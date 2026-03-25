@@ -1,0 +1,181 @@
+# CTM-SAK Configuration File
+# ===========================
+# Place this file at:
+#   ~/.ctm_sak/config.ini   (recommended)
+#   ./ctm_sak.ini            (project-local)
+#   or point CTM_SAK_CONFIG env var to any path
+#
+# Values in [DEFAULT] are inherited by every target section.
+
+[DEFAULT]
+timeout    = 30
+verify_ssl = true
+max_retries = 3
+
+# =============================================================================
+# ThreatQ — OAuth2 client credentials
+# =============================================================================
+[threatq]
+host          = https://threatq.example.com
+client_id     = YOUR_CLIENT_ID
+client_secret = YOUR_CLIENT_SECRET
+auth_type     = oauth2
+
+# =============================================================================
+# Proofpoint TAP — HTTP Basic (service principal + secret)
+# =============================================================================
+[proofpoint]
+host               = https://tap-api-v2.proofpoint.com
+service_principal  = YOUR_SERVICE_PRINCIPAL
+secret             = YOUR_SECRET
+auth_type          = basic
+
+# =============================================================================
+# Netskope — API token
+# =============================================================================
+[netskope]
+host      = https://YOUR_TENANT.goskope.com
+api_token = YOUR_API_TOKEN
+auth_type = token
+
+# =============================================================================
+# CrowdStrike Falcon — OAuth2 client credentials
+# =============================================================================
+[crowdstrike]
+host          = https://api.crowdstrike.com
+client_id     = YOUR_CLIENT_ID
+client_secret = YOUR_CLIENT_SECRET
+auth_type     = oauth2
+
+# =============================================================================
+# XSOAR 6 — API key (+ optional auth_id for MSSP)
+# =============================================================================
+[xsoar]
+host    = https://xsoar.example.com
+api_key = YOUR_API_KEY
+# auth_id = 1          ; uncomment for MSSP multi-tenant
+auth_type = api_key
+
+# =============================================================================
+# Recorded Future — API token
+# =============================================================================
+[recordedfuture]
+host      = https://api.recordedfuture.com
+api_token = YOUR_RF_API_TOKEN
+auth_type = token
+
+# =============================================================================
+# ReliaQuest GreyMatter — OAuth2 client credentials
+# =============================================================================
+[greymatter]
+host          = https://api.greymatter.io
+client_id     = YOUR_CLIENT_ID
+client_secret = YOUR_CLIENT_SECRET
+auth_type     = oauth2
+
+# =============================================================================
+# Whistic Vendor Security Network — API key
+# =============================================================================
+[whistic]
+host    = https://api.whistic.com
+api_key = YOUR_API_KEY
+auth_type = api_key
+
+# =============================================================================
+# RiskRecon (Mastercard) — OAuth2 client credentials
+# =============================================================================
+[riskrecon]
+host          = https://api.riskrecon.com
+client_id     = YOUR_CLIENT_ID
+client_secret = YOUR_CLIENT_SECRET
+auth_type     = oauth2
+
+# =============================================================================
+# Feedly AI / Enterprise — Bearer token (read-only)
+# =============================================================================
+[feedly]
+host      = https://api.feedly.com
+api_token = YOUR_ACCESS_TOKEN
+auth_type = token
+
+# =============================================================================
+# Splunk Enterprise / Cloud — Token (port 8089)
+# =============================================================================
+[splunk]
+host      = https://splunk.example.com:8089
+api_token = YOUR_BEARER_TOKEN
+# auth_type = basic
+# username  = analyst
+# password  = your-password
+auth_type = token
+
+# =============================================================================
+# Claude AI Agent — API key for ResearchAgent and ParsingAgent
+# =============================================================================
+[claude]
+api_key               = sk-ant-YOUR_API_KEY
+model                 = claude-sonnet-4-6
+max_tokens            = 4096
+timeout               = 120
+# Maximum confidence assigned to AI-extracted STIX objects (0-100).
+# Prevents AI hallucinations propagating to EDLs at high confidence.
+ai_confidence_ceiling = 60
+
+# =============================================================================
+# Microsoft Copilot — DirectLine secret for CopilotReader
+# =============================================================================
+[copilot]
+# Bot Framework DirectLine secret from Azure Bot registration
+# Channels → Direct Line → Secret keys
+directline_secret = YOUR_DIRECTLINE_SECRET
+# Seconds to wait for Copilot to respond per source query
+bot_timeout = 60
+
+# =============================================================================
+# Research Library — TTL overrides (hours)
+# Defaults: indicator=24, vulnerability=72, campaign=336, threat_actor=720, other=168
+# =============================================================================
+[research_library]
+staging_name     = _ctmsak_staging
+library_name     = _ctmsak_library
+# Uncomment to override defaults:
+# ttl_indicator    = 24
+# ttl_vulnerability = 72
+# ttl_campaign     = 336
+# ttl_threat_actor = 720
+# ttl_other        = 168
+
+# =============================================================================
+# VirusTotal
+# =============================================================================
+[virustotal]
+host      = https://www.virustotal.com
+api_key   = YOUR_VT_API_KEY
+auth_type = token
+
+# =============================================================================
+# Shadowserver
+# =============================================================================
+[shadowserver]
+host       = https://api.shadowserver.org
+api_key    = YOUR_SS_API_KEY
+api_secret = YOUR_SS_API_SECRET
+auth_type  = token
+
+# =============================================================================
+# Rapid7 (InsightVM or Threat Command)
+# =============================================================================
+[rapid7]
+host     = https://us.api.insight.rapid7.com
+api_key  = YOUR_R7_API_KEY
+product  = insightvm    # or: threat_command
+auth_type = token
+
+# =============================================================================
+# Nucleus Security
+# =============================================================================
+[nucleus]
+host    = https://api.nucleussec.com
+api_key = YOUR_NUCLEUS_API_KEY
+project = YOUR_PROJECT_ID
+auth_type = token

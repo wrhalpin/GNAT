@@ -1,0 +1,95 @@
+[build-system]
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name        = "ctm-sak"
+version     = "0.1.0"
+description = "Cybersecurity Threat Management Swiss Army Knife — universal STIX ORM and multi-platform security client"
+readme      = "README.md"
+license     = { file = "LICENSE" }
+authors     = [{ name = "CTM-SAK Contributors" }]
+keywords    = ["cybersecurity","threat-intelligence","stix","taxii","ioc","siem","soar"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Developers",
+    "Topic :: Security",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+requires-python = ">=3.9"
+dependencies    = ["urllib3>=2.0"]
+
+[project.optional-dependencies]
+yaml   = ["pyyaml>=6.0"]
+taxii  = ["taxii2-client>=2.3"]
+rss    = ["feedparser>=6.0"]
+ingest = ["taxii2-client>=2.3", "feedparser>=6.0"]
+async  = ["httpx>=0.27"]
+persist   = ["sqlalchemy>=2.0"]
+schedule  = ["croniter>=2.0"]
+agents    = []
+research  = []
+reports   = ["reportlab>=4.0"]   # PDF; DOCX via npm docx (install separately)   # no new deps — uses existing context + schedule   # stdlib only; Claude API key in config.ini
+viz    = ["plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1"]
+serve  = ["fastapi>=0.111", "uvicorn>=0.30"]
+dev    = [
+    "pytest>=7.4", "pytest-cov>=4.1", "pytest-mock>=3.11",
+    "pyyaml>=6.0", "taxii2-client>=2.3", "feedparser>=6.0",
+    "ruff>=0.4", "mypy>=1.9", "httpx>=0.27", "sqlalchemy>=2.0",
+    "plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1",
+]
+all = ["pyyaml>=6.0", "taxii2-client>=2.3", "feedparser>=6.0", "httpx>=0.27", "sqlalchemy>=2.0", "croniter>=2.0", "reportlab>=4.0", "plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1", "fastapi>=0.111", "uvicorn>=0.30"]
+
+[project.scripts]
+ctm-sak-codegen = "ctm_sak.codegen.openapi_generator:_main"
+ctm-sak = "ctm_sak.cli.main:main"
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["ctm_sak*"]
+
+[tool.setuptools.package-data]
+"ctm_sak" = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short -p no:warnings"
+markers   = [
+    "integration: live API tests requiring real credentials (opt-in with --run-integration)",
+    "slow: tests that take >5s",
+]
+
+[tool.coverage.run]
+source = ["ctm_sak"]
+omit   = ["tests/*", "ctm_sak/codegen/*"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "def __repr__", "raise NotImplementedError", "if TYPE_CHECKING", "pass"]
+show_missing = true
+fail_under   = 70
+
+[tool.ruff]
+line-length    = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501", "B904", "SIM108"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*"             = ["F841", "S101"]
+"ctm_sak/codegen/*"   = ["E501"]
+
+[tool.mypy]
+python_version         = "3.9"
+warn_return_any        = true
+warn_unused_configs    = true
+ignore_missing_imports = true
