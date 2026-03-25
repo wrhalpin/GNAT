@@ -1,609 +1,439 @@
-"""
+# """
 ctm_sak.connectors.splunk.client
-==================================
 
-Splunk Enterprise / Splunk Cloud REST API connector.
+Core HTTP client for the Splunk connector.
 
-Authentication
---------------
-Two modes supported:
+Wraps urllib3.PoolManager with:
 
-**Token-based** (recommended for automation)::
+- Automatic auth header injection via SplunkAuthManager
+- JSON request/response handling
+- Splunk-specific error parsing and exception mapping
+- Retry logic with exponential backoff for transient errors
+- output_mode=json enforcement on all requests
+- Context manager support for connection lifecycle
 
-    [splunk]
-    host      = https://splunk.example.com:8089
-    api_token = <bearer-token>
-    auth_type = token
+## Splunk REST conventions
 
-**Username + password** (generates a session token on first use)::
+- Management port: 8089 (splunkd)
+- All endpoints return JSON when `?output_mode=json` is appended
+- POST bodies are `application/x-www-form-urlencoded` unless sending
+  raw file content (threat intel upload uses multipart/form-data)
+- Pagination: `count` + `offset` parameters; no cursor tokens
+- Error body shape:
+  {"messages": [{"type": "ERROR", "text": "…"}]}
 
-    [splunk]
-    host     = https://splunk.example.com:8089
-    username = analyst
-    password = s3cr3t
-    auth_type = basic
+## Usage
 
-Note: Splunk uses port 8089 (management port) for the REST API, not 8000
-(the web UI port).
+```
+cfg = load_splunk_config(parser)
+client = SplunkClient(cfg)
+with client:
+    jobs = client.get("search/jobs", params={"count": 10})
+```
 
-STIX Type Mapping
------------------
-+--------------------+----------------------------------+
-| STIX Type          | Splunk Resource                  |
-+====================+==================================+
-| indicator          | threat-intel lookup / notable    |
-+--------------------+----------------------------------+
-| malware            | threat-intel lookup              |
-+--------------------+----------------------------------+
-| vulnerability      | notable event (CVE)              |
-+--------------------+----------------------------------+
-
-Key Features
-------------
-* ``search(spl)`` — run any SPL search (blocking or async)
-* ``get_notable_events()`` — fetch ES Notable Events
-* ``post_threat_intel(ioc_type, value)`` — add to threat-intel lookup
-* ``get_threat_intel(ioc_type)`` — read a threat-intel lookup table
-* ``list_saved_searches()`` — enumerate saved searches
-* ``get_kvstore(collection)`` — read a KV Store collection
-* ``post_kvstore(collection, record)`` — write to KV Store
-
-Output mode: all endpoints use ``output_mode=json``.
 """
 
-from __future__ import annotations
-
+import json
 import time
-from typing import Any, Dict, List, Optional
+import urllib.parse
+import urllib3
 
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from .auth import SplunkAuthManager
+from .config import SplunkConfig
+from .exceptions import (
+SplunkAPIError,
+SplunkAuthError,
+SplunkNotFoundError,
+SplunkRateLimitError,
+)
 
+# ── Retry configuration ───────────────────────────────────────────────────────
 
-class SplunkClient(BaseClient, ConnectorMixin):
+_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+_MAX_RETRIES = 3
+_RETRY_BASE_DELAY = 1.0   # seconds
+_RETRY_BACKOFF = 2.0      # multiplier
+
+class SplunkClient:
+"""
+urllib3-based HTTP client for the Splunk REST API.
+
+```
+Parameters
+----------
+config : SplunkConfig
+    Validated connector configuration.
+
+Attributes
+----------
+config : SplunkConfig
+    The active configuration.
+auth : SplunkAuthManager
+    The authentication manager (accessible for token introspection).
+"""
+
+def __init__(self, config: SplunkConfig) -> None:
+    self.config = config
+    self._http = self._build_pool_manager()
+    self.auth = SplunkAuthManager(config, self._http)
+
+# ── Context manager ───────────────────────────────────────────────────
+
+def __enter__(self) -> "SplunkClient":
+    return self
+
+def __exit__(self, *_) -> None:
+    self.close()
+
+def close(self) -> None:
+    """Logout from Splunk (session key auth) and release connections."""
+    try:
+        self.auth.logout()
+    finally:
+        self._http.clear()
+
+# ── Public HTTP verbs ──────────────────────────────────────────────────
+
+def get(
+    self,
+    endpoint: str,
+    params: dict | None = None,
+    namespaced: bool = True,
+    raw: bool = False,
+) -> dict | bytes:
     """
-    HTTP client for the Splunk Enterprise / Splunk Cloud REST API.
+    HTTP GET against a Splunk REST endpoint.
 
     Parameters
     ----------
-    host : str
-        Base URL including port, e.g. ``"https://splunk.example.com:8089"``.
-    api_token : str, optional
-        Splunk bearer token.  Takes precedence over username/password.
-    username : str, optional
-        Splunk username (used if *api_token* is not set).
-    password : str, optional
-        Splunk password.
-    app : str
-        Splunk app context for searches.  Default ``"search"``.
-    search_timeout : int
-        Maximum seconds to wait for a blocking search job.  Default 120.
+    endpoint : str
+        Path relative to the namespace root, e.g. ``"search/jobs"``.
+    params : dict | None
+        Query parameters. ``output_mode=json`` is always appended.
+    namespaced : bool
+        If True, uses /servicesNS/<owner>/<app>/<endpoint>.
+        If False, uses /services/<endpoint> (global scope).
+    raw : bool
+        If True, return the raw response bytes instead of parsed JSON.
+
+    Returns
+    -------
+    dict | bytes
+        Parsed JSON dict, or raw bytes when ``raw=True``.
     """
+    url = self._build_url(endpoint, namespaced)
+    qp = self._inject_output_mode(params)
+    return self._request("GET", url, fields=qp, raw=raw)
 
-    stix_type_map: Dict[str, str] = {
-        "indicator":     "threat_activity",
-        "malware":       "threat_activity",
-        "vulnerability": "notable",
+def post(
+    self,
+    endpoint: str,
+    data: dict | None = None,
+    params: dict | None = None,
+    namespaced: bool = True,
+    content_type: str = "application/x-www-form-urlencoded",
+    raw_body: bytes | None = None,
+) -> dict:
+    """
+    HTTP POST against a Splunk REST endpoint.
+
+    Parameters
+    ----------
+    endpoint : str
+        Path relative to the namespace root.
+    data : dict | None
+        Form data (encoded as x-www-form-urlencoded by default).
+    params : dict | None
+        Query parameters appended to the URL.
+    namespaced : bool
+        Namespace vs global scope toggle.
+    content_type : str
+        Override Content-Type header.
+    raw_body : bytes | None
+        Send a raw body (e.g. multipart for file upload).
+        Mutually exclusive with ``data``.
+
+    Returns
+    -------
+    dict
+        Parsed JSON response.
+    """
+    url = self._build_url(endpoint, namespaced)
+    qp = self._inject_output_mode(params)
+    if qp:
+        url = f"{url}?{urllib.parse.urlencode(qp)}"
+
+    if raw_body is not None:
+        body = raw_body
+        headers = {"Content-Type": content_type}
+    elif data:
+        body = urllib.parse.urlencode(data).encode("utf-8")
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    else:
+        body = b""
+        headers = {}
+
+    return self._request("POST", url, body=body, extra_headers=headers)
+
+def delete(self, endpoint: str, namespaced: bool = True) -> dict:
+    """HTTP DELETE against a Splunk REST endpoint."""
+    url = self._build_url(endpoint, namespaced)
+    url = f"{url}?output_mode=json"
+    return self._request("DELETE", url)
+
+def put(
+    self,
+    endpoint: str,
+    data: dict | None = None,
+    namespaced: bool = True,
+) -> dict:
+    """HTTP PUT (used for KV Store document updates)."""
+    url = self._build_url(endpoint, namespaced)
+    url = f"{url}?output_mode=json"
+    body = json.dumps(data or {}).encode("utf-8")
+    return self._request(
+        "PUT",
+        url,
+        body=body,
+        extra_headers={"Content-Type": "application/json"},
+    )
+
+# ── Pagination helper ──────────────────────────────────────────────────
+
+def paginate(
+    self,
+    endpoint: str,
+    params: dict | None = None,
+    namespaced: bool = True,
+    page_size: int = 100,
+    result_key: str = "entry",
+):
+    """
+    Generator that yields all pages of a list endpoint.
+
+    Splunk paginates via ``count`` + ``offset``. Iterates until
+    the response contains fewer results than ``page_size``.
+
+    Parameters
+    ----------
+    endpoint : str
+        REST endpoint path.
+    params : dict | None
+        Additional query parameters.
+    namespaced : bool
+        Namespace vs global scope.
+    page_size : int
+        Results per page (Splunk ``count`` parameter).
+    result_key : str
+        Top-level JSON key that contains the list (usually 'entry').
+
+    Yields
+    ------
+    dict
+        Individual result entries.
+    """
+    offset = 0
+    base_params = dict(params or {})
+    base_params["count"] = page_size
+
+    while True:
+        base_params["offset"] = offset
+        response = self.get(endpoint, params=base_params, namespaced=namespaced)
+        entries = response.get(result_key, [])
+        yield from entries
+
+        if len(entries) < page_size:
+            break
+        offset += page_size
+
+# ── Internal ───────────────────────────────────────────────────────────
+
+def _build_pool_manager(self) -> urllib3.PoolManager:
+    """Create urllib3.PoolManager with TLS and retry configuration."""
+    kwargs: dict = {
+        "num_pools": 4,
+        "maxsize": 10,
+        "timeout": urllib3.Timeout(
+            connect=10.0,
+            read=float(self.config.timeout),
+        ),
+        "retries": urllib3.Retry(
+            total=0,  # CTM-SAK handles retries manually for full control
+            raise_on_status=False,
+        ),
     }
 
-    # IOC type → Splunk threat-intel lookup name
-    _TI_LOOKUP: Dict[str, str] = {
-        "ip":     "ip_intel",
-        "domain": "http_intel",
-        "url":    "http_intel",
-        "email":  "email_intel",
-        "md5":    "file_intel",
-        "sha256": "file_intel",
-        "sha1":   "file_intel",
-    }
+    if not self.config.verify_ssl:
+        kwargs["cert_reqs"] = "CERT_NONE"
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    else:
+        kwargs["cert_reqs"] = "CERT_REQUIRED"
 
-    def __init__(
-        self,
-        host: str,
-        api_token: str = "",
-        username: str = "",
-        password: str = "",
-        app: str = "search",
-        search_timeout: int = 120,
-        **kwargs: Any,
-    ):
-        super().__init__(host=host, **kwargs)
-        self._api_token      = api_token
-        self._username       = username
-        self._password       = password
-        self._app            = app
-        self._search_timeout = search_timeout
+    return urllib3.PoolManager(**kwargs)
 
-    # ── Authentication ─────────────────────────────────────────────────────
+def _build_url(self, endpoint: str, namespaced: bool) -> str:
+    endpoint = endpoint.lstrip("/")
+    if namespaced:
+        return self.config.namespace_path(endpoint)
+    return self.config.services_path(endpoint)
 
-    def authenticate(self) -> None:
-        """
-        Authenticate to Splunk.
+@staticmethod
+def _inject_output_mode(params: dict | None) -> dict:
+    result = dict(params or {})
+    result.setdefault("output_mode", "json")
+    return result
 
-        If *api_token* is set, injects a Bearer header.
-        Otherwise exchanges username+password for a session token via
-        ``/services/auth/login``.
+def _request(
+    self,
+    method: str,
+    url: str,
+    fields: dict | None = None,
+    body: bytes | None = None,
+    extra_headers: dict | None = None,
+    raw: bool = False,
+) -> dict | bytes:
+    """
+    Execute an HTTP request with auth injection, retries, and error mapping.
 
-        Raises
-        ------
-        SAKClientError
-            If neither token nor credentials are configured, or if
-            username/password authentication fails.
-        """
-        if self._api_token:
-            self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
-            return
+    Parameters
+    ----------
+    method : str
+        HTTP verb.
+    url : str
+        Fully qualified URL.
+    fields : dict | None
+        Query parameters for GET; form fields for POST when body is None.
+    body : bytes | None
+        Raw request body.
+    extra_headers : dict | None
+        Headers to merge with auth headers.
+    raw : bool
+        Return raw bytes instead of parsed JSON.
 
-        if self._username and self._password:
-            resp = self.post(
-                "/services/auth/login",
-                data={
-                    "username": self._username,
-                    "password": self._password,
-                    "output_mode": "json",
-                },
-            )
-            session_key = (
-                resp.get("sessionKey") if isinstance(resp, dict)
-                else None
-            )
-            if not session_key:
-                raise SAKClientError("Splunk: authentication failed — no session key")
-            self._auth_headers["Authorization"] = f"Splunk {session_key}"
-            return
+    Returns
+    -------
+    dict | bytes
 
-        raise SAKClientError(
-            "Splunk: no credentials configured. "
-            "Set api_token or username+password in config."
-        )
+    Raises
+    ------
+    SplunkAuthError, SplunkRateLimitError, SplunkNotFoundError,
+    SplunkAPIError
+    """
+    headers = self.auth.get_auth_headers()
+    if extra_headers:
+        headers.update(extra_headers)
 
-    # ── ConnectorMixin — CRUD ─────────────────────────────────────────────
+    delay = _RETRY_BASE_DELAY
+    last_exc: Exception | None = None
 
-    def health_check(self) -> bool:
-        """Ping Splunk via the server-info endpoint."""
-        self.get("/services/server/info", params={"output_mode": "json"})
-        return True
-
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
-        """
-        Fetch a single Splunk result.
-
-        For indicators: looks up a value in the threat-intel lookup.
-        For vulnerabilities / notables: fetches by event key.
-        """
-        if stix_type in ("indicator", "malware"):
-            # Search threat-intel by id/value
-            results = self.search(
-                f'| inputlookup ip_intel | where id="{object_id}" | head 1'
-            )
-            return results[0] if results else {}
-
-        if stix_type == "vulnerability":
-            results = self.search(
-                f'index=notable event_id="{object_id}" | head 1'
-            )
-            return results[0] if results else {}
-
-        raise SAKClientError(f"Splunk: unsupported STIX type '{stix_type}'")
-
-    def list_objects(
-        self,
-        stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
-        page: int = 1,
-        page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
-        """
-        List Splunk objects via SPL search.
-
-        Parameters
-        ----------
-        filters : dict, optional
-            Supported keys:
-            * ``query`` — arbitrary SPL string appended after the base search
-            * ``earliest`` — Splunk time modifier, e.g. ``"-24h"``
-            * ``latest``   — end time, default ``"now"``
-        """
-        filters   = dict(filters or {})
-        query     = filters.pop("query", "")
-        earliest  = filters.pop("earliest", "-24h")
-        latest    = filters.pop("latest", "now")
-
-        if stix_type in ("indicator", "malware"):
-            spl = f"| inputlookup ip_intel {query} | head {page_size}"
-        elif stix_type == "vulnerability":
-            spl = (
-                f"index=notable earliest={earliest} latest={latest} "
-                f"{query} | head {page_size}"
-            )
-        else:
-            raise SAKClientError(f"Splunk: unsupported STIX type '{stix_type}'")
-
-        return self.search(spl)
-
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Write a threat-intel entry to a Splunk lookup table.
-
-        Parameters
-        ----------
-        payload : dict
-            Must contain ``ioc_type`` (``"ip"``, ``"domain"``, etc.)
-            and ``value``.  Additional keys are written as-is.
-        """
-        ioc_type = payload.get("ioc_type", "ip")
-        value    = payload.get("value", "")
-        if not value:
-            raise SAKClientError("Splunk upsert: 'value' is required")
-        return self.post_threat_intel(ioc_type, value, extra=payload)
-
-    def delete_object(self, stix_type: str, object_id: str) -> None:
-        """Remove an entry from the threat-intel lookup by id."""
-        spl = f'| inputlookup ip_intel | where id!="{object_id}" | outputlookup ip_intel'
-        self.search(spl)
-
-    # ── Domain-specific operations ────────────────────────────────────────
-
-    def search(
-        self,
-        spl: str,
-        earliest: str = "-24h",
-        latest: str   = "now",
-        max_results: int = 10_000,
-        blocking: bool = True,
-    ) -> List[Dict[str, Any]]:
-        """
-        Execute a Splunk SPL search and return result rows.
-
-        Parameters
-        ----------
-        spl : str
-            SPL search string.  Do not include leading ``search`` keyword
-            for transforming commands (``| inputlookup``, ``| stats``, etc.).
-        earliest : str
-            Splunk time modifier for earliest bound.  Default ``"-24h"``.
-        latest : str
-            Splunk time modifier for latest bound.  Default ``"now"``.
-        max_results : int
-            Maximum rows to return.  Default 10 000.
-        blocking : bool
-            If ``True`` (default), waits for the job to finish before returning.
-            If ``False``, returns the job SID immediately.
-
-        Returns
-        -------
-        list of dict
-            Result rows.  Each dict maps field name → value.
-
-        Raises
-        ------
-        SAKClientError
-            If the search job fails or times out.
-        """
-        if not spl.startswith("|") and not spl.startswith("search"):
-            spl = f"search {spl}"
-
-        # Create search job
-        job_resp = self.post(
-            f"/services/search/jobs",
-            data={
-                "search":         spl,
-                "earliest_time":  earliest,
-                "latest_time":    latest,
-                "output_mode":    "json",
-                "exec_mode":      "normal" if not blocking else "blocking",
-                "count":          str(max_results),
-            },
-        )
-        sid = job_resp.get("sid") if isinstance(job_resp, dict) else None
-        if not sid:
-            raise SAKClientError("Splunk: failed to create search job")
-
-        if not blocking:
-            return [{"sid": sid}]
-
-        # Poll until done
-        deadline = time.time() + self._search_timeout
-        while time.time() < deadline:
-            status = self.get(
-                f"/services/search/jobs/{sid}",
-                params={"output_mode": "json"},
-            )
-            entry   = status.get("entry", [{}])[0] if isinstance(status, dict) else {}
-            content = entry.get("content", {})
-            disp    = content.get("dispatchState", "")
-            if disp in ("DONE", "FAILED", "FINALIZED"):
-                break
-            time.sleep(1.0)
-        else:
-            raise SAKClientError(
-                f"Splunk: search job {sid} timed out after {self._search_timeout}s"
-            )
-
-        if content.get("dispatchState") == "FAILED":
-            raise SAKClientError(
-                f"Splunk: search job {sid} failed: "
-                f"{content.get('messages', '')}"
-            )
-
-        # Fetch results
-        results_resp = self.get(
-            f"/services/search/jobs/{sid}/results",
-            params={"output_mode": "json", "count": str(max_results)},
-        )
-        rows = results_resp.get("results", []) if isinstance(results_resp, dict) else []
-
-        # Clean up the job
+    for attempt in range(_MAX_RETRIES + 1):
         try:
-            self.delete(f"/services/search/jobs/{sid}")
-        except Exception:  # noqa: BLE001
-            pass
+            if body is not None:
+                response = self._http.request(
+                    method,
+                    url,
+                    body=body,
+                    headers=headers,
+                )
+            else:
+                response = self._http.request(
+                    method,
+                    url,
+                    fields=fields,
+                    headers=headers,
+                )
+        except urllib3.exceptions.HTTPError as exc:
+            last_exc = exc
+            if attempt < _MAX_RETRIES:
+                time.sleep(delay)
+                delay *= _RETRY_BACKOFF
+                continue
+            raise SplunkAPIError(
+                f"Connection error after {_MAX_RETRIES} retries: {exc}",
+                endpoint=url,
+            ) from exc
 
-        return rows
-
-    def get_notable_events(
-        self,
-        earliest: str = "-24h",
-        latest: str   = "now",
-        max_results: int = 500,
-        filters: Optional[Dict[str, str]] = None,
-    ) -> List[Dict[str, Any]]:
-        """
-        Fetch Splunk Enterprise Security Notable Events.
-
-        Parameters
-        ----------
-        filters : dict, optional
-            Key-value pairs appended as SPL WHERE conditions.
-            e.g. ``{"severity": "critical", "status": "1"}``
-
-        Returns
-        -------
-        list of dict
-            Notable event rows with ``rule_name``, ``severity``,
-            ``src``, ``dest``, ``event_id``, ``urgency`` etc.
-        """
-        where_clauses = ""
-        if filters:
-            where_clauses = " | where " + " AND ".join(
-                f'{k}="{v}"' for k, v in filters.items()
+        # ── Auth retry on 401 ──────────────────────────────────────
+        if response.status == 401:
+            if attempt == 0:
+                # Token may have expired -- invalidate and retry once
+                self.auth.invalidate_session()
+                headers = self.auth.get_auth_headers()
+                if extra_headers:
+                    headers.update(extra_headers)
+                continue
+            raise SplunkAuthError(
+                "Splunk returned 401 after token refresh. "
+                "Check credentials or token expiry."
             )
-        spl = (
-            f"index=notable earliest={earliest} latest={latest}"
-            f"{where_clauses} | head {max_results}"
-        )
-        return self.search(spl, earliest=earliest, latest=latest)
 
-    def post_threat_intel(
-        self,
-        ioc_type: str,
-        value: str,
-        extra: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Add an entry to a Splunk threat-intelligence lookup table.
+        # ── Rate limit ─────────────────────────────────────────────
+        if response.status == 429:
+            if attempt < _MAX_RETRIES:
+                time.sleep(delay)
+                delay *= _RETRY_BACKOFF
+                continue
+            raise SplunkRateLimitError(
+                "Splunk rate limit exceeded.",
+                status_code=429,
+                endpoint=url,
+            )
 
-        Parameters
-        ----------
-        ioc_type : str
-            IOC type key: ``"ip"``, ``"domain"``, ``"url"``,
-            ``"email"``, ``"md5"``, ``"sha256"``, ``"sha1"``.
-        value : str
-            The IOC value to add.
-        extra : dict, optional
-            Additional fields to write to the lookup row.
+        # ── Transient server errors ────────────────────────────────
+        if response.status in _RETRYABLE_STATUS and attempt < _MAX_RETRIES:
+            time.sleep(delay)
+            delay *= _RETRY_BACKOFF
+            continue
 
-        Returns
-        -------
-        dict
-            Result of the outputlookup search.
-        """
-        lookup = self._TI_LOOKUP.get(ioc_type, "http_intel")
-        fields = {ioc_type: value, "source": "ctm-sak"}
-        if extra:
-            fields.update({k: str(v) for k, v in extra.items()
-                           if k not in ("ioc_type", "value")})
-        field_str = " ".join(f'{k}="{v}"' for k, v in fields.items())
-        spl = (
-            f'| makeresults | eval {field_str.replace("=", "=", 1)}'
-            f' | inputlookup append=t {lookup}'
-            f' | outputlookup {lookup}'
-        )
-        return {"lookup": lookup, "value": value, "result": self.search(spl)}
+        # ── Map remaining error codes ──────────────────────────────
+        if response.status == 404:
+            raise SplunkNotFoundError(
+                f"Resource not found: {url}",
+                status_code=404,
+                endpoint=url,
+            )
 
-    def get_threat_intel(
-        self,
-        ioc_type: str,
-        value_filter: Optional[str] = None,
-        max_results: int = 1000,
-    ) -> List[Dict[str, Any]]:
-        """
-        Read entries from a Splunk threat-intel lookup table.
+        if response.status == 403:
+            raise SplunkAuthError(
+                f"Permission denied: {url} (HTTP 403). "
+                "Check the token's capability set."
+            )
 
-        Parameters
-        ----------
-        ioc_type : str
-            IOC type key (see :meth:`post_threat_intel`).
-        value_filter : str, optional
-            Filter by value substring.
-        """
-        lookup = self._TI_LOOKUP.get(ioc_type, "http_intel")
-        filter_clause = (
-            f' | search {ioc_type}="*{value_filter}*"'
-            if value_filter else ""
-        )
-        spl = f"| inputlookup {lookup}{filter_clause} | head {max_results}"
-        return self.search(spl)
+        if response.status not in (200, 201):
+            messages = self._extract_error_messages(response.data)
+            raise SplunkAPIError(
+                f"Unexpected response from Splunk.",
+                status_code=response.status,
+                endpoint=url,
+                messages=messages,
+            )
 
-    def list_saved_searches(
-        self, app: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        List saved searches in the given app context.
+        # ── Success ────────────────────────────────────────────────
+        if raw:
+            return response.data
 
-        Parameters
-        ----------
-        app : str, optional
-            Splunk app namespace.  Defaults to the instance ``app`` setting.
+        return self._parse_json(response.data, url)
 
-        Returns
-        -------
-        list of dict
-            Saved search entries with ``name``, ``search``, ``cron_schedule``.
-        """
-        app = app or self._app
-        resp = self.get(
-            f"/servicesNS/-/{app}/saved/searches",
-            params={"output_mode": "json", "count": 200},
-        )
-        return resp.get("entry", []) if isinstance(resp, dict) else []
+    # Should not reach here, but satisfy the type checker.
+    if last_exc:
+        raise SplunkAPIError(str(last_exc), endpoint=url) from last_exc
+    raise SplunkAPIError("Request failed after retries.", endpoint=url)
 
-    def get_kvstore(
-        self, collection: str, query: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Read records from a Splunk KV Store collection.
+@staticmethod
+def _parse_json(data: bytes, url: str) -> dict:
+    try:
+        return json.loads(data.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise SplunkAPIError(
+            f"Failed to parse JSON response from {url}: {exc}",
+            endpoint=url,
+        ) from exc
 
-        Parameters
-        ----------
-        collection : str
-            KV Store collection name.
-        query : dict, optional
-            MongoDB-style query filter (JSON-encoded).
-
-        Returns
-        -------
-        list of dict
-            Collection records.
-        """
-        import json as _json
-        params: Dict[str, Any] = {"output_mode": "json"}
-        if query:
-            params["query"] = _json.dumps(query)
-        resp = self.get(
-            f"/servicesNS/nobody/{self._app}/storage/collections/data/{collection}",
-            params=params,
-        )
-        return resp if isinstance(resp, list) else []
-
-    def post_kvstore(
-        self, collection: str, record: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Write a record to a Splunk KV Store collection.
-
-        Parameters
-        ----------
-        collection : str
-            KV Store collection name.
-        record : dict
-            The record to write.
-
-        Returns
-        -------
-        dict
-            Response containing the ``_key`` of the stored record.
-        """
-        return self.post(
-            f"/servicesNS/nobody/{self._app}/storage/collections/data/{collection}",
-            json=record,
-        )
-
-    # ── ConnectorMixin — STIX translation ─────────────────────────────────
-
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Translate a Splunk result row to STIX 2.1.
-
-        Handles notable events (produces ``vulnerability`` or ``indicator``)
-        and threat-intel lookup rows (produces ``indicator``).
-        """
-        # Notable event
-        if "rule_name" in native or "event_id" in native:
-            severity = native.get("severity", "unknown")
-            conf_map = {
-                "critical": 95, "high": 80,
-                "medium": 60, "low": 40, "informational": 20,
-            }
-            return {
-                "type":         "indicator",
-                "id":           f"indicator--{native.get('event_id', '')}",
-                "name":         native.get("rule_name", ""),
-                "description":  native.get("search_name", ""),
-                "pattern":      (
-                    f"[ipv4-addr:value = '{native.get('src', '')}']"
-                    if native.get("src") else "[unknown:value = '']"
-                ),
-                "pattern_type": "stix",
-                "created":      native.get("_time", ""),
-                "modified":     native.get("_time", ""),
-                "confidence":   conf_map.get(severity, 50),
-                "x_splunk_severity": severity,
-                "x_splunk_urgency":  native.get("urgency", ""),
-                "x_splunk_src":      native.get("src", ""),
-                "x_splunk_dest":     native.get("dest", ""),
-                "x_splunk_index":    native.get("index", ""),
-            }
-
-        # Threat-intel lookup row — try common field names
-        value = (
-            native.get("ip") or native.get("domain") or
-            native.get("url") or native.get("md5") or
-            native.get("sha256") or native.get("email") or
-            native.get("value") or ""
-        )
-        ioc_type_map = {
-            "ip":     "[ipv4-addr:value = '{v}']",
-            "domain": "[domain-name:value = '{v}']",
-            "url":    "[url:value = '{v}']",
-            "md5":    "[file:hashes.MD5 = '{v}']",
-            "sha256": "[file:hashes.SHA-256 = '{v}']",
-            "email":  "[email-addr:value = '{v}']",
-        }
-        detected_key = next(
-            (k for k in ("ip", "domain", "url", "md5", "sha256", "email")
-             if native.get(k)), "ip"
-        )
-        pattern = ioc_type_map.get(
-            detected_key, "[unknown:value = '{v}']"
-        ).format(v=value.replace("'", "\\'"))
-
-        return {
-            "type":            "indicator",
-            "id":              f"indicator--{native.get('_key', '')}",
-            "name":            value,
-            "pattern":         pattern,
-            "pattern_type":    "stix",
-            "created":         native.get("_time", ""),
-            "modified":        native.get("_time", ""),
-            "confidence":      70,
-            "x_splunk_source": native.get("source", ""),
-            "x_splunk_index":  native.get("index", ""),
-        }
-
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Translate a STIX Indicator to a Splunk threat-intel lookup row.
-        """
-        import re
-        pattern = stix_dict.get("pattern", "")
-        m = re.search(r"=\s*'([^']+)'", pattern)
-        value = m.group(1) if m else stix_dict.get("name", "")
-
-        ioc_type = "ip"
-        if "domain-name" in pattern:
-            ioc_type = "domain"
-        elif "url:" in pattern:
-            ioc_type = "url"
-        elif "MD5" in pattern:
-            ioc_type = "md5"
-        elif "SHA-256" in pattern:
-            ioc_type = "sha256"
-        elif "email-addr" in pattern:
-            ioc_type = "email"
-
-        return {
-            "ioc_type": ioc_type,
-            "value":    value,
-            "source":   "ctm-sak",
-        }
+@staticmethod
+def _extract_error_messages(data: bytes) -> list[str]:
+    try:
+        body = json.loads(data.decode("utf-8"))
+        return [m.get("text", "") for m in body.get("messages", [])]
+    except Exception:
+        return []
+```
