@@ -1,5 +1,5 @@
 """
-CTM-SAK Security Onion Connector
+GNAT Security Onion Connector
 ===================================
 Connector for Security Onion Network Security Monitoring platform.
 
@@ -25,7 +25,7 @@ STIX 2.1: No native support. Mapper converts alerts → observed-data bundles.
 Dev access: Fully free, open source.
   ISO/Docker: https://docs.securityonion.net/en/2.4/installation.html
 
-Configuration (ctm_sak.ini):
+Configuration (gnat.ini):
   [security_onion]
   url           = https://securityonion.corp.example.com
   username      =
@@ -340,7 +340,7 @@ class SecurityOnionAlertCommands:
 
     @staticmethod
     def normalise_alert(alert: dict) -> dict:
-        """Flatten a Security Onion alert to CTM-SAK normalised format."""
+        """Flatten a Security Onion alert to GNAT normalised format."""
         rule = alert.get("rule", {})
         sev_map = {"1": 4, "2": 3, "3": 2, "4": 1, 1: 4, 2: 3, 3: 2, 4: 1}
         sev_raw = alert.get("event", {}).get("severity", 3)

@@ -1,5 +1,5 @@
 """
-CTM-SAK AlienVault OSSIM Connector
+GNAT AlienVault OSSIM Connector
 =====================================
 Connector for AlienVault OSSIM (Open Source SIEM).
 
@@ -25,7 +25,7 @@ STIX: No native support. Mapper converts alarms → observed-data bundles.
 Dev access: Free, open source. OVA download at alienvault.com/products/ossim
   (Note: support ended 2024, community maintained)
 
-Configuration (ctm_sak.ini):
+Configuration (gnat.ini):
   [ossim]
   url        = https://ossim.corp.example.com
   api_key    =
@@ -280,7 +280,7 @@ class OSSIMAlarmCommands:
 
     @staticmethod
     def normalise_alarm(alarm: dict) -> dict:
-        """Flatten an OSSIM alarm to CTM-SAK normalised format."""
+        """Flatten an OSSIM alarm to GNAT normalised format."""
         prio = int(alarm.get("priority", 1))
         sev_map = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
         return {

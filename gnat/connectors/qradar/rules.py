@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.rules
+gnat.connectors.qradar.rules
 ==================================
 Correlation rule inspection commands for the QRadar connector.
 

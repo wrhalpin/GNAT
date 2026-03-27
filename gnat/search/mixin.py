@@ -1,8 +1,8 @@
 """
-ctm_sak.search.mixin
+gnat.search.mixin
 ====================
 
-:class:`STIXSearchMixin` — optional mixin for :class:`~ctm_sak.orm.base.STIXBase`
+:class:`STIXSearchMixin` — optional mixin for :class:`~gnat.orm.base.STIXBase`
 subclasses that adds a ``to_search_doc()`` method.
 
 The mixin is deliberately separate from ``STIXBase`` so that:
@@ -106,7 +106,7 @@ _STRUCTURED_FIELDS: frozenset = frozenset({
 class STIXSearchMixin:
     """
     Mixin that adds full-text search document generation to any
-    :class:`~ctm_sak.orm.base.STIXBase` subclass.
+    :class:`~gnat.orm.base.STIXBase` subclass.
 
     Apply **before** ``STIXBase`` in the MRO::
 

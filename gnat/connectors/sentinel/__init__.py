@@ -1,5 +1,5 @@
 """
-CTM-SAK Microsoft Sentinel Connector
+GNAT Microsoft Sentinel Connector
 =======================================
 Connector for Microsoft Sentinel (Azure cloud-native SIEM/SOAR).
 
@@ -57,7 +57,7 @@ Microsoft Sentinel requires an Azure subscription.
   Microsoft Sentinel free trial: 31 days, 10 GB/day ingestion.
   Azure student subscription available with .edu email.
 
-Configuration section (ctm_sak.ini):
+Configuration section (gnat.ini):
   [sentinel]
   tenant_id         =
   client_id         =

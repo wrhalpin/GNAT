@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.watchlists
+gnat.connectors.sentinel.watchlists
 =========================================
 Watchlist management commands for Microsoft Sentinel.
 

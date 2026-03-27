@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.analytic_rules
+gnat.connectors.sentinel.analytic_rules
 ============================================
 Analytic rule management commands for Microsoft Sentinel.
 
@@ -98,7 +98,7 @@ class SentinelAnalyticRuleCommands:
 
     @staticmethod
     def normalise_rule(rule: dict) -> dict:
-        """Flatten a Sentinel analytic rule to CTM-SAK normalised format."""
+        """Flatten a Sentinel analytic rule to GNAT normalised format."""
         props = rule.get("properties", {})
         return {
             "id": rule.get("name"),

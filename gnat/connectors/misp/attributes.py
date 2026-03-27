@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.attributes
+gnat.connectors.misp.attributes
 =====================================
 Attribute management commands for the MISP connector.
 
@@ -342,7 +342,7 @@ class MISPAttributeCommands:
 
     @staticmethod
     def normalise_attribute(attr: dict) -> dict:
-        """Flatten a MISP attribute to CTM-SAK normalised format."""
+        """Flatten a MISP attribute to GNAT normalised format."""
         tags = [t.get("name", "") for t in attr.get("Tag", [])]
         return {
             "id": attr.get("id"),

@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.auth
+gnat.connectors.sentinel.auth
 ===================================
 Azure OAuth2 client credentials authentication for the Sentinel connector.
 

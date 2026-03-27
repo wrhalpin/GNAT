@@ -1,9 +1,9 @@
 """
-ctm_sak.research.library  (search-integrated delta)
+gnat.research.library  (search-integrated delta)
 ====================================================
 
 This module documents the **minimal changes** needed in
-:class:`~ctm_sak.research.library.ResearchLibrary` to route
+:class:`~gnat.research.library.ResearchLibrary` to route
 :meth:`search` through the Solr sidecar when configured.
 
 The full library is unchanged except for:
@@ -28,8 +28,8 @@ import logging
 from typing import List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.research.entry import ResearchEntry
-    from ctm_sak.search.index import SearchIndex
+    from gnat.research.entry import ResearchEntry
+    from gnat.search.index import SearchIndex
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class _ResearchLibrarySearchPatch:
     """
     Shows only the changed / added methods.  Integrate these into the
-    existing ResearchLibrary class in ctm_sak/research/library.py.
+    existing ResearchLibrary class in gnat/research/library.py.
     """
 
     # --- Change 1: accept search_index in __init__ ---
@@ -57,7 +57,7 @@ class _ResearchLibrarySearchPatch:
         if search_index is not None:
             self._search_index = search_index
         else:
-            from ctm_sak.search.index import NullSearchIndex
+            from gnat.search.index import NullSearchIndex
             self._search_index: "SearchIndex" = NullSearchIndex()
 
     # --- Change 2: updated search() dispatcher ---
@@ -72,7 +72,7 @@ class _ResearchLibrarySearchPatch:
         """
         Search the library for entries matching a query string.
 
-        Routes through Solr when a :class:`~ctm_sak.search.index.SolrSearchIndex`
+        Routes through Solr when a :class:`~gnat.search.index.SolrSearchIndex`
         is attached; falls back to the existing in-memory scan otherwise.
         The external interface is identical in both paths.
 
@@ -91,7 +91,7 @@ class _ResearchLibrarySearchPatch:
         -------
         list of ResearchEntry
         """
-        from ctm_sak.search.index import NullSearchIndex
+        from gnat.search.index import NullSearchIndex
 
         if not isinstance(self._search_index, NullSearchIndex):
             return self._solr_search(
@@ -214,11 +214,11 @@ class _ResearchLibrarySearchPatch:
             return cls(..., search_index=search_index)
         """
         try:
-            from ctm_sak.config import SAKConfig
-            from ctm_sak.search import build_search_index
+            from gnat.config import SAKConfig
+            from gnat.search import build_search_index
             cfg = SAKConfig()
             return build_search_index(cfg)
         except Exception as exc:
             logger.debug("Search index not configured: %s", exc)
-            from ctm_sak.search.index import NullSearchIndex
+            from gnat.search.index import NullSearchIndex
             return NullSearchIndex()

@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.client
+gnat.connectors.misp.client
 =================================
 Core HTTP client for the MISP connector.
 

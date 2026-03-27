@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.ariel
+gnat.connectors.qradar.ariel
 ==================================
 Ariel search (AQL query) commands for the QRadar connector.
 
@@ -457,7 +457,7 @@ class QRadarArielCommands:
     @staticmethod
     def normalise_event_row(row: dict) -> dict:
         """
-        Flatten an Ariel event row to CTM-SAK normalised format.
+        Flatten an Ariel event row to GNAT normalised format.
 
         Parameters
         ----------

@@ -1,5 +1,5 @@
 """
-CTM-SAK MISP Connector
+GNAT MISP Connector
 ========================
 Connector for MISP (Malware Information Sharing Platform).
 
@@ -50,7 +50,7 @@ Completely free and open source.
   MISP community training instance (request access):
     https://www.misp-project.org/misp-training/
 
-Configuration section (ctm_sak.ini):
+Configuration section (gnat.ini):
   [misp]
   url               = https://misp.corp.example.com
   api_key           =

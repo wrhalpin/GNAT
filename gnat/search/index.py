@@ -1,10 +1,10 @@
 """
-ctm_sak.search.index
+gnat.search.index
 ====================
 
 :class:`SolrSearchIndex` — the Solr sidecar client.
 
-This class is the **only** module in CTM-SAK that knows Solr exists.
+This class is the **only** module in GNAT that knows Solr exists.
 Everything else (ORM, pipeline, research library) talks to it through
 the :class:`SearchIndex` abstract interface, which means you can swap
 in Elasticsearch or a no-op stub without touching anything else.
@@ -53,7 +53,7 @@ Usage
 -----
 Direct::
 
-    from ctm_sak.search import SolrSearchIndex
+    from gnat.search import SolrSearchIndex
 
     idx = SolrSearchIndex.from_config(cfg)
     idx.index(threat_actor_obj, source_platform="threatq")
@@ -90,8 +90,8 @@ import urllib3
 from urllib3.util.retry import Retry
 
 if TYPE_CHECKING:
-    from ctm_sak.config import SAKConfig
-    from ctm_sak.orm.base import STIXBase
+    from gnat.config import SAKConfig
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ logger = logging.getLogger(__name__)
 
 class SearchIndex(ABC):
     """
-    Abstract interface for all CTM-SAK full-text search backends.
+    Abstract interface for all GNAT full-text search backends.
 
     Concrete implementations: :class:`SolrSearchIndex`, :class:`NullSearchIndex`.
     """
@@ -121,7 +121,7 @@ class SearchIndex(ABC):
         ----------
         obj : STIXBase
             Object to index.  Must implement
-            :meth:`~ctm_sak.search.mixin.STIXSearchMixin.to_search_doc`
+            :meth:`~gnat.search.mixin.STIXSearchMixin.to_search_doc`
             or ``to_dict()`` as fallback.
         source_platform : str
             Connector that produced this object (stored as a facet field).
@@ -211,8 +211,8 @@ class NullSearchIndex(SearchIndex):
     ``search()`` always returns an empty list.
     ``ping()`` always returns ``True``.
 
-    This lets :class:`~ctm_sak.ingest.pipeline.IngestPipeline` and
-    :class:`~ctm_sak.research.library.ResearchLibrary` call index/search
+    This lets :class:`~gnat.ingest.pipeline.IngestPipeline` and
+    :class:`~gnat.research.library.ResearchLibrary` call index/search
     methods unconditionally without guarding for ``None``.
     """
 
@@ -242,13 +242,13 @@ class NullSearchIndex(SearchIndex):
 
 class SolrSearchIndex(SearchIndex):
     """
-    Solr sidecar client for CTM-SAK full-text search.
+    Solr sidecar client for GNAT full-text search.
 
     Parameters
     ----------
     base_url : str
         Solr base URL including collection path,
-        e.g. ``"http://localhost:8983/solr/ctmsak"``.
+        e.g. ``"http://localhost:8983/solr/gnat"``.
     timeout : float
         HTTP timeout in seconds.  Defaults to ``10``.
     max_retries : int
@@ -260,7 +260,7 @@ class SolrSearchIndex(SearchIndex):
 
     Examples
     --------
-    >>> idx = SolrSearchIndex("http://localhost:8983/solr/ctmsak")
+    >>> idx = SolrSearchIndex("http://localhost:8983/solr/gnat")
     >>> idx.ping()
     True
     >>> ids = idx.search("Lazarus Group", stix_types=["threat-actor"])
@@ -307,7 +307,7 @@ class SolrSearchIndex(SearchIndex):
 
             [search]
             backend     = solr
-            solr_url    = http://localhost:8983/solr/ctmsak
+            solr_url    = http://localhost:8983/solr/gnat
             timeout     = 10
             max_retries = 2
             verify_ssl  = true
@@ -469,7 +469,7 @@ class SolrSearchIndex(SearchIndex):
             )
         # Fallback: minimal doc with best-effort text_content from all
         # string values in to_dict() that aren't structural fields.
-        from ctm_sak.search.mixin import _STRUCTURED_FIELDS
+        from gnat.search.mixin import _STRUCTURED_FIELDS
         raw = obj.to_dict()
         text_parts = [
             str(v) for k, v in raw.items()

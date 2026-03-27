@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.config
+gnat.connectors.sentinel.config
 =====================================
 Configuration schema for the Microsoft Sentinel connector.
 
@@ -126,10 +126,10 @@ def load_sentinel_config(
     config: configparser.ConfigParser,
     section: str = "sentinel",
 ) -> SentinelConfig:
-    """Parse [sentinel] section from ctm_sak.ini."""
+    """Parse [sentinel] section from gnat.ini."""
     if not config.has_section(section):
         raise SentinelConfigError(
-            f"Configuration section '[{section}]' not found in ctm_sak.ini."
+            f"Configuration section '[{section}]' not found in gnat.ini."
         )
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))

@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.log_sources
+gnat.connectors.qradar.log_sources
 ========================================
 Log source inventory commands for the QRadar connector.
 

@@ -1,5 +1,5 @@
 """
-CTM-SAK Suricata Connector
+GNAT Suricata Connector
 ============================
 Connector for Suricata IDS/IPS/NSM engine.
 
@@ -14,7 +14,7 @@ EVE JSON format
 ---------------
 Suricata writes all events to a single eve.json file in JSON-per-line
 format. Key event types:
-  alert    — IDS/IPS alert (most important for CTM-SAK)
+  alert    — IDS/IPS alert (most important for GNAT)
   flow     — network flow record
   dns      — DNS query/response
   http     — HTTP transaction
@@ -31,7 +31,7 @@ Alert event key fields:
 Unix socket (suricatasc)
 ------------------------
 The suricatasc command-line tool communicates with the running Suricata
-process via a Unix domain socket. CTM-SAK wraps selected socket commands:
+process via a Unix domain socket. GNAT wraps selected socket commands:
   dump-counters  — engine performance counters
   iface-stat     — interface statistics
   shutdown       — graceful shutdown
@@ -42,7 +42,7 @@ STIX: EVE alert events → STIX observed-data bundles.
 Dev access: Completely free, open source.
   https://suricata.io/download/
 
-Configuration (ctm_sak.ini):
+Configuration (gnat.ini):
   [suricata]
   eve_log_path    = /var/log/suricata/eve.json
   socket_path     = /var/run/suricata/suricata-command.socket
@@ -182,7 +182,7 @@ class SuricataEVEReader:
         except PermissionError:
             raise SuricataLogError(
                 f"Permission denied reading {log_path}. "
-                "Run CTM-SAK with appropriate file permissions."
+                "Run GNAT with appropriate file permissions."
             )
 
     def iter_events_from(
@@ -261,7 +261,7 @@ class SuricataEVEReader:
     @staticmethod
     def normalise_alert(event: dict) -> dict:
         """
-        Flatten a Suricata EVE alert event to CTM-SAK normalised format.
+        Flatten a Suricata EVE alert event to GNAT normalised format.
 
         Parameters
         ----------

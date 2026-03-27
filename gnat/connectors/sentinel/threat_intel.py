@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.threat_intel
+gnat.connectors.sentinel.threat_intel
 ==========================================
 Threat Intelligence Indicator commands for Microsoft Sentinel.
 
@@ -170,7 +170,7 @@ class SentinelThreatIntelCommands:
 
     @staticmethod
     def normalise_indicator(indicator: dict) -> dict:
-        """Flatten a Sentinel TI indicator to CTM-SAK normalised format."""
+        """Flatten a Sentinel TI indicator to GNAT normalised format."""
         props = indicator.get("properties", {})
         return {
             "id": indicator.get("name"),

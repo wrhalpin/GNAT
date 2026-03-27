@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.hunting
+gnat.connectors.sentinel.hunting
 ======================================
 Hunting query management commands for Microsoft Sentinel.
 
@@ -88,7 +88,7 @@ class SentinelHuntingCommands:
 
     @staticmethod
     def normalise_query(query: dict) -> dict:
-        """Flatten a Sentinel hunting query to CTM-SAK normalised format."""
+        """Flatten a Sentinel hunting query to GNAT normalised format."""
         props = query.get("properties", {})
         return {
             "id": query.get("name"),

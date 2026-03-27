@@ -1,5 +1,5 @@
 """
-ctm_sak.ingest.pipeline.pipeline  (search-integrated version)
+gnat.ingest.pipeline.pipeline  (search-integrated version)
 =============================================================
 
 This module shows the **delta** from the original IngestPipeline needed
@@ -28,9 +28,9 @@ Usage
 -----
 ::
 
-    from ctm_sak.ingest import IngestPipeline
-    from ctm_sak.search import build_search_index
-    from ctm_sak.config import SAKConfig
+    from gnat.ingest import IngestPipeline
+    from gnat.search import build_search_index
+    from gnat.config import SAKConfig
 
     cfg = SAKConfig()
     idx = build_search_index(cfg)   # NullSearchIndex if [search] absent
@@ -52,17 +52,17 @@ from __future__ import annotations
 import logging
 from typing import Callable, Iterator, List, Optional, TYPE_CHECKING
 
-from ctm_sak.ingest.base import (
+from gnat.ingest.base import (
     DeduplicationCache,
     IngestResult,
     RecordMapper,
     SourceReader,
 )
-from ctm_sak.search.index import NullSearchIndex, SearchIndex
+from gnat.search.index import NullSearchIndex, SearchIndex
 
 if TYPE_CHECKING:
-    from ctm_sak.orm.base import STIXBase
-    from ctm_sak.client import SAKClient
+    from gnat.orm.base import STIXBase
+    from gnat.client import SAKClient
 
 logger = logging.getLogger(__name__)
 
@@ -132,13 +132,13 @@ class IngestPipeline:
         source_platform: str = "",
     ) -> "IngestPipeline":
         """
-        Attach a :class:`~ctm_sak.search.index.SearchIndex` to this pipeline.
+        Attach a :class:`~gnat.search.index.SearchIndex` to this pipeline.
 
         Parameters
         ----------
         search_index : SearchIndex
-            A :class:`~ctm_sak.search.index.SolrSearchIndex` (or any
-            :class:`~ctm_sak.search.index.SearchIndex` implementation).
+            A :class:`~gnat.search.index.SolrSearchIndex` (or any
+            :class:`~gnat.search.index.SearchIndex` implementation).
         source_platform : str, optional
             Label stored in the Solr document's ``source_platform`` field.
             Typically the connector name (``"threatq"``, ``"recordedfuture"``).
@@ -151,7 +151,7 @@ class IngestPipeline:
 
         Notes
         -----
-        If *search_index* is a :class:`~ctm_sak.search.index.NullSearchIndex`
+        If *search_index* is a :class:`~gnat.search.index.NullSearchIndex`
         (the default), this method is a no-op at runtime — useful for
         disabling indexing in tests without changing the pipeline call site.
         """

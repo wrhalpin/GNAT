@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.stix_mapper
+gnat.connectors.qradar.stix_mapper
 ========================================
 STIX 2.1 mapping layer for the QRadar connector.
 
@@ -239,7 +239,8 @@ class QRadarSTIXMapper:
         src_port = event.get("src_port")
         dst_port = event.get("dst_port")
         if event.get("src_ip") and event.get("dst_ip") and (src_port or dst_port):
-            net_id = f"network-traffic--{_det_uuid('network-traffic', f'{event.get(\"src_ip\")}:{src_port}-{event.get(\"dst_ip\")}:{dst_port}')}"
+            _net_key = f'{event.get("src_ip")}:{src_port}-{event.get("dst_ip")}:{dst_port}'
+            net_id = f"network-traffic--{_det_uuid('network-traffic', _net_key)}"
             if net_id not in seen:
                 src_ref = f"ipv4-addr--{_det_uuid('ipv4-addr', event['src_ip'])}"
                 dst_ref = f"ipv4-addr--{_det_uuid('ipv4-addr', event['dst_ip'])}"

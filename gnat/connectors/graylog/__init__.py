@@ -1,11 +1,11 @@
 """
-CTM-SAK Graylog Connector
+GNAT Graylog Connector
 ===========================
 Connector for Graylog SIEM / log management platform.
 
 Auth: HTTP Basic (username:password base64)
   Authorization: Basic <base64(username:password)>
-  Also requires: X-Requested-By: CTM-SAK (on all write requests)
+  Also requires: X-Requested-By: GNAT (on all write requests)
 
 Base URL: https://<host>:<port>/api
 
@@ -24,7 +24,7 @@ STIX: No native support. Mapper converts log messages → observed-data.
 Dev access: Free Community Edition.
   https://graylog.org/downloads/
 
-Configuration (ctm_sak.ini):
+Configuration (gnat.ini):
   [graylog]
   url         = https://graylog.corp.example.com:9000
   username    =
@@ -108,7 +108,7 @@ class GraylogConfig:
     @property
     def write_headers(self) -> dict:
         """Graylog requires X-Requested-By on all non-GET requests."""
-        return {**self.base_headers, "X-Requested-By": "CTM-SAK"}
+        return {**self.base_headers, "X-Requested-By": "GNAT"}
 
 
 def load_graylog_config(
@@ -384,7 +384,7 @@ class GraylogSearchCommands:
 
     @staticmethod
     def normalise_message(msg: dict) -> dict:
-        """Flatten a Graylog message wrapper to CTM-SAK normalised format."""
+        """Flatten a Graylog message wrapper to GNAT normalised format."""
         fields = msg.get("message", {})
         return {
             "id": fields.get("_id"),

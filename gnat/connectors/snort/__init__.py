@@ -1,5 +1,5 @@
 """
-CTM-SAK Snort Connector
+GNAT Snort Connector
 =========================
 Connector for Snort IDS/IPS (v2.x and v3.x).
 
@@ -36,7 +36,7 @@ STIX: Alert events → STIX observed-data bundles.
 Dev access: Completely free, open source.
   https://www.snort.org/downloads
 
-Configuration (ctm_sak.ini):
+Configuration (gnat.ini):
   [snort]
   alert_log_path  = /var/log/snort/alert_json.txt
   log_format      = json      ; 'json' (Snort 3) or 'fast' (Snort 2)
@@ -180,7 +180,7 @@ class SnortJSONReader:
 
     @staticmethod
     def normalise_alert(alert: dict) -> dict:
-        """Flatten a Snort 3 JSON alert to CTM-SAK normalised format."""
+        """Flatten a Snort 3 JSON alert to GNAT normalised format."""
         prio = int(alert.get("priority", 2))
         sev_map = {1: 4, 2: 3, 3: 2, 4: 1}
         return {

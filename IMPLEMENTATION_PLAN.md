@@ -63,26 +63,41 @@ by changing one string in the config file.
 gnat/
 ├── orm/                    STIX 2.1 ORM (Indicator, ThreatActor, Vulnerability, ...)
 ├── clients/                BaseClient (urllib3), CLIENT_REGISTRY
-├── connectors/             15 platform connectors
+├── connectors/             26 platform connectors
 │   ├── threatq/
 │   ├── crowdstrike/
 │   ├── splunk/
 │   ├── netskope/
 │   ├── xsoar/
 │   ├── recordedfuture/
-│   ├── virustotal/         ← new in 1.0.0
-│   ├── shadowserver/       ← new in 1.0.0
-│   ├── rapid7/             ← new in 1.0.0
-│   ├── nucleus/            ← new in 1.0.0
+│   ├── virustotal/
+│   ├── shadowserver/
+│   ├── rapid7/
+│   ├── nucleus/
 │   ├── greymatter/
 │   ├── whistic/
 │   ├── riskrecon/
 │   ├── feedly/
-│   └── proofpoint/
+│   ├── proofpoint/
+│   ├── controlup/          ← ControlUp DEX (bearer token)
+│   ├── alienvault/         ← AlienVault OTX (API key)
+│   ├── elastic/            ← Elastic SIEM (API key/Basic)
+│   ├── graylog/            ← Graylog (API key/Basic)
+│   ├── misp/               ← MISP Threat Sharing (API key)
+│   ├── opencti/            ← OpenCTI (API key)
+│   ├── ossim/              ← OSSIM (Basic auth)
+│   ├── qradar/             ← IBM QRadar (API token)
+│   ├── security_onion/     ← Security Onion (API key)
+│   ├── sentinel/           ← Microsoft Sentinel (OAuth2/Azure AD)
+│   ├── snort/              ← Snort IDS (File/Syslog)
+│   ├── suricata/           ← Suricata IDS/IPS (File/Syslog)
+│   ├── wazuh/              ← Wazuh SIEM/XDR (API key/Basic)
+│   └── zeek/               ← Zeek Network Monitor (File/Syslog)
 ├── ingest/                 SourceReaders (14), RecordMappers (12), IngestPipeline
 ├── export/                 ExportFilters, Transforms (EDL, Netskope), Delivery, ExportJob
 ├── schedule/               FeedJob, FeedScheduler, APScheduler/Celery adapters
 ├── context/                Workspace, WorkspaceManager, GlobalContextRegistry, stores
+├── search/                 Solr search sidecar (GNATIndexer, SearchMixin, ORM/pipeline integration)
 ├── agents/                 ResearchAgent, ParsingAgent, CopilotReader, ClaudeClient
 ├── research/               ResearchLibrary, ResearchEntry, CurationJob
 ├── reports/                ReportGenerator, ReportJob, 4 renderers, 2 delivery targets
@@ -380,10 +395,8 @@ npm install -g docx
 
 ### Medium term
 - Web UI for research library browsing and report viewing
-- MISP connector
-- OpenCTI connector
-- Elastic SIEM connector
 - Multi-tenant workspace isolation for MSP deployments
+- Solr search UI / dashboard integration
 
 ### Long term
 - TAXII 2.1 server — expose GNAT as a TAXII collection for downstream consumers

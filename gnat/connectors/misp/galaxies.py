@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.galaxies
+gnat.connectors.misp.galaxies
 ===================================
 Galaxy and cluster management commands for the MISP connector.
 

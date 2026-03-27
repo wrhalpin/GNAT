@@ -1,8 +1,8 @@
 """
-ctm_sak.orm — STIX 2.1 ORM classes with search mixin applied.
+gnat.orm — STIX 2.1 ORM classes with search mixin applied.
 
 This module shows the recommended pattern for applying
-:class:`~ctm_sak.search.mixin.STIXSearchMixin` to each SDO/SCO subclass.
+:class:`~gnat.search.mixin.STIXSearchMixin` to each SDO/SCO subclass.
 
 Rules of thumb
 --------------
@@ -18,8 +18,8 @@ Rules of thumb
   file names, email subjects, or URL paths for FT purposes.
 """
 
-from ctm_sak.orm.base import STIXBase
-from ctm_sak.search.mixin import STIXSearchMixin
+from gnat.orm.base import STIXBase
+from gnat.search.mixin import STIXSearchMixin
 
 
 # ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 import configparser, json, unittest
 from unittest.mock import MagicMock, patch
 
-from ctm_sak.connectors.ossim import (
+from gnat.connectors.ossim import (
     OSSIMConfig, OSSIMConfigError, OSSIMAuthError, OSSIMAPIError, OSSIMNotFoundError,
     OSSIMClient, OSSIMAlarmCommands, OSSIMEventCommands, OSSIMAssetCommands,
     OSSIMSensorCommands, OSSIMSTIXMapper, load_ossim_config,
@@ -21,7 +21,7 @@ def _resp(status=200, body=None):
 
 def _make_client():
     cfg = _cfg()
-    with patch("ctm_sak.connectors.ossim.urllib3.PoolManager") as pm:
+    with patch("gnat.connectors.ossim.urllib3.PoolManager") as pm:
         mock_http = MagicMock()
         pm.return_value = mock_http
         c = OSSIMClient(cfg); c._http = mock_http
@@ -91,7 +91,7 @@ class TestOSSIMClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("ctm_sak.connectors.ossim.urllib3.PoolManager"):
+        with patch("gnat.connectors.ossim.urllib3.PoolManager"):
             with OSSIMClient(cfg) as client:
                 self.assertIsInstance(client, OSSIMClient)
 

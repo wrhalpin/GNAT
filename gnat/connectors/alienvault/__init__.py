@@ -1,5 +1,5 @@
 """
-CTM-SAK AlienVault OTX Connector
+GNAT AlienVault OTX Connector
 ===================================
 Connector for AlienVault Open Threat Exchange (OTX).
 
@@ -26,7 +26,7 @@ STIX: No native STIX but maps naturally to STIX indicator SDOs.
 
 Dev access: Completely free. Register at https://otx.alienvault.com
 
-Configuration (ctm_sak.ini):
+Configuration (gnat.ini):
   [alienvault_otx]
   api_key      =
   verify_ssl   = true
@@ -315,7 +315,7 @@ class OTXPulseCommands:
 
     @staticmethod
     def normalise_pulse(pulse: dict) -> dict:
-        """Flatten an OTX pulse to CTM-SAK normalised format."""
+        """Flatten an OTX pulse to GNAT normalised format."""
         return {
             "id": pulse.get("id"),
             "name": pulse.get("name"),
@@ -406,7 +406,7 @@ class OTXIndicatorCommands:
 
     @staticmethod
     def normalise_indicator(ind: dict) -> dict:
-        """Flatten an OTX indicator to CTM-SAK normalised format."""
+        """Flatten an OTX indicator to GNAT normalised format."""
         return {
             "id": ind.get("id"),
             "type": ind.get("type"),

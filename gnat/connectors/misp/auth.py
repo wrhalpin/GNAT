@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.auth
+gnat.connectors.misp.auth
 ===============================
 Authentication manager for the MISP connector.
 
