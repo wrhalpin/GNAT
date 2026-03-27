@@ -153,8 +153,8 @@ function statBox(sl, pres, x, y, w, h, value, label, color) {
 // ═══════════════════════════════════════════════════════════════════════════
 let pres = new pptxgen();
 pres.layout = "LAYOUT_16x9";
-pres.title  = "GNAT: Cybersecurity Threat Management Swiss Army Knife";
-pres.author = "GNAT";
+pres.title  = "GNAT: GNAT's Not Another TIP";
+pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 1: Title ──────────────────────────────────────────────────────
 {
@@ -173,7 +173,7 @@ pres.author = "GNAT";
     fontSize: 52, fontFace: "Calibri", bold: true,
     color: C.white, align: "left", margin: 0
   });
-  sl.addText("Cybersecurity Threat Management Swiss Army Knife", {
+  sl.addText("GNAT's Not Another TIP", {
     x: 0.5, y: 1.75, w: 9, h: 0.8,
     fontSize: 22, fontFace: "Calibri",
     color: C.mint, align: "left", margin: 0
