@@ -1,6 +1,6 @@
 # GNAT Implementation and Architecture Plan
 
-**GNAT** — Cybersecurity Threat Management Swiss Army Knife  
+**GNAT** — Universal Cyber Threat Management Library 
 Version 1.0.0 | Architecture as of March 2026
 
 ---
