@@ -1,12 +1,12 @@
 """
-ctm_sak.export.filters
+gnat.export.filters
 ========================
 
-Concrete :class:`~ctm_sak.export.base.ExportFilter` implementations.
+Concrete :class:`~gnat.export.base.ExportFilter` implementations.
 
 Filters are composable via ``&``::
 
-    from ctm_sak.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
+    from gnat.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
 
     f = TypeFilter("indicator") & ConfidenceFilter(min_confidence=70) & TLPFilter(["white"])
 
@@ -33,10 +33,10 @@ import re
 from datetime import datetime, timezone, timedelta
 from typing import Any, Callable, Iterable, Iterator, List, Optional, Set, TYPE_CHECKING
 
-from ctm_sak.export.base import ExportFilter
+from gnat.export.base import ExportFilter
 
 if TYPE_CHECKING:
-    from ctm_sak.orm.base import STIXBase
+    from gnat.orm.base import STIXBase
 
 
 def _utcnow() -> datetime:

@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.splunk.search
+gnat.connectors.splunk.search
 
 SPL search job commands for the Splunk connector.
 

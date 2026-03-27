@@ -1,5 +1,5 @@
 """
-ctm_sak.viz.grafana.server
+gnat.viz.grafana.server
 ===========================
 
 Lightweight FastAPI server that exposes workspace data as a Grafana
@@ -10,14 +10,14 @@ dashboards without needing Microsoft licenses or complex integrations.
 
 Setup
 -----
-1. Install extras: ``pip install "ctm-sak[viz,serve]"``
+1. Install extras: ``pip install "gnat[viz,serve]"``
 2. Start the server::
 
-       ctm-sak viz serve --workspace apt28 --port 3001
+       gnat viz serve --workspace apt28 --port 3001
 
    Or programmatically::
 
-       from ctm_sak.viz.grafana.server import GrafanaServer
+       from gnat.viz.grafana.server import GrafanaServer
        server = GrafanaServer(workspace_manager)
        server.run(port=3001)
 
@@ -53,7 +53,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import WorkspaceManager
+    from gnat.context.workspace import WorkspaceManager
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def _require_fastapi():
     except ImportError:
         raise ImportError(
             "FastAPI and uvicorn are required for the Grafana server: "
-            "pip install 'ctm-sak[serve]'"
+            "pip install 'gnat[serve]'"
         )
 
 
@@ -88,8 +88,8 @@ def build_app(manager: "WorkspaceManager") -> Any:
     from fastapi.responses import JSONResponse
 
     app = FastAPI(
-        title="CTM-SAK Grafana Datasource",
-        description="Serves CTM-SAK workspace data as a Grafana SimpleJSON datasource",
+        title="GNAT Grafana Datasource",
+        description="Serves GNAT workspace data as a Grafana SimpleJSON datasource",
         version="0.1.0",
     )
     app.add_middleware(
@@ -139,7 +139,7 @@ def build_app(manager: "WorkspaceManager") -> Any:
 
     @app.get("/")
     async def health():
-        return {"status": "ok", "service": "ctm-sak-grafana"}
+        return {"status": "ok", "service": "gnat-grafana"}
 
     @app.get("/workspaces")
     async def list_workspaces():
@@ -207,7 +207,7 @@ def build_app(manager: "WorkspaceManager") -> Any:
 
             # ── Table: all objects of a type ──────────────────────────────
             if field is None:
-                from ctm_sak.viz.tabular import _COLUMNS
+                from gnat.viz.tabular import _COLUMNS
                 cols = _COLUMNS.get(stix_type, _COLUMNS["_default"])
                 columns = [{"text": c, "type": "string"} for c in cols]
                 rows = [_obj_to_row(obj, cols) for obj in objs]
@@ -346,7 +346,7 @@ class GrafanaServer:
         """Start the server (blocking)."""
         _require_fastapi()
         import uvicorn
-        logger.info("Starting CTM-SAK Grafana datasource on %s:%d", self._host, self._port)
+        logger.info("Starting GNAT Grafana datasource on %s:%d", self._host, self._port)
         uvicorn.run(
             self.app,
             host=self._host,
@@ -364,7 +364,7 @@ class GrafanaServer:
         import threading
         thread = threading.Thread(
             target=self.run, daemon=True,
-            name="ctm-sak-grafana",
+            name="gnat-grafana",
         )
         thread.start()
         logger.info("Grafana server started in background thread (port %d)", self._port)

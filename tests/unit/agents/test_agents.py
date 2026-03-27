@@ -2,7 +2,7 @@
 tests/unit/agents/test_agents.py
 =================================
 
-Unit tests for the CTM-SAK AI agent layer.
+Unit tests for the GNAT AI agent layer.
 
 Covers:
 - AgentConfig: construction, from_ini error handling
@@ -28,12 +28,12 @@ import json
 
 import pytest
 
-from ctm_sak.agents import (
+from gnat.agents import (
     AgentConfig, ClaudeClient,
     ResearchAgent, ParsingAgent, CopilotReader,
 )
-from ctm_sak.agents.base import ResearchResult, ParsedIntel
-from ctm_sak.ingest.base import SourceReader, RecordMapper
+from gnat.agents.base import ResearchResult, ParsedIntel
+from gnat.ingest.base import SourceReader, RecordMapper
 
 
 # ===========================================================================
@@ -874,7 +874,7 @@ class TestAgentChain:
         with patch.object(ClaudeClient, "complete") as mock_complete:
             mock_complete.side_effect = [research_resp, parsing_resp]
 
-            from ctm_sak.ingest import IngestPipeline
+            from gnat.ingest import IngestPipeline
 
             pa = ParsingAgent(cfg)
             ra = ResearchAgent(cfg, topics=["APT29"])
@@ -906,7 +906,7 @@ class TestAgentChain:
         with patch.object(ClaudeClient, "complete") as mock_complete:
             mock_complete.side_effect = [research_resp, parsing_resp]
 
-            from ctm_sak.ingest import IngestPipeline
+            from gnat.ingest import IngestPipeline
             pipeline = (
                 IngestPipeline("ceiling-test")
                 .read_from(ResearchAgent(cfg, topics=["APT29"]))

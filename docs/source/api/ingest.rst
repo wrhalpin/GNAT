@@ -1,7 +1,7 @@
-ctm_sak.ingest
+gnat.ingest
 --------------
 
-.. automodule:: ctm_sak.ingest
+.. automodule:: gnat.ingest
    :members:
    :undoc-members:
    :show-inheritance:

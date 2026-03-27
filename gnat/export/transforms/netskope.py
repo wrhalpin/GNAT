@@ -1,5 +1,5 @@
 """
-ctm_sak.export.transforms.netskope
+gnat.export.transforms.netskope
 ====================================
 
 Netskope Cloud Exchange (CE) threat-intel transform.
@@ -46,10 +46,10 @@ import json
 import re
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from ctm_sak.export.base import ExportTransform, TransformResult
+from gnat.export.base import ExportTransform, TransformResult
 
 if TYPE_CHECKING:
-    from ctm_sak.orm.base import STIXBase
+    from gnat.orm.base import STIXBase
 
 
 _PATTERN_TO_NETSKOPE: Dict[str, str] = {
@@ -88,7 +88,7 @@ class NetskopeCETransform(ExportTransform):
     ----------
     source_label : str
         Label written into the ``comment`` field of each indicator.
-        Default ``"CTM-SAK"``.
+        Default ``"GNAT"``.
     default_reputation : int
         Reputation (0–100) used when no confidence/score field is found.
         Default ``50``.
@@ -113,7 +113,7 @@ class NetskopeCETransform(ExportTransform):
 
     def __init__(
         self,
-        source_label: str = "CTM-SAK",
+        source_label: str = "GNAT",
         default_reputation: int = 50,
         active_only: bool = True,
         category: str = "Malware",
@@ -200,7 +200,7 @@ class NetskopeCETransform(ExportTransform):
 
 
 """
-ctm_sak.export.transforms.stix_bundle
+gnat.export.transforms.stix_bundle
 ========================================
 
 STIX 2.1 Bundle transform — wraps filtered objects in a valid bundle
@@ -262,7 +262,7 @@ class STIXBundleTransform(ExportTransform):
 
 
 """
-ctm_sak.export.transforms.csv_transform
+gnat.export.transforms.csv_transform
 ==========================================
 
 CSV transform — flat rows of key fields, ready for Excel or SIEM import.

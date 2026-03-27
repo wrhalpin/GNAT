@@ -1,9 +1,9 @@
 """
-ctm_sak.orm.observable
+gnat.orm.observable
 ======================
 STIX 2.1 Cyber Observable Object (SCO) base.
 """
-from ctm_sak.orm.base import STIXBase
+from gnat.orm.base import STIXBase
 
 class Observable(STIXBase):
     """

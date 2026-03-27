@@ -1,1 +1,1 @@
-"""ctm_sak.export.delivery — export delivery targets."""
+"""gnat.export.delivery — export delivery targets."""

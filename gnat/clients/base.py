@@ -1,5 +1,5 @@
 """
-ctm_sak.clients.base
+gnat.clients.base
 ====================
 
 urllib3-based base HTTP client that all connector clients inherit from.
@@ -15,7 +15,7 @@ implement :meth:`authenticate`.  The base class provides:
 
 Example (connector authors)::
 
-    from ctm_sak.clients.base import BaseClient
+    from gnat.clients.base import BaseClient
 
     class ThreatQClient(BaseClient):
         def authenticate(self):
@@ -54,7 +54,7 @@ class SAKClientError(Exception):
 
 class BaseClient:
     """
-    urllib3-backed HTTP client base class for all CTM-SAK connectors.
+    urllib3-backed HTTP client base class for all GNAT connectors.
 
     Parameters
     ----------
@@ -67,7 +67,7 @@ class BaseClient:
     max_retries : int
         Number of automatic retries on transient failures.  Defaults to ``3``.
     config : dict, optional
-        Raw config dict (typically from :class:`~ctm_sak.config.SAKConfig`)
+        Raw config dict (typically from :class:`~gnat.config.SAKConfig`)
         for subclass use.
 
     Attributes

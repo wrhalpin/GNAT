@@ -1,5 +1,5 @@
 """
-ctm_sak.context.workspace
+gnat.context.workspace
 ==========================
 
 :class:`Workspace` is the analyst's local working context — a named,
@@ -22,14 +22,14 @@ Think of it like a git working tree:
 Persistence
 -----------
 Every mutation is immediately written to the configured
-:class:`~ctm_sak.context.store.WorkspaceStore` (SQLite by default) or
-:class:`~ctm_sak.context.store.FlatFileStore`.  If the process crashes
+:class:`~gnat.context.store.WorkspaceStore` (SQLite by default) or
+:class:`~gnat.context.store.FlatFileStore`.  If the process crashes
 mid-session, the workspace can be resumed with ``WorkspaceManager.open()``.
 
 Enrichment and relationships
 -----------------------------
 When a secondary source returns data for a known object, the workspace
-creates a STIX :class:`~ctm_sak.orm.relationship.Relationship` object linking
+creates a STIX :class:`~gnat.orm.relationship.Relationship` object linking
 the original indicator to the enrichment result and stores *both*.  This
 preserves provenance — you can see exactly which platform said what, rather
 than silently merging scores.  The ``strategy`` parameter controls the exact
@@ -51,13 +51,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Iterator, List, Optional, TYPE_CHECKING
 
-from ctm_sak.orm.base import STIXBase, _utcnow
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.relationship import Relationship
+from gnat.orm.base import STIXBase, _utcnow
+from gnat.orm.indicator import Indicator
+from gnat.orm.relationship import Relationship
 
 if TYPE_CHECKING:
-    from ctm_sak.context.store import WorkspaceStore, FlatFileStore
-    from ctm_sak.context.global_context import GlobalContext, GlobalContextRegistry
+    from gnat.context.store import WorkspaceStore, FlatFileStore
+    from gnat.context.global_context import GlobalContext, GlobalContextRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ class Workspace:
 
     def _init_store(self) -> None:
         """Ensure the workspace record exists in the store and load cached objects."""
-        from ctm_sak.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore, FlatFileStore
 
         if isinstance(self._store, WorkspaceStore):
             ws_model = self._store.get_or_create_workspace(
@@ -624,7 +624,7 @@ class Workspace:
 
         Useful for sharing with external tools or archiving.
         """
-        from ctm_sak.context.store import FlatFileStore
+        from gnat.context.store import FlatFileStore
         if isinstance(self._store, FlatFileStore):
             return self._store.export_bundle(self.name)
         import uuid as _uuid
@@ -645,7 +645,7 @@ class Workspace:
             return False
         del self.objects[stix_id]
         self.dirty.add(stix_id)
-        from ctm_sak.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore, FlatFileStore
         if isinstance(self._store, WorkspaceStore):
             self._store.soft_delete_object(self._ws_id, stix_id)
         else:
@@ -654,7 +654,7 @@ class Workspace:
 
     def get_enrichment_history(self, stix_id: Optional[str] = None) -> List[dict]:
         """Return the enrichment log for this workspace."""
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             return self._store.get_enrichment_history(self._ws_id, stix_id)
         return self._store.get_enrichment_history(self.name, stix_id)
@@ -676,7 +676,7 @@ class Workspace:
 
     def _persist_object(self, stix_dict: dict, source_platform: str = "",
                         mark_dirty: bool = False) -> None:
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             self._store.upsert_object(
                 self._ws_id, stix_dict,
@@ -690,14 +690,14 @@ class Workspace:
 
     def _log_enrichment(self, stix_id: str, source: str,
                         data: dict, strategy: str) -> None:
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             self._store.log_enrichment(self._ws_id, stix_id, source, data, strategy)
         else:
             self._store.log_enrichment(self.name, stix_id, source, data, strategy)
 
     def _mark_clean(self) -> None:
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             self._store.mark_clean(self._ws_id)
 
@@ -718,13 +718,13 @@ class Workspace:
     @staticmethod
     def _from_dict(stix_dict: dict) -> STIXBase:
         """Reconstruct the most specific ORM class from a STIX dict."""
-        from ctm_sak.orm.base import STIXBase
-        from ctm_sak.orm.indicator import Indicator
-        from ctm_sak.orm.malware import Malware
-        from ctm_sak.orm.vulnerability import Vulnerability
-        from ctm_sak.orm.threat_actor import ThreatActor
-        from ctm_sak.orm.attack_pattern import AttackPattern
-        from ctm_sak.orm.relationship import Relationship
+        from gnat.orm.base import STIXBase
+        from gnat.orm.indicator import Indicator
+        from gnat.orm.malware import Malware
+        from gnat.orm.vulnerability import Vulnerability
+        from gnat.orm.threat_actor import ThreatActor
+        from gnat.orm.attack_pattern import AttackPattern
+        from gnat.orm.relationship import Relationship
         _MAP = {
             "indicator":     Indicator,
             "malware":       Malware,
@@ -803,7 +803,7 @@ class WorkspaceManager:
         The global context registry.
     store : WorkspaceStore or FlatFileStore, optional
         Persistence backend.  If omitted a SQLite store at
-        ``~/.ctm_sak/workspaces.db`` is created automatically.
+        ``~/.gnat/workspaces.db`` is created automatically.
 
     Examples
     --------
@@ -817,7 +817,7 @@ class WorkspaceManager:
 
     Custom store::
 
-        from ctm_sak.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore, FlatFileStore
         pg_store = WorkspaceStore("postgresql+psycopg2://user:pass@host/ctmsak")
         pg_store.create_all()
         manager = WorkspaceManager(registry, store=pg_store)
@@ -843,11 +843,11 @@ class WorkspaceManager:
         Parameters
         ----------
         config_path : str, optional
-            INI config path (defaults to ``~/.ctm_sak/config.ini``).
+            INI config path (defaults to ``~/.gnat/config.ini``).
         db_url : str, optional
-            SQLAlchemy URL (defaults to ``~/.ctm_sak/workspaces.db``).
+            SQLAlchemy URL (defaults to ``~/.gnat/workspaces.db``).
         """
-        from ctm_sak.context.global_context import GlobalContextRegistry
+        from gnat.context.global_context import GlobalContextRegistry
         registry = GlobalContextRegistry.from_config(config_path)
         store    = cls._default_store(db_url)
         return cls(registry=registry, store=store)
@@ -888,7 +888,7 @@ class WorkspaceManager:
                 read_only=["rf"],
             )
         """
-        from ctm_sak.context.global_context import GlobalContextRegistry
+        from gnat.context.global_context import GlobalContextRegistry
         registry = GlobalContextRegistry.from_clients(
             clients, default=default, read_only=read_only
         )
@@ -905,7 +905,7 @@ class WorkspaceManager:
         ValueError
             If a workspace with this name already exists.
         """
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             if self._store.get_workspace(name) is not None:
                 raise ValueError(
@@ -922,7 +922,7 @@ class WorkspaceManager:
         KeyError
             If no workspace with this name exists.
         """
-        from ctm_sak.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore, FlatFileStore
         if isinstance(self._store, WorkspaceStore):
             if self._store.get_workspace(name) is None:
                 raise KeyError(
@@ -943,7 +943,7 @@ class WorkspaceManager:
 
     def list(self) -> List[dict]:
         """Return metadata dicts for all workspaces."""
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             return [
                 {
@@ -959,7 +959,7 @@ class WorkspaceManager:
 
     def delete(self, name: str) -> bool:
         """Permanently delete a workspace. Returns ``True`` if found."""
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             return self._store.delete_workspace(name)
         return self._store.delete_workspace(name)
@@ -968,10 +968,10 @@ class WorkspaceManager:
 
     @staticmethod
     def _default_store(db_url: Optional[str] = None) -> Any:
-        from ctm_sak.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore, FlatFileStore
         if _HAS_SQLALCHEMY := WorkspaceStore.__module__ != "builtins":
             try:
-                url   = db_url or "sqlite:///~/.ctm_sak/workspaces.db"
+                url   = db_url or "sqlite:///~/.gnat/workspaces.db"
                 store = WorkspaceStore(url)
                 store.create_all()
                 return store

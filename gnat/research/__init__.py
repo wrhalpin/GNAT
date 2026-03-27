@@ -1,5 +1,5 @@
 """
-ctm_sak.research
+gnat.research
 =================
 
 Three-tier shared research knowledge base for threat intelligence teams.
@@ -12,8 +12,8 @@ Tiers
 
 Typical analyst workflow::
 
-    from ctm_sak.research import ResearchLibrary
-    from ctm_sak.agents import ResearchAgent, ParsingAgent, AgentConfig
+    from gnat.research import ResearchLibrary
+    from gnat.agents import ResearchAgent, ParsingAgent, AgentConfig
 
     lib    = ResearchLibrary.default()
     config = AgentConfig.from_ini()
@@ -25,7 +25,7 @@ Typical analyst workflow::
         lib.load_into_workspace("APT29", my_workspace)
     else:
         # 2. Run research agent
-        from ctm_sak.ingest import IngestPipeline
+        from gnat.ingest import IngestPipeline
         pipeline = (
             IngestPipeline("apt29-research")
             .read_from(ResearchAgent(config, topics=["APT29"]))
@@ -51,8 +51,8 @@ Typical analyst workflow::
 
 Scheduled curation (server-side)::
 
-    from ctm_sak.research import ResearchLibrary, CurationJob
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.research import ResearchLibrary, CurationJob
+    from gnat.schedule import FeedScheduler
 
     lib = ResearchLibrary.default()
     job = CurationJob(lib, interval_seconds=4 * 3600)  # every 4 hours
@@ -61,11 +61,11 @@ Scheduled curation (server-side)::
         scheduler.add(job)
 """
 
-from ctm_sak.research.entry import (
+from gnat.research.entry import (
     ResearchEntry, DEFAULT_TTLS, categorise_topic, topic_key,
 )
-from ctm_sak.research.library import ResearchLibrary
-from ctm_sak.research.curation import CurationJob
+from gnat.research.library import ResearchLibrary
+from gnat.research.curation import CurationJob
 
 __all__ = [
     "ResearchEntry",

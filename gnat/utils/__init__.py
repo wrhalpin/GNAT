@@ -1,1 +1,1 @@
-"""ctm_sak.utils — Shared utility helpers."""
+"""gnat.utils — Shared utility helpers."""

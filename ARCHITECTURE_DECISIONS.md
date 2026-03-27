@@ -1,4 +1,4 @@
-# CTM-SAK Architecture Decisions
+# GNAT Architecture Decisions
 
 A single reference for every design decision made during development,
 including tradeoffs, alternatives considered, and implementation notes.
@@ -145,7 +145,7 @@ should raise `SAKClientError` from `upsert_object` and `delete_object`
 with a clear "read-only" message. The `GlobalContextRegistry` marks them
 with `read_only=True` which prevents `Workspace.commit()` targeting them.
 
-**`CLIENT_REGISTRY` in `ctm_sak/clients/__init__.py`:**
+**`CLIENT_REGISTRY` in `gnat/clients/__init__.py`:**
 Must be updated for every new connector. Keys are lowercase, hyphens
 replaced with underscores (e.g. `"greymatter"`, `"riskrecon"`).
 
@@ -258,7 +258,7 @@ WorkspaceStore (SQLAlchemy) ← preferred
 
 FlatFileStore               ← zero-dependency fallback
     └── Auto-selected when SQLAlchemy is not installed
-    └── One JSON file per object in ~/.ctm_sak/workspaces/<name>/objects/
+    └── One JSON file per object in ~/.gnat/workspaces/<name>/objects/
     └── JSONL enrichment log per workspace
 ```
 
@@ -486,12 +486,12 @@ are dropped. Run `view.summary()` first to understand the graph before capping.
 
 **Running the Grafana server:**
 ```bash
-ctm-sak viz serve --port 3001
+gnat viz serve --port 3001
 # In Grafana: Add data source → SimpleJSON → http://localhost:3001
 ```
 
 **Power BI import workflow:**
-1. `ctm-sak viz powerbi --workspace apt28 --file workspace.xlsx`
+1. `gnat viz powerbi --workspace apt28 --file workspace.xlsx`
 2. Power BI Desktop → Get Data → Excel → select `workspace.xlsx`
 3. Load all sheets. Relationships sheet auto-creates the graph visual.
 4. `to_model_json()` optional — auto-wires foreign keys if imported via
@@ -508,9 +508,9 @@ ctm-sak viz serve --port 3001
 - Typer adds Click + type annotation reflection.
 - argparse is stdlib, zero overhead, sufficient for this command surface.
 
-**`ctm-sak` entry point tree:**
+**`gnat` entry point tree:**
 ```
-ctm-sak
+gnat
 ├── ping    --target NAME
 ├── query   --target NAME --type STIX_TYPE --id OBJECT_ID
 ├── list    --target NAME --type STIX_TYPE [--limit N] [--filter K=V ...]
@@ -560,12 +560,12 @@ client. Use for validating format mappings before committing.
 
 **Registration after generation:**
 ```python
-# ctm_sak/clients/__init__.py
-from ctm_sak.connectors.myplatform.client import MyplatformClient
+# gnat/clients/__init__.py
+from gnat.connectors.myplatform.client import MyplatformClient
 CLIENT_REGISTRY["myplatform"] = MyplatformClient
 
-# ctm_sak/async_client/connectors.py — add async mirror
-# ctm_sak/async_client/client.py — add to _build_async_registry()
+# gnat/async_client/connectors.py — add async mirror
+# gnat/async_client/client.py — add to _build_async_registry()
 ```
 
 ---
@@ -574,9 +574,9 @@ CLIENT_REGISTRY["myplatform"] = MyplatformClient
 
 **INI file search order:**
 1. Explicit `config_path=` parameter
-2. `CTM_SAK_CONFIG` environment variable
-3. `~/.ctm_sak/config.ini`
-4. `./ctm_sak.ini`
+2. `GNAT_CONFIG` environment variable
+3. `~/.gnat/config.ini`
+4. `./gnat.ini`
 
 **Section naming:**
 - `[DEFAULT]` — inherited by all sections
@@ -651,7 +651,7 @@ def _assert_stix_contract(stix_dict):
 
 **Integration tests opt-in:**
 ```bash
-CTM_SAK_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
+GNAT_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
 ```
 Never run in CI without real credentials. The GitHub Actions `ci.yml`
 does not include `--run-integration`.
@@ -685,13 +685,13 @@ pip install -e ".[dev]" httpx
 ```
 
 **`py.typed` marker:**
-Present at `ctm_sak/py.typed` — signals mypy and other type checkers
+Present at `gnat/py.typed` — signals mypy and other type checkers
 that the package provides inline types (PEP 561).
 
 **Entry points:**
 ```
-ctm-sak        → ctm_sak.cli.main:main
-ctm-sak-codegen → ctm_sak.codegen.openapi_generator:_main
+gnat        → gnat.cli.main:main
+gnat-codegen → gnat.codegen.openapi_generator:_main
 ```
 
 **OIDC PyPI publishing:**
@@ -711,9 +711,9 @@ project settings under the repo name.
 
 ```bash
 # 1. Generate scaffold
-ctm-sak-codegen --spec platform-openapi.json --name myplatform --auth oauth2
+gnat-codegen --spec platform-openapi.json --name myplatform --auth oauth2
 
-# 2. Implement in ctm_sak/connectors/myplatform/client.py
+# 2. Implement in gnat/connectors/myplatform/client.py
 #    - authenticate()
 #    - to_stix(native) → dict with type, id, created, modified
 #    - from_stix(stix_dict) → platform-native payload
@@ -721,12 +721,12 @@ ctm-sak-codegen --spec platform-openapi.json --name myplatform --auth oauth2
 #    - get_object(), list_objects(), upsert_object(), delete_object()
 
 # 3. Register sync connector
-# ctm_sak/clients/__init__.py:
+# gnat/clients/__init__.py:
 CLIENT_REGISTRY["myplatform"] = MyplatformClient
 
 # 4. Add async mirror
-# ctm_sak/async_client/connectors.py: add AsyncMyplatformClient
-# ctm_sak/async_client/client.py: add to _build_async_registry()
+# gnat/async_client/connectors.py: add AsyncMyplatformClient
+# gnat/async_client/client.py: add to _build_async_registry()
 
 # 5. Add INI section to config/config.ini.example
 
@@ -750,16 +750,16 @@ class MyMapper(RecordMapper):
         # yield STIXBase objects using self._client, self.tlp_marking, self.confidence
 
 # Register in:
-# ctm_sak/ingest/sources/__init__.py
-# ctm_sak/ingest/mappers/__init__.py
-# ctm_sak/__init__.py (both __all__ and import)
+# gnat/ingest/sources/__init__.py
+# gnat/ingest/mappers/__init__.py
+# gnat/__init__.py (both __all__ and import)
 ```
 
 ## Quick Reference: Workspace Investigation Workflow
 
 ```python
-from ctm_sak import SAKClient
-from ctm_sak.context import WorkspaceManager, GlobalContextRegistry
+from gnat import SAKClient
+from gnat.context import WorkspaceManager, GlobalContextRegistry
 
 # Setup (once per session)
 tq = SAKClient().connect("threatq")
@@ -787,7 +787,7 @@ result = ws.commit()        # write back to ThreatQ
 print(result)
 
 # Visualize
-from ctm_sak.viz import TabularView, GraphView
+from gnat.viz import TabularView, GraphView
 TabularView(ws).show()
 GraphView(ws).to_html("graph.html")  # auto-selects sigma.js at scale
 ```
@@ -869,16 +869,16 @@ unlimited queueing.
 
 ### Config extras
 
-`pip install "ctm-sak[schedule]"` adds `croniter` for cron expression
+`pip install "gnat[schedule]"` adds `croniter` for cron expression
 support. Interval-based jobs work with no extras. APScheduler and Celery
 adapters require those packages installed separately.
 
 ### Quick-reference: adding a scheduled feed
 
 ```python
-from ctm_sak.schedule import FeedJob, FeedScheduler
-from ctm_sak.ingest.sources.readers import PlainTextReader, TAXIICollectionReader
-from ctm_sak.ingest.mappers.mappers import FlatIOCMapper, STIXPassthroughMapper
+from gnat.schedule import FeedJob, FeedScheduler
+from gnat.ingest.sources.readers import PlainTextReader, TAXIICollectionReader
+from gnat.ingest.mappers.mappers import FlatIOCMapper, STIXPassthroughMapper
 
 # Stateless feed (blocklist)
 blocklist = FeedJob(
@@ -897,7 +897,7 @@ taxii = FeedJob(
         added_after=ctx.last_success_iso or "2024-01-01T00:00:00Z",
     ),
     mapper_factory=lambda ctx: STIXPassthroughMapper(client=tq_client),
-    cron="0 2 * * *",   # 02:00 daily — requires pip install "ctm-sak[schedule]"
+    cron="0 2 * * *",   # 02:00 daily — requires pip install "gnat[schedule]"
     client=tq_client,
     on_failure=lambda rec: logger.error("TAXII feed failed: %s", rec.error),
 )
@@ -1003,12 +1003,12 @@ def factory(ctx):
 This is the exact workflow from the design brief:
 
 ```python
-from ctm_sak.export import ExportPipeline
-from ctm_sak.export.filters import TypeFilter, ConfidenceFilter, IOCTypeFilter
-from ctm_sak.export.transforms.netskope import NetskopeCETransform
-from ctm_sak.export.delivery.targets import HTTPDelivery, MultiDelivery, FileDelivery, EDLServer
-from ctm_sak.export.jobs import ExportJob
-from ctm_sak.schedule import FeedScheduler
+from gnat.export import ExportPipeline
+from gnat.export.filters import TypeFilter, ConfidenceFilter, IOCTypeFilter
+from gnat.export.transforms.netskope import NetskopeCETransform
+from gnat.export.delivery.targets import HTTPDelivery, MultiDelivery, FileDelivery, EDLServer
+from gnat.export.jobs import ExportJob
+from gnat.schedule import FeedScheduler
 
 # ThreatQ workspace (populated by ingestion pipeline or direct load)
 ws = manager.open("threat-intel")
@@ -1068,7 +1068,7 @@ scheduler.start(run_immediately=True)   # backfill on startup
 ```
 
 Netskope CE's sharing rules then push the received indicators to tenant URL/domain/IP
-lists, which push to perimeter firewall EDLs. CTM-SAK's role is the authoritative
+lists, which push to perimeter firewall EDLs. GNAT's role is the authoritative
 push from ThreatQ into CE — everything downstream is Netskope's responsibility.
 
 ---
@@ -1167,7 +1167,7 @@ a warning log.
 
 ### Prompts are centralised in prompts.py
 
-All Claude system and user prompt templates live in `ctm_sak/agents/prompts.py`.
+All Claude system and user prompt templates live in `gnat/agents/prompts.py`.
 This is intentional — prompt engineering is iterative and keeping prompts
 separate from logic means they can be reviewed, versioned, and tuned without
 touching agent code. The JSON schema embedded in `PARSING_SYSTEM` is the
@@ -1254,8 +1254,8 @@ increases discoverability by colleagues.
 ### CurationJob scheduling
 
 ```python
-from ctm_sak.research import ResearchLibrary, CurationJob
-from ctm_sak.schedule import FeedScheduler
+from gnat.research import ResearchLibrary, CurationJob
+from gnat.schedule import FeedScheduler
 
 lib  = ResearchLibrary.default()
 job  = CurationJob(lib, interval_seconds=4 * 3600)   # every 4 hours

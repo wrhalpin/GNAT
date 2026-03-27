@@ -1,9 +1,9 @@
 """
-ctm_sak.orm.relationship
+gnat.orm.relationship
 ========================
 STIX 2.1 Relationship SRO.
 """
-from ctm_sak.orm.base import STIXBase
+from gnat.orm.base import STIXBase
 
 class Relationship(STIXBase):
     """

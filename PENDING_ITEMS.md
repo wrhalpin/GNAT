@@ -1,4 +1,4 @@
-# CTM-SAK Pending Items
+# GNAT Pending Items
 
 Tracked outstanding implementation tasks, normalization work, and
 known gaps. Update this file as items are completed or new ones are
@@ -10,13 +10,13 @@ identified.
 
 ### 1. ThreatQ Sector / Industry Field Normalization
 
-**File:** `ctm_sak/connectors/threatq/client.py` — `to_stix()` method
+**File:** `gnat/connectors/threatq/client.py` — `to_stix()` method
 
 **Status:** Placeholder — needs field name verification
 
 **Background:**
 ThreatQ has Target Industry and Target Sector attributes on threat objects.
-CTM-SAK uses `x_target_sectors` as the canonical field for sector-based
+GNAT uses `x_target_sectors` as the canonical field for sector-based
 filtering (used by `SectorFilter` in the reports layer and the export
 pipeline). The ThreatQ connector's `to_stix()` method needs to read
 ThreatQ's field names and write them to `x_target_sectors`.
@@ -33,7 +33,7 @@ ThreatQ's field names and write them to `x_target_sectors`.
    or free-form strings. Note: known values include "Healthcare",
    "Insurance", "Hospitals and Health Centers", "Opportunistic" — check
    if these are from a ThreatQ-defined list or user-entered.
-5. Update `to_stix()` in `ctm_sak/connectors/threatq/client.py`:
+5. Update `to_stix()` in `gnat/connectors/threatq/client.py`:
 
 ```python
 # In ThreatQClient.to_stix() — fill in actual field names:
@@ -61,28 +61,28 @@ if industries or sectors:
 
 ### 2. VirusTotal Connector
 
-**File:** `ctm_sak/connectors/virustotal/client.py`  
+**File:** `gnat/connectors/virustotal/client.py`  
 **Status:** ✅ COMPLETE — API key auth, file/URL/IP/domain lookups, `to_stix()` maps VT reputation to `Indicator` with confidence scoring.
 
 ---
 
 ### 3. ShadowServer Connector
 
-**File:** `ctm_sak/connectors/shadowserver/client.py`  
+**File:** `gnat/connectors/shadowserver/client.py`  
 **Status:** ✅ COMPLETE — API key auth, reports/scan/asn queries, `to_stix()` maps scan results to `Indicator`/`Vulnerability`.
 
 ---
 
 ### 4. Rapid7 InsightVM/IDR Connector
 
-**File:** `ctm_sak/connectors/rapid7/client.py`  
+**File:** `gnat/connectors/rapid7/client.py`  
 **Status:** ✅ COMPLETE — API key auth, vulnerability and asset queries, `to_stix()` maps CVEs to `Vulnerability` with CVSS.
 
 ---
 
 ### 5. Nucleus Connector
 
-**File:** `ctm_sak/connectors/nucleus/client.py`  
+**File:** `gnat/connectors/nucleus/client.py`  
 **Status:** ✅ COMPLETE — API key auth, asset/vuln/finding queries, `to_stix()` maps findings to `Vulnerability` with sector tagging placeholder.
 
 ---
@@ -91,7 +91,7 @@ if industries or sectors:
 
 ### 6. DOCX Renderer — Node.js npm dependency
 
-**File:** `ctm_sak/reports/renderers.py` — `DOCXRenderer`
+**File:** `gnat/reports/renderers.py` — `DOCXRenderer`
 
 **Status:** Implemented but requires `npm install -g docx` on the host.
 
@@ -106,7 +106,7 @@ if industries or sectors:
 
 ### 7. Report Email Body HTML
 
-**File:** `ctm_sak/reports/delivery.py` — `EmailDelivery`
+**File:** `gnat/reports/delivery.py` — `EmailDelivery`
 
 **Status:** Plain-text email body only. The `body_html` parameter exists
 but no HTML body is auto-generated from the report.
@@ -122,7 +122,7 @@ but no HTML body is auto-generated from the report.
 
 ### 8. Report Yearly Scheduling
 
-**File:** `ctm_sak/reports/generator.py` — `ReportJob`
+**File:** `gnat/reports/generator.py` — `ReportJob`
 
 **Status:** Yearly reports default to `interval_seconds=365*86400` which
 is a single large interval — fine for production but awkward for testing
@@ -138,7 +138,7 @@ and for cases where the server restarts.
 
 ### 9. Research Library — WorkspaceManager.default() method
 
-**File:** `ctm_sak/context/workspace.py`
+**File:** `gnat/context/workspace.py`
 
 **Status:** `ResearchLibrary.default()` calls `WorkspaceManager.default()`
 which may not exist — needs verification.
@@ -146,13 +146,13 @@ which may not exist — needs verification.
 **Action required:**
 - Check `WorkspaceManager` for a `default()` class method.
 - If absent, add it: opens the default SQLite store at
-  `~/.ctm_sak/workspaces/` and connects with a dummy GlobalContext.
+  `~/.gnat/workspaces/` and connects with a dummy GlobalContext.
 
 ---
 
 ### 10. AI Agent — Copilot DirectLine Token Refresh
 
-**File:** `ctm_sak/agents/copilot.py`
+**File:** `gnat/agents/copilot.py`
 
 **Status:** The DirectLine secret is passed directly as a Bearer token.
 DirectLine secrets are long-lived, but if token-based auth is configured
@@ -168,29 +168,29 @@ is needed.
 
 ## LOW PRIORITY / NICE TO HAVE
 
-### 11. CLI — `ctm-sak report` subcommand
+### 11. CLI — `gnat report` subcommand
 
-**File:** `ctm_sak/cli/main.py`
+**File:** `gnat/cli/main.py`
 
 **Status:** CLI has a `schedule` subcommand stub but no `report` subcommand.
 
 **Action required:**
-- Add `ctm-sak report run --config report.daily_healthcare` to trigger
+- Add `gnat report run --config report.daily_healthcare` to trigger
   on-demand report generation from the CLI.
-- Add `ctm-sak report list` to show configured report profiles.
+- Add `gnat report list` to show configured report profiles.
 
 ### 12. Export Pipeline — `SectorFilter` integration
 
-**File:** `ctm_sak/export/filters.py`
+**File:** `gnat/export/filters.py`
 
 **Status:** The export filter library has `TypeFilter`, `ConfidenceFilter`,
 `TLPFilter` etc. but no `SectorFilter`. The report layer has its own in
-`ctm_sak/reports/base.py`.
+`gnat/reports/base.py`.
 
 **Action required:**
-- Move `SectorFilter` to `ctm_sak/export/filters.py` so it's available
+- Move `SectorFilter` to `gnat/export/filters.py` so it's available
   in both the export pipeline and the report layer.
-- Update `ctm_sak/reports/base.py` to import from the new location.
+- Update `gnat/reports/base.py` to import from the new location.
 
 ### 13. CHANGELOG.md — versions 0.6.0 through 1.0.0
 
@@ -226,5 +226,5 @@ Once ThreatQ field names are confirmed, update this table:
 
 **Canonical field:** `x_target_sectors` — list of strings on any STIX object.  
 **Alias config:** `[sector_aliases]` section in `config.ini`.  
-**Filter class:** `ctm_sak/reports/base.py::SectorFilter` (move to
-`ctm_sak/export/filters.py` — see item 12).
+**Filter class:** `gnat/reports/base.py::SectorFilter` (move to
+`gnat/export/filters.py` — see item 12).

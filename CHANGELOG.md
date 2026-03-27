@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to CTM-SAK are documented here.
+All notable changes to GNAT are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Planned
 - Async client variant (`asyncio` / `httpx`)
 - STIX 2.1 pattern validator integration
-- CLI entry point (`ctm-sak query`, `ctm-sak ingest`)
+- CLI entry point (`gnat query`, `gnat ingest`)
 - Docker-based integration test harness
 - Sphinx API documentation
 
@@ -66,7 +66,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 `ElasticResultMapper`, `NVDCVEMapper`
 
 #### Code generation
-- `openapi_generator.py` — CLI (`ctm-sak-codegen`) and Python API
+- `openapi_generator.py` — CLI (`gnat-codegen`) and Python API
 - Parses OpenAPI 3.x / Swagger 2.x specs (JSON or YAML)
 - Generates connector package, `__init__.py`, and full pytest scaffold
 - Detects CRUD endpoints, schema fields, auth type; scaffolds `to_stix` / `from_stix`
@@ -94,8 +94,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `Makefile` with `test`, `lint`, `typecheck`, `build`, `clean` targets
 - `.gitignore` tuned for Python + security tooling
 
-[Unreleased]: https://github.com/your-org/ctm-sak/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-org/ctm-sak/releases/tag/v0.1.0
+[Unreleased]: https://github.com/your-org/gnat/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/your-org/gnat/releases/tag/v0.1.0
 
 ---
 
@@ -103,20 +103,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-#### Async client (`ctm_sak/async_client/`)
+#### Async client (`gnat/async_client/`)
 - `AsyncBaseClient` on `httpx` with retry transport, async context manager
 - `AsyncSAKClient` — async mirror of `SAKClient` supporting `async with` and `asyncio.gather` concurrent multi-platform queries
 - `AsyncSTIXBase` — awaitable `select()`, `save()`, `delete()`, `refresh()`
 - Async connectors for all six platforms: `AsyncThreatQClient`, `AsyncCrowdStrikeClient`, `AsyncProofpointClient`, `AsyncNetskopeClient`, `AsyncXSOARClient`, `AsyncRecordedFutureClient`
-- New optional extra: `pip install "ctm-sak[async]"` (installs httpx)
+- New optional extra: `pip install "gnat[async]"` (installs httpx)
 
-#### CLI (`ctm_sak/cli/`, entry point `ctm-sak`)
-- `ctm-sak ping` — connectivity check
-- `ctm-sak query` — fetch single object by id with `--output json|table|stix`
-- `ctm-sak list` — paginated object listing with `--filter KEY=VALUE`
-- `ctm-sak ingest` — file-to-platform with 8 format options, `--dry-run`, `--tlp`, `--confidence`, `--deduplicate`
-- `ctm-sak codegen` — wraps the OpenAPI generator
-- `ctm-sak config --show|--validate|--init` — config management
+#### CLI (`gnat/cli/`, entry point `gnat`)
+- `gnat ping` — connectivity check
+- `gnat query` — fetch single object by id with `--output json|table|stix`
+- `gnat list` — paginated object listing with `--filter KEY=VALUE`
+- `gnat ingest` — file-to-platform with 8 format options, `--dry-run`, `--tlp`, `--confidence`, `--deduplicate`
+- `gnat codegen` — wraps the OpenAPI generator
+- `gnat config --show|--validate|--init` — config management
 - ANSI color output with `--no-color` fallback; `--debug` flag for trace logging
 
 #### Sphinx documentation (`docs/`)
@@ -151,15 +151,15 @@ Barnes-Hut uses a custom pure-Python quad-tree with centre-of-mass approximation
 **New methods**: `to_graph_json()` (sigma.js data format for Grafana graph panel); `to_html(renderer=sigma|plotly3d)` explicit renderer selection; `show(max_nodes=N)` caps by degree centrality; `show(cluster_threshold=N)` override per-call
 
 **Grafana graph panel integration**: `GrafanaServer` now exposes `/graph-json/<workspace>` endpoint returning sigma.js-compatible node/edge data for live dashboard graphs
-#### Visualization layer (`ctm_sak/viz/`)
+#### Visualization layer (`gnat/viz/`)
 - **`TabularView`** — filterable tables: rich terminal (ANSI color), Jupyter inline, self-contained sortable dark-theme HTML, CSV, Excel/Power BI (openpyxl, freeze-panes, auto-widths, alternating rows)
 - **`GraphView`** — 3D force-directed STIX relationship graph via Plotly; spring layout (networkx, ≤800 nodes) with Fibonacci sphere fallback; nodes colored + sized by confidence/risk score; edges grouped by relationship type; `to_html()`, `to_json()`, `to_networkx()`, `summary()`
 - **`GrafanaServer`** — FastAPI SimpleJSON datasource server; endpoints: `/search`, `/query` (table + timeseries), `/annotations` (enrichment events), `/tag-keys`, `/tag-values`; `run_in_background()` for notebooks
 - **`PowerBIExporter`** — multi-sheet Excel workbook with Relationships + EnrichmentLog + Summary sheets; `to_model_json()` Power BI data model descriptor with auto-generated table relationships
 - **`grafana_dashboard` / `save_grafana_dashboard`** — pre-built Grafana dashboard JSON: object-type bar chart, RF risk-score timeline, CVSS timeline, confidence gauge, indicator table, relationship table, enrichment annotations
-- New CLI subcommand tree: `ctm-sak viz table`, `graph`, `serve`, `dashboard`, `powerbi`
-- New optional extras: `pip install ctm-sak[viz]` (plotly + networkx + openpyxl), `ctm-sak[serve]` (fastapi + uvicorn)
-#### Context system (`ctm_sak/context/`)
+- New CLI subcommand tree: `gnat viz table`, `graph`, `serve`, `dashboard`, `powerbi`
+- New optional extras: `pip install gnat[viz]` (plotly + networkx + openpyxl), `gnat[serve]` (fastapi + uvicorn)
+#### Context system (`gnat/context/`)
 - **`GlobalContext`** — wraps a `SAKClient`, adds read-only flag and priority
 - **`GlobalContextRegistry`** — manages multiple global contexts; `from_config()` and `from_clients()` factories; default write target, `writable()` / `read_only_contexts()` helpers
 - **`Workspace`** — analyst working set with:
@@ -176,4 +176,4 @@ Barnes-Hut uses a custom pure-Python quad-tree with centre-of-mass approximation
 - **`WorkspaceStore`** (SQLAlchemy) — SQLite (WAL mode) or PostgreSQL; schema: `workspaces`, `workspace_objects` (with dirty tracking + soft delete), `enrichment_log`, `context_globals`
 - **`FlatFileStore`** — zero-dependency JSON flat-file fallback; one file per object, JSONL enrichment log, STIX bundle export; auto-selected when SQLAlchemy is not installed
 - Transparent backend switching: `WorkspaceStore` preferred, falls back to `FlatFileStore`
-- New optional extra: `pip install "ctm-sak[persist]"` (installs sqlalchemy)
+- New optional extra: `pip install "gnat[persist]"` (installs sqlalchemy)

@@ -3,12 +3,12 @@ requires      = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name        = "ctm-sak"
+name        = "gnat"
 version     = "0.1.0"
 description = "Cybersecurity Threat Management Swiss Army Knife — universal STIX ORM and multi-platform security client"
 readme      = "README.md"
 license     = { file = "LICENSE" }
-authors     = [{ name = "CTM-SAK Contributors" }]
+authors     = [{ name = "GNAT Contributors" }]
 keywords    = ["cybersecurity","threat-intelligence","stix","taxii","ioc","siem","soar"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -48,15 +48,15 @@ dev    = [
 all = ["pyyaml>=6.0", "taxii2-client>=2.3", "feedparser>=6.0", "httpx>=0.27", "sqlalchemy>=2.0", "croniter>=2.0", "reportlab>=4.0", "plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1", "fastapi>=0.111", "uvicorn>=0.30"]
 
 [project.scripts]
-ctm-sak-codegen = "ctm_sak.codegen.openapi_generator:_main"
-ctm-sak = "ctm_sak.cli.main:main"
+gnat-codegen = "gnat.codegen.openapi_generator:_main"
+gnat = "gnat.cli.main:main"
 
 [tool.setuptools.packages.find]
 where   = ["."]
-include = ["ctm_sak*"]
+include = ["gnat*"]
 
 [tool.setuptools.package-data]
-"ctm_sak" = ["py.typed"]
+"gnat" = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -67,8 +67,8 @@ markers   = [
 ]
 
 [tool.coverage.run]
-source = ["ctm_sak"]
-omit   = ["tests/*", "ctm_sak/codegen/*"]
+source = ["gnat"]
+omit   = ["tests/*", "gnat/codegen/*"]
 branch = true
 
 [tool.coverage.report]
@@ -86,7 +86,7 @@ ignore = ["E501", "B904", "SIM108"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*"             = ["F841", "S101"]
-"ctm_sak/codegen/*"   = ["E501"]
+"gnat/codegen/*"   = ["E501"]
 
 [tool.mypy]
 python_version         = "3.9"

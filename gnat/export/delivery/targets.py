@@ -1,5 +1,5 @@
 """
-ctm_sak.export.delivery.targets
+gnat.export.delivery.targets
 ================================
 
 Concrete ExportDelivery implementations for file, HTTP, EDL server,
@@ -16,10 +16,10 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from ctm_sak.export.base import ExportDelivery, DeliveryResult, TransformResult
+from gnat.export.base import ExportDelivery, DeliveryResult, TransformResult
 
 if TYPE_CHECKING:
-    from ctm_sak.client import SAKClient
+    from gnat.client import SAKClient
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +287,7 @@ class EDLServer(ExportDelivery):
         self._server = http.server.HTTPServer((self._host, self._port), _H)
         self._thread = threading.Thread(
             target=self._server.serve_forever, daemon=True,
-            name=f"ctm-sak-edl:{self._port}",
+            name=f"gnat-edl:{self._port}",
         )
         self._thread.start()
         logger.info("EDLServer started on %s:%d", self._host, self._port)

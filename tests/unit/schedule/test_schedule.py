@@ -2,7 +2,7 @@
 tests/unit/schedule/test_schedule.py
 ======================================
 
-Unit tests for ctm_sak.schedule — FeedJob and FeedScheduler.
+Unit tests for gnat.schedule — FeedJob and FeedScheduler.
 
 Coverage:
 - JobRunContext / RunRecord dataclasses
@@ -31,9 +31,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ctm_sak.schedule import FeedJob, FeedScheduler, JobRunContext, RunRecord
-from ctm_sak.schedule.job import _utcnow
-from ctm_sak.ingest.base import IngestResult
+from gnat.schedule import FeedJob, FeedScheduler, JobRunContext, RunRecord
+from gnat.schedule.job import _utcnow
+from gnat.ingest.base import IngestResult
 
 
 # ===========================================================================
@@ -69,7 +69,7 @@ def _simple_job(job_id="test", interval=60, **kwargs):
         **kwargs,
     )
 
-PATCH_RUN = "ctm_sak.ingest.pipeline.pipeline.IngestPipeline.run"
+PATCH_RUN = "gnat.ingest.pipeline.pipeline.IngestPipeline.run"
 
 
 # ===========================================================================
@@ -617,7 +617,7 @@ class TestFeedSchedulerAdapters:
         lines = s.to_cron_lines()
         assert "hourly" in lines
         assert "daily" in lines
-        assert "# CTM-SAK" in lines
+        assert "# GNAT" in lines
 
     def test_to_cron_lines_skips_disabled(self):
         s = FeedScheduler()

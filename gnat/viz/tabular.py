@@ -1,5 +1,5 @@
 """
-ctm_sak.viz.tabular
+gnat.viz.tabular
 ====================
 
 Tabular views of workspace objects — terminal tables, HTML, CSV, and Excel.
@@ -16,7 +16,7 @@ Targets
 
 Usage::
 
-    from ctm_sak.viz import TabularView
+    from gnat.viz import TabularView
 
     view = TabularView(workspace)
 
@@ -32,7 +32,7 @@ Usage::
     # Jupyter
     view.display()
 
-    # In the CLI: ctm-sak viz table --workspace apt28 --output html --file report.html
+    # In the CLI: gnat viz table --workspace apt28 --output html --file report.html
 """
 
 from __future__ import annotations
@@ -46,8 +46,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import Workspace
-    from ctm_sak.orm.base import STIXBase
+    from gnat.context.workspace import Workspace
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +272,7 @@ class TabularView:
         The workbook is Power BI-compatible: one sheet per type, typed columns,
         freeze panes, auto-width, header styling.
 
-        Requires ``openpyxl``: ``pip install "ctm-sak[viz]"``.
+        Requires ``openpyxl``: ``pip install "gnat[viz]"``.
 
         Parameters
         ----------
@@ -285,7 +285,7 @@ class TabularView:
             from openpyxl.utils import get_column_letter
         except ImportError:
             raise ImportError(
-                "openpyxl is required for Excel export: pip install 'ctm-sak[viz]'"
+                "openpyxl is required for Excel export: pip install 'gnat[viz]'"
             )
 
         wb = openpyxl.Workbook()
@@ -293,7 +293,7 @@ class TabularView:
 
         # ── Summary sheet ──────────────────────────────────────────────────
         ws_summary = wb.create_sheet("Summary")
-        ws_summary.append(["CTM-SAK Workspace Export"])
+        ws_summary.append(["GNAT Workspace Export"])
         ws_summary.append(["Workspace", self._ws.name])
         ws_summary.append(["Exported", datetime.now(timezone.utc).isoformat()])
         ws_summary.append(["Total objects", len(self._ws)])
@@ -471,7 +471,7 @@ class TabularView:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CTM-SAK Workspace: {self._ws.name}</title>
+  <title>GNAT Workspace: {self._ws.name}</title>
   <style>
     *{{box-sizing:border-box;margin:0;padding:0}}
     body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
@@ -499,7 +499,7 @@ class TabularView:
   </style>
 </head>
 <body>
-  <h1>CTM-SAK: {self._ws.name}</h1>
+  <h1>GNAT: {self._ws.name}</h1>
   <p class="meta">Generated {ts} &nbsp;|&nbsp; {len(self._ws)} total objects</p>
   {''.join(sections)}
   <script>

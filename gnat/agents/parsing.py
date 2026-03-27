@@ -1,18 +1,18 @@
 """
-ctm_sak.agents.parsing
+gnat.agents.parsing
 =======================
 
-:class:`ParsingAgent` — a :class:`~ctm_sak.ingest.base.RecordMapper` that
+:class:`ParsingAgent` — a :class:`~gnat.ingest.base.RecordMapper` that
 uses Claude to extract structured threat intelligence from unstructured text.
 
-It consumes :class:`~ctm_sak.agents.base.ResearchResult` raw records (or any
+It consumes :class:`~gnat.agents.base.ResearchResult` raw records (or any
 ``RawRecord`` with a ``text`` field) and yields STIX 2.1 ORM objects:
 
-* :class:`~ctm_sak.orm.indicator.Indicator` for each extracted IOC
-* :class:`~ctm_sak.orm.attack_pattern.AttackPattern` for each TTP
-* :class:`~ctm_sak.orm.threat_actor.ThreatActor` for each actor
-* :class:`~ctm_sak.orm.vulnerability.Vulnerability` for each CVE
-* A narrative :class:`~ctm_sak.orm.indicator.Indicator` summary object if
+* :class:`~gnat.orm.indicator.Indicator` for each extracted IOC
+* :class:`~gnat.orm.attack_pattern.AttackPattern` for each TTP
+* :class:`~gnat.orm.threat_actor.ThreatActor` for each actor
+* :class:`~gnat.orm.vulnerability.Vulnerability` for each CVE
+* A narrative :class:`~gnat.orm.indicator.Indicator` summary object if
   no structured data was found (so the pipeline always has *something* to
   work with)
 
@@ -30,8 +30,8 @@ Pipeline usage
 --------------
 ::
 
-    from ctm_sak.agents import ResearchAgent, ParsingAgent, AgentConfig
-    from ctm_sak.ingest import IngestPipeline
+    from gnat.agents import ResearchAgent, ParsingAgent, AgentConfig
+    from gnat.ingest import IngestPipeline
 
     config = AgentConfig.from_ini()
 
@@ -64,13 +64,13 @@ import re
 import uuid
 from typing import Any, Dict, Iterator, List, Optional
 
-from ctm_sak.ingest.base import RawRecord, RecordMapper
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.attack_pattern import AttackPattern
-from ctm_sak.orm.threat_actor import ThreatActor
-from ctm_sak.orm.vulnerability import Vulnerability
-from ctm_sak.agents.base import AgentConfig, ClaudeClient, ParsedIntel
-from ctm_sak.agents.prompts import PARSING_SYSTEM, PARSING_USER
+from gnat.ingest.base import RawRecord, RecordMapper
+from gnat.orm.indicator import Indicator
+from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.vulnerability import Vulnerability
+from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel
+from gnat.agents.prompts import PARSING_SYSTEM, PARSING_USER
 
 logger = logging.getLogger(__name__)
 
@@ -114,8 +114,8 @@ class ParsingAgent(RecordMapper):
     """
     AI-powered threat intelligence extractor using Claude.
 
-    Implements :class:`~ctm_sak.ingest.base.RecordMapper` so it works
-    directly in any :class:`~ctm_sak.ingest.pipeline.pipeline.IngestPipeline`
+    Implements :class:`~gnat.ingest.base.RecordMapper` so it works
+    directly in any :class:`~gnat.ingest.pipeline.pipeline.IngestPipeline`
     as the ``map_with`` stage.
 
     Parameters

@@ -1,15 +1,15 @@
 """
-ctm_sak.async_client
+gnat.async_client
 ====================
 
-Async (httpx-based) client layer for CTM-SAK.
+Async (httpx-based) client layer for GNAT.
 
-Requires: ``pip install "ctm-sak[async]"``
+Requires: ``pip install "gnat[async]"``
 
 Quick start::
 
     import asyncio
-    import ctm_sak.async_client as async_ctm
+    import gnat.async_client as async_ctm
 
     async def main():
         async with async_ctm.AsyncSAKClient() as cli:
@@ -19,9 +19,9 @@ Quick start::
     asyncio.run(main())
 """
 
-from ctm_sak.async_client.base import AsyncBaseClient
-from ctm_sak.async_client.client import AsyncSAKClient, AsyncSTIXBase
-from ctm_sak.async_client.connectors import (
+from gnat.async_client.base import AsyncBaseClient
+from gnat.async_client.client import AsyncSAKClient, AsyncSTIXBase
+from gnat.async_client.connectors import (
     AsyncThreatQClient,
     AsyncCrowdStrikeClient,
     AsyncProofpointClient,

@@ -1,23 +1,23 @@
 """
-ctm_sak.viz
+gnat.viz
 ============
 
-Visualization layer for CTM-SAK workspaces.
+Visualization layer for GNAT workspaces.
 
 Components
 ----------
 
 TabularView
     Filterable tables: terminal (rich), Jupyter, HTML, CSV, Excel/Power BI.
-    ``pip install "ctm-sak[viz]"`` for Excel support (openpyxl).
+    ``pip install "gnat[viz]"`` for Excel support (openpyxl).
 
 GraphView
     3D force-directed STIX relationship graph via Plotly.
-    ``pip install "ctm-sak[viz]"`` (plotly + networkx).
+    ``pip install "gnat[viz]"`` (plotly + networkx).
 
 GrafanaServer
     FastAPI SimpleJSON datasource server for Grafana dashboards.
-    ``pip install "ctm-sak[serve]"`` (fastapi + uvicorn).
+    ``pip install "gnat[serve]"`` (fastapi + uvicorn).
 
 PowerBIExporter
     Excel workbook export with Power BI data model JSON.
@@ -27,7 +27,7 @@ grafana_dashboard / save_grafana_dashboard
 
 Quick start::
 
-    from ctm_sak.viz import TabularView, GraphView
+    from gnat.viz import TabularView, GraphView
 
     view = TabularView(workspace)
     view.show()
@@ -38,18 +38,18 @@ Quick start::
     graph.show()
     graph.to_html("graph.html")
 
-    from ctm_sak.viz import GrafanaServer, save_grafana_dashboard
+    from gnat.viz import GrafanaServer, save_grafana_dashboard
     server = GrafanaServer(manager)
     server.run_in_background()
     save_grafana_dashboard("apt28", "dashboard.json")
 """
 
-from ctm_sak.viz.tabular import TabularView
-from ctm_sak.viz.graph   import GraphView
-from ctm_sak.viz.export  import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
+from gnat.viz.tabular import TabularView
+from gnat.viz.graph   import GraphView
+from gnat.viz.export  import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
 
 try:
-    from ctm_sak.viz.grafana.server import GrafanaServer, build_app
+    from gnat.viz.grafana.server import GrafanaServer, build_app
     _HAS_GRAFANA = True
 except ImportError:
     _HAS_GRAFANA = False

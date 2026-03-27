@@ -1,3 +1,3 @@
-"""ctm_sak.ingest.pipeline — IngestPipeline orchestrator."""
-from ctm_sak.ingest.pipeline.pipeline import IngestPipeline
+"""gnat.ingest.pipeline — IngestPipeline orchestrator."""
+from gnat.ingest.pipeline.pipeline import IngestPipeline
 __all__ = ["IngestPipeline"]

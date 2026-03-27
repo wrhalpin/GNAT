@@ -1,9 +1,9 @@
-# CTM-SAK Configuration File
+# GNAT Configuration File
 # ===========================
 # Place this file at:
-#   ~/.ctm_sak/config.ini   (recommended)
-#   ./ctm_sak.ini            (project-local)
-#   or point CTM_SAK_CONFIG env var to any path
+#   ~/.gnat/config.ini   (recommended)
+#   ./gnat.ini            (project-local)
+#   or point GNAT_CONFIG env var to any path
 #
 # Values in [DEFAULT] are inherited by every target section.
 

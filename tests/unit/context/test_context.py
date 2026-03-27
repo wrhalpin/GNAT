@@ -2,7 +2,7 @@
 tests/unit/context/test_context.py
 ====================================
 
-Unit tests for the CTM-SAK context system.
+Unit tests for the GNAT context system.
 
 Covers:
 - FlatFileStore: create/get/list/delete workspaces, object CRUD,
@@ -29,13 +29,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ctm_sak.context.store import FlatFileStore
-from ctm_sak.context.global_context import GlobalContext, GlobalContextRegistry
-from ctm_sak.context.workspace import Workspace, WorkspaceManager, CommitResult
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.malware import Malware
-from ctm_sak.orm.vulnerability import Vulnerability
-from ctm_sak.orm.relationship import Relationship
+from gnat.context.store import FlatFileStore
+from gnat.context.global_context import GlobalContext, GlobalContextRegistry
+from gnat.context.workspace import Workspace, WorkspaceManager, CommitResult
+from gnat.orm.indicator import Indicator
+from gnat.orm.malware import Malware
+from gnat.orm.vulnerability import Vulnerability
+from gnat.orm.relationship import Relationship
 
 
 # ===========================================================================
@@ -52,7 +52,7 @@ def tmp_flat_store(tmp_path):
 def sqlite_store():
     """WorkspaceStore backed by in-memory SQLite."""
     try:
-        from ctm_sak.context.store import WorkspaceStore
+        from gnat.context.store import WorkspaceStore
         store = WorkspaceStore("sqlite:///:memory:")
         store.create_all()
         return store
@@ -713,7 +713,7 @@ class TestWorkspaceManager:
 
     def test_create_duplicate_raises(self, tmp_path):
         try:
-            from ctm_sak.context.store import WorkspaceStore
+            from gnat.context.store import WorkspaceStore
             store = WorkspaceStore("sqlite:///:memory:")
             store.create_all()
             manager = WorkspaceManager(_make_registry(), store=store)

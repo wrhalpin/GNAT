@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.feedly.client
+gnat.connectors.feedly.client
 ==================================
 
 Feedly Threat Intelligence connector (Feedly AI / Leo API).
@@ -53,8 +53,8 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List, Optional
 
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class FeedlyClient(BaseClient, ConnectorMixin):

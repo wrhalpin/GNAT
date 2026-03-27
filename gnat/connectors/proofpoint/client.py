@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.proofpoint.client
+gnat.connectors.proofpoint.client
 ======================================
 
 Proofpoint Targeted Attack Protection (TAP) API connector.
@@ -15,8 +15,8 @@ INI config::
 
 from typing import Any, Dict, List, Optional
 import base64
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class ProofpointClient(BaseClient, ConnectorMixin):

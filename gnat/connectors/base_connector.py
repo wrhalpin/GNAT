@@ -1,11 +1,11 @@
 """
-ctm_sak.connectors.base_connector
+gnat.connectors.base_connector
 ==================================
 
 Mixin providing the STIX translation contract every connector must implement.
 
 Connector clients should inherit from BOTH
-:class:`~ctm_sak.clients.base.BaseClient` and :class:`ConnectorMixin`::
+:class:`~gnat.clients.base.BaseClient` and :class:`ConnectorMixin`::
 
     class ThreatQClient(BaseClient, ConnectorMixin):
         stix_type_map = {...}

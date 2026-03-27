@@ -1,5 +1,5 @@
 """
-ctm_sak.reports.synthesizer
+gnat.reports.synthesizer
 ============================
 
 :class:`ReportSynthesizer` — AI narrative generation for report sections.
@@ -36,9 +36,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.agents.base import AgentConfig, ClaudeClient
-    from ctm_sak.reports.base import ReportConfig, ReportSection
-    from ctm_sak.reports.aggregator import ReportAggregates
+    from gnat.agents.base import AgentConfig, ClaudeClient
+    from gnat.reports.base import ReportConfig, ReportSection
+    from gnat.reports.aggregator import ReportAggregates
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +63,8 @@ class ReportSynthesizer:
     --------
     ::
 
-        from ctm_sak.agents import AgentConfig
-        from ctm_sak.reports.synthesizer import ReportSynthesizer
+        from gnat.agents import AgentConfig
+        from gnat.reports.synthesizer import ReportSynthesizer
 
         synth = ReportSynthesizer(config, AgentConfig.from_ini())
         sections = synth.synthesize(agg, report_type="daily")
@@ -83,7 +83,7 @@ class ReportSynthesizer:
         self._lib    = research_library
         self._calls  = 0
         # Import here to avoid circular at module level
-        from ctm_sak.agents.base import ClaudeClient
+        from gnat.agents.base import ClaudeClient
         self._client = ClaudeClient(agent_config)
 
     @property
@@ -112,7 +112,7 @@ class ReportSynthesizer:
         list of ReportSection
             Sections with ``narrative`` populated.
         """
-        from ctm_sak.reports.base import ReportSection
+        from gnat.reports.base import ReportSection
 
         sections: List[ReportSection] = []
 
@@ -130,7 +130,7 @@ class ReportSynthesizer:
     def _synthesize_daily(
         self, agg: "ReportAggregates"
     ) -> List["ReportSection"]:
-        from ctm_sak.reports.base import ReportSection
+        from gnat.reports.base import ReportSection
 
         sections = []
 
@@ -191,7 +191,7 @@ class ReportSynthesizer:
     def _synthesize_trends(
         self, agg: "ReportAggregates"
     ) -> List["ReportSection"]:
-        from ctm_sak.reports.base import ReportSection
+        from gnat.reports.base import ReportSection
         sections = []
 
         # Executive summary
@@ -281,7 +281,7 @@ class ReportSynthesizer:
     def _synthesize_yearly(
         self, agg: "ReportAggregates"
     ) -> List["ReportSection"]:
-        from ctm_sak.reports.base import ReportSection
+        from gnat.reports.base import ReportSection
         sections = []
 
         # Year in review — top-level narrative

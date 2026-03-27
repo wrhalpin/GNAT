@@ -1,5 +1,5 @@
 """
-ctm_sak.research.entry
+gnat.research.entry
 =======================
 
 :class:`ResearchEntry` — the unit of knowledge stored in the research library.

@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.threatq.client
+gnat.connectors.threatq.client
 ==================================
 
 ThreatQ Threat Intelligence Platform connector.
@@ -35,8 +35,8 @@ STIX Type Mapping
 
 from typing import Any, Dict, List, Optional
 
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class ThreatQClient(BaseClient, ConnectorMixin):
@@ -58,7 +58,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     timeout : float
         Request timeout in seconds.  Default ``30``.
     **kwargs
-        Forwarded to :class:`~ctm_sak.clients.base.BaseClient`.
+        Forwarded to :class:`~gnat.clients.base.BaseClient`.
     """
 
     stix_type_map: Dict[str, str] = {

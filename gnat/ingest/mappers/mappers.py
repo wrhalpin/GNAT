@@ -1,8 +1,8 @@
 """
-ctm_sak.ingest.mappers.mappers
+gnat.ingest.mappers.mappers
 ================================
 
-Concrete :class:`~ctm_sak.ingest.base.RecordMapper` implementations that
+Concrete :class:`~gnat.ingest.base.RecordMapper` implementations that
 convert raw source records into STIX 2.1 ORM objects.
 
 Available mappers
@@ -42,18 +42,18 @@ import re
 import uuid
 from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
 
-from ctm_sak.ingest.base import RawRecord, RecordMapper
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.malware import Malware
-from ctm_sak.orm.vulnerability import Vulnerability
-from ctm_sak.orm.threat_actor import ThreatActor
-from ctm_sak.orm.attack_pattern import AttackPattern
-from ctm_sak.orm.observable import IPv4Address, DomainName, URL, FileObject, EmailAddress
-from ctm_sak.orm.relationship import Relationship
-from ctm_sak.orm.base import STIXBase
+from gnat.ingest.base import RawRecord, RecordMapper
+from gnat.orm.indicator import Indicator
+from gnat.orm.malware import Malware
+from gnat.orm.vulnerability import Vulnerability
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.observable import IPv4Address, DomainName, URL, FileObject, EmailAddress
+from gnat.orm.relationship import Relationship
+from gnat.orm.base import STIXBase
 
 if TYPE_CHECKING:
-    from ctm_sak.client import SAKClient
+    from gnat.client import SAKClient
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def _make_id(stix_type: str) -> str:
 
 
 def _utcnow() -> str:
-    from ctm_sak.orm.base import _utcnow as _base_utcnow
+    from gnat.orm.base import _utcnow as _base_utcnow
     return _base_utcnow()
 
 
@@ -126,7 +126,7 @@ _IOC_INDICATOR_TYPE: Dict[str, str] = {
 
 class FlatIOCMapper(RecordMapper):
     """
-    Map generic ``{value, type}`` dicts to STIX :class:`~ctm_sak.orm.indicator.Indicator`.
+    Map generic ``{value, type}`` dicts to STIX :class:`~gnat.orm.indicator.Indicator`.
 
     This is the Swiss Army Knife mapper for plaintext, CSV, and simple JSON
     exports where each record represents a single IOC.
@@ -211,13 +211,13 @@ class FlatIOCMapper(RecordMapper):
 
 class STIXPassthroughMapper(RecordMapper):
     """
-    Convert already-STIX dicts (from :class:`~ctm_sak.ingest.sources.readers.STIXBundleReader`
-    or :class:`~ctm_sak.ingest.sources.readers.TAXIICollectionReader`) into
+    Convert already-STIX dicts (from :class:`~gnat.ingest.sources.readers.STIXBundleReader`
+    or :class:`~gnat.ingest.sources.readers.TAXIICollectionReader`) into
     bound ORM objects.
 
     Supported STIX types: ``indicator``, ``threat-actor``, ``malware``,
     ``vulnerability``, ``attack-pattern``, ``relationship``.
-    Unknown types pass through as bare :class:`~ctm_sak.orm.base.STIXBase`.
+    Unknown types pass through as bare :class:`~gnat.orm.base.STIXBase`.
 
     Parameters
     ----------
@@ -265,12 +265,12 @@ class STIXPassthroughMapper(RecordMapper):
 
 class MISPAttributeMapper(RecordMapper):
     """
-    Convert MISP attribute records (from :class:`~ctm_sak.ingest.sources.readers.MISPReader`)
+    Convert MISP attribute records (from :class:`~gnat.ingest.sources.readers.MISPReader`)
     into STIX Indicator or Vulnerability objects.
 
     MISP attributes with ``to_ids=True`` are mapped to STIX ``Indicator``.
-    Attributes of type ``"vulnerability"`` become :class:`~ctm_sak.orm.vulnerability.Vulnerability`.
-    Malware samples become :class:`~ctm_sak.orm.malware.Malware`.
+    Attributes of type ``"vulnerability"`` become :class:`~gnat.orm.vulnerability.Vulnerability`.
+    Malware samples become :class:`~gnat.orm.malware.Malware`.
     All others fall back to ``Indicator`` if the type is in the known map.
 
     Parameters
@@ -385,7 +385,7 @@ class CEFMapper(RecordMapper):
     ):
         super().__init__(**kwargs)
         self._ioc_fields = ioc_fields or self._DEFAULT_IOC_FIELDS
-        from ctm_sak.ingest.sources.readers import PlainTextReader
+        from gnat.ingest.sources.readers import PlainTextReader
         self._classifier = PlainTextReader("", from_string=True)
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
@@ -476,7 +476,7 @@ class SQLRowMapper(RecordMapper):
         self._dc = description_col
         self._stix_type = stix_type
         self._extra = extra_col_map or {}
-        from ctm_sak.ingest.sources.readers import PlainTextReader
+        from gnat.ingest.sources.readers import PlainTextReader
         self._classifier = PlainTextReader("", from_string=True)
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
@@ -549,7 +549,7 @@ class RSSEntryMapper(RecordMapper):
     Map RSS / Atom feed entries to STIX objects.
 
     Extracts IOC values from the ``summary`` and ``title`` fields, then
-    produces :class:`~ctm_sak.orm.indicator.Indicator` objects for each IOC
+    produces :class:`~gnat.orm.indicator.Indicator` objects for each IOC
     found.  Also produces an ``AttackPattern`` entry for the feed item itself
     so provenance is preserved.
 
@@ -589,7 +589,7 @@ class RSSEntryMapper(RecordMapper):
         if not self._extract:
             return
 
-        from ctm_sak.ingest.sources.readers import PlainTextReader
+        from gnat.ingest.sources.readers import PlainTextReader
         classifier = PlainTextReader("", from_string=True)
 
         # IPs
@@ -645,7 +645,7 @@ class RSSEntryMapper(RecordMapper):
 
 class EmailIOCMapper(RecordMapper):
     """
-    Map email records (from :class:`~ctm_sak.ingest.sources.readers.EmailReader`)
+    Map email records (from :class:`~gnat.ingest.sources.readers.EmailReader`)
     to STIX Indicator objects.
 
     Produces one Indicator per unique IOC found in the email's extracted
@@ -824,7 +824,7 @@ class SplunkResultMapper(FlatIOCMapper):
                     record = dict(record)
                     record[self._vf] = record[candidate]
                     if self._tf not in record or not record[self._tf]:
-                        from ctm_sak.ingest.sources.readers import PlainTextReader
+                        from gnat.ingest.sources.readers import PlainTextReader
                         c = PlainTextReader("", from_string=True)
                         record[self._tf] = c._classify(str(record[self._vf]))
                     break
@@ -847,13 +847,13 @@ class ElasticResultMapper(SplunkResultMapper):
 
 class NVDCVEMapper(RecordMapper):
     """
-    Map NVD CVE JSON feed entries to STIX :class:`~ctm_sak.orm.vulnerability.Vulnerability`.
+    Map NVD CVE JSON feed entries to STIX :class:`~gnat.orm.vulnerability.Vulnerability`.
 
     Handles both the NVD 1.x feed format (``CVE_Items``) and the NVD 2.x
     API format (``vulnerabilities``).
 
     Each record is expected to be a single CVE item dict as yielded by
-    :class:`~ctm_sak.ingest.sources.readers.JSONReader` with
+    :class:`~gnat.ingest.sources.readers.JSONReader` with
     ``records_key="CVE_Items"`` or ``"vulnerabilities"``.
 
     Examples

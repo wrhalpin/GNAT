@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.splunk.exceptions
+gnat.connectors.splunk.exceptions
 
 Exception hierarchy for the Splunk connector.
 

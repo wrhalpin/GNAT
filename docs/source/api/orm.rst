@@ -1,7 +1,7 @@
-ctm_sak.orm
+gnat.orm
 -----------
 
-.. automodule:: ctm_sak.orm
+.. automodule:: gnat.orm
    :members:
    :undoc-members:
    :show-inheritance:

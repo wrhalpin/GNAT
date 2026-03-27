@@ -10,9 +10,9 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from ctm_sak.config import SAKConfig
-from ctm_sak.client import SAKClient
-from ctm_sak.clients.base import BaseClient, SAKClientError
+from gnat.config import SAKConfig
+from gnat.client import SAKClient
+from gnat.clients.base import BaseClient, SAKClientError
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ class TestSAKConfig:
         assert str(cfg.config_path) == minimal_config
 
     def test_env_var_resolution(self, minimal_config, monkeypatch):
-        monkeypatch.setenv("CTM_SAK_CONFIG", minimal_config)
+        monkeypatch.setenv("GNAT_CONFIG", minimal_config)
         cfg = SAKConfig()   # no explicit path
         assert "threatq" in cfg.sections
 
@@ -70,7 +70,7 @@ class TestSAKClient:
 
     def test_connect_returns_self(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.authenticate",
+            "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
         cli = SAKClient(config_path=minimal_config)
@@ -79,7 +79,7 @@ class TestSAKClient:
 
     def test_connect_sets_target(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.authenticate",
+            "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
         cli = SAKClient(config_path=minimal_config)
@@ -88,7 +88,7 @@ class TestSAKClient:
 
     def test_connect_case_insensitive(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.authenticate",
+            "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
         cli = SAKClient(config_path=minimal_config)
@@ -109,7 +109,7 @@ class TestSAKClient:
 
     def test_disconnect_clears_client(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.authenticate",
+            "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
         cli = SAKClient(config_path=minimal_config)
@@ -124,11 +124,11 @@ class TestSAKClient:
 
     def test_ping_returns_true_on_healthy_client(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.authenticate",
+            "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.health_check",
+            "gnat.connectors.threatq.client.ThreatQClient.health_check",
             lambda self: True,
         )
         cli = SAKClient(config_path=minimal_config)
@@ -137,11 +137,11 @@ class TestSAKClient:
 
     def test_ping_returns_false_on_exception(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.authenticate",
+            "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.health_check",
+            "gnat.connectors.threatq.client.ThreatQClient.health_check",
             MagicMock(side_effect=Exception("unreachable")),
         )
         cli = SAKClient(config_path=minimal_config)
@@ -150,7 +150,7 @@ class TestSAKClient:
 
     def test_override_kwargs_win_over_config(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
-            "ctm_sak.connectors.threatq.client.ThreatQClient.authenticate",
+            "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
         cli = SAKClient(config_path=minimal_config)
@@ -162,7 +162,7 @@ class TestSAKClient:
     ])
     def test_all_targets_connect(self, target, minimal_config, monkeypatch):
         """Smoke test: every registered connector can be instantiated."""
-        from ctm_sak.clients import CLIENT_REGISTRY
+        from gnat.clients import CLIENT_REGISTRY
         connector_cls = CLIENT_REGISTRY[target]
         monkeypatch.setattr(connector_cls, "authenticate", lambda self: None)
         cli = SAKClient(config_path=minimal_config)

@@ -1,5 +1,5 @@
-"""ctm_sak.ingest.mappers — RecordMapper implementations."""
-from ctm_sak.ingest.mappers.mappers import (
+"""gnat.ingest.mappers — RecordMapper implementations."""
+from gnat.ingest.mappers.mappers import (
     FlatIOCMapper,
     STIXPassthroughMapper,
     MISPAttributeMapper,

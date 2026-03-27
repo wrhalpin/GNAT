@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.crowdstrike.client
+gnat.connectors.crowdstrike.client
 ======================================
 
 CrowdStrike Falcon Platform connector (OAuth2 client-credentials).
@@ -14,8 +14,8 @@ INI config::
 """
 
 from typing import Any, Dict, List, Optional
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class CrowdStrikeClient(BaseClient, ConnectorMixin):

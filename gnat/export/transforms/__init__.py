@@ -1,6 +1,6 @@
-"""ctm_sak.export.transforms — format-specific transforms."""
-from ctm_sak.export.transforms.edl import EDLTransform
-from ctm_sak.export.transforms.netskope import (
+"""gnat.export.transforms — format-specific transforms."""
+from gnat.export.transforms.edl import EDLTransform
+from gnat.export.transforms.netskope import (
     NetskopeCETransform, STIXBundleTransform, CSVTransform
 )
 

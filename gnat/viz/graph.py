@@ -1,5 +1,5 @@
 """
-ctm_sak.viz.graph
+gnat.viz.graph
 ==================
 
 High-performance STIX relationship graph — scales to 10 000+ nodes.
@@ -46,11 +46,11 @@ Performance at scale (measured, MacBook Pro M2)
 | 10 000     | 50 000      | ~3.5s             | ~1.5s             |
 +------------+-------------+-------------------+-------------------+
 
-Requires: ``pip install "ctm-sak[viz]"`` (plotly for small graphs)
+Requires: ``pip install "gnat[viz]"`` (plotly for small graphs)
 
 Usage::
 
-    from ctm_sak.viz import GraphView
+    from gnat.viz import GraphView
 
     view = GraphView(workspace)
 
@@ -118,8 +118,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import Workspace
-    from ctm_sak.orm.base import STIXBase
+    from gnat.context.workspace import Workspace
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -1271,7 +1271,7 @@ class GraphView:
         graph_data = self._build_graph_data(nodes, edges, positions)
         graph_json = json.dumps(graph_data)
 
-        ws_title  = title or f"CTM-SAK: {self._ws.name}"
+        ws_title  = title or f"GNAT: {self._ws.name}"
         n_nodes   = len(nodes)
         n_edges   = len(edges)
 
@@ -1510,7 +1510,7 @@ class GraphView:
             import plotly.graph_objects as go
         except ImportError:
             raise ImportError(
-                "plotly required for 3D graph: pip install 'ctm-sak[viz]'"
+                "plotly required for 3D graph: pip install 'gnat[viz]'"
             )
 
         positions_2d = self._compute_layout(nodes, edges)
@@ -1574,7 +1574,7 @@ class GraphView:
                 text=texts, hoverinfo="text",
             ))
 
-        ws_title = title or f"CTM-SAK: {self._ws.name}"
+        ws_title = title or f"GNAT: {self._ws.name}"
         return go.Figure(
             data=traces,
             layout=go.Layout(

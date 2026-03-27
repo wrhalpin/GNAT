@@ -1,9 +1,9 @@
 """
-ctm_sak.orm.attack_pattern
+gnat.orm.attack_pattern
 ==========================
 STIX 2.1 Attack Pattern SDO.
 """
-from ctm_sak.orm.base import STIXBase
+from gnat.orm.base import STIXBase
 
 class AttackPattern(STIXBase):
     """STIX 2.1 Attack Pattern domain object."""

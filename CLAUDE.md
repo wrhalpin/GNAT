@@ -1,4 +1,4 @@
-# CLAUDE.md — CTM-SAK (GNAT) AI Assistant Guide
+# CLAUDE.md — GNAT AI Assistant Guide
 
 This file provides context for AI assistants (Claude Code and similar) working in this repository.
 
@@ -6,14 +6,14 @@ This file provides context for AI assistants (Claude Code and similar) working i
 
 ## Project Overview
 
-**CTM-SAK** (Cybersecurity Threat Management Swiss Army Knife) is a production-ready Python library providing:
+**GNAT** (Cybersecurity Threat Management Swiss Army Knife) is a production-ready Python library providing:
 - A unified client interface for 15+ security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude API)
 - A fully featured CLI
 
-**Package name on PyPI:** `ctm-sak`
+**Package name on PyPI:** `gnat`
 **Import root:** `gnat`
 **Version:** 0.1.0
 **Python support:** 3.9, 3.10, 3.11, 3.12
@@ -72,7 +72,7 @@ make install        # pip install -e ".[dev]" + httpx
 |--------|---------|-------------|
 | `make test` | `pytest tests/unit/ -v` | Run unit tests |
 | `make coverage` | pytest + coverage | HTML report at `htmlcov/` |
-| `make integration` | pytest with `--run-integration` | Requires `CTM_SAK_CONFIG` env var |
+| `make integration` | pytest with `--run-integration` | Requires `GNAT_CONFIG` env var |
 | `make lint` | ruff check + format check | Lint the codebase |
 | `make fmt` | ruff format | Auto-format code |
 | `make typecheck` | mypy | Type-check public APIs |
@@ -93,10 +93,10 @@ pytest tests/integration/ --run-integration -v  # Integration (needs live creds)
 
 ### Configuration
 
-CTM-SAK uses INI-based configuration. Search order:
-1. `CTM_SAK_CONFIG` environment variable (path to file)
-2. `~/.ctm_sak/config.ini`
-3. `./ctm_sak.ini`
+GNAT uses INI-based configuration. Search order:
+1. `GNAT_CONFIG` environment variable (path to file)
+2. `~/.gnat/config.ini`
+3. `./gnat.ini`
 
 Copy `config/config.ini.example` to get started. Each platform gets its own section:
 
@@ -143,7 +143,7 @@ Always run `make fmt && make lint` before committing.
 Alternatively, use the code generator:
 
 ```bash
-ctm-sak codegen openapi --spec path/to/openapi.yaml --target myplatform
+gnat codegen openapi --spec path/to/openapi.yaml --target myplatform
 ```
 
 ### Adding an Ingest Reader or Mapper
@@ -186,7 +186,7 @@ See `ARCHITECTURE_DECISIONS.md` for the full rationale. Key choices:
 - `minimal_config()` — Writes a temporary INI config file; returns its path
 - `sak_client()` — Returns a `SAKClient` pre-loaded from the test config
 
-**Integration tests** are gated by `@pytest.mark.integration` and the `--run-integration` flag. They require real credentials in `CTM_SAK_CONFIG`.
+**Integration tests** are gated by `@pytest.mark.integration` and the `--run-integration` flag. They require real credentials in `GNAT_CONFIG`.
 
 **Slow tests** use `@pytest.mark.slow` for optional exclusion.
 
@@ -239,18 +239,18 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 Install only what you need:
 
 ```bash
-pip install ctm-sak                        # Core only (urllib3)
-pip install "ctm-sak[yaml]"               # YAML support (pyyaml)
-pip install "ctm-sak[taxii]"              # TAXII reading (taxii2-client)
-pip install "ctm-sak[ingest]"             # TAXII + RSS (taxii2-client + feedparser)
-pip install "ctm-sak[async]"              # Async client (httpx)
-pip install "ctm-sak[persist]"            # DB persistence (sqlalchemy)
-pip install "ctm-sak[schedule]"           # Cron scheduling (croniter)
-pip install "ctm-sak[reports]"            # PDF reports (reportlab)
-pip install "ctm-sak[viz]"               # Visualization (plotly, networkx, openpyxl)
-pip install "ctm-sak[serve]"              # HTTP server (fastapi, uvicorn)
-pip install "ctm-sak[all]"               # Everything
-pip install "ctm-sak[dev]"               # All + dev tools
+pip install gnat                        # Core only (urllib3)
+pip install "gnat[yaml]"               # YAML support (pyyaml)
+pip install "gnat[taxii]"              # TAXII reading (taxii2-client)
+pip install "gnat[ingest]"             # TAXII + RSS (taxii2-client + feedparser)
+pip install "gnat[async]"              # Async client (httpx)
+pip install "gnat[persist]"            # DB persistence (sqlalchemy)
+pip install "gnat[schedule]"           # Cron scheduling (croniter)
+pip install "gnat[reports]"            # PDF reports (reportlab)
+pip install "gnat[viz]"               # Visualization (plotly, networkx, openpyxl)
+pip install "gnat[serve]"              # HTTP server (fastapi, uvicorn)
+pip install "gnat[all]"               # Everything
+pip install "gnat[dev]"               # All + dev tools
 ```
 
 ---

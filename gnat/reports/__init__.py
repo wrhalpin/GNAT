@@ -1,5 +1,5 @@
 """
-ctm_sak.reports
+gnat.reports
 ================
 
 Automated threat intelligence report generation — daily, trends, and yearly.
@@ -9,9 +9,9 @@ two delivery targets (email, SharePoint), configurable AI involvement.
 
 Quick start::
 
-    from ctm_sak.reports import ReportGenerator, ReportConfig, AIMode, ReportJob
-    from ctm_sak.agents import AgentConfig
-    from ctm_sak.research import ResearchLibrary
+    from gnat.reports import ReportGenerator, ReportConfig, AIMode, ReportJob
+    from gnat.agents import AgentConfig
+    from gnat.research import ResearchLibrary
 
     config = ReportConfig(
         report_type = "daily",
@@ -37,8 +37,8 @@ Quick start::
 
 Scheduled reports::
 
-    from ctm_sak.reports import ReportJob
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.reports import ReportJob
+    from gnat.schedule import FeedScheduler
 
     job = ReportJob(
         manager        = workspace_manager,
@@ -57,17 +57,17 @@ Scheduled reports::
         scheduler.add(job)
 """
 
-from ctm_sak.reports.base import (
+from gnat.reports.base import (
     AIMode, ReportConfig, ReportSection, ReportDocument,
     ReportResult, SectorFilter,
 )
-from ctm_sak.reports.aggregator import DataAggregator, ReportAggregates
-from ctm_sak.reports.synthesizer import ReportSynthesizer
-from ctm_sak.reports.renderers import (
+from gnat.reports.aggregator import DataAggregator, ReportAggregates
+from gnat.reports.synthesizer import ReportSynthesizer
+from gnat.reports.renderers import (
     MarkdownRenderer, HTMLRenderer, PDFRenderer, DOCXRenderer,
 )
-from ctm_sak.reports.delivery import EmailDelivery, SharePointDelivery
-from ctm_sak.reports.generator import ReportGenerator, ReportJob
+from gnat.reports.delivery import EmailDelivery, SharePointDelivery
+from gnat.reports.generator import ReportGenerator, ReportJob
 
 __all__ = [
     # Configuration

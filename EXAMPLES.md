@@ -1,7 +1,7 @@
-# CTM-SAK Examples
+# GNAT Examples
 
 Code snippet reference for implementation and testing.
-All examples assume `ctm_sak` is installed and `config.ini` is configured.
+All examples assume `gnat` is installed and `config.ini` is configured.
 
 ---
 
@@ -51,9 +51,9 @@ financial  = Financial Services, Finance, Banking, FS-ISAC
 ### Loading config
 
 ```python
-from ctm_sak.config import SAKConfig
+from gnat.config import SAKConfig
 
-cfg = SAKConfig()                          # auto-finds ~/.ctm_sak/config.ini
+cfg = SAKConfig()                          # auto-finds ~/.gnat/config.ini
 cfg = SAKConfig("/path/to/config.ini")     # explicit path
 cfg = SAKConfig(os.environ["MY_CONFIG"])   # from env var
 
@@ -68,7 +68,7 @@ print(section["host"])
 ### Connect to ThreatQ
 
 ```python
-from ctm_sak.connectors.threatq.client import ThreatQClient
+from gnat.connectors.threatq.client import ThreatQClient
 
 client = ThreatQClient(
     host          = "https://threatq.example.com",
@@ -93,7 +93,7 @@ new_ind = client.upsert_object("indicator", {
 ### Connect via SAKClient (config-driven)
 
 ```python
-from ctm_sak.client import SAKClient
+from gnat.client import SAKClient
 
 client = SAKClient.from_config("threatq")   # reads [threatq] from config.ini
 client.connect()
@@ -103,7 +103,7 @@ client.ping()
 ### VirusTotal
 
 ```python
-from ctm_sak.connectors.virustotal.client import VirusTotalClient
+from gnat.connectors.virustotal.client import VirusTotalClient
 
 vt = VirusTotalClient(
     host    = "https://www.virustotal.com",
@@ -127,7 +127,7 @@ for item in results:
 ### ShadowServer
 
 ```python
-from ctm_sak.connectors.shadowserver.client import ShadowServerClient
+from gnat.connectors.shadowserver.client import ShadowServerClient
 
 ss = ShadowServerClient(
     api_key    = "your-ss-key",
@@ -150,7 +150,7 @@ for rec in records[:5]:
 ### Rapid7 InsightVM
 
 ```python
-from ctm_sak.connectors.rapid7.client import Rapid7Client
+from gnat.connectors.rapid7.client import Rapid7Client
 
 r7 = Rapid7Client(
     host    = "https://us.api.insight.rapid7.com",
@@ -171,7 +171,7 @@ for v in vulns:
 ### Nucleus Security
 
 ```python
-from ctm_sak.connectors.nucleus.client import NucleusClient
+from gnat.connectors.nucleus.client import NucleusClient
 
 ns = NucleusClient(
     api_key = "your-nucleus-key",
@@ -199,7 +199,7 @@ for v in risky:
 ### Create STIX objects
 
 ```python
-from ctm_sak.orm import Indicator, ThreatActor, Vulnerability, AttackPattern, Relationship
+from gnat.orm import Indicator, ThreatActor, Vulnerability, AttackPattern, Relationship
 
 # Indicator
 ind = Indicator(
@@ -248,9 +248,9 @@ print(ind.to_stix_bundle())
 ### Blocklist → ThreatQ
 
 ```python
-from ctm_sak.ingest import IngestPipeline
-from ctm_sak.ingest.sources.readers import PlainTextReader
-from ctm_sak.ingest.mappers.mappers import FlatIOCMapper
+from gnat.ingest import IngestPipeline
+from gnat.ingest.sources.readers import PlainTextReader
+from gnat.ingest.mappers.mappers import FlatIOCMapper
 
 result = (
     IngestPipeline("blocklist-daily")
@@ -266,7 +266,7 @@ print(result)  # IngestResult: 1247 records → 1247 mapped → 1201 written
 ### TAXII feed → ThreatQ (incremental)
 
 ```python
-from ctm_sak.ingest.sources.readers import TAXIICollectionReader
+from gnat.ingest.sources.readers import TAXIICollectionReader
 
 result = (
     IngestPipeline("taxii-daily")
@@ -282,8 +282,8 @@ result = (
 ### CSV file → workspace
 
 ```python
-from ctm_sak.ingest.sources.readers import CSVReader
-from ctm_sak.ingest.mappers.mappers import CSVIndicatorMapper
+from gnat.ingest.sources.readers import CSVReader
+from gnat.ingest.mappers.mappers import CSVIndicatorMapper
 
 result = (
     IngestPipeline("csv-import")
@@ -300,7 +300,7 @@ result = (
 ### Splunk alerts → indicators (incremental)
 
 ```python
-from ctm_sak.ingest.sources.readers import SplunkReader
+from gnat.ingest.sources.readers import SplunkReader
 
 result = (
     IngestPipeline("splunk-alerts")
@@ -324,11 +324,11 @@ result = (
 ### Create and use a workspace
 
 ```python
-from ctm_sak.context import GlobalContextRegistry, GlobalContext, Workspace, FlatFileStore
-from ctm_sak.context.workspace import WorkspaceManager
+from gnat.context import GlobalContextRegistry, GlobalContext, Workspace, FlatFileStore
+from gnat.context.workspace import WorkspaceManager
 
 # Setup
-store   = FlatFileStore(base_dir="~/.ctm_sak/workspaces")
+store   = FlatFileStore(base_dir="~/.gnat/workspaces")
 manager = WorkspaceManager(global_registry, store=store)
 
 # Create / open
@@ -352,7 +352,7 @@ bundle = ws.export_bundle()
 ### Global context registry
 
 ```python
-from ctm_sak.context import GlobalContextRegistry, GlobalContext
+from gnat.context import GlobalContextRegistry, GlobalContext
 
 reg = GlobalContextRegistry()
 reg.register(GlobalContext("tq",    threatq_client,      priority=10))
@@ -371,10 +371,10 @@ ws.enrich(strategy="create_relationships")
 ### ThreatQ indicators → Palo Alto EDL
 
 ```python
-from ctm_sak.export import ExportPipeline, ExportJob
-from ctm_sak.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
-from ctm_sak.export.transforms.edl import EDLTransform
-from ctm_sak.export.delivery.targets import FileDelivery, EDLServer
+from gnat.export import ExportPipeline, ExportJob
+from gnat.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
+from gnat.export.transforms.edl import EDLTransform
+from gnat.export.delivery.targets import FileDelivery, EDLServer
 
 # Serve live EDL on port 8080 (firewalls poll this)
 edl_server = EDLServer(port=8080)
@@ -397,9 +397,9 @@ job = ExportJob(
 ### ThreatQ → Netskope CE (FQDN + URL + SHA256)
 
 ```python
-from ctm_sak.export.filters import IOCTypeFilter
-from ctm_sak.export.transforms.netskope import NetskopeCETransform
-from ctm_sak.export.delivery.targets import PlatformDelivery
+from gnat.export.filters import IOCTypeFilter
+from gnat.export.transforms.netskope import NetskopeCETransform
+from gnat.export.delivery.targets import PlatformDelivery
 
 job = ExportJob(
     job_id = "tq-to-netskope-ce",
@@ -422,7 +422,7 @@ job = ExportJob(
 ### Export to STIX bundle file
 
 ```python
-from ctm_sak.export.transforms.netskope import STIXBundleTransform
+from gnat.export.transforms.netskope import STIXBundleTransform
 
 result = (
     ExportPipeline("stix-export")
@@ -440,9 +440,9 @@ result = (
 ### Basic scheduled feed
 
 ```python
-from ctm_sak.schedule import FeedJob, FeedScheduler
-from ctm_sak.ingest.sources.readers import PlainTextReader
-from ctm_sak.ingest.mappers.mappers import FlatIOCMapper
+from gnat.schedule import FeedJob, FeedScheduler
+from gnat.ingest.sources.readers import PlainTextReader
+from gnat.ingest.mappers.mappers import FlatIOCMapper
 
 job = FeedJob(
     job_id         = "blocklist-hourly",
@@ -497,8 +497,8 @@ print(scheduler.summary())
 ### Research agent — topic-driven
 
 ```python
-from ctm_sak.agents import ResearchAgent, ParsingAgent, AgentConfig
-from ctm_sak.ingest import IngestPipeline
+from gnat.agents import ResearchAgent, ParsingAgent, AgentConfig
+from gnat.ingest import IngestPipeline
 
 config = AgentConfig.from_ini()
 
@@ -542,7 +542,7 @@ job = FeedJob(
 ### M365 content via Copilot
 
 ```python
-from ctm_sak.agents import CopilotReader
+from gnat.agents import CopilotReader
 
 job = FeedJob(
     job_id = "m365-threat-intel",
@@ -586,7 +586,7 @@ for stix_obj in agent.map(record):
 ### Check before researching
 
 ```python
-from ctm_sak.research import ResearchLibrary
+from gnat.research import ResearchLibrary
 
 lib = ResearchLibrary.default()
 
@@ -627,8 +627,8 @@ for e in results:
 ### Scheduled curation
 
 ```python
-from ctm_sak.research import ResearchLibrary, CurationJob
-from ctm_sak.schedule import FeedScheduler
+from gnat.research import ResearchLibrary, CurationJob
+from gnat.schedule import FeedScheduler
 
 lib     = ResearchLibrary.default()
 curator = CurationJob(lib, interval_seconds=4 * 3600)
@@ -644,7 +644,7 @@ with FeedScheduler() as sched:
 ### Daily report — no AI
 
 ```python
-from ctm_sak.reports import ReportGenerator, ReportConfig, AIMode
+from gnat.reports import ReportGenerator, ReportConfig, AIMode
 
 config = ReportConfig(
     report_type = "daily",
@@ -665,7 +665,7 @@ print(result.files_written)
 ### Trends report — AI-assisted
 
 ```python
-from ctm_sak.agents import AgentConfig
+from gnat.agents import AgentConfig
 
 config = ReportConfig(
     report_type = "trends",
@@ -692,8 +692,8 @@ result = ReportGenerator(
 ### Scheduled reports
 
 ```python
-from ctm_sak.reports import ReportJob
-from ctm_sak.schedule import FeedScheduler
+from gnat.reports import ReportJob
+from gnat.schedule import FeedScheduler
 
 daily_job = ReportJob(
     manager      = manager,
@@ -733,7 +733,7 @@ with FeedScheduler() as sched:
 ### GraphView — intent-driven
 
 ```python
-from ctm_sak.viz import GraphView
+from gnat.viz import GraphView
 
 view = GraphView(workspace)
 
@@ -767,7 +767,7 @@ view.render_risk_heatmap(
 ### TabularView
 
 ```python
-from ctm_sak.viz import TabularView
+from gnat.viz import TabularView
 
 view = TabularView(workspace)
 
@@ -785,7 +785,7 @@ view.to_excel("intel.xlsx")             # Excel / Power BI
 
 ```python
 import asyncio
-from ctm_sak.async_client import AsyncSAKClient
+from gnat.async_client import AsyncSAKClient
 
 async def gather_all():
     async with AsyncSAKClient() as client:
@@ -807,14 +807,14 @@ print(f"Gathered {len(indicators)} indicators from 3 platforms")
 ### Daily SOC workflow — check library, research if needed, update EDL
 
 ```python
-from ctm_sak.research import ResearchLibrary
-from ctm_sak.agents import ResearchAgent, ParsingAgent, AgentConfig
-from ctm_sak.export import ExportPipeline, ExportJob
-from ctm_sak.export.filters import TypeFilter, ConfidenceFilter
-from ctm_sak.export.transforms.edl import EDLTransform
-from ctm_sak.export.delivery.targets import EDLServer
-from ctm_sak.schedule import FeedScheduler
-from ctm_sak.ingest import IngestPipeline
+from gnat.research import ResearchLibrary
+from gnat.agents import ResearchAgent, ParsingAgent, AgentConfig
+from gnat.export import ExportPipeline, ExportJob
+from gnat.export.filters import TypeFilter, ConfidenceFilter
+from gnat.export.transforms.edl import EDLTransform
+from gnat.export.delivery.targets import EDLServer
+from gnat.schedule import FeedScheduler
+from gnat.ingest import IngestPipeline
 
 lib    = ResearchLibrary.default()
 config = AgentConfig.from_ini()
@@ -832,7 +832,7 @@ for topic in ["APT29", "LockBit", "CVE-2024-3400"]:
                     note="Automated daily research cycle")
 
 # 2. Curate staging → library
-from ctm_sak.research import CurationJob
+from gnat.research import CurationJob
 CurationJob(lib).execute()
 
 # 3. Export indicators to EDL
@@ -852,11 +852,11 @@ print(f"EDL updated: {export_result.delivery_result.delivered}")
 ### Server-side scheduled pipeline (production)
 
 ```python
-from ctm_sak.schedule import FeedJob, FeedScheduler
-from ctm_sak.reports import ReportJob, ReportConfig, AIMode
-from ctm_sak.research import ResearchLibrary, CurationJob
-from ctm_sak.agents import AgentConfig
-from ctm_sak.export import ExportJob
+from gnat.schedule import FeedJob, FeedScheduler
+from gnat.reports import ReportJob, ReportConfig, AIMode
+from gnat.research import ResearchLibrary, CurationJob
+from gnat.agents import AgentConfig
+from gnat.export import ExportJob
 
 lib        = ResearchLibrary.default()
 agent_cfg  = AgentConfig.from_ini()

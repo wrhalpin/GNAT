@@ -1,8 +1,8 @@
 """
-ctm_sak.ingest.base
+gnat.ingest.base
 ====================
 
-Abstract base classes and protocols for the CTM-SAK ingestion framework.
+Abstract base classes and protocols for the GNAT ingestion framework.
 
 Architecture Overview
 ---------------------
@@ -24,13 +24,13 @@ The ingestion layer is built from three composable abstractions:
     not understand STIX or security concepts.
 
 **RecordMapper**
-    Knows how to convert a raw dict into one or more :class:`~ctm_sak.orm.base.STIXBase`
+    Knows how to convert a raw dict into one or more :class:`~gnat.orm.base.STIXBase`
     instances.  One mapper per source schema (CSV column layout, DB table
     shape, MISP event structure, etc.).
 
 **IngestPipeline**
     Chains a reader and a mapper, applies optional filters and deduplication,
-    and optionally writes results to a connected :class:`~ctm_sak.client.SAKClient`.
+    and optionally writes results to a connected :class:`~gnat.client.SAKClient`.
 
 This design means you can:
 * Swap sources without touching mappers (e.g. read same CSV from disk or S3).
@@ -48,8 +48,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Generator, Iterable, Iterator, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.orm.base import STIXBase
-    from ctm_sak.client import SAKClient
+    from gnat.orm.base import STIXBase
+    from gnat.client import SAKClient
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ class RecordMapper(ABC):
     Abstract base for all record-to-STIX mappers.
 
     A :class:`RecordMapper` receives a raw dict (from a :class:`SourceReader`)
-    and yields zero or more :class:`~ctm_sak.orm.base.STIXBase` instances.
+    and yields zero or more :class:`~gnat.orm.base.STIXBase` instances.
 
     A single raw record may produce multiple STIX objects — for example a
     MISP event that contains many attributes.

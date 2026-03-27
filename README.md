@@ -1,8 +1,8 @@
-# CTM-SAK 🔪
+# GNAT 🔪
 
 **Cybersecurity Threat Management Swiss Army Knife**
 
-A universal Python client and STIX 2.1-compatible ORM for interacting with security platforms. CTM-SAK provides a uniform abstraction layer so you can write the same code regardless of which platform sits underneath.
+A universal Python client and STIX 2.1-compatible ORM for interacting with security platforms. GNAT provides a uniform abstraction layer so you can write the same code regardless of which platform sits underneath.
 
 ---
 
@@ -22,9 +22,9 @@ A universal Python client and STIX 2.1-compatible ORM for interacting with secur
 ## Installation
 
 ```bash
-pip install ctm-sak
+pip install gnat
 # Optional: YAML support for the OpenAPI code generator
-pip install "ctm-sak[yaml]"
+pip install "gnat[yaml]"
 ```
 
 ---
@@ -33,7 +33,7 @@ pip install "ctm-sak[yaml]"
 
 ### 1. Configure
 
-Copy `config/config.ini.example` to `~/.ctm_sak/config.ini` and fill in your credentials:
+Copy `config/config.ini.example` to `~/.gnat/config.ini` and fill in your credentials:
 
 ```ini
 [DEFAULT]
@@ -56,10 +56,10 @@ auth_type     = oauth2
 ### 2. Connect and use
 
 ```python
-import ctm_sak
+import gnat
 
 # --- Classic client usage ---
-cli = ctm_sak.SAKClient()
+cli = gnat.SAKClient()
 cli.connect(target="threatq")
 
 # Ping to verify connectivity
@@ -67,13 +67,13 @@ print(cli.ping())   # True
 
 # --- ORM usage ---
 # Fetch an existing indicator by id
-ind = ctm_sak.Indicator(client=cli)
+ind = gnat.Indicator(client=cli)
 ind.id = "indicator--12345"
 ind.select()
 print(ind.name, ind.pattern)
 
 # Create a new indicator
-new_ind = ctm_sak.Indicator(
+new_ind = gnat.Indicator(
     client=cli,
     name="Malicious IP",
     pattern="[ipv4-addr:value = '198.51.100.99']",
@@ -90,16 +90,16 @@ new_ind.save()
 new_ind.delete()
 
 # --- Other ORM types ---
-actor = ctm_sak.ThreatActor(client=cli, name="APT-XYZ")
+actor = gnat.ThreatActor(client=cli, name="APT-XYZ")
 actor.save()
 
-malware = ctm_sak.Malware(client=cli, name="BlackCat", is_family=True)
+malware = gnat.Malware(client=cli, name="BlackCat", is_family=True)
 malware.save()
 
-vuln = ctm_sak.Vulnerability(client=cli, name="CVE-2024-12345")
+vuln = gnat.Vulnerability(client=cli, name="CVE-2024-12345")
 vuln.save()
 
-rel = ctm_sak.Relationship(
+rel = gnat.Relationship(
     client=cli,
     relationship_type="uses",
     source_ref=actor.id,
@@ -115,14 +115,14 @@ rel.save()
 cli.connect(target="crowdstrike")
 
 # Exact same ORM calls work
-ind = ctm_sak.Indicator(client=cli, name="Evil Hash")
+ind = gnat.Indicator(client=cli, name="Evil Hash")
 ind.save()
 ```
 
 ### 4. Override config at runtime
 
 ```python
-cli = ctm_sak.SAKClient()
+cli = gnat.SAKClient()
 cli.connect(
     target="netskope",
     host="https://mytenant.goskope.com",
@@ -137,7 +137,7 @@ cli.connect(
 Every ORM object is STIX 2.1 wire-format compatible:
 
 ```python
-ind = ctm_sak.Indicator(name="Evil Domain", pattern="[domain-name:value = 'evil.com']")
+ind = gnat.Indicator(name="Evil Domain", pattern="[domain-name:value = 'evil.com']")
 
 # Single object as dict
 print(ind.to_dict())
@@ -148,25 +148,25 @@ bundle = ind.to_stix_bundle()
 print(json.dumps(bundle, indent=2))
 
 # Restore from dict
-restored = ctm_sak.Indicator.from_dict(ind.to_dict(), client=cli)
+restored = gnat.Indicator.from_dict(ind.to_dict(), client=cli)
 ```
 
 ---
 
 ## Adding a New Connector (Code Generation)
 
-CTM-SAK ships with an OpenAPI-based code generator. Given any OpenAPI 3.x or Swagger 2.x spec you get a fully scaffolded connector in seconds:
+GNAT ships with an OpenAPI-based code generator. Given any OpenAPI 3.x or Swagger 2.x spec you get a fully scaffolded connector in seconds:
 
 ```bash
 # CLI
-ctm-sak-codegen \
+gnat-codegen \
     --spec    ./specs/myplatform-openapi.json \
     --name    myplatform \
     --auth    oauth2 \
-    --out-dir ./ctm_sak/connectors
+    --out-dir ./gnat/connectors
 
 # Python API
-from ctm_sak.codegen import generate_connector
+from gnat.codegen import generate_connector
 generate_connector(
     spec_path="./myplatform.yaml",
     connector_name="myplatform",
@@ -175,14 +175,14 @@ generate_connector(
 ```
 
 This generates:
-- `ctm_sak/connectors/myplatform/client.py` — fully structured, ready to fill in `to_stix()` / `from_stix()`
-- `ctm_sak/connectors/myplatform/__init__.py`
+- `gnat/connectors/myplatform/client.py` — fully structured, ready to fill in `to_stix()` / `from_stix()`
+- `gnat/connectors/myplatform/__init__.py`
 - `tests/unit/connectors/test_myplatform.py` — complete pytest scaffold
 
-Then register the new connector in `ctm_sak/clients/__init__.py`:
+Then register the new connector in `gnat/clients/__init__.py`:
 
 ```python
-from ctm_sak.connectors.myplatform.client import MyplatformClient
+from gnat.connectors.myplatform.client import MyplatformClient
 
 CLIENT_REGISTRY = {
     ...
@@ -195,7 +195,7 @@ CLIENT_REGISTRY = {
 ## Project Structure
 
 ```
-ctm_sak/
+gnat/
 ├── __init__.py              # Public API surface
 ├── client.py                # SAKClient — top-level facade
 ├── config.py                # INI file loader
@@ -235,7 +235,7 @@ tests/
     └── test_integration.py  # Live API tests (opt-in)
 
 config/
-└── config.ini.example       # Copy to ~/.ctm_sak/config.ini
+└── config.ini.example       # Copy to ~/.gnat/config.ini
 ```
 
 ---
@@ -247,10 +247,10 @@ config/
 pytest tests/unit/ -v
 
 # With coverage
-pytest tests/unit/ --cov=ctm_sak --cov-report=term-missing
+pytest tests/unit/ --cov=gnat --cov-report=term-missing
 
 # Integration tests (requires real credentials in config)
-CTM_SAK_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
+GNAT_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
 ```
 
 ---
@@ -289,7 +289,7 @@ MIT
 
 ## Ingestion Framework
 
-CTM-SAK includes a composable ingestion layer for pulling threat intelligence from any external source into STIX 2.1 objects.
+GNAT includes a composable ingestion layer for pulling threat intelligence from any external source into STIX 2.1 objects.
 
 ### Architecture
 
@@ -307,14 +307,14 @@ IngestPipeline ──(optionally writes to)──► SAKClient
 
 **Plaintext IOC list → ThreatQ:**
 ```python
-import ctm_sak
+import gnat
 
-cli = ctm_sak.SAKClient().connect("threatq")
+cli = gnat.SAKClient().connect("threatq")
 
 result = (
-    ctm_sak.IngestPipeline("daily-blocklist")
-    .read_from(ctm_sak.PlainTextReader("blocklist.txt"))
-    .map_with(ctm_sak.FlatIOCMapper(tlp_marking="amber", confidence=75))
+    gnat.IngestPipeline("daily-blocklist")
+    .read_from(gnat.PlainTextReader("blocklist.txt"))
+    .map_with(gnat.FlatIOCMapper(tlp_marking="amber", confidence=75))
     .write_to(cli)
     .deduplicate(key_fields=["name"])
     .filter(lambda o: getattr(o, "confidence", 0) >= 50)
@@ -331,9 +331,9 @@ server = Server("https://limo.anomali.com/api/v1/taxii2/", user="guest", passwor
 collection = server.api_roots[0].collections[0]
 
 result = (
-    ctm_sak.IngestPipeline("taxii-feed")
-    .read_from(ctm_sak.TAXIICollectionReader(collection, stix_types=["indicator"]))
-    .map_with(ctm_sak.STIXPassthroughMapper(client=cli))
+    gnat.IngestPipeline("taxii-feed")
+    .read_from(gnat.TAXIICollectionReader(collection, stix_types=["indicator"]))
+    .map_with(gnat.STIXPassthroughMapper(client=cli))
     .write_to(cli)
     .deduplicate()
     .run()
@@ -345,17 +345,17 @@ result = (
 import psycopg2
 
 conn = psycopg2.connect("host=db dbname=ti user=ro password=secret")
-cli = ctm_sak.SAKClient().connect("xsoar")
+cli = gnat.SAKClient().connect("xsoar")
 
 result = (
-    ctm_sak.IngestPipeline("postgres-iocs")
-    .read_from(ctm_sak.SQLReader(
+    gnat.IngestPipeline("postgres-iocs")
+    .read_from(gnat.SQLReader(
         conn,
         query="SELECT value, type, confidence, notes FROM indicators WHERE active = %s",
         params=(True,),
         column_map={"notes": "description"},
     ))
-    .map_with(ctm_sak.SQLRowMapper(
+    .map_with(gnat.SQLRowMapper(
         value_col="value", type_col="type",
         description_col="description", client=cli,
     ))
@@ -367,9 +367,9 @@ result = (
 **MISP export → Recorded Future:**
 ```python
 result = (
-    ctm_sak.IngestPipeline("misp-export")
-    .read_from(ctm_sak.MISPReader("misp_export.json", attribute_types=["ip-dst", "domain", "md5"]))
-    .map_with(ctm_sak.MISPAttributeMapper(require_to_ids=True, tlp_marking="red", confidence=90))
+    gnat.IngestPipeline("misp-export")
+    .read_from(gnat.MISPReader("misp_export.json", attribute_types=["ip-dst", "domain", "md5"]))
+    .map_with(gnat.MISPAttributeMapper(require_to_ids=True, tlp_marking="red", confidence=90))
     .write_to(cli)
     .deduplicate(key_fields=["name"])
     .run()
@@ -379,9 +379,9 @@ result = (
 **NVD CVE feed → vulnerability tracking:**
 ```python
 result = (
-    ctm_sak.IngestPipeline("nvd-daily")
-    .read_from(ctm_sak.JSONReader("nvdcve-1.1-recent.json", records_key="CVE_Items"))
-    .map_with(ctm_sak.NVDCVEMapper(confidence=95))
+    gnat.IngestPipeline("nvd-daily")
+    .read_from(gnat.JSONReader("nvdcve-1.1-recent.json", records_key="CVE_Items"))
+    .map_with(gnat.NVDCVEMapper(confidence=95))
     .filter(lambda v: getattr(v, "x_cvss_score", 0) >= 7.0)   # HIGH+ only
     .run()
 )
@@ -390,9 +390,9 @@ result = (
 **Phishing email folder:**
 ```python
 result = (
-    ctm_sak.IngestPipeline("phish-samples")
-    .read_from(ctm_sak.EmailReader("phishing_samples/", recursive=True))
-    .map_with(ctm_sak.EmailIOCMapper(ioc_types=["ips", "urls", "domains"]))
+    gnat.IngestPipeline("phish-samples")
+    .read_from(gnat.EmailReader("phishing_samples/", recursive=True))
+    .map_with(gnat.EmailIOCMapper(ioc_types=["ips", "urls", "domains"]))
     .deduplicate(key_fields=["name"])
     .run()
 )
@@ -403,22 +403,22 @@ objs = list(pipeline.iter_objects())   # collect without writing
 ```python
 # Splunk
 result = (
-    ctm_sak.IngestPipeline("splunk-hunt")
-    .read_from(ctm_sak.SplunkReader(splunk_client,
+    gnat.IngestPipeline("splunk-hunt")
+    .read_from(gnat.SplunkReader(splunk_client,
         search="search index=threat_intel type=ip | table src_ip type"))
-    .map_with(ctm_sak.SplunkResultMapper(value_field="src_ip"))
+    .map_with(gnat.SplunkResultMapper(value_field="src_ip"))
     .write_to(cli)
     .run()
 )
 
 # Elasticsearch
 result = (
-    ctm_sak.IngestPipeline("elastic-iocs")
-    .read_from(ctm_sak.ElasticReader(elastic_client,
+    gnat.IngestPipeline("elastic-iocs")
+    .read_from(gnat.ElasticReader(elastic_client,
         index="threat-intel-*",
         query={"term": {"active": True}},
         source_fields=["value", "type", "confidence"]))
-    .map_with(ctm_sak.FlatIOCMapper())
+    .map_with(gnat.FlatIOCMapper())
     .run()
 )
 ```

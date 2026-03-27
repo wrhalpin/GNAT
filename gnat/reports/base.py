@@ -1,8 +1,8 @@
 """
-ctm_sak.reports.base
+gnat.reports.base
 =====================
 
-Shared foundations for all CTM-SAK report types.
+Shared foundations for all GNAT report types.
 
 Key types
 ---------
@@ -64,7 +64,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.orm.base import STIXBase
+    from gnat.orm.base import STIXBase
 
 
 # ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ class ReportConfig:
         config_path : str, optional
             Explicit path to config.ini.
         """
-        from ctm_sak.config import SAKConfig
+        from gnat.config import SAKConfig
         cfg = SAKConfig(config_path)
         try:
             s = cfg.get(section_name)
@@ -275,7 +275,7 @@ class SectorFilter:
     """
 
     _SECTOR_FIELDS = [
-        "x_target_sectors",        # CTM-SAK canonical
+        "x_target_sectors",        # GNAT canonical
         "x_threatq_industries",    # ThreatQ placeholder — update when verified
         "x_threatq_sectors",       # ThreatQ placeholder — update when verified
         "x_rf_target_sectors",     # Recorded Future
@@ -353,7 +353,7 @@ class SectorFilter:
         aliases: Dict[str, List[str]] = {}
         if ini_config_path or True:
             try:
-                from ctm_sak.config import SAKConfig
+                from gnat.config import SAKConfig
                 cfg = SAKConfig(ini_config_path)
                 try:
                     section = cfg.get("sector_aliases")

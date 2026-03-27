@@ -1,5 +1,5 @@
 """
-ctm_sak.context.global_context
+gnat.context.global_context
 ================================
 
 :class:`GlobalContext` represents a persistent connection to a security
@@ -42,8 +42,8 @@ import logging
 from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.client import SAKClient
-    from ctm_sak.orm.base import STIXBase
+    from gnat.client import SAKClient
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class GlobalContext:
     """
     A named, connected security platform context.
 
-    A global context wraps a :class:`~ctm_sak.client.SAKClient` and adds
+    A global context wraps a :class:`~gnat.client.SAKClient` and adds
     metadata (name, read-only flag, priority) used by workspaces to decide
     which platform to load from and write to.
 
@@ -73,7 +73,7 @@ class GlobalContext:
 
     Examples
     --------
-    >>> from ctm_sak import SAKClient
+    >>> from gnat import SAKClient
     >>> cli = SAKClient().connect("threatq")
     >>> gc = GlobalContext("threatq_prod", cli, priority=1)
     """
@@ -168,7 +168,7 @@ class GlobalContextRegistry:
     which is the default write target, and how they are prioritised.
 
     Typically constructed once via :meth:`from_config` and stored on the
-    :class:`~ctm_sak.context.workspace.WorkspaceManager`.
+    :class:`~gnat.context.workspace.WorkspaceManager`.
 
     Parameters
     ----------
@@ -205,15 +205,15 @@ class GlobalContextRegistry:
         ----------
         config_path : str, optional
             Explicit path to config.ini.  If omitted the default search
-            order is used (see :class:`~ctm_sak.config.SAKConfig`).
+            order is used (see :class:`~gnat.config.SAKConfig`).
 
         Returns
         -------
         GlobalContextRegistry
             Populated registry, with all clients connected.
         """
-        from ctm_sak.config import SAKConfig
-        from ctm_sak.client import SAKClient
+        from gnat.config import SAKConfig
+        from gnat.client import SAKClient
 
         cfg = SAKConfig(config_path)
         registry = cls()

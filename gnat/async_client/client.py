@@ -1,8 +1,8 @@
 """
-ctm_sak.async_client.client
+gnat.async_client.client
 ============================
 
-Async counterpart to :class:`~ctm_sak.client.SAKClient`.
+Async counterpart to :class:`~gnat.client.SAKClient`.
 
 :class:`AsyncSAKClient` exposes the same ``connect`` / ``disconnect`` / ``ping``
 API but all I/O is non-blocking.  It is designed to be used as an async
@@ -28,9 +28,9 @@ import asyncio
 import logging
 from typing import Any, Optional
 
-from ctm_sak.config import SAKConfig
-from ctm_sak.clients.base import SAKClientError
-from ctm_sak.async_client.base import AsyncBaseClient
+from gnat.config import SAKConfig
+from gnat.clients.base import SAKClientError
+from gnat.async_client.base import AsyncBaseClient
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def _build_async_registry() -> dict:
     logic in async-compatible form.  Where a platform has a dedicated async
     connector it is preferred; otherwise the sync connector is wrapped.
     """
-    from ctm_sak.async_client.connectors import (
+    from gnat.async_client.connectors import (
         AsyncThreatQClient,
         AsyncGreyMatterClient,
         AsyncWhisticClient,
@@ -85,7 +85,7 @@ class AsyncSAKClient:
     Parameters
     ----------
     config_path : str, optional
-        Path to an INI configuration file (same as sync :class:`~ctm_sak.client.SAKClient`).
+        Path to an INI configuration file (same as sync :class:`~gnat.client.SAKClient`).
 
     Examples
     --------
@@ -215,7 +215,7 @@ class AsyncSAKClient:
 class AsyncSTIXBase:
     """
     Async-capable ORM base — thin wrapper around
-    :class:`~ctm_sak.orm.base.STIXBase` that exposes awaitable CRUD methods.
+    :class:`~gnat.orm.base.STIXBase` that exposes awaitable CRUD methods.
 
     Parameters
     ----------

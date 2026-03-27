@@ -1,10 +1,10 @@
 # “””
-ctm_sak.connectors.splunk.kvstore
+gnat.connectors.splunk.kvstore
 
 Splunk KV Store (key-value store) commands.
 
 The KV Store is a MongoDB-compatible JSON document store built into
-Splunk that CTM-SAK uses for:
+Splunk that GNAT uses for:
 
 - Caching enrichment results
 - Storing deduplication state

@@ -2,7 +2,7 @@
 tests/unit/ingest/test_ingest.py
 =================================
 
-Unit tests for the CTM-SAK ingestion layer.
+Unit tests for the GNAT ingestion layer.
 
 Covers:
 - SourceReader base behaviour (context manager, open/close, read_all)
@@ -39,15 +39,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ctm_sak.ingest.base import (
+from gnat.ingest.base import (
     DeduplicationCache,
     IngestResult,
     RawRecord,
     RecordMapper,
     SourceReader,
 )
-from ctm_sak.ingest.pipeline.pipeline import IngestPipeline
-from ctm_sak.ingest.sources.readers import (
+from gnat.ingest.pipeline.pipeline import IngestPipeline
+from gnat.ingest.sources.readers import (
     CSVReader,
     JSONLReader,
     JSONReader,
@@ -58,7 +58,7 @@ from ctm_sak.ingest.sources.readers import (
     STIXBundleReader,
     SyslogReader,
 )
-from ctm_sak.ingest.mappers.mappers import (
+from gnat.ingest.mappers.mappers import (
     CEFMapper,
     EmailIOCMapper,
     FlatIOCMapper,
@@ -69,9 +69,9 @@ from ctm_sak.ingest.mappers.mappers import (
     SQLRowMapper,
     STIXPassthroughMapper,
 )
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.malware import Malware
-from ctm_sak.orm.vulnerability import Vulnerability
+from gnat.orm.indicator import Indicator
+from gnat.orm.malware import Malware
+from gnat.orm.vulnerability import Vulnerability
 
 
 # ===========================================================================

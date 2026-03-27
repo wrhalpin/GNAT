@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.recordedfuture.v3
+gnat.connectors.recordedfuture.v3
 
 Recorded Future Connect API v3 client.
 
@@ -28,7 +28,7 @@ from **future** import annotations
 
 from typing import Any, Dict, List, Optional
 
-from ctm_sak.connectors.recordedfuture.base import RecordedFutureBase
+from gnat.connectors.recordedfuture.base import RecordedFutureBase
 
 class RecordedFutureClientV3(RecordedFutureBase):
 “”“Recorded Future Connect API v3 client.”””

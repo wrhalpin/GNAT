@@ -1,18 +1,18 @@
 """
-ctm_sak.async_client.base
+gnat.async_client.base
 ==========================
 
-``httpx``-based async counterpart to :class:`~ctm_sak.clients.base.BaseClient`.
+``httpx``-based async counterpart to :class:`~gnat.clients.base.BaseClient`.
 
 All connector clients that need async support should subclass
 :class:`AsyncBaseClient` instead of (or in addition to) the sync
-:class:`~ctm_sak.clients.base.BaseClient`.
+:class:`~gnat.clients.base.BaseClient`.
 
 Design
 ------
 * Drop-in async mirror: same method signatures as the sync client,
   but all HTTP methods are ``async def`` and must be ``await``-ed.
-* Shares the same :class:`~ctm_sak.clients.base.SAKClientError` exception.
+* Shares the same :class:`~gnat.clients.base.SAKClientError` exception.
 * Uses ``httpx.AsyncClient`` with a connection pool, retry middleware, and
   configurable timeouts.
 * ``authenticate()`` is also ``async def`` — suited for platforms whose
@@ -21,7 +21,7 @@ Design
 Usage::
 
     import asyncio
-    import ctm_sak.async_client as async_ctm
+    import gnat.async_client as async_ctm
 
     async def main():
         cli = async_ctm.AsyncSAKClient()
@@ -54,7 +54,7 @@ import logging
 from typing import Any, Dict, Optional
 from urllib.parse import urljoin, urlencode
 
-from ctm_sak.clients.base import SAKClientError
+from gnat.clients.base import SAKClientError
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class AsyncBaseClient:
 
     Notes
     -----
-    ``httpx`` must be installed: ``pip install "ctm-sak[async]"``
+    ``httpx`` must be installed: ``pip install "gnat[async]"``
 
     Attributes
     ----------
@@ -120,7 +120,7 @@ class AsyncBaseClient:
             import httpx
         except ImportError:
             raise ImportError(
-                "httpx is required for async support: pip install 'ctm-sak[async]'"
+                "httpx is required for async support: pip install 'gnat[async]'"
             )
         transport = httpx.AsyncHTTPTransport(retries=self.max_retries)
         self._http = httpx.AsyncClient(

@@ -1,9 +1,9 @@
 # “””
-ctm_sak.connectors.splunk.config
+gnat.connectors.splunk.config
 
 Configuration schema for the Splunk connector.
 
-Reads from the [splunk] section of ctm_sak.ini.
+Reads from the [splunk] section of gnat.ini.
 All fields have safe defaults; host/port/credentials are required at runtime.
 
 ## INI example
@@ -12,7 +12,7 @@ All fields have safe defaults; host/port/credentials are required at runtime.
 host            = splunk.corp.example.com
 port            = 8089
 scheme          = https
-username        = svc_ctm_sak
+username        = svc_gnat
 password        = s3cr3t                    ; omit if using token
 token           =                           ; pre-generated token (preferred)
 verify_ssl      = true
@@ -158,7 +158,7 @@ config: configparser.ConfigParser,
 section: str = “splunk”,
 ) -> SplunkConfig:
 “””
-Parse [splunk] section from a ctm_sak.ini ConfigParser instance.
+Parse [splunk] section from a gnat.ini ConfigParser instance.
 
 ```
 Parameters
@@ -179,7 +179,7 @@ SplunkConfigError
 """
 if not config.has_section(section):
     raise SplunkConfigError(
-        f"Configuration section '[{section}]' not found in ctm_sak.ini."
+        f"Configuration section '[{section}]' not found in gnat.ini."
     )
 
 raw = dict(_DEFAULTS)

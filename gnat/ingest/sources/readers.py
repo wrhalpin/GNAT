@@ -1,8 +1,8 @@
 """
-ctm_sak.ingest.sources.readers
+gnat.ingest.sources.readers
 ================================
 
-Concrete :class:`~ctm_sak.ingest.base.SourceReader` implementations for all
+Concrete :class:`~gnat.ingest.base.SourceReader` implementations for all
 supported source types.
 
 Available readers
@@ -53,7 +53,7 @@ from itertools import islice
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 
-from ctm_sak.ingest.base import RawRecord, SourceReader
+from gnat.ingest.base import RawRecord, SourceReader
 
 logger = logging.getLogger(__name__)
 
@@ -832,7 +832,7 @@ class RSSReader(SourceReader):
     url : str
         URL of the RSS/Atom feed.  May also be a local file path.
     http_client : BaseClient, optional
-        A configured :class:`~ctm_sak.clients.base.BaseClient` to use for
+        A configured :class:`~gnat.clients.base.BaseClient` to use for
         fetching.  If omitted ``feedparser`` fetches directly.
     max_entries : int, optional
         Maximum number of entries to yield.
@@ -1083,12 +1083,12 @@ class SplunkReader(SourceReader):
     Execute a Splunk SPL search and yield result rows.
 
     Uses the Splunk REST API (``/services/search/jobs``) directly via
-    :class:`~ctm_sak.clients.base.BaseClient` so no Splunk SDK is required.
+    :class:`~gnat.clients.base.BaseClient` so no Splunk SDK is required.
 
     Parameters
     ----------
     base_client : BaseClient
-        An authenticated :class:`~ctm_sak.clients.base.BaseClient` pointing
+        An authenticated :class:`~gnat.clients.base.BaseClient` pointing
         at the Splunk management port (usually ``https://splunk:8089``).
     search : str
         SPL search string (e.g. ``"search index=threat_intel | table src_ip type"``).
@@ -1101,7 +1101,7 @@ class SplunkReader(SourceReader):
 
     Examples
     --------
-    >>> from ctm_sak.clients.base import BaseClient
+    >>> from gnat.clients.base import BaseClient
     >>> class SplunkClient(BaseClient):
     ...     def authenticate(self):
     ...         self._auth_headers["Authorization"] = "Splunk my-token"
@@ -1164,7 +1164,7 @@ class ElasticReader(SourceReader):
     Parameters
     ----------
     base_client : BaseClient
-        An authenticated :class:`~ctm_sak.clients.base.BaseClient` pointing
+        An authenticated :class:`~gnat.clients.base.BaseClient` pointing
         at the Elasticsearch cluster (e.g. ``https://elastic:9200``).
     index : str
         Index or index pattern to search (e.g. ``"threat-intel-*"``).

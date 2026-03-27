@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.riskrecon.client
+gnat.connectors.riskrecon.client
 =====================================
 
 RiskRecon (Mastercard) Third-Party Risk Management connector.
@@ -47,8 +47,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class RiskReconClient(BaseClient, ConnectorMixin):
