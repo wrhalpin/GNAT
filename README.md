@@ -1,8 +1,8 @@
 # GNAT 🔪
 
-**Cybersecurity Threat Management Swiss Army Knife**
+**GNAT's Not Another TIP**
 
-A universal Python client and STIX 2.1-compatible ORM for interacting with security platforms. GNAT provides a uniform abstraction layer so you can write the same code regardless of which platform sits underneath.
+A universal CTM toolkit including Python client and STIX 2.1-compatible ORM for interacting with security platforms. GNAT provides a uniform abstraction layer so you can write the same code regardless of which platform sits underneath.
 
 ---
 
