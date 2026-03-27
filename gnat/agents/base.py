@@ -1,8 +1,8 @@
 """
-ctm_sak.agents.base
+gnat.agents.base
 ====================
 
-Shared foundations for the CTM-SAK AI agent layer:
+Shared foundations for the GNAT AI agent layer:
 
 * :class:`AgentConfig`   — loaded from ``[claude]`` / ``[copilot]`` INI sections
 * :class:`ResearchResult` — a single sourced document returned by the research agent
@@ -21,7 +21,7 @@ Claude::
     max_tokens = 4096
     timeout    = 120
 
-Copilot (for :class:`~ctm_sak.agents.copilot.CopilotReader`)::
+Copilot (for :class:`~gnat.agents.copilot.CopilotReader`)::
 
     [copilot]
     directline_secret = <bot-framework-secret>
@@ -84,7 +84,7 @@ class AgentConfig:
     @classmethod
     def from_ini(cls, config_path: Optional[str] = None) -> "AgentConfig":
         """
-        Load from the ``[claude]`` section of the CTM-SAK INI file.
+        Load from the ``[claude]`` section of the GNAT INI file.
 
         Parameters
         ----------
@@ -98,7 +98,7 @@ class AgentConfig:
         FileNotFoundError
             If no config file is found.
         """
-        from ctm_sak.config import SAKConfig
+        from gnat.config import SAKConfig
         cfg = SAKConfig(config_path)
         try:
             section = cfg.get("claude")
@@ -129,7 +129,7 @@ class AgentConfig:
 @dataclass
 class ResearchResult:
     """
-    A single document / synthesis returned by :class:`~ctm_sak.agents.research.ResearchAgent`.
+    A single document / synthesis returned by :class:`~gnat.agents.research.ResearchAgent`.
 
     In **topic-driven** mode this is one synthesized summary per topic.
     In **feed-driven** mode this is one record per source URL that
@@ -177,7 +177,7 @@ class ResearchResult:
 @dataclass
 class ParsedIntel:
     """
-    Structured threat intelligence extracted by :class:`~ctm_sak.agents.parsing.ParsingAgent`.
+    Structured threat intelligence extracted by :class:`~gnat.agents.parsing.ParsingAgent`.
 
     Attributes
     ----------

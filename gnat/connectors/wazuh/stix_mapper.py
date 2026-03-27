@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.stix_mapper
+gnat.connectors.wazuh.stix_mapper
 
 STIX 2.1 mapping layer for the Wazuh connector.
 
@@ -79,7 +79,7 @@ class WazuhSTIXMapper:
 Bidirectional mapper between Wazuh data structures and STIX 2.1 objects.
 
 ```
-Operates on plain Python dicts (from WazuhClient responses or CTM-SAK
+Operates on plain Python dicts (from WazuhClient responses or GNAT
 ORM .to_dict() output). Does not depend on external STIX libraries.
 
 Usage
@@ -449,7 +449,7 @@ def stix_indicator_to_wazuh_rule(
     indicator: dict,
     rule_id: int = 200000,
     rule_level: int = 10,
-    group: str = "ctm_sak_ioc",
+    group: str = "gnat_ioc",
 ) -> str:
     """
     Convert a STIX 2.1 indicator to a Wazuh custom rule XML snippet.
@@ -474,7 +474,7 @@ def stix_indicator_to_wazuh_rule(
     str
         Wazuh rule XML string.
     """
-    name = indicator.get("name", "CTM-SAK IOC")
+    name = indicator.get("name", "GNAT IOC")
     description = indicator.get("description", name)
     pattern = indicator.get("pattern", "")
     indicator_types = indicator.get("indicator_types", [])
@@ -500,7 +500,7 @@ def stix_indicator_to_wazuh_rule(
 
     if not value:
         return (
-            f"<!-- CTM-SAK: Could not extract observable value from pattern: {pattern} -->"
+            f"<!-- GNAT: Could not extract observable value from pattern: {pattern} -->"
         )
 
     return f"""<group name="{group}">
@@ -514,7 +514,7 @@ def stix_indicator_to_wazuh_rule(
 
   <rule id="{rule_id}" level="{rule_level}">
     <field name="{match_field}">{value}</field>
-    <description>CTM-SAK IOC Match: {description}</description>
+    <description>GNAT IOC Match: {description}</description>
     <group>{group},{",".join(indicator_types)}</group>
     <options>no_full_log</options>
   </rule>

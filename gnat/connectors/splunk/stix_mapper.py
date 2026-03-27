@@ -1,14 +1,14 @@
 # “””
-ctm_sak.connectors.splunk.stix_mapper
+gnat.connectors.splunk.stix_mapper
 
 STIX 2.1 ↔ Splunk field mapping layer.
 
-This module bridges CTM-SAK’s STIX 2.1 ORM objects and Splunk’s flat
+This module bridges GNAT’s STIX 2.1 ORM objects and Splunk’s flat
 KV store / threat intel field schemas.
 
 ## Direction A — STIX → Splunk (for threat intel ingestion)
 
-CTM-SAK STIX ORM objects are converted to Splunk KV store records
+GNAT STIX ORM objects are converted to Splunk KV store records
 suitable for direct upsert into Splunk ES threat intel collections.
 
 Supported STIX SDO/SCO types → Splunk collection:
@@ -36,7 +36,7 @@ NOT supported (Splunk limitation):
 ## Direction B — Splunk results → STIX (for data export from Splunk)
 
 Search result rows from Splunk’s notable / threat events are converted
-to STIX 2.1 Observed Data SCO bundles for downstream CTM-SAK processing.
+to STIX 2.1 Observed Data SCO bundles for downstream GNAT processing.
 
 Field mapping tables are based on Splunk’s CIM (Common Information Model)
 field names as they appear in search results.
@@ -64,23 +64,23 @@ from .exceptions import SplunkSTIXError
 
 _IP_FIELD_MAP: dict[str, str] = {
 “value”: “ip”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _DOMAIN_FIELD_MAP: dict[str, str] = {
 “value”: “domain”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _URL_FIELD_MAP: dict[str, str] = {
 “value”: “url”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _FILE_FIELD_MAP: dict[str, str] = {
@@ -88,32 +88,32 @@ _FILE_FIELD_MAP: dict[str, str] = {
 “hashes.MD5”: “md5”,
 “hashes.SHA-1”: “sha1”,
 “hashes.SHA-256”: “sha256”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _EMAIL_FIELD_MAP: dict[str, str] = {
 “value”: “src_user”,
 “display_name”: “user”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _PROCESS_FIELD_MAP: dict[str, str] = {
 “name”: “process”,
 “command_line”: “process_exec”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _REGISTRY_FIELD_MAP: dict[str, str] = {
 “key”: “registry_key_name”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _CERT_FIELD_MAP: dict[str, str] = {
@@ -121,17 +121,17 @@ _CERT_FIELD_MAP: dict[str, str] = {
 “serial_number”: “ssl_serial”,
 “subject”: “ssl_subject”,
 “issuer”: “ssl_issuer”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 _USER_FIELD_MAP: dict[str, str] = {
 “user_id”: “user”,
 “account_login”: “src_user”,
-“x_ctm_sak_description”: “description”,
-“x_ctm_sak_threat_type”: “threat_key”,
-“x_ctm_sak_weight”: “weight”,
+“x_gnat_description”: “description”,
+“x_gnat_threat_type”: “threat_key”,
+“x_gnat_weight”: “weight”,
 }
 
 # Map STIX SCO type → (collection_key, field_map)
@@ -154,9 +154,9 @@ class SplunkSTIXMapper:
 Bidirectional mapper between STIX 2.1 objects and Splunk KV store records.
 
 ```
-This class does NOT import the CTM-SAK STIX ORM directly to avoid
+This class does NOT import the GNAT STIX ORM directly to avoid
 circular imports. It operates on plain dicts that conform to the
-STIX 2.1 JSON representation, which is what the CTM-SAK ORM produces
+STIX 2.1 JSON representation, which is what the GNAT ORM produces
 via its ``.to_dict()`` / ``.serialize()`` methods.
 
 Usage
@@ -322,11 +322,11 @@ def splunk_notable_to_stix_bundle(self, notable: dict) -> dict:
         "last_observed": notable.get("timestamp") or now_ts,
         "number_observed": 1,
         "object_refs": refs,
-        "x_ctm_sak_source": "splunk_es",
-        "x_ctm_sak_rule_name": notable.get("rule_name"),
-        "x_ctm_sak_urgency": notable.get("urgency"),
-        "x_ctm_sak_severity": notable.get("severity"),
-        "x_ctm_sak_event_id": notable.get("event_id"),
+        "x_gnat_source": "splunk_es",
+        "x_gnat_rule_name": notable.get("rule_name"),
+        "x_gnat_urgency": notable.get("urgency"),
+        "x_gnat_severity": notable.get("severity"),
+        "x_gnat_event_id": notable.get("event_id"),
     }
     objects.append(observed)
 
@@ -466,8 +466,8 @@ def splunk_search_rows_to_stix_bundle(
                 "last_observed": lo,
                 "number_observed": 1,
                 "object_refs": refs,
-                "x_ctm_sak_source": "splunk_search",
-                "x_ctm_sak_raw": row,
+                "x_gnat_source": "splunk_search",
+                "x_gnat_raw": row,
             })
 
     return {
@@ -529,7 +529,7 @@ def _indicator_to_record(
         "_key": obj.get("id", str(uuid.uuid4())),
         "description": obj.get("description", obj.get("name", "")),
         "threat_key": ",".join(indicator_types) if indicator_types else "",
-        "weight": str(obj.get("x_ctm_sak_weight", default_weight)),
+        "weight": str(obj.get("x_gnat_weight", default_weight)),
         "stix_pattern": obj.get("pattern", ""),  # stored, not evaluated
         "stix_id": obj.get("id", ""),
         "valid_from": obj.get("valid_from", ""),
@@ -599,7 +599,7 @@ def _extract_observed_data_objects(obj: dict) -> list[dict]:
     """
     Extract referenced SCO objects from an observed-data SDO.
 
-    CTM-SAK's STIX ORM inlines the SCO dicts under ``object_refs``
+    GNAT's STIX ORM inlines the SCO dicts under ``object_refs``
     when serialized for transport. If the ORM uses ID references
     only, this returns an empty list (caller skips).
     """

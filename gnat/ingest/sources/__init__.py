@@ -1,5 +1,5 @@
-"""ctm_sak.ingest.sources — SourceReader implementations."""
-from ctm_sak.ingest.sources.readers import (
+"""gnat.ingest.sources — SourceReader implementations."""
+from gnat.ingest.sources.readers import (
     PlainTextReader,
     CSVReader,
     JSONReader,

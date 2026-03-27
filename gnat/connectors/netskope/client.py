@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.netskope.client
+gnat.connectors.netskope.client
 ====================================
 
 Netskope REST API v2 connector.
@@ -13,8 +13,8 @@ INI config::
 """
 
 from typing import Any, Dict, List, Optional
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class NetskopeClient(BaseClient, ConnectorMixin):

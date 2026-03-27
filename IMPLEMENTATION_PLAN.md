@@ -1,17 +1,17 @@
-# CTM-SAK Implementation and Architecture Plan
+# GNAT Implementation and Architecture Plan
 
-**CTM-SAK** — Cybersecurity Threat Management Swiss Army Knife  
+**GNAT** — Cybersecurity Threat Management Swiss Army Knife  
 Version 1.0.0 | Architecture as of March 2026
 
 ---
 
 ## Overview
 
-CTM-SAK is a universal Python client and STIX 2.1 ORM library providing a
+GNAT is a universal Python client and STIX 2.1 ORM library providing a
 single abstracted interface across multiple security platforms. It solves the
 platform proliferation problem: security teams typically maintain point-to-point
 integrations between every combination of tools, each with its own auth model,
-data format, and API quirks. CTM-SAK replaces that web of bespoke integrations
+data format, and API quirks. GNAT replaces that web of bespoke integrations
 with one library, one configuration file, and one operational model.
 
 ---
@@ -60,7 +60,7 @@ by changing one string in the config file.
 ## Package Structure
 
 ```
-ctm_sak/
+gnat/
 ├── orm/                    STIX 2.1 ORM (Indicator, ThreatActor, Vulnerability, ...)
 ├── clients/                BaseClient (urllib3), CLIENT_REGISTRY
 ├── connectors/             15 platform connectors
@@ -127,16 +127,16 @@ feeds, export pipelines, and daily reports without contention.
 **Three services:**
 
 ```
-Service 1: ctm-sak-scheduler.service
+Service 1: gnat-scheduler.service
   — FeedScheduler running all ingest, export, curation, and report jobs
   — Restarts automatically on failure (missed one run = acceptable)
 
-Service 2: ctm-sak-edl.service
+Service 2: gnat-edl.service
   — EDLServer on port 8080 (or behind nginx)
   — Reads pre-written files; completely independent of scheduler
   — Firewalls poll this; uptime matters more than scheduler uptime
 
-Service 3: ctm-sak-monitor.service (optional)
+Service 3: gnat-monitor.service (optional)
   — Lightweight HTTP endpoint returning scheduler.summary() as JSON
   — Azure Monitor or simple ping check hooks into this
 ```
@@ -160,19 +160,19 @@ isolation that actually matters.
 ### systemd service template
 
 ```ini
-# /etc/systemd/system/ctm-sak-scheduler.service
+# /etc/systemd/system/gnat-scheduler.service
 [Unit]
-Description=CTM-SAK Feed Scheduler
+Description=GNAT Feed Scheduler
 After=network.target
 
 [Service]
 Type=simple
 User=ctmsak
-WorkingDirectory=/opt/ctm-sak
-ExecStart=/opt/ctm-sak/venv/bin/python -m ctm_sak.scheduler_main
+WorkingDirectory=/opt/gnat
+ExecStart=/opt/gnat/venv/bin/python -m gnat.scheduler_main
 Restart=on-failure
 RestartSec=30
-Environment=CTM_SAK_CONFIG=/etc/ctm-sak/config.ini
+Environment=GNAT_CONFIG=/etc/gnat/config.ini
 
 [Install]
 WantedBy=multi-user.target
@@ -291,7 +291,7 @@ can be generated with `ai_mode=NONE` without any API dependency.
 
 ## Sector / Industry Normalization (PENDING)
 
-The canonical field for sector data across all CTM-SAK objects is
+The canonical field for sector data across all GNAT objects is
 `x_target_sectors` — a list of strings on any STIX object.
 
 **Status:** Placeholder in ThreatQ connector. Connector needs updating
@@ -330,7 +330,7 @@ pytest tests/unit/research/
 pytest tests/unit/reports/
 
 # Run with coverage
-pytest --cov=ctm_sak tests/
+pytest --cov=gnat tests/
 ```
 
 All tests use `unittest.mock` — no live API calls, no network required.
@@ -350,20 +350,20 @@ New connectors follow the pattern in `tests/unit/connectors/test_connectors.py`.
 ### Optional extras
 
 ```bash
-pip install "ctm-sak[async]"      # httpx — AsyncSAKClient
-pip install "ctm-sak[taxii]"      # taxii2-client — TAXIICollectionReader
-pip install "ctm-sak[persist]"    # sqlalchemy — WorkspaceStore (SQLite/PostgreSQL)
-pip install "ctm-sak[viz]"        # plotly, networkx, openpyxl — GraphView, TabularView
-pip install "ctm-sak[schedule]"   # croniter — cron expression scheduling
-pip install "ctm-sak[reports]"    # reportlab — PDF rendering
-pip install "ctm-sak[serve]"      # fastapi, uvicorn — GrafanaServer
+pip install "gnat[async]"      # httpx — AsyncSAKClient
+pip install "gnat[taxii]"      # taxii2-client — TAXIICollectionReader
+pip install "gnat[persist]"    # sqlalchemy — WorkspaceStore (SQLite/PostgreSQL)
+pip install "gnat[viz]"        # plotly, networkx, openpyxl — GraphView, TabularView
+pip install "gnat[schedule]"   # croniter — cron expression scheduling
+pip install "gnat[reports]"    # reportlab — PDF rendering
+pip install "gnat[serve]"      # fastapi, uvicorn — GrafanaServer
 npm install -g docx               # Node.js — DOCX report rendering
 ```
 
 ### Full install
 
 ```bash
-pip install "ctm-sak[async,taxii,persist,viz,schedule,reports,serve]"
+pip install "gnat[async,taxii,persist,viz,schedule,reports,serve]"
 npm install -g docx
 ```
 
@@ -374,8 +374,8 @@ npm install -g docx
 ### Near term
 - Complete ThreatQ sector normalization (see PENDING_ITEMS.md)
 - Add sector normalization to RF, CrowdStrike connectors
-- Move `SectorFilter` to `ctm_sak/export/filters.py`
-- CLI `ctm-sak report run` subcommand
+- Move `SectorFilter` to `gnat/export/filters.py`
+- CLI `gnat report run` subcommand
 - CHANGELOG.md update through v1.0.0
 
 ### Medium term
@@ -386,6 +386,6 @@ npm install -g docx
 - Multi-tenant workspace isolation for MSP deployments
 
 ### Long term
-- TAXII 2.1 server — expose CTM-SAK as a TAXII collection for downstream consumers
+- TAXII 2.1 server — expose GNAT as a TAXII collection for downstream consumers
 - STIX 2.1 validation against official spec
 - Analyst workflow UI (review AI-extracted intel before promotion)

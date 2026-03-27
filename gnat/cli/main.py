@@ -1,33 +1,33 @@
 """
-ctm_sak.cli.main
+gnat.cli.main
 =================
 
-CTM-SAK command-line interface.
+GNAT command-line interface.
 
-Entry point: ``ctm-sak`` (installed via ``pyproject.toml`` scripts).
+Entry point: ``gnat`` (installed via ``pyproject.toml`` scripts).
 
 Sub-commands
 ------------
 
 .. code-block:: text
 
-    ctm-sak ping      --target threatq
-    ctm-sak query     --target threatq --type indicator --id indicator--abc
-    ctm-sak list      --target crowdstrike --type indicator --limit 20
-    ctm-sak ingest    --target threatq --source iocs.txt --format plaintext
-    ctm-sak ingest    --target threatq --source feed.json --format stix-bundle
-    ctm-sak ingest    --target threatq --source export.csv --format csv
-    ctm-sak ingest    --target threatq --source events.json --format misp
-    ctm-sak codegen   --spec openapi.json --name myplatform --auth oauth2
-    ctm-sak config    --show
-    ctm-sak config    --validate
+    gnat ping      --target threatq
+    gnat query     --target threatq --type indicator --id indicator--abc
+    gnat list      --target crowdstrike --type indicator --limit 20
+    gnat ingest    --target threatq --source iocs.txt --format plaintext
+    gnat ingest    --target threatq --source feed.json --format stix-bundle
+    gnat ingest    --target threatq --source export.csv --format csv
+    gnat ingest    --target threatq --source events.json --format misp
+    gnat codegen   --spec openapi.json --name myplatform --auth oauth2
+    gnat config    --show
+    gnat config    --validate
 
 Global flags
 ------------
 
 .. code-block:: text
 
-    --config PATH      Path to config.ini  (default: ~/.ctm_sak/config.ini)
+    --config PATH      Path to config.ini  (default: ~/.gnat/config.ini)
     --output FORMAT    Output format: json | table | stix  (default: table)
     --quiet            Suppress informational output
     --no-color         Disable ANSI color output
@@ -44,7 +44,7 @@ import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger("ctm_sak.cli")
+logger = logging.getLogger("gnat.cli")
 
 
 # ── ANSI color helpers ─────────────────────────────────────────────────────
@@ -95,24 +95,24 @@ def _print_stix(obj: Any) -> None:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="ctm-sak",
-        description=_bold("CTM-SAK — Cybersecurity Threat Management Swiss Army Knife"),
+        prog="gnat",
+        description=_bold("GNAT — Cybersecurity Threat Management Swiss Army Knife"),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""\
             Examples:
-              ctm-sak ping   --target threatq
-              ctm-sak query  --target crowdstrike --type indicator --id indicator--abc
-              ctm-sak list   --target xsoar --type indicator --limit 50
-              ctm-sak ingest --target threatq --source iocs.txt --format plaintext
-              ctm-sak ingest --target threatq --source bundle.json --format stix-bundle
-              ctm-sak codegen --spec openapi.json --name myplatform --auth oauth2
-              ctm-sak config --validate
+              gnat ping   --target threatq
+              gnat query  --target crowdstrike --type indicator --id indicator--abc
+              gnat list   --target xsoar --type indicator --limit 50
+              gnat ingest --target threatq --source iocs.txt --format plaintext
+              gnat ingest --target threatq --source bundle.json --format stix-bundle
+              gnat codegen --spec openapi.json --name myplatform --auth oauth2
+              gnat config --validate
         """),
     )
 
     # Global flags
     parser.add_argument("--config",   metavar="PATH",
-                        help="Path to config.ini (default: ~/.ctm_sak/config.ini)")
+                        help="Path to config.ini (default: ~/.gnat/config.ini)")
     parser.add_argument("--output",   choices=["json", "table", "stix"],
                         default="table", help="Output format (default: table)")
     parser.add_argument("--quiet",    action="store_true",
@@ -182,7 +182,7 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="Connector name (snake_case)")
     p_cg.add_argument("--auth",     default="oauth2",
                       choices=["oauth2", "api_key", "basic"])
-    p_cg.add_argument("--out-dir",  default="./ctm_sak/connectors",
+    p_cg.add_argument("--out-dir",  default="./gnat/connectors",
                       metavar="DIR")
     p_cg.add_argument("--test-dir", default="./tests/unit/connectors",
                       metavar="DIR")
@@ -214,7 +214,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_vd = viz_subs.add_parser("dashboard", help="Export Grafana dashboard JSON")
     p_vd.add_argument("--workspace", required=True, metavar="NAME")
     p_vd.add_argument("--file",      default="dashboard.json")
-    p_vd.add_argument("--datasource", default="CTM-SAK")
+    p_vd.add_argument("--datasource", default="GNAT")
 
     p_vpb = viz_subs.add_parser("powerbi", help="Export workspace to Power BI Excel")
     p_vpb.add_argument("--workspace", required=True, metavar="NAME")
@@ -250,7 +250,7 @@ def _build_parser() -> argparse.ArgumentParser:
 # ── Command handlers ───────────────────────────────────────────────────────
 
 def _cmd_ping(args: argparse.Namespace) -> int:
-    from ctm_sak.client import SAKClient
+    from gnat.client import SAKClient
     _info(args, f"Pinging {_bold(args.target)} …")
     try:
         cli = SAKClient(config_path=args.config)
@@ -268,7 +268,7 @@ def _cmd_ping(args: argparse.Namespace) -> int:
 
 
 def _cmd_query(args: argparse.Namespace) -> int:
-    from ctm_sak.client import SAKClient
+    from gnat.client import SAKClient
     _info(args, f"Querying {_bold(args.target)} for {args.type} {_dim(args.id)} …")
     try:
         cli = SAKClient(config_path=args.config)
@@ -283,7 +283,7 @@ def _cmd_query(args: argparse.Namespace) -> int:
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
-    from ctm_sak.client import SAKClient
+    from gnat.client import SAKClient
     _info(args, f"Listing {args.type} from {_bold(args.target)} …")
     try:
         cli = SAKClient(config_path=args.config)
@@ -313,13 +313,13 @@ def _cmd_list(args: argparse.Namespace) -> int:
 
 
 def _cmd_ingest(args: argparse.Namespace) -> int:
-    from ctm_sak.client import SAKClient
-    from ctm_sak.ingest import IngestPipeline
-    from ctm_sak.ingest.sources import (
+    from gnat.client import SAKClient
+    from gnat.ingest import IngestPipeline
+    from gnat.ingest.sources import (
         PlainTextReader, CSVReader, JSONReader, JSONLReader,
         STIXBundleReader, MISPReader,
     )
-    from ctm_sak.ingest.mappers import (
+    from gnat.ingest.mappers import (
         FlatIOCMapper, CSVIndicatorMapper, STIXPassthroughMapper,
         MISPAttributeMapper, NVDCVEMapper,
     )
@@ -404,7 +404,7 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
 
 
 def _cmd_codegen(args: argparse.Namespace) -> int:
-    from ctm_sak.codegen.openapi_generator import generate_connector
+    from gnat.codegen.openapi_generator import generate_connector
     _info(args, f"Generating connector {_bold(args.name)} from {_dim(args.spec)} …")
     try:
         generate_connector(
@@ -422,7 +422,7 @@ def _cmd_codegen(args: argparse.Namespace) -> int:
 
 
 def _cmd_config(args: argparse.Namespace) -> int:
-    from ctm_sak.config import SAKConfig
+    from gnat.config import SAKConfig
 
     _REQUIRED_KEYS = {
         "threatq":       {"host", "client_id", "client_secret"},
@@ -435,7 +435,7 @@ def _cmd_config(args: argparse.Namespace) -> int:
     _SECRET_KEYS = {"client_secret", "secret", "api_key", "api_token", "password"}
 
     if args.init:
-        default_path = Path.home() / ".ctm_sak" / "config.ini"
+        default_path = Path.home() / ".gnat" / "config.ini"
         default_path.parent.mkdir(parents=True, exist_ok=True)
         example = Path(__file__).parent.parent.parent / "config" / "config.ini.example"
         if example.exists():
@@ -452,7 +452,7 @@ def _cmd_config(args: argparse.Namespace) -> int:
         cfg = SAKConfig(args.config)
     except FileNotFoundError as exc:
         print(_red(f"Config not found: {exc}"))
-        print(_dim("  Run: ctm-sak config --init"))
+        print(_dim("  Run: gnat config --init"))
         return 1
 
     if args.show:
@@ -508,8 +508,8 @@ def _output(args: argparse.Namespace, data: Any) -> None:
 # ── Entry point ────────────────────────────────────────────────────────────
 
 def _cmd_viz(args: argparse.Namespace) -> int:
-    from ctm_sak.context import WorkspaceManager
-    from ctm_sak.viz import TabularView, GraphView, PowerBIExporter, save_grafana_dashboard
+    from gnat.context import WorkspaceManager
+    from gnat.viz import TabularView, GraphView, PowerBIExporter, save_grafana_dashboard
 
     viz_cmd = getattr(args, "viz_command", None)
 
@@ -541,7 +541,7 @@ def _cmd_viz(args: argparse.Namespace) -> int:
             ws = manager.open(args.workspace)
         except KeyError as e:
             print(_red(str(e))); return 1
-        from ctm_sak.viz import GraphView
+        from gnat.viz import GraphView
         gv = GraphView(ws)
         if args.file:
             gv.to_html(args.file, stix_types=args.types)
@@ -552,8 +552,8 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         return 0
 
     if viz_cmd == "serve":
-        from ctm_sak.context import WorkspaceManager
-        from ctm_sak.viz.grafana.server import GrafanaServer
+        from gnat.context import WorkspaceManager
+        from gnat.viz.grafana.server import GrafanaServer
         manager = WorkspaceManager.default(config_path=args.config)
         server  = GrafanaServer(manager, host=args.host, port=args.port)
         print(_green(f"✓  Grafana datasource: {server.url()}"))
@@ -582,7 +582,7 @@ def _cmd_viz(args: argparse.Namespace) -> int:
 
 def _cmd_schedule(args) -> int:
     """schedule subcommand — list, run, crontab."""
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.schedule import FeedScheduler
     # Scheduler must be defined in the user's project; here we show a stub
     # that reads job definitions from a Python module specified in config.
     schedule_cmd = getattr(args, "schedule_command", None)

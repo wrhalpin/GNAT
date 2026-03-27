@@ -1,5 +1,5 @@
 """
-ctm_sak.viz.export
+gnat.viz.export
 ===================
 
 Exports workspace data to external BI tools without requiring live API
@@ -8,17 +8,17 @@ connections.
 Power BI
 --------
 Produces multi-sheet ``.xlsx`` files (via the existing
-:meth:`~ctm_sak.viz.tabular.TabularView.to_excel` method) with a column
+:meth:`~gnat.viz.tabular.TabularView.to_excel` method) with a column
 structure designed for direct import into Power BI Desktop as a data source.
 Also exports a Relationships table so Power BI can build relationship diagrams
 in its own graph visual.
 
 Grafana Dashboard JSON
 -----------------------
-Pre-built panel configurations for the most common CTM-SAK use cases:
+Pre-built panel configurations for the most common GNAT use cases:
 indicator risk heatmap, vulnerability CVSS timeline, enrichment activity,
 type breakdown bar chart.  Copy the JSON into Grafana's dashboard import
-dialog and point it at a running :class:`~ctm_sak.viz.grafana.server.GrafanaServer`.
+dialog and point it at a running :class:`~gnat.viz.grafana.server.GrafanaServer`.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import Workspace
+    from gnat.context.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class PowerBIExporter:
     ::
 
         exporter = PowerBIExporter(workspace)
-        exporter.to_xlsx("ctm_sak_workspace.xlsx")
+        exporter.to_xlsx("gnat_workspace.xlsx")
         exporter.to_model_json("model.json")
     """
 
@@ -78,7 +78,7 @@ class PowerBIExporter:
 
         Requires ``openpyxl``.
         """
-        from ctm_sak.viz.tabular import TabularView, _COLUMNS, _get_field, _coerce
+        from gnat.viz.tabular import TabularView, _COLUMNS, _get_field, _coerce
 
         try:
             import openpyxl
@@ -86,7 +86,7 @@ class PowerBIExporter:
             from openpyxl.utils import get_column_letter
         except ImportError:
             raise ImportError(
-                "openpyxl is required for Power BI export: pip install 'ctm-sak[viz]'"
+                "openpyxl is required for Power BI export: pip install 'gnat[viz]'"
             )
 
         wb = openpyxl.Workbook()
@@ -168,7 +168,7 @@ class PowerBIExporter:
         # ── Summary sheet ──────────────────────────────────────────────────
         from datetime import datetime, timezone
         summary_ws = wb.create_sheet("Summary")
-        summary_ws["A1"] = "CTM-SAK Workspace Export"
+        summary_ws["A1"] = "GNAT Workspace Export"
         summary_ws["A1"].font = Font(bold=True, size=14)
         summary_data = [
             ("Workspace",    self._ws.name),
@@ -199,7 +199,7 @@ class PowerBIExporter:
         dict
             Model descriptor.  If *path* is provided, also writes to disk.
         """
-        from ctm_sak.viz.tabular import _COLUMNS
+        from gnat.viz.tabular import _COLUMNS
 
         by_type: Dict[str, list] = {}
         for obj in self._ws.objects.values():
@@ -240,7 +240,7 @@ class PowerBIExporter:
         })
 
         model = {
-            "name":   f"CTM-SAK_{self._ws.name}",
+            "name":   f"GNAT_{self._ws.name}",
             "tables": tables,
             "relationships": [
                 {
@@ -266,11 +266,11 @@ class PowerBIExporter:
 
 def grafana_dashboard(
     workspace_name: str,
-    datasource_name: str = "CTM-SAK",
+    datasource_name: str = "GNAT",
     title: Optional[str] = None,
 ) -> dict:
     """
-    Generate a pre-built Grafana dashboard JSON for a CTM-SAK workspace.
+    Generate a pre-built Grafana dashboard JSON for a GNAT workspace.
 
     Includes panels for:
 
@@ -288,7 +288,7 @@ def grafana_dashboard(
     datasource_name : str
         The Grafana datasource name for the SimpleJSON source.
     title : str, optional
-        Dashboard title.  Defaults to ``"CTM-SAK: <workspace_name>"``.
+        Dashboard title.  Defaults to ``"GNAT: <workspace_name>"``.
 
     Returns
     -------
@@ -304,7 +304,7 @@ def grafana_dashboard(
             json.dump(dashboard, f, indent=2)
     """
     ds = {"type": "simplejson", "uid": datasource_name}
-    title = title or f"CTM-SAK: {workspace_name}"
+    title = title or f"GNAT: {workspace_name}"
 
     def _target(target_str, ref_id="A"):
         return {"target": target_str, "refId": ref_id, "type": "timeserie"}
@@ -417,8 +417,8 @@ def grafana_dashboard(
         "__inputs": [
             {
                 "name":        datasource_name,
-                "label":       "CTM-SAK Datasource",
-                "description": "SimpleJSON datasource pointing at ctm-sak viz serve",
+                "label":       "GNAT Datasource",
+                "description": "SimpleJSON datasource pointing at gnat viz serve",
                 "type":        "datasource",
                 "pluginId":    "simplejson",
                 "pluginName":  "SimpleJSON",
@@ -442,14 +442,14 @@ def grafana_dashboard(
         "refresh":       "30s",
         "time":          {"from": "now-30d", "to": "now"},
         "panels":        panels,
-        "tags":          ["ctm-sak", "threat-intelligence", workspace_name],
+        "tags":          ["gnat", "threat-intelligence", workspace_name],
     }
 
 
 def save_grafana_dashboard(
     workspace_name: str,
     path: str,
-    datasource_name: str = "CTM-SAK",
+    datasource_name: str = "GNAT",
     title: Optional[str] = None,
 ) -> None:
     """

@@ -1,5 +1,5 @@
 """
-ctm_sak.research.library
+gnat.research.library
 =========================
 
 :class:`ResearchLibrary` — the three-tier shared research knowledge base.
@@ -26,8 +26,8 @@ Tiers
 Access model
 ------------
 All analyst interaction with the library goes through :class:`ResearchLibrary`
-methods — never directly through :class:`~ctm_sak.context.workspace.Workspace`
-or :class:`~ctm_sak.context.workspace.WorkspaceManager`.  This keeps the
+methods — never directly through :class:`~gnat.context.workspace.Workspace`
+or :class:`~gnat.context.workspace.WorkspaceManager`.  This keeps the
 read-only guard, audit trail, and freshness logic centralised.
 
 INI configuration
@@ -48,7 +48,7 @@ Usage
 -----
 ::
 
-    from ctm_sak.research import ResearchLibrary
+    from gnat.research import ResearchLibrary
 
     lib = ResearchLibrary.default()
 
@@ -81,13 +81,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from ctm_sak.research.entry import (
+from gnat.research.entry import (
     ResearchEntry, DEFAULT_TTLS, categorise_topic, topic_key, topic_fingerprint,
 )
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import Workspace, WorkspaceManager
-    from ctm_sak.orm.base import STIXBase
+    from gnat.context.workspace import Workspace, WorkspaceManager
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class ResearchLibrary:
         db_url : str, optional
             SQLAlchemy URL for the workspace store.  Defaults to SQLite.
         """
-        from ctm_sak.context.workspace import WorkspaceManager
+        from gnat.context.workspace import WorkspaceManager
         manager = WorkspaceManager.default(config_path=config_path, db_url=db_url)
         ttls = cls._load_ttls(config_path)
         staging, library = cls._load_names(config_path)
@@ -205,7 +205,7 @@ class ResearchLibrary:
         Promote research from a personal workspace into staging.
 
         Extracts STIX objects from the workspace (all, or the specified
-        subset), wraps them in a :class:`~ctm_sak.research.entry.ResearchEntry`,
+        subset), wraps them in a :class:`~gnat.research.entry.ResearchEntry`,
         and writes the entry to the staging workspace.
 
         Parameters
@@ -458,7 +458,7 @@ class ResearchLibrary:
                 "Run research first or check lib.search() for similar topics."
             )
 
-        from ctm_sak.context.workspace import Workspace as _WS
+        from gnat.context.workspace import Workspace as _WS
         count = 0
         for stix_dict in entry.stix_objects:
             workspace._add_object(stix_dict, mark_dirty=mark_dirty)
@@ -542,11 +542,11 @@ class ResearchLibrary:
         """Create staging and library workspaces if they don't exist."""
         self._manager.get_or_create(
             self._staging_name,
-            description="CTM-SAK shared research staging area",
+            description="GNAT shared research staging area",
         )
         self._manager.get_or_create(
             self._library_name,
-            description="CTM-SAK curated research library (managed — do not edit directly)",
+            description="GNAT curated research library (managed — do not edit directly)",
         )
 
     def _entry_store_key(self, entry: ResearchEntry) -> str:
@@ -564,7 +564,7 @@ class ResearchLibrary:
         ws = self._manager.open(workspace_name)
         store = self._manager._store
 
-        from ctm_sak.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore, FlatFileStore
 
         if isinstance(store, WorkspaceStore):
             ws_model = store.get_workspace(workspace_name)
@@ -602,7 +602,7 @@ class ResearchLibrary:
         """Load all ResearchEntry objects from a workspace's store."""
         store = self._manager._store
 
-        from ctm_sak.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore, FlatFileStore
 
         raw_entries: List[Dict[str, Any]] = []
 

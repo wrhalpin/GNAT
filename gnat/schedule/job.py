@@ -1,18 +1,18 @@
 """
-ctm_sak.schedule.job
+gnat.schedule.job
 =====================
 
 :class:`FeedJob` — declarative specification of a scheduled ingest run.
 
 A ``FeedJob`` binds together:
 
-* **What to read** — a :class:`~ctm_sak.ingest.base.SourceReader` factory
+* **What to read** — a :class:`~gnat.ingest.base.SourceReader` factory
   (called fresh each run so the reader can carry per-run state like
   ``newer_than`` derived from the previous run's timestamp).
-* **How to map** — a :class:`~ctm_sak.ingest.base.RecordMapper` factory.
-* **Where to write** — an optional :class:`~ctm_sak.client.SAKClient`.
+* **How to map** — a :class:`~gnat.ingest.base.RecordMapper` factory.
+* **Where to write** — an optional :class:`~gnat.client.SAKClient`.
 * **When to run** — interval in seconds, or a cron expression.
-* **Run history** — a rolling log of :class:`~ctm_sak.ingest.base.IngestResult`
+* **Run history** — a rolling log of :class:`~gnat.ingest.base.IngestResult`
   objects from past runs, used for health monitoring and backfill.
 
 The reader factory pattern is central to correct incremental ingestion.
@@ -54,8 +54,8 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.ingest.base import SourceReader, RecordMapper, IngestResult
-    from ctm_sak.client import SAKClient
+    from gnat.ingest.base import SourceReader, RecordMapper, IngestResult
+    from gnat.client import SAKClient
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class JobRunContext:
         Same as ``last_success_at`` but as an ISO 8601 string, convenient
         for passing to ``added_after`` / ``newer_than`` parameters.
     last_result : IngestResult or None
-        The :class:`~ctm_sak.ingest.base.IngestResult` from the most recent
+        The :class:`~gnat.ingest.base.IngestResult` from the most recent
         run (successful or not), or ``None`` on the first run.
     custom : dict
         Arbitrary key/value store for job-specific state that reader
@@ -177,7 +177,7 @@ class FeedJob:
         Run every N seconds.  Mutually exclusive with ``cron``.
     cron : str, optional
         Cron expression (``"*/15 * * * *"`` = every 15 minutes).
-        Requires ``croniter``: ``pip install "ctm-sak[schedule]"``.
+        Requires ``croniter``: ``pip install "gnat[schedule]"``.
         Mutually exclusive with ``interval_seconds``.
     client : SAKClient, optional
         Connected platform client to write results to.  If omitted, results
@@ -216,7 +216,7 @@ class FeedJob:
     --------
     Incremental TAXII feed::
 
-        from ctm_sak.schedule import FeedJob, FeedScheduler
+        from gnat.schedule import FeedJob, FeedScheduler
 
         def make_taxii_reader(ctx):
             return TAXIICollectionReader(
@@ -325,7 +325,7 @@ class FeedJob:
         RunRecord
             Record of this run's outcome.
         """
-        from ctm_sak.ingest import IngestPipeline
+        from gnat.ingest import IngestPipeline
 
         if not self.enabled:
             logger.debug("FeedJob %r: skipped (disabled)", self.job_id)

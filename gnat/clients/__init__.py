@@ -1,30 +1,30 @@
 """
-ctm_sak.clients
+gnat.clients
 ===============
 
 HTTP client implementations for each supported security platform.
 
-All clients inherit from :class:`~ctm_sak.clients.base.BaseClient` and are
+All clients inherit from :class:`~gnat.clients.base.BaseClient` and are
 registered in the :data:`CLIENT_REGISTRY` dict so that
-:class:`~ctm_sak.client.SAKClient` can resolve them by name.
+:class:`~gnat.client.SAKClient` can resolve them by name.
 """
 
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.threatq.client import ThreatQClient
-from ctm_sak.connectors.proofpoint.client import ProofpointClient
-from ctm_sak.connectors.netskope.client import NetskopeClient
-from ctm_sak.connectors.crowdstrike.client import CrowdStrikeClient
-from ctm_sak.connectors.xsoar.client import XSOARClient
-from ctm_sak.connectors.recordedfuture.client import RecordedFutureClient
-from ctm_sak.connectors.greymatter.client import GreyMatterClient
-from ctm_sak.connectors.whistic.client import WhisticClient
-from ctm_sak.connectors.riskrecon.client import RiskReconClient
-from ctm_sak.connectors.feedly.client import FeedlyClient
-from ctm_sak.connectors.splunk.client import SplunkClient
-from ctm_sak.connectors.virustotal.client import VirusTotalClient
-from ctm_sak.connectors.shadowserver.client import ShadowServerClient
-from ctm_sak.connectors.rapid7.client import Rapid7Client
-from ctm_sak.connectors.nucleus.client import NucleusClient
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.threatq.client import ThreatQClient
+from gnat.connectors.proofpoint.client import ProofpointClient
+from gnat.connectors.netskope.client import NetskopeClient
+from gnat.connectors.crowdstrike.client import CrowdStrikeClient
+from gnat.connectors.xsoar.client import XSOARClient
+from gnat.connectors.recordedfuture.client import RecordedFutureClient
+from gnat.connectors.greymatter.client import GreyMatterClient
+from gnat.connectors.whistic.client import WhisticClient
+from gnat.connectors.riskrecon.client import RiskReconClient
+from gnat.connectors.feedly.client import FeedlyClient
+from gnat.connectors.splunk.client import SplunkClient
+from gnat.connectors.virustotal.client import VirusTotalClient
+from gnat.connectors.shadowserver.client import ShadowServerClient
+from gnat.connectors.rapid7.client import Rapid7Client
+from gnat.connectors.nucleus.client import NucleusClient
 
 CLIENT_REGISTRY: dict = {
     "threatq": ThreatQClient,

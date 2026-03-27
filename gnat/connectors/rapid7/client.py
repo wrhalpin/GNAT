@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.rapid7.client
+gnat.connectors.rapid7.client
 ==================================
 
 Rapid7 connector — InsightVM (vulnerability management) and
@@ -35,8 +35,8 @@ https://docs.rapid7.com/threat-command/
 """
 
 from typing import Any, Dict, List, Optional
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class Rapid7Client(BaseClient, ConnectorMixin):
@@ -102,7 +102,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
                       payload: Dict[str, Any]) -> Dict[str, Any]:
         if self._product == "insightvm":
             raise SAKClientError(
-                "InsightVM is read-only via CTM-SAK. "
+                "InsightVM is read-only via GNAT. "
                 "Use the InsightVM console for remediation tracking."
             )
         # Threat Command supports IOC submissions

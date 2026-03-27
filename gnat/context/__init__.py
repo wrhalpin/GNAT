@@ -1,13 +1,13 @@
 """
-ctm_sak.context
+gnat.context
 ===============
 
-Global/local context system for CTM-SAK analyst workspaces.
+Global/local context system for GNAT analyst workspaces.
 
 Quick start::
 
-    from ctm_sak import SAKClient
-    from ctm_sak.context import WorkspaceManager, GlobalContextRegistry
+    from gnat import SAKClient
+    from gnat.context import WorkspaceManager, GlobalContextRegistry
 
     # Build registry from connected clients
     tq = SAKClient().connect("threatq")
@@ -30,16 +30,16 @@ Quick start::
     print(result)
 """
 
-from ctm_sak.context.global_context import GlobalContext, GlobalContextRegistry
-from ctm_sak.context.workspace import (
+from gnat.context.global_context import GlobalContext, GlobalContextRegistry
+from gnat.context.workspace import (
     Workspace,
     WorkspaceManager,
     CommitResult,
 )
-from ctm_sak.context.store import FlatFileStore
+from gnat.context.store import FlatFileStore
 
 try:
-    from ctm_sak.context.store import WorkspaceStore
+    from gnat.context.store import WorkspaceStore
     _HAS_SQLALCHEMY = True
 except Exception:
     _HAS_SQLALCHEMY = False

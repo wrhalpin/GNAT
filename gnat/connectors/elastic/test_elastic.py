@@ -1,7 +1,7 @@
 # “””
 tests/connectors/test_elastic.py
 
-Unit tests for the CTM-SAK Elastic Security connector.
+Unit tests for the GNAT Elastic Security connector.
 
 All HTTP is mocked via unittest.mock on urllib3.PoolManager.
 No live Elasticsearch or Kibana instance required.
@@ -32,8 +32,8 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch, call
 
-from ctm_sak.connectors.elastic.config import ElasticConfig, load_elastic_config
-from ctm_sak.connectors.elastic.exceptions import (
+from gnat.connectors.elastic.config import ElasticConfig, load_elastic_config
+from gnat.connectors.elastic.exceptions import (
 ElasticAuthError,
 ElasticAPIError,
 ElasticConfigError,
@@ -45,14 +45,14 @@ ElasticNotFoundError,
 ElasticRateLimitError,
 ElasticSTIXError,
 )
-from ctm_sak.connectors.elastic.auth import ElasticAuthManager
-from ctm_sak.connectors.elastic.client import ElasticClient
-from ctm_sak.connectors.elastic.es_search import ElasticSearchCommands
-from ctm_sak.connectors.elastic.kibana_rules import KibanaRulesCommands
-from ctm_sak.connectors.elastic.kibana_alerts import KibanaAlertsCommands
-from ctm_sak.connectors.elastic.kibana_cases import KibanaCasesCommands
-from ctm_sak.connectors.elastic.threat_intel import ElasticThreatIntelCommands
-from ctm_sak.connectors.elastic.stix_mapper import ElasticSTIXMapper
+from gnat.connectors.elastic.auth import ElasticAuthManager
+from gnat.connectors.elastic.client import ElasticClient
+from gnat.connectors.elastic.es_search import ElasticSearchCommands
+from gnat.connectors.elastic.kibana_rules import KibanaRulesCommands
+from gnat.connectors.elastic.kibana_alerts import KibanaAlertsCommands
+from gnat.connectors.elastic.kibana_cases import KibanaCasesCommands
+from gnat.connectors.elastic.threat_intel import ElasticThreatIntelCommands
+from gnat.connectors.elastic.stix_mapper import ElasticSTIXMapper
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ return {
 
 def _make_client(config: ElasticConfig | None = None) -> tuple[ElasticClient, MagicMock]:
 cfg = config or _make_config()
-with patch(“ctm_sak.connectors.elastic.client.urllib3.PoolManager”) as pm_cls:
+with patch(“gnat.connectors.elastic.client.urllib3.PoolManager”) as pm_cls:
 mock_pm = MagicMock()
 pm_cls.return_value = mock_pm
 client = ElasticClient(cfg)
@@ -335,7 +335,7 @@ def test_kibana_400_raises_validation_error(self):
 
 def test_context_manager(self):
     cfg = _make_config()
-    with patch("ctm_sak.connectors.elastic.client.urllib3.PoolManager"):
+    with patch("gnat.connectors.elastic.client.urllib3.PoolManager"):
         with ElasticClient(cfg) as client:
             self.assertIsInstance(client, ElasticClient)
 
@@ -981,7 +981,7 @@ class TestElasticExceptions(unittest.TestCase):
 
 ```
 def test_all_inherit_from_base(self):
-    from ctm_sak.connectors.elastic.exceptions import ElasticError
+    from gnat.connectors.elastic.exceptions import ElasticError
     for exc_cls in [
         ElasticConfigError, ElasticAuthError, ElasticAPIError,
         ElasticNotFoundError, ElasticConflictError, ElasticRateLimitError,

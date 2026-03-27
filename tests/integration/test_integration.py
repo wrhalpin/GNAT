@@ -2,13 +2,13 @@
 tests/integration/test_integration.py
 =======================================
 
-Integration tests for CTM-SAK — these tests issue REAL HTTP requests and
-require live credentials in a ``ctm_sak_integration.ini`` file or the
-``CTM_SAK_CONFIG`` environment variable.
+Integration tests for GNAT — these tests issue REAL HTTP requests and
+require live credentials in a ``gnat_integration.ini`` file or the
+``GNAT_CONFIG`` environment variable.
 
 Run with::
 
-    CTM_SAK_CONFIG=/path/to/real.ini pytest tests/integration/ -v -m integration
+    GNAT_CONFIG=/path/to/real.ini pytest tests/integration/ -v -m integration
 
 All tests are marked ``@pytest.mark.integration`` and skipped by default in
 CI unless the ``--run-integration`` flag is passed.
@@ -25,8 +25,8 @@ Prerequisites (per target):
 import os
 import pytest
 
-from ctm_sak.client import SAKClient
-from ctm_sak.orm.indicator import Indicator
+from gnat.client import SAKClient
+from gnat.orm.indicator import Indicator
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +61,7 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope="module")
 def cli():
     """Return a SAKClient using the real integration config."""
-    config_path = os.environ.get("CTM_SAK_CONFIG")
+    config_path = os.environ.get("GNAT_CONFIG")
     return SAKClient(config_path=config_path)
 
 
@@ -85,7 +85,7 @@ class TestThreatQIntegration:
         cli.connect("threatq")
         ind = Indicator(
             client=cli,
-            name="ctm-sak-integration-test",
+            name="gnat-integration-test",
             pattern="[ipv4-addr:value = '198.51.100.1']",
             indicator_types=["malicious-activity"],
         )

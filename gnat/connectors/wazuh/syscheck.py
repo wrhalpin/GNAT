@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.syscheck
+gnat.connectors.wazuh.syscheck
 
 File Integrity Monitoring (FIM / syscheck) commands.
 
@@ -217,7 +217,7 @@ def clear_syscheck_database(self, agent_id: str) -> dict:
 @staticmethod
 def normalise_fim_event(event: dict) -> dict:
     """
-    Flatten a Wazuh syscheck event to CTM-SAK normalised format.
+    Flatten a Wazuh syscheck event to GNAT normalised format.
 
     Designed to map cleanly to a STIX 2.1 file SCO via WazuhSTIXMapper.
 

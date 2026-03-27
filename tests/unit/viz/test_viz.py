@@ -2,7 +2,7 @@
 tests/unit/viz/test_viz.py
 ===========================
 
-Unit tests for ctm_sak.viz — tabular, graph, export, Grafana server.
+Unit tests for gnat.viz — tabular, graph, export, Grafana server.
 
 No real network calls, no Plotly rendering, no file system side-effects
 beyond tmp_path fixtures.  All external deps (plotly, networkx, openpyxl,
@@ -19,14 +19,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ctm_sak.context import FlatFileStore, GlobalContext, GlobalContextRegistry, Workspace
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.malware import Malware
-from ctm_sak.orm.vulnerability import Vulnerability
-from ctm_sak.orm.relationship import Relationship
-from ctm_sak.viz.tabular import TabularView, _coerce, _get_field, _to_rows
-from ctm_sak.viz.graph import GraphView
-from ctm_sak.viz.export import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
+from gnat.context import FlatFileStore, GlobalContext, GlobalContextRegistry, Workspace
+from gnat.orm.indicator import Indicator
+from gnat.orm.malware import Malware
+from gnat.orm.vulnerability import Vulnerability
+from gnat.orm.relationship import Relationship
+from gnat.viz.tabular import TabularView, _coerce, _get_field, _to_rows
+from gnat.viz.graph import GraphView
+from gnat.viz.export import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
 
 
 # ===========================================================================
@@ -165,7 +165,7 @@ class TestTabularView:
         ws   = _populated_workspace(tmp_path)
         view = TabularView(ws)
         # Patch rich to force plain fallback
-        with patch("ctm_sak.viz.tabular.TabularView._show_rich",
+        with patch("gnat.viz.tabular.TabularView._show_rich",
                    side_effect=ImportError("no rich")):
             view.show()
         captured = capsys.readouterr()
@@ -174,7 +174,7 @@ class TestTabularView:
     def test_show_filters_by_type(self, tmp_path, capsys):
         ws   = _populated_workspace(tmp_path)
         view = TabularView(ws)
-        with patch("ctm_sak.viz.tabular.TabularView._show_rich",
+        with patch("gnat.viz.tabular.TabularView._show_rich",
                    side_effect=ImportError("no rich")):
             view.show(stix_type="malware")
         captured = capsys.readouterr()
@@ -371,7 +371,7 @@ class TestGraphView:
 
     def test_barnes_hut_layout_covers_all_nodes(self, tmp_path):
         import random as _r, math as _m
-        from ctm_sak.viz.graph import _barnes_hut_layout
+        from gnat.viz.graph import _barnes_hut_layout
         n   = 100
         ids = [f"n{i}" for i in range(n)]
         rng = _r.Random(42)
@@ -383,7 +383,7 @@ class TestGraphView:
 
     def test_type_cluster_layout(self, tmp_path):
         import random as _r
-        from ctm_sak.viz.graph import _type_cluster_layout
+        from gnat.viz.graph import _type_cluster_layout
         n    = 200
         ids  = [f"n{i}" for i in range(n)]
         rng  = _r.Random(42)
@@ -565,7 +565,7 @@ class TestGrafanaDashboard:
 
     def test_grafana_dashboard_structure(self):
         d = grafana_dashboard("apt28")
-        assert d["title"] == "CTM-SAK: apt28"
+        assert d["title"] == "GNAT: apt28"
         assert d["schemaVersion"] == 38
         assert "panels" in d
         assert len(d["panels"]) >= 4
@@ -594,7 +594,7 @@ class TestGrafanaDashboard:
         save_grafana_dashboard("apt28", out)
         assert Path(out).exists()
         loaded = json.loads(Path(out).read_text())
-        assert loaded["title"] == "CTM-SAK: apt28"
+        assert loaded["title"] == "GNAT: apt28"
 
     def test_grafana_dashboard_has_annotations(self):
         d = grafana_dashboard("apt28")
@@ -615,7 +615,7 @@ class TestGrafanaServer:
 
     @pytest.fixture
     def manager(self, tmp_path):
-        from ctm_sak.context import WorkspaceManager
+        from gnat.context import WorkspaceManager
         store    = FlatFileStore(base_dir=str(tmp_path / "workspaces"))
         registry = _make_registry()
         mgr      = WorkspaceManager(registry, store=store)
@@ -631,7 +631,7 @@ class TestGrafanaServer:
 
     def test_build_app_requires_fastapi(self, manager):
         try:
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             app = build_app(manager)
             assert app is not None
         except ImportError:
@@ -640,7 +640,7 @@ class TestGrafanaServer:
     def test_health_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.get("/")
             assert resp.status_code == 200
@@ -651,7 +651,7 @@ class TestGrafanaServer:
     def test_workspaces_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.get("/workspaces")
             assert resp.status_code == 200
@@ -663,7 +663,7 @@ class TestGrafanaServer:
     def test_search_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client  = TestClient(build_app(manager))
             resp    = client.post("/search", json={})
             assert resp.status_code == 200
@@ -676,7 +676,7 @@ class TestGrafanaServer:
     def test_query_table_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/query", json={
                 "targets": [{"target": "test-ws/indicator", "type": "table"}],
@@ -693,7 +693,7 @@ class TestGrafanaServer:
     def test_query_summary_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/query", json={
                 "targets": [{"target": "test-ws/summary"}],
@@ -710,7 +710,7 @@ class TestGrafanaServer:
     def test_query_timeseries_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/query", json={
                 "targets": [{"target": "test-ws/indicator/confidence"}],
@@ -725,7 +725,7 @@ class TestGrafanaServer:
     def test_tag_keys_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/tag-keys", json={})
             assert resp.status_code == 200
@@ -737,7 +737,7 @@ class TestGrafanaServer:
     def test_tag_values_stix_type(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/tag-values", json={"key": "stix_type"})
             assert resp.status_code == 200
@@ -749,7 +749,7 @@ class TestGrafanaServer:
     def test_annotations_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
-            from ctm_sak.viz.grafana.server import build_app
+            from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/annotations", json={
                 "annotation": {"query": "test-ws", "name": "Enrichment"}
@@ -932,7 +932,7 @@ class TestGraphViewIntents:
         ws = _populated_workspace(tmp_path)
         gv = GraphView(ws)
         # Add an indicator with no created field
-        from ctm_sak.orm.indicator import Indicator as _Ind
+        from gnat.orm.indicator import Indicator as _Ind
         bare = _Ind(name="bare.com", pattern="[domain-name:value = 'bare.com']",
                     pattern_type="stix")
         ws.add(bare, mark_dirty=False)
@@ -945,7 +945,7 @@ class TestGraphViewIntents:
         ws = _populated_workspace(tmp_path)
         gv = GraphView(ws)
         # Add an indicator with no x_rf_risk_score
-        from ctm_sak.orm.indicator import Indicator as _Ind
+        from gnat.orm.indicator import Indicator as _Ind
         bare = _Ind(name="bare2.com", pattern="[domain-name:value = 'bare2.com']",
                     pattern_type="stix", confidence=50)
         ws.add(bare, mark_dirty=False)

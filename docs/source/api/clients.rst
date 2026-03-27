@@ -1,7 +1,7 @@
-ctm_sak.clients
+gnat.clients
 ---------------
 
-.. automodule:: ctm_sak.clients
+.. automodule:: gnat.clients
    :members:
    :undoc-members:
    :show-inheritance:

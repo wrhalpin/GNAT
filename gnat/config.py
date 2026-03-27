@@ -1,8 +1,8 @@
 """
-ctm_sak.config
+gnat.config
 ==============
 
-INI-file based configuration management for CTM-SAK.
+INI-file based configuration management for GNAT.
 
 Configuration files use standard INI format with one section per target::
 
@@ -24,9 +24,9 @@ Configuration files use standard INI format with one section per target::
 
 Default config file search order:
     1. Path passed explicitly to ``SAKConfig``
-    2. ``CTM_SAK_CONFIG`` environment variable
-    3. ``~/.ctm_sak/config.ini``
-    4. ``./ctm_sak.ini``
+    2. ``GNAT_CONFIG`` environment variable
+    3. ``~/.gnat/config.ini``
+    4. ``./gnat.ini``
 """
 
 import configparser
@@ -36,8 +36,8 @@ from typing import Optional
 
 
 _DEFAULT_SEARCH_PATHS = [
-    Path.home() / ".ctm_sak" / "config.ini",
-    Path("ctm_sak.ini"),
+    Path.home() / ".gnat" / "config.ini",
+    Path("gnat.ini"),
 ]
 
 
@@ -68,8 +68,8 @@ class SAKConfig:
         resolved = self._resolve_path(config_path)
         if resolved is None:
             raise FileNotFoundError(
-                "No CTM-SAK configuration file found. "
-                "Create ~/.ctm_sak/config.ini or pass config_path= explicitly."
+                "No GNAT configuration file found. "
+                "Create ~/.gnat/config.ini or pass config_path= explicitly."
             )
         self._path = resolved
         self._parser.read(resolved)
@@ -127,7 +127,7 @@ class SAKConfig:
                 return p
             raise FileNotFoundError(f"Config file not found: {explicit}")
 
-        env = os.environ.get("CTM_SAK_CONFIG")
+        env = os.environ.get("GNAT_CONFIG")
         if env:
             p = Path(env)
             if p.exists():

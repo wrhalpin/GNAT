@@ -1,20 +1,20 @@
 """
-ctm_sak.reports.generator
+gnat.reports.generator
 ==========================
 
 :class:`ReportGenerator` — orchestrates the full report generation pipeline:
 
     Collect → Filter → Aggregate → Synthesize → Render → Deliver
 
-:class:`ReportJob` — a :class:`~ctm_sak.schedule.job.FeedJob` subclass
+:class:`ReportJob` — a :class:`~gnat.schedule.job.FeedJob` subclass
 that wraps ``ReportGenerator`` for scheduled execution.
 
 Usage
 -----
 ::
 
-    from ctm_sak.reports import ReportGenerator, ReportConfig, AIMode
-    from ctm_sak.agents import AgentConfig
+    from gnat.reports import ReportGenerator, ReportConfig, AIMode
+    from gnat.agents import AgentConfig
 
     config = ReportConfig(
         report_type = "daily",
@@ -39,8 +39,8 @@ Usage
 
 Scheduled generation::
 
-    from ctm_sak.reports import ReportJob
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.reports import ReportJob
+    from gnat.schedule import FeedScheduler
 
     job = ReportJob(
         manager        = workspace_manager,
@@ -62,20 +62,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from ctm_sak.reports.base import (
+from gnat.reports.base import (
     AIMode, ReportConfig, ReportDocument, ReportResult,
     ReportSection, SectorFilter, _utcnow,
 )
-from ctm_sak.reports.aggregator import DataAggregator
-from ctm_sak.reports.renderers import (
+from gnat.reports.aggregator import DataAggregator
+from gnat.reports.renderers import (
     MarkdownRenderer, HTMLRenderer, PDFRenderer, DOCXRenderer,
 )
-from ctm_sak.schedule.job import FeedJob
+from gnat.schedule.job import FeedJob
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import WorkspaceManager
-    from ctm_sak.agents.base import AgentConfig
-    from ctm_sak.research.library import ResearchLibrary
+    from gnat.context.workspace import WorkspaceManager
+    from gnat.agents.base import AgentConfig
+    from gnat.research.library import ResearchLibrary
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ class ReportGenerator:
                     self._config.ai_mode.value,
                 )
             else:
-                from ctm_sak.reports.synthesizer import ReportSynthesizer
+                from gnat.reports.synthesizer import ReportSynthesizer
                 synth = ReportSynthesizer(
                     config           = self._config,
                     agent_config     = self._acfg,
@@ -260,7 +260,7 @@ class ReportGenerator:
         self, doc: ReportDocument, agg: "ReportAggregates"
     ) -> None:
         """Add pure-data sections — always present regardless of AI mode."""
-        from ctm_sak.reports.aggregator import ReportAggregates
+        from gnat.reports.aggregator import ReportAggregates
 
         # Intel volume summary
         doc.add_section(ReportSection(
@@ -384,7 +384,7 @@ class ReportGenerator:
             logger.warning("ReportGenerator: email delivery but no email_to configured")
             return
         try:
-            from ctm_sak.reports.delivery import EmailDelivery
+            from gnat.reports.delivery import EmailDelivery
             subject = self._config.email_subject.format(
                 report_type=self._config.report_type.title(),
                 date=result.generated_at.strftime("%Y-%m-%d"),
@@ -411,7 +411,7 @@ class ReportGenerator:
             )
             return
         try:
-            from ctm_sak.reports.delivery import SharePointDelivery
+            from gnat.reports.delivery import SharePointDelivery
             from urllib.parse import urlparse
             parsed   = urlparse(self._config.sharepoint_url)
             # Split site path from library
@@ -472,9 +472,9 @@ class ReportJob(FeedJob):
     """
     Scheduled report generation job.
 
-    Wraps :class:`ReportGenerator` in a :class:`~ctm_sak.schedule.job.FeedJob`
+    Wraps :class:`ReportGenerator` in a :class:`~gnat.schedule.job.FeedJob`
     so reports can be generated on a schedule via
-    :class:`~ctm_sak.schedule.scheduler.FeedScheduler`.
+    :class:`~gnat.schedule.scheduler.FeedScheduler`.
 
     Parameters
     ----------
@@ -553,8 +553,8 @@ class ReportJob(FeedJob):
 
     def execute(self, scheduled_at=None) -> "RunRecord":
         """Run the report generator, wrapped in FeedJob state management."""
-        from ctm_sak.schedule.job import RunRecord, _utcnow
-        from ctm_sak.ingest.base import IngestResult
+        from gnat.schedule.job import RunRecord, _utcnow
+        from gnat.ingest.base import IngestResult
 
         if not self.enabled:
             return RunRecord(

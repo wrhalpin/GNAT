@@ -1,10 +1,10 @@
 # “””
-ctm_sak.connectors.elastic.stix_mapper
+gnat.connectors.elastic.stix_mapper
 
 STIX 2.1 ↔ Elastic Common Schema (ECS) bidirectional mapping.
 
 Elastic Security uses ECS as its normalisation layer. This mapper
-bridges CTM-SAK’s STIX 2.1 ORM objects and Elastic’s ECS schema.
+bridges GNAT’s STIX 2.1 ORM objects and Elastic’s ECS schema.
 
 ## Direction A — STIX → ECS (for threat intel upload to Elastic)
 
@@ -28,7 +28,7 @@ threat.indicator.email.address: <value>
 indicator SDO → type determined by pattern content
 + threat.indicator.description, confidence, first_seen
 
-## Direction B — ECS → STIX (for export from Elastic to CTM-SAK ORM)
+## Direction B — ECS → STIX (for export from Elastic to GNAT ORM)
 
 ECS `threat.indicator.*` documents → STIX 2.1 indicator SDOs
 or SCOs depending on the indicator type.
@@ -87,7 +87,7 @@ class ElasticSTIXMapper:
 Bidirectional mapper between STIX 2.1 and Elastic ECS.
 
 ```
-Operates on plain Python dicts (from CTM-SAK ORM .to_dict()
+Operates on plain Python dicts (from GNAT ORM .to_dict()
 or ElasticClient search results).
 
 Usage
@@ -95,7 +95,7 @@ Usage
 mapper = ElasticSTIXMapper()
 
 # STIX bundle → ECS indicator docs
-ecs_docs = mapper.stix_bundle_to_ecs_indicators(bundle, provider="CTM-SAK")
+ecs_docs = mapper.stix_bundle_to_ecs_indicators(bundle, provider="GNAT")
 
 # ECS indicator doc → STIX indicator SDO
 stix_obj = mapper.ecs_indicator_to_stix(ecs_doc)
@@ -109,8 +109,8 @@ bundle = mapper.alert_to_stix_bundle(normalised_alert)
 def stix_bundle_to_ecs_indicators(
     self,
     bundle: dict,
-    provider: str = "ctm_sak",
-    feed_name: str = "CTM-SAK",
+    provider: str = "gnat",
+    feed_name: str = "GNAT",
 ) -> list[dict]:
     """
     Convert a STIX 2.1 bundle to a list of ECS indicator documents.
@@ -165,8 +165,8 @@ def stix_bundle_to_ecs_indicators(
 def stix_object_to_ecs_indicator(
     self,
     obj: dict,
-    provider: str = "ctm_sak",
-    feed_name: str = "CTM-SAK",
+    provider: str = "gnat",
+    feed_name: str = "GNAT",
 ) -> dict | None:
     """
     Convert a single STIX object to an ECS indicator doc.

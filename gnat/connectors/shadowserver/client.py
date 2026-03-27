@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.shadowserver.client
+gnat.connectors.shadowserver.client
 ========================================
 
 Shadowserver Foundation API connector — network threat intelligence,
@@ -34,8 +34,8 @@ import hashlib
 import hmac as _hmac
 import json
 from typing import Any, Dict, List, Optional
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class ShadowServerClient(BaseClient, ConnectorMixin):

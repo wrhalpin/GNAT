@@ -1,5 +1,5 @@
 # """
-ctm_sak.connectors.splunk.client
+gnat.connectors.splunk.client
 
 Core HTTP client for the Splunk connector.
 
@@ -258,7 +258,7 @@ def _build_pool_manager(self) -> urllib3.PoolManager:
             read=float(self.config.timeout),
         ),
         "retries": urllib3.Retry(
-            total=0,  # CTM-SAK handles retries manually for full control
+            total=0,  # GNAT handles retries manually for full control
             raise_on_status=False,
         ),
     }

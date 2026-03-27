@@ -1,7 +1,7 @@
-ctm_sak.connectors
+gnat.connectors
 ------------------
 
-.. automodule:: ctm_sak.connectors
+.. automodule:: gnat.connectors
    :members:
    :undoc-members:
    :show-inheritance:

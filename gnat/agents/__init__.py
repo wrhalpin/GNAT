@@ -1,10 +1,10 @@
 """
-ctm_sak.agents
+gnat.agents
 ==============
 
 AI-powered threat intelligence agents using Claude and Microsoft Copilot.
 
-Two agent types, both implementing standard ctm_sak ingest interfaces so
+Two agent types, both implementing standard gnat ingest interfaces so
 they drop directly into IngestPipeline and FeedJob without special casing.
 
 ResearchAgent (SourceReader)
@@ -26,8 +26,8 @@ CopilotReader (SourceReader)
 
 Quick start::
 
-    from ctm_sak.agents import ResearchAgent, ParsingAgent, AgentConfig
-    from ctm_sak.ingest import IngestPipeline
+    from gnat.agents import ResearchAgent, ParsingAgent, AgentConfig
+    from gnat.ingest import IngestPipeline
 
     config = AgentConfig.from_ini()   # reads [claude] section from config.ini
 
@@ -43,8 +43,8 @@ Quick start::
 
 Scheduled feed monitoring::
 
-    from ctm_sak.agents import ResearchAgent, ParsingAgent, AgentConfig
-    from ctm_sak.schedule import FeedJob, FeedScheduler
+    from gnat.agents import ResearchAgent, ParsingAgent, AgentConfig
+    from gnat.schedule import FeedJob, FeedScheduler
 
     config = AgentConfig.from_ini()
 
@@ -69,7 +69,7 @@ Scheduled feed monitoring::
 
 M365 + Copilot::
 
-    from ctm_sak.agents import CopilotReader, ParsingAgent, AgentConfig
+    from gnat.agents import CopilotReader, ParsingAgent, AgentConfig
 
     job = FeedJob(
         job_id="m365-threat-intel",
@@ -87,10 +87,10 @@ M365 + Copilot::
     )
 """
 
-from ctm_sak.agents.base import AgentConfig, ResearchResult, ParsedIntel, ClaudeClient
-from ctm_sak.agents.research import ResearchAgent
-from ctm_sak.agents.parsing import ParsingAgent
-from ctm_sak.agents.copilot import CopilotReader
+from gnat.agents.base import AgentConfig, ResearchResult, ParsedIntel, ClaudeClient
+from gnat.agents.research import ResearchAgent
+from gnat.agents.parsing import ParsingAgent
+from gnat.agents.copilot import CopilotReader
 
 __all__ = [
     "AgentConfig",

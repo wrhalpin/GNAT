@@ -1,5 +1,5 @@
 """
-ctm_sak.export
+gnat.export
 ===============
 
 Push-based export and integration pipeline for sharing threat intelligence
@@ -9,11 +9,11 @@ Three-stage composable pipeline: Filter → Transform → Deliver
 
 Quick start (ThreatQ → Palo Alto EDL)::
 
-    from ctm_sak.export import ExportPipeline, ExportJob
-    from ctm_sak.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
-    from ctm_sak.export.transforms.edl import EDLTransform
-    from ctm_sak.export.delivery.targets import EDLServer
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.export import ExportPipeline, ExportJob
+    from gnat.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
+    from gnat.export.transforms.edl import EDLTransform
+    from gnat.export.delivery.targets import EDLServer
+    from gnat.schedule import FeedScheduler
 
     edl_server = EDLServer(port=8080)
 
@@ -37,8 +37,8 @@ Quick start (ThreatQ → Palo Alto EDL)::
 
 ThreatQ → Netskope CE (FQDN + URL + SHA256)::
 
-    from ctm_sak.export.transforms.netskope import NetskopeCETransform
-    from ctm_sak.export.delivery.targets import PlatformDelivery
+    from gnat.export.transforms.netskope import NetskopeCETransform
+    from gnat.export.delivery.targets import PlatformDelivery
 
     job = ExportJob(
         job_id="tq-to-netskope-ce",
@@ -57,7 +57,7 @@ ThreatQ → Netskope CE (FQDN + URL + SHA256)::
     )
 """
 
-from ctm_sak.export.base import (
+from gnat.export.base import (
     ExportFilter,
     ExportTransform,
     ExportDelivery,
@@ -67,7 +67,7 @@ from ctm_sak.export.base import (
     DeliveryResult,
     PassthroughFilter,
 )
-from ctm_sak.export.jobs import ExportJob
+from gnat.export.jobs import ExportJob
 
 __all__ = [
     # Core abstractions

@@ -4,6 +4,6 @@ include CHANGELOG.md
 include CONTRIBUTING.md
 include pyproject.toml
 recursive-include config *.ini *.example
-recursive-include ctm_sak *.py py.typed
+recursive-include gnat *.py py.typed
 recursive-include tests *.py
-recursive-include ctm_sak/context *.py
+recursive-include gnat/context *.py

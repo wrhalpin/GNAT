@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.virustotal.client
+gnat.connectors.virustotal.client
 ======================================
 
 VirusTotal API v3 connector — read-only threat intelligence.
@@ -32,8 +32,8 @@ https://docs.virustotal.com/reference/overview
 """
 
 from typing import Any, Dict, List, Optional
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class VirusTotalClient(BaseClient, ConnectorMixin):

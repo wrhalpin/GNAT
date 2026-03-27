@@ -1,5 +1,5 @@
 """
-ctm_sak.reports.aggregator
+gnat.reports.aggregator
 ===========================
 
 :class:`DataAggregator` — computes all facts and statistics from workspace
@@ -28,9 +28,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import Workspace, WorkspaceManager
-    from ctm_sak.orm.base import STIXBase
-    from ctm_sak.reports.base import ReportConfig, SectorFilter
+    from gnat.context.workspace import Workspace, WorkspaceManager
+    from gnat.orm.base import STIXBase
+    from gnat.reports.base import ReportConfig, SectorFilter
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ReportAggregates:
     All computed data for a report, ready for synthesis and rendering.
 
     Fields are populated by :class:`DataAggregator` and consumed by
-    :class:`~ctm_sak.reports.synthesizer.ReportSynthesizer` and the
+    :class:`~gnat.reports.synthesizer.ReportSynthesizer` and the
     renderer classes.
 
     Everything in this class is a plain Python primitive (int, str, list,

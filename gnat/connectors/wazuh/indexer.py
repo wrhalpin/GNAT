@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.indexer
+gnat.connectors.wazuh.indexer
 
 Wazuh Indexer (OpenSearch) API commands.
 

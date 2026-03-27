@@ -1,12 +1,12 @@
 """
-ctm_sak.context.store
+gnat.context.store
 ======================
 
-SQLAlchemy-backed persistence layer for CTM-SAK contexts and workspaces.
+SQLAlchemy-backed persistence layer for GNAT contexts and workspaces.
 
 Design
 ------
-The STIX ORM objects (:class:`~ctm_sak.orm.base.STIXBase` and subclasses)
+The STIX ORM objects (:class:`~gnat.orm.base.STIXBase` and subclasses)
 remain pure Python — they are **not** SQLAlchemy models.  Instead, this
 module defines a thin set of SQLAlchemy models that store *serialised*
 STIX JSON alongside workspace metadata.  The conversion is:
@@ -25,7 +25,7 @@ This keeps the two layers completely decoupled:
 Supported backends
 ------------------
 * **SQLite** (default) — zero-config, single-file, ideal for local workspaces.
-  ``sqlite:///~/.ctm_sak/workspaces.db``
+  ``sqlite:///~/.gnat/workspaces.db``
 * **PostgreSQL** — for shared team contexts.
   ``postgresql+psycopg2://user:pass@host/dbname``
 * **In-memory SQLite** — for tests.
@@ -81,7 +81,7 @@ def _require_sqlalchemy() -> None:
     if not _HAS_SQLALCHEMY:
         raise ImportError(
             "SQLAlchemy is required for workspace persistence: "
-            "pip install 'ctm-sak[persist]'"
+            "pip install 'gnat[persist]'"
         )
 
 
@@ -246,14 +246,14 @@ class WorkspaceStore:
     High-level interface to the SQLAlchemy-backed workspace database.
 
     Handles engine creation, schema initialisation, and provides
-    CRUD operations used by :class:`~ctm_sak.context.workspace.Workspace`.
+    CRUD operations used by :class:`~gnat.context.workspace.Workspace`.
 
     Parameters
     ----------
     url : str
         SQLAlchemy database URL.  Examples:
 
-        * ``"sqlite:///~/.ctm_sak/workspaces.db"`` — local file
+        * ``"sqlite:///~/.gnat/workspaces.db"`` — local file
         * ``"sqlite:///:memory:"`` — in-memory (tests)
         * ``"postgresql+psycopg2://user:pass@host/ctmsak"`` — PostgreSQL
 
@@ -262,7 +262,7 @@ class WorkspaceStore:
 
     Examples
     --------
-    >>> store = WorkspaceStore("sqlite:///~/.ctm_sak/workspaces.db")
+    >>> store = WorkspaceStore("sqlite:///~/.gnat/workspaces.db")
     >>> store.create_all()
     """
 
@@ -485,7 +485,7 @@ class FlatFileStore:
 
     .. code-block:: text
 
-        ~/.ctm_sak/workspaces/<name>/
+        ~/.gnat/workspaces/<name>/
             workspace.json          # metadata
             objects/
                 <stix-id>.json      # one file per STIX object
@@ -495,7 +495,7 @@ class FlatFileStore:
     ----------
     base_dir : str or Path
         Root directory for all flat-file workspaces.
-        Default: ``~/.ctm_sak/workspaces``
+        Default: ``~/.gnat/workspaces``
 
     Examples
     --------
@@ -504,7 +504,7 @@ class FlatFileStore:
     """
 
     def __init__(self, base_dir: Optional[str] = None):
-        self._base = Path(base_dir or "~/.ctm_sak/workspaces").expanduser()
+        self._base = Path(base_dir or "~/.gnat/workspaces").expanduser()
         self._base.mkdir(parents=True, exist_ok=True)
 
     def _ws_dir(self, name: str) -> Path:

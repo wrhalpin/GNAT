@@ -1,7 +1,7 @@
-ctm_sak.codegen
+gnat.codegen
 ---------------
 
-.. automodule:: ctm_sak.codegen
+.. automodule:: gnat.codegen
    :members:
    :undoc-members:
    :show-inheritance:

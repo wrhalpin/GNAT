@@ -1,10 +1,10 @@
 """
-conftest.py — shared pytest fixtures for CTM-SAK test suite.
+conftest.py — shared pytest fixtures for GNAT test suite.
 """
 
 import pytest
 from unittest.mock import MagicMock, patch
-from ctm_sak.client import SAKClient
+from gnat.client import SAKClient
 
 
 # ---------------------------------------------------------------------------

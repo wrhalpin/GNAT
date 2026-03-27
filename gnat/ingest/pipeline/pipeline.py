@@ -1,17 +1,17 @@
 """
-ctm_sak.ingest.pipeline.pipeline
+gnat.ingest.pipeline.pipeline
 ==================================
 
 :class:`IngestPipeline` — the top-level orchestrator that chains a
-:class:`~ctm_sak.ingest.base.SourceReader` with a
-:class:`~ctm_sak.ingest.base.RecordMapper`, applies optional transforms and
+:class:`~gnat.ingest.base.SourceReader` with a
+:class:`~gnat.ingest.base.RecordMapper`, applies optional transforms and
 deduplication, and optionally writes results to a connected platform.
 
 Usage::
 
-    from ctm_sak.ingest import IngestPipeline
-    from ctm_sak.ingest.sources import CSVSourceReader
-    from ctm_sak.ingest.mappers import FlatIOCMapper
+    from gnat.ingest import IngestPipeline
+    from gnat.ingest.sources import CSVSourceReader
+    from gnat.ingest.mappers import FlatIOCMapper
 
     pipeline = (
         IngestPipeline()
@@ -33,7 +33,7 @@ from __future__ import annotations
 import logging
 from typing import Callable, Iterator, List, Optional, TYPE_CHECKING
 
-from ctm_sak.ingest.base import (
+from gnat.ingest.base import (
     DeduplicationCache,
     IngestResult,
     RecordMapper,
@@ -41,8 +41,8 @@ from ctm_sak.ingest.base import (
 )
 
 if TYPE_CHECKING:
-    from ctm_sak.orm.base import STIXBase
-    from ctm_sak.client import SAKClient
+    from gnat.orm.base import STIXBase
+    from gnat.client import SAKClient
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class IngestPipeline:
         Parameters
         ----------
         reader : SourceReader
-            Any :class:`~ctm_sak.ingest.base.SourceReader` subclass.
+            Any :class:`~gnat.ingest.base.SourceReader` subclass.
 
         Returns
         -------
@@ -120,7 +120,7 @@ class IngestPipeline:
         Parameters
         ----------
         mapper : RecordMapper
-            Any :class:`~ctm_sak.ingest.base.RecordMapper` subclass.
+            Any :class:`~gnat.ingest.base.RecordMapper` subclass.
 
         Returns
         -------
@@ -137,7 +137,7 @@ class IngestPipeline:
         Parameters
         ----------
         client : SAKClient
-            A connected :class:`~ctm_sak.client.SAKClient`.
+            A connected :class:`~gnat.client.SAKClient`.
 
         Returns
         -------

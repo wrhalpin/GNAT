@@ -1,10 +1,10 @@
 """
-ctm_sak.async_client.connectors
+gnat.async_client.connectors
 ================================
 
 Async connector clients for all six supported platforms.
 
-Each class inherits from :class:`~ctm_sak.async_client.base.AsyncBaseClient`
+Each class inherits from :class:`~gnat.async_client.base.AsyncBaseClient`
 and mirrors its sync counterpart's auth + translation logic as async methods.
 The STIX translation methods (``to_stix``, ``from_stix``) are kept synchronous
 since they are CPU-bound; only the HTTP I/O methods are awaited.
@@ -16,9 +16,9 @@ import base64
 import logging
 from typing import Any, Dict, List, Optional
 
-from ctm_sak.async_client.base import AsyncBaseClient
-from ctm_sak.clients.base import SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.async_client.base import AsyncBaseClient
+from gnat.clients.base import SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 logger = logging.getLogger(__name__)
 
@@ -433,10 +433,10 @@ class AsyncGreyMatterClient(AsyncBaseClient, ConnectorMixin):
         return await (self.put(f"/v1/{t}/{gid}", json=p) if gid else self.post(f"/v1/{t}", json=p))
     async def delete_object(self, t, oid): await self.delete(f"/v1/{t}/{oid.split('--')[-1]}")
     def to_stix(self, n):
-        from ctm_sak.connectors.greymatter.client import GreyMatterClient
+        from gnat.connectors.greymatter.client import GreyMatterClient
         return GreyMatterClient(host=self.host).to_stix(n)
     def from_stix(self, d):
-        from ctm_sak.connectors.greymatter.client import GreyMatterClient
+        from gnat.connectors.greymatter.client import GreyMatterClient
         return GreyMatterClient(host=self.host).from_stix(d)
 
 
@@ -462,10 +462,10 @@ class AsyncWhisticClient(AsyncBaseClient, ConnectorMixin):
     async def upsert_object(self, t, p): raise SAKClientError("Whistic: direct create not supported")
     async def delete_object(self, t, oid): await self.delete(f"/v1/vendors/{oid}")
     def to_stix(self, n):
-        from ctm_sak.connectors.whistic.client import WhisticClient
+        from gnat.connectors.whistic.client import WhisticClient
         return WhisticClient(host=self.host).to_stix(n)
     def from_stix(self, d):
-        from ctm_sak.connectors.whistic.client import WhisticClient
+        from gnat.connectors.whistic.client import WhisticClient
         return WhisticClient(host=self.host).from_stix(d)
 
 
@@ -494,10 +494,10 @@ class AsyncRiskReconClient(AsyncBaseClient, ConnectorMixin):
     async def upsert_object(self, t, p): return await self.post("/companies", json=p)
     async def delete_object(self, t, oid): await self.delete(f"/companies/{oid.split('--')[-1]}")
     def to_stix(self, n):
-        from ctm_sak.connectors.riskrecon.client import RiskReconClient
+        from gnat.connectors.riskrecon.client import RiskReconClient
         return RiskReconClient(host=self.host).to_stix(n)
     def from_stix(self, d):
-        from ctm_sak.connectors.riskrecon.client import RiskReconClient
+        from gnat.connectors.riskrecon.client import RiskReconClient
         return RiskReconClient(host=self.host).from_stix(d)
 
 
@@ -522,7 +522,7 @@ class AsyncFeedlyClient(AsyncBaseClient, ConnectorMixin):
     async def upsert_object(self, t, p): raise SAKClientError("Feedly is read-only")
     async def delete_object(self, t, oid): raise SAKClientError("Feedly is read-only")
     def to_stix(self, n):
-        from ctm_sak.connectors.feedly.client import FeedlyClient
+        from gnat.connectors.feedly.client import FeedlyClient
         return FeedlyClient(host=self.host).to_stix(n)
     def from_stix(self, d): return {"note": "Feedly read-only"}
 
@@ -553,8 +553,8 @@ class AsyncSplunkClient(AsyncBaseClient, ConnectorMixin):
     async def upsert_object(self, t, p): return {}
     async def delete_object(self, t, oid): pass
     def to_stix(self, n):
-        from ctm_sak.connectors.splunk.client import SplunkClient
+        from gnat.connectors.splunk.client import SplunkClient
         return SplunkClient(host=self.host).to_stix(n)
     def from_stix(self, d):
-        from ctm_sak.connectors.splunk.client import SplunkClient
+        from gnat.connectors.splunk.client import SplunkClient
         return SplunkClient(host=self.host).from_stix(d)

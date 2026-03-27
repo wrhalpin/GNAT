@@ -1,5 +1,5 @@
 """
-ctm_sak.client
+gnat.client
 ==============
 
 Top-level :class:`SAKClient` facade.  This is the primary entry point for
@@ -8,18 +8,18 @@ client, and exposes a unified interface to the rest of the library.
 
 Usage::
 
-    import ctm_sak
+    import gnat
 
-    # Auto-load config from ~/.ctm_sak/config.ini
-    cli = ctm_sak.SAKClient()
+    # Auto-load config from ~/.gnat/config.ini
+    cli = gnat.SAKClient()
     cli.connect(target="threatq")
 
     # Explicit config path
-    cli = ctm_sak.SAKClient(config_path="/path/to/my.ini")
+    cli = gnat.SAKClient(config_path="/path/to/my.ini")
     cli.connect(target="crowdstrike")
 
     # Pass config dict directly (no INI file needed)
-    cli = ctm_sak.SAKClient()
+    cli = gnat.SAKClient()
     cli.connect(
         target="netskope",
         host="https://tenant.goskope.com",
@@ -30,8 +30,8 @@ Usage::
 
 from typing import Any, Optional
 
-from ctm_sak.config import SAKConfig
-from ctm_sak.clients.base import BaseClient, SAKClientError
+from gnat.config import SAKConfig
+from gnat.clients.base import BaseClient, SAKClientError
 
 
 class SAKClient:
@@ -47,7 +47,7 @@ class SAKClient:
     ----------
     config_path : str, optional
         Path to an INI configuration file.  If omitted the library searches
-        the default locations (see :class:`~ctm_sak.config.SAKConfig`).
+        the default locations (see :class:`~gnat.config.SAKConfig`).
 
     Attributes
     ----------
@@ -102,7 +102,7 @@ class SAKClient:
         >>> cli = SAKClient().connect("netskope", api_token="tok123")
         """
         # Import here to avoid circular imports at module load time
-        from ctm_sak.clients import CLIENT_REGISTRY
+        from gnat.clients import CLIENT_REGISTRY
 
         target = target.lower()
         if target not in CLIENT_REGISTRY:

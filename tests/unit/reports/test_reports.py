@@ -2,7 +2,7 @@
 tests/unit/reports/test_reports.py
 ====================================
 
-Unit tests for ctm_sak.reports.
+Unit tests for gnat.reports.
 
 Covers:
 - AIMode enum values
@@ -31,18 +31,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ctm_sak.reports import (
+from gnat.reports import (
     AIMode, ReportConfig, SectorFilter, DataAggregator, ReportAggregates,
     MarkdownRenderer, HTMLRenderer, PDFRenderer,
     ReportGenerator, ReportJob, ReportResult,
     ReportSection, ReportDocument,
 )
-from ctm_sak.context import GlobalContextRegistry, GlobalContext, FlatFileStore
-from ctm_sak.context.workspace import WorkspaceManager
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.threat_actor import ThreatActor
-from ctm_sak.orm.vulnerability import Vulnerability
-from ctm_sak.orm.attack_pattern import AttackPattern
+from gnat.context import GlobalContextRegistry, GlobalContext, FlatFileStore
+from gnat.context.workspace import WorkspaceManager
+from gnat.orm.indicator import Indicator
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.vulnerability import Vulnerability
+from gnat.orm.attack_pattern import AttackPattern
 
 
 # ===========================================================================
@@ -556,7 +556,7 @@ class TestReportGenerator:
             assert os.path.exists(fp)
 
     def test_ai_assisted_calls_synthesizer(self, manager, library_ws, tmp_path):
-        from ctm_sak.agents.base import AgentConfig, ClaudeClient
+        from gnat.agents.base import AgentConfig, ClaudeClient
         mock_resp = {"content": [{"type": "text",
                                    "text": "Narrative for this section."}]}
         with patch.object(ClaudeClient, "complete", return_value=mock_resp):
@@ -691,7 +691,7 @@ class TestReportJob:
 
     def test_schedule_via_feedscheduler(self, manager, library_ws, tmp_path):
         import time
-        from ctm_sak.schedule import FeedScheduler
+        from gnat.schedule import FeedScheduler
 
         fired = []
         cfg = ReportConfig(

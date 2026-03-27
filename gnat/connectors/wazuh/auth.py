@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.auth
+gnat.connectors.wazuh.auth
 
 JWT authentication manager for the Wazuh connector.
 

@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.es_search
+gnat.connectors.elastic.es_search
 
 Elasticsearch index management and search commands.
 
@@ -17,7 +17,7 @@ and KibanaAlertsCommands respectively.
 
 ## ECS field reference
 
-Key ECS fields used in CTM-SAK security queries:
+Key ECS fields used in GNAT security queries:
 @timestamp           — event time
 event.kind           — ‘alert’, ‘event’, ‘signal’
 event.category       — [‘network’, ‘file’, ‘process’, ‘authentication’, …]

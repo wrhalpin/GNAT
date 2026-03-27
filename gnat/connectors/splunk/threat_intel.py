@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.splunk.threat_intel
+gnat.connectors.splunk.threat_intel
 
 Enterprise Security Threat Intelligence API commands.
 
@@ -36,7 +36,7 @@ Supported STIX object types:
   STIX pattern syntax is ignored by Splunk)
 
 The SplunkSTIXMapper handles pre-processing STIX 2.1 ORM objects
-from CTM-SAK’s ORM into the flat KV store format Splunk expects
+from GNAT’s ORM into the flat KV store format Splunk expects
 before calling the upload/upsert methods here.
 
 ## References
@@ -389,7 +389,7 @@ def upload_stix_bundle_dict(
     weight: int = 50,
 ) -> dict:
     """
-    Upload a STIX 2.1 bundle dict (from CTM-SAK ORM) to Splunk ES.
+    Upload a STIX 2.1 bundle dict (from GNAT ORM) to Splunk ES.
 
     Parameters
     ----------

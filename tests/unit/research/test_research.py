@@ -2,7 +2,7 @@
 tests/unit/research/test_research.py
 =====================================
 
-Unit tests for the CTM-SAK shared research library.
+Unit tests for the GNAT shared research library.
 
 Covers:
 - categorise_topic: all five categories + fallback
@@ -27,16 +27,16 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ctm_sak.research import (
+from gnat.research import (
     ResearchLibrary, ResearchEntry, CurationJob,
     categorise_topic, topic_key, DEFAULT_TTLS,
 )
-from ctm_sak.context import (
+from gnat.context import (
     GlobalContextRegistry, GlobalContext, FlatFileStore,
 )
-from ctm_sak.context.workspace import WorkspaceManager
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.threat_actor import ThreatActor
+from gnat.context.workspace import WorkspaceManager
+from gnat.orm.indicator import Indicator
+from gnat.orm.threat_actor import ThreatActor
 
 
 # ===========================================================================

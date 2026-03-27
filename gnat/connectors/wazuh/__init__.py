@@ -1,5 +1,5 @@
 # “””
-CTM-SAK Wazuh Connector
+GNAT Wazuh Connector
 
 Connector for Wazuh Open Source XDR / SIEM platform.
 
@@ -28,7 +28,7 @@ docker/docker-installation.html
 OVA:    https://documentation.wazuh.com/current/deployment-options/
 virtual-machine/virtual-machine.html
 
-Configuration section (ctm_sak.ini):
+Configuration section (gnat.ini):
 [wazuh]
 host              = localhost
 port              = 55000

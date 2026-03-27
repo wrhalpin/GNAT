@@ -1,9 +1,9 @@
 """
-ctm_sak.orm.threat_actor
+gnat.orm.threat_actor
 ========================
 STIX 2.1 Threat Actor SDO.
 """
-from ctm_sak.orm.base import STIXBase
+from gnat.orm.base import STIXBase
 
 class ThreatActor(STIXBase):
     """STIX 2.1 Threat Actor domain object."""

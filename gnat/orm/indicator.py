@@ -1,5 +1,5 @@
 """
-ctm_sak.orm.indicator
+gnat.orm.indicator
 =====================
 
 STIX 2.1 Indicator SDO.
@@ -10,7 +10,7 @@ information about what they mean and how to interpret them.
 STIX 2.1 Reference: https://docs.oasis-open.org/cti/stix/v2.1/os/stix-v2.1-os.html#_muftrcpnf89v
 """
 
-from ctm_sak.orm.base import STIXBase
+from gnat.orm.base import STIXBase
 
 
 class Indicator(STIXBase):

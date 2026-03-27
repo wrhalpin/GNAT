@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.splunk.alerts
+gnat.connectors.splunk.alerts
 
 Alert and notable event commands for the Splunk connector.
 
@@ -15,9 +15,9 @@ Covers two alert surfaces:
   ES REST endpoints under /servicesNS/…/SplunkEnterpriseSecuritySuite/
 - CRUD on notable event status (new → in progress → closed → resolved)
 
-## Alert severity mapping (ES → CTM-SAK)
+## Alert severity mapping (ES → GNAT)
 
-ES urgency string → integer severity for CTM-SAK incident model:
+ES urgency string → integer severity for GNAT incident model:
 critical  → 4
 high      → 3
 medium    → 2
@@ -233,7 +233,7 @@ def search_notables(
     Returns
     -------
     list[dict]
-        Notable event records normalised for CTM-SAK.
+        Notable event records normalised for GNAT.
     """
     self._require_es()
 
@@ -346,7 +346,7 @@ def get_notable_by_id(self, event_id: str) -> dict | None:
 
 @staticmethod
 def _normalise_notable(row: dict) -> dict:
-    """Map Splunk ES notable fields to CTM-SAK normalised format."""
+    """Map Splunk ES notable fields to GNAT normalised format."""
     urgency = (row.get("urgency") or "unknown").lower()
     return {
         "event_id": row.get("event_id"),

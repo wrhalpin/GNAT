@@ -1,8 +1,8 @@
 """
-ctm_sak.agents.research
+gnat.agents.research
 ========================
 
-:class:`ResearchAgent` — a :class:`~ctm_sak.ingest.base.SourceReader` that
+:class:`ResearchAgent` — a :class:`~gnat.ingest.base.SourceReader` that
 uses the Claude API (with web search enabled) to gather threat intelligence
 on specific topics or from monitored sources.
 
@@ -11,7 +11,7 @@ Two operating modes
 
 **Topic-driven** — given a list of threat topics (actor names, CVEs, malware
 families, campaign names), the agent searches the web and returns one
-synthesized :class:`~ctm_sak.agents.base.ResearchResult` per topic::
+synthesized :class:`~gnat.agents.base.ResearchResult` per topic::
 
     agent = ResearchAgent(
         config=AgentConfig.from_ini(),
@@ -22,11 +22,11 @@ synthesized :class:`~ctm_sak.agents.base.ResearchResult` per topic::
 
 **Feed-driven** — given a list of monitored source URLs, the agent checks
 each source for new threat-relevant content and returns one
-:class:`~ctm_sak.agents.base.ResearchResult` per item found.  Designed to
-run on a schedule via :class:`~ctm_sak.schedule.job.FeedJob` with
+:class:`~gnat.agents.base.ResearchResult` per item found.  Designed to
+run on a schedule via :class:`~gnat.schedule.job.FeedJob` with
 ``ctx.last_success_iso`` providing the ``newer_than`` cutoff::
 
-    from ctm_sak.schedule import FeedJob
+    from gnat.schedule import FeedJob
 
     def make_agent(ctx):
         return ResearchAgent(
@@ -71,9 +71,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterator, List, Optional
 
-from ctm_sak.ingest.base import RawRecord, SourceReader
-from ctm_sak.agents.base import AgentConfig, ClaudeClient, ResearchResult
-from ctm_sak.agents.prompts import (
+from gnat.ingest.base import RawRecord, SourceReader
+from gnat.agents.base import AgentConfig, ClaudeClient, ResearchResult
+from gnat.agents.prompts import (
     RESEARCH_SYSTEM,
     RESEARCH_TOPIC_USER,
     RESEARCH_TOPIC_USER_NEWER,
@@ -95,8 +95,8 @@ class ResearchAgent(SourceReader):
     """
     AI-powered threat intelligence researcher using Claude + web search.
 
-    Implements :class:`~ctm_sak.ingest.base.SourceReader` so it drops
-    directly into :class:`~ctm_sak.ingest.pipeline.pipeline.IngestPipeline`
+    Implements :class:`~gnat.ingest.base.SourceReader` so it drops
+    directly into :class:`~gnat.ingest.pipeline.pipeline.IngestPipeline`
     as the ``read_from`` source.
 
     Parameters
@@ -112,7 +112,7 @@ class ResearchAgent(SourceReader):
     newer_than : str, optional
         ISO 8601 timestamp.  In topic-driven mode, instructs Claude to focus
         on recent findings.  In feed-driven mode, filters out older content.
-        Typically ``ctx.last_success_iso`` from :class:`~ctm_sak.schedule.job.JobRunContext`.
+        Typically ``ctx.last_success_iso`` from :class:`~gnat.schedule.job.JobRunContext`.
     max_calls_per_run : int
         Maximum Claude API calls per ``_iter_records`` invocation.
         Default ``20``.  Prevents runaway cost on large topic lists.
@@ -129,7 +129,7 @@ class ResearchAgent(SourceReader):
     --------
     Topic-driven::
 
-        from ctm_sak.agents import ResearchAgent, AgentConfig
+        from gnat.agents import ResearchAgent, AgentConfig
 
         agent = ResearchAgent(
             config=AgentConfig.from_ini(),

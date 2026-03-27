@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.config
+gnat.connectors.elastic.config
 
 Configuration schema for the Elastic Security connector.
 
@@ -237,7 +237,7 @@ config: configparser.ConfigParser,
 section: str = “elastic”,
 ) -> ElasticConfig:
 “””
-Parse [elastic] section from a ctm_sak.ini ConfigParser instance.
+Parse [elastic] section from a gnat.ini ConfigParser instance.
 
 ```
 Parameters
@@ -257,7 +257,7 @@ ElasticConfigError
 """
 if not config.has_section(section):
     raise ElasticConfigError(
-        f"Configuration section '[{section}]' not found in ctm_sak.ini."
+        f"Configuration section '[{section}]' not found in gnat.ini."
     )
 
 raw = dict(_DEFAULTS)

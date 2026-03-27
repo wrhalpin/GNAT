@@ -1,18 +1,18 @@
 """
-ctm_sak.schedule
+gnat.schedule
 =================
 
-Scheduled feed ingestion for CTM-SAK.
+Scheduled feed ingestion for GNAT.
 
-Binds :class:`~ctm_sak.ingest.base.SourceReader` /
-:class:`~ctm_sak.ingest.base.RecordMapper` factories into recurring jobs,
+Binds :class:`~gnat.ingest.base.SourceReader` /
+:class:`~gnat.ingest.base.RecordMapper` factories into recurring jobs,
 manages job threads, and exposes adapters for APScheduler and Celery.
 
 Quick start::
 
-    from ctm_sak.schedule import FeedJob, FeedScheduler
-    from ctm_sak.ingest.sources.readers import PlainTextReader
-    from ctm_sak.ingest.mappers.mappers import FlatIOCMapper
+    from gnat.schedule import FeedJob, FeedScheduler
+    from gnat.ingest.sources.readers import PlainTextReader
+    from gnat.ingest.mappers.mappers import FlatIOCMapper
 
     job = FeedJob(
         job_id="blocklist",
@@ -28,8 +28,8 @@ Quick start::
         import time; time.sleep(7200)   # run for 2 hours
 """
 
-from ctm_sak.schedule.job import FeedJob, JobRunContext, RunRecord
-from ctm_sak.schedule.scheduler import FeedScheduler
+from gnat.schedule.job import FeedJob, JobRunContext, RunRecord
+from gnat.schedule.scheduler import FeedScheduler
 
 __all__ = [
     "FeedJob",

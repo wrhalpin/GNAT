@@ -1,4 +1,4 @@
-CTM-SAK Documentation
+GNAT Documentation
 ======================
 
 **Cybersecurity Threat Management Swiss Army Knife** — a universal Python client
@@ -28,7 +28,7 @@ and STIX 2.1-compatible ORM for security platforms.
    :maxdepth: 3
    :caption: API Reference
 
-   api/ctm_sak
+   api/gnat
    api/clients
    api/orm
    api/ingest

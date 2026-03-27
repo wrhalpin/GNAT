@@ -1,8 +1,8 @@
 """
-ctm_sak.orm.base
+gnat.orm.base
 ================
 
-STIX 2.1-compatible base ORM class for all CTM-SAK domain objects.
+STIX 2.1-compatible base ORM class for all GNAT domain objects.
 
 Every STIX Domain Object (SDO), Relationship Object (SRO), and Cyber
 Observable Object (SCO) is modelled as a subclass of :class:`STIXBase`.
@@ -11,7 +11,7 @@ Design Goals
 ------------
 * **STIX 2.1 wire-format compatible** – ``to_dict()`` / ``from_dict()``
   produce/consume valid STIX bundles.
-* **Client-bound** – objects carry an optional :class:`~ctm_sak.client.SAKClient`
+* **Client-bound** – objects carry an optional :class:`~gnat.client.SAKClient`
   reference so CRUD methods work transparently.
 * **Platform-agnostic** – translators in each connector package convert
   between STIX and the target platform's native schema.
@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.client import SAKClient
+    from gnat.client import SAKClient
 
 
 def _utcnow() -> str:
@@ -46,7 +46,7 @@ def _utcnow() -> str:
 
 class STIXBase:
     """
-    Abstract base for all CTM-SAK ORM objects.
+    Abstract base for all GNAT ORM objects.
 
     Subclasses must set the class attribute :attr:`stix_type` to the
     appropriate STIX 2.1 type string (e.g. ``"indicator"``,

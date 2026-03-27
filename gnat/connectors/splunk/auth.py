@@ -1,9 +1,9 @@
 # “””
-ctm_sak.connectors.splunk.auth
+gnat.connectors.splunk.auth
 
 Authentication manager for the Splunk connector.
 
-Splunk supports two auth modes used by CTM-SAK:
+Splunk supports two auth modes used by GNAT:
 
 1. Pre-generated Token (preferred)
 - Created in Splunk Web: Settings → Tokens

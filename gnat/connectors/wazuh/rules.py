@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.rules
+gnat.connectors.wazuh.rules
 
 Rule and decoder management commands for the Wazuh connector.
 

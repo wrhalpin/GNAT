@@ -1,8 +1,8 @@
 """
-ctm_sak.research.curation
+gnat.research.curation
 ==========================
 
-:class:`CurationJob` — a :class:`~ctm_sak.schedule.job.FeedJob` subclass
+:class:`CurationJob` — a :class:`~gnat.schedule.job.FeedJob` subclass
 that runs the staging → library promotion pipeline on a schedule.
 
 What it does
@@ -23,8 +23,8 @@ Usage
 -----
 ::
 
-    from ctm_sak.research import ResearchLibrary, CurationJob
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.research import ResearchLibrary, CurationJob
+    from gnat.schedule import FeedScheduler
 
     lib = ResearchLibrary.default()
 
@@ -46,12 +46,12 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-from ctm_sak.schedule.job import FeedJob, JobRunContext, RunRecord, _utcnow
-from ctm_sak.ingest.base import IngestResult, SourceReader, RecordMapper, RawRecord
+from gnat.schedule.job import FeedJob, JobRunContext, RunRecord, _utcnow
+from gnat.ingest.base import IngestResult, SourceReader, RecordMapper, RawRecord
 
 if TYPE_CHECKING:
-    from ctm_sak.research.library import ResearchLibrary
-    from ctm_sak.research.entry import ResearchEntry
+    from gnat.research.library import ResearchLibrary
+    from gnat.research.entry import ResearchEntry
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class _CurationMapper(RecordMapper):
         departure from the standard mapper contract — the caller
         (:class:`CurationJob`) calls :meth:`flush` after the pipeline run.
         """
-        from ctm_sak.research.entry import ResearchEntry, topic_key
+        from gnat.research.entry import ResearchEntry, topic_key
 
         try:
             entry = ResearchEntry.from_dict(record)
@@ -175,8 +175,8 @@ class CurationJob(FeedJob):
     --------
     ::
 
-        from ctm_sak.research import ResearchLibrary, CurationJob
-        from ctm_sak.schedule import FeedScheduler
+        from gnat.research import ResearchLibrary, CurationJob
+        from gnat.schedule import FeedScheduler
 
         lib = ResearchLibrary.default()
         job = CurationJob(lib, interval_seconds=4 * 3600)
@@ -213,7 +213,7 @@ class CurationJob(FeedJob):
         """
         Run one curation cycle.
 
-        Overrides :meth:`~ctm_sak.schedule.job.FeedJob.execute` to use
+        Overrides :meth:`~gnat.schedule.job.FeedJob.execute` to use
         the two-pass curation logic (collect all → dedup → flush) rather
         than the standard stream-processing pipeline.
         """
@@ -279,7 +279,7 @@ class CurationJob(FeedJob):
                 return record
 
             # Dedup: group by topic key, keep most recent
-            from ctm_sak.research.entry import topic_key
+            from gnat.research.entry import topic_key
             by_topic: Dict[str, "ResearchEntry"] = {}
             for entry in pending:
                 tkey = topic_key(entry.topic)

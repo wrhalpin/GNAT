@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.vulnerabilities
+gnat.connectors.wazuh.vulnerabilities
 
 Vulnerability detection commands for the Wazuh connector.
 
@@ -13,7 +13,7 @@ cve, name (package), version, architecture, severity,
 cvss2_score, cvss3_score, detection_time, package.condition,
 references, title
 
-## CVSS severity mapping → CTM-SAK
+## CVSS severity mapping → GNAT
 
 critical (9.0–10.0) → 4
 high     (7.0–8.9)  → 3
@@ -170,7 +170,7 @@ def run_vulnerability_scan(self, agent_id: str) -> dict:
 
 @staticmethod
 def normalise_vulnerability(vuln: dict) -> dict:
-    """Flatten a Wazuh vulnerability record for CTM-SAK."""
+    """Flatten a Wazuh vulnerability record for GNAT."""
     sev_str = (vuln.get("severity") or "unknown").lower()
     return {
         "cve": vuln.get("cve"),

@@ -1,10 +1,10 @@
-"""Sphinx configuration for CTM-SAK documentation."""
+"""Sphinx configuration for GNAT documentation."""
 import os, sys
 sys.path.insert(0, os.path.abspath("../.."))
 
-project   = "CTM-SAK"
-author    = "CTM-SAK Contributors"
-copyright = "2025, CTM-SAK Contributors"
+project   = "GNAT"
+author    = "GNAT Contributors"
+copyright = "2025, GNAT Contributors"
 release   = "0.1.0"
 
 extensions = [
@@ -36,7 +36,7 @@ intersphinx_mapping = {
 
 html_theme       = "furo"
 html_static_path = ["_static"]
-html_title       = "CTM-SAK"
+html_title       = "GNAT"
 html_theme_options = {
     "navigation_with_keys": True,
     "light_css_variables": {"color-brand-primary": "#1a73e8", "color-brand-content": "#1a73e8"},

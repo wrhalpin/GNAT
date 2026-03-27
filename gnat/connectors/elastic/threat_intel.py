@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.threat_intel
+gnat.connectors.elastic.threat_intel
 
 Threat Intelligence indicator commands for the Elastic Security connector.
 
@@ -17,7 +17,7 @@ using the ECS `threat.indicator.*` field hierarchy.
    ───────────────────────────────────────────────────────────
    POST to `logs-ti_<source>.indicator-<namespace>/_doc`
    Documents must conform to ECS `threat.indicator.*` schema.
-   This is what CTM-SAK uses for bulk IOC push from its ORM.
+   This is what GNAT uses for bulk IOC push from its ORM.
 
 ## ECS threat.indicator fields
 
@@ -36,7 +36,7 @@ threat.indicator.reference    — source URL
 threat.feed.name              — feed name
 threat.feed.dashboard_id      — linked Kibana dashboard
 
-## STIX 2.1 → ECS mapping table (for CTM-SAK ORM → Elastic upload)
+## STIX 2.1 → ECS mapping table (for GNAT ORM → Elastic upload)
 
 ipv4-addr.value           → threat.indicator.ip
 ipv6-addr.value           → threat.indicator.ip
@@ -63,7 +63,7 @@ from typing import Iterator
 
 from .client import ElasticClient
 
-_DEFAULT_TI_INDEX = “logs-ti_ctm_sak.indicator-default”
+_DEFAULT_TI_INDEX = “logs-ti_gnat.indicator-default”
 _CONFIDENCE_MAP = {
 3: “High”, 2: “Medium”, 1: “Low”, 0: “Not Specified”,
 “high”: “High”, “medium”: “Medium”, “low”: “Low”,
@@ -306,7 +306,7 @@ def delete_indicators_by_provider(
 def upload_stix_bundle(
     self,
     bundle: dict,
-    source_name: str = "ctm_sak",
+    source_name: str = "gnat",
     index: str | None = None,
 ) -> dict:
     """
@@ -353,7 +353,7 @@ def upload_stix_bundle(
 @staticmethod
 def normalise_indicator(doc: dict) -> dict:
     """
-    Flatten an ECS indicator document to CTM-SAK normalised format.
+    Flatten an ECS indicator document to GNAT normalised format.
 
     Parameters
     ----------

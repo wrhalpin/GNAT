@@ -1,7 +1,7 @@
-ctm_sak.utils
+gnat.utils
 -------------
 
-.. automodule:: ctm_sak.utils
+.. automodule:: gnat.utils
    :members:
    :undoc-members:
    :show-inheritance:

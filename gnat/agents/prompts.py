@@ -1,8 +1,8 @@
 """
-ctm_sak.agents.prompts
+gnat.agents.prompts
 =======================
 
-All Claude prompt templates used by the CTM-SAK agent layer, kept in one
+All Claude prompt templates used by the GNAT agent layer, kept in one
 module so they are easy to audit, tune, and override without touching agent
 logic.
 
@@ -16,7 +16,7 @@ Tuning notes
 * ``RESEARCH_TOPIC_USER`` — the ``{topic}`` and ``{newer_than_hint}``
   placeholders are required.
 * ``PARSING_SYSTEM`` — the JSON schema embedded in the system prompt defines
-  the contract with :class:`~ctm_sak.agents.parsing.ParsingAgent`.
+  the contract with :class:`~gnat.agents.parsing.ParsingAgent`.
   Field names must match what ``ParsingAgent._to_stix_objects`` expects.
 * ``FEED_MONITOR_USER`` — used in feed-driven mode; ``{sources_block}``
   is a newline-separated list of configured URLs.

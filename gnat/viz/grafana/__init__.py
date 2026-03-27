@@ -1,1 +1,1 @@
-"""ctm_sak.viz.grafana — Grafana SimpleJSON datasource server."""
+"""gnat.viz.grafana — Grafana SimpleJSON datasource server."""

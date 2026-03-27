@@ -1,4 +1,4 @@
-# Contributing to CTM-SAK
+# Contributing to GNAT
 
 Thank you for considering a contribution. This document covers the workflow
 for bug reports, new connectors, new ingest readers/mappers, and general
@@ -20,8 +20,8 @@ improvements.
 ## Development Setup
 
 ```bash
-git clone https://github.com/your-org/ctm-sak.git
-cd ctm-sak
+git clone https://github.com/your-org/gnat.git
+cd gnat
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
@@ -47,8 +47,8 @@ make coverage
 # A specific test file
 pytest tests/unit/ingest/test_ingest.py -v
 
-# Integration tests (requires real credentials in ~/.ctm_sak/config.ini)
-CTM_SAK_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
+# Integration tests (requires real credentials in ~/.gnat/config.ini)
+GNAT_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
 ```
 
 ---
@@ -59,23 +59,23 @@ The fastest path is the built-in code generator:
 
 ```bash
 # Download the platform's OpenAPI spec, then:
-ctm-sak-codegen \
+gnat-codegen \
     --spec    ./specs/myplatform-openapi.json \
     --name    myplatform \
     --auth    oauth2
 ```
 
-This scaffolds `ctm_sak/connectors/myplatform/client.py` and a test file.
+This scaffolds `gnat/connectors/myplatform/client.py` and a test file.
 Then:
 
 1. **Fill in `authenticate()`** — inject the correct auth header(s).
 2. **Implement `to_stix(native)`** — map platform fields → STIX 2.1 dict.
 3. **Implement `from_stix(stix_dict)`** — map STIX → platform request payload.
 4. **Implement `get_object()`, `list_objects()`, `upsert_object()`, `delete_object()`**.
-5. **Register the connector** in `ctm_sak/clients/__init__.py`:
+5. **Register the connector** in `gnat/clients/__init__.py`:
 
    ```python
-   from ctm_sak.connectors.myplatform.client import MyplatformClient
+   from gnat.connectors.myplatform.client import MyplatformClient
    CLIENT_REGISTRY["myplatform"] = MyplatformClient
    ```
 
@@ -88,8 +88,8 @@ Then:
 Every connector must inherit from both `BaseClient` and `ConnectorMixin`:
 
 ```python
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 class MyplatformClient(BaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "ioc", ...}
@@ -120,10 +120,10 @@ Use `x_` prefixes for non-standard extension fields (e.g. `x_rf_risk_score`).
 
 ### New SourceReader
 
-1. Subclass `ctm_sak.ingest.base.SourceReader`.
+1. Subclass `gnat.ingest.base.SourceReader`.
 2. Implement `_iter_records(self) -> Iterator[RawRecord]`.
 3. Override `open()` / `close()` if you manage external resources.
-4. Export from `ctm_sak/ingest/sources/__init__.py` and `ctm_sak/__init__.py`.
+4. Export from `gnat/ingest/sources/__init__.py` and `gnat/__init__.py`.
 5. Add unit tests in `tests/unit/ingest/test_ingest.py`.
 
 ```python
@@ -144,10 +144,10 @@ class MyReader(SourceReader):
 
 ### New RecordMapper
 
-1. Subclass `ctm_sak.ingest.base.RecordMapper`.
+1. Subclass `gnat.ingest.base.RecordMapper`.
 2. Implement `map(self, record: RawRecord) -> Iterator[STIXBase]`.
 3. Use `self._client`, `self.tlp_marking`, `self.confidence` for consistency.
-4. Export from `ctm_sak/ingest/mappers/__init__.py` and `ctm_sak/__init__.py`.
+4. Export from `gnat/ingest/mappers/__init__.py` and `gnat/__init__.py`.
 5. Add unit tests.
 
 ```python
@@ -174,7 +174,7 @@ class MyMapper(RecordMapper):
 
 ## Code Style
 
-CTM-SAK uses **Ruff** for linting and formatting:
+GNAT uses **Ruff** for linting and formatting:
 
 ```bash
 make lint       # ruff check + ruff format --check
@@ -205,5 +205,5 @@ Before opening a PR:
 - [ ] Docstrings present on all public classes and methods
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
 - [ ] `config/config.ini.example` updated if new config keys added
-- [ ] `ctm_sak/__init__.py` updated if new public symbols added
+- [ ] `gnat/__init__.py` updated if new public symbols added
 - [ ] `make lint` and `make typecheck` clean (or known suppressions documented)

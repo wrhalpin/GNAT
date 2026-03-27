@@ -1,24 +1,24 @@
 """
-ctm_sak.export.jobs
+gnat.export.jobs
 =====================
 
-:class:`ExportJob` — a :class:`~ctm_sak.schedule.job.FeedJob` subclass
-that wraps an :class:`~ctm_sak.export.base.ExportPipeline` for scheduled
+:class:`ExportJob` — a :class:`~gnat.schedule.job.FeedJob` subclass
+that wraps an :class:`~gnat.export.base.ExportPipeline` for scheduled
 delivery.
 
 Because ``ExportJob`` inherits from ``FeedJob``, it works identically with
-:class:`~ctm_sak.schedule.scheduler.FeedScheduler` — you get drift-corrected
+:class:`~gnat.schedule.scheduler.FeedScheduler` — you get drift-corrected
 timing, overlap prevention, history tracking, ``on_success``/``on_failure``
 callbacks, APScheduler export, and everything else for free.
 
 Usage::
 
-    from ctm_sak.export.jobs import ExportJob
-    from ctm_sak.export import ExportPipeline
-    from ctm_sak.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
-    from ctm_sak.export.transforms.edl import EDLTransform
-    from ctm_sak.export.delivery.targets import FileDelivery, MultiDelivery, EDLServer
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.export.jobs import ExportJob
+    from gnat.export import ExportPipeline
+    from gnat.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
+    from gnat.export.transforms.edl import EDLTransform
+    from gnat.export.delivery.targets import FileDelivery, MultiDelivery, EDLServer
+    from gnat.schedule import FeedScheduler
 
     edl_server = EDLServer(port=8080)
 
@@ -49,8 +49,8 @@ Usage::
 
 ThreatQ → Netskope CE example::
 
-    from ctm_sak.export.transforms.netskope import NetskopeCETransform
-    from ctm_sak.export.delivery.targets import HTTPDelivery
+    from gnat.export.transforms.netskope import NetskopeCETransform
+    from gnat.export.delivery.targets import HTTPDelivery
 
     def tq_to_netskope(ctx):
         return (
@@ -79,18 +79,18 @@ import logging
 from datetime import datetime
 from typing import Any, Callable, List, Optional, TYPE_CHECKING
 
-from ctm_sak.schedule.job import FeedJob, JobRunContext, RunRecord, _utcnow
+from gnat.schedule.job import FeedJob, JobRunContext, RunRecord, _utcnow
 
 if TYPE_CHECKING:
-    from ctm_sak.export.base import ExportPipeline, ExportResult
+    from gnat.export.base import ExportPipeline, ExportResult
 
 logger = logging.getLogger(__name__)
 
 
 class ExportJob(FeedJob):
     """
-    A scheduled export job — wraps an :class:`~ctm_sak.export.base.ExportPipeline`
-    as a :class:`~ctm_sak.schedule.job.FeedJob`.
+    A scheduled export job — wraps an :class:`~gnat.export.base.ExportPipeline`
+    as a :class:`~gnat.schedule.job.FeedJob`.
 
     The ``pipeline_factory`` is called fresh on each run, allowing the
     pipeline to incorporate per-run state from ``JobRunContext`` (e.g.
@@ -121,7 +121,7 @@ class ExportJob(FeedJob):
     Attributes
     ----------
     last_export_result : ExportResult or None
-        The :class:`~ctm_sak.export.base.ExportResult` from the most
+        The :class:`~gnat.export.base.ExportResult` from the most
         recent run.
 
     Examples
@@ -170,7 +170,7 @@ class ExportJob(FeedJob):
         """
         Execute the export pipeline for one run.
 
-        Overrides :meth:`~ctm_sak.schedule.job.FeedJob.execute` to call
+        Overrides :meth:`~gnat.schedule.job.FeedJob.execute` to call
         the pipeline factory and run the export pipeline directly, bypassing
         the ingest-oriented reader/mapper/pipeline logic.
 
@@ -180,7 +180,7 @@ class ExportJob(FeedJob):
             Run record with ``result.total_records = source_objects``,
             ``result.written_objects = filtered_objects``.
         """
-        from ctm_sak.ingest.base import IngestResult
+        from gnat.ingest.base import IngestResult
 
         if not self.enabled:
             rec = RunRecord(

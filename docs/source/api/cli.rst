@@ -1,7 +1,7 @@
-ctm_sak.cli
+gnat.cli
 -----------
 
-.. automodule:: ctm_sak.cli
+.. automodule:: gnat.cli
    :members:
    :undoc-members:
    :show-inheritance:

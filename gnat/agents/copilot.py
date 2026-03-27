@@ -1,8 +1,8 @@
 """
-ctm_sak.agents.copilot
+gnat.agents.copilot
 =======================
 
-:class:`CopilotReader` — a :class:`~ctm_sak.ingest.base.SourceReader` that
+:class:`CopilotReader` — a :class:`~gnat.ingest.base.SourceReader` that
 queries Microsoft Copilot via the Bot Framework DirectLine API to retrieve
 threat-relevant content from configured M365 sources.
 
@@ -12,7 +12,7 @@ Your threat intelligence arrives via M365 channels — forwarded vendor
 advisories in Outlook, threat reports shared in Teams, curated SharePoint
 libraries.  Copilot has native access to all of these through Microsoft Graph.
 :class:`CopilotReader` delegates source navigation to Copilot and returns
-the content as raw text records for the :class:`~ctm_sak.agents.parsing.ParsingAgent`
+the content as raw text records for the :class:`~gnat.agents.parsing.ParsingAgent`
 to extract structured intel from.
 
 Configuration
@@ -71,9 +71,9 @@ Pipeline usage
 --------------
 ::
 
-    from ctm_sak.agents import CopilotReader, ParsingAgent, AgentConfig
-    from ctm_sak.ingest import IngestPipeline
-    from ctm_sak.schedule import FeedJob
+    from gnat.agents import CopilotReader, ParsingAgent, AgentConfig
+    from gnat.ingest import IngestPipeline
+    from gnat.schedule import FeedJob
 
     def make_reader(ctx):
         return CopilotReader(
@@ -104,7 +104,7 @@ The DirectLine v3 API is used:
 4. Parse the bot reply and return content as ``RawRecord`` dicts
 
 The full DirectLine async client is in
-:mod:`ctm_sak.async_client.connectors`; this reader uses a synchronous
+:mod:`gnat.async_client.connectors`; this reader uses a synchronous
 ``urllib``-based implementation for compatibility with the sync
 ``SourceReader`` interface.
 """
@@ -118,8 +118,8 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, Iterator, List, Optional
 
-from ctm_sak.ingest.base import RawRecord, SourceReader
-from ctm_sak.agents.prompts import COPILOT_QUERY_TEMPLATE, COPILOT_NEWER_HINT
+from gnat.ingest.base import RawRecord, SourceReader
+from gnat.agents.prompts import COPILOT_QUERY_TEMPLATE, COPILOT_NEWER_HINT
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ class CopilotReader(SourceReader):
     newer_than : str, optional
         ISO 8601 timestamp.  Only retrieve content published/received after
         this time.  Typically ``ctx.last_success_iso`` from
-        :class:`~ctm_sak.schedule.job.JobRunContext`.
+        :class:`~gnat.schedule.job.JobRunContext`.
     bot_timeout : int
         Seconds to wait for a Copilot response per source query.
         Default ``60``.
@@ -188,7 +188,7 @@ class CopilotReader(SourceReader):
         config_path: Optional[str] = None,
     ) -> "CopilotReader":
         """
-        Construct from the ``[copilot]`` section of the CTM-SAK INI file.
+        Construct from the ``[copilot]`` section of the GNAT INI file.
 
         Parameters
         ----------
@@ -204,7 +204,7 @@ class CopilotReader(SourceReader):
         KeyError
             If ``[copilot]`` section or ``directline_secret`` key is missing.
         """
-        from ctm_sak.config import SAKConfig
+        from gnat.config import SAKConfig
         cfg = SAKConfig(config_path)
         try:
             section = cfg.get("copilot")
@@ -381,7 +381,7 @@ class CopilotReader(SourceReader):
         """POST an activity (user message) to the conversation."""
         body = json.dumps({
             "type": "message",
-            "from": {"id": "ctm-sak-agent", "name": "CTM-SAK"},
+            "from": {"id": "gnat-agent", "name": "GNAT"},
             "text": text,
         }).encode("utf-8")
 
@@ -414,10 +414,10 @@ class CopilotReader(SourceReader):
             watermark = resp.get("watermark")
             activities = resp.get("activities", [])
 
-            # Look for a bot reply (fromId != ctm-sak-agent)
+            # Look for a bot reply (fromId != gnat-agent)
             for activity in activities:
                 from_id = activity.get("from", {}).get("id", "")
-                if from_id != "ctm-sak-agent" and activity.get("type") == "message":
+                if from_id != "gnat-agent" and activity.get("type") == "message":
                     text = activity.get("text", "")
                     # Copilot sometimes wraps text in an Adaptive Card
                     if not text:

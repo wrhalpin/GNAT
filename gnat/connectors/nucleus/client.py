@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.nucleus.client
+gnat.connectors.nucleus.client
 ====================================
 
 Nucleus Security connector — unified vulnerability intelligence and
@@ -30,8 +30,8 @@ https://docs.nucleussec.com/api/
 """
 
 from typing import Any, Dict, List, Optional
-from ctm_sak.clients.base import BaseClient, SAKClientError
-from ctm_sak.connectors.base_connector import ConnectorMixin
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 
 
 class NucleusClient(BaseClient, ConnectorMixin):
@@ -243,6 +243,6 @@ class NucleusClient(BaseClient, ConnectorMixin):
             "value":      ioc_value,
             "type":       ioc_type,
             "confidence": stix_dict.get("confidence", 50),
-            "source":     stix_dict.get("x_source_platform", "ctm-sak"),
+            "source":     stix_dict.get("x_source_platform", "gnat"),
             "tags":       stix_dict.get("x_source_topic", ""),
         }

@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.alerts
+gnat.connectors.wazuh.alerts
 
 Alert and security event commands for the Wazuh connector.
 
@@ -10,14 +10,14 @@ via the `/alerts` endpoint (available in Wazuh 4.6+).
 For richer queries (time ranges, field filters, aggregations),
 WazuhIndexerCommands provides direct Indexer API access.
 
-## Alert severity mapping (Wazuh → CTM-SAK)
+## Alert severity mapping (Wazuh → GNAT)
 
 Wazuh uses integer rule levels (0–15):
-0–3   → informational (CTM-SAK severity 0)
-4–7   → low          (CTM-SAK severity 1)
-8–11  → medium       (CTM-SAK severity 2)
-12–14 → high         (CTM-SAK severity 3)
-15    → critical      (CTM-SAK severity 4)
+0–3   → informational (GNAT severity 0)
+4–7   → low          (GNAT severity 1)
+8–11  → medium       (GNAT severity 2)
+12–14 → high         (GNAT severity 3)
+15    → critical      (GNAT severity 4)
 
 ## References
 
@@ -130,12 +130,12 @@ def get_alerts_by_severity(
     limit: int | None = None,
 ) -> list[dict]:
     """
-    Get alerts filtered by CTM-SAK severity label or integer.
+    Get alerts filtered by GNAT severity label or integer.
 
     Parameters
     ----------
     severity : str | int
-        CTM-SAK severity: 'informational'|'low'|'medium'|'high'|'critical'
+        GNAT severity: 'informational'|'low'|'medium'|'high'|'critical'
         or integer 0–4.
     agent_id : str | None
         Optionally filter to a specific agent.
@@ -249,7 +249,7 @@ def get_event_stats_by_week(self) -> list[dict]:
 @staticmethod
 def normalise_alert(alert: dict) -> dict:
     """
-    Flatten a Wazuh alert record to CTM-SAK normalised format.
+    Flatten a Wazuh alert record to GNAT normalised format.
 
     Parameters
     ----------

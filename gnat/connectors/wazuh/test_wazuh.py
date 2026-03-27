@@ -1,7 +1,7 @@
 # “””
 tests/connectors/test_wazuh.py
 
-Unit tests for the CTM-SAK Wazuh connector.
+Unit tests for the GNAT Wazuh connector.
 
 All HTTP is mocked via unittest.mock on urllib3.PoolManager.
 No live Wazuh instance required.
@@ -34,8 +34,8 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch, call
 
-from ctm_sak.connectors.wazuh.config import WazuhConfig, load_wazuh_config
-from ctm_sak.connectors.wazuh.exceptions import (
+from gnat.connectors.wazuh.config import WazuhConfig, load_wazuh_config
+from gnat.connectors.wazuh.exceptions import (
 WazuhAuthError,
 WazuhAPIError,
 WazuhConfigError,
@@ -45,16 +45,16 @@ WazuhRateLimitError,
 WazuhSTIXError,
 WazuhIndexerError,
 )
-from ctm_sak.connectors.wazuh.auth import WazuhAuthManager
-from ctm_sak.connectors.wazuh.client import WazuhClient
-from ctm_sak.connectors.wazuh.agents import WazuhAgentCommands
-from ctm_sak.connectors.wazuh.alerts import WazuhAlertCommands, _level_to_severity
-from ctm_sak.connectors.wazuh.syscheck import WazuhSyscheckCommands
-from ctm_sak.connectors.wazuh.vulnerabilities import WazuhVulnerabilityCommands
-from ctm_sak.connectors.wazuh.rules import WazuhRulesCommands
-from ctm_sak.connectors.wazuh.active_response import WazuhActiveResponseCommands
-from ctm_sak.connectors.wazuh.indexer import WazuhIndexerCommands
-from ctm_sak.connectors.wazuh.stix_mapper import WazuhSTIXMapper
+from gnat.connectors.wazuh.auth import WazuhAuthManager
+from gnat.connectors.wazuh.client import WazuhClient
+from gnat.connectors.wazuh.agents import WazuhAgentCommands
+from gnat.connectors.wazuh.alerts import WazuhAlertCommands, _level_to_severity
+from gnat.connectors.wazuh.syscheck import WazuhSyscheckCommands
+from gnat.connectors.wazuh.vulnerabilities import WazuhVulnerabilityCommands
+from gnat.connectors.wazuh.rules import WazuhRulesCommands
+from gnat.connectors.wazuh.active_response import WazuhActiveResponseCommands
+from gnat.connectors.wazuh.indexer import WazuhIndexerCommands
+from gnat.connectors.wazuh.stix_mapper import WazuhSTIXMapper
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -85,7 +85,7 @@ return {
 
 def _make_client(config: WazuhConfig | None = None) -> tuple[WazuhClient, MagicMock]:
 cfg = config or _make_config()
-with patch(“ctm_sak.connectors.wazuh.client.urllib3.PoolManager”) as pm_cls:
+with patch(“gnat.connectors.wazuh.client.urllib3.PoolManager”) as pm_cls:
 mock_pm = MagicMock()
 pm_cls.return_value = mock_pm
 client = WazuhClient(cfg)
@@ -336,7 +336,7 @@ def test_429_retries_then_raises(self):
 
 def test_context_manager(self):
     cfg = _make_config()
-    with patch("ctm_sak.connectors.wazuh.client.urllib3.PoolManager"):
+    with patch("gnat.connectors.wazuh.client.urllib3.PoolManager"):
         with WazuhClient(cfg) as client:
             self.assertIsInstance(client, WazuhClient)
 
@@ -990,7 +990,7 @@ class TestWazuhExceptions(unittest.TestCase):
 
 ```
 def test_all_inherit_from_base(self):
-    from ctm_sak.connectors.wazuh.exceptions import WazuhError
+    from gnat.connectors.wazuh.exceptions import WazuhError
     for exc_cls in [
         WazuhConfigError, WazuhAuthError, WazuhAPIError,
         WazuhNotFoundError, WazuhPermissionError, WazuhRateLimitError,

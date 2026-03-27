@@ -1,12 +1,12 @@
-"""ctm_sak.orm — STIX 2.1-compatible ORM domain objects."""
-from ctm_sak.orm.base import STIXBase
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.threat_actor import ThreatActor
-from ctm_sak.orm.malware import Malware
-from ctm_sak.orm.vulnerability import Vulnerability
-from ctm_sak.orm.attack_pattern import AttackPattern
-from ctm_sak.orm.observable import Observable, IPv4Address, DomainName, URL, FileObject, EmailAddress
-from ctm_sak.orm.relationship import Relationship
+"""gnat.orm — STIX 2.1-compatible ORM domain objects."""
+from gnat.orm.base import STIXBase
+from gnat.orm.indicator import Indicator
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.malware import Malware
+from gnat.orm.vulnerability import Vulnerability
+from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.observable import Observable, IPv4Address, DomainName, URL, FileObject, EmailAddress
+from gnat.orm.relationship import Relationship
 
 __all__ = [
     "STIXBase", "Indicator", "ThreatActor", "Malware", "Vulnerability",

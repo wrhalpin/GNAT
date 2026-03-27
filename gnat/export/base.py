@@ -1,8 +1,8 @@
 """
-ctm_sak.export.base
+gnat.export.base
 =====================
 
-Core abstractions for the CTM-SAK export/integration pipeline.
+Core abstractions for the GNAT export/integration pipeline.
 
 Export is a *push* operation — it differs from ingestion in a critical way:
 the target often needs a **complete, authoritative list**, not an incremental
@@ -18,15 +18,15 @@ Three-stage pipeline::
     Deliver    — push the rendered payload to the destination
 
 All three stages are composable protocol classes.  Concrete implementations
-live in ``ctm_sak.export.filters``, ``ctm_sak.export.transforms.*``, and
-``ctm_sak.export.delivery.*``.
+live in ``gnat.export.filters``, ``gnat.export.transforms.*``, and
+``gnat.export.delivery.*``.
 
 Usage::
 
-    from ctm_sak.export import ExportPipeline
-    from ctm_sak.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
-    from ctm_sak.export.transforms.edl import EDLTransform
-    from ctm_sak.export.delivery.file import FileDelivery
+    from gnat.export import ExportPipeline
+    from gnat.export.filters import TypeFilter, ConfidenceFilter, TLPFilter
+    from gnat.export.transforms.edl import EDLTransform
+    from gnat.export.delivery.file import FileDelivery
 
     pipeline = (
         ExportPipeline("tq-to-edl")
@@ -41,11 +41,11 @@ Usage::
     result = pipeline.run()
     print(result)   # ExportResult: 847 objects → 3 files
 
-The pipeline is designed to be wrapped in a :class:`~ctm_sak.export.jobs.ExportJob`
+The pipeline is designed to be wrapped in a :class:`~gnat.export.jobs.ExportJob`
 for scheduled delivery::
 
-    from ctm_sak.export.jobs import ExportJob
-    from ctm_sak.schedule import FeedScheduler
+    from gnat.export.jobs import ExportJob
+    from gnat.schedule import FeedScheduler
 
     job = ExportJob(
         job_id="tq-to-edl-hourly",
@@ -67,8 +67,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, Iterator, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.context.workspace import Workspace
-    from ctm_sak.orm.base import STIXBase
+    from gnat.context.workspace import Workspace
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class ExportFilter(ABC):
     """
     Abstract base for export filters.
 
-    A filter takes a stream of :class:`~ctm_sak.orm.base.STIXBase` objects
+    A filter takes a stream of :class:`~gnat.orm.base.STIXBase` objects
     and yields only those that pass its predicate.
     """
 
@@ -131,7 +131,7 @@ class ExportTransform(ABC):
     """
     Abstract base for export transforms.
 
-    A transform takes a list of :class:`~ctm_sak.orm.base.STIXBase` objects
+    A transform takes a list of :class:`~gnat.orm.base.STIXBase` objects
     and produces a :class:`TransformResult` — one or more named payloads
     ready to deliver.  The payloads are a dict so that transforms that
     produce multiple output files (e.g. separate IPv4/domain/URL EDL files)
@@ -371,7 +371,7 @@ class ExportPipeline:
         Parameters
         ----------
         source : Workspace or list of STIXBase or iterable
-            If a :class:`~ctm_sak.context.workspace.Workspace`, all objects
+            If a :class:`~gnat.context.workspace.Workspace`, all objects
             in the workspace are used as the source.
             If a list/iterable, those objects are used directly.
 
@@ -380,7 +380,7 @@ class ExportPipeline:
         ExportPipeline
             ``self`` for chaining.
         """
-        from ctm_sak.context.workspace import Workspace
+        from gnat.context.workspace import Workspace
         if isinstance(source, Workspace):
             self._workspace = source
         else:

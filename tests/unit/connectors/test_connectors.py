@@ -2,7 +2,7 @@
 tests/unit/connectors/test_connectors.py
 =========================================
 
-Unit tests for all six CTM-SAK connector clients.
+Unit tests for all six GNAT connector clients.
 
 Tests cover:
 - Authentication header injection
@@ -14,18 +14,18 @@ Tests cover:
 import pytest
 from unittest.mock import MagicMock
 
-from ctm_sak.clients.base import SAKClientError
-from ctm_sak.connectors.greymatter.client import GreyMatterClient
-from ctm_sak.connectors.whistic.client import WhisticClient
-from ctm_sak.connectors.riskrecon.client import RiskReconClient
-from ctm_sak.connectors.feedly.client import FeedlyClient
-from ctm_sak.connectors.splunk.client import SplunkClient
-from ctm_sak.connectors.threatq.client import ThreatQClient
-from ctm_sak.connectors.proofpoint.client import ProofpointClient
-from ctm_sak.connectors.netskope.client import NetskopeClient
-from ctm_sak.connectors.crowdstrike.client import CrowdStrikeClient
-from ctm_sak.connectors.xsoar.client import XSOARClient
-from ctm_sak.connectors.recordedfuture.client import RecordedFutureClient
+from gnat.clients.base import SAKClientError
+from gnat.connectors.greymatter.client import GreyMatterClient
+from gnat.connectors.whistic.client import WhisticClient
+from gnat.connectors.riskrecon.client import RiskReconClient
+from gnat.connectors.feedly.client import FeedlyClient
+from gnat.connectors.splunk.client import SplunkClient
+from gnat.connectors.threatq.client import ThreatQClient
+from gnat.connectors.proofpoint.client import ProofpointClient
+from gnat.connectors.netskope.client import NetskopeClient
+from gnat.connectors.crowdstrike.client import CrowdStrikeClient
+from gnat.connectors.xsoar.client import XSOARClient
+from gnat.connectors.recordedfuture.client import RecordedFutureClient
 
 
 # ---------------------------------------------------------------------------
@@ -556,7 +556,7 @@ class TestSplunkClient:
         assert s["x_splunk_src"] == "10.0.0.1"
 
     def test_to_stix_threat_intel_row(self, client):
-        s = client.to_stix({"ip": "5.5.5.5", "source": "ctm-sak", "_time": ""})
+        s = client.to_stix({"ip": "5.5.5.5", "source": "gnat", "_time": ""})
         assert "ipv4-addr" in s["pattern"]
         assert "5.5.5.5" in s["pattern"]
 

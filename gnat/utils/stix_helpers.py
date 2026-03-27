@@ -1,5 +1,5 @@
 """
-ctm_sak.utils.stix_helpers
+gnat.utils.stix_helpers
 ===========================
 Utility functions for working with STIX 2.1 objects and bundles.
 """

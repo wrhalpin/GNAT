@@ -2,7 +2,7 @@
 tests/unit/export/test_export.py
 ==================================
 
-Unit tests for ctm_sak.export — filters, transforms, delivery, pipeline, jobs.
+Unit tests for gnat.export — filters, transforms, delivery, pipeline, jobs.
 
 Coverage:
 - All filter classes: TypeFilter, ConfidenceFilter, TLPFilter, TagFilter,
@@ -32,23 +32,23 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ctm_sak.orm.indicator import Indicator
-from ctm_sak.orm.malware import Malware
-from ctm_sak.orm.vulnerability import Vulnerability
+from gnat.orm.indicator import Indicator
+from gnat.orm.malware import Malware
+from gnat.orm.vulnerability import Vulnerability
 
-from ctm_sak.export import ExportPipeline, TransformResult, DeliveryResult
-from ctm_sak.export.filters import (
+from gnat.export import ExportPipeline, TransformResult, DeliveryResult
+from gnat.export.filters import (
     TypeFilter, ConfidenceFilter, TLPFilter, TagFilter,
     AgeFilter, IOCTypeFilter, LimitFilter, DeduplicateFilter, FunctionFilter,
 )
-from ctm_sak.export.transforms.edl import EDLTransform
-from ctm_sak.export.transforms.netskope import (
+from gnat.export.transforms.edl import EDLTransform
+from gnat.export.transforms.netskope import (
     NetskopeCETransform, STIXBundleTransform, CSVTransform,
 )
-from ctm_sak.export.delivery.targets import (
+from gnat.export.delivery.targets import (
     FileDelivery, LogDelivery, MultiDelivery,
 )
-from ctm_sak.export.jobs import ExportJob
+from gnat.export.jobs import ExportJob
 
 
 # ===========================================================================
@@ -698,7 +698,7 @@ class TestExportJob:
         assert seen[1] is not None
 
     def test_integrates_with_feed_scheduler(self):
-        from ctm_sak.schedule import FeedScheduler
+        from gnat.schedule import FeedScheduler
         job = ExportJob("j", lambda ctx: self._build_pipeline(), interval_seconds=60)
         sched = FeedScheduler()
         sched.add(job)

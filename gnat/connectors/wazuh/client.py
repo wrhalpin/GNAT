@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.client
+gnat.connectors.wazuh.client
 
 Core HTTP client for the Wazuh connector.
 

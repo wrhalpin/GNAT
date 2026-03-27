@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.client
+gnat.connectors.elastic.client
 
 Core HTTP client for the Elastic Security connector.
 
