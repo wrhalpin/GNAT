@@ -1,4 +1,4 @@
-# """
+"""
 gnat.connectors.splunk.client
 
 Core HTTP client for the Splunk connector.
