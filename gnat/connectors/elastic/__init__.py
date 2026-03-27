@@ -1,5 +1,5 @@
 # “””
-CTM-SAK Elastic Security Connector
+GNAT Elastic Security Connector
 
 Connector for Elastic Security (Elasticsearch + Kibana Security).
 
@@ -49,7 +49,7 @@ Custom Threat Intelligence integration (ti_custom). The connector:
 - Maps Detection Rule fields ↔ STIX 2.1 indicator SDOs
 
 ECS (Elastic Common Schema) is the normalisation layer between
-raw event data and STIX. CTM-SAK maps ECS fields directly.
+raw event data and STIX. GNAT maps ECS fields directly.
 
 ## Dev access
 
@@ -57,7 +57,7 @@ Free self-hosted Basic tier with full API access:
 Docker: https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
 14-day cloud trial (no credit card): https://cloud.elastic.co/registration
 
-Configuration section (ctm_sak.ini):
+Configuration section (gnat.ini):
 [elastic]
 es_host           = localhost
 es_port           = 9200

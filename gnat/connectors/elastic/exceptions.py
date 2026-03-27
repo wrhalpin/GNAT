@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.exceptions
+gnat.connectors.elastic.exceptions
 
 Exception hierarchy for the Elastic Security connector.
 

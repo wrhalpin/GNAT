@@ -1,18 +1,18 @@
-# CTM-SAK Makefile
+# GNAT Makefile
 .DEFAULT_GOAL := help
 PYTHON  ?= python
 PIP     ?= pip
 PYTEST  ?= pytest
 RUFF    ?= ruff
 MYPY    ?= mypy
-SRC     := ctm_sak
+SRC     := gnat
 TESTS   := tests
 
 .PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen
 
 help:
 	@echo ""
-	@echo "CTM-SAK development targets"
+	@echo "GNAT development targets"
 	@echo "────────────────────────────────────────────"
 	@echo "  make install       Install package + all dev deps"
 	@echo "  make test          Run all unit tests"
@@ -39,7 +39,7 @@ coverage:
 	@echo "Coverage report: htmlcov/index.html"
 
 integration:
-	@[ -n "$(CTM_SAK_CONFIG)" ] || (echo "ERROR: set CTM_SAK_CONFIG=/path/to/real.ini"; exit 1)
+	@[ -n "$(GNAT_CONFIG)" ] || (echo "ERROR: set GNAT_CONFIG=/path/to/real.ini"; exit 1)
 	$(PYTEST) $(TESTS)/integration/ --run-integration -v
 
 lint:

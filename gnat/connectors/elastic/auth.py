@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.auth
+gnat.connectors.elastic.auth
 
 Authentication manager for the Elastic Security connector.
 
@@ -17,7 +17,7 @@ both are base64-encoded — the prefix “ApiKey” vs “Basic” disambiguates
 
 ## API key privileges
 
-For CTM-SAK’s full connector surface the API key needs:
+For GNAT’s full connector surface the API key needs:
 
 Cluster privileges:
 - monitor (health, info)
@@ -33,7 +33,7 @@ Kibana privileges (via role assigned to key):
 
 Elastic does not provide a refresh flow for API keys.
 If a key is revoked or expires, the connector raises ElasticAuthError
-and the key must be replaced in ctm_sak.ini manually.
+and the key must be replaced in gnat.ini manually.
 
 WazuhAuthManager pattern note: there is no equivalent token-renewal
 loop here. The auth object is intentionally lightweight — it just

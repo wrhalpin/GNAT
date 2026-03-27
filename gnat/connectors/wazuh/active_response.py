@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.active_response
+gnat.connectors.wazuh.active_response
 
 Active Response command execution for the Wazuh connector.
 

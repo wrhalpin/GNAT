@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.kibana_alerts
+gnat.connectors.elastic.kibana_alerts
 
 Kibana Security alert management commands.
 
@@ -240,7 +240,7 @@ def bulk_update_status_by_query(
 
 @staticmethod
 def normalise_alert(alert: dict) -> dict:
-    """Flatten a Kibana alert to CTM-SAK normalised format."""
+    """Flatten a Kibana alert to GNAT normalised format."""
     kib = alert.get("kibana", {}).get("alert", {})
     rule = kib.get("rule", {})
     severity_map = {"low": 1, "medium": 2, "high": 3, "critical": 4}

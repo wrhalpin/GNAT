@@ -1,7 +1,7 @@
 # “””
 tests/connectors/test_splunk.py
 
-Unit tests for the CTM-SAK Splunk connector.
+Unit tests for the GNAT Splunk connector.
 
 ## Test strategy
 
@@ -35,8 +35,8 @@ from unittest.mock import MagicMock, patch, PropertyMock
 
 # ── Connector imports ─────────────────────────────────────────────────────────
 
-from ctm_sak.connectors.splunk.config import SplunkConfig, load_splunk_config
-from ctm_sak.connectors.splunk.exceptions import (
+from gnat.connectors.splunk.config import SplunkConfig, load_splunk_config
+from gnat.connectors.splunk.exceptions import (
 SplunkAuthError,
 SplunkAPIError,
 SplunkConfigError,
@@ -46,13 +46,13 @@ SplunkSearchError,
 SplunkThreatIntelError,
 SplunkSTIXError,
 )
-from ctm_sak.connectors.splunk.auth import SplunkAuthManager
-from ctm_sak.connectors.splunk.client import SplunkClient
-from ctm_sak.connectors.splunk.search import SplunkSearchCommands
-from ctm_sak.connectors.splunk.alerts import SplunkAlertCommands
-from ctm_sak.connectors.splunk.threat_intel import SplunkThreatIntelCommands
-from ctm_sak.connectors.splunk.kvstore import SplunkKVStoreCommands
-from ctm_sak.connectors.splunk.stix_mapper import SplunkSTIXMapper
+from gnat.connectors.splunk.auth import SplunkAuthManager
+from gnat.connectors.splunk.client import SplunkClient
+from gnat.connectors.splunk.search import SplunkSearchCommands
+from gnat.connectors.splunk.alerts import SplunkAlertCommands
+from gnat.connectors.splunk.threat_intel import SplunkThreatIntelCommands
+from gnat.connectors.splunk.kvstore import SplunkKVStoreCommands
+from gnat.connectors.splunk.stix_mapper import SplunkSTIXMapper
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -81,7 +81,7 @@ return resp
 def _make_client(config: SplunkConfig | None = None) -> tuple[SplunkClient, MagicMock]:
 “”“Return a SplunkClient with a mocked urllib3 PoolManager.”””
 cfg = config or _make_config()
-with patch(“ctm_sak.connectors.splunk.client.urllib3.PoolManager”) as mock_pm_cls:
+with patch(“gnat.connectors.splunk.client.urllib3.PoolManager”) as mock_pm_cls:
 mock_pm = MagicMock()
 mock_pm_cls.return_value = mock_pm
 client = SplunkClient(cfg)
@@ -286,7 +286,7 @@ def test_429_raises_rate_limit_after_retries(self):
 def test_context_manager(self):
     """Client can be used as a context manager."""
     cfg = _make_config()
-    with patch("ctm_sak.connectors.splunk.client.urllib3.PoolManager"):
+    with patch("gnat.connectors.splunk.client.urllib3.PoolManager"):
         with SplunkClient(cfg) as client:
             self.assertIsInstance(client, SplunkClient)
 
@@ -479,7 +479,7 @@ def test_invalid_collection_raises(self):
 
 def test_validate_collection_strips_intel_suffix(self):
     """'ip_intel' and 'ip' both resolve to 'ip_intel'."""
-    from ctm_sak.connectors.splunk.threat_intel import (
+    from gnat.connectors.splunk.threat_intel import (
         SplunkThreatIntelCommands as TI,
     )
     self.assertEqual(TI._validate_collection("ip"), "ip_intel")
@@ -530,10 +530,10 @@ def _make_kvstore(self):
 def test_list_collections(self):
     kv, mock_http = self._make_kvstore()
     mock_http.request.return_value = _make_response(
-        200, {"entry": [{"name": "ctm_sak_cache"}, {"name": "ctm_sak_state"}]}
+        200, {"entry": [{"name": "gnat_cache"}, {"name": "gnat_state"}]}
     )
     names = kv.list_collections()
-    self.assertIn("ctm_sak_cache", names)
+    self.assertIn("gnat_cache", names)
 
 def test_collection_exists_true(self):
     kv, mock_http = self._make_kvstore()
@@ -749,7 +749,7 @@ class TestSplunkExceptions(unittest.TestCase):
 
 ```
 def test_all_exceptions_inherit_from_base(self):
-    from ctm_sak.connectors.splunk.exceptions import SplunkError
+    from gnat.connectors.splunk.exceptions import SplunkError
     for exc_cls in [
         SplunkConfigError,
         SplunkAuthError,

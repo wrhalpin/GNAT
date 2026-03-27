@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.config
+gnat.connectors.wazuh.config
 
 Configuration schema for the Wazuh connector.
 
@@ -173,7 +173,7 @@ config: configparser.ConfigParser,
 section: str = “wazuh”,
 ) -> WazuhConfig:
 “””
-Parse [wazuh] section from a ctm_sak.ini ConfigParser instance.
+Parse [wazuh] section from a gnat.ini ConfigParser instance.
 
 ```
 Parameters
@@ -194,7 +194,7 @@ WazuhConfigError
 """
 if not config.has_section(section):
     raise WazuhConfigError(
-        f"Configuration section '[{section}]' not found in ctm_sak.ini."
+        f"Configuration section '[{section}]' not found in gnat.ini."
     )
 
 raw = dict(_DEFAULTS)

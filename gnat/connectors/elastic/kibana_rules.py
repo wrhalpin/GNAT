@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.kibana_rules
+gnat.connectors.elastic.kibana_rules
 
 Kibana Security Detection Engine rule commands.
 
@@ -426,7 +426,7 @@ def import_rules(
 @staticmethod
 def normalise_rule(rule: dict) -> dict:
     """
-    Flatten a Kibana detection rule for CTM-SAK normalised format.
+    Flatten a Kibana detection rule for GNAT normalised format.
 
     Parameters
     ----------

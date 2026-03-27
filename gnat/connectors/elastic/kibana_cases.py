@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.elastic.kibana_cases
+gnat.connectors.elastic.kibana_cases
 
 Kibana Cases API commands.
 

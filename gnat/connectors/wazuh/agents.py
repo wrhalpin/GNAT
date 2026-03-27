@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.agents
+gnat.connectors.wazuh.agents
 
 Agent management commands for the Wazuh connector.
 
@@ -18,7 +18,7 @@ disconnected — agent was connected but has stopped reporting
 never_connected — agent was enrolled but never connected
 pending      — agent enrolled but awaiting first connection
 
-## Agent info fields of interest for CTM-SAK
+## Agent info fields of interest for GNAT
 
 id, name, ip, status, os.platform, os.version, version,
 lastKeepAlive, registerIP, dateAdd, group, manager, node_name
@@ -437,7 +437,7 @@ def remove_agent_from_group(self, agent_id: str, group_id: str) -> dict:
 @staticmethod
 def normalise_agent(agent: dict) -> dict:
     """
-    Flatten a Wazuh agent record for CTM-SAK normalised format.
+    Flatten a Wazuh agent record for GNAT normalised format.
 
     Parameters
     ----------

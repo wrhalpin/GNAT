@@ -1,5 +1,5 @@
 # “””
-ctm_sak.connectors.wazuh.exceptions
+gnat.connectors.wazuh.exceptions
 
 Exception hierarchy for the Wazuh connector.
 

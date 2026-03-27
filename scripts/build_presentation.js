@@ -1,7 +1,7 @@
 const pptxgen = require("pptxgenjs");
 const path = require("path");
 
-const OUT = process.argv[2] || "/mnt/user-data/outputs/CTM-SAK-Presentation.pptx";
+const OUT = process.argv[2] || "/mnt/user-data/outputs/GNAT-Presentation.pptx";
 
 // ── Palette ──────────────────────────────────────────────────────────────
 const C = {
@@ -153,8 +153,8 @@ function statBox(sl, pres, x, y, w, h, value, label, color) {
 // ═══════════════════════════════════════════════════════════════════════════
 let pres = new pptxgen();
 pres.layout = "LAYOUT_16x9";
-pres.title  = "CTM-SAK: Cybersecurity Threat Management Swiss Army Knife";
-pres.author = "CTM-SAK";
+pres.title  = "GNAT: Cybersecurity Threat Management Swiss Army Knife";
+pres.author = "GNAT";
 
 // ── Slide 1: Title ──────────────────────────────────────────────────────
 {
@@ -168,7 +168,7 @@ pres.author = "CTM-SAK";
     x: 0.22, y: 4.9, w: 9.78, h: 0.08, fill: { color: C.teal }, line: { width: 0 }
   });
 
-  sl.addText("CTM-SAK", {
+  sl.addText("GNAT", {
     x: 0.5, y: 0.7, w: 9, h: 1.0,
     fontSize: 52, fontFace: "Calibri", bold: true,
     color: C.white, align: "left", margin: 0
@@ -261,7 +261,7 @@ pres.author = "CTM-SAK";
     x: 0.35, y: 0.95, w: 4.1, h: 0.38,
     fill: { color: C.red }, line: { width: 0 }
   });
-  sl.addText("WITHOUT CTM-SAK", {
+  sl.addText("WITHOUT GNAT", {
     x: 0.35, y: 0.95, w: 4.1, h: 0.38,
     fontSize: 12, fontFace: "Calibri", bold: true,
     color: C.white, align: "center", margin: 0
@@ -286,7 +286,7 @@ pres.author = "CTM-SAK";
     x: 4.55, y: 3.2, w: 0.9, h: 0,
     line: { color: C.teal, width: 2.5, endArrowType: "triangle" }
   });
-  sl.addText("CTM-SAK", {
+  sl.addText("GNAT", {
     x: 4.5, y: 3.35, w: 1.0, h: 0.25,
     fontSize: 9, fontFace: "Calibri", bold: true,
     color: C.teal, align: "center", margin: 0
@@ -297,7 +297,7 @@ pres.author = "CTM-SAK";
     x: 5.55, y: 0.95, w: 4.1, h: 0.38,
     fill: { color: C.teal }, line: { width: 0 }
   });
-  sl.addText("WITH CTM-SAK", {
+  sl.addText("WITH GNAT", {
     x: 5.55, y: 0.95, w: 4.1, h: 0.38,
     fontSize: 12, fontFace: "Calibri", bold: true,
     color: C.white, align: "center", margin: 0
@@ -325,7 +325,7 @@ pres.author = "CTM-SAK";
   // Layers
   const layers = [
     { label: "ANALYST / AUTOMATION LAYER", sub: "Workstations · SOAR · Scheduled jobs · CLI", col: C.navy2, textCol: C.white, y: 0.85 },
-    { label: "CTM-SAK CORE", sub: "Ingest · Export · Agents · Research Library · Reports · Visualization", col: C.steel, textCol: C.white, y: 1.52 },
+    { label: "GNAT CORE", sub: "Ingest · Export · Agents · Research Library · Reports · Visualization", col: C.steel, textCol: C.white, y: 1.52 },
     { label: "STIX 2.1 ORM + WORKSPACE", sub: "Indicator · ThreatActor · Vulnerability · AttackPattern · Relationship", col: C.teal, textCol: C.white, y: 2.19 },
     { label: "CONNECTOR LAYER (15 platforms)", sub: "ThreatQ · CrowdStrike · Splunk · RF · Netskope · VT · ShadowServer · Rapid7 · Nucleus · …", col: C.navy2, textCol: C.offwhite, y: 2.86 },
     { label: "EXTERNAL PLATFORMS", sub: "APIs, feeds, SIEMs, EDRs, vulnerability scanners, threat intel platforms", col: "6B7280", textCol: C.white, y: 3.53 },
@@ -545,7 +545,7 @@ pres.author = "CTM-SAK";
   });
 
   // Use case row
-  sl.addText("Real example: ThreatQ → CTM-SAK → Netskope CE (FQDN + URL + SHA256 every 15 min) → Tenant lists → Palo Alto EDLs", {
+  sl.addText("Real example: ThreatQ → GNAT → Netskope CE (FQDN + URL + SHA256 every 15 min) → Tenant lists → Palo Alto EDLs", {
     x: 0.35, y: 3.35, w: 9.3, h: 0.38,
     fontSize: 10.5, fontFace: "Calibri", italic: true,
     color: C.steel, align: "center", margin: 0
@@ -579,7 +579,7 @@ pres.author = "CTM-SAK";
   statBox(sl, pres, 4.95, 0.95, 2.15, 1.35, "ExportJob", "Scheduled export", C.teal);
   statBox(sl, pres, 7.25, 0.95, 2.45, 1.35, "ReportJob", "Scheduled reports", C.steel);
 
-  sl.addText("Every job type in CTM-SAK extends FeedJob and runs in the same FeedScheduler", {
+  sl.addText("Every job type in GNAT extends FeedJob and runs in the same FeedScheduler", {
     x: 0.35, y: 2.42, w: 9.3, h: 0.3,
     fontSize: 10.5, fontFace: "Calibri", italic: true,
     color: C.steel, align: "center", margin: 0
@@ -905,7 +905,7 @@ pres.author = "CTM-SAK";
     });
   });
 
-  sl.addText("Storage: ~/.ctm_sak/config.ini · workspaces/ · /var/reports/", {
+  sl.addText("Storage: ~/.gnat/config.ini · workspaces/ · /var/reports/", {
     x: 0.5, y: 4.75, w: 5.7, h: 0.3,
     fontSize: 9, fontFace: "Calibri", italic: true, color: C.muted, margin: 0
   });
@@ -1054,7 +1054,7 @@ pres.author = "CTM-SAK";
   const sl = contentSlide(pres, "Implementation Sequence");
 
   const phases = [
-    { phase: "Phase 1", label: "Foundation", days: "Days 1-2", items: ["Install + configure config.ini", "Test connectivity: ctm-sak ping", "First ingest dry-run"], col: C.teal },
+    { phase: "Phase 1", label: "Foundation", days: "Days 1-2", items: ["Install + configure config.ini", "Test connectivity: gnat ping", "First ingest dry-run"], col: C.teal },
     { phase: "Phase 2", label: "Ingest", days: "Days 3-5", items: ["All connector configs", "Primary ingest jobs (TQ, RF, CS)", "FeedScheduler running"], col: C.steel },
     { phase: "Phase 3", label: "Export", days: "Days 6-8", items: ["Netskope CE ExportJob (15 min)", "EDL files hourly", "Verify TQ → CE → firewall EDLs"], col: C.teal },
     { phase: "Phase 4", label: "Research", days: "Days 9-10", items: ["Configure [claude] in config.ini", "First ResearchAgent query", "CurationJob to scheduler"], col: C.steel },
@@ -1140,7 +1140,7 @@ pres.author = "CTM-SAK";
   });
 
   const roadmap = [
-    "CLI: ctm-sak report run --config report.daily_healthcare",
+    "CLI: gnat report run --config report.daily_healthcare",
     "SectorFilter: move to export/filters.py for use in both export and report layers",
     "CHANGELOG: versions 0.6.0 through 1.0.0",
     "Email body: use rendered HTML report as email body (not generic text)",
@@ -1182,7 +1182,7 @@ pres.author = "CTM-SAK";
     x: 0, y: 0, w: 0.22, h: 5.625, fill: { color: C.teal }, line: { width: 0 }
   });
 
-  sl.addText("CTM-SAK", {
+  sl.addText("GNAT", {
     x: 0.5, y: 1.0, w: 9, h: 0.9,
     fontSize: 52, fontFace: "Calibri", bold: true,
     color: C.white, align: "left", margin: 0
