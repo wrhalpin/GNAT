@@ -179,3 +179,13 @@ host    = https://api.nucleussec.com
 api_key = YOUR_NUCLEUS_API_KEY
 project = YOUR_PROJECT_ID
 auth_type = token
+
+# =============================================================================
+# ControlUp (DEX / VDI & DaaS)
+# =============================================================================
+[controlup]
+host      = https://api.controlup.io
+api_key   = YOUR_CONTROLUP_API_KEY
+org_id    = YOUR_ORG_ID
+product   = dex         # or: vdi
+auth_type = token

@@ -570,3 +570,290 @@ class TestSplunkClient:
         p = client.from_stix({"name": "1.2.3.4",
                                "pattern": "[ipv4-addr:value = '1.2.3.4']"})
         assert p["ioc_type"] == "ip"
+
+
+# ===========================================================================
+# ControlUp
+# ===========================================================================
+
+from gnat.connectors.controlup.client import ControlUpClient
+
+
+class TestControlUpClient:
+
+    @pytest.fixture
+    def client(self):
+        c = ControlUpClient(
+            host="https://api.controlup.io",
+            api_key="test-key",
+            org_id="org-123",
+            product="dex",
+        )
+        c._authenticated = True
+        return c
+
+    @pytest.fixture
+    def vdi_client(self):
+        c = ControlUpClient(
+            host="https://api.controlup.io",
+            api_key="test-key",
+            org_id="org-123",
+            product="vdi",
+        )
+        c._authenticated = True
+        return c
+
+    # -- Authentication -------------------------------------------------------
+
+    def test_authenticate_sets_bearer(self):
+        c = ControlUpClient(host="https://api.controlup.io", api_key="my-key", org_id="o1")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer my-key"
+        assert c._auth_headers["Accept"] == "application/json"
+
+    # -- URL prefix -----------------------------------------------------------
+
+    def test_dex_prefix(self, client):
+        assert client._prefix == "/dex/v1/organizations/org-123"
+
+    def test_vdi_prefix(self, vdi_client):
+        assert vdi_client._prefix == "/vdi/v1/organizations/org-123"
+
+    # -- health_check ---------------------------------------------------------
+
+    def test_health_check_success(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [], "totalCount": 0}))
+        assert client.health_check() is True
+
+    def test_health_check_failure(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=SAKClientError("err")))
+        assert client.health_check() is False
+
+    # -- get_object -----------------------------------------------------------
+
+    def test_get_object_device(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"deviceId": "d1", "hostname": "pc1"}))
+        result = client.get_object("infrastructure", "d1")
+        assert result["deviceId"] == "d1"
+
+    def test_get_object_unsupported_type(self, client):
+        with pytest.raises(SAKClientError, match="does not support"):
+            client.get_object("malware", "x")
+
+    # -- list_objects ---------------------------------------------------------
+
+    def test_list_objects_devices(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"deviceId": "d1"}]}))
+        result = client.list_objects("infrastructure")
+        assert isinstance(result, list)
+        assert result[0]["deviceId"] == "d1"
+
+    def test_list_objects_empty_response(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={}))
+        assert client.list_objects("indicator") == []
+
+    def test_list_objects_page_converted_to_zero_based(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_objects("infrastructure", page=3, page_size=50)
+        _, kwargs = mock_get.call_args
+        assert kwargs["params"]["page"] == 2   # page 3 → 0-based index 2
+
+    def test_list_objects_unsupported_type(self, client):
+        with pytest.raises(SAKClientError, match="does not support"):
+            client.list_objects("threat-actor")
+
+    # -- list_devices / list_sessions / list_alerts helpers ------------------
+
+    def test_list_devices_with_filters(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_devices(status="active", os_family="windows")
+        _, kwargs = mock_get.call_args
+        assert kwargs["params"]["status"] == "active"
+        assert kwargs["params"]["osFamily"] == "windows"
+
+    def test_list_sessions_with_username(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_sessions(username="jsmith")
+        _, kwargs = mock_get.call_args
+        assert kwargs["params"]["username"] == "jsmith"
+
+    def test_list_alerts_severity_filter(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_alerts(severity="critical", resolved=False)
+        _, kwargs = mock_get.call_args
+        assert kwargs["params"]["severity"] == "critical"
+        assert kwargs["params"]["resolved"] == "false"
+
+    # -- upsert_object --------------------------------------------------------
+
+    def test_upsert_device_tags(self, client, monkeypatch):
+        monkeypatch.setattr(client, "put", MagicMock(return_value={"success": True}))
+        result = client.upsert_object("infrastructure", {"device_id": "d1", "tags": ["prod", "finance"]})
+        assert result["success"] is True
+
+    def test_upsert_missing_device_id_raises(self, client):
+        with pytest.raises(SAKClientError, match="device_id"):
+            client.upsert_object("infrastructure", {"tags": ["prod"]})
+
+    def test_upsert_unsupported_type_raises(self, client):
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("indicator", {})
+
+    # -- delete_object --------------------------------------------------------
+
+    def test_delete_raises(self, client):
+        with pytest.raises(SAKClientError, match="does not expose delete"):
+            client.delete_object("infrastructure", "d1")
+
+    # -- query_data_index -----------------------------------------------------
+
+    def test_query_data_index(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"data": [{"processName": "chrome.exe"}], "totalCount": 1})
+        monkeypatch.setattr(client, "post", mock_post)
+        result = client.query_data_index(
+            index="processes",
+            metrics=["processName", "cpuUsage"],
+            filters={"deviceId": "d1"},
+        )
+        assert result["totalCount"] == 1
+        body = mock_post.call_args[1]["json_body"]
+        assert body["index"] == "processes"
+        assert body["metrics"] == ["processName", "cpuUsage"]
+        assert body["filters"]["deviceId"] == "d1"
+        assert body["page"] == 0   # page=1 → 0
+
+    def test_query_data_index_bad_response(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value=None))
+        result = client.query_data_index("devices")
+        assert result == {"data": [], "totalCount": 0}
+
+    # -- get_session_statistics -----------------------------------------------
+
+    def test_get_session_statistics(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"active": 42}))
+        result = client.get_session_statistics()
+        assert result["active"] == 42
+
+    # -- STIX translation: device ---------------------------------------------
+
+    def test_device_to_stix(self, client):
+        native = {
+            "deviceId":   "d-abc",
+            "hostname":   "WIN-PC1",
+            "osName":     "Windows 11",
+            "osVersion":  "22H2",
+            "osFamily":   "windows",
+            "status":     "active",
+            "healthScore": 87,
+            "lastSeen":   "2025-01-15T10:00:00Z",
+            "ipAddresses": ["192.168.1.50"],
+            "tags":       ["finance", "prod"],
+        }
+        s = client.to_stix(native)
+        _assert_stix_contract(s)
+        assert s["type"] == "infrastructure"
+        assert s["name"] == "WIN-PC1"
+        assert s["x_cu_device_id"] == "d-abc"
+        assert s["x_cu_health_score"] == 87
+        assert s["x_source_platform"] == "controlup"
+
+    def test_device_stix_server_infra_type(self, client):
+        native = {"deviceId": "srv1", "hostname": "LINUX-SRV", "osFamily": "linux"}
+        s = client.to_stix(native)
+        assert "server" in s["infrastructure_types"]
+
+    # -- STIX translation: session --------------------------------------------
+
+    def test_session_to_stix(self, client):
+        native = {
+            "sessionId":    "sess-99",
+            "username":     "jsmith",
+            "deviceId":     "d-abc",
+            "hostname":     "WIN-PC1",
+            "sessionState": "active",
+            "logonTime":    "2025-01-15T08:30:00Z",
+            "lastActivity": "2025-01-15T10:00:00Z",
+            "protocol":     "RDP",
+        }
+        s = client.to_stix(native)
+        _assert_stix_contract(s)
+        assert s["type"] == "observed-data"
+        assert s["x_cu_username"] == "jsmith"
+        assert s["x_cu_protocol"] == "RDP"
+        assert s["x_cu_user_ref"]["user_id"] == "jsmith"
+
+    # -- STIX translation: alert ----------------------------------------------
+
+    def test_alert_to_stix(self, client):
+        native = {
+            "alertId":     "alert-7",
+            "name":        "High CPU Usage",
+            "alertType":   "HighCPU",
+            "severity":    "high",
+            "description": "CPU above 95% for 5 minutes",
+            "createdAt":   "2025-01-15T09:00:00Z",
+            "deviceId":    "d-abc",
+            "resolved":    False,
+        }
+        s = client.to_stix(native)
+        _assert_stix_contract(s)
+        assert s["type"] == "indicator"
+        assert s["confidence"] == 75   # high → 75
+        assert s["x_cu_severity"] == "high"
+        assert s["x_cu_resolved"] is False
+        assert s["x_source_platform"] == "controlup"
+
+    def test_alert_unknown_severity_defaults_confidence(self, client):
+        native = {"alertId": "a1", "alertType": "Unknown", "severity": "unknown"}
+        s = client.to_stix(native)
+        assert s["confidence"] == 50
+
+    # -- STIX translation: vulnerability --------------------------------------
+
+    def test_vuln_to_stix(self, client):
+        native = {
+            "id":          "v-001",
+            "cveId":       "CVE-2024-12345",
+            "severity":    "critical",
+            "cvssScore":   9.8,
+            "description": "Remote code execution vulnerability.",
+            "detectedAt":  "2025-01-10T00:00:00Z",
+            "deviceId":    "d-abc",
+        }
+        s = client.to_stix(native)
+        _assert_stix_contract(s)
+        assert s["type"] == "vulnerability"
+        assert s["name"] == "CVE-2024-12345"
+        assert s["x_cvss_score"] == 9.8
+        assert s["x_cve_id"] == "CVE-2024-12345"
+
+    # -- from_stix ------------------------------------------------------------
+
+    def test_from_stix_infrastructure(self, client):
+        stix = {
+            "type":            "infrastructure",
+            "x_cu_device_id":  "d-abc",
+            "x_cu_tags":       ["prod", "finance"],
+        }
+        payload = client.from_stix(stix)
+        assert payload["device_id"] == "d-abc"
+        assert "prod" in payload["tags"]
+
+    def test_from_stix_indicator(self, client):
+        stix = {
+            "type":         "indicator",
+            "name":         "High CPU",
+            "pattern":      "[process:name = 'malware.exe']",
+            "x_cu_severity": "high",
+        }
+        payload = client.from_stix(stix)
+        assert payload["value"] == "malware.exe"
+        assert payload["severity"] == "high"
+
+    def test_from_stix_unknown_type(self, client):
+        payload = client.from_stix({"type": "malware", "name": "BadThing"})
+        assert payload["type"] == "malware"
