@@ -1,4 +1,4 @@
-# “””
+"""
 gnat.connectors.elastic.kibana_alerts
 
 Kibana Security alert management commands.
@@ -9,258 +9,256 @@ status management and bulk operations on top of raw ES access.
 
 ## Alert lifecycle
 
-open      — newly generated, not yet triaged
-acknowledged — analyst has seen it
-closed    — resolved / false positive
+open      -- newly generated, not yet triaged
+acknowledged -- analyst has seen it
+closed    -- resolved / false positive
 
 ## Alert fields of interest (ECS + Kibana fields)
 
-_id                               — Kibana internal alert ID
-@timestamp                        — alert generation time
-kibana.alert.rule.name            — rule that fired
-kibana.alert.rule.rule_id         — stable rule_id
-kibana.alert.severity             — ‘low’|‘medium’|‘high’|‘critical’
-kibana.alert.severity_score       — integer (20/40/60/80)
-kibana.alert.status               — ‘open’|‘acknowledged’|‘closed’
-kibana.alert.workflow_status      — same as above (newer field name)
-kibana.alert.reason               — human readable alert reason
-host.name / host.ip               — host context
-user.name                         — user context
-source.ip / destination.ip        — network context
-process.name                      — process context
+_id                               -- Kibana internal alert ID
+@timestamp                        -- alert generation time
+kibana.alert.rule.name            -- rule that fired
+kibana.alert.rule.rule_id         -- stable rule_id
+kibana.alert.severity             -- 'low'|'medium'|'high'|'critical'
+kibana.alert.severity_score       -- integer (20/40/60/80)
+kibana.alert.status               -- 'open'|'acknowledged'|'closed'
+kibana.alert.workflow_status      -- same as above (newer field name)
+kibana.alert.reason               -- human readable alert reason
+host.name / host.ip               -- host context
+user.name                         -- user context
+source.ip / destination.ip        -- network context
+process.name                      -- process context
 
 ## References
 
 - https://www.elastic.co/guide/en/security/current/alerts-api.html
 - https://www.elastic.co/guide/en/kibana/current/get-alerts-api.html
-  “””
+  """
 
 from .client import ElasticClient
 
-_ALERTS_BASE = “api/detection_engine/signals”
-_KIBANA_ALERTS_BASE = “internal/rac/alerts”
+_ALERTS_BASE = "api/detection_engine/signals"
+_KIBANA_ALERTS_BASE = "internal/rac/alerts"
 
 class KibanaAlertsCommands:
-“””
-Kibana Security alert management operations.
-
-```
-Parameters
-----------
-client : ElasticClient
-    Authenticated HTTP client.
-"""
-
-def __init__(self, client: ElasticClient) -> None:
-    self._client = client
-
-# ── Query alerts ───────────────────────────────────────────────────────
-
-def search_alerts(
-    self,
-    status: str | None = None,
-    severity: str | None = None,
-    rule_id: str | None = None,
-    host_name: str | None = None,
-    time_range: tuple[str, str] | None = None,
-    size: int = 100,
-) -> list[dict]:
     """
-    Search Kibana security alerts using the signals query endpoint.
+    Kibana Security alert management operations.
 
     Parameters
     ----------
-    status : str | None
-        'open', 'acknowledged', or 'closed'.
-    severity : str | None
-        'low', 'medium', 'high', or 'critical'.
-    rule_id : str | None
-        Filter by stable rule_id.
-    host_name : str | None
-        Filter by host.name.
-    time_range : tuple[str, str] | None
-        (start_iso, end_iso) window.
-    size : int
-        Max alerts to return.
-
-    Returns
-    -------
-    list[dict]
-        Alert ``_source`` documents.
+    client : ElasticClient
+        Authenticated HTTP client.
     """
-    must: list[dict] = []
 
-    if status:
-        must.append({"term": {"kibana.alert.workflow_status": status}})
-    if severity:
-        must.append({"term": {"kibana.alert.severity": severity}})
-    if rule_id:
-        must.append({"term": {"kibana.alert.rule.rule_id": rule_id}})
-    if host_name:
-        must.append({"term": {"host.name": host_name}})
-    if time_range:
-        start, end = time_range
-        must.append({"range": {"@timestamp": {"gte": start, "lte": end}}})
+    def __init__(self, client: ElasticClient) -> None:
+        self._client = client
 
-    query = {"bool": {"must": must}} if must else {"match_all": {}}
-    body = {"query": query, "size": size, "sort": [{"@timestamp": {"order": "desc"}}]}
-    response = self._client.kibana_post(
-        f"{_ALERTS_BASE}/search", body=body
-    )
-    hits = response.get("hits", {}).get("hits", [])
-    return [h.get("_source", {}) for h in hits]
+    # ── Query alerts ───────────────────────────────────────────────────────
 
-def get_alert_by_id(self, alert_id: str) -> dict | None:
-    """
-    Retrieve a single alert by Kibana internal ID.
+    def search_alerts(
+        self,
+        status: str | None = None,
+        severity: str | None = None,
+        rule_id: str | None = None,
+        host_name: str | None = None,
+        time_range: tuple[str, str] | None = None,
+        size: int = 100,
+    ) -> list[dict]:
+        """
+        Search Kibana security alerts using the signals query endpoint.
 
-    Parameters
-    ----------
-    alert_id : str
-        Kibana alert _id.
+        Parameters
+        ----------
+        status : str | None
+            'open', 'acknowledged', or 'closed'.
+        severity : str | None
+            'low', 'medium', 'high', or 'critical'.
+        rule_id : str | None
+            Filter by stable rule_id.
+        host_name : str | None
+            Filter by host.name.
+        time_range : tuple[str, str] | None
+            (start_iso, end_iso) window.
+        size : int
+            Max alerts to return.
 
-    Returns
-    -------
-    dict | None
-        Alert source, or None if not found.
-    """
-    body = {
-        "query": {"term": {"_id": alert_id}},
-        "size": 1,
-    }
-    response = self._client.kibana_post(
-        f"{_ALERTS_BASE}/search", body=body
-    )
-    hits = response.get("hits", {}).get("hits", [])
-    return hits[0].get("_source") if hits else None
+        Returns
+        -------
+        list[dict]
+            Alert ``_source`` documents.
+        """
+        must: list[dict] = []
 
-def get_alert_counts_by_status(self) -> dict:
-    """
-    Return alert counts grouped by workflow status.
+        if status:
+            must.append({"term": {"kibana.alert.workflow_status": status}})
+        if severity:
+            must.append({"term": {"kibana.alert.severity": severity}})
+        if rule_id:
+            must.append({"term": {"kibana.alert.rule.rule_id": rule_id}})
+        if host_name:
+            must.append({"term": {"host.name": host_name}})
+        if time_range:
+            start, end = time_range
+            must.append({"range": {"@timestamp": {"gte": start, "lte": end}}})
 
-    Returns
-    -------
-    dict
-        Keys: open, acknowledged, closed.
-    """
-    body = {
-        "size": 0,
-        "aggs": {
-            "by_status": {
-                "terms": {
-                    "field": "kibana.alert.workflow_status",
-                    "size": 10,
+        query = {"bool": {"must": must}} if must else {"match_all": {}}
+        body = {"query": query, "size": size, "sort": [{"@timestamp": {"order": "desc"}}]}
+        response = self._client.kibana_post(
+            f"{_ALERTS_BASE}/search", body=body
+        )
+        hits = response.get("hits", {}).get("hits", [])
+        return [h.get("_source", {}) for h in hits]
+
+    def get_alert_by_id(self, alert_id: str) -> dict | None:
+        """
+        Retrieve a single alert by Kibana internal ID.
+
+        Parameters
+        ----------
+        alert_id : str
+            Kibana alert _id.
+
+        Returns
+        -------
+        dict | None
+            Alert source, or None if not found.
+        """
+        body = {
+            "query": {"term": {"_id": alert_id}},
+            "size": 1,
+        }
+        response = self._client.kibana_post(
+            f"{_ALERTS_BASE}/search", body=body
+        )
+        hits = response.get("hits", {}).get("hits", [])
+        return hits[0].get("_source") if hits else None
+
+    def get_alert_counts_by_status(self) -> dict:
+        """
+        Return alert counts grouped by workflow status.
+
+        Returns
+        -------
+        dict
+            Keys: open, acknowledged, closed.
+        """
+        body = {
+            "size": 0,
+            "aggs": {
+                "by_status": {
+                    "terms": {
+                        "field": "kibana.alert.workflow_status",
+                        "size": 10,
+                    }
                 }
             }
         }
-    }
-    response = self._client.kibana_post(
-        f"{_ALERTS_BASE}/search", body=body
-    )
-    buckets = (
-        response.get("aggregations", {})
-        .get("by_status", {})
-        .get("buckets", [])
-    )
-    return {b["key"]: b["doc_count"] for b in buckets}
-
-# ── Status management ──────────────────────────────────────────────────
-
-def update_alert_status(
-    self,
-    alert_ids: list[str],
-    status: str,
-) -> dict:
-    """
-    Update the status of one or more alerts.
-
-    Parameters
-    ----------
-    alert_ids : list[str]
-        Kibana alert _id values to update.
-    status : str
-        Target status: 'open', 'acknowledged', or 'closed'.
-
-    Returns
-    -------
-    dict
-        Update response with updated count.
-    """
-    if status not in ("open", "acknowledged", "closed"):
-        raise ValueError(
-            f"Invalid status '{status}'. "
-            "Must be 'open', 'acknowledged', or 'closed'."
+        response = self._client.kibana_post(
+            f"{_ALERTS_BASE}/search", body=body
         )
-    body = {
-        "signal_ids": alert_ids,
-        "status": status,
-    }
-    return self._client.kibana_post(
-        f"{_ALERTS_BASE}/status", body=body
-    )
+        buckets = (
+            response.get("aggregations", {})
+            .get("by_status", {})
+            .get("buckets", [])
+        )
+        return {b["key"]: b["doc_count"] for b in buckets}
 
-def acknowledge_alerts(self, alert_ids: list[str]) -> dict:
-    """Acknowledge a list of alerts."""
-    return self.update_alert_status(alert_ids, "acknowledged")
+    # ── Status management ──────────────────────────────────────────────────
 
-def close_alerts(self, alert_ids: list[str]) -> dict:
-    """Close (resolve) a list of alerts."""
-    return self.update_alert_status(alert_ids, "closed")
+    def update_alert_status(
+        self,
+        alert_ids: list[str],
+        status: str,
+    ) -> dict:
+        """
+        Update the status of one or more alerts.
 
-def reopen_alerts(self, alert_ids: list[str]) -> dict:
-    """Reopen closed or acknowledged alerts."""
-    return self.update_alert_status(alert_ids, "open")
+        Parameters
+        ----------
+        alert_ids : list[str]
+            Kibana alert _id values to update.
+        status : str
+            Target status: 'open', 'acknowledged', or 'closed'.
 
-def bulk_update_status_by_query(
-    self,
-    query: dict,
-    status: str,
-) -> dict:
-    """
-    Bulk-update alert status using a query filter.
+        Returns
+        -------
+        dict
+            Update response with updated count.
+        """
+        if status not in ("open", "acknowledged", "closed"):
+            raise ValueError(
+                f"Invalid status '{status}'. "
+                "Must be 'open', 'acknowledged', or 'closed'."
+            )
+        body = {
+            "signal_ids": alert_ids,
+            "status": status,
+        }
+        return self._client.kibana_post(
+            f"{_ALERTS_BASE}/status", body=body
+        )
 
-    Parameters
-    ----------
-    query : dict
-        Elasticsearch Query DSL to match alerts.
-    status : str
-        Target status.
+    def acknowledge_alerts(self, alert_ids: list[str]) -> dict:
+        """Acknowledge a list of alerts."""
+        return self.update_alert_status(alert_ids, "acknowledged")
 
-    Returns
-    -------
-    dict
-        Update result.
-    """
-    body = {"query": query, "status": status}
-    return self._client.kibana_post(
-        f"{_ALERTS_BASE}/status", body=body
-    )
+    def close_alerts(self, alert_ids: list[str]) -> dict:
+        """Close (resolve) a list of alerts."""
+        return self.update_alert_status(alert_ids, "closed")
 
-# ── Normalisation helper ───────────────────────────────────────────────
+    def reopen_alerts(self, alert_ids: list[str]) -> dict:
+        """Reopen closed or acknowledged alerts."""
+        return self.update_alert_status(alert_ids, "open")
 
-@staticmethod
-def normalise_alert(alert: dict) -> dict:
-    """Flatten a Kibana alert to GNAT normalised format."""
-    kib = alert.get("kibana", {}).get("alert", {})
-    rule = kib.get("rule", {})
-    severity_map = {"low": 1, "medium": 2, "high": 3, "critical": 4}
-    sev_str = kib.get("severity", "low")
-    return {
-        "id": alert.get("_id") or alert.get("kibana", {}).get("alert", {}).get("uuid"),
-        "timestamp": alert.get("@timestamp"),
-        "rule_name": rule.get("name"),
-        "rule_id": rule.get("rule_id"),
-        "severity": severity_map.get(sev_str, 1),
-        "severity_label": sev_str,
-        "severity_score": kib.get("severity_score"),
-        "status": kib.get("workflow_status") or kib.get("status"),
-        "reason": kib.get("reason"),
-        "host_name": alert.get("host", {}).get("name"),
-        "host_ip": alert.get("host", {}).get("ip"),
-        "user_name": alert.get("user", {}).get("name"),
-        "src_ip": alert.get("source", {}).get("ip"),
-        "dest_ip": alert.get("destination", {}).get("ip"),
-        "process_name": alert.get("process", {}).get("name"),
-        "_raw": alert,
-    }
-```
+    def bulk_update_status_by_query(
+        self,
+        query: dict,
+        status: str,
+    ) -> dict:
+        """
+        Bulk-update alert status using a query filter.
+
+        Parameters
+        ----------
+        query : dict
+            Elasticsearch Query DSL to match alerts.
+        status : str
+            Target status.
+
+        Returns
+        -------
+        dict
+            Update result.
+        """
+        body = {"query": query, "status": status}
+        return self._client.kibana_post(
+            f"{_ALERTS_BASE}/status", body=body
+        )
+
+    # ── Normalisation helper ───────────────────────────────────────────────
+
+    @staticmethod
+    def normalise_alert(alert: dict) -> dict:
+        """Flatten a Kibana alert to GNAT normalised format."""
+        kib = alert.get("kibana", {}).get("alert", {})
+        rule = kib.get("rule", {})
+        severity_map = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+        sev_str = kib.get("severity", "low")
+        return {
+            "id": alert.get("_id") or alert.get("kibana", {}).get("alert", {}).get("uuid"),
+            "timestamp": alert.get("@timestamp"),
+            "rule_name": rule.get("name"),
+            "rule_id": rule.get("rule_id"),
+            "severity": severity_map.get(sev_str, 1),
+            "severity_label": sev_str,
+            "severity_score": kib.get("severity_score"),
+            "status": kib.get("workflow_status") or kib.get("status"),
+            "reason": kib.get("reason"),
+            "host_name": alert.get("host", {}).get("name"),
+            "host_ip": alert.get("host", {}).get("ip"),
+            "user_name": alert.get("user", {}).get("name"),
+            "src_ip": alert.get("source", {}).get("ip"),
+            "dest_ip": alert.get("destination", {}).get("ip"),
+            "process_name": alert.get("process", {}).get("name"),
+            "_raw": alert,
+        }

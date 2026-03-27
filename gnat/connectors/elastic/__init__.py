@@ -1,11 +1,11 @@
-# “””
+"""
 GNAT Elastic Security Connector
 
 Connector for Elastic Security (Elasticsearch + Kibana Security).
 
 Covers two API surfaces:
 
-Surface A — Elasticsearch REST API  (port 9200)
+Surface A -- Elasticsearch REST API  (port 9200)
 ─────────────────────────────────────────────────
 
 - Index search, document CRUD, index management
@@ -13,7 +13,7 @@ Surface A — Elasticsearch REST API  (port 9200)
 - Alert/signal indices (.alerts-security.*)
 - Direct Query DSL for advanced analytics
 
-Surface B — Kibana Security API     (port 5601)
+Surface B -- Kibana Security API     (port 5601)
 ─────────────────────────────────────────────────
 
 - Detection rules (create/read/update/delete/enable/disable/import/export)
@@ -29,7 +29,7 @@ Both surfaces share a single Elastic API key:
 Authorization: ApiKey <base64(id:api_key)>
 
 The API key is created in Kibana:
-Stack Management → API Keys → Create API key
+Stack Management -> API Keys -> Create API key
 
 Or via the Elasticsearch API:
 POST /_security/api_key
@@ -73,7 +73,7 @@ es_index_alerts   = .alerts-security.*
 es_index_ti       = logs-ti_*
 kibana_space      = default
 cloud_id          =            ; Elastic Cloud ID (overrides host/port)
-“””
+"""
 
 from .client import ElasticClient
 from .auth import ElasticAuthManager
@@ -94,27 +94,27 @@ ElasticSTIXError,
 ElasticKibanaError,
 )
 
-**all** = [
-“ElasticClient”,
-“ElasticAuthManager”,
-“ElasticSearchCommands”,
-“KibanaRulesCommands”,
-“KibanaAlertsCommands”,
-“KibanaCasesCommands”,
-“ElasticThreatIntelCommands”,
-“ElasticSTIXMapper”,
-“ElasticConfig”,
-“load_elastic_config”,
-“ElasticAuthError”,
-“ElasticAPIError”,
-“ElasticNotFoundError”,
-“ElasticConfigError”,
-“ElasticRateLimitError”,
-“ElasticSTIXError”,
-“ElasticKibanaError”,
+__all__ = [
+"ElasticClient",
+"ElasticAuthManager",
+"ElasticSearchCommands",
+"KibanaRulesCommands",
+"KibanaAlertsCommands",
+"KibanaCasesCommands",
+"ElasticThreatIntelCommands",
+"ElasticSTIXMapper",
+"ElasticConfig",
+"load_elastic_config",
+"ElasticAuthError",
+"ElasticAPIError",
+"ElasticNotFoundError",
+"ElasticConfigError",
+"ElasticRateLimitError",
+"ElasticSTIXError",
+"ElasticKibanaError",
 ]
 
-**version** = “0.1.0”
-**platform** = “Elastic Security (Elasticsearch + Kibana)”
-**api_versions** = [“8.x”, “8.10+”]
-**stix_support** = “native”   # STIX 2.1 + TAXII 2.1 via Custom TI integration
+__version__ = "0.1.0"
+__platform__ = "Elastic Security (Elasticsearch + Kibana)"
+__api_versions__ = ["8.x", "8.10+"]
+__stix_support__ = "native"   # STIX 2.1 + TAXII 2.1 via Custom TI integration
