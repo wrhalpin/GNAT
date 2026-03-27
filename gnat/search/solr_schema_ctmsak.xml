@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Solr Managed Schema for CTM-SAK
+  =================================
+  Collection: ctmsak
+
+  Apply via Solr Schema API or by replacing the auto-generated
+  managed-schema in your collection's conf/ directory.
+
+  Design principles
+  -----------------
+  1. Solr is a full-text sidecar — it does not own data.
+     Only text fields that benefit from FT indexing live here.
+     All structured predicates (confidence, tlp, dates as ranges)
+     stay in your Postgres layer.
+
+  2. text_content is stored="false".  It exists only for inverted-index
+     construction.  Source objects are fetched from the source of truth
+     by STIX ID after Solr returns results.
+
+  3. display_name is stored="true", indexed="false" — used for result
+     display and highlighting without contributing to relevance ranking.
+
+  4. stix_type and source_platform are string fields (exact-match) for
+     filter queries.  Solr caches filter queries separately from FT
+     queries, so faceting by type/platform is essentially free.
+
+  5. created / modified are pdate fields for date-range filter queries
+     (e.g. "modified in the last 7 days").
+
+  6. No dynamic fields, copyFields, or schema magic.  Explicit > implicit
+     for a controlled v1 schema.
+
+  Solr version: 9.x
+  Field type reference: https://solr.apache.org/guide/solr/latest/indexing-guide/field-types.html
+-->
+
+<schema name="ctmsak" version="1.6">
+
+  <!-- ===================================================================
+       Field Types
+       =================================================================== -->
+
+  <!-- Exact-match string (not tokenised).  Used for IDs, type labels,
+       platform names — fields you filter on, not search through. -->
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+
+  <!-- Full-text with standard tokenisation, lower-casing, stop words,
+       and stemming.  The workhorse for text_content. -->
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true"
+              words="lang/stopwords_en.txt"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true"
+              words="lang/stopwords_en.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"
+              ignoreCase="true" expand="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <!-- ISO-8601 date field.  Enables range queries like:
+         created:[NOW-7DAYS TO NOW]  -->
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+
+
+  <!-- ===================================================================
+       Fields
+       =================================================================== -->
+
+  <!-- Primary key — STIX object ID (e.g. "threat-actor--abc123...").
+       Required by Solr as the document unique key. -->
+  <field name="id"
+         type="string"
+         indexed="true"
+         stored="true"
+         required="true"/>
+
+  <!-- STIX type string.  Used as a filter query facet.
+       e.g. fq=stix_type:(threat-actor OR malware) -->
+  <field name="stix_type"
+         type="string"
+         indexed="true"
+         stored="true"
+         default="unknown"/>
+
+  <!-- Connector that produced this object.
+       e.g. "threatq", "recordedfuture", "research_library"
+       Used as a filter query facet — does not participate in FT ranking. -->
+  <field name="source_platform"
+         type="string"
+         indexed="true"
+         stored="true"
+         default=""/>
+
+  <!-- STIX created timestamp.  Enables:
+         fq=created:[2024-01-01T00:00:00Z TO NOW]  -->
+  <field name="created"
+         type="pdate"
+         indexed="true"
+         stored="true"/>
+
+  <!-- STIX modified timestamp.  Enables recency-weighted queries and
+       freshness filter queries. -->
+  <field name="modified"
+         type="pdate"
+         indexed="true"
+         stored="true"/>
+
+  <!-- Human-readable display label returned in search results.
+       Not tokenised — used for highlighting only.
+       Populated by STIXSearchMixin._build_display_name(). -->
+  <field name="display_name"
+         type="string"
+         indexed="false"
+         stored="true"
+         default=""/>
+
+  <!-- The sole full-text field.
+       All human-readable text from _search_text_fields is flattened here
+       by STIXSearchMixin._build_text_content().
+
+       stored="false" — Solr never serves this field back in results.
+       The source of truth holds the data; Solr holds the inverted index.
+
+       This is the critical design choice that keeps the sidecar honest:
+       you cannot accidentally start using Solr as the data layer. -->
+  <field name="text_content"
+         type="text_general"
+         indexed="true"
+         stored="false"
+         multiValued="false"/>
+
+  <!-- Optional pipeline-level metadata field.
+       Populated by extra_fields={"research_topic": ...} in the
+       ResearchLibrary integration.  Stored for display; not FT indexed. -->
+  <field name="research_topic"
+         type="string"
+         indexed="true"
+         stored="true"
+         default=""/>
+
+
+  <!-- ===================================================================
+       Unique Key
+       =================================================================== -->
+
+  <uniqueKey>id</uniqueKey>
+
+</schema>
