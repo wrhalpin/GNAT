@@ -21,10 +21,8 @@ No live Splunk instance is required to run the test suite.
 
 ## Running
 
-```
 pytest tests/connectors/test_splunk.py -v
 pytest tests/connectors/test_splunk.py -v --tb=short -x
-```
 
 “””
 
@@ -97,7 +95,6 @@ return client, mock_pm
 
 class TestSplunkConfig(unittest.TestCase):
 
-```
 def test_minimal_token_config(self):
     """Token-only config constructs without error."""
     cfg = _make_config()
@@ -174,7 +171,6 @@ def test_load_missing_host_raises(self):
     parser.read_dict({"splunk": {"token": "tok"}})
     with self.assertRaises(SplunkConfigError):
         load_splunk_config(parser)
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -184,7 +180,6 @@ def test_load_missing_host_raises(self):
 
 class TestSplunkAuthManager(unittest.TestCase):
 
-```
 def _make_auth(self, config=None) -> tuple[SplunkAuthManager, MagicMock]:
     cfg = config or _make_config()
     mock_http = MagicMock()
@@ -239,7 +234,6 @@ def test_token_auth_logout_is_noop(self):
     auth, mock_http = self._make_auth()
     auth.logout()
     mock_http.request.assert_not_called()
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -249,7 +243,6 @@ def test_token_auth_logout_is_noop(self):
 
 class TestSplunkClient(unittest.TestCase):
 
-```
 def test_get_returns_parsed_json(self):
     client, mock_http = _make_client()
     mock_http.request.return_value = _make_response(200, {"entry": []})
@@ -310,7 +303,6 @@ def test_paginate_yields_all_entries(self):
     ]
     results = list(client.paginate("saved/searches", page_size=5))
     self.assertEqual(len(results), 7)
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -320,7 +312,6 @@ def test_paginate_yields_all_entries(self):
 
 class TestSplunkSearchCommands(unittest.TestCase):
 
-```
 def _make_search(self) -> tuple[SplunkSearchCommands, MagicMock]:
     client, mock_http = _make_client()
     return SplunkSearchCommands(client), mock_http
@@ -397,7 +388,6 @@ def test_list_saved_searches(self):
     mock_http.request.return_value = _make_response(200, {"entry": [entry]})
     results = search.list_saved_searches()
     self.assertEqual(results[0]["name"], "My Alert")
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -407,7 +397,6 @@ def test_list_saved_searches(self):
 
 class TestSplunkAlertCommands(unittest.TestCase):
 
-```
 def _make_alerts(self, es_enabled=False):
     cfg = _make_config(es_enabled=es_enabled)
     client, mock_http = _make_client(cfg)
@@ -451,7 +440,6 @@ def test_normalise_notable_unknown_urgency(self):
     row = {"urgency": "undefined"}
     result = SplunkAlertCommands._normalise_notable(row)
     self.assertEqual(result["severity"], 0)
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -461,7 +449,6 @@ def test_normalise_notable_unknown_urgency(self):
 
 class TestSplunkThreatIntelCommands(unittest.TestCase):
 
-```
 def _make_ti(self, es_enabled=True):
     cfg = _make_config(es_enabled=es_enabled)
     client, mock_http = _make_client(cfg)
@@ -512,7 +499,6 @@ def test_upsert_ioc_without_key(self):
     mock_http.request.return_value = _make_response(200, {"_key": "new-key"})
     result = ti.upsert_ioc("ip", {"ip": "10.0.0.1"})
     self.assertIsNotNone(result)
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -522,7 +508,6 @@ def test_upsert_ioc_without_key(self):
 
 class TestSplunkKVStoreCommands(unittest.TestCase):
 
-```
 def _make_kvstore(self):
     client, mock_http = _make_client()
     return SplunkKVStoreCommands(client), mock_http
@@ -568,7 +553,6 @@ def test_batch_insert_chunks_correctly(self):
     records = [{"field": str(i)} for i in range(1100)]
     kv.batch_insert("my_coll", records, batch_size=500)
     self.assertEqual(mock_http.request.call_count, 3)
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -578,7 +562,6 @@ def test_batch_insert_chunks_correctly(self):
 
 class TestSplunkSTIXMapper(unittest.TestCase):
 
-```
 def setUp(self):
     self.mapper = SplunkSTIXMapper()
 
@@ -737,7 +720,6 @@ def test_search_rows_ip_deduplication(self):
 def test_empty_rows_produces_empty_bundle(self):
     bundle = self.mapper.splunk_search_rows_to_stix_bundle([])
     self.assertEqual(bundle["objects"], [])
-```
 
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -747,7 +729,6 @@ def test_empty_rows_produces_empty_bundle(self):
 
 class TestSplunkExceptions(unittest.TestCase):
 
-```
 def test_all_exceptions_inherit_from_base(self):
     from gnat.connectors.splunk.exceptions import SplunkError
     for exc_cls in [
@@ -777,7 +758,6 @@ def test_rate_limit_is_api_error(self):
 
 def test_not_found_is_api_error(self):
     self.assertTrue(issubclass(SplunkNotFoundError, SplunkAPIError))
-```
 
 if **name** == “**main**”:
 unittest.main(verbosity=2)

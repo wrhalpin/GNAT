@@ -25,6 +25,7 @@ from gnat.connectors.virustotal.client import VirusTotalClient
 from gnat.connectors.shadowserver.client import ShadowServerClient
 from gnat.connectors.rapid7.client import Rapid7Client
 from gnat.connectors.nucleus.client import NucleusClient
+from gnat.connectors.controlup.client import ControlUpClient
 
 CLIENT_REGISTRY: dict = {
     "threatq": ThreatQClient,
@@ -42,6 +43,7 @@ CLIENT_REGISTRY: dict = {
     "shadowserver":   ShadowServerClient,
     "rapid7":         Rapid7Client,
     "nucleus":        NucleusClient,
+    "controlup":      ControlUpClient,
 }
 
 __all__ = [

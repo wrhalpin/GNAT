@@ -223,6 +223,7 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Whistic | `gnat/connectors/whistic/` | API key |
 | RiskRecon | `gnat/connectors/riskrecon/` | API key |
 | Feedly | `gnat/connectors/feedly/` | OAuth2/API key |
+| ControlUp DEX | `gnat/connectors/controlup/` | Bearer token |
 
 ---
 
