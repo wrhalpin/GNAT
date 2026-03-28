@@ -41,6 +41,9 @@ from gnat.connectors.sentinel.connector import SentinelConnector
 from gnat.connectors.wazuh.connector import WazuhConnector
 from gnat.connectors.servicenow.client import ServiceNowClient
 from gnat.connectors.jira.client import JiraClient
+from gnat.connectors.threatconnect.client import ThreatConnectClient
+from gnat.connectors.mandiant.client import MandiantClient
+from gnat.connectors.defenderti.client import DefenderTIClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -75,6 +78,9 @@ CLIENT_REGISTRY: dict = {
     "wazuh":          WazuhConnector,
     "servicenow":     ServiceNowClient,
     "jira":           JiraClient,
+    "threatconnect":  ThreatConnectClient,
+    "mandiant":       MandiantClient,
+    "defenderti":     DefenderTIClient,
 }
 
 __all__ = [

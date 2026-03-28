@@ -2438,3 +2438,279 @@ class TestJiraClient:
         assert isinstance(results, list)
         _, kwargs = mock_post.call_args
         assert "threat-intel" in kwargs["json"]["jql"]
+
+
+# ---------------------------------------------------------------------------
+# ThreatConnectClient
+# ---------------------------------------------------------------------------
+
+class TestThreatConnectClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.threatconnect.client import ThreatConnectClient
+        return ThreatConnectClient(
+            host="https://app.threatconnect.com",
+            api_key="tc-token-abc",
+            auth_type="token",
+        )
+
+    def test_authenticate_token_sets_header(self, client):
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "TC-Token tc-token-abc"
+
+    def test_authenticate_hmac_mode(self):
+        from gnat.connectors.threatconnect.client import ThreatConnectClient
+        c = ThreatConnectClient(
+            host="https://app.threatconnect.com",
+            access_id="aid",
+            secret_key="skey",
+            auth_type="hmac",
+        )
+        c.authenticate()  # should not set Authorization (computed per-request)
+        assert "Authorization" not in c._auth_headers
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"status": "ok"})
+        assert client.health_check() is True
+
+    def test_list_objects_indicators(self, client, monkeypatch):
+        payload = {"data": [{"id": 1, "summary": "1.2.3.4", "type": "Address"}]}
+        monkeypatch.setattr(client, "get", lambda path, **kw: payload)
+        results = client.list_objects("indicator")
+        assert len(results) == 1
+        assert results[0]["summary"] == "1.2.3.4"
+
+    def test_list_objects_returns_empty_on_bad_response(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: "bad")
+        assert client.list_objects("indicator") == []
+
+    def test_get_object(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": {"id": 7}})
+        obj = client.get_object("indicator", "7")
+        assert obj["id"] == 7
+
+    def test_upsert_creates(self, client, monkeypatch):
+        captured = {}
+        def fake_post(path, **kw):
+            captured["path"] = path
+            return {"data": {"id": 99}}
+        monkeypatch.setattr(client, "post", fake_post)
+        result = client.upsert_object("indicator", {"summary": "evil.com", "type": "Host"})
+        assert "/indicators" in captured["path"]
+        assert result["id"] == 99
+
+    def test_upsert_updates_when_id_present(self, client, monkeypatch):
+        captured = {}
+        def fake_put(path, **kw):
+            captured["path"] = path
+            return {"data": {"id": 42}}
+        monkeypatch.setattr(client, "put", fake_put)
+        result = client.upsert_object("indicator", {"id": 42, "summary": "evil.com"})
+        assert "42" in captured["path"]
+
+    def test_to_stix_address(self, client):
+        native = {"id": 1, "summary": "1.2.3.4", "type": "Address",
+                  "dateAdded": "2026-01-01", "lastModified": "2026-01-02",
+                  "confidence": 75, "ownerName": "Org"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "indicator"
+        assert "ipv4-addr" in stix["pattern"]
+        assert stix["x_source_platform"] == "threatconnect"
+
+    def test_to_stix_hash(self, client):
+        sha256 = "a" * 64
+        native = {"id": 2, "summary": sha256, "type": "File", "confidence": 90}
+        stix = client.to_stix(native)
+        assert "SHA-256" in stix["pattern"]
+
+    def test_from_stix_returns_payload(self, client):
+        stix = {"pattern": "[ipv4-addr:value = '10.0.0.1']", "name": "10.0.0.1", "confidence": 80}
+        payload = client.from_stix(stix)
+        assert payload["summary"] == "10.0.0.1"
+        assert payload["type"] == "Address"
+
+    def test_hmac_signature_length(self, client):
+        from gnat.connectors.threatconnect.client import ThreatConnectClient
+        c = ThreatConnectClient(host="https://app.threatconnect.com",
+                                access_id="a", secret_key="s", auth_type="hmac")
+        sig = c._compute_hmac("/api/v3/indicators", "GET", "1234567890")
+        import base64
+        # base64-encoded 32-byte SHA256 = 44 chars
+        assert len(base64.b64decode(sig + "==")) == 32
+
+
+# ---------------------------------------------------------------------------
+# MandiantClient
+# ---------------------------------------------------------------------------
+
+class TestMandiantClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.mandiant.client import MandiantClient
+        return MandiantClient(
+            host="https://api.intelligence.mandiant.com",
+            api_key="key123",
+            api_secret="secret456",
+        )
+
+    def test_authenticate_sets_bearer(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post",
+                            lambda path, **kw: {"access_token": "tok_abc"})
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "Bearer tok_abc"
+
+    def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
+        from gnat.clients.base import SAKClientError
+        monkeypatch.setattr(client, "post", lambda path, **kw: {})
+        with pytest.raises(SAKClientError, match="Mandiant"):
+            client.authenticate()
+
+    def test_health_check_returns_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"indicators": []})
+        assert client.health_check() is True
+
+    def test_list_objects_indicators(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"indicator": [{"value": "1.2.3.4"}]})
+        results = client.list_objects("indicator")
+        assert len(results) == 1
+
+    def test_list_objects_actors(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"actor": [{"name": "APT1"}]})
+        results = client.list_objects("threat-actor")
+        assert results[0]["name"] == "APT1"
+
+    def test_upsert_raises(self, client):
+        from gnat.clients.base import SAKClientError
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("indicator", {"value": "1.2.3.4"})
+
+    def test_to_stix_indicator(self, client):
+        native = {"id": "i1", "value": "1.2.3.4", "type": "ipv4",
+                  "mscore": 80, "first_seen": "2026-01-01", "last_seen": "2026-02-01"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "indicator"
+        assert "ipv4-addr" in stix["pattern"]
+        assert stix["confidence"] == 80
+        assert stix["x_source_platform"] == "mandiant"
+
+    def test_to_stix_actor(self, client):
+        native = {"type": "Actor", "id": "a1", "name": "APT28",
+                  "description": "Russian APT", "aliases": [{"name": "Fancy Bear"}]}
+        stix = client.to_stix(native)
+        assert stix["type"] == "threat-actor"
+        assert stix["name"] == "APT28"
+        assert "Fancy Bear" in stix["aliases"]
+
+    def test_to_stix_malware(self, client):
+        native = {"type": "Malware", "id": "m1", "name": "WannaCry",
+                  "description": "Ransomware", "aliases": []}
+        stix = client.to_stix(native)
+        assert stix["type"] == "malware"
+        assert stix["is_family"] is True
+
+    def test_from_stix_returns_dict(self, client):
+        stix = {"pattern": "[ipv4-addr:value = '192.168.1.1']", "name": "192.168.1.1"}
+        payload = client.from_stix(stix)
+        assert payload["value"] == "192.168.1.1"
+        assert payload["type"] == "ipv4"
+
+
+# ---------------------------------------------------------------------------
+# DefenderTIClient
+# ---------------------------------------------------------------------------
+
+class TestDefenderTIClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.defenderti.client import DefenderTIClient
+        return DefenderTIClient(
+            host="https://graph.microsoft.com",
+            tenant_id="tenant-123",
+            client_id="client-456",
+            client_secret="secret-789",
+        )
+
+    def test_authenticate_sets_bearer(self, client, monkeypatch):
+        import json as _json
+        import urllib3 as _u3
+        fake_response = MagicMock()
+        fake_response.data = _json.dumps({"access_token": "az_tok"}).encode()
+        fake_pool = MagicMock()
+        fake_pool.request.return_value = fake_response
+        monkeypatch.setattr(_u3, "PoolManager", lambda **kw: fake_pool)
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "Bearer az_tok"
+
+    def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
+        import json as _json
+        import urllib3 as _u3
+        from gnat.clients.base import SAKClientError
+        fake_response = MagicMock()
+        fake_response.data = _json.dumps({}).encode()
+        fake_pool = MagicMock()
+        fake_pool.request.return_value = fake_response
+        monkeypatch.setattr(_u3, "PoolManager", lambda **kw: fake_pool)
+        with pytest.raises(SAKClientError, match="DefenderTI"):
+            client.authenticate()
+
+    def test_health_check_success(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"value": []})
+        assert client.health_check() is True
+
+    def test_list_objects(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"value": [{"id": "ti-1"}]})
+        results = client.list_objects("indicator")
+        assert results[0]["id"] == "ti-1"
+
+    def test_upsert_creates(self, client, monkeypatch):
+        captured = {}
+        def fake_post(path, **kw):
+            captured["json"] = kw.get("json", {})
+            return {"id": "new-ti"}
+        monkeypatch.setattr(client, "post", fake_post)
+        result = client.upsert_object("indicator", {"networkIPv4": "1.2.3.4"})
+        assert result["id"] == "new-ti"
+
+    def test_upsert_patches_when_id_present(self, client, monkeypatch):
+        captured = {}
+        def fake_patch(path, **kw):
+            captured["path"] = path
+            return {"id": "ti-42"}
+        monkeypatch.setattr(client, "patch", fake_patch)
+        client.upsert_object("indicator", {"id": "ti-42", "networkIPv4": "1.2.3.4"})
+        assert "ti-42" in captured["path"]
+
+    def test_to_stix_ipv4(self, client):
+        native = {"id": "ti-1", "networkIPv4": "1.2.3.4", "confidence": 70,
+                  "threatType": "Malware", "action": "alert",
+                  "createdDateTime": "2026-01-01", "lastReportedDateTime": "2026-02-01"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "indicator"
+        assert "1.2.3.4" in stix["pattern"]
+        assert stix["x_source_platform"] == "defenderti"
+
+    def test_to_stix_domain(self, client):
+        native = {"id": "ti-2", "domainName": "evil.com", "confidence": 90,
+                  "threatType": "C2", "createdDateTime": "2026-01-01"}
+        stix = client.to_stix(native)
+        assert "domain-name" in stix["pattern"]
+
+    def test_from_stix_ipv4(self, client):
+        stix = {"pattern": "[ipv4-addr:value = '10.0.0.1']", "name": "10.0.0.1",
+                "confidence": 60, "description": "bad IP"}
+        payload = client.from_stix(stix)
+        assert payload["networkIPv4"] == "10.0.0.1"
+        assert payload["action"] == "alert"
+
+    def test_from_stix_sha256(self, client):
+        sha = "a" * 64
+        stix = {"pattern": f"[file:hashes.'SHA-256' = '{sha}']", "name": sha}
+        payload = client.from_stix(stix)
+        assert payload["fileHashType"] == "sha256"
+        assert payload["fileHashValue"] == sha

@@ -266,3 +266,35 @@ output_dir   = /var/reports/annual
 # schedule defaults to "0 6 1 1 *" when report_type = yearly
 # Uncomment to override:
 # schedule   = 0 6 1 1 *
+
+# =============================================================================
+# ThreatConnect TC Exchange API v3
+# =============================================================================
+[threatconnect]
+host      = https://app.threatconnect.com
+# Option 1 — TC-Token (static API token from TC UI):
+api_key   = YOUR_TC_API_TOKEN
+auth_type = token
+# Option 2 — HMAC signing:
+# access_id  = YOUR_ACCESS_ID
+# secret_key = YOUR_SECRET_KEY
+# auth_type  = hmac
+
+# =============================================================================
+# Mandiant Advantage Threat Intelligence API
+# =============================================================================
+[mandiant]
+host       = https://api.intelligence.mandiant.com
+api_key    = YOUR_MANDIANT_API_KEY
+api_secret = YOUR_MANDIANT_API_SECRET
+auth_type  = oauth2
+
+# =============================================================================
+# Microsoft Defender Threat Intelligence (MS Graph tiIndicators)
+# =============================================================================
+[defenderti]
+host          = https://graph.microsoft.com
+tenant_id     = YOUR_AZURE_TENANT_ID
+client_id     = YOUR_APP_CLIENT_ID
+client_secret = YOUR_APP_CLIENT_SECRET
+auth_type     = oauth2
