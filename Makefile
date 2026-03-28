@@ -8,7 +8,7 @@ MYPY    ?= mypy
 SRC     := gnat
 TESTS   := tests
 
-.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen
+.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen build-rust build-rust-dev
 
 help:
 	@echo ""
@@ -25,7 +25,16 @@ help:
 	@echo "  make docs          Build Sphinx HTML documentation"
 	@echo "  make build         Build sdist + wheel"
 	@echo "  make clean         Remove all build artifacts"
+	@echo "  make build-rust    Build + install the Rust native extension (release)"
+	@echo "  make build-rust-dev  Build Rust extension in dev mode (faster, no optimisations)"
 	@echo ""
+
+build-rust:
+	cd rust_core && maturin build --release
+	$(PIP) install rust_core/target/wheels/gnat_core-*.whl --force-reinstall
+
+build-rust-dev:
+	cd rust_core && maturin develop
 
 install:
 	$(PIP) install -e ".[dev]" httpx

@@ -52,6 +52,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
 
 from gnat.export.base import ExportTransform, TransformResult
+from gnat.ingest._ioc_classifier import (
+    defang as _fast_defang,
+    extract_pattern_value as _fast_extract_pattern_value,
+)
 
 if TYPE_CHECKING:
     from gnat.orm.base import STIXBase
@@ -84,15 +88,12 @@ _DEFANG_PATTERNS = [
 
 def _refang(value: str) -> str:
     """Remove common defanging substitutions to restore clean IOC values."""
-    for pattern, replacement in _DEFANG_PATTERNS:
-        value = pattern.sub(replacement, value)
-    return value.strip()
+    return _fast_defang(value)
 
 
 def _extract_value(pattern_str: str) -> Optional[str]:
     """Pull the quoted value from a STIX pattern string."""
-    m = _VALUE_RE.search(pattern_str)
-    return m.group(1) if m else None
+    return _fast_extract_pattern_value(pattern_str)
 
 
 def _detect_ioc_type(pattern_str: str) -> Optional[str]:

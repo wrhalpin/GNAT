@@ -54,6 +54,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 
 from gnat.ingest.base import RawRecord, SourceReader
+from gnat.ingest._ioc_classifier import classify_ioc as _fast_classify, defang as _fast_defang
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,9 @@ class PlainTextReader(SourceReader):
             self._patterns.update(extra_patterns)
 
     def _classify(self, value: str) -> str:
+        # Use the fast path when no custom extra_patterns are registered
+        if self._patterns is self.__class__._PATTERNS:
+            return _fast_classify(value)
         for ioc_type, pattern in self._patterns.items():
             if pattern.match(value):
                 return ioc_type
@@ -148,11 +152,7 @@ class PlainTextReader(SourceReader):
             if not line or line.startswith("#"):
                 continue
             # Strip defang markers: [.] hxxp, etc.
-            value = (
-                line.replace("[.]", ".")
-                    .replace("hxxp://", "http://")
-                    .replace("hxxps://", "https://")
-            )
+            value = _fast_defang(line)
             ioc_type = self._classify(value)
             if ioc_type == "unknown" and self._skip_unknown:
                 logger.debug("PlainTextReader: skipping unknown line %d: %r", lineno, value)
