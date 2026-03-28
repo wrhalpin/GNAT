@@ -776,3 +776,139 @@ class TestReportJob:
         time.sleep(0.5)
         sched.stop()
         assert len(fired) >= 1
+
+    def test_yearly_default_cron(self, manager, library_ws, tmp_path):
+        """ReportJob for yearly should use cron, not a 365-day interval."""
+        cfg = ReportConfig(
+            report_type="yearly", workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE, formats=["markdown"],
+            delivery=["file"], output_dir=str(tmp_path / "yearly"),
+        )
+        job = ReportJob(manager=manager, config=cfg)
+        # cron should be set; interval_seconds should be None
+        assert job.cron == "0 6 1 1 *"
+        assert job.interval_seconds is None
+
+    def test_daily_default_interval(self, manager, library_ws, tmp_path):
+        """ReportJob for daily should use 86400-second interval by default."""
+        cfg = ReportConfig(
+            report_type="daily", workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE, formats=["markdown"],
+            delivery=["file"], output_dir=str(tmp_path / "daily"),
+        )
+        job = ReportJob(manager=manager, config=cfg)
+        assert job.interval_seconds == 86400
+        assert job.cron is None
+
+    def test_custom_schedule_overrides_default(self, manager, library_ws, tmp_path):
+        """Explicit schedule in ReportConfig takes precedence over defaults."""
+        cfg = ReportConfig(
+            report_type="yearly", workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE, formats=["markdown"],
+            delivery=["file"], output_dir=str(tmp_path / "yearly"),
+            schedule="0 8 1 1 *",
+        )
+        job = ReportJob(manager=manager, config=cfg)
+        assert job.cron == "0 8 1 1 *"
+
+
+# ===========================================================================
+# EmailDelivery body_html population (item #7)
+# ===========================================================================
+
+class TestEmailBodyHTML:
+
+    def test_html_file_used_as_body(self, manager, library_ws, tmp_path):
+        """When an HTML file is rendered, _extract_email_body_html returns its content."""
+        from gnat.reports.generator import ReportGenerator
+
+        cfg = ReportConfig(
+            report_type="daily", workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE, formats=["html"],
+            delivery=["file"], output_dir=str(tmp_path / "out"),
+        )
+        gen = ReportGenerator(manager, cfg)
+        result = gen.run()
+        assert "html" in result.formats_rendered
+
+        from gnat.reports.base import ReportDocument
+        _now = result.generated_at
+        doc = ReportDocument(
+            title="T", report_type="daily",
+            generated_at=_now, period_start=_now, period_end=_now,
+        )
+        body = gen._extract_email_body_html(result, doc)
+        assert body.startswith("<!DOCTYPE html") or "<html" in body
+
+    def test_no_html_file_uses_executive_summary(self, manager, library_ws, tmp_path):
+        """Without an HTML file, falls back to executive summary from doc."""
+        from gnat.reports.generator import ReportGenerator
+        from gnat.reports.base import ReportDocument, ReportSection
+
+        cfg = ReportConfig(
+            report_type="daily", workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE, formats=["markdown"],
+            delivery=["file"], output_dir=str(tmp_path / "out"),
+        )
+        gen = ReportGenerator(manager, cfg)
+        result = gen.run()
+        # No HTML file in this run
+        html_files = [f for f in result.files_written if f.endswith(".html")]
+        assert html_files == []
+
+        _now = result.generated_at
+        doc = ReportDocument(
+            title="Daily Report", report_type="daily",
+            generated_at=_now, period_start=_now, period_end=_now,
+        )
+        doc.add_section(ReportSection(
+            title="Executive Summary",
+            narrative="Key findings: 3 new threat actors observed.",
+            section_type="narrative",
+        ))
+
+        body = gen._extract_email_body_html(result, doc)
+        assert "Key findings" in body
+        assert "<html" in body.lower()
+
+    def test_no_html_no_doc_returns_empty(self, manager, library_ws, tmp_path):
+        """With no HTML file and no doc, returns empty string."""
+        from gnat.reports.generator import ReportGenerator
+
+        cfg = ReportConfig(
+            report_type="daily", workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE, formats=["markdown"],
+            delivery=["file"], output_dir=str(tmp_path / "out"),
+        )
+        gen = ReportGenerator(manager, cfg)
+        result = gen.run()
+        assert gen._extract_email_body_html(result, None) == ""
+
+    def test_executive_summary_capped_at_2000_chars(self, manager, library_ws, tmp_path):
+        """Executive summary is truncated at 2000 characters."""
+        from gnat.reports.generator import ReportGenerator
+        from gnat.reports.base import ReportDocument, ReportSection
+
+        cfg = ReportConfig(
+            report_type="daily", workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE, formats=["markdown"],
+            delivery=["file"], output_dir=str(tmp_path / "out"),
+        )
+        gen = ReportGenerator(manager, cfg)
+        result = gen.run()
+
+        long_narrative = "x" * 5000
+        _now = result.generated_at
+        doc = ReportDocument(
+            title="Daily Report", report_type="daily",
+            generated_at=_now, period_start=_now, period_end=_now,
+        )
+        doc.add_section(ReportSection(
+            title="Executive Summary",
+            narrative=long_narrative,
+            section_type="narrative",
+        ))
+        body = gen._extract_email_body_html(result, doc)
+        # The snippet is capped at 2000 chars before HTML wrapping
+        assert long_narrative[:2000] in body
+        assert long_narrative[2001:] not in body

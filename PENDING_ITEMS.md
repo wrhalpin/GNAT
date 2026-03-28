@@ -103,15 +103,12 @@ pure-Python `python-docx`. No subprocess, no temp files, no Node.js required.
 
 **File:** `gnat/reports/delivery.py` — `EmailDelivery`
 
-**Status:** Plain-text email body only. The `body_html` parameter exists
-but no HTML body is auto-generated from the report.
-
-**Action required:**
-- `ReportGenerator._deliver_email()` should pass the HTML report as the
-  email body when an HTML output was rendered, rather than a generic
-  plain-text message.
-- Use the first 2000 chars of the executive summary as the email body
-  for PDF/DOCX-only deliveries.
+**Status:** ✅ COMPLETE — `ReportGenerator._extract_email_body_html()` reads
+the rendered `.html` file and passes its full content as `body_html` when an
+HTML output was rendered. For PDF/DOCX-only deliveries it falls back to an
+HTML snippet built from the first 2000 chars of the Executive Summary section
+narrative. `_deliver_email()` now passes the result to `EmailDelivery.from_ini()`.
+4 unit tests added in `TestEmailBodyHTML`.
 
 ---
 
@@ -119,15 +116,12 @@ but no HTML body is auto-generated from the report.
 
 **File:** `gnat/reports/generator.py` — `ReportJob`
 
-**Status:** Yearly reports default to `interval_seconds=365*86400` which
-is a single large interval — fine for production but awkward for testing
-and for cases where the server restarts.
-
-**Action required:**
-- Add support for calendar-anchored scheduling: "run on January 1st" via
-  cron `"0 6 1 1 *"` rather than a 365-day interval.
-- Document recommended cron expressions per report type in
-  `config/config.ini.example`.
+**Status:** ✅ COMPLETE — `ReportJob` now defaults yearly reports to
+`cron="0 6 1 1 *"` (06:00 UTC January 1st) instead of the 365-day interval,
+preventing drift after server restarts. `config/config.ini.example` documents
+recommended cron expressions for daily (`0 6 * * *`), weekly trends
+(`0 6 * * 1`), and yearly (`0 6 1 1 *`) report types. 3 unit tests added
+in `TestReportJob`.
 
 ---
 

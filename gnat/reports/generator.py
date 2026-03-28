@@ -245,7 +245,7 @@ class ReportGenerator:
 
         # ── 7. Deliver ─────────────────────────────────────────────────────
         if result.files_written:
-            self._deliver(result)
+            self._deliver(result, doc)
 
         result.duration_seconds = time.perf_counter() - t_start
         logger.info(
@@ -365,7 +365,7 @@ class ReportGenerator:
 
     # ── Delivery ───────────────────────────────────────────────────────────
 
-    def _deliver(self, result: ReportResult) -> None:
+    def _deliver(self, result: ReportResult, doc: Optional["ReportDocument"] = None) -> None:
         """Dispatch to configured delivery targets."""
         for target in self._config.delivery:
             t = target.lower().strip()
@@ -373,13 +373,15 @@ class ReportGenerator:
                 result.deliveries_sent.append(f"file:{self._config.output_dir}")
                 continue
             if t == "email":
-                self._deliver_email(result)
+                self._deliver_email(result, doc)
             elif t == "sharepoint":
                 self._deliver_sharepoint(result)
             else:
                 logger.warning("ReportGenerator: unknown delivery target %r", t)
 
-    def _deliver_email(self, result: ReportResult) -> None:
+    def _deliver_email(
+        self, result: ReportResult, doc: Optional["ReportDocument"] = None
+    ) -> None:
         if not self._config.email_to:
             logger.warning("ReportGenerator: email delivery but no email_to configured")
             return
@@ -389,9 +391,15 @@ class ReportGenerator:
                 report_type=self._config.report_type.title(),
                 date=result.generated_at.strftime("%Y-%m-%d"),
             )
+
+            # Populate HTML body: prefer the rendered HTML file; fall back to
+            # the Executive Summary narrative for PDF/DOCX-only deliveries.
+            body_html = self._extract_email_body_html(result, doc)
+
             delivery = EmailDelivery.from_ini(
                 to_addresses=self._config.email_to,
                 subject=subject,
+                body_html=body_html,
             )
             outcome = delivery.send(result.files_written)
             if outcome["success"]:
@@ -403,6 +411,38 @@ class ReportGenerator:
         except Exception as exc:
             result.errors.append(f"Email delivery error: {exc}")
             logger.error("ReportGenerator: email delivery failed — %s", exc)
+
+    def _extract_email_body_html(
+        self, result: ReportResult, doc: Optional["ReportDocument"] = None
+    ) -> str:
+        """Return HTML content for the email body.
+
+        Reads the rendered ``.html`` file when available; otherwise builds a
+        compact HTML snippet from the Executive Summary section narrative
+        (capped at 2 000 characters) for PDF/DOCX-only reports.
+        """
+        # 1. Use rendered HTML file if present
+        html_files = [f for f in result.files_written if f.endswith(".html")]
+        if html_files:
+            try:
+                return Path(html_files[0]).read_text(encoding="utf-8")
+            except OSError as exc:
+                logger.warning(
+                    "ReportGenerator: could not read HTML file for email body — %s", exc
+                )
+
+        # 2. Fall back to executive summary narrative from the document
+        if doc is not None:
+            for section in doc.sections:
+                if "executive" in section.title.lower() and section.has_narrative:
+                    snippet = section.narrative[:2000]
+                    return (
+                        f"<html><body><h2>{result.title}</h2>"
+                        f"<p>{snippet.replace(chr(10), '<br>')}</p>"
+                        "</body></html>"
+                    )
+
+        return ""
 
     def _deliver_sharepoint(self, result: ReportResult) -> None:
         if not self._config.sharepoint_url:
@@ -534,12 +574,20 @@ class ReportJob(FeedJob):
         if config.schedule:
             cron = config.schedule
         else:
-            # Default schedules by report type
-            interval_seconds = {
+            # Default schedules by report type.
+            # Yearly uses a calendar-anchored cron (Jan 1 at 06:00 UTC) to
+            # avoid 365-day interval drift after server restarts.
+            _default_crons = {
+                "yearly": "0 6 1 1 *",
+            }
+            _default_intervals = {
                 "daily":  86400,
                 "trends": 7 * 86400,
-                "yearly": 365 * 86400,
-            }.get(config.report_type, 86400)
+            }
+            if config.report_type in _default_crons:
+                cron = _default_crons[config.report_type]
+            else:
+                interval_seconds = _default_intervals.get(config.report_type, 86400)
 
         super().__init__(
             job_id          = job_id or f"report-{config.report_type}",

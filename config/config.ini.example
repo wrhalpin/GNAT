@@ -189,3 +189,62 @@ api_key   = YOUR_CONTROLUP_API_KEY
 org_id    = YOUR_ORG_ID
 product   = dex         # or: vdi
 auth_type = token
+
+# =============================================================================
+# SMTP — for ReportGenerator email delivery
+# =============================================================================
+[email]
+smtp_host     = smtp.office365.com
+smtp_port     = 587
+smtp_user     = reports@example.com
+smtp_password = YOUR_SMTP_PASSWORD
+smtp_tls      = true
+from_address  = gnat-reports@example.com
+
+# =============================================================================
+# Reports — scheduled report generation
+#
+# Recommended cron expressions per report type:
+#
+#   Daily threat intelligence digest  →  schedule = 0 6 * * *
+#     (06:00 UTC every day)
+#
+#   Weekly trends / intelligence brief →  schedule = 0 6 * * 1
+#     (06:00 UTC every Monday)
+#
+#   Annual strategic report            →  schedule = 0 6 1 1 *
+#     (06:00 UTC on January 1st — default for report_type = yearly)
+#     Using a cron expression rather than a 365-day interval prevents
+#     drift when the server restarts mid-year.
+#
+# All fields follow standard cron syntax:  min hour dom month dow
+# =============================================================================
+[report:daily-healthcare]
+report_type  = daily
+workspaces   = _ctmsak_library
+sectors      = Healthcare, Opportunistic
+formats      = pdf, html, markdown
+delivery     = email, file
+email_to     = soc-team@example.com
+output_dir   = /var/reports/daily
+schedule     = 0 6 * * *
+
+[report:weekly-trends]
+report_type  = trends
+workspaces   = _ctmsak_library
+formats      = pdf, html
+delivery     = email, file
+email_to     = leadership@example.com
+output_dir   = /var/reports/weekly
+schedule     = 0 6 * * 1
+
+[report:annual]
+report_type  = yearly
+workspaces   = _ctmsak_library
+formats      = pdf, docx
+delivery     = email, sharepoint, file
+email_to     = ciso@example.com
+output_dir   = /var/reports/annual
+# schedule defaults to "0 6 1 1 *" when report_type = yearly
+# Uncomment to override:
+# schedule   = 0 6 1 1 *

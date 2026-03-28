@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 - `CopilotReader`: DirectLine token exchange and auto-refresh (`use_token_exchange = true` in `[copilot]` INI section). Exchanges secret for short-lived token via `POST /tokens/generate`; refreshes automatically before expiry via `POST /tokens/refresh`. Falls back to secret on failure. 20 unit tests.
+- `ReportGenerator._extract_email_body_html()`: auto-populates the `body_html` argument of `EmailDelivery` — reads the rendered `.html` file when available; falls back to an HTML snippet of the first 2 000 characters of the Executive Summary section for PDF/DOCX-only deliveries. 4 unit tests in `TestEmailBodyHTML`.
+- `ReportJob` yearly scheduling: defaults to cron `"0 6 1 1 *"` (06:00 UTC Jan 1) instead of a 365-day interval, preventing drift after server restarts. `config/config.ini.example` documents recommended cron expressions for daily (`0 6 * * *`), weekly trends (`0 6 * * 1`), and yearly (`0 6 1 1 *`) report types. 3 unit tests.
 
 ### Fixed
 - `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`
