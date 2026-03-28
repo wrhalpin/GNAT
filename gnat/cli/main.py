@@ -328,6 +328,22 @@ def _build_parser() -> argparse.ArgumentParser:
     p_nlq.add_argument("--limit", type=int, default=None, metavar="N",
                        help="Override result limit")
 
+    # ── tui ───────────────────────────────────────────────────────────────
+    p_tui = subs.add_parser("tui",
+                            help="Launch interactive terminal UI (requires gnat[tui])")
+    p_tui.add_argument("screen", nargs="?",
+                       choices=["query", "library", "scheduler", "reports"],
+                       default="query",
+                       help="Screen to open on launch (default: query)")
+    p_tui.add_argument("--backend", default=None, choices=["builtin", "claude"],
+                       metavar="BACKEND",
+                       help="NLP backend for the query screen")
+    p_tui.add_argument("--platform", dest="tui_platform", default=None,
+                       metavar="NAME",
+                       help="Connector platform key to query")
+    p_tui.add_argument("--reports-dir", default=None, metavar="DIR",
+                       help="Directory to scan for generated reports")
+
     return parser
 
 
@@ -943,6 +959,34 @@ def _cmd_nlq(args) -> int:
         return 1
 
 
+def _cmd_tui(args) -> int:
+    """tui subcommand — launch the interactive Textual terminal UI."""
+    try:
+        from gnat.tui.app import run as _tui_run
+    except ImportError:
+        print(
+            _red("Error: Textual is not installed.  "
+                 "Run: pip install \"gnat[tui]\""),
+            file=sys.stderr,
+        )
+        return 1
+
+    screen      = getattr(args, "screen", "query") or "query"
+    nlp_backend = getattr(args, "backend", None)
+    platform    = getattr(args, "tui_platform", None)
+    reports_dir = getattr(args, "reports_dir", None)
+    config_path = getattr(args, "config", None)
+
+    _tui_run(
+        config_path=config_path,
+        initial_tab=screen,
+        nlp_backend=nlp_backend,
+        nlp_platform=platform,
+        reports_dir=reports_dir,
+    )
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """
     Main CLI entry point.
@@ -983,6 +1027,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "config":   _cmd_config,
         "client":   _cmd_client,
         "nlq":      _cmd_nlq,
+        "tui":      _cmd_tui,
     }
 
     handler = handlers.get(args.command)

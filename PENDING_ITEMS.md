@@ -410,6 +410,8 @@ Eleven new connectors in priority order. Each follows the standard
 
 ### 23a. Terminal UI (Textual) — Workstation / SSH Analyst Tool
 
+**Status:** ✅ Complete — `gnat/tui/` package, 4 screens, 2 widgets, `gnat tui` CLI, 38 unit tests.
+
 **Priority:** LOW
 
 **What:** Interactive terminal UI for analysts running GNAT on a local
