@@ -50,14 +50,37 @@ def _make_registry():
     return r
 
 
+def _make_indicator(name: str) -> Indicator:
+    """Create a standalone Indicator with an explicit timestamp in _properties."""
+    ind = Indicator(
+        name=name,
+        pattern=f"[domain-name:value = '{name}']",
+        pattern_type="stix",
+        confidence=70,
+        x_tlp="white",
+    )
+    from datetime import datetime, timezone
+    ts = datetime.now(timezone.utc).isoformat()
+    ind._properties["created"]  = ts
+    ind._properties["modified"] = ts
+    return ind
+
+
 def _populated_workspace(tmp_path, n_indicators=5, n_malware=2,
                           n_vulns=3, n_rels=4) -> Workspace:
     store    = FlatFileStore(base_dir=str(tmp_path / "workspaces"))
     registry = _make_registry()
     ws       = Workspace("test", registry, store)
 
+    def _stamp(obj_id, ts):
+        """Stamp the reconstructed workspace object's _properties with ts."""
+        if obj_id in ws.objects:
+            ws.objects[obj_id]._properties["created"]  = ts
+            ws.objects[obj_id]._properties["modified"] = ts
+
     indicators = []
     for i in range(n_indicators):
+        ts = f"2024-01-{i+1:02d}T00:00:00Z"
         ind = Indicator(
             name=f"evil-{i}.com",
             pattern=f"[domain-name:value = 'evil-{i}.com']",
@@ -66,42 +89,48 @@ def _populated_workspace(tmp_path, n_indicators=5, n_malware=2,
             confidence=50 + i * 8,
             x_tlp="amber",
             x_rf_risk_score=30 + i * 12,
-            created=f"2024-01-{i+1:02d}T00:00:00Z",
-            modified=f"2024-01-{i+1:02d}T00:00:00Z",
+            created=ts,
+            modified=ts,
         )
         ws.add(ind, mark_dirty=False)
-        indicators.append(ind)
+        _stamp(ind.id, ts)
+        indicators.append(ws.objects[ind.id])
 
     malwares = []
     for i in range(n_malware):
+        ts = f"2024-02-0{i+1}T00:00:00Z"
         mal = Malware(name=f"BadMal-{i}", is_family=False,
-                      confidence=70, created=f"2024-02-0{i+1}T00:00:00Z",
-                      modified=f"2024-02-0{i+1}T00:00:00Z")
+                      confidence=70, created=ts, modified=ts)
         ws.add(mal, mark_dirty=False)
-        malwares.append(mal)
+        _stamp(mal.id, ts)
+        malwares.append(ws.objects[mal.id])
 
     vulns = []
     for i in range(n_vulns):
+        ts = f"2024-03-0{i+1}T00:00:00Z"
         v = Vulnerability(name=f"CVE-2024-{i:04d}",
                           x_cvss_score=5.0 + i,
                           confidence=80,
-                          created=f"2024-03-0{i+1}T00:00:00Z",
-                          modified=f"2024-03-0{i+1}T00:00:00Z")
+                          created=ts,
+                          modified=ts)
         ws.add(v, mark_dirty=False)
-        vulns.append(v)
+        _stamp(v.id, ts)
+        vulns.append(ws.objects[v.id])
 
     # Add relationships between indicators and malware
     for i in range(min(n_rels, len(indicators), len(malwares))):
+        ts = f"2024-04-0{i+1}T00:00:00Z"
         rel = Relationship(
             relationship_type="indicates",
             source_ref=indicators[i % len(indicators)].id,
             target_ref=malwares[i % len(malwares)].id,
             x_enrichment_source="recorded_future",
             x_enrichment_strategy="create_relationships",
-            created=f"2024-04-0{i+1}T00:00:00Z",
-            modified=f"2024-04-0{i+1}T00:00:00Z",
+            created=ts,
+            modified=ts,
         )
         ws.add(rel, mark_dirty=False)
+        _stamp(rel.id, ts)
 
     return ws
 

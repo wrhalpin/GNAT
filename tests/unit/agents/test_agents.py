@@ -674,7 +674,7 @@ class TestParsingAgentMap:
 
         long_text = "A" * 50_000
         with patch.object(ClaudeClient, "complete", side_effect=capture):
-            ParsingAgent(cfg, max_text_chars=100).map(
+            _ = ParsingAgent(cfg, max_text_chars=100).map(
                 {"text": long_text, "url": "", "topic": "x"}
             )
             list(_)  # exhaust iterator if needed

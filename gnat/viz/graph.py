@@ -1013,27 +1013,15 @@ class GraphView:
             connected = {e["source"] for e in edges} | {e["target"] for e in edges}
             nodes = {k: v for k, v in nodes.items() if k in connected}
 
-        use_sigma = n > self._plotly_threshold
-
-        if use_sigma:
-            html = self._build_sigma_html(
-                nodes, edges, title,
-                edge_opacity_override=edge_opacity,
-                uniform_node_size=uniform_node_size,
-                highlight_ids=highlight_ids or set(),
-            )
-        else:
-            try:
-                fig = self._build_plotly_figure(nodes, edges, title)
-                html = fig.to_html(include_plotlyjs=True, full_html=True)
-            except ImportError:
-                # plotly not installed — fall back to sigma
-                html = self._build_sigma_html(
-                    nodes, edges, title,
-                    edge_opacity_override=edge_opacity,
-                    uniform_node_size=uniform_node_size,
-                    highlight_ids=highlight_ids or set(),
-                )
+        # Intent methods always use sigma.js for consistent, self-contained HTML
+        # output with embedded GRAPH_DATA. Plotly is reserved for explicit
+        # to_html(renderer="plotly3d") calls via the low-level API.
+        html = self._build_sigma_html(
+            nodes, edges, title,
+            edge_opacity_override=edge_opacity,
+            uniform_node_size=uniform_node_size,
+            highlight_ids=highlight_ids or set(),
+        )
 
         return self._deliver_html(html, path, "intent")
 
@@ -1089,9 +1077,10 @@ class GraphView:
         from datetime import datetime, timezone
 
         def _parse_ts(obj):
-            raw = obj._properties.get(time_field, "")
-            if not raw and hasattr(obj, time_field):
-                raw = getattr(obj, time_field, "")
+            # Only read from _properties so that auto-defaulted core
+            # attributes (self.created = _utcnow()) don't mask "truly
+            # unset" timestamps. Objects without explicit timestamps get x=-5.
+            raw = obj._properties.get(time_field, "") if hasattr(obj, "_properties") else ""
             if not raw:
                 return None
             try:

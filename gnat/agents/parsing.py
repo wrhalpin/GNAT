@@ -295,7 +295,7 @@ class ParsingAgent(RecordMapper):
     def _common_fields(self, intel: ParsedIntel) -> Dict[str, Any]:
         """Fields added to every AI-extracted STIX object."""
         return {
-            "confidence":      intel.confidence,
+            "confidence":      min(intel.confidence, self._config.ai_confidence_ceiling),
             "x_source_type":   "ai_extracted",
             "x_source_url":    intel.source_url,
             "x_source_topic":  intel.source_topic,

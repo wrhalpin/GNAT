@@ -44,10 +44,19 @@ def _utcnow() -> datetime:
 
 
 def _get(obj: "STIXBase", field: str) -> Any:
-    """Safely get a field from a STIXBase object."""
+    """Safely get a field from a STIXBase object.
+
+    For STIXBase objects, checks ``_properties`` exclusively so that
+    explicitly-set values are found and auto-defaulted core attributes
+    (such as ``modified = _utcnow()`` in ``__init__``) are not treated as
+    real timestamps when the caller is testing for field presence.
+    Falls back to ``getattr`` for non-STIXBase dict-like objects.
+    """
+    if hasattr(obj, "_properties"):
+        return obj._properties.get(field)
     if hasattr(obj, field):
         return getattr(obj, field, None)
-    return obj._properties.get(field)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -305,9 +314,12 @@ class AgeFilter(ExportFilter):
             raw = _get(obj, field)
             if raw:
                 try:
-                    return datetime.fromisoformat(
+                    dt = datetime.fromisoformat(
                         str(raw).replace("Z", "+00:00")
                     )
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    return dt
                 except ValueError:
                     pass
         return None

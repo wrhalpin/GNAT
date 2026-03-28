@@ -62,11 +62,11 @@ DEFAULT_TTLS: Dict[str, int] = {
 _TOPIC_KEYWORDS: Dict[str, List[str]] = {
     "indicator":     ["ioc", "ip", "domain", "hash", "url", "indicator", "blocklist"],
     "vulnerability": ["cve", "vuln", "exploit", "patch", "advisory", "rce", "lpe"],
-    "campaign":      ["campaign", "operation", "intrusion", "incident", "breach"],
     "threat_actor":  [
         "apt", "threat actor", "group", "unc", "ta", "g0", "lazarus",
         "cozy bear", "fancy bear", "volt typhoon", "scattered spider",
     ],
+    "campaign":      ["campaign", "operation", "intrusion", "incident", "breach"],
 }
 
 

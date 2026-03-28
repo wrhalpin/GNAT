@@ -613,6 +613,8 @@ class TestWorkspaceEnrichment:
         gc.client.client.list_objects.return_value = [
             {"id": "indicator--low", "value": "low.com", "type": "indicator"}
         ]
+        # Clear side_effect so return_value is used (side_effect takes priority in MagicMock)
+        gc.client.client.to_stix.side_effect = None
         gc.client.client.to_stix.return_value = {
             "type": "indicator", "id": "indicator--low",
             "name": "low.com", "pattern": "[domain-name:value = 'low.com']",

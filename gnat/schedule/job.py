@@ -137,6 +137,7 @@ class RunRecord:
     result:           Optional[Any]       = None
     error:            Optional[str]       = None
     duration_seconds: float               = 0.0
+    run_count:        int                 = 0
 
     def as_dict(self) -> dict:
         """Serialise to a plain dict for logging or persistence."""
@@ -460,6 +461,18 @@ class FeedJob:
         """The most recent :class:`RunRecord`, or ``None`` if never run."""
         return self.history[-1] if self.history else None
 
+    def _skipped_record(self) -> RunRecord:
+        """Return a RunRecord representing a skipped (disabled) job."""
+        now = _utcnow()
+        return RunRecord(
+            run_number       = self.run_count,
+            scheduled_at     = now,
+            started_at       = now,
+            finished_at      = now,
+            status           = "skipped",
+            duration_seconds = 0.0,
+        )
+
     @property
     def consecutive_failures(self) -> int:
         """Number of consecutive failed runs from the most recent backwards."""
@@ -480,12 +493,10 @@ class FeedJob:
         if not self.enabled:
             return None
         if self.interval_seconds:
-            base = (
-                self.history[-1].started_at
-                if self.history else _utcnow()
-            )
+            if not self.history:
+                return _utcnow()
             from datetime import timedelta
-            return base + timedelta(seconds=self.interval_seconds)
+            return self.history[-1].started_at + timedelta(seconds=self.interval_seconds)
         if self.cron:
             try:
                 from croniter import croniter  # type: ignore

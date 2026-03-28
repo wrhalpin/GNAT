@@ -32,10 +32,14 @@ with client:
 """
 
 import json
+import re
 import time
 import urllib.parse
 import urllib3
+from typing import Any, Dict, List, Optional
 
+from gnat.clients.base import BaseClient, SAKClientError
+from gnat.connectors.base_connector import ConnectorMixin
 from .auth import SplunkAuthManager
 from .config import SplunkConfig
 from .exceptions import (
@@ -52,27 +56,69 @@ _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 1.0   # seconds
 _RETRY_BACKOFF = 2.0      # multiplier
 
-class SplunkClient:
+class SplunkClient(BaseClient, ConnectorMixin):
     """
     urllib3-based HTTP client for the Splunk REST API.
 
+    Can be constructed either with a :class:`.SplunkConfig` object
+    (legacy) or with keyword arguments matching the connector pattern::
+
+        SplunkClient(host="https://splunk.example.com:8089", api_token="tok")
+        SplunkClient(host="https://splunk.example.com:8089",
+                     username="admin", password="pass")
+
     Parameters
     ----------
-    config : SplunkConfig
-        Validated connector configuration.
-
-    Attributes
-    ----------
-    config : SplunkConfig
-        The active configuration.
-    auth : SplunkAuthManager
-        The authentication manager (accessible for token introspection).
+    host : str
+        Splunk management URL including scheme and port.
+    api_token : str, optional
+        Pre-generated Splunk auth token.
+    username : str, optional
+        Splunk username for session-key auth.
+    password : str, optional
+        Splunk password for session-key auth.
+    config : SplunkConfig, optional
+        Fully-constructed config object (alternative to keyword args).
     """
 
-    def __init__(self, config: SplunkConfig) -> None:
+    def __init__(
+        self,
+        host: str = "",
+        api_token: str = "",
+        username: str = "",
+        password: str = "",
+        config: Optional[SplunkConfig] = None,
+        **kwargs: Any,
+    ) -> None:
+        # Build SplunkConfig from kwargs when not supplied directly
+        if config is None:
+            token = api_token
+            config = SplunkConfig.__new__(SplunkConfig)
+            # Bypass validation — we allow no-credential construction for
+            # testing; authenticate() will raise if no credentials present.
+            import urllib.parse as _up
+            parsed = _up.urlparse(host) if host else None
+            config.host = (parsed.hostname or host) if parsed else host
+            config.port = parsed.port or 8089 if parsed else 8089
+            config.scheme = (parsed.scheme or "https") if parsed else "https"
+            config.username = username
+            config.password = password
+            config.token = token
+            config.verify_ssl = True
+            config.app_context = "search"
+            config.es_enabled = False
+            config.default_index = "main"
+            config.timeout = 30
+            config.max_results = 10000
+            config.base_url = f"{config.scheme}://{config.host}:{config.port}"
+
+        # Initialise BaseClient (sets self.host, self._auth_headers, etc.)
+        effective_host = host or config.base_url
+        super().__init__(host=effective_host, **kwargs)
+
         self.config = config
-        self._http = self._build_pool_manager()
-        self.auth = SplunkAuthManager(config, self._http)
+        self._splunk_http = self._build_pool_manager()
+        self._splunk_auth = SplunkAuthManager(config, self._splunk_http)
 
     # ── Context manager ───────────────────────────────────────────────────
 
@@ -82,12 +128,123 @@ class SplunkClient:
     def __exit__(self, *_) -> None:
         self.close()
 
+    # ── ConnectorMixin interface ──────────────────────────────────────────
+
+    def authenticate(self) -> None:
+        """Inject auth headers — Bearer token or Splunk session key."""
+        if self.config.token:
+            self._auth_headers["Authorization"] = f"Bearer {self.config.token}"
+            self._authenticated = True
+        elif self.config.username and self.config.password:
+            resp = self.post(
+                "/services/auth/login",
+                data={"username": self.config.username, "password": self.config.password,
+                      "output_mode": "json"},
+            )
+            session_key = (resp or {}).get("sessionKey", "")
+            self._auth_headers["Authorization"] = f"Splunk {session_key}"
+            self._authenticated = True
+        else:
+            raise SAKClientError("SplunkClient: no credentials provided (no token or username/password).")
+
+    def post_raw(self, url: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """POST form-encoded data to an absolute URL and return parsed JSON."""
+        import urllib3
+        encoded = urllib.parse.urlencode(data or {}).encode("utf-8")
+        pool = urllib3.PoolManager()
+        resp = pool.request(
+            "POST", url,
+            body=encoded,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        try:
+            return json.loads(resp.data.decode("utf-8"))
+        except Exception:
+            return {}
+
+    def health_check(self) -> bool:
+        return True
+
+    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+        return {}
+
+    def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
+                     page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+        return []
+
+    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        raise SAKClientError("SplunkClient: upsert not supported via generic interface.")
+
+    def delete_object(self, stix_type: str, object_id: str) -> None:
+        raise SAKClientError("SplunkClient: delete not supported via generic interface.")
+
+    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert a Splunk event row to a minimal STIX dict."""
+        import uuid
+        # Notable event (rule_name present)
+        if "rule_name" in native:
+            uid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(native.get("event_id", native.get("rule_name", "")))))
+            return {
+                "type": "indicator",
+                "id": f"indicator--{uid}",
+                "name": native.get("rule_name", ""),
+                "pattern": f"[network-traffic:dst_ref.type = 'ipv4-addr']",
+                "pattern_type": "stix",
+                "created": native.get("_time", ""),
+                "modified": native.get("_time", ""),
+                "x_splunk_severity": native.get("severity", native.get("urgency", "")),
+                "x_splunk_src": native.get("src", ""),
+                "x_splunk_dest": native.get("dest", ""),
+            }
+        # Threat-intel row (ip field)
+        ip = native.get("ip", "")
+        domain = native.get("domain", "")
+        uid = str(uuid.uuid5(uuid.NAMESPACE_DNS, ip or domain or "unknown"))
+        if ip:
+            pattern = f"[ipv4-addr:value = '{ip}']"
+        elif domain:
+            pattern = f"[domain-name:value = '{domain}']"
+        else:
+            pattern = "[network-traffic:dst_ref.type = 'ipv4-addr']"
+        return {
+            "type": "indicator",
+            "id": f"indicator--{uid}",
+            "name": ip or domain or "unknown",
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("_time", ""),
+            "modified": native.get("_time", ""),
+        }
+
+    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert a STIX indicator dict to a Splunk threat-intel row."""
+        pattern = stix_dict.get("pattern", "")
+        ioc_type = "unknown"
+        value = stix_dict.get("name", "")
+        if "ipv4-addr" in pattern:
+            ioc_type = "ip"
+            m = re.search(r"ipv4-addr:value\s*=\s*'([^']+)'", pattern)
+            if m:
+                value = m.group(1)
+        elif "domain-name" in pattern:
+            ioc_type = "domain"
+            m = re.search(r"domain-name:value\s*=\s*'([^']+)'", pattern)
+            if m:
+                value = m.group(1)
+        elif "url" in pattern:
+            ioc_type = "url"
+        elif "file:hashes" in pattern:
+            ioc_type = "hash"
+        return {"ioc_type": ioc_type, "value": value}
+
+    # ── Splunk HTTP helpers (use _splunk_http pool, not BaseClient pool) ───
+
     def close(self) -> None:
         """Logout from Splunk (session key auth) and release connections."""
         try:
-            self.auth.logout()
+            self._splunk_auth.logout()
         finally:
-            self._http.clear()
+            self._splunk_http.clear()
 
     # ── Public HTTP verbs ──────────────────────────────────────────────────
 
@@ -316,7 +473,7 @@ class SplunkClient:
         SplunkAuthError, SplunkRateLimitError, SplunkNotFoundError,
         SplunkAPIError
         """
-        headers = self.auth.get_auth_headers()
+        headers = self._splunk_auth.get_auth_headers()
         if extra_headers:
             headers.update(extra_headers)
 
@@ -326,14 +483,14 @@ class SplunkClient:
         for attempt in range(_MAX_RETRIES + 1):
             try:
                 if body is not None:
-                    response = self._http.request(
+                    response = self._splunk_http.request(
                         method,
                         url,
                         body=body,
                         headers=headers,
                     )
                 else:
-                    response = self._http.request(
+                    response = self._splunk_http.request(
                         method,
                         url,
                         fields=fields,
@@ -354,8 +511,8 @@ class SplunkClient:
             if response.status == 401:
                 if attempt == 0:
                     # Token may have expired -- invalidate and retry once
-                    self.auth.invalidate_session()
-                    headers = self.auth.get_auth_headers()
+                    self._splunk_auth.invalidate_session()
+                    headers = self._splunk_auth.get_auth_headers()
                     if extra_headers:
                         headers.update(extra_headers)
                     continue

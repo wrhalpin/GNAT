@@ -337,8 +337,12 @@ class FeedScheduler:
         dict
             ``{job_id: RunRecord}`` for every job that was triggered.
         """
-        jobs = [j for j in self._jobs.values() if j.enabled]
-        results: Dict[str, RunRecord] = {}
+        enabled_jobs  = [j for j in self._jobs.values() if j.enabled]
+        disabled_jobs = [j for j in self._jobs.values() if not j.enabled]
+        results: Dict[str, RunRecord] = {
+            j.job_id: j._skipped_record() for j in disabled_jobs
+        }
+        jobs = enabled_jobs
 
         if not parallel:
             for job in jobs:

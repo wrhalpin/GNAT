@@ -504,21 +504,34 @@ class TestHTMLRenderer:
 # PDFRenderer
 # ===========================================================================
 
+_reportlab_available = True
+try:
+    import reportlab  # noqa: F401
+except ImportError:
+    _reportlab_available = False
+
+
 class TestPDFRenderer:
 
     def test_creates_file(self, tmp_path):
+        if not _reportlab_available:
+            pytest.skip("reportlab not installed")
         doc = _make_doc()
         path = str(tmp_path / "r.pdf")
         PDFRenderer().render(doc, path)
         assert os.path.exists(path)
 
     def test_non_empty(self, tmp_path):
+        if not _reportlab_available:
+            pytest.skip("reportlab not installed")
         doc = _make_doc()
         path = str(tmp_path / "r.pdf")
         PDFRenderer().render(doc, path)
         assert os.path.getsize(path) > 500
 
     def test_creates_parent_dir(self, tmp_path):
+        if not _reportlab_available:
+            pytest.skip("reportlab not installed")
         doc = _make_doc()
         path = str(tmp_path / "subdir" / "nested" / "r.pdf")
         PDFRenderer().render(doc, path)
@@ -585,10 +598,10 @@ class TestDOCXRenderer:
 class TestReportGenerator:
 
     def test_no_ai_all_formats(self, manager, library_ws, tmp_path):
-        cfg = _daily_config(tmp_path, formats=["markdown", "html", "pdf"])
+        cfg = _daily_config(tmp_path, formats=["markdown", "html", "docx"])
         result = ReportGenerator(manager, cfg).run()
         assert result.success
-        assert set(result.formats_rendered) == {"markdown", "html", "pdf"}
+        assert set(result.formats_rendered) == {"markdown", "html", "docx"}
         assert len(result.files_written) == 3
 
     def test_no_ai_zero_calls(self, manager, library_ws, tmp_path):
