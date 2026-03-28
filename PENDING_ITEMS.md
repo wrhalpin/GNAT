@@ -93,14 +93,9 @@ if industries or sectors:
 
 **File:** `gnat/reports/renderers.py` — `DOCXRenderer`
 
-**Status:** Implemented but requires `npm install -g docx` on the host.
-
-**Action required:**
-- Document the npm dependency clearly in deployment instructions.
-- Consider packaging a `scripts/generate_docx.js` helper script in the
-  repo so users don't need to know the npm package name.
-- Alternatively, evaluate `python-docx` as a pure-Python fallback for
-  environments without Node.js.
+**Status:** ✅ COMPLETE — Replaced Node.js/npm `docx` implementation with
+pure-Python `python-docx`. No subprocess, no temp files, no Node.js required.
+`python-docx>=1.1` added to `[reports]` and `[all]` extras in `pyproject.toml`.
 
 ---
 

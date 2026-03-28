@@ -414,7 +414,7 @@ class SplunkClient:
         # Should not reach here, but satisfy the type checker.
         if last_exc:
             raise SplunkAPIError(str(last_exc), endpoint=url) from last_exc
-        raise SplunkAPIError("Request failed after retries.", endpoint=url)
+        raise SplunkAPIError("Request failed after retries.", endpoint=url)  # noqa: RET504
 
     @staticmethod
     def _parse_json(data: bytes, url: str) -> dict:
@@ -433,19 +433,6 @@ class SplunkClient:
             return [m.get("text", "") for m in body.get("messages", [])]
         except Exception:
             return []
-                messages=messages,
-            )
-
-        # ── Success ────────────────────────────────────────────────
-        if raw:
-            return response.data
-
-        return self._parse_json(response.data, url)
-
-    # Should not reach here, but satisfy the type checker.
-    if last_exc:
-        raise SplunkAPIError(str(last_exc), endpoint=url) from last_exc
-    raise SplunkAPIError("Request failed after retries.", endpoint=url)
 
 @staticmethod
 def _parse_json(data: bytes, url: str) -> dict:
@@ -464,4 +451,3 @@ def _extract_error_messages(data: bytes) -> list[str]:
         return [m.get("text", "") for m in body.get("messages", [])]
     except Exception:
         return []
-```
