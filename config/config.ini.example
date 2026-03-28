@@ -266,3 +266,105 @@ output_dir   = /var/reports/annual
 # schedule defaults to "0 6 1 1 *" when report_type = yearly
 # Uncomment to override:
 # schedule   = 0 6 1 1 *
+
+# =============================================================================
+# ThreatConnect TC Exchange API v3
+# =============================================================================
+[threatconnect]
+host      = https://app.threatconnect.com
+# Option 1 — TC-Token (static API token from TC UI):
+api_key   = YOUR_TC_API_TOKEN
+auth_type = token
+# Option 2 — HMAC signing:
+# access_id  = YOUR_ACCESS_ID
+# secret_key = YOUR_SECRET_KEY
+# auth_type  = hmac
+
+# =============================================================================
+# Mandiant Advantage Threat Intelligence API
+# =============================================================================
+[mandiant]
+host       = https://api.intelligence.mandiant.com
+api_key    = YOUR_MANDIANT_API_KEY
+api_secret = YOUR_MANDIANT_API_SECRET
+auth_type  = oauth2
+
+# =============================================================================
+# Microsoft Defender Threat Intelligence (MS Graph tiIndicators)
+# =============================================================================
+[defenderti]
+host          = https://graph.microsoft.com
+tenant_id     = YOUR_AZURE_TENANT_ID
+client_id     = YOUR_APP_CLIENT_ID
+client_secret = YOUR_APP_CLIENT_SECRET
+auth_type     = oauth2
+
+# =============================================================================
+# TheHive 5.x SOAR / Case Management
+# =============================================================================
+[thehive]
+host    = https://thehive.example.com
+api_key = YOUR_THEHIVE_API_KEY
+# org   = MyOrganisation   # optional: multi-tenant X-Organisation header
+auth_type = token
+
+# =============================================================================
+# Anomali ThreatStream OPTIC API v2
+# =============================================================================
+[threatstream]
+host      = https://api.threatstream.com
+username  = your@email.com
+api_key   = YOUR_THREATSTREAM_API_KEY
+auth_type = api_key
+
+# =============================================================================
+# SOCRadar CTI + Attack Surface Management
+# =============================================================================
+[socradar]
+host       = https://platform.socradar.com
+api_key    = YOUR_SOCRADAR_API_KEY
+# company_id = YOUR_COMPANY_ID   # required for attack-surface endpoints
+auth_type  = token
+
+# =============================================================================
+# PulseDive Community Threat Intelligence
+# =============================================================================
+[pulsedive]
+host    = https://pulsedive.com
+api_key = YOUR_PULSEDIVE_API_KEY
+auth_type = token
+
+# =============================================================================
+# Flare Systems Threat Exposure Intelligence
+# =============================================================================
+[flare]
+host       = https://api.flare.io
+api_key    = YOUR_FLARE_API_KEY
+# tenant_id = YOUR_TENANT_ID     # optional: multi-tenant
+auth_type  = token
+
+# =============================================================================
+# Stellar Cyber Open XDR (Starlight)
+# =============================================================================
+[stellarcyber]
+host      = https://your-tenant.stellarcyber.ai
+username  = admin
+api_key   = YOUR_STELLARCYBER_API_KEY
+auth_type = token
+
+# =============================================================================
+# Yeti FOSS Threat Intelligence Platform
+# =============================================================================
+[yeti]
+host    = https://yeti.example.com
+api_key = YOUR_YETI_API_KEY
+auth_type = token
+
+# =============================================================================
+# CloudSEK XVigil Attack Surface Management
+# =============================================================================
+[cloudsek]
+host    = https://api.cloudsek.com
+api_key = YOUR_CLOUDSEK_API_KEY
+# org_id = YOUR_ORG_ID    # optional: multi-tenant
+auth_type = token

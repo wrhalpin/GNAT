@@ -41,6 +41,17 @@ from gnat.connectors.sentinel.connector import SentinelConnector
 from gnat.connectors.wazuh.connector import WazuhConnector
 from gnat.connectors.servicenow.client import ServiceNowClient
 from gnat.connectors.jira.client import JiraClient
+from gnat.connectors.threatconnect.client import ThreatConnectClient
+from gnat.connectors.mandiant.client import MandiantClient
+from gnat.connectors.defenderti.client import DefenderTIClient
+from gnat.connectors.thehive.client import TheHiveClient
+from gnat.connectors.threatstream.client import ThreatStreamClient
+from gnat.connectors.socradar.client import SOCRadarClient
+from gnat.connectors.pulsedive.client import PulseDiveClient
+from gnat.connectors.flare.client import FlareClient
+from gnat.connectors.stellarcyber.client import StellarCyberClient
+from gnat.connectors.yeti.client import YetiClient
+from gnat.connectors.cloudsek.client import CloudSEKClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -75,6 +86,17 @@ CLIENT_REGISTRY: dict = {
     "wazuh":          WazuhConnector,
     "servicenow":     ServiceNowClient,
     "jira":           JiraClient,
+    "threatconnect":  ThreatConnectClient,
+    "mandiant":       MandiantClient,
+    "defenderti":     DefenderTIClient,
+    "thehive":        TheHiveClient,
+    "threatstream":   ThreatStreamClient,
+    "socradar":       SOCRadarClient,
+    "pulsedive":      PulseDiveClient,
+    "flare":          FlareClient,
+    "stellarcyber":   StellarCyberClient,
+    "yeti":           YetiClient,
+    "cloudsek":       CloudSEKClient,
 }
 
 __all__ = [

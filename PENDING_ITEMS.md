@@ -258,6 +258,8 @@ coverage, and correct test placement (all connector tests in
 
 ### 18. NLP Query Interface
 
+**Status:** ✅ Complete — `gnat/nlp/` package, `SAKClient.natural_language_query()`, `gnat nlq` CLI, 46 unit tests.
+
 **Priority:** MEDIUM
 
 **What:** Natural-language query layer on top of `SAKClient.list_objects()`.
@@ -329,6 +331,8 @@ uses existing `[agents]` Claude client.
 ---
 
 ### 20. Additional Connectors (Batch 2)
+
+**Status:** ✅ Complete — all 11 connectors implemented and tested.
 
 **Priority:** MEDIUM — depends on #15 audit to ensure consistent baseline
 
@@ -406,6 +410,8 @@ Eleven new connectors in priority order. Each follows the standard
 
 ### 23a. Terminal UI (Textual) — Workstation / SSH Analyst Tool
 
+**Status:** ✅ Complete — `gnat/tui/` package, 4 screens, 2 widgets, `gnat tui` CLI, 38 unit tests.
+
 **Priority:** LOW
 
 **What:** Interactive terminal UI for analysts running GNAT on a local
@@ -464,6 +470,8 @@ to structured filter input if NLP not configured.
 ---
 
 ### 23b. Web UI (FastAPI) — Server / Dashboard
+
+**Status:** ✅ Complete — `gnat/serve/` package, 3 API routers, embedded single-page dashboard, `gnat serve` CLI, 54 unit tests.
 
 **Priority:** LOW
 
