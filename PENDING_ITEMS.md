@@ -258,6 +258,8 @@ coverage, and correct test placement (all connector tests in
 
 ### 18. NLP Query Interface
 
+**Status:** ✅ Complete — `gnat/nlp/` package, `SAKClient.natural_language_query()`, `gnat nlq` CLI, 46 unit tests.
+
 **Priority:** MEDIUM
 
 **What:** Natural-language query layer on top of `SAKClient.list_objects()`.

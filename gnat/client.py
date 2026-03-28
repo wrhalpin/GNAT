@@ -28,7 +28,7 @@ Usage::
     )
 """
 
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from gnat.config import SAKConfig
 from gnat.clients.base import BaseClient, SAKClientError
@@ -174,6 +174,64 @@ class SAKClient:
                 "Set it in config.ini or pass host= to connect()."
             )
         return cfg
+
+    def natural_language_query(
+        self,
+        query: str,
+        extra_connectors: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Translate a free-text query into STIX results using the NLP engine.
+
+        Reads the ``[nlp]`` section from the loaded config to choose the
+        backend (``builtin`` or ``claude``).  When a connector is already
+        connected via :meth:`connect`, it is automatically included in the
+        dispatch set.
+
+        Parameters
+        ----------
+        query : str
+            Free-text analyst query, e.g.
+            ``"Get all IPs for APT28 from the last 30 days"``.
+        extra_connectors : dict, optional
+            Additional ``{name: connector_instance}`` pairs to query beyond
+            the currently-connected client.
+
+        Returns
+        -------
+        list of dict
+            Aggregated raw objects from all queried connectors, each tagged
+            with a ``"_source"`` key.  If no live connectors are provided
+            the parsed :class:`~gnat.nlp.QuerySpec` is returned serialised
+            as a single-element list.
+
+        Examples
+        --------
+        >>> cli = SAKClient().connect("threatq")
+        >>> results = cli.natural_language_query(
+        ...     "Show me all domains for Lazarus Group since January"
+        ... )
+        """
+        from gnat.nlp.parser import NLPQueryEngine
+
+        if self._config is None:
+            try:
+                self._config = SAKConfig(self._config_path)
+            except FileNotFoundError:
+                pass
+
+        if self._config is not None:
+            engine = NLPQueryEngine.from_config(self._config)
+        else:
+            engine = NLPQueryEngine()
+
+        connectors: Dict[str, Any] = {}
+        if self.client is not None and self.target is not None:
+            connectors[self.target] = self.client
+        if extra_connectors:
+            connectors.update(extra_connectors)
+
+        return engine.query(query, connectors=connectors if connectors else None)
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"SAKClient(target={self.target!r}, connected={self.client is not None})"

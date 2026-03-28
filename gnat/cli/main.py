@@ -27,6 +27,8 @@ Sub-commands
     gnat config    --validate
     gnat client    capabilities --platform threatq
     gnat client    call         --platform threatq --method list_objects --args type=indicator
+    gnat nlq       "Get all IPs for APT28 from the last 30 days"
+    gnat nlq       "Lazarus Group domains since January" --platform threatq --backend claude
 
 Global flags
 ------------
@@ -311,6 +313,20 @@ def _build_parser() -> argparse.ArgumentParser:
                            help="Method arguments as KEY=VALUE pairs")
     p_cl_call.add_argument("--allow-write", action="store_true",
                            help="Permit write operations (upsert_object, delete_object)")
+
+    # ── nlq ───────────────────────────────────────────────────────────────
+    p_nlq = subs.add_parser("nlq",
+                             help="Natural-language threat-intel query")
+    p_nlq.add_argument("query", metavar="QUERY",
+                       help="Free-text query, e.g. \"APT28 IPs last 30 days\"")
+    p_nlq.add_argument("--platform", dest="nlq_platform", default=None, metavar="NAME",
+                       help="Connect to this platform and query it (optional)")
+    p_nlq.add_argument("--backend",  default=None, choices=["builtin", "claude"],
+                       help="Override NLP backend (default: from [nlp] config or builtin)")
+    p_nlq.add_argument("--parse-only", action="store_true",
+                       help="Print the parsed QuerySpec without querying any connector")
+    p_nlq.add_argument("--limit", type=int, default=None, metavar="N",
+                       help="Override result limit")
 
     return parser
 
@@ -867,6 +883,66 @@ def _cmd_client(args) -> int:
     return 0
 
 
+def _cmd_nlq(args) -> int:
+    """nlq subcommand — natural-language threat-intel query."""
+    from gnat.nlp.parser import NLPQueryEngine
+    from gnat.nlp.builtin import BuiltinParser
+
+    # Build engine
+    backend = getattr(args, "backend", None) or "builtin"
+    if backend == "claude":
+        try:
+            from gnat.config import SAKConfig
+            from gnat.agents.base import AgentConfig
+            cfg = SAKConfig(args.config)
+            agent_cfg = AgentConfig.from_config(cfg._parser)
+            engine = NLPQueryEngine(backend="claude", claude_config=agent_cfg)
+        except Exception as exc:
+            print(_yellow(f"Claude backend unavailable ({exc}); using builtin"), file=sys.stderr)
+            engine = NLPQueryEngine(backend="builtin")
+    else:
+        engine = NLPQueryEngine(backend="builtin")
+
+    # Override limit if given
+    query = args.query
+    spec = engine.parse(query)
+    if getattr(args, "limit", None):
+        spec.limit = args.limit
+
+    if args.parse_only:
+        _output(args, spec.to_dict())
+        return 0
+
+    _info(args, f"Parsing: {_dim(query)}")
+    _info(args, f"  entities:  {spec.entities or '(none)'}")
+    _info(args, f"  ioc_types: {spec.ioc_types or '(all)'}")
+    _info(args, f"  since:     {spec.since or '(any)'}")
+    _info(args, f"  platforms: {spec.platforms or '(all)'}")
+    _info(args, f"  limit:     {spec.limit}")
+
+    platform = getattr(args, "nlq_platform", None)
+    if not platform:
+        # No live connector — just return the parsed spec
+        print(_dim("\nNo --platform specified; showing parsed query spec only."))
+        _output(args, spec.to_dict())
+        return 0
+
+    try:
+        from gnat.client import SAKClient
+        cli = SAKClient(config_path=args.config)
+        cli.connect(target=platform)
+        _info(args, f"Querying {_bold(platform)} …")
+        results = cli.natural_language_query(query)
+        if not results:
+            print(_dim("No results."))
+            return 0
+        _output(args, results)
+        return 0
+    except Exception as exc:
+        print(_red(f"Error: {exc}"), file=sys.stderr)
+        return 1
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """
     Main CLI entry point.
@@ -906,6 +982,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "codegen":  _cmd_codegen,
         "config":   _cmd_config,
         "client":   _cmd_client,
+        "nlq":      _cmd_nlq,
     }
 
     handler = handlers.get(args.command)

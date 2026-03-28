@@ -60,6 +60,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `ServiceNowClient` (`gnat/connectors/servicenow/client.py`): new `BaseClient + ConnectorMixin` for the ServiceNow Table API (`sn_si_incident`). Supports Basic auth (username + password) and Bearer token. `annotate_incident(incident_sys_id, stix_obj)` appends a structured GNAT work note to the incident via `PUT /api/now/table/sn_si_incident/{sys_id}`. `to_stix()` maps SI records to STIX `observed-data`. 13 unit tests.
   - `GreyMatterClient.link_investigation(case_id, stix_obj)`: new helper — calls `POST /v1/incidents/{case_id}/linked_observables`; infers GreyMatter observable type from the STIX pattern. `upsert_object()` now accepts a `linked_cases` list kwarg that is merged into the request payload. 4 unit tests.
   - `servicenow` registered in `CLIENT_REGISTRY`; `[servicenow]` section added to `config/config.ini.example`.
+- **NLP query interface (#18):** New `gnat/nlp/` package with two interchangeable backends and a unified `QuerySpec` dataclass:
+  - `QuerySpec` — dataclass with `entities`, `ioc_types`, `since`, `until`, `platforms`, `limit`, `raw_query`; `to_dict()` serialises datetimes as ISO-8601.
+  - `BuiltinParser` — zero-dependency regex-based parser; extracts threat-actor entities (APT/TA/FIN/G patterns, CVE IDs, malware families), IOC types (ip/domain/hash/url/email keywords), relative/absolute time ranges (`last N days/weeks/months`, ISO dates, month names, `yesterday`, `today`), platform filters, and result limits.
+  - `ClaudeParser` — sends the query to Claude API with a structured JSON-schema prompt; falls back to `BuiltinParser` on any API or JSON parse error.
+  - `NLPQueryEngine` — facade with `from_config()` factory (reads `[nlp]` INI section for `backend`/`default_limit`); `parse()` returns a `QuerySpec`; `query()` dispatches to named connectors, tags results with `_source`, and returns the serialised spec when no live connectors are provided.
+  - `SAKClient.natural_language_query(query, extra_connectors)` — convenience method that auto-includes the connected client and delegates to `NLPQueryEngine`.
+  - CLI: `gnat nlq "<query>" [--platform <key>] [--backend builtin|claude] [--parse-only] [--limit N]` — parses the query, optionally connects a platform, and prints results as JSON.
+  - `pyproject.toml`: new `[nlp]` optional-dependency group (zero new deps for builtin backend; Claude backend reuses existing `[agents]` client).
+  - 46 unit tests covering `QuerySpec`, `BuiltinParser` (time/IOC/entity/limit extraction), `NLPQueryEngine` (connector dispatch, platform filtering, error handling), `ClaudeParser` (mocked API, fallback paths, markdown fence stripping), and `SAKClient.natural_language_query()`.
 
 ### Fixed
 - `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`

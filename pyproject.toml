@@ -41,6 +41,7 @@ reports   = ["reportlab>=4.0", "python-docx>=1.1"]   # PDF + DOCX (pure Python, 
 viz    = ["plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1"]
 serve  = ["fastapi>=0.111", "uvicorn>=0.30"]
 tui    = ["textual>=0.60"]
+nlp    = []  # builtin backend has no deps; claude backend uses existing [agents] client
 dev    = [
     "pytest>=7.4", "pytest-cov>=4.1", "pytest-mock>=3.11",
     "pyyaml>=6.0", "taxii2-client>=2.3", "feedparser>=6.0",
