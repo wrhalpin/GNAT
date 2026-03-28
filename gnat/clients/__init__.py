@@ -49,6 +49,9 @@ from gnat.connectors.threatstream.client import ThreatStreamClient
 from gnat.connectors.socradar.client import SOCRadarClient
 from gnat.connectors.pulsedive.client import PulseDiveClient
 from gnat.connectors.flare.client import FlareClient
+from gnat.connectors.stellarcyber.client import StellarCyberClient
+from gnat.connectors.yeti.client import YetiClient
+from gnat.connectors.cloudsek.client import CloudSEKClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -91,6 +94,9 @@ CLIENT_REGISTRY: dict = {
     "socradar":       SOCRadarClient,
     "pulsedive":      PulseDiveClient,
     "flare":          FlareClient,
+    "stellarcyber":   StellarCyberClient,
+    "yeti":           YetiClient,
+    "cloudsek":       CloudSEKClient,
 }
 
 __all__ = [

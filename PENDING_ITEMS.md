@@ -332,6 +332,8 @@ uses existing `[agents]` Claude client.
 
 ### 20. Additional Connectors (Batch 2)
 
+**Status:** ✅ Complete — all 11 connectors implemented and tested.
+
 **Priority:** MEDIUM — depends on #15 audit to ensure consistent baseline
 
 Eleven new connectors in priority order. Each follows the standard

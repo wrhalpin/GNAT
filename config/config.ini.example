@@ -342,3 +342,29 @@ host       = https://api.flare.io
 api_key    = YOUR_FLARE_API_KEY
 # tenant_id = YOUR_TENANT_ID     # optional: multi-tenant
 auth_type  = token
+
+# =============================================================================
+# Stellar Cyber Open XDR (Starlight)
+# =============================================================================
+[stellarcyber]
+host      = https://your-tenant.stellarcyber.ai
+username  = admin
+api_key   = YOUR_STELLARCYBER_API_KEY
+auth_type = token
+
+# =============================================================================
+# Yeti FOSS Threat Intelligence Platform
+# =============================================================================
+[yeti]
+host    = https://yeti.example.com
+api_key = YOUR_YETI_API_KEY
+auth_type = token
+
+# =============================================================================
+# CloudSEK XVigil Attack Surface Management
+# =============================================================================
+[cloudsek]
+host    = https://api.cloudsek.com
+api_key = YOUR_CLOUDSEK_API_KEY
+# org_id = YOUR_ORG_ID    # optional: multi-tenant
+auth_type = token
