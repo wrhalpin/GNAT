@@ -38,3 +38,5 @@ Thumbs.db
 # Node (scripts/)
 scripts/node_modules/
 scripts/package-lock.json
+*.pyc
+*.db
