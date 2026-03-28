@@ -2714,3 +2714,203 @@ class TestDefenderTIClient:
         payload = client.from_stix(stix)
         assert payload["fileHashType"] == "sha256"
         assert payload["fileHashValue"] == sha
+
+
+# ---------------------------------------------------------------------------
+# TheHiveClient
+# ---------------------------------------------------------------------------
+
+class TestTheHiveClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.thehive.client import TheHiveClient
+        return TheHiveClient(host="https://thehive.example.com", api_key="hive-key-123")
+
+    def test_authenticate_sets_bearer(self, client):
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "Bearer hive-key-123"
+
+    def test_authenticate_sets_org_header(self):
+        from gnat.connectors.thehive.client import TheHiveClient
+        c = TheHiveClient(host="https://thehive.example.com", api_key="k", org="CorpA")
+        c.authenticate()
+        assert c._auth_headers["X-Organisation"] == "CorpA"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"status": "ok"})
+        assert client.health_check() is True
+
+    def test_list_objects_returns_list(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post",
+                            lambda path, **kw: [{"_id": "c1", "title": "Test"}])
+        results = client.list_objects("case")
+        assert len(results) == 1
+        assert results[0]["_id"] == "c1"
+
+    def test_list_objects_with_dict_response(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post",
+                            lambda path, **kw: {"items": [{"_id": "a1"}]})
+        results = client.list_objects("alert")
+        assert results[0]["_id"] == "a1"
+
+    def test_get_object(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"_id": "c42", "title": "Breach"})
+        obj = client.get_object("case", "c42")
+        assert obj["_id"] == "c42"
+
+    def test_upsert_creates(self, client, monkeypatch):
+        captured = {}
+        def fake_post(path, **kw):
+            captured["path"] = path
+            return {"_id": "new"}
+        monkeypatch.setattr(client, "post", fake_post)
+        result = client.upsert_object("case", {"title": "New Case"})
+        assert "/case" in captured["path"]
+        assert result["_id"] == "new"
+
+    def test_upsert_patches_when_id_present(self, client, monkeypatch):
+        captured = {}
+        def fake_patch(path, **kw):
+            captured["path"] = path
+            return {"_id": "existing"}
+        monkeypatch.setattr(client, "patch", fake_patch)
+        client.upsert_object("case", {"id": "existing", "title": "Updated"})
+        assert "existing" in captured["path"]
+
+    def test_add_observable_calls_post(self, client, monkeypatch):
+        captured = {}
+        def fake_post(path, **kw):
+            captured["path"] = path
+            captured["json"] = kw.get("json", {})
+            return {}
+        monkeypatch.setattr(client, "post", fake_post)
+        stix = {"type": "indicator", "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                "name": "1.2.3.4"}
+        client.add_observable("case-99", stix)
+        assert "case-99" in captured["path"]
+        assert captured["json"]["dataType"] == "ip"
+        assert captured["json"]["data"] == "1.2.3.4"
+
+    def test_to_stix_case(self, client):
+        native = {"_type": "case", "_id": "c1", "title": "Phishing",
+                  "description": "Phishing attack", "_createdAt": "2026-01-01",
+                  "_updatedAt": "2026-01-02", "severity": 3, "status": "Open",
+                  "tags": ["phishing"]}
+        stix = client.to_stix(native)
+        assert stix["type"] == "observed-data"
+        assert stix["name"] == "Phishing"
+        assert stix["x_source_platform"] == "thehive"
+
+    def test_to_stix_alert(self, client):
+        native = {"_type": "alert", "_id": "a1", "title": "Malware Alert",
+                  "sourceRef": "malware.com", "_createdAt": "2026-01-01",
+                  "severity": 2, "type": "external"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "indicator"
+
+    def test_to_stix_observable_domain(self, client):
+        native = {"_id": "o1", "dataType": "domain", "data": "evil.com",
+                  "_createdAt": "2026-01-01", "ioc": True, "tags": []}
+        stix = client.to_stix(native)
+        assert "domain-name" in stix["pattern"]
+
+    def test_from_stix_builds_case_payload(self, client):
+        stix = {"type": "indicator", "name": "Suspicious IP",
+                "description": "IP seen in attacks", "confidence": 75}
+        payload = client.from_stix(stix)
+        assert payload["title"] == "Suspicious IP"
+        assert "severity" in payload
+
+
+# ---------------------------------------------------------------------------
+# ThreatStreamClient
+# ---------------------------------------------------------------------------
+
+class TestThreatStreamClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.threatstream.client import ThreatStreamClient
+        return ThreatStreamClient(
+            host="https://api.threatstream.com",
+            username="analyst@example.com",
+            api_key="ts-key-xyz",
+        )
+
+    def test_authenticate_stores_credentials(self, client):
+        client.authenticate()
+        assert client._ts_auth["username"] == "analyst@example.com"
+        assert client._ts_auth["api_key"] == "ts-key-xyz"
+
+    def test_health_check_success(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"objects": [], "meta": {}})
+        assert client.health_check() is True
+
+    def test_health_check_failure(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: "bad")
+        assert client.health_check() is False
+
+    def test_list_objects_returns_objects(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"objects": [{"id": 1, "type": "ip"}]})
+        results = client.list_objects("indicator")
+        assert len(results) == 1
+        assert results[0]["id"] == 1
+
+    def test_list_objects_with_filters(self, client, monkeypatch):
+        captured = {}
+        def fake_get(path, **kw):
+            captured["params"] = kw.get("params", {})
+            return {"objects": []}
+        monkeypatch.setattr(client, "get", fake_get)
+        client.list_objects("indicator", filters={"status": "active", "confidence__gte": 70})
+        assert captured["params"]["status"] == "active"
+
+    def test_get_object(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"id": 42, "type": "domain"})
+        obj = client.get_object("indicator", "42")
+        assert obj["id"] == 42
+
+    def test_upsert_creates(self, client, monkeypatch):
+        captured = {}
+        def fake_post(path, **kw):
+            captured["json"] = kw.get("json", {})
+            return {}
+        monkeypatch.setattr(client, "post", fake_post)
+        client.upsert_object("indicator", {"value": "1.2.3.4", "type": "ip"})
+        assert "objects" in captured["json"]
+
+    def test_upsert_patches_when_id_present(self, client, monkeypatch):
+        captured = {}
+        def fake_patch(path, **kw):
+            captured["path"] = path
+            return {}
+        monkeypatch.setattr(client, "patch", fake_patch)
+        client.upsert_object("indicator", {"id": 77, "value": "evil.com"})
+        assert "77" in captured["path"]
+
+    def test_to_stix_ip(self, client):
+        native = {"id": 1, "type": "ip", "value": "1.2.3.4",
+                  "confidence": 85, "status": "active",
+                  "created_ts": "2026-01-01", "modified_ts": "2026-01-02"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "indicator"
+        assert "ipv4-addr" in stix["pattern"]
+        assert stix["confidence"] == 85
+        assert stix["x_source_platform"] == "threatstream"
+
+    def test_to_stix_domain(self, client):
+        native = {"id": 2, "type": "domain", "value": "evil.com", "confidence": 60}
+        stix = client.to_stix(native)
+        assert "domain-name" in stix["pattern"]
+
+    def test_from_stix_returns_payload(self, client):
+        stix = {"pattern": "[domain-name:value = 'evil.com']",
+                "name": "evil.com", "confidence": 80}
+        payload = client.from_stix(stix)
+        assert payload["value"] == "evil.com"
+        assert payload["type"] == "domain"
+        assert payload["status"] == "active"

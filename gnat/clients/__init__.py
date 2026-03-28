@@ -44,6 +44,8 @@ from gnat.connectors.jira.client import JiraClient
 from gnat.connectors.threatconnect.client import ThreatConnectClient
 from gnat.connectors.mandiant.client import MandiantClient
 from gnat.connectors.defenderti.client import DefenderTIClient
+from gnat.connectors.thehive.client import TheHiveClient
+from gnat.connectors.threatstream.client import ThreatStreamClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -81,6 +83,8 @@ CLIENT_REGISTRY: dict = {
     "threatconnect":  ThreatConnectClient,
     "mandiant":       MandiantClient,
     "defenderti":     DefenderTIClient,
+    "thehive":        TheHiveClient,
+    "threatstream":   ThreatStreamClient,
 }
 
 __all__ = [

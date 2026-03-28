@@ -298,3 +298,21 @@ tenant_id     = YOUR_AZURE_TENANT_ID
 client_id     = YOUR_APP_CLIENT_ID
 client_secret = YOUR_APP_CLIENT_SECRET
 auth_type     = oauth2
+
+# =============================================================================
+# TheHive 5.x SOAR / Case Management
+# =============================================================================
+[thehive]
+host    = https://thehive.example.com
+api_key = YOUR_THEHIVE_API_KEY
+# org   = MyOrganisation   # optional: multi-tenant X-Organisation header
+auth_type = token
+
+# =============================================================================
+# Anomali ThreatStream OPTIC API v2
+# =============================================================================
+[threatstream]
+host      = https://api.threatstream.com
+username  = your@email.com
+api_key   = YOUR_THREATSTREAM_API_KEY
+auth_type = api_key
