@@ -9,6 +9,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- **Web dashboard** (`gnat/serve/`): FastAPI-based browser UI for server deployments, accessible via `gnat serve`. Secured by `X-Api-Key` header; binds to `127.0.0.1` by default; rate-limited to 100 req/min per key. Three API routers:
+  - `GET/POST /api/library` — search, fetch, promote, and reject Research Library entries
+  - `GET /api/reports` — list reports; serve HTML reports inline; return metadata for PDF/DOCX
+  - `GET/POST /api/scheduler/jobs` — list registered feed jobs; trigger any job in a background thread
+  - `GET /health` — unauthenticated liveness check
+  - `GET /` — embedded single-page dashboard (vanilla JS, no build step, dark theme)
+- `WebUIConfig` (`gnat/serve/config.py`): reads `[webui]` INI section (`enabled`, `bind`, `port`, `api_key`, `reports_dir`); falls back to safe defaults.
+- `APIKeyAuth` (`gnat/serve/auth.py`): `hmac.compare_digest` constant-time key validation as a FastAPI callable dependency.
+- `RateLimiter` (`gnat/serve/rate_limit.py`): sliding-window in-memory rate limiter (thread-safe) as a FastAPI callable dependency.
+- `gnat serve` CLI subcommand: `--host`, `--port`, `--api-key` (auto-generated with warning if omitted), `--reports-dir` flags. Auto-prints the generated key to stderr on first launch.
+- 54 unit tests in `tests/unit/test_serve.py` covering config, auth, rate limiting, all three routers (including path traversal guard, 503 when backend not configured, size formatting), health endpoint, dashboard HTML, and CLI registration.
 - `CopilotReader`: DirectLine token exchange and auto-refresh (`use_token_exchange = true` in `[copilot]` INI section). Exchanges secret for short-lived token via `POST /tokens/generate`; refreshes automatically before expiry via `POST /tokens/refresh`. Falls back to secret on failure. 20 unit tests.
 - `ReportGenerator._extract_email_body_html()`: auto-populates the `body_html` argument of `EmailDelivery` — reads the rendered `.html` file when available; falls back to an HTML snippet of the first 2 000 characters of the Executive Summary section for PDF/DOCX-only deliveries. 4 unit tests in `TestEmailBodyHTML`.
 - `ReportJob` yearly scheduling: defaults to cron `"0 6 1 1 *"` (06:00 UTC Jan 1) instead of a 365-day interval, preventing drift after server restarts. `config/config.ini.example` documents recommended cron expressions for daily (`0 6 * * *`), weekly trends (`0 6 * * 1`), and yearly (`0 6 1 1 *`) report types. 3 unit tests.

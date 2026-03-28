@@ -29,6 +29,8 @@ Sub-commands
     gnat client    call         --platform threatq --method list_objects --args type=indicator
     gnat nlq       "Get all IPs for APT28 from the last 30 days"
     gnat nlq       "Lazarus Group domains since January" --platform threatq --backend claude
+    gnat serve     --api-key mysecret --port 8088
+    gnat serve     --host 0.0.0.0 --port 8088 --reports-dir /var/gnat/reports
 
 Global flags
 ------------
@@ -342,6 +344,25 @@ def _build_parser() -> argparse.ArgumentParser:
                        metavar="NAME",
                        help="Connector platform key to query")
     p_tui.add_argument("--reports-dir", default=None, metavar="DIR",
+                       help="Directory to scan for generated reports")
+
+    # ── serve ─────────────────────────────────────────────────────────────
+    p_srv = subs.add_parser(
+        "serve",
+        help="Start web dashboard server (requires gnat[serve])",
+        description=(
+            "Launch the GNAT web dashboard — a browser-based interface for the "
+            "Research Library, Reports, and Scheduler.  Binds to localhost by "
+            "default; use nginx+TLS for external exposure."
+        ),
+    )
+    p_srv.add_argument("--host", default="127.0.0.1", metavar="HOST",
+                       help="Host/IP to bind to (default: 127.0.0.1)")
+    p_srv.add_argument("--port", type=int, default=8088, metavar="PORT",
+                       help="TCP port (default: 8088)")
+    p_srv.add_argument("--api-key", default=None, metavar="KEY",
+                       help="X-Api-Key secret; auto-generated if omitted")
+    p_srv.add_argument("--reports-dir", default=None, metavar="DIR",
                        help="Directory to scan for generated reports")
 
     return parser
@@ -987,6 +1008,55 @@ def _cmd_tui(args) -> int:
     return 0
 
 
+def _cmd_serve(args) -> int:
+    """serve subcommand — start the GNAT web dashboard."""
+    try:
+        from gnat.serve.app import create_app, run as _serve_run
+    except ImportError:
+        print(
+            _red("Error: FastAPI/uvicorn is not installed.  "
+                 "Run: pip install \"gnat[serve]\""),
+            file=sys.stderr,
+        )
+        return 1
+
+    import os
+    import secrets
+
+    host        = getattr(args, "host", "127.0.0.1") or "127.0.0.1"
+    port        = getattr(args, "port", 8088) or 8088
+    api_key     = getattr(args, "api_key", None)
+    reports_dir = getattr(args, "reports_dir", None)
+    config_path = getattr(args, "config", None)
+
+    if not api_key:
+        api_key = secrets.token_hex(16)
+        print(
+            _yellow("No API key supplied — generated a random key:"),
+            file=sys.stderr,
+        )
+        print(f"  X-Api-Key: {_bold(api_key)}", file=sys.stderr)
+        print("  Store this value — it will not be shown again.\n", file=sys.stderr)
+
+    # Optionally resolve reports_dir from INI when not given on CLI
+    if not reports_dir and config_path:
+        from gnat.serve.config import WebUIConfig
+        cfg = WebUIConfig.from_ini(config_path)
+        reports_dir = cfg.reports_dir
+
+    url = f"http://{host}:{port}"
+    print(_green(f"✓  GNAT Web Dashboard: {_bold(url)}"), file=sys.stderr)
+    print(_dim("   Press Ctrl+C to stop."), file=sys.stderr)
+
+    _serve_run(
+        api_key=api_key,
+        host=host,
+        port=port,
+        reports_dir=reports_dir,
+    )
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """
     Main CLI entry point.
@@ -1028,6 +1098,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "client":   _cmd_client,
         "nlq":      _cmd_nlq,
         "tui":      _cmd_tui,
+        "serve":    _cmd_serve,
     }
 
     handler = handlers.get(args.command)

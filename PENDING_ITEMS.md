@@ -471,6 +471,8 @@ to structured filter input if NLP not configured.
 
 ### 23b. Web UI (FastAPI) — Server / Dashboard
 
+**Status:** ✅ Complete — `gnat/serve/` package, 3 API routers, embedded single-page dashboard, `gnat serve` CLI, 54 unit tests.
+
 **Priority:** LOW
 
 **What:** Browser-based dashboard for server deployments. FastAPI
