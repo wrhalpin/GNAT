@@ -29,6 +29,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `ZeekClient` (`gnat/connectors/zeek/client.py`): new file-based `BaseClient + ConnectorMixin` for Zeek log files; supports both TSV (default) and JSON formats; `list_objects()` reads from notice.log by default; `to_stix()` maps Zeek notice records → STIX `observed-data` with `x_zeek_notice` extension; `iter_stix_connections()` maps conn.log → `x_zeek_conn`. 7 unit tests.
 - `OpenCTIClient` (`gnat/connectors/opencti/client.py`): new `BaseClient + ConnectorMixin` wrapper for OpenCTI GraphQL API; Bearer token auth; `list_objects()` and `get_object()` use GraphQL queries; `to_stix()` maps OpenCTI entity types to STIX SDOs.
 - `CLIENT_REGISTRY` updated: all 29 supported platforms now registered — added `alienvault`, `alienvault_otx`, `graylog`, `ossim`, `security_onion`, `snort`, `suricata`, `zeek`, `elastic`, `misp`, `opencti`, `qradar`, `sentinel`, `wazuh` (total: 30 entries including `alienvault_otx` alias).
+- **Optional Rust native extension** (`rust_core/`): new `gnat-core` Rust crate (PyO3 + maturin) that accelerates the hot-path IOC classification and defanging functions used on every ingested line:
+  - `classify_ioc(value)` — regex-classify an IOC string (sha256/sha1/md5/ip/ipv6/url/email/domain/unknown)
+  - `classify_ioc_batch(values)` — bulk classify without Python loop overhead
+  - `defang(value)` — reverse `[.]`, `hxxp://`, `hxxps://` substitutions
+  - `refang(value)` — apply defanging for safe display
+  - `extract_pattern_value(pattern)` — extract quoted value from STIX pattern strings
+- `gnat/ingest/_ioc_classifier.py`: new Python shim that imports from the Rust `_core` extension when installed and falls back transparently to pure-Python equivalents; exposes `RUST_AVAILABLE` flag.
+- `gnat/ingest/sources/readers.py` (`PlainTextReader`): `_classify()` and `_iter_records()` now use `_fast_classify` / `_fast_defang` from `_ioc_classifier` shim — Rust-accelerated when available.
+- `gnat/export/transforms/edl.py` (`EDLTransform`): `_refang()` and `_extract_value()` now delegate to `_ioc_classifier` shim — Rust-accelerated when available.
+- `gnat/_core.pyi`: type stubs for the Rust extension (IDE/mypy support).
+- `Makefile`: new `build-rust` target (`maturin build --release` + pip install wheel) and `build-rust-dev` target (`maturin develop`) for local development.
+- `pyproject.toml`: new `[fast]` optional-dependency group documenting the `gnat-core` native extension.
+- `tests/unit/test_rust_core.py`: 88 parity tests verifying pure-Python and Rust implementations produce identical output for all 5 functions across all IOC types; Rust-specific tests auto-skip when the wheel is not installed.
 
 ### Fixed
 - `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`
