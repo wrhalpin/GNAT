@@ -587,7 +587,7 @@ class Workspace:
 
         # Handle deletions
         deleted_ids = {sid for sid in self._snapshot if sid not in self.objects}
-        for stix_id in (stix_ids or deleted_ids) & deleted_ids:
+        for stix_id in (set(stix_ids) if stix_ids else deleted_ids) & deleted_ids:
             stix_type = self._snapshot[stix_id].get("type", "indicator")
             if dry_run:
                 result.would_write.append({"id": stix_id, "action": "deleted"})

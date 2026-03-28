@@ -84,10 +84,11 @@ class BaseClient:
         timeout: float = 30.0,
         max_retries: int = 3,
         config: Optional[Dict[str, Any]] = None,
+        **_ignored: Any,
     ):
         self.host = host.rstrip("/")
         self.verify_ssl = verify_ssl
-        self.timeout = timeout
+        self.timeout = float(timeout)
         self.config = config or {}
         self._auth_headers: Dict[str, str] = {}
         self._authenticated = False
@@ -101,7 +102,7 @@ class BaseClient:
 
         kwargs: Dict[str, Any] = {
             "retries": retry,
-            "timeout": urllib3.Timeout(connect=timeout, read=timeout),
+            "timeout": urllib3.Timeout(connect=self.timeout, read=self.timeout),
         }
         if not verify_ssl:
             kwargs["cert_reqs"] = "CERT_NONE"

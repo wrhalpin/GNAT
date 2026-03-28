@@ -44,10 +44,19 @@ def _utcnow() -> datetime:
 
 
 def _get(obj: "STIXBase", field: str) -> Any:
-    """Safely get a field from a STIXBase object."""
+    """Safely get a field from a STIXBase object.
+
+    For STIXBase objects, checks ``_properties`` exclusively so that
+    explicitly-set values are found and auto-defaulted core attributes
+    (such as ``modified = _utcnow()`` in ``__init__``) are not treated as
+    real timestamps when the caller is testing for field presence.
+    Falls back to ``getattr`` for non-STIXBase dict-like objects.
+    """
+    if hasattr(obj, "_properties"):
+        return obj._properties.get(field)
     if hasattr(obj, field):
         return getattr(obj, field, None)
-    return obj._properties.get(field)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -305,9 +314,12 @@ class AgeFilter(ExportFilter):
             raw = _get(obj, field)
             if raw:
                 try:
-                    return datetime.fromisoformat(
+                    dt = datetime.fromisoformat(
                         str(raw).replace("Z", "+00:00")
                     )
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    return dt
                 except ValueError:
                     pass
         return None
@@ -552,6 +564,156 @@ class FunctionFilter(ExportFilter):
 
     def __repr__(self) -> str:
         return f"FunctionFilter(fn={self._predicate.__name__!r})"
+
+
+# ---------------------------------------------------------------------------
+# SectorFilter
+# ---------------------------------------------------------------------------
+
+class SectorFilter(ExportFilter):
+    """
+    Filter STIX objects by the canonical ``x_target_sectors`` field.
+
+    Supports alias expansion for cross-platform normalisation and both
+    ``any`` / ``all`` matching modes.  Can be composed with other
+    ``ExportFilter`` subclasses via ``&``.
+
+    Parameters
+    ----------
+    sectors : list of str
+        Sector strings to match against.
+    match : str
+        ``"any"`` (default) or ``"all"``.
+    strict : bool
+        If ``False`` (default), untagged objects pass through alongside
+        tagged matches.  If ``True``, only explicitly-tagged objects pass.
+    aliases : dict, optional
+        ``{canonical: [alias, alias, ...]}`` mapping loaded from the
+        ``[sector_aliases]`` INI section.
+
+    Examples
+    --------
+    ::
+
+        from gnat.export.filters import SectorFilter, TypeFilter
+
+        f = TypeFilter("indicator") & SectorFilter(
+            sectors=["Healthcare", "Opportunistic"],
+            aliases={"healthcare": ["Healthcare", "Health", "Medical"]},
+        )
+        filtered = list(f(workspace_objects))
+    """
+
+    _SECTOR_FIELDS = [
+        "x_target_sectors",        # GNAT canonical
+        "x_threatq_industries",    # ThreatQ placeholder
+        "x_threatq_sectors",       # ThreatQ placeholder
+        "x_rf_target_sectors",     # Recorded Future
+        "x_cs_target_industries",  # CrowdStrike
+    ]
+
+    def __init__(
+        self,
+        sectors: List[str],
+        match: str = "any",
+        strict: bool = False,
+        aliases: Optional[Dict[str, List[str]]] = None,
+    ):
+        self._sectors = [s.lower().strip() for s in sectors]
+        self._match   = match.lower()
+        self._strict  = strict
+        self._aliases = self._build_alias_set(aliases or {})
+
+    def _build_alias_set(
+        self, aliases: Dict[str, List[str]]
+    ) -> Dict[str, List[str]]:
+        return {
+            k.lower().strip(): [a.lower().strip() for a in v]
+            for k, v in aliases.items()
+        }
+
+    def _sector_values(self, obj: "STIXBase") -> List[str]:
+        values: List[str] = []
+        for field_name in self._SECTOR_FIELDS:
+            raw = obj._properties.get(field_name)
+            if raw is None:
+                continue
+            if isinstance(raw, list):
+                values.extend(str(v).lower().strip() for v in raw)
+            elif isinstance(raw, str):
+                values.extend(
+                    v.lower().strip() for v in raw.split(",") if v.strip()
+                )
+        return values
+
+    def _matches_sector(self, obj_sector: str, target: str) -> bool:
+        if target in obj_sector or obj_sector in target:
+            return True
+        for aliases in self._aliases.values():
+            if target in aliases and obj_sector in aliases:
+                return True
+        return False
+
+    def _object_matches(self, obj: "STIXBase") -> bool:
+        obj_sectors = self._sector_values(obj)
+        if not obj_sectors:
+            return not self._strict
+        if self._match == "all":
+            return all(
+                any(self._matches_sector(os, t) for os in obj_sectors)
+                for t in self._sectors
+            )
+        return any(
+            any(self._matches_sector(os, t) for os in obj_sectors)
+            for t in self._sectors
+        )
+
+    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+        if not self._sectors:
+            yield from objects
+            return
+        for obj in objects:
+            if self._object_matches(obj):
+                yield obj
+
+    def __repr__(self) -> str:
+        return (
+            f"SectorFilter(sectors={self._sectors}, match={self._match!r}, "
+            f"strict={self._strict})"
+        )
+
+    @classmethod
+    def from_ini(cls, ini_config_path: Optional[str] = None,
+                 sectors: Optional[List[str]] = None,
+                 match: str = "any",
+                 strict: bool = False) -> "SectorFilter":
+        """
+        Construct with aliases loaded from the ``[sector_aliases]`` INI section.
+
+        Parameters
+        ----------
+        ini_config_path : str, optional
+            Path to config.ini.  Uses default search order if omitted.
+        sectors : list of str, optional
+            Sectors to filter on.  Defaults to ``[]`` (pass-all).
+        match : str
+            ``"any"`` or ``"all"``.
+        strict : bool
+            Drop untagged objects when ``True``.
+        """
+        aliases: Dict[str, List[str]] = {}
+        try:
+            from gnat.config import SAKConfig
+            cfg = SAKConfig(ini_config_path)
+            try:
+                section = cfg.get("sector_aliases")
+                for key, val in section.items():
+                    aliases[key] = [v.strip() for v in val.split(",") if v.strip()]
+            except KeyError:
+                pass
+        except Exception:
+            pass
+        return cls(sectors=sectors or [], match=match, strict=strict, aliases=aliases)
 
 
 # Re-export for convenience

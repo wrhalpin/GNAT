@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (Cybersecurity Threat Management Swiss Army Knife) is a production-ready Python library providing:
-- A unified client interface for 26 security/threat intelligence platforms
+- A unified client interface for 29 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude API)
@@ -30,7 +30,7 @@ gnat/                        # Main Python package
 ├── config.py                # INI-based configuration management
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 26 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 29 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
 ├── cli/                     # CLI entry point (gnat/cli/main.py — 27 KB)

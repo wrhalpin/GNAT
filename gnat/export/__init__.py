@@ -68,6 +68,7 @@ from gnat.export.base import (
     PassthroughFilter,
 )
 from gnat.export.jobs import ExportJob
+from gnat.export.filters import SectorFilter
 
 __all__ = [
     # Core abstractions
@@ -81,4 +82,6 @@ __all__ = [
     "PassthroughFilter",
     # Scheduled export job
     "ExportJob",
+    # Sector filtering (also available in gnat.reports)
+    "SectorFilter",
 ]

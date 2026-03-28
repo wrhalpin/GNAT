@@ -234,7 +234,7 @@ gnat/
 │   ├── attack_pattern.py
 │   ├── observable.py        # IPv4Address, DomainName, URL, File, Email
 │   └── relationship.py
-├── connectors/              # 26 platform connectors
+├── connectors/              # 29 platform connectors
 │   ├── base_connector.py    # ConnectorMixin (STIX translation contract)
 │   ├── threatq/             # ThreatQ TIP
 │   ├── crowdstrike/         # CrowdStrike Falcon

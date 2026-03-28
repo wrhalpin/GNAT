@@ -417,10 +417,13 @@ class LogDelivery(ExportDelivery):
     def deliver(self, result: TransformResult) -> DeliveryResult:
         dr = DeliveryResult()
         for name, content in result.payloads.items():
-            if isinstance(content, (dict, list)):
-                body = json.dumps(content)[:self._max]
-            elif isinstance(content, bytes):
+            if isinstance(content, bytes):
                 body = content.decode("utf-8", errors="replace")[:self._max]
+            elif isinstance(content, (dict, list)):
+                try:
+                    body = json.dumps(content)[:self._max]
+                except (TypeError, ValueError):
+                    body = str(content)[:self._max]
             else:
                 body = str(content)[:self._max]
             logger.log(self._level, "LogDelivery[%s]: %s", name, body)

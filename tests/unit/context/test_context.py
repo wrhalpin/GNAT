@@ -613,6 +613,8 @@ class TestWorkspaceEnrichment:
         gc.client.client.list_objects.return_value = [
             {"id": "indicator--low", "value": "low.com", "type": "indicator"}
         ]
+        # Clear side_effect so return_value is used (side_effect takes priority in MagicMock)
+        gc.client.client.to_stix.side_effect = None
         gc.client.client.to_stix.return_value = {
             "type": "indicator", "id": "indicator--low",
             "name": "low.com", "pattern": "[domain-name:value = 'low.com']",
@@ -776,3 +778,19 @@ class TestWorkspaceManager:
         )
         assert manager._registry.default.name == "tq"
         assert manager._registry.get("rf").read_only is True
+
+    def test_default_no_config_raises(self, tmp_path):
+        """default() propagates FileNotFoundError when no config exists."""
+        with pytest.raises(FileNotFoundError):
+            WorkspaceManager.default(config_path=str(tmp_path / "nonexistent.ini"))
+
+    def test_default_with_config(self, minimal_config):
+        """default() builds a valid WorkspaceManager from a config file."""
+        manager = WorkspaceManager.default(config_path=minimal_config)
+        assert isinstance(manager, WorkspaceManager)
+        assert manager._store is not None
+
+    def test_default_returns_workspace_manager_type(self, minimal_config):
+        """default() always returns a WorkspaceManager instance."""
+        manager = WorkspaceManager.default(config_path=minimal_config)
+        assert type(manager).__name__ == "WorkspaceManager"

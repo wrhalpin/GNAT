@@ -37,6 +37,7 @@ from gnat.reports import (
     ReportGenerator, ReportJob, ReportResult,
     ReportSection, ReportDocument,
 )
+from gnat.reports.renderers import DOCXRenderer
 from gnat.context import GlobalContextRegistry, GlobalContext, FlatFileStore
 from gnat.context.workspace import WorkspaceManager
 from gnat.orm.indicator import Indicator
@@ -503,25 +504,91 @@ class TestHTMLRenderer:
 # PDFRenderer
 # ===========================================================================
 
+_reportlab_available = True
+try:
+    import reportlab  # noqa: F401
+except ImportError:
+    _reportlab_available = False
+
+
 class TestPDFRenderer:
 
     def test_creates_file(self, tmp_path):
+        if not _reportlab_available:
+            pytest.skip("reportlab not installed")
         doc = _make_doc()
         path = str(tmp_path / "r.pdf")
         PDFRenderer().render(doc, path)
         assert os.path.exists(path)
 
     def test_non_empty(self, tmp_path):
+        if not _reportlab_available:
+            pytest.skip("reportlab not installed")
         doc = _make_doc()
         path = str(tmp_path / "r.pdf")
         PDFRenderer().render(doc, path)
         assert os.path.getsize(path) > 500
 
     def test_creates_parent_dir(self, tmp_path):
+        if not _reportlab_available:
+            pytest.skip("reportlab not installed")
         doc = _make_doc()
         path = str(tmp_path / "subdir" / "nested" / "r.pdf")
         PDFRenderer().render(doc, path)
         assert os.path.exists(path)
+
+
+# ===========================================================================
+# DOCXRenderer
+# ===========================================================================
+
+class TestDOCXRenderer:
+
+    def test_creates_file(self, tmp_path):
+        doc = _make_doc()
+        path = str(tmp_path / "r.docx")
+        DOCXRenderer().render(doc, path)
+        assert os.path.exists(path)
+
+    def test_non_empty(self, tmp_path):
+        doc = _make_doc()
+        path = str(tmp_path / "r.docx")
+        DOCXRenderer().render(doc, path)
+        assert os.path.getsize(path) > 1000
+
+    def test_creates_parent_dir(self, tmp_path):
+        doc = _make_doc()
+        path = str(tmp_path / "subdir" / "nested" / "r.docx")
+        DOCXRenderer().render(doc, path)
+        assert os.path.exists(path)
+
+    def test_is_valid_zip(self, tmp_path):
+        """DOCX files are ZIP archives — verify basic structure."""
+        import zipfile
+        doc = _make_doc()
+        path = str(tmp_path / "r.docx")
+        DOCXRenderer().render(doc, path)
+        assert zipfile.is_zipfile(path)
+        with zipfile.ZipFile(path) as zf:
+            names = zf.namelist()
+        assert "word/document.xml" in names
+
+    def test_title_in_content(self, tmp_path):
+        """Title text should appear in the document XML."""
+        import zipfile
+        doc = _make_doc()
+        path = str(tmp_path / "r.docx")
+        DOCXRenderer().render(doc, path)
+        with zipfile.ZipFile(path) as zf:
+            xml = zf.read("word/document.xml").decode("utf-8")
+        assert "Test Report" in xml
+
+    def test_missing_python_docx_raises(self, tmp_path):
+        import sys
+        from unittest.mock import patch
+        with patch.dict(sys.modules, {"docx": None}):
+            with pytest.raises(ImportError, match="python-docx"):
+                DOCXRenderer().render(_make_doc(), str(tmp_path / "r.docx"))
 
 
 # ===========================================================================
@@ -531,10 +598,10 @@ class TestPDFRenderer:
 class TestReportGenerator:
 
     def test_no_ai_all_formats(self, manager, library_ws, tmp_path):
-        cfg = _daily_config(tmp_path, formats=["markdown", "html", "pdf"])
+        cfg = _daily_config(tmp_path, formats=["markdown", "html", "docx"])
         result = ReportGenerator(manager, cfg).run()
         assert result.success
-        assert set(result.formats_rendered) == {"markdown", "html", "pdf"}
+        assert set(result.formats_rendered) == {"markdown", "html", "docx"}
         assert len(result.files_written) == 3
 
     def test_no_ai_zero_calls(self, manager, library_ws, tmp_path):

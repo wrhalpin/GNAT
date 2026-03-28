@@ -93,14 +93,9 @@ if industries or sectors:
 
 **File:** `gnat/reports/renderers.py` — `DOCXRenderer`
 
-**Status:** Implemented but requires `npm install -g docx` on the host.
-
-**Action required:**
-- Document the npm dependency clearly in deployment instructions.
-- Consider packaging a `scripts/generate_docx.js` helper script in the
-  repo so users don't need to know the npm package name.
-- Alternatively, evaluate `python-docx` as a pure-Python fallback for
-  environments without Node.js.
+**Status:** ✅ COMPLETE — Replaced Node.js/npm `docx` implementation with
+pure-Python `python-docx`. No subprocess, no temp files, no Node.js required.
+`python-docx>=1.1` added to `[reports]` and `[all]` extras in `pyproject.toml`.
 
 ---
 
@@ -134,13 +129,12 @@ in `TestReportJob`.
 
 **File:** `gnat/context/workspace.py`
 
-**Status:** `ResearchLibrary.default()` calls `WorkspaceManager.default()`
-which may not exist — needs verification.
-
-**Action required:**
-- Check `WorkspaceManager` for a `default()` class method.
-- If absent, add it: opens the default SQLite store at
-  `~/.gnat/workspaces/` and connects with a dummy GlobalContext.
+**Status:** ✅ COMPLETE — `WorkspaceManager.default()` exists and is fully
+implemented. Builds a `GlobalContextRegistry` from config and a SQLite
+`WorkspaceStore` (falls back to `FlatFileStore` if SQLAlchemy unavailable).
+`ResearchLibrary.default()` chains through it correctly. Added 3 unit tests
+to `TestWorkspaceManager` covering the happy path, missing config error, and
+return type.
 
 ---
 
@@ -148,15 +142,12 @@ which may not exist — needs verification.
 
 **File:** `gnat/agents/copilot.py`
 
-**Status:** The DirectLine secret is passed directly as a Bearer token.
-DirectLine secrets are long-lived, but if token-based auth is configured
-(exchanging a secret for a token via the token endpoint), refresh logic
-is needed.
-
-**Action required:**
-- Test with the actual Bot Framework DirectLine endpoint.
-- If token exchange is required, add `_refresh_token()` logic before
-  `_open_conversation()`.
+**Status:** ✅ COMPLETE — Added `use_token_exchange` flag (INI: `use_token_exchange = true`).
+When enabled, `_ensure_token()` exchanges the DirectLine secret for a 30-minute
+token via `POST /tokens/generate` on first use, and refreshes automatically via
+`POST /tokens/refresh` when fewer than 5 minutes remain. `_bearer()` returns the
+current token (or secret as fallback). `_query_source` calls `_ensure_token()`
+before opening each conversation. 20 unit tests added.
 
 ---
 
@@ -166,37 +157,26 @@ is needed.
 
 **File:** `gnat/cli/main.py`
 
-**Status:** CLI has a `schedule` subcommand stub but no `report` subcommand.
-
-**Action required:**
-- Add `gnat report run --config report.daily_healthcare` to trigger
-  on-demand report generation from the CLI.
-- Add `gnat report list` to show configured report profiles.
+**Status:** ✅ COMPLETE — Added `gnat report list` and `gnat report run`.
+`run` accepts `--config <name>`, `--formats`, `--output-dir`, `--no-ai`.
 
 ### 12. Export Pipeline — `SectorFilter` integration
 
 **File:** `gnat/export/filters.py`
 
-**Status:** The export filter library has `TypeFilter`, `ConfidenceFilter`,
-`TLPFilter` etc. but no `SectorFilter`. The report layer has its own in
-`gnat/reports/base.py`.
-
-**Action required:**
-- Move `SectorFilter` to `gnat/export/filters.py` so it's available
-  in both the export pipeline and the report layer.
-- Update `gnat/reports/base.py` to import from the new location.
+**Status:** ✅ COMPLETE — `SectorFilter` moved to `gnat/export/filters.py`
+as a proper `ExportFilter` subclass (composable via `&`). Re-exported from
+`gnat/reports/base.py` with `apply()` and `from_config()` helpers for
+backwards compatibility. Available as `gnat.export.SectorFilter`.
 
 ### 13. CHANGELOG.md — versions 0.6.0 through 1.0.0
 
 **File:** `CHANGELOG.md`
 
-**Status:** Last logged version was 0.5.0. Needs entries for:
-- 0.6.0 — FeedScheduler, CurationJob
-- 0.7.0 — ExportPipeline, ExportJob, EDLTransform, NetskopeCETransform
-- 0.8.0 — AI Agents (ResearchAgent, ParsingAgent, CopilotReader)
-- 0.9.0 — ResearchLibrary three-tier knowledge base
-- 1.0.0 — Report generation (daily, trends, yearly), four formats,
-           email + SharePoint delivery
+**Status:** ✅ COMPLETE — Added entries for 0.6.0 (FeedScheduler),
+0.7.0 (ExportPipeline + filters), 0.8.0 (AI Agents), 0.9.0 (ResearchLibrary),
+and 1.0.0 (Reports, 29 connectors, search sidecar, CLI report subcommand,
+python-docx DOCXRenderer, SectorFilter move).
 
 ### 14. pyproject.toml — `[project.optional-dependencies]` for new connectors
 

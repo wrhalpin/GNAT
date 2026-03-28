@@ -25,6 +25,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 import json
+import time
 
 import pytest
 
@@ -674,7 +675,7 @@ class TestParsingAgentMap:
 
         long_text = "A" * 50_000
         with patch.object(ClaudeClient, "complete", side_effect=capture):
-            ParsingAgent(cfg, max_text_chars=100).map(
+            _ = ParsingAgent(cfg, max_text_chars=100).map(
                 {"text": long_text, "url": "", "topic": "x"}
             )
             list(_)  # exhaust iterator if needed
@@ -858,6 +859,171 @@ class TestCopilotReaderParseReply:
     def test_empty_array(self):
         items = CopilotReader._parse_reply("[]", {"name": "test"})
         assert items == []
+
+
+# ===========================================================================
+# CopilotReader — token exchange and refresh
+# ===========================================================================
+
+class TestCopilotTokenRefresh:
+    """Tests for DirectLine token exchange and auto-refresh logic."""
+
+    _SOURCE = [{"type": "sharepoint", "name": "TR", "url": "https://sp.example.com"}]
+
+    def _cr(self, use_token_exchange=True) -> CopilotReader:
+        return CopilotReader(
+            directline_secret="my-secret",
+            sources=self._SOURCE,
+            use_token_exchange=use_token_exchange,
+        )
+
+    def test_default_no_token_exchange(self):
+        cr = CopilotReader(directline_secret="s", sources=self._SOURCE)
+        assert cr._use_token_exchange is False
+        assert cr._token is None
+
+    def test_use_token_exchange_flag_set(self):
+        cr = self._cr(use_token_exchange=True)
+        assert cr._use_token_exchange is True
+
+    def test_bearer_returns_secret_when_no_token(self):
+        cr = self._cr(use_token_exchange=True)
+        # Before _ensure_token() is called, secret is used as bearer
+        assert cr._bearer() == "my-secret"
+
+    def test_bearer_returns_token_when_set(self):
+        cr = self._cr(use_token_exchange=True)
+        cr._token = "short-lived-token"
+        assert cr._bearer() == "short-lived-token"
+
+    def test_bearer_uses_secret_when_exchange_disabled(self):
+        cr = self._cr(use_token_exchange=False)
+        cr._token = "should-be-ignored"
+        assert cr._bearer() == "my-secret"
+
+    def test_ensure_token_no_op_when_disabled(self):
+        cr = self._cr(use_token_exchange=False)
+        with patch.object(cr, "_exchange_for_token") as mock_ex:
+            cr._ensure_token()
+            mock_ex.assert_not_called()
+        assert cr._token is None
+
+    def test_ensure_token_exchanges_on_first_call(self):
+        cr = self._cr(use_token_exchange=True)
+        with patch.object(cr, "_exchange_for_token", return_value="tok-1") as mock_ex:
+            cr._ensure_token()
+            mock_ex.assert_called_once()
+        assert cr._token == "tok-1"
+        assert cr._token_expires_at is not None
+
+    def test_ensure_token_no_exchange_when_token_fresh(self):
+        cr = self._cr(use_token_exchange=True)
+        cr._token = "tok-1"
+        cr._token_expires_at = time.time() + 1000  # plenty of time left
+        with patch.object(cr, "_exchange_for_token") as mock_ex, \
+             patch.object(cr, "_refresh_token") as mock_ref:
+            cr._ensure_token()
+            mock_ex.assert_not_called()
+            mock_ref.assert_not_called()
+        assert cr._token == "tok-1"
+
+    def test_ensure_token_refreshes_when_expiring_soon(self):
+        cr = self._cr(use_token_exchange=True)
+        cr._token = "tok-1"
+        cr._token_expires_at = time.time() + 60  # < _TOKEN_REFRESH_BUFFER (300s)
+        with patch.object(cr, "_refresh_token", return_value="tok-2") as mock_ref:
+            cr._ensure_token()
+            mock_ref.assert_called_once()
+        assert cr._token == "tok-2"
+
+    def test_ensure_token_keeps_old_token_when_refresh_fails(self):
+        cr = self._cr(use_token_exchange=True)
+        cr._token = "tok-old"
+        cr._token_expires_at = time.time() + 10  # about to expire
+        with patch.object(cr, "_refresh_token", return_value=None):
+            cr._ensure_token()
+        assert cr._token == "tok-old"  # keeps stale token
+
+    def test_exchange_for_token_returns_token_from_response(self):
+        cr = self._cr(use_token_exchange=True)
+        with patch.object(cr, "_dl_request", return_value={"token": "exchanged-tok"}):
+            result = cr._exchange_for_token()
+        assert result == "exchanged-tok"
+
+    def test_exchange_for_token_returns_none_on_failure(self):
+        cr = self._cr(use_token_exchange=True)
+        with patch.object(cr, "_dl_request", return_value=None):
+            result = cr._exchange_for_token()
+        assert result is None
+
+    def test_refresh_token_returns_new_token(self):
+        cr = self._cr(use_token_exchange=True)
+        cr._token = "old-tok"
+        with patch.object(cr, "_dl_request", return_value={"token": "new-tok"}):
+            result = cr._refresh_token()
+        assert result == "new-tok"
+
+    def test_refresh_token_returns_none_when_no_current_token(self):
+        cr = self._cr(use_token_exchange=True)
+        cr._token = None
+        result = cr._refresh_token()
+        assert result is None
+
+    def test_refresh_token_calls_refresh_endpoint(self):
+        cr = self._cr(use_token_exchange=True)
+        cr._token = "old-tok"
+        with patch.object(cr, "_dl_request", return_value={"token": "new"}) as mock_req:
+            cr._refresh_token()
+        url_called = mock_req.call_args[0][0]
+        assert "tokens/refresh" in url_called
+
+    def test_exchange_for_token_calls_generate_endpoint(self):
+        cr = self._cr(use_token_exchange=True)
+        with patch.object(cr, "_dl_request", return_value={"token": "t"}) as mock_req:
+            cr._exchange_for_token()
+        url_called = mock_req.call_args[0][0]
+        assert "tokens/generate" in url_called
+
+    def test_from_ini_reads_use_token_exchange_true(self, tmp_path):
+        ini = tmp_path / "config.ini"
+        ini.write_text(
+            "[copilot]\n"
+            "directline_secret = sec\n"
+            "use_token_exchange = true\n"
+        )
+        cr = CopilotReader.from_ini(
+            sources=self._SOURCE, config_path=str(ini)
+        )
+        assert cr._use_token_exchange is True
+
+    def test_from_ini_reads_use_token_exchange_false(self, tmp_path):
+        ini = tmp_path / "config.ini"
+        ini.write_text(
+            "[copilot]\n"
+            "directline_secret = sec\n"
+            "use_token_exchange = false\n"
+        )
+        cr = CopilotReader.from_ini(
+            sources=self._SOURCE, config_path=str(ini)
+        )
+        assert cr._use_token_exchange is False
+
+    def test_from_ini_default_no_token_exchange(self, tmp_path):
+        ini = tmp_path / "config.ini"
+        ini.write_text("[copilot]\ndirectline_secret = sec\n")
+        cr = CopilotReader.from_ini(
+            sources=self._SOURCE, config_path=str(ini)
+        )
+        assert cr._use_token_exchange is False
+
+    def test_query_source_calls_ensure_token(self):
+        """_query_source should always call _ensure_token before opening a conversation."""
+        cr = self._cr(use_token_exchange=True)
+        call_order = []
+        with patch.object(cr, "_ensure_token", side_effect=lambda: call_order.append("ensure")), \
+             patch.object(cr, "_open_conversation", return_value=None):
+            cr._query_source(self._SOURCE[0])
+        assert call_order[0] == "ensure"
 
 
 # ===========================================================================

@@ -246,6 +246,7 @@ class CurationJob(FeedJob):
             run_number   = self.run_count,
             scheduled_at = sched_at,
             started_at   = started_at,
+            run_count    = self.run_count,
         )
 
         stats = {"promoted": 0, "archived": 0, "skipped": 0}

@@ -23,6 +23,7 @@ INI file::
     [copilot]
     directline_secret = <bot-framework-directline-secret>
     bot_timeout       = 60
+    use_token_exchange = true   ; optional — exchange secret for short-lived token
 
 Sources are defined in code (not INI) because they vary per job::
 
@@ -160,6 +161,11 @@ class CopilotReader(SourceReader):
         If ``sources`` is empty or a source dict is missing required keys.
     """
 
+    #: Refresh the token when fewer than this many seconds remain.
+    _TOKEN_REFRESH_BUFFER: int = 300  # 5 minutes
+    #: DirectLine tokens are valid for 30 minutes per Microsoft spec.
+    _TOKEN_LIFETIME: int = 1800
+
     def __init__(
         self,
         directline_secret: str,
@@ -169,16 +175,21 @@ class CopilotReader(SourceReader):
         poll_interval: float = 2.0,
         max_poll_attempts: int = 30,
         label: str = "CopilotReader",
+        use_token_exchange: bool = False,
     ):
         super().__init__(source_id=label)
         if not sources:
             raise ValueError("CopilotReader: at least one source must be configured")
-        self._secret       = directline_secret
-        self._sources      = sources
-        self._newer_than   = newer_than
-        self._timeout      = bot_timeout
-        self._poll_interval = poll_interval
-        self._max_polls    = max_poll_attempts
+        self._secret            = directline_secret
+        self._sources           = sources
+        self._newer_than        = newer_than
+        self._timeout           = bot_timeout
+        self._poll_interval     = poll_interval
+        self._max_polls         = max_poll_attempts
+        self._use_token_exchange = use_token_exchange
+        # Token state (populated on first use when use_token_exchange=True)
+        self._token:            Optional[str]   = None
+        self._token_expires_at: Optional[float] = None  # UNIX timestamp
 
     @classmethod
     def from_ini(
@@ -218,11 +229,16 @@ class CopilotReader(SourceReader):
         if not secret:
             raise KeyError("[copilot] section missing 'directline_secret'")
 
+        use_token_exchange = section.get(
+            "use_token_exchange", "false"
+        ).strip().lower() in ("true", "1", "yes")
+
         return cls(
-            directline_secret = secret,
-            sources           = sources,
-            newer_than        = newer_than,
-            bot_timeout       = int(section.get("bot_timeout", 60)),
+            directline_secret  = secret,
+            sources            = sources,
+            newer_than         = newer_than,
+            bot_timeout        = int(section.get("bot_timeout", 60)),
+            use_token_exchange = use_token_exchange,
         )
 
     # ── SourceReader interface ─────────────────────────────────────────────
@@ -261,6 +277,9 @@ class CopilotReader(SourceReader):
         Open a DirectLine conversation, send a Copilot query for one M365
         source, poll for the reply, and return parsed content items.
         """
+        # Ensure we have a valid token (exchange/refresh if configured)
+        self._ensure_token()
+
         # Build the query text for Copilot
         query_text = self._build_query(source)
 
@@ -332,11 +351,112 @@ class CopilotReader(SourceReader):
             newer_than_hint=newer_hint,
         )
 
+    # ── Token exchange / refresh ───────────────────────────────────────────
+
+    def _ensure_token(self) -> None:
+        """
+        Ensure a valid DirectLine token is available.
+
+        When ``use_token_exchange`` is ``True``:
+
+        * First call: exchanges the DirectLine secret for a short-lived token
+          via ``POST /v3/directline/tokens/generate``.
+        * Subsequent calls: refreshes the token via
+          ``POST /v3/directline/tokens/refresh`` if fewer than
+          :attr:`_TOKEN_REFRESH_BUFFER` seconds remain before expiry.
+
+        Does nothing when ``use_token_exchange`` is ``False`` (secret is used
+        directly as the Bearer value).
+        """
+        if not self._use_token_exchange:
+            return
+
+        now = time.time()
+
+        if self._token is None:
+            # First use — exchange secret for token
+            token = self._exchange_for_token()
+            if token:
+                self._token = token
+                self._token_expires_at = now + self._TOKEN_LIFETIME
+                logger.debug("CopilotReader: obtained DirectLine token (expires in %ds)",
+                             self._TOKEN_LIFETIME)
+            else:
+                logger.warning(
+                    "CopilotReader: token exchange failed — falling back to secret"
+                )
+        elif (
+            self._token_expires_at is not None
+            and (self._token_expires_at - now) < self._TOKEN_REFRESH_BUFFER
+        ):
+            # Token expiring soon — refresh it
+            new_token = self._refresh_token()
+            if new_token:
+                self._token = new_token
+                self._token_expires_at = now + self._TOKEN_LIFETIME
+                logger.debug("CopilotReader: refreshed DirectLine token")
+            else:
+                logger.warning(
+                    "CopilotReader: token refresh failed — reusing existing token"
+                )
+
+    def _exchange_for_token(self) -> Optional[str]:
+        """
+        Exchange the DirectLine secret for a short-lived conversation token.
+
+        Calls ``POST /v3/directline/tokens/generate`` with the secret as
+        the Bearer credential and returns the ``token`` field from the
+        response, or ``None`` on failure.
+        """
+        resp = self._dl_request(
+            f"{_DIRECTLINE_BASE}/tokens/generate",
+            data=b"{}",
+            method="POST",
+        )
+        if resp:
+            return resp.get("token")
+        return None
+
+    def _refresh_token(self) -> Optional[str]:
+        """
+        Refresh the current DirectLine token before it expires.
+
+        Calls ``POST /v3/directline/tokens/refresh`` with the current token
+        as the Bearer credential and returns the new ``token`` value, or
+        ``None`` on failure.
+
+        The caller should fall back to the existing token if ``None`` is
+        returned (the old token is still valid for a few minutes).
+        """
+        if not self._token:
+            return None
+        resp = self._dl_request(
+            f"{_DIRECTLINE_BASE}/tokens/refresh",
+            data=b"{}",
+            method="POST",
+        )
+        if resp:
+            return resp.get("token")
+        return None
+
+    def _bearer(self) -> str:
+        """
+        Return the current bearer value.
+
+        When ``use_token_exchange`` is ``True`` and a token has been obtained,
+        the token is returned.  Otherwise the DirectLine secret is used
+        (secrets are long-lived and valid as bearer tokens per the DirectLine
+        spec).
+        """
+        if self._use_token_exchange and self._token:
+            return self._token
+        return self._secret
+
     # ── DirectLine v3 HTTP calls (sync urllib) ─────────────────────────────
 
     def _dl_headers(self) -> Dict[str, str]:
         return {
-            "Authorization": f"Bearer {self._secret}",
+            "Authorization": f"Bearer {self._bearer()}",
             "Content-Type":  "application/json",
         }
 
