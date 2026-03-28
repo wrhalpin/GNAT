@@ -376,33 +376,21 @@ Eleven new connectors in priority order. Each follows the standard
 
 **Priority:** MEDIUM-LOW
 
-**What:** `gnat codegen xsoar --connector <name>` generates a valid XSOAR
-content pack zip from an existing GNAT connector. Promotes code reuse for
-shops that run XSOAR natively and want a native integration without
-maintaining two separate codebases.
+**Status:** ✅ COMPLETE
 
-**XSOAR content pack structure:**
-```
-MyConnector/
-├── pack_metadata.json
-├── Integrations/
-│   └── MyConnector/
-│       ├── MyConnector.yml      # integration definition (commands, args, outputs)
-│       └── MyConnector.py       # Python script wrapping GNAT client methods
-└── ReleaseNotes/
-    └── 1_0_0.md
-```
-
-**Generator logic** (in `gnat/codegen/xsoar_generator.py`):
-1. Introspect connector class via `capabilities()` (see item #19)
-2. Map GNAT method signatures → XSOAR command definitions in YAML
-3. Render `MyConnector.py` that imports the GNAT client and delegates
-4. Render `pack_metadata.json` from connector metadata
-5. Zip the output
-
-**CLI:** `gnat codegen xsoar --connector threatq --output ./packs/`
-
-**Depends on:** #19 (capability reflection provides introspection input)
+**Implemented:**
+- `gnat/codegen/xsoar_generator.py` — `generate_xsoar_pack(connector_name,
+  output_dir, version, auth_type, overwrite)`. Introspects any registered
+  connector via `capabilities()`, maps methods to XSOAR command defs, and
+  writes a valid XSOAR 6 content pack zip. Write methods flagged
+  `dangerous: true`; auth type auto-detected from constructor signature.
+- Pack layout: `pack_metadata.json`, `Integrations/<Name>/<Name>.yml`,
+  `Integrations/<Name>/<Name>.py`, `ReleaseNotes/<ver>.md`.
+- `gnat codegen` restructured to `openapi`/`xsoar` sub-subcommands.
+  CLI: `gnat codegen xsoar --connector threatq --output ./packs/`.
+- Platform-specific helpers (`link_incident`, `link_investigation`,
+  `annotate_incident`) auto-surface as XSOAR commands.
+- 40 unit tests in `tests/unit/test_xsoar_generator.py`.
 
 ---
 

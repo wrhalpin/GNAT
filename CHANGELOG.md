@@ -42,6 +42,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `Makefile`: new `build-rust` target (`maturin build --release` + pip install wheel) and `build-rust-dev` target (`maturin develop`) for local development.
 - `pyproject.toml`: new `[fast]` optional-dependency group documenting the `gnat-core` native extension.
 - `tests/unit/test_rust_core.py`: 88 parity tests verifying pure-Python and Rust implementations produce identical output for all 5 functions across all IOC types; Rust-specific tests auto-skip when the wheel is not installed.
+- **XSOAR Content Pack Generator (#21):**
+  - `gnat.codegen.xsoar_generator.generate_xsoar_pack(connector_name, output_dir, version, auth_type, overwrite)`: introspects any registered connector via `capabilities()` and writes a valid XSOAR 6 content pack zip. Pack layout: `pack_metadata.json`, `Integrations/<Name>/<Name>.yml` (command manifest), `Integrations/<Name>/<Name>.py` (delegating Python script), `ReleaseNotes/1_0_0.md`. Write methods are flagged `dangerous: true` in the YAML; auth methods are omitted from command list and handled at integration level. Auth type is auto-detected from constructor signature (oauth2/basic/api_key) or can be overridden.
+  - `gnat codegen xsoar --connector <name> --output ./packs/ [--version X.Y.Z] [--auth oauth2|api_key|basic] [--overwrite]`
+  - `gnat codegen openapi` (existing functionality now under `openapi` subcommand; old flat `gnat codegen --spec ...` replaced by `gnat codegen openapi --spec ...`)
+  - Platform-specific helpers (`link_incident`, `link_investigation`, `annotate_incident`) automatically surface as named XSOAR commands.
+  - 40 unit tests in `tests/unit/test_xsoar_generator.py`.
 - **Client capability reflection (#19):**
   - `ConnectorMixin.capabilities()`: returns a structured dict of all available connector operations — standard 7-method interface plus platform-specific extras. Each entry includes `signature`, `doc` (first docstring line), `type` (`auth` | `read` | `write` | `helper`), and `platform_specific` flag. Private, HTTP-plumbing, and meta methods are excluded via MRO walk.
   - `ConnectorMixin.call(method_name, *args, allow_write=False, **kwargs)`: safe whitelist-based dynamic dispatch; only methods in `capabilities()` are reachable; write-classified methods require `allow_write=True`.

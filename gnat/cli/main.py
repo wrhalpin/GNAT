@@ -18,7 +18,8 @@ Sub-commands
     gnat ingest    --target threatq --source feed.json --format stix-bundle
     gnat ingest    --target threatq --source export.csv --format csv
     gnat ingest    --target threatq --source events.json --format misp
-    gnat codegen   --spec openapi.json --name myplatform --auth oauth2
+    gnat codegen   openapi --spec openapi.json --name myplatform --auth oauth2
+    gnat codegen   xsoar   --connector threatq --output ./packs/
     gnat report    list
     gnat report    run --config daily_healthcare
     gnat report    run --config daily_healthcare --formats pdf,html --no-ai
@@ -179,19 +180,36 @@ def _build_parser() -> argparse.ArgumentParser:
                           help="JSON key containing the array of records")
 
     # ── codegen ───────────────────────────────────────────────────────────
-    p_cg = subs.add_parser("codegen",
-                            help="Generate a connector from an OpenAPI spec")
-    p_cg.add_argument("--spec",     required=True, metavar="PATH",
-                      help="OpenAPI spec file (JSON or YAML)")
-    p_cg.add_argument("--name",     required=True, metavar="NAME",
-                      help="Connector name (snake_case)")
-    p_cg.add_argument("--auth",     default="oauth2",
-                      choices=["oauth2", "api_key", "basic"])
-    p_cg.add_argument("--out-dir",  default="./gnat/connectors",
-                      metavar="DIR")
-    p_cg.add_argument("--test-dir", default="./tests/unit/connectors",
-                      metavar="DIR")
-    p_cg.add_argument("--overwrite", action="store_true")
+    p_cg = subs.add_parser("codegen", help="Code generation utilities")
+    cg_subs = p_cg.add_subparsers(dest="codegen_command", title="codegen commands",
+                                   metavar="<codegen_command>")
+    cg_subs.required = True
+
+    p_cg_oa = cg_subs.add_parser("openapi",
+                                  help="Generate a connector from an OpenAPI spec")
+    p_cg_oa.add_argument("--spec",     required=True, metavar="PATH",
+                         help="OpenAPI spec file (JSON or YAML)")
+    p_cg_oa.add_argument("--name",     required=True, metavar="NAME",
+                         help="Connector name (snake_case)")
+    p_cg_oa.add_argument("--auth",     default="oauth2",
+                         choices=["oauth2", "api_key", "basic"])
+    p_cg_oa.add_argument("--out-dir",  default="./gnat/connectors", metavar="DIR")
+    p_cg_oa.add_argument("--test-dir", default="./tests/unit/connectors", metavar="DIR")
+    p_cg_oa.add_argument("--overwrite", action="store_true")
+
+    p_cg_xs = cg_subs.add_parser("xsoar",
+                                  help="Generate an XSOAR content pack from a GNAT connector")
+    p_cg_xs.add_argument("--connector", required=True, metavar="NAME",
+                         help="GNAT connector key (e.g. threatq, crowdstrike)")
+    p_cg_xs.add_argument("--output",    default="./packs", metavar="DIR",
+                         help="Output directory for the generated .zip (default: ./packs)")
+    p_cg_xs.add_argument("--version",   default="1.0.0", metavar="X.Y.Z",
+                         help="Pack semantic version (default: 1.0.0)")
+    p_cg_xs.add_argument("--auth",      default=None,
+                         choices=["oauth2", "api_key", "basic"],
+                         help="Override auth type (auto-detected when omitted)")
+    p_cg_xs.add_argument("--overwrite", action="store_true",
+                         help="Overwrite existing zip file")
 
     # ── viz ───────────────────────────────────────────────────────────────
     p_viz = subs.add_parser("viz", help="Workspace visualization")
@@ -454,21 +472,50 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
 
 
 def _cmd_codegen(args: argparse.Namespace) -> int:
-    from gnat.codegen.openapi_generator import generate_connector
-    _info(args, f"Generating connector {_bold(args.name)} from {_dim(args.spec)} …")
-    try:
-        generate_connector(
-            spec_path=args.spec,
-            connector_name=args.name,
-            auth_type=args.auth,
-            out_dir=args.out_dir,
-            test_dir=args.test_dir,
-            overwrite=args.overwrite,
-        )
-        return 0
-    except Exception as exc:
-        print(_red(f"Error: {exc}"), file=sys.stderr)
-        return 1
+    if args.codegen_command == "openapi":
+        from gnat.codegen.openapi_generator import generate_connector
+        _info(args, f"Generating connector {_bold(args.name)} from {_dim(args.spec)} …")
+        try:
+            generate_connector(
+                spec_path=args.spec,
+                connector_name=args.name,
+                auth_type=args.auth,
+                out_dir=args.out_dir,
+                test_dir=args.test_dir,
+                overwrite=args.overwrite,
+            )
+            return 0
+        except Exception as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+
+    elif args.codegen_command == "xsoar":
+        from gnat.codegen.xsoar_generator import generate_xsoar_pack
+        _info(args, f"Generating XSOAR pack for {_bold(args.connector)} …")
+        try:
+            zip_path = generate_xsoar_pack(
+                connector_name=args.connector,
+                output_dir=args.output,
+                version=args.version,
+                auth_type=args.auth,
+                overwrite=args.overwrite,
+            )
+            print(_green(f"✓  Pack written: {zip_path}"))
+            return 0
+        except KeyError as exc:
+            print(_red(f"Unknown connector: {exc}"), file=sys.stderr)
+            return 1
+        except FileExistsError as exc:
+            print(_red(f"File exists: {exc}"), file=sys.stderr)
+            return 1
+        except Exception as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            if args.debug:
+                import traceback
+                traceback.print_exc()
+            return 1
+
+    return 0
 
 
 def _cmd_config(args: argparse.Namespace) -> int:
