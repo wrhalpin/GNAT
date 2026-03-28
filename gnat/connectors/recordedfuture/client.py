@@ -41,7 +41,10 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
 
     def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
         resource = self.stix_type_map.get(stix_type, stix_type)
-        resp = self.get(f"/v2/{resource}/{object_id}", params={"fields": "entity,risk,timestamps"})
+        resp = self.get(
+            f"/v2/{resource}/{object_id}",
+            params={"fields": "entity,risk,timestamps,relatedEntities"},
+        )
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
     def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
@@ -62,7 +65,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         entity = native.get("entity", {})
         risk   = native.get("risk", {})
-        return {
+        stix: Dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{entity.get('id', '')}",
             "name": entity.get("name", ""),
@@ -73,6 +76,17 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
             "x_rf_risk_score": risk.get("score", 0),
             "x_rf_criticality": risk.get("criticalityLabel", ""),
         }
+        # Targeted industries from relatedEntities (type == "Industry")
+        # Returned when ?fields=...relatedEntities is included in the request.
+        sectors = [
+            r.get("entity", {}).get("name", "")
+            for r in native.get("relatedEntities", [])
+            if r.get("type") == "Industry"
+        ]
+        sectors = [s for s in sectors if s]
+        if sectors:
+            stix["x_target_sectors"] = sectors
+        return stix
 
     def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
         return {"entity": stix_dict.get("name", "")}

@@ -256,6 +256,26 @@ class TestCrowdStrikeClient:
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
 
+    def test_to_stix_target_industries(self, client):
+        native = {"id": "cs-2", "value": "apt28", "type": "actor",
+                  "created_timestamp": "", "modified_timestamp": "",
+                  "target_industries": ["Healthcare", "Government"]}
+        stix = client.to_stix(native)
+        assert stix.get("x_target_sectors") == ["Healthcare", "Government"]
+
+    def test_to_stix_no_industries_omits_key(self, client):
+        native = {"id": "cs-3", "value": "1.2.3.4", "type": "ipv4",
+                  "created_timestamp": "", "modified_timestamp": ""}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_to_stix_empty_industries_omits_key(self, client):
+        native = {"id": "cs-4", "value": "1.2.3.4", "type": "ipv4",
+                  "created_timestamp": "", "modified_timestamp": "",
+                  "target_industries": []}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
     def test_from_stix_returns_dict(self, client):
         result = client.from_stix({"name": "1.2.3.4"})
         assert isinstance(result, dict)
@@ -413,6 +433,39 @@ class TestRecordedFutureClient:
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix.get("x_rf_risk_score") == 90
+
+    def test_to_stix_extracts_related_industries(self, client):
+        native = {
+            "entity": {"id": "rf-2", "name": "ThreatActor-X"},
+            "risk": {"score": 75, "criticalityLabel": "Malicious"},
+            "timestamps": {"firstSeen": "", "lastSeen": ""},
+            "relatedEntities": [
+                {"type": "Industry", "entity": {"name": "Healthcare"}},
+                {"type": "Industry", "entity": {"name": "Finance"}},
+                {"type": "Country",  "entity": {"name": "United States"}},
+            ],
+        }
+        stix = client.to_stix(native)
+        sectors = stix.get("x_target_sectors", [])
+        assert "Healthcare" in sectors
+        assert "Finance" in sectors
+        assert "United States" not in sectors
+
+    def test_to_stix_no_related_entities_omits_key(self, client):
+        native = {
+            "entity": {"id": "rf-3", "name": "1.2.3.4"},
+            "risk": {"score": 50, "criticalityLabel": "Suspicious"},
+            "timestamps": {"firstSeen": "", "lastSeen": ""},
+        }
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_get_object_requests_related_entities(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": {}})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.get_object("indicator", "rf-1")
+        _, kwargs = mock_get.call_args
+        assert "relatedEntities" in kwargs.get("params", {}).get("fields", "")
 
     def test_list_objects_returns_list(self, client, monkeypatch):
         monkeypatch.setattr(client, "get", MagicMock(

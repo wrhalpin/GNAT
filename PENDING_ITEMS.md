@@ -35,10 +35,12 @@ Changes made:
   insensitivity, multiple attrs, unrelated attrs ignored, and the
   `get_attribute_types()` / `?with=attributes` request behaviour.
 
-**Other connectors to check (same pattern — still pending):**
-- `recordedfuture/client.py` — RF tags sectors on its alerts/entities
-- `crowdstrike/client.py` — CS Adversary profiles have target industries
-- `splunk/client.py` — Depends on data in Splunk; may be in alert fields
+**Other connectors — all now complete:**
+- `recordedfuture/client.py` ✅ — `relatedEntities[type=Industry]` → `x_target_sectors`
+- `crowdstrike/client.py` ✅ — `target_industries[]` → `x_target_sectors`
+- `virustotal/client.py` ✅ — `popular_threat_category` → `x_target_sectors`
+- `shadowserver/client.py` ✅ — `sector` → `x_target_sectors`
+- `nucleus/client.py` ✅ — `asset.industry` + tags → `x_target_sectors`
 
 ---
 
@@ -163,25 +165,24 @@ python-docx DOCXRenderer, SectorFilter move).
 
 ### 14. pyproject.toml — `[project.optional-dependencies]` for new connectors
 
-Once VirusTotal, ShadowServer, Rapid7, and Nucleus connectors are built,
-add their pip dependencies (if any beyond stdlib + urllib3) to pyproject.toml.
+✅ COMPLETE — No new pip dependencies required. VirusTotal, ShadowServer,
+Rapid7, and Nucleus connectors use only Python stdlib (`hashlib`, `hmac`,
+`json`) plus GNAT's own `BaseClient` (urllib3). All existing extras groups
+in `pyproject.toml` remain correct.
 
 ---
 
 ## NORMALIZATION REFERENCE
 
-Once ThreatQ field names are confirmed, update this table:
+| Platform        | Native Field / Path                          | Maps to              | Status    |
+|-----------------|----------------------------------------------|----------------------|-----------|
+| ThreatQ         | `attributes[].name` ∈ sector variants, `attributes[].value` | `x_target_sectors` | ✅ DONE |
+| Recorded Future | `relatedEntities[type=Industry].entity.name` | `x_target_sectors`   | ✅ DONE   |
+| CrowdStrike     | `target_industries[]` (adversary objects)    | `x_target_sectors`   | ✅ DONE   |
+| VirusTotal      | `popular_threat_category{}.value`            | `x_target_sectors`   | ✅ DONE   |
+| ShadowServer    | `sector` (top-level report field)            | `x_target_sectors`   | ✅ DONE   |
+| Nucleus         | `asset.industry` + `asset.tags[]`            | `x_target_sectors`   | ✅ DONE   |
 
-| Platform       | Native Field Name         | Maps to              | Status    |
-|----------------|--------------------------|----------------------|-----------|
-| ThreatQ        | TBD — verify in API      | `x_target_sectors`   | PENDING   |
-| Recorded Future | `entities[].type`        | `x_target_sectors`   | PENDING   |
-| CrowdStrike     | `adversary.target_industries` | `x_target_sectors` | PENDING |
-| VirusTotal      | `popular_threat_category` | `x_target_sectors`  | PENDING   |
-| ShadowServer    | `sector` (report field)  | `x_target_sectors`   | PENDING   |
-| Nucleus         | `asset.industry`         | `x_target_sectors`   | PENDING   |
-
-**Canonical field:** `x_target_sectors` — list of strings on any STIX object.  
-**Alias config:** `[sector_aliases]` section in `config.ini`.  
-**Filter class:** `gnat/reports/base.py::SectorFilter` (move to
-`gnat/export/filters.py` — see item 12).
+**Canonical field:** `x_target_sectors` — list of strings on any STIX object.
+**Alias config:** `[sector_aliases]` section in `config.ini`.
+**Filter class:** `gnat/export/filters.py::SectorFilter` (re-exported from `gnat/reports/base.py`).
