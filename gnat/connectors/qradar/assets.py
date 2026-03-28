@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.assets
+gnat.connectors.qradar.assets
 ===================================
 Asset management commands for the QRadar connector.
 

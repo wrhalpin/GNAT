@@ -1,7 +1,7 @@
 """
 tests/connectors/test_sentinel.py
 ====================================
-Unit tests for the CTM-SAK Microsoft Sentinel connector.
+Unit tests for the GNAT Microsoft Sentinel connector.
 
 Coverage
 --------
@@ -27,8 +27,8 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch
 
-from ctm_sak.connectors.sentinel.config import SentinelConfig, load_sentinel_config
-from ctm_sak.connectors.sentinel.exceptions import (
+from gnat.connectors.sentinel.config import SentinelConfig, load_sentinel_config
+from gnat.connectors.sentinel.exceptions import (
     SentinelAuthError,
     SentinelAPIError,
     SentinelConfigError,
@@ -36,15 +36,15 @@ from ctm_sak.connectors.sentinel.exceptions import (
     SentinelRateLimitError,
     SentinelSTIXError,
 )
-from ctm_sak.connectors.sentinel.auth import SentinelAuthManager
-from ctm_sak.connectors.sentinel.client import SentinelClient
-from ctm_sak.connectors.sentinel.incidents import SentinelIncidentCommands
-from ctm_sak.connectors.sentinel.alerts import SentinelAlertCommands
-from ctm_sak.connectors.sentinel.watchlists import SentinelWatchlistCommands
-from ctm_sak.connectors.sentinel.analytic_rules import SentinelAnalyticRuleCommands
-from ctm_sak.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
-from ctm_sak.connectors.sentinel.hunting import SentinelHuntingCommands
-from ctm_sak.connectors.sentinel.stix_mapper import SentinelSTIXMapper
+from gnat.connectors.sentinel.auth import SentinelAuthManager
+from gnat.connectors.sentinel.client import SentinelClient
+from gnat.connectors.sentinel.incidents import SentinelIncidentCommands
+from gnat.connectors.sentinel.alerts import SentinelAlertCommands
+from gnat.connectors.sentinel.watchlists import SentinelWatchlistCommands
+from gnat.connectors.sentinel.analytic_rules import SentinelAnalyticRuleCommands
+from gnat.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
+from gnat.connectors.sentinel.hunting import SentinelHuntingCommands
+from gnat.connectors.sentinel.stix_mapper import SentinelSTIXMapper
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ def _azure_list(items: list, next_link: str | None = None) -> dict:
 
 def _make_client(config: SentinelConfig | None = None) -> tuple[SentinelClient, MagicMock]:
     cfg = config or _make_config()
-    with patch("ctm_sak.connectors.sentinel.client.urllib3.PoolManager") as pm_cls:
+    with patch("gnat.connectors.sentinel.client.urllib3.PoolManager") as pm_cls:
         mock_pm = MagicMock()
         pm_cls.return_value = mock_pm
         client = SentinelClient(cfg)
@@ -133,7 +133,7 @@ _SAMPLE_TI_INDICATOR = {
         "killChainPhases": [{"killChainName": "mitre-attack", "phaseName": "initial-access"}],
         "externalReferences": [],
         "revoked": False,
-        "source": "ctm_sak",
+        "source": "gnat",
     },
 }
 
@@ -345,7 +345,7 @@ class TestSentinelClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("ctm_sak.connectors.sentinel.client.urllib3.PoolManager"):
+        with patch("gnat.connectors.sentinel.client.urllib3.PoolManager"):
             with SentinelClient(cfg) as c:
                 self.assertIsInstance(c, SentinelClient)
 
@@ -429,7 +429,7 @@ class TestSentinelThreatIntelCommands(unittest.TestCase):
         mock_http.request.return_value = _make_response(201, _SAMPLE_TI_INDICATOR)
         props = {
             "displayName": "Test", "pattern": "[ipv4-addr:value = '9.9.9.9']",
-            "patternType": "stix", "source": "ctm_sak",
+            "patternType": "stix", "source": "gnat",
             "validFrom": "2024-01-01T00:00:00Z",
         }
         result = ti_cmd.create_indicator(props)
@@ -442,8 +442,8 @@ class TestSentinelThreatIntelCommands(unittest.TestCase):
             Exception("Network error"),
         ]
         results = ti_cmd.bulk_create_indicators([
-            {"displayName": "A", "pattern": "...", "source": "ctm_sak", "patternType": "stix", "validFrom": "2024-01-01T00:00:00Z"},
-            {"displayName": "B", "pattern": "...", "source": "ctm_sak", "patternType": "stix", "validFrom": "2024-01-01T00:00:00Z"},
+            {"displayName": "A", "pattern": "...", "source": "gnat", "patternType": "stix", "validFrom": "2024-01-01T00:00:00Z"},
+            {"displayName": "B", "pattern": "...", "source": "gnat", "patternType": "stix", "validFrom": "2024-01-01T00:00:00Z"},
         ])
         self.assertEqual(len(results), 2)
         self.assertIn("error", results[1])
@@ -592,7 +592,7 @@ class TestSentinelSTIXMapper(unittest.TestCase):
 class TestSentinelExceptions(unittest.TestCase):
 
     def test_all_inherit_from_base(self):
-        from ctm_sak.connectors.sentinel.exceptions import SentinelError
+        from gnat.connectors.sentinel.exceptions import SentinelError
         for cls in [SentinelConfigError, SentinelAuthError, SentinelAPIError,
                     SentinelNotFoundError, SentinelRateLimitError, SentinelSTIXError]:
             self.assertTrue(issubclass(cls, SentinelError))

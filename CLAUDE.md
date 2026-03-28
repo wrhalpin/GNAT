@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (Cybersecurity Threat Management Swiss Army Knife) is a production-ready Python library providing:
-- A unified client interface for 15+ security/threat intelligence platforms
+- A unified client interface for 26 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude API)
@@ -30,7 +30,7 @@ gnat/                        # Main Python package
 ├── config.py                # INI-based configuration management
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 15 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 26 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
 ├── cli/                     # CLI entry point (gnat/cli/main.py — 27 KB)
@@ -42,6 +42,7 @@ gnat/                        # Main Python package
 ├── viz/                     # Visualization (Tabular, Graph, Grafana, Power BI)
 ├── codegen/                 # OpenAPI → connector scaffolding
 ├── async_client/            # Async variant (httpx)
+├── search/                  # Solr full-text search sidecar (SearchMixin, indexer, ORM integration)
 └── utils/                   # Misc helpers (stix_helpers.py)
 
 tests/
@@ -224,6 +225,44 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | RiskRecon | `gnat/connectors/riskrecon/` | API key |
 | Feedly | `gnat/connectors/feedly/` | OAuth2/API key |
 | ControlUp DEX | `gnat/connectors/controlup/` | Bearer token |
+| AlienVault OTX | `gnat/connectors/alienvault/` | API key |
+| Elastic SIEM | `gnat/connectors/elastic/` | API key/Basic |
+| Graylog | `gnat/connectors/graylog/` | API key/Basic |
+| MISP | `gnat/connectors/misp/` | API key |
+| OpenCTI | `gnat/connectors/opencti/` | API key |
+| OSSIM | `gnat/connectors/ossim/` | Basic auth |
+| IBM QRadar | `gnat/connectors/qradar/` | API token |
+| Security Onion | `gnat/connectors/security_onion/` | API key |
+| Microsoft Sentinel | `gnat/connectors/sentinel/` | OAuth2 (Azure AD) |
+| Snort | `gnat/connectors/snort/` | File/Syslog |
+| Suricata | `gnat/connectors/suricata/` | File/Syslog |
+| Wazuh | `gnat/connectors/wazuh/` | API key/Basic |
+| Zeek | `gnat/connectors/zeek/` | File/Syslog |
+
+---
+
+## Search Sidecar (`gnat/search/`)
+
+The `gnat/search/` package provides a Solr-backed full-text search sidecar for GNAT:
+
+| File | Purpose |
+|------|---------|
+| `__init__.py` | Package exports (`SearchMixin`, `GNATIndexer`, `SolrSearchConfig`) |
+| `index.py` | `GNATIndexer` — Solr document indexing and querying |
+| `mixin.py` | `SearchMixin` — connector mixin that auto-indexes on write operations |
+| `orm_with_mixin.py` | ORM integration helpers (mixin-enhanced STIX objects) |
+| `pipeline_patch.py` | Ingest pipeline patch to route records through Solr indexer |
+| `library_patch.py` | ResearchLibrary patch for search-backed lookups |
+| `config_search_section.ini` | INI template for the `[search]` configuration section |
+| `solr_schema_gnat.xml` | Solr 9.x schema definition for GNAT threat intel fields |
+
+Configure via `[search]` section in gnat.ini:
+```ini
+[search]
+solr_url    = http://localhost:8983/solr/gnat
+enabled     = true
+batch_size  = 100
+```
 
 ---
 

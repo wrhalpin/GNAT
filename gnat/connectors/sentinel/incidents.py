@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.incidents
+gnat.connectors.sentinel.incidents
 ========================================
 Incident management commands for the Microsoft Sentinel connector.
 
@@ -237,7 +237,7 @@ class SentinelIncidentCommands:
 
     @staticmethod
     def normalise_incident(incident: dict) -> dict:
-        """Flatten a Sentinel incident resource to CTM-SAK normalised format."""
+        """Flatten a Sentinel incident resource to GNAT normalised format."""
         props = incident.get("properties", {})
         owner = props.get("owner", {})
         sev_str = props.get("severity", "Low")

@@ -1,5 +1,5 @@
 """
-CTM-SAK IBM QRadar Connector
+GNAT IBM QRadar Connector
 ==============================
 Connector for IBM QRadar SIEM (on-premises and QRadar on Cloud).
 
@@ -31,7 +31,7 @@ Key domains
                     reference maps (key→value)
                     reference map of sets (key→set)
                     reference tables (key→row)
-                    Used by CTM-SAK to push IOC data into QRadar.
+                    Used by GNAT to push IOC data into QRadar.
 
   Rules           — Correlation rules that generate offenses.
   Assets          — Asset / host inventory.
@@ -46,7 +46,7 @@ Auth
   The token is created in:
   QRadar Admin → User Management → Authorized Services → Add Authorized Service
 
-  Tokens are scoped by user capability set. CTM-SAK needs at minimum:
+  Tokens are scoped by user capability set. GNAT needs at minimum:
     OFFENSE MANAGER   — read/update offenses
     NETWORK ACTIVITY  — search events/flows via Ariel
     REFERENCE DATA MANAGER — manage reference sets
@@ -64,7 +64,7 @@ QRadar Community Edition:
   https://www.ibm.com/community/101/qradar/ce/
   100 EPS / 5,000 FPM, 3-month renewable license, full API access.
 
-Configuration section (ctm_sak.ini):
+Configuration section (gnat.ini):
   [qradar]
   host              = qradar.corp.example.com
   token             =

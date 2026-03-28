@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.exceptions
+gnat.connectors.qradar.exceptions
 =======================================
 Exception hierarchy for the QRadar connector.
 

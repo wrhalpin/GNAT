@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.client
+gnat.connectors.qradar.client
 ===================================
 Core HTTP client for the QRadar connector.
 

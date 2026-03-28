@@ -222,7 +222,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const problems = [
-    ["15 Different APIs", "Each platform has its own auth scheme, data model, and SDK. ThreatQ OAuth2 ≠ CrowdStrike OAuth2 ≠ VirusTotal API key."],
+    ["26 Different APIs", "Each platform has its own auth scheme, data model, and SDK. ThreatQ OAuth2 ≠ CrowdStrike OAuth2 ≠ VirusTotal API key."],
     ["No Shared Data Model", "An indicator in ThreatQ looks nothing like one in CrowdStrike or Splunk. Correlation requires manual mapping."],
     ["Custom Code Per Integration", "Every new source or destination means new scripts with no shared error handling, retry logic, or scheduling."],
     ["Fragile Automation", "Ad-hoc scripts break when APIs change. No tests, no versioning, no consistent patterns."],
@@ -327,7 +327,7 @@ pres.author = "wrhalpin@gmail.com";
     { label: "ANALYST / AUTOMATION LAYER", sub: "Workstations · SOAR · Scheduled jobs · CLI", col: C.navy2, textCol: C.white, y: 0.85 },
     { label: "GNAT CORE", sub: "Ingest · Export · Agents · Research Library · Reports · Visualization", col: C.steel, textCol: C.white, y: 1.52 },
     { label: "STIX 2.1 ORM + WORKSPACE", sub: "Indicator · ThreatActor · Vulnerability · AttackPattern · Relationship", col: C.teal, textCol: C.white, y: 2.19 },
-    { label: "CONNECTOR LAYER (15 platforms)", sub: "ThreatQ · CrowdStrike · Splunk · RF · Netskope · VT · ShadowServer · Rapid7 · Nucleus · …", col: C.navy2, textCol: C.offwhite, y: 2.86 },
+    { label: "CONNECTOR LAYER (26 platforms)", sub: "ThreatQ · CrowdStrike · Splunk · Elastic · Wazuh · QRadar · Sentinel · Zeek · Suricata · Snort · MISP · OTX · Graylog · …", col: C.navy2, textCol: C.offwhite, y: 2.86 },
     { label: "EXTERNAL PLATFORMS", sub: "APIs, feeds, SIEMs, EDRs, vulnerability scanners, threat intel platforms", col: "6B7280", textCol: C.white, y: 3.53 },
   ];
 
@@ -361,7 +361,7 @@ pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 5: Connectors ─────────────────────────────────────────────────
 {
-  const sl = contentSlide(pres, "15 Platform Connectors — One Interface");
+  const sl = contentSlide(pres, "26 Platform Connectors — One Interface");
 
   const connectors = [
     ["ThreatQ", "OAuth2 · Full CRUD", C.steel],
@@ -379,30 +379,47 @@ pres.author = "wrhalpin@gmail.com";
     ["ShadowServer", "API key · Scan/ASN", C.teal],
     ["Rapid7", "API key · Vuln/Asset", C.teal],
     ["Nucleus", "API key · Asset/Vuln", C.teal],
+    ["ControlUp DEX", "Bearer · Endpoint UX", C.teal],
+    ["AlienVault OTX", "API key · IOC/Pulses", C.teal],
+    ["Elastic SIEM", "API key/Basic · ECS", C.teal],
+    ["Graylog", "API key · Log alerts", C.teal],
+    ["MISP", "API key · Full CRUD", C.teal],
+    ["OpenCTI", "API key · GraphQL", C.teal],
+    ["OSSIM", "Basic auth · Events", C.teal],
+    ["IBM QRadar", "API token · Offenses", C.teal],
+    ["Security Onion", "API key · Alerts", C.teal],
+    ["MS Sentinel", "OAuth2/AAD · Incidents", C.teal],
+    ["Snort IDS", "File/Syslog · Rules", C.teal],
+    ["Suricata", "File/Syslog · EVE JSON", C.teal],
+    ["Wazuh", "API key/Basic · Alerts", C.teal],
+    ["Zeek", "File/Syslog · Conn logs", C.teal],
   ];
 
-  const cols = 5;
+  // 6 columns × 5 rows = 30 cells, compact tiles to fit slide
+  const cols = 6;
+  const tileW = 1.53, tileH = 0.82;
+  const startX = 0.2, startY = 0.85, colGap = 1.57, rowGap = 0.88;
   connectors.forEach(([name, detail, color], i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
-    const x = 0.35 + col * 1.87;
-    const y = 1.0 + row * 1.3;
+    const x = startX + col * colGap;
+    const y = startY + row * rowGap;
     sl.addShape(pres.shapes.RECTANGLE, {
-      x, y, w: 1.75, h: 1.1,
+      x, y, w: tileW, h: tileH,
       fill: { color: C.white }, line: { color: C.border, width: 0.5 },
       shadow: makeShadow()
     });
     sl.addShape(pres.shapes.RECTANGLE, {
-      x, y, w: 1.75, h: 0.08, fill: { color }, line: { width: 0 }
+      x, y, w: tileW, h: 0.06, fill: { color }, line: { width: 0 }
     });
     sl.addText(name, {
-      x: x + 0.08, y: y + 0.18, w: 1.59, h: 0.32,
-      fontSize: 11, fontFace: "Calibri", bold: true,
+      x: x + 0.05, y: y + 0.1, w: tileW - 0.1, h: 0.28,
+      fontSize: 9, fontFace: "Calibri", bold: true,
       color: C.charcoal, align: "center", margin: 0
     });
     sl.addText(detail, {
-      x: x + 0.06, y: y + 0.52, w: 1.63, h: 0.4,
-      fontSize: 8.5, fontFace: "Calibri", color: C.muted, align: "center", margin: 0
+      x: x + 0.04, y: y + 0.4, w: tileW - 0.08, h: 0.35,
+      fontSize: 7.5, fontFace: "Calibri", color: C.muted, align: "center", margin: 0
     });
   });
 
@@ -691,8 +708,8 @@ pres.author = "wrhalpin@gmail.com";
   // Three tiers
   const tiers = [
     { label: "PERSONAL WORKSPACES", sub: "Analyst-owned · Active investigation", col: C.navy2, arrow: true },
-    { label: "STAGING  (_ctmsak_staging)", sub: "lib.promote(ws, topic, researcher, note='…')  →  anyone can write, nothing auto-reads", col: C.steel, arrow: true },
-    { label: "LIBRARY  (_ctmsak_library)", sub: "Curated · Read-only to analysts · Managed by CurationJob every 4h", col: C.teal, arrow: false },
+    { label: "STAGING  (_gnat_staging)", sub: "lib.promote(ws, topic, researcher, note='…')  →  anyone can write, nothing auto-reads", col: C.steel, arrow: true },
+    { label: "LIBRARY  (_gnat_library)", sub: "Curated · Read-only to analysts · Managed by CurationJob every 4h", col: C.teal, arrow: false },
   ];
 
   tiers.forEach(({ label, sub, col, arrow }, i) => {
@@ -881,9 +898,9 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const services = [
-    { name: "ctmsak-scheduler.service", desc: "FeedScheduler: ingest, export, AI research,\ncuration, and report jobs", col: C.teal },
-    { name: "ctmsak-edl.service  :8080", desc: "EDLServer: serves indicator files to firewalls.\nIndependent — survives scheduler restart", col: C.steel },
-    { name: "ctmsak-health.service  :8090", desc: "Health endpoint: GET /status → JSON\nAzure Monitor ping check", col: C.navy2 },
+    { name: "gnat-scheduler.service", desc: "FeedScheduler: ingest, export, AI research,\ncuration, and report jobs", col: C.teal },
+    { name: "gnat-edl.service  :8080", desc: "EDLServer: serves indicator files to firewalls.\nIndependent — survives scheduler restart", col: C.steel },
+    { name: "gnat-health.service  :8090", desc: "Health endpoint: GET /status → JSON\nAzure Monitor ping check", col: C.navy2 },
   ];
 
   services.forEach(({ name, desc, col }, i) => {
@@ -962,7 +979,7 @@ pres.author = "wrhalpin@gmail.com";
     },
     {
       title: "Maintenance Simplicity",
-      body: "API changes affect one connector file, not every script. Tests cover all 15 connectors uniformly. One library version number covers the entire integration stack.",
+      body: "API changes affect one connector file, not every script. Tests cover all 26 connectors uniformly. One library version number covers the entire integration stack.",
       col: C.steel,
     },
     {
@@ -1011,12 +1028,68 @@ pres.author = "wrhalpin@gmail.com";
   });
 }
 
-// ── Slide 15: Numbers ────────────────────────────────────────────────────
+// ── Slide 15: Search Sidecar ─────────────────────────────────────────────
+{
+  const sl = contentSlide(pres, "Search Sidecar — Solr Full-Text Search");
+
+  sl.addText("Every STIX object indexed in Solr 9.x — search across all connectors simultaneously", {
+    x: 0.4, y: 0.9, w: 9.2, h: 0.35,
+    fontSize: 13, fontFace: "Calibri", italic: true,
+    color: C.steel, align: "left", margin: 0
+  });
+
+  const components = [
+    { label: "GNATIndexer", sub: "gnat/search/index.py", body: "Add/update/delete Solr documents. Batch indexing with configurable batch_size. Field-mapped from STIX objects.", col: C.teal },
+    { label: "SearchMixin", sub: "gnat/search/mixin.py", body: "Drop-in connector mixin. Auto-indexes on upsert_object() calls. Zero code change to existing connectors.", col: C.steel },
+    { label: "ORM Integration", sub: "gnat/search/orm_with_mixin.py", body: "SearchMixin-enhanced STIX objects. Transparent to existing ORM code.", col: C.navy2 },
+    { label: "Pipeline Patch", sub: "gnat/search/pipeline_patch.py", body: "Patches IngestPipeline to route records through Solr indexer post-map.", col: C.steel },
+    { label: "Library Patch", sub: "gnat/search/library_patch.py", body: "ResearchLibrary search-backed lookups. Cross-source correlation at query time.", col: C.navy2 },
+    { label: "Solr Schema", sub: "solr_schema_gnat.xml", body: "Solr 9.x schema for GNAT fields: type, value, confidence, x_target_sectors, tlp, source, timestamp.", col: C.teal },
+  ];
+
+  components.forEach(({ label, sub, body, col }, i) => {
+    const c = i % 3;
+    const r = Math.floor(i / 3);
+    const x = 0.3 + c * 3.15;
+    const y = 1.45 + r * 1.95;
+    sl.addShape(pres.shapes.RECTANGLE, {
+      x, y, w: 3.0, h: 1.75,
+      fill: { color: C.white }, line: { color: C.border, width: 0.5 },
+      shadow: makeShadow()
+    });
+    sl.addShape(pres.shapes.RECTANGLE, {
+      x, y, w: 3.0, h: 0.08, fill: { color: col }, line: { width: 0 }
+    });
+    sl.addText(label, {
+      x: x + 0.1, y: y + 0.15, w: 2.8, h: 0.3,
+      fontSize: 11, fontFace: "Calibri", bold: true, color: C.charcoal, align: "left", margin: 0
+    });
+    sl.addText(sub, {
+      x: x + 0.1, y: y + 0.45, w: 2.8, h: 0.22,
+      fontSize: 8.5, fontFace: "Calibri", italic: true, color: C.muted, align: "left", margin: 0
+    });
+    sl.addText(body, {
+      x: x + 0.1, y: y + 0.7, w: 2.8, h: 0.95,
+      fontSize: 9, fontFace: "Calibri", color: C.charcoal, align: "left", margin: 0
+    });
+  });
+
+  sl.addShape(pres.shapes.RECTANGLE, {
+    x: 0.3, y: 5.1, w: 9.4, h: 0.38,
+    fill: { color: C.light_bg }, line: { color: C.border, width: 0.5 }
+  });
+  sl.addText("Configure via [search] section in gnat.ini  ·  solr_url = http://localhost:8983/solr/gnat  ·  enabled = true  ·  batch_size = 100", {
+    x: 0.4, y: 5.14, w: 9.2, h: 0.3,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, align: "center", margin: 0
+  });
+}
+
+// ── Slide 16: Numbers ────────────────────────────────────────────────────
 {
   const sl = contentSlide(pres, "By the Numbers");
 
   const stats = [
-    ["15", "Platform\nConnectors", C.teal],
+    ["26", "Platform\nConnectors", C.teal],
     ["784", "Unit\nTests", C.steel],
     ["96", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
@@ -1144,8 +1217,8 @@ pres.author = "wrhalpin@gmail.com";
     "SectorFilter: move to export/filters.py for use in both export and report layers",
     "CHANGELOG: versions 0.6.0 through 1.0.0",
     "Email body: use rendered HTML report as email body (not generic text)",
-    "Yearly reports: calendar-anchored cron (0 6 1 1 *) vs 365-day interval",
-    "Juno.build / Internet Computer: Rust-based serverless agent (future exploration)",
+    "Solr search UI / Grafana dashboard integration for gnat/search sidecar",
+    "Multi-tenant workspace isolation for MSP deployments",
   ];
   sl.addText(roadmap.map(t => ({ text: t, options: { bullet: true, breakLine: true } })), {
     x: 5.35, y: 1.32, w: 4.15, h: 2.2,
@@ -1194,7 +1267,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const summary = [
-    "15 connectors · STIX 2.1 · Ingest + Export pipelines",
+    "26 connectors · STIX 2.1 · Ingest + Export pipelines",
     "AI agents (Claude + Copilot) · Research library · Report generation",
     "784 tests · ~$50/month Azure · Incremental adoption",
   ];

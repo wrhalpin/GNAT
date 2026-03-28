@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.exceptions
+gnat.connectors.misp.exceptions
 =====================================
 Exception hierarchy for the MISP connector.
 

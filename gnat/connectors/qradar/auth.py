@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.auth
+gnat.connectors.qradar.auth
 ================================
 Authentication manager for the QRadar connector.
 
@@ -8,7 +8,7 @@ header on every request. There is no token refresh, session management,
 or expiry handling — the token is valid until revoked in the QRadar
 admin console.
 
-This is the simplest auth pattern across all CTM-SAK connectors.
+This is the simplest auth pattern across all GNAT connectors.
 The auth manager focuses on header construction and a verify() method
 that hits the lightweight ``/api/help/version`` endpoint to confirm
 connectivity and token validity.
@@ -16,7 +16,7 @@ connectivity and token validity.
 Token scoping
 -------------
 QRadar tokens inherit capabilities from the user role they are assigned.
-The required capabilities for CTM-SAK operations are:
+The required capabilities for GNAT operations are:
   OFFENSE MANAGER            — read/update offenses and notes
   NETWORK ACTIVITY           — execute Ariel AQL searches
   REFERENCE DATA MANAGER     — create/update reference sets and maps

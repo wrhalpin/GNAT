@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.tags
+gnat.connectors.misp.tags
 ===============================
 Tag management commands for the MISP connector.
 

@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.events
+gnat.connectors.misp.events
 =================================
 Event management commands for the MISP connector.
 
@@ -24,7 +24,7 @@ Key event fields
   Tag           — list of tag dicts
   Galaxy        — list of galaxy cluster dicts
 
-Threat level mapping → CTM-SAK severity
+Threat level mapping → GNAT severity
 -----------------------------------------
   1 (High)       → 3
   2 (Medium)     → 2
@@ -357,7 +357,7 @@ class MISPEventCommands:
 
     @staticmethod
     def normalise_event(event: dict) -> dict:
-        """Flatten a MISP event dict to CTM-SAK normalised format."""
+        """Flatten a MISP event dict to GNAT normalised format."""
         threat_level = int(event.get("threat_level_id", 4))
         severity = _THREAT_TO_SEVERITY.get(threat_level, 0)
         tags = [t.get("name", "") for t in event.get("Tag", [])]

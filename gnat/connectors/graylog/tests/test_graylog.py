@@ -2,7 +2,7 @@
 import base64, configparser, json, unittest
 from unittest.mock import MagicMock, patch
 
-from ctm_sak.connectors.graylog import (
+from gnat.connectors.graylog import (
     GraylogConfig, GraylogConfigError, GraylogAuthError,
     GraylogAPIError, GraylogNotFoundError,
     GraylogClient, GraylogSearchCommands, GraylogStreamCommands,
@@ -24,7 +24,7 @@ def _resp(status=200, body=None):
 
 def _make_client():
     cfg = _cfg()
-    with patch("ctm_sak.connectors.graylog.urllib3.PoolManager") as pm:
+    with patch("gnat.connectors.graylog.urllib3.PoolManager") as pm:
         mock_http = MagicMock()
         pm.return_value = mock_http
         c = GraylogClient(cfg)
@@ -120,7 +120,7 @@ class TestGraylogClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("ctm_sak.connectors.graylog.urllib3.PoolManager"):
+        with patch("gnat.connectors.graylog.urllib3.PoolManager"):
             with GraylogClient(cfg) as client:
                 self.assertIsInstance(client, GraylogClient)
 
@@ -250,7 +250,7 @@ class TestGraylogSTIXMapper(unittest.TestCase):
 
 class TestGraylogExceptions(unittest.TestCase):
     def test_hierarchy(self):
-        from ctm_sak.connectors.graylog import GraylogError
+        from gnat.connectors.graylog import GraylogError
         for cls in [GraylogConfigError, GraylogAuthError,
                     GraylogAPIError, GraylogNotFoundError]:
             self.assertTrue(issubclass(cls, GraylogError))

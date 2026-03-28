@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.sightings
+gnat.connectors.misp.sightings
 ====================================
 Sighting commands for the MISP connector.
 
@@ -31,7 +31,7 @@ class MISPSightingCommands:
         attribute_id: int | str | None = None,
         value: str | None = None,
         type_sighting: int = 0,
-        source: str = "ctm_sak",
+        source: str = "gnat",
         timestamp: int | None = None,
     ) -> dict:
         """
@@ -72,7 +72,7 @@ class MISPSightingCommands:
         self,
         values: list[str],
         type_sighting: int = 0,
-        source: str = "ctm_sak",
+        source: str = "gnat",
     ) -> dict:
         """
         Report sightings for multiple attribute values at once.
@@ -136,7 +136,7 @@ class MISPSightingCommands:
     def report_false_positive(
         self,
         attribute_id: int | str,
-        source: str = "ctm_sak",
+        source: str = "gnat",
     ) -> dict:
         """Report an attribute as a false positive."""
         return self.add_sighting(

@@ -1,7 +1,7 @@
 """
 tests/connectors/test_qradar.py
 ==================================
-Unit tests for the CTM-SAK QRadar connector.
+Unit tests for the GNAT QRadar connector.
 
 All HTTP is mocked via unittest.mock on urllib3.PoolManager.
 No live QRadar instance required.
@@ -36,8 +36,8 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch, call
 
-from ctm_sak.connectors.qradar.config import QRadarConfig, load_qradar_config
-from ctm_sak.connectors.qradar.exceptions import (
+from gnat.connectors.qradar.config import QRadarConfig, load_qradar_config
+from gnat.connectors.qradar.exceptions import (
     QRadarAPIError,
     QRadarArielError,
     QRadarAuthError,
@@ -47,19 +47,19 @@ from ctm_sak.connectors.qradar.exceptions import (
     QRadarRateLimitError,
     QRadarSTIXError,
 )
-from ctm_sak.connectors.qradar.auth import QRadarAuthManager
-from ctm_sak.connectors.qradar.client import QRadarClient
-from ctm_sak.connectors.qradar.offenses import (
+from gnat.connectors.qradar.auth import QRadarAuthManager
+from gnat.connectors.qradar.client import QRadarClient
+from gnat.connectors.qradar.offenses import (
     QRadarOffenseCommands,
     _magnitude_to_severity,
     _epoch_ms_to_iso,
 )
-from ctm_sak.connectors.qradar.ariel import QRadarArielCommands
-from ctm_sak.connectors.qradar.reference_data import QRadarReferenceDataCommands
-from ctm_sak.connectors.qradar.rules import QRadarRulesCommands
-from ctm_sak.connectors.qradar.assets import QRadarAssetCommands
-from ctm_sak.connectors.qradar.log_sources import QRadarLogSourceCommands
-from ctm_sak.connectors.qradar.stix_mapper import QRadarSTIXMapper
+from gnat.connectors.qradar.ariel import QRadarArielCommands
+from gnat.connectors.qradar.reference_data import QRadarReferenceDataCommands
+from gnat.connectors.qradar.rules import QRadarRulesCommands
+from gnat.connectors.qradar.assets import QRadarAssetCommands
+from gnat.connectors.qradar.log_sources import QRadarLogSourceCommands
+from gnat.connectors.qradar.stix_mapper import QRadarSTIXMapper
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ def _make_response(
 
 def _make_client(config: QRadarConfig | None = None) -> tuple[QRadarClient, MagicMock]:
     cfg = config or _make_config()
-    with patch("ctm_sak.connectors.qradar.client.urllib3.PoolManager") as pm_cls:
+    with patch("gnat.connectors.qradar.client.urllib3.PoolManager") as pm_cls:
         mock_pm = MagicMock()
         pm_cls.return_value = mock_pm
         client = QRadarClient(cfg)
@@ -351,7 +351,7 @@ class TestQRadarClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("ctm_sak.connectors.qradar.client.urllib3.PoolManager"):
+        with patch("gnat.connectors.qradar.client.urllib3.PoolManager"):
             with QRadarClient(cfg) as c:
                 self.assertIsInstance(c, QRadarClient)
 
@@ -625,7 +625,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
     def test_list_sets(self):
         rd, mock_http = self._make_rd()
         mock_http.request.return_value = _make_response(
-            200, [{"name": "ctm_sak_ips", "element_type": "IP"}],
+            200, [{"name": "gnat_ips", "element_type": "IP"}],
             content_range="items 0-0/1"
         )
         results = rd.list_sets()
@@ -677,10 +677,10 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         rd, mock_http = self._make_rd()
         # ensure_set_exists → 200 (exists), bulk_load → 200
         mock_http.request.side_effect = [
-            _make_response(200, {"name": "ctm_sak_ips"}),
-            _make_response(200, {"name": "ctm_sak_ips", "number_of_elements": 2}),
+            _make_response(200, {"name": "gnat_ips"}),
+            _make_response(200, {"name": "gnat_ips", "number_of_elements": 2}),
         ]
-        result = rd.push_ip_iocs("ctm_sak_ips", ["1.2.3.4", "5.6.7.8"])
+        result = rd.push_ip_iocs("gnat_ips", ["1.2.3.4", "5.6.7.8"])
         self.assertIsNotNone(result)
 
     def test_create_map(self):
@@ -976,7 +976,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
 class TestQRadarExceptions(unittest.TestCase):
 
     def test_all_inherit_from_base(self):
-        from ctm_sak.connectors.qradar.exceptions import QRadarError
+        from gnat.connectors.qradar.exceptions import QRadarError
         for exc_cls in [
             QRadarConfigError, QRadarAuthError, QRadarAPIError,
             QRadarNotFoundError, QRadarConflictError, QRadarRateLimitError,

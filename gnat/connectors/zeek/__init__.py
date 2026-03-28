@@ -1,12 +1,12 @@
 """
-CTM-SAK Zeek Connector
+GNAT Zeek Connector
 ========================
 Connector for Zeek (formerly Bro) Network Analysis Framework.
 
 Zeek has no REST API. Integration is via log file consumption.
 Zeek writes structured logs for every protocol and event it observes.
 
-Log formats supported by CTM-SAK:
+Log formats supported by GNAT:
   1. JSON (zeek-cut or json-logs plugin) — preferred, one JSON per line
   2. TSV (default Zeek format) — tab-separated with header comments
 
@@ -27,7 +27,7 @@ conn.log key fields (TSV format):
   proto, service, duration, orig_bytes, resp_bytes,
   conn_state, local_orig, local_resp, missed_bytes, history
 
-notice.log key fields (CTM-SAK priority):
+notice.log key fields (GNAT priority):
   ts, uid, id.orig_h, id.orig_p, id.resp_h, id.resp_p,
   fuid, file_mime_type, file_desc, proto, note, msg,
   sub, src, dst, p, n, peer_descr, actions, suppress_for, dropped
@@ -37,7 +37,7 @@ STIX: notice.log and conn.log events → STIX observed-data bundles.
 Dev access: Completely free, open source.
   https://zeek.org/get-zeek/
 
-Configuration (ctm_sak.ini):
+Configuration (gnat.ini):
   [zeek]
   log_dir       = /var/log/zeek/current
   log_format    = tsv      ; 'tsv' or 'json'
@@ -277,7 +277,7 @@ class ZeekLogCommands:
 
     @staticmethod
     def normalise_notice(record: dict) -> dict:
-        """Flatten a Zeek notice.log record to CTM-SAK normalised format."""
+        """Flatten a Zeek notice.log record to GNAT normalised format."""
         return {
             "timestamp": record.get("ts"),
             "uid": record.get("uid"),
@@ -296,7 +296,7 @@ class ZeekLogCommands:
 
     @staticmethod
     def normalise_connection(record: dict) -> dict:
-        """Flatten a Zeek conn.log record to CTM-SAK normalised format."""
+        """Flatten a Zeek conn.log record to GNAT normalised format."""
         return {
             "timestamp": record.get("ts"),
             "uid": record.get("uid"),

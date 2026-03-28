@@ -1,7 +1,7 @@
 """
 tests/connectors/test_misp.py
 ================================
-Unit tests for the CTM-SAK MISP connector.
+Unit tests for the GNAT MISP connector.
 
 Coverage
 --------
@@ -26,8 +26,8 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from ctm_sak.connectors.misp.config import MISPConfig, load_misp_config
-from ctm_sak.connectors.misp.exceptions import (
+from gnat.connectors.misp.config import MISPConfig, load_misp_config
+from gnat.connectors.misp.exceptions import (
     MISPAuthError,
     MISPAPIError,
     MISPConfigError,
@@ -35,15 +35,15 @@ from ctm_sak.connectors.misp.exceptions import (
     MISPSTIXError,
     MISPValidationError,
 )
-from ctm_sak.connectors.misp.auth import MISPAuthManager
-from ctm_sak.connectors.misp.client import MISPClient
-from ctm_sak.connectors.misp.events import MISPEventCommands
-from ctm_sak.connectors.misp.attributes import MISPAttributeCommands
-from ctm_sak.connectors.misp.tags import MISPTagCommands
-from ctm_sak.connectors.misp.galaxies import MISPGalaxyCommands
-from ctm_sak.connectors.misp.feeds import MISPFeedCommands
-from ctm_sak.connectors.misp.sightings import MISPSightingCommands
-from ctm_sak.connectors.misp.stix_mapper import MISPSTIXMapper
+from gnat.connectors.misp.auth import MISPAuthManager
+from gnat.connectors.misp.client import MISPClient
+from gnat.connectors.misp.events import MISPEventCommands
+from gnat.connectors.misp.attributes import MISPAttributeCommands
+from gnat.connectors.misp.tags import MISPTagCommands
+from gnat.connectors.misp.galaxies import MISPGalaxyCommands
+from gnat.connectors.misp.feeds import MISPFeedCommands
+from gnat.connectors.misp.sightings import MISPSightingCommands
+from gnat.connectors.misp.stix_mapper import MISPSTIXMapper
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ def _make_response(status: int = 200, body=None) -> MagicMock:
 
 def _make_client(config: MISPConfig | None = None) -> tuple[MISPClient, MagicMock]:
     cfg = config or _make_config()
-    with patch("ctm_sak.connectors.misp.client.urllib3.PoolManager") as pm_cls:
+    with patch("gnat.connectors.misp.client.urllib3.PoolManager") as pm_cls:
         mock_pm = MagicMock()
         pm_cls.return_value = mock_pm
         client = MISPClient(cfg)
@@ -247,7 +247,7 @@ class TestMISPClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("ctm_sak.connectors.misp.client.urllib3.PoolManager"):
+        with patch("gnat.connectors.misp.client.urllib3.PoolManager"):
             with MISPClient(cfg) as c:
                 self.assertIsInstance(c, MISPClient)
 
@@ -703,7 +703,7 @@ class TestMISPSTIXMapper(unittest.TestCase):
 class TestMISPExceptions(unittest.TestCase):
 
     def test_all_inherit_from_base(self):
-        from ctm_sak.connectors.misp.exceptions import MISPError
+        from gnat.connectors.misp.exceptions import MISPError
         for cls in [MISPConfigError, MISPAuthError, MISPAPIError,
                     MISPNotFoundError, MISPValidationError, MISPSTIXError]:
             self.assertTrue(issubclass(cls, MISPError))

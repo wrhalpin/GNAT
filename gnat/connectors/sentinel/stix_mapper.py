@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.stix_mapper
+gnat.connectors.sentinel.stix_mapper
 ==========================================
 STIX 2.1 mapping for the Microsoft Sentinel connector.
 
@@ -125,7 +125,7 @@ class SentinelSTIXMapper:
             "validFrom": indicator.get("valid_from", _now_ts()),
             "confidence": indicator.get("confidence", 0),
             "threatTypes": indicator.get("indicator_types", ["malicious-activity"]),
-            "source": indicator.get("x_opencti_score", "ctm_sak"),
+            "source": indicator.get("x_opencti_score", "gnat"),
             "revoked": indicator.get("revoked", False),
         }
         if indicator.get("valid_until"):

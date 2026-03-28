@@ -12,17 +12,17 @@ import os
 import tempfile
 import unittest
 
-from ctm_sak.connectors.suricata import (
+from gnat.connectors.suricata import (
     SuricataConfig, SuricataConfigError, SuricataLogError,
     SuricataEVEReader, SuricataSocketCommands, SuricataSTIXMapper,
     load_suricata_config,
 )
-from ctm_sak.connectors.snort import (
+from gnat.connectors.snort import (
     SnortConfig, SnortConfigError, SnortLogError,
     SnortJSONReader, SnortFastReader, SnortAlertReader, SnortSTIXMapper,
     load_snort_config,
 )
-from ctm_sak.connectors.zeek import (
+from gnat.connectors.zeek import (
     ZeekConfig, ZeekConfigError, ZeekLogError,
     ZeekTSVReader, ZeekJSONReader, ZeekLogCommands, ZeekSTIXMapper,
     load_zeek_config,
@@ -132,7 +132,7 @@ class TestSuricataEVEReader(unittest.TestCase):
         self.assertEqual(norm["src_ip"], "1.2.3.4")
         self.assertEqual(norm["dst_ip"], "10.0.0.1")
         self.assertEqual(norm["signature"], "ET SCAN SSH Brute Force")
-        self.assertEqual(norm["severity"], 3)   # Suricata severity 2 → CTM-SAK 3 (high)
+        self.assertEqual(norm["severity"], 3)   # Suricata severity 2 → GNAT 3 (high)
         self.assertEqual(norm["signature_id"], 2001219)
         self.assertEqual(norm["action"], "allowed")
 

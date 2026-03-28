@@ -2,7 +2,7 @@
 import configparser, json, unittest
 from unittest.mock import MagicMock, patch
 
-from ctm_sak.connectors.alienvault_otx import (
+from gnat.connectors.alienvault_otx import (
     OTXConfig, OTXConfigError, OTXAuthError, OTXAPIError, OTXNotFoundError,
     OTXRateLimitError, OTXClient, OTXPulseCommands, OTXIndicatorCommands,
     OTXFeedCommands, OTXSTIXMapper, OTXSTIXError, load_otx_config,
@@ -21,7 +21,7 @@ def _resp(status=200, body=None):
 
 def _make_client():
     cfg = _cfg()
-    with patch("ctm_sak.connectors.alienvault_otx.urllib3.PoolManager") as pm:
+    with patch("gnat.connectors.alienvault_otx.urllib3.PoolManager") as pm:
         mock_http = MagicMock()
         pm.return_value = mock_http
         c = OTXClient(cfg); c._http = mock_http

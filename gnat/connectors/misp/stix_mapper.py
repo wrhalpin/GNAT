@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.stix_mapper
+gnat.connectors.misp.stix_mapper
 ======================================
 STIX 2.1 mapping layer for the MISP connector.
 

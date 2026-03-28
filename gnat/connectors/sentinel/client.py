@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.client
+gnat.connectors.sentinel.client
 =====================================
 Core HTTP client for the Microsoft Sentinel connector.
 

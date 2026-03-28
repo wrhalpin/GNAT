@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.sentinel.exceptions
+gnat.connectors.sentinel.exceptions
 =========================================
 Exception hierarchy for the Microsoft Sentinel connector.
 

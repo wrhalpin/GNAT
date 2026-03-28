@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.config
+gnat.connectors.misp.config
 =================================
 Configuration schema for the MISP connector.
 
@@ -95,10 +95,10 @@ def load_misp_config(
     config: configparser.ConfigParser,
     section: str = "misp",
 ) -> MISPConfig:
-    """Parse [misp] section from ctm_sak.ini."""
+    """Parse [misp] section from gnat.ini."""
     if not config.has_section(section):
         raise MISPConfigError(
-            f"Configuration section '[{section}]' not found in ctm_sak.ini."
+            f"Configuration section '[{section}]' not found in gnat.ini."
         )
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))

@@ -16,6 +16,29 @@ A universal CTM toolkit including Python client and STIX 2.1-compatible ORM for 
 | `crowdstrike` | CrowdStrike Falcon |
 | `xsoar` | Palo Alto XSOAR 6 |
 | `recordedfuture` | Recorded Future Connect API |
+| `splunk` | Splunk Enterprise / Splunk ES |
+| `virustotal` | VirusTotal |
+| `shadowserver` | Shadowserver Foundation |
+| `rapid7` | Rapid7 InsightVM / InsightIDR |
+| `nucleus` | Nucleus Security |
+| `greymatter` | GreyMatter |
+| `whistic` | Whistic |
+| `riskrecon` | RiskRecon |
+| `feedly` | Feedly Threat Intelligence |
+| `controlup` | ControlUp DEX |
+| `alienvault` | AlienVault OTX |
+| `elastic` | Elastic SIEM / Security |
+| `graylog` | Graylog |
+| `misp` | MISP Threat Sharing Platform |
+| `opencti` | OpenCTI |
+| `ossim` | OSSIM / AlienVault SIEM |
+| `qradar` | IBM QRadar |
+| `security_onion` | Security Onion |
+| `sentinel` | Microsoft Sentinel |
+| `snort` | Snort IDS |
+| `suricata` | Suricata IDS/IPS |
+| `wazuh` | Wazuh SIEM/XDR |
+| `zeek` | Zeek Network Monitor |
 
 ---
 
@@ -211,14 +234,44 @@ gnat/
 │   ├── attack_pattern.py
 │   ├── observable.py        # IPv4Address, DomainName, URL, File, Email
 │   └── relationship.py
-├── connectors/
+├── connectors/              # 26 platform connectors
 │   ├── base_connector.py    # ConnectorMixin (STIX translation contract)
-│   ├── threatq/client.py
-│   ├── proofpoint/client.py
-│   ├── netskope/client.py
-│   ├── crowdstrike/client.py
-│   ├── xsoar/client.py
-│   └── recordedfuture/client.py
+│   ├── threatq/             # ThreatQ TIP
+│   ├── crowdstrike/         # CrowdStrike Falcon
+│   ├── netskope/            # Netskope SASE
+│   ├── proofpoint/          # Proofpoint TAP
+│   ├── xsoar/               # Palo Alto XSOAR
+│   ├── recordedfuture/      # Recorded Future
+│   ├── splunk/              # Splunk Enterprise / ES
+│   ├── virustotal/          # VirusTotal
+│   ├── shadowserver/        # Shadowserver
+│   ├── rapid7/              # Rapid7 InsightVM/IDR
+│   ├── nucleus/             # Nucleus Security
+│   ├── greymatter/          # GreyMatter
+│   ├── whistic/             # Whistic
+│   ├── riskrecon/           # RiskRecon
+│   ├── feedly/              # Feedly Threat Intel
+│   ├── controlup/           # ControlUp DEX
+│   ├── alienvault/          # AlienVault OTX
+│   ├── elastic/             # Elastic SIEM
+│   ├── graylog/             # Graylog
+│   ├── misp/                # MISP
+│   ├── opencti/             # OpenCTI
+│   ├── ossim/               # OSSIM
+│   ├── qradar/              # IBM QRadar
+│   ├── security_onion/      # Security Onion
+│   ├── sentinel/            # Microsoft Sentinel
+│   ├── snort/               # Snort IDS
+│   ├── suricata/            # Suricata IDS/IPS
+│   ├── wazuh/               # Wazuh SIEM/XDR
+│   └── zeek/                # Zeek Network Monitor
+├── search/                  # Solr full-text search sidecar
+│   ├── index.py             # GNATIndexer (Solr document management)
+│   ├── mixin.py             # SearchMixin for connectors
+│   ├── orm_with_mixin.py    # ORM integration
+│   ├── pipeline_patch.py    # Ingest pipeline integration
+│   ├── library_patch.py     # ResearchLibrary integration
+│   └── solr_schema_gnat.xml # Solr 9.x schema
 ├── codegen/
 │   └── openapi_generator.py # CLI + Python API for connector generation
 └── utils/
@@ -230,7 +283,7 @@ tests/
 │   ├── test_orm.py          # ORM + STIXBase tests
 │   ├── test_client.py       # SAKClient, SAKConfig, BaseClient tests
 │   └── connectors/
-│       └── test_connectors.py  # All 6 connector tests
+│       └── test_connectors.py  # Connector tests
 └── integration/
     └── test_integration.py  # Live API tests (opt-in)
 

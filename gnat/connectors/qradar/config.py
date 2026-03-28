@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.config
+gnat.connectors.qradar.config
 ===================================
 Configuration schema for the QRadar connector.
 
@@ -139,7 +139,7 @@ def load_qradar_config(
     section: str = "qradar",
 ) -> "QRadarConfig":
     """
-    Parse [qradar] section from a ctm_sak.ini ConfigParser instance.
+    Parse [qradar] section from a gnat.ini ConfigParser instance.
 
     Parameters
     ----------
@@ -158,7 +158,7 @@ def load_qradar_config(
     """
     if not config.has_section(section):
         raise QRadarConfigError(
-            f"Configuration section '[{section}]' not found in ctm_sak.ini."
+            f"Configuration section '[{section}]' not found in gnat.ini."
         )
 
     raw = dict(_DEFAULTS)

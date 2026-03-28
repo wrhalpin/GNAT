@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.misp.feeds
+gnat.connectors.misp.feeds
 ================================
 Feed management commands for the MISP connector.
 

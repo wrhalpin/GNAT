@@ -2,7 +2,7 @@
 import json, time, unittest
 from unittest.mock import MagicMock, patch
 
-from ctm_sak.connectors.security_onion import (
+from gnat.connectors.security_onion import (
     SecurityOnionConfig, SecurityOnionConfigError, SecurityOnionAuthError,
     SecurityOnionAPIError, SecurityOnionNotFoundError,
     SecurityOnionClient, SecurityOnionAlertCommands, SecurityOnionCaseCommands,
@@ -25,7 +25,7 @@ def _resp(status=200, body=None):
 
 def _make_client():
     cfg = _cfg()
-    with patch("ctm_sak.connectors.security_onion.urllib3.PoolManager") as pm:
+    with patch("gnat.connectors.security_onion.urllib3.PoolManager") as pm:
         mock_http = MagicMock()
         pm.return_value = mock_http
         c = SecurityOnionClient(cfg)
@@ -102,7 +102,7 @@ class TestSecurityOnionClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("ctm_sak.connectors.security_onion.urllib3.PoolManager"):
+        with patch("gnat.connectors.security_onion.urllib3.PoolManager"):
             with SecurityOnionClient(cfg) as client:
                 self.assertIsInstance(client, SecurityOnionClient)
 

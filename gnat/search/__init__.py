@@ -1,8 +1,8 @@
 """
-ctm_sak.search
+gnat.search
 ==============
 
-Optional full-text search sidecar for CTM-SAK.
+Optional full-text search sidecar for GNAT.
 
 This package provides Solr integration as a **read-acceleration layer**
 for unstructured text fields (descriptions, aliases, report bodies, notes).
@@ -18,25 +18,25 @@ Public surface
 :class:`NullSearchIndex`
     Safe no-op default.
 :class:`STIXSearchMixin`
-    Mixin for :class:`~ctm_sak.orm.base.STIXBase` subclasses that adds
+    Mixin for :class:`~gnat.orm.base.STIXBase` subclasses that adds
     ``to_search_doc()``.
 
 Factory helper
 --------------
-:func:`build_search_index` reads ``[search]`` from a :class:`~ctm_sak.config.SAKConfig`
+:func:`build_search_index` reads ``[search]`` from a :class:`~gnat.config.SAKConfig`
 and returns the appropriate concrete implementation::
 
-    from ctm_sak.search import build_search_index
+    from gnat.search import build_search_index
     idx = build_search_index(cfg)   # SolrSearchIndex or NullSearchIndex
 """
 
-from ctm_sak.search.mixin import STIXSearchMixin
-from ctm_sak.search.index import SearchIndex, SolrSearchIndex, NullSearchIndex
+from gnat.search.mixin import STIXSearchMixin
+from gnat.search.index import SearchIndex, SolrSearchIndex, NullSearchIndex
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ctm_sak.config import SAKConfig
+    from gnat.config import SAKConfig
 
 
 def build_search_index(config: "SAKConfig") -> SearchIndex:
@@ -50,7 +50,7 @@ def build_search_index(config: "SAKConfig") -> SearchIndex:
 
         [search]
         backend  = solr          ; "solr" or "memory" (default: memory)
-        solr_url = http://localhost:8983/solr/ctmsak
+        solr_url = http://localhost:8983/solr/gnat
 
     Returns
     -------
@@ -60,8 +60,8 @@ def build_search_index(config: "SAKConfig") -> SearchIndex:
 
     Examples
     --------
-    >>> from ctm_sak.config import SAKConfig
-    >>> from ctm_sak.search import build_search_index
+    >>> from gnat.config import SAKConfig
+    >>> from gnat.search import build_search_index
     >>> idx = build_search_index(SAKConfig())
     """
     try:

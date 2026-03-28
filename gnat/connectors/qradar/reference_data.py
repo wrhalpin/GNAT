@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.reference_data
+gnat.connectors.qradar.reference_data
 ==========================================
 Reference data commands for the QRadar connector.
 
@@ -24,7 +24,7 @@ Reference data types
   Reference Table     — key → row (multi-column)
                         POST /api/reference_data/tables
 
-CTM-SAK IOC workflow
+GNAT IOC workflow
 ---------------------
   1. Ensure the reference set exists (create_set if not)
   2. Bulk-add STIX indicator values via add_set_values_bulk()
@@ -154,7 +154,7 @@ class QRadarReferenceDataCommands:
         params = {"purge_only": str(purge_only).lower()}
         return self._client.delete(f"reference_data/sets/{name}", params=params)
 
-    def add_set_value(self, name: str, value: str, source: str = "ctm_sak") -> dict:
+    def add_set_value(self, name: str, value: str, source: str = "gnat") -> dict:
         """
         Add a single value to a reference set.
 
@@ -181,7 +181,7 @@ class QRadarReferenceDataCommands:
         self,
         name: str,
         values: list[str],
-        source: str = "ctm_sak",
+        source: str = "gnat",
     ) -> dict:
         """
         Bulk-add multiple values to a reference set.
@@ -318,7 +318,7 @@ class QRadarReferenceDataCommands:
         name: str,
         key: str,
         value: str,
-        source: str = "ctm_sak",
+        source: str = "gnat",
     ) -> dict:
         """
         Add or update a key/value pair in a reference map.
@@ -348,7 +348,7 @@ class QRadarReferenceDataCommands:
         self,
         name: str,
         entries: dict[str, str],
-        source: str = "ctm_sak",
+        source: str = "gnat",
     ) -> dict:
         """
         Bulk-add key/value entries to a reference map.
@@ -395,7 +395,7 @@ class QRadarReferenceDataCommands:
         name: str,
         key: str,
         value: str,
-        source: str = "ctm_sak",
+        source: str = "gnat",
     ) -> dict:
         """Add a value to a key's set in a map-of-sets."""
         return self._client.post(
@@ -442,7 +442,7 @@ class QRadarReferenceDataCommands:
         Parameters
         ----------
         set_name : str
-            Reference set name (e.g. 'ctm_sak_malicious_ips').
+            Reference set name (e.g. 'gnat_malicious_ips').
         ips : list[str]
             IPv4/IPv6 addresses to add.
         create_if_missing : bool
@@ -469,7 +469,7 @@ class QRadarReferenceDataCommands:
         Parameters
         ----------
         set_name : str
-            Reference set name (e.g. 'ctm_sak_malicious_domains').
+            Reference set name (e.g. 'gnat_malicious_domains').
         domains : list[str]
             Domain strings to add.
         create_if_missing : bool
@@ -496,7 +496,7 @@ class QRadarReferenceDataCommands:
         Parameters
         ----------
         set_name : str
-            Reference set name (e.g. 'ctm_sak_malicious_hashes').
+            Reference set name (e.g. 'gnat_malicious_hashes').
         hashes : list[str]
             Hash strings (MD5, SHA-1, SHA-256) to add.
         create_if_missing : bool

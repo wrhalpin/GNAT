@@ -1,5 +1,5 @@
 """
-ctm_sak.connectors.qradar.offenses
+gnat.connectors.qradar.offenses
 =====================================
 Offense management commands for the QRadar connector.
 
@@ -72,7 +72,7 @@ OFFENSE_TYPE_LABELS = {
     14: "Username/Source IP",
 }
 
-# Magnitude → CTM-SAK severity (0–4)
+# Magnitude → GNAT severity (0–4)
 def _magnitude_to_severity(magnitude: int) -> int:
     if magnitude >= 9:
         return 4   # critical
@@ -419,10 +419,10 @@ class QRadarOffenseCommands:
     @staticmethod
     def normalise_offense(offense: dict) -> dict:
         """
-        Flatten a QRadar offense record to CTM-SAK normalised format.
+        Flatten a QRadar offense record to GNAT normalised format.
 
         Converts epoch milliseconds to ISO 8601 strings and maps
-        QRadar magnitude to CTM-SAK severity (0–4).
+        QRadar magnitude to GNAT severity (0–4).
 
         Parameters
         ----------
