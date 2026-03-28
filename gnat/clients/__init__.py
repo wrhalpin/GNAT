@@ -40,6 +40,7 @@ from gnat.connectors.qradar.connector import QRadarConnector
 from gnat.connectors.sentinel.connector import SentinelConnector
 from gnat.connectors.wazuh.connector import WazuhConnector
 from gnat.connectors.servicenow.client import ServiceNowClient
+from gnat.connectors.jira.client import JiraClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -73,6 +74,7 @@ CLIENT_REGISTRY: dict = {
     "sentinel":       SentinelConnector,
     "wazuh":          WazuhConnector,
     "servicenow":     ServiceNowClient,
+    "jira":           JiraClient,
 }
 
 __all__ = [

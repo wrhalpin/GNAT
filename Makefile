@@ -8,7 +8,7 @@ MYPY    ?= mypy
 SRC     := gnat
 TESTS   := tests
 
-.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen build-rust build-rust-dev
+.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen build-rust build-rust-dev docker-build docker-up docker-down docker-logs
 
 help:
 	@echo ""
@@ -27,6 +27,10 @@ help:
 	@echo "  make clean         Remove all build artifacts"
 	@echo "  make build-rust    Build + install the Rust native extension (release)"
 	@echo "  make build-rust-dev  Build Rust extension in dev mode (faster, no optimisations)"
+	@echo "  make docker-build  Build all Docker service images"
+	@echo "  make docker-up     Start all services (detached)"
+	@echo "  make docker-down   Stop all services"
+	@echo "  make docker-logs   Tail logs for all services"
 	@echo ""
 
 build-rust:
@@ -74,3 +78,15 @@ clean:
 	rm -rf build dist *.egg-info htmlcov .coverage .mypy_cache .ruff_cache docs/build
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f

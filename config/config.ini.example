@@ -199,6 +199,15 @@ password  = YOUR_PASSWORD
 # api_key = YOUR_BEARER_TOKEN
 # auth_type = api_key
 
+[jira]
+host      = https://yourorg.atlassian.net
+# Jira Cloud — email + API token (recommended):
+email     = user@example.com
+api_token = YOUR_API_TOKEN
+# OR Jira Server/Data Center — bearer token:
+# api_key = YOUR_BEARER_TOKEN
+# auth_type = api_key
+
 # =============================================================================
 # SMTP — for ReportGenerator email delivery
 # =============================================================================

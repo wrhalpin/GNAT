@@ -1,0 +1,84 @@
+---
+# GNAT — single-host Docker Compose deployment
+# Services: scheduler (ingest cron), edl (block-list HTTP server), monitor (health)
+#
+# Quick start:
+#   cp .env.example .env          # edit GNAT_CONFIG path
+#   docker compose up -d
+#
+# Logs:
+#   docker compose logs -f
+version: "3.9"
+
+services:
+
+  # ── Feed scheduler ──────────────────────────────────────────────────────
+  # Runs configured FeedJobs on cron schedule; writes to shared workspace.
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/scheduler/Dockerfile
+    container_name: gnat-scheduler
+    environment:
+      GNAT_CONFIG: /etc/gnat/config.ini
+    volumes:
+      - ${GNAT_CONFIG_DIR:-./config}:/etc/gnat:ro
+      - workspace:/var/gnat/workspace
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "from gnat.schedule import FeedScheduler; print('ok')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  # ── EDL server ──────────────────────────────────────────────────────────
+  # Serves dynamic enforcement-decision lists over HTTP (port 8080).
+  edl:
+    build:
+      context: .
+      dockerfile: docker/edl/Dockerfile
+    container_name: gnat-edl
+    environment:
+      GNAT_CONFIG: /etc/gnat/config.ini
+    volumes:
+      - ${GNAT_CONFIG_DIR:-./config}:/etc/gnat:ro
+      - workspace:/var/gnat/workspace:ro
+    ports:
+      - "${EDL_PORT:-8080}:8080"
+    restart: unless-stopped
+    depends_on:
+      - scheduler
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Health monitor ──────────────────────────────────────────────────────
+  # Exposes /health endpoint and connector drift summary (port 8090).
+  monitor:
+    build:
+      context: .
+      dockerfile: docker/monitor/Dockerfile
+    container_name: gnat-monitor
+    environment:
+      GNAT_CONFIG: /etc/gnat/config.ini
+    volumes:
+      - ${GNAT_CONFIG_DIR:-./config}:/etc/gnat:ro
+      - workspace:/var/gnat/workspace:ro
+    ports:
+      - "${MONITOR_PORT:-8090}:8090"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+# ── Named volumes ────────────────────────────────────────────────────────
+volumes:
+  workspace:
+    name: gnat-workspace

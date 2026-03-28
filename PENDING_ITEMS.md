@@ -242,28 +242,17 @@ coverage, and correct test placement (all connector tests in
 
 **Priority:** MEDIUM
 
-**What:** Two new `BaseClient + ConnectorMixin` connectors for IT service
-management / ticketing:
+**Status:** ✅ COMPLETE
 
-**Jira** (`gnat/connectors/jira/`):
-- Auth: API token (Basic with email + token), OAuth2 supported
-- `get_object(issue_key)` → `GET /rest/api/3/issue/{key}`
-- `list_objects(jql)` → `POST /rest/api/3/issue/search` with JQL
-- `upsert_object(stix_obj)` → `POST /rest/api/3/issue` (create) or
-  `PUT /rest/api/3/issue/{key}` (update); maps STIX to Jira fields
-- `annotate_ticket(key, stix_obj)` → `POST /rest/api/3/issue/{key}/comment`
-- `to_stix()` → maps Jira issue to STIX `note` or `course-of-action` SDO
-- `from_stix()` → builds JQL from STIX fields
-
-**ServiceNow** (`gnat/connectors/servicenow/`):
-- Auth: Basic (username + password) or OAuth2
-- `get_object(sys_id)` → `GET /api/now/table/sn_si_incident/{sys_id}`
-- `list_objects(query)` → `GET /api/now/table/sn_si_incident?sysparm_query=...`
-- `upsert_object(stix_obj)` → create/update security incident
-- `annotate_ticket(sys_id, stix_obj)` → add work note
-- `to_stix()` → maps SI record to STIX `observed-data` or `course-of-action`
-
-**Config sections:** `[jira]` and `[servicenow]` in `config.ini.example`.
+**Implemented:**
+- **ServiceNow** ✅ — completed in item #16.
+- **Jira** (`gnat/connectors/jira/client.py`): `BaseClient + ConnectorMixin`
+  for Jira REST API v3 (Cloud + Server/DC). Basic auth (email + API token)
+  or Bearer token. `list_objects()` via JQL (`POST /rest/api/3/issue/search`);
+  `upsert_object()` create/update; `to_stix()` maps issues to `note` /
+  `course-of-action`; `from_stix()` builds JQL; `annotate_ticket()` posts
+  ADF-formatted comment; `search_by_label()` helper. Registered in
+  `CLIENT_REGISTRY`, `[jira]` section in `config.ini.example`. 15 unit tests.
 
 ---
 
@@ -398,55 +387,20 @@ Eleven new connectors in priority order. Each follows the standard
 
 **Priority:** MEDIUM-LOW
 
-**What:** Package GNAT's three operational services as Docker containers
-with a `docker-compose.yml` for single-host deployment. No change to
-application code — pure infrastructure.
+**Status:** ✅ COMPLETE
 
-**Files to create:**
-```
-docker/
-├── scheduler/Dockerfile     # gnat-scheduler service
-├── edl/Dockerfile           # gnat-edl server
-├── monitor/Dockerfile       # gnat-monitor health endpoint
-docker-compose.yml            # orchestrates all three + named volumes
-.env.example                  # GNAT_CONFIG path, port bindings
-.dockerignore
-```
-
-**Service design:**
-```yaml
-services:
-  scheduler:
-    build: docker/scheduler
-    volumes:
-      - ./config:/etc/gnat:ro
-      - workspace:/var/gnat/workspace
-    restart: unless-stopped
-
-  edl:
-    build: docker/edl
-    ports: ["8080:8080"]
-    volumes:
-      - workspace:/var/gnat/workspace:ro
-    restart: unless-stopped
-    depends_on: [scheduler]
-
-  monitor:
-    build: docker/monitor
-    ports: ["8090:8090"]
-    volumes:
-      - workspace:/var/gnat/workspace:ro
-    restart: unless-stopped
-
-volumes:
-  workspace:
-```
-
-**Dev container:** `.devcontainer/devcontainer.json` for VS Code / Codespaces,
-includes Rust toolchain (for `make build-rust`).
-
-**Makefile targets added:** `make docker-build`, `make docker-up`,
-`make docker-down`, `make docker-logs`.
+**Implemented:**
+- `docker/scheduler/Dockerfile`, `docker/edl/Dockerfile`,
+  `docker/monitor/Dockerfile` — slim Python 3.11 images with targeted
+  extras; workspace bind-mounted via named volume `gnat-workspace`.
+- `docker-compose.yml` — orchestrates scheduler, edl (port 8080), monitor
+  (port 8090) with health-checks and `restart: unless-stopped`.
+- `.env.example` — `GNAT_CONFIG_DIR`, `EDL_PORT`, `MONITOR_PORT` vars.
+- `.dockerignore` — excludes secrets, test artifacts, Rust build products.
+- `.devcontainer/devcontainer.json` — VS Code / Codespaces dev container;
+  Rust toolchain + Docker-in-Docker + Ruff extension.
+- `Makefile` — added `docker-build`, `docker-up`, `docker-down`,
+  `docker-logs` targets.
 
 ---
 
