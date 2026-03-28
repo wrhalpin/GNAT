@@ -59,11 +59,43 @@ class XSOARClient(BaseClient, ConnectorMixin):
         })
         return resp.get("iocObjects", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        return self.post("/indicators/edit", json=payload)
+    def upsert_object(self, stix_type: str, payload: Dict[str, Any],
+                      incident_id: Optional[str] = None, **kwargs: Any) -> Dict[str, Any]:
+        """Create or update an indicator. If *incident_id* is given, the
+        indicator is linked to that incident after upsert."""
+        result = self.post("/indicators/edit", json=payload)
+        if incident_id:
+            self.link_incident(incident_id, payload)
+        return result
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         self.post("/indicators/delete", json={"id": object_id, "doNotWhitelist": False})
+
+    def link_incident(self, incident_id: str, stix_obj: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Link a STIX indicator to an existing XSOAR incident.
+
+        Calls ``POST /incident/{incident_id}/linkedIncidents`` with a
+        minimal indicator payload derived from *stix_obj*.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID (numeric string).
+        stix_obj : dict
+            STIX indicator dict (or any dict with a ``name`` / ``pattern`` field).
+
+        Returns
+        -------
+        dict
+            Raw XSOAR API response.
+        """
+        indicator_value = stix_obj.get("name", stix_obj.get("value", ""))
+        payload = {
+            "incidentId": incident_id,
+            "indicators": [{"value": indicator_value}],
+        }
+        return self.post(f"/incident/{incident_id}/linkedIncidents", json=payload)
 
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         return {

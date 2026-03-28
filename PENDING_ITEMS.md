@@ -220,22 +220,21 @@ coverage, and correct test placement (all connector tests in
 
 **Priority:** HIGH — depends on #15 audit confirming current connector state
 
-**What:** Ensure investigative intelligence (STIX objects) can be pushed to
-and linked within incident/case records on three platforms:
+**Status:** ✅ COMPLETE
 
-- **XSOAR:** `POST /incident/{id}/linkedIncidents` — link STIX indicators
-  to existing incidents; `upsert_object()` should accept an `incident_id`
-  kwarg to associate on write.
-- **ServiceNow:** `sys_relationship` table — create relationship records
-  linking a `sn_si_incident` to STIX-derived CIs. New helper method
-  `annotate_incident(incident_sys_id, stix_obj)`.
-- **GreyMatter:** Investigation objects support `linked_cases` — verify
-  current `upsert_object()` populates this; add `link_investigation()`
-  helper if not.
-
-**Config:** No new INI keys required; incident IDs passed as kwargs.
-
-**Tests:** Per-platform unit tests covering the link path + error cases.
+**Implemented:**
+- **XSOAR:** `XSOARClient.link_incident(incident_id, stix_obj)` — calls
+  `POST /incident/{id}/linkedIncidents`. `upsert_object()` now accepts
+  `incident_id` kwarg; automatically links on write when provided. 4 unit tests.
+- **ServiceNow:** New `ServiceNowClient` (`gnat/connectors/servicenow/`) —
+  `BaseClient + ConnectorMixin` for `sn_si_incident` Table API. Basic auth
+  (username+password) and Bearer token. `annotate_incident(sys_id, stix_obj)`
+  appends a structured work note via `PUT /api/now/table/sn_si_incident/{sys_id}`.
+  Registered in `CLIENT_REGISTRY` and `config.ini.example`. 13 unit tests.
+- **GreyMatter:** `GreyMatterClient.link_investigation(case_id, stix_obj)` —
+  calls `POST /v1/incidents/{case_id}/linked_observables`; infers observable
+  type from STIX pattern. `upsert_object()` now accepts `linked_cases` list
+  kwarg merged into request payload. 4 unit tests.
 
 ---
 

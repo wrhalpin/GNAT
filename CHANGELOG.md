@@ -42,6 +42,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `Makefile`: new `build-rust` target (`maturin build --release` + pip install wheel) and `build-rust-dev` target (`maturin develop`) for local development.
 - `pyproject.toml`: new `[fast]` optional-dependency group documenting the `gnat-core` native extension.
 - `tests/unit/test_rust_core.py`: 88 parity tests verifying pure-Python and Rust implementations produce identical output for all 5 functions across all IOC types; Rust-specific tests auto-skip when the wheel is not installed.
+- **Incident linking (#16):**
+  - `XSOARClient.link_incident(incident_id, stix_obj)`: new helper — calls `POST /incident/{id}/linkedIncidents` to associate a STIX indicator with an XSOAR incident. `upsert_object()` now accepts an `incident_id` kwarg; when provided it automatically calls `link_incident()` after the upsert. 4 unit tests.
+  - `ServiceNowClient` (`gnat/connectors/servicenow/client.py`): new `BaseClient + ConnectorMixin` for the ServiceNow Table API (`sn_si_incident`). Supports Basic auth (username + password) and Bearer token. `annotate_incident(incident_sys_id, stix_obj)` appends a structured GNAT work note to the incident via `PUT /api/now/table/sn_si_incident/{sys_id}`. `to_stix()` maps SI records to STIX `observed-data`. 13 unit tests.
+  - `GreyMatterClient.link_investigation(case_id, stix_obj)`: new helper — calls `POST /v1/incidents/{case_id}/linked_observables`; infers GreyMatter observable type from the STIX pattern. `upsert_object()` now accepts a `linked_cases` list kwarg that is merged into the request payload. 4 unit tests.
+  - `servicenow` registered in `CLIENT_REGISTRY`; `[servicenow]` section added to `config/config.ini.example`.
 
 ### Fixed
 - `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`

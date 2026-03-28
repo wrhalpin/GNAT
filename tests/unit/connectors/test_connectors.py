@@ -2061,3 +2061,235 @@ class TestOpenCTIClient:
                 "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z"}
         result = client.from_stix(stix)
         assert isinstance(result, dict)
+
+
+# ===========================================================================
+# Incident Linking: XSOAR link_incident
+# ===========================================================================
+
+class TestXSOARIncidentLinking:
+
+    @pytest.fixture
+    def client(self):
+        return _authenticated(XSOARClient, api_key="xsoar-key")
+
+    def test_link_incident_calls_correct_endpoint(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"id": "link-1"})
+        monkeypatch.setattr(client, "post", mock_post)
+        stix = {"name": "10.0.0.99", "type": "indicator", "id": "indicator--abc"}
+        result = client.link_incident("incident-42", stix)
+        assert result == {"id": "link-1"}
+        url_called = mock_post.call_args[0][0]
+        assert "incident-42" in url_called
+        assert "linkedIncidents" in url_called
+
+    def test_link_incident_payload_contains_value(self, client, monkeypatch):
+        captured = {}
+
+        def fake_post(path, **kwargs):
+            captured.update(kwargs.get("json", {}))
+            return {}
+
+        monkeypatch.setattr(client, "post", fake_post)
+        stix = {"name": "evil.com", "type": "indicator", "id": "indicator--xyz"}
+        client.link_incident("inc-1", stix)
+        assert captured.get("incidentId") == "inc-1"
+        indicators = captured.get("indicators", [])
+        assert any(ind.get("value") == "evil.com" for ind in indicators)
+
+    def test_upsert_object_links_when_incident_id_given(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "upserted"}))
+        stix = {"name": "malware.exe", "value": "malware.exe"}
+        client.upsert_object("indicator", stix, incident_id="inc-99")
+        # post was called at least twice: upsert + link
+        assert client.post.call_count >= 2
+
+    def test_upsert_object_no_link_when_no_incident_id(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "upserted"}))
+        client.upsert_object("indicator", {"name": "test"})
+        assert client.post.call_count == 1
+
+
+# ===========================================================================
+# Incident Linking: ServiceNow annotate_incident
+# ===========================================================================
+
+class TestServiceNowClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.servicenow.client import ServiceNowClient
+        c = ServiceNowClient(host="https://dev12345.service-now.com",
+                             username="admin", password="pass")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_basic_header(self):
+        from gnat.connectors.servicenow.client import ServiceNowClient
+        c = ServiceNowClient(host="https://dev12345.service-now.com",
+                             username="user", password="secret")
+        c.authenticate()
+        assert c._auth_headers["Authorization"].startswith("Basic ")
+
+    def test_authenticate_sets_bearer_when_api_key(self):
+        from gnat.connectors.servicenow.client import ServiceNowClient
+        c = ServiceNowClient(host="https://dev12345.service-now.com",
+                             api_key="tok123")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer tok123"
+
+    def test_health_check_success(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"result": []}))
+        assert client.health_check() is True
+
+    def test_health_check_failure_raises(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            MagicMock(side_effect=SAKClientError("unreachable")))
+        with pytest.raises(SAKClientError):
+            client.health_check()
+
+    def test_get_object_returns_result(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            MagicMock(return_value={"result": {"sys_id": "abc123"}}))
+        result = client.get_object("observed-data", "abc123")
+        assert result["sys_id"] == "abc123"
+
+    def test_list_objects_returns_list(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            MagicMock(return_value={"result": [{"sys_id": "r1"}]}))
+        results = client.list_objects("observed-data")
+        assert isinstance(results, list)
+        assert results[0]["sys_id"] == "r1"
+
+    def test_list_objects_passes_query(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"result": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_objects("observed-data", query="state=1^priority=1")
+        _, kwargs = mock_get.call_args
+        assert kwargs["params"]["sysparm_query"] == "state=1^priority=1"
+
+    def test_upsert_object_creates_new(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post",
+                            MagicMock(return_value={"result": {"sys_id": "new-1"}}))
+        result = client.upsert_object("observed-data", {"name": "Ransomware event"})
+        assert result.get("sys_id") == "new-1"
+
+    def test_upsert_object_updates_existing(self, client, monkeypatch):
+        mock_put = MagicMock(return_value={"result": {"sys_id": "old-1"}})
+        monkeypatch.setattr(client, "put", mock_put)
+        result = client.upsert_object("observed-data", {"name": "Updated"}, sys_id="old-1")
+        assert result.get("sys_id") == "old-1"
+        mock_put.assert_called_once()
+
+    def test_to_stix_contract(self, client):
+        native = {
+            "sys_id":            "abc123",
+            "short_description": "Ransomware detected",
+            "description":       "Details here",
+            "opened_at":         "2026-01-01T00:00:00Z",
+            "state":             "1",
+            "priority":          "1",
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_sn_sys_id"] == "abc123"
+
+    def test_from_stix_returns_sn_payload(self, client):
+        stix = {"type": "indicator", "id": "indicator--x", "name": "bad.exe",
+                "description": "Malicious binary"}
+        result = client.from_stix(stix)
+        assert isinstance(result, dict)
+        assert "short_description" in result
+        assert "bad.exe" in result["short_description"]
+
+    def test_annotate_incident_calls_put(self, client, monkeypatch):
+        mock_put = MagicMock(return_value={"result": {"sys_id": "inc-1"}})
+        monkeypatch.setattr(client, "put", mock_put)
+        stix = {"type": "indicator", "id": "indicator--abc",
+                "name": "10.0.0.1"}
+        result = client.annotate_incident("inc-1", stix)
+        assert result.get("sys_id") == "inc-1"
+        mock_put.assert_called_once()
+        call_path = mock_put.call_args[0][0]
+        assert "inc-1" in call_path
+
+    def test_annotate_incident_work_notes_contain_stix_id(self, client, monkeypatch):
+        captured = {}
+
+        def fake_put(path, **kwargs):
+            captured.update(kwargs.get("json", {}))
+            return {"result": {}}
+
+        monkeypatch.setattr(client, "put", fake_put)
+        stix = {"type": "indicator", "id": "indicator--xyz", "name": "evil.com"}
+        client.annotate_incident("sys-abc", stix)
+        assert "indicator--xyz" in captured.get("work_notes", "")
+
+    def test_unsupported_stix_type_raises(self, client):
+        with pytest.raises(SAKClientError):
+            client.list_objects("malware")
+
+
+# ===========================================================================
+# Incident Linking: GreyMatter link_investigation
+# ===========================================================================
+
+class TestGreyMatterIncidentLinking:
+
+    @pytest.fixture
+    def client(self):
+        c = GreyMatterClient(host="https://fake.example.com",
+                             client_id="cid", client_secret="sec")
+        c._authenticated = True
+        return c
+
+    def test_link_investigation_calls_correct_endpoint(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"id": "obs-link-1"})
+        monkeypatch.setattr(client, "post", mock_post)
+        stix = {"type": "indicator", "id": "indicator--aaa",
+                "name": "1.2.3.4",
+                "pattern": "[ipv4-addr:value = '1.2.3.4']"}
+        result = client.link_investigation("case-99", stix)
+        assert result == {"id": "obs-link-1"}
+        url_called = mock_post.call_args[0][0]
+        assert "case-99" in url_called
+        assert "linked_observables" in url_called
+
+    def test_link_investigation_payload_type_inferred(self, client, monkeypatch):
+        captured = {}
+
+        def fake_post(path, **kwargs):
+            captured.update(kwargs.get("json", {}))
+            return {}
+
+        monkeypatch.setattr(client, "post", fake_post)
+        stix = {"type": "indicator", "id": "indicator--bbb",
+                "name": "evil.com",
+                "pattern": "[domain-name:value = 'evil.com']"}
+        client.link_investigation("case-01", stix)
+        assert captured.get("type") == "domain"
+        assert captured.get("value") == "evil.com"
+        assert captured.get("case_id") == "case-01"
+
+    def test_link_investigation_fallback_to_name(self, client, monkeypatch):
+        captured = {}
+
+        def fake_post(path, **kwargs):
+            captured.update(kwargs.get("json", {}))
+            return {}
+
+        monkeypatch.setattr(client, "post", fake_post)
+        stix = {"type": "indicator", "id": "indicator--ccc",
+                "name": "sha256hash",
+                "pattern": ""}
+        client.link_investigation("case-02", stix)
+        assert captured.get("value") == "sha256hash"
+
+    def test_upsert_object_passes_linked_cases(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"id": "new-obs"})
+        monkeypatch.setattr(client, "post", mock_post)
+        payload = {"type": "ipv4", "value": "5.5.5.5"}
+        client.upsert_object("indicator", payload, linked_cases=["case-10", "case-11"])
+        _, kwargs = mock_post.call_args
+        assert kwargs["json"].get("linked_cases") == ["case-10", "case-11"]
