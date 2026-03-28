@@ -190,6 +190,24 @@ org_id    = YOUR_ORG_ID
 product   = dex         # or: vdi
 auth_type = token
 
+[servicenow]
+host      = https://YOUR_INSTANCE.service-now.com
+# Basic auth (username + password):
+username  = svc_gnat
+password  = YOUR_PASSWORD
+# OR bearer token:
+# api_key = YOUR_BEARER_TOKEN
+# auth_type = api_key
+
+[jira]
+host      = https://yourorg.atlassian.net
+# Jira Cloud — email + API token (recommended):
+email     = user@example.com
+api_token = YOUR_API_TOKEN
+# OR Jira Server/Data Center — bearer token:
+# api_key = YOUR_BEARER_TOKEN
+# auth_type = api_key
+
 # =============================================================================
 # SMTP — for ReportGenerator email delivery
 # =============================================================================

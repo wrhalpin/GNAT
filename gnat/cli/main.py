@@ -18,12 +18,15 @@ Sub-commands
     gnat ingest    --target threatq --source feed.json --format stix-bundle
     gnat ingest    --target threatq --source export.csv --format csv
     gnat ingest    --target threatq --source events.json --format misp
-    gnat codegen   --spec openapi.json --name myplatform --auth oauth2
+    gnat codegen   openapi --spec openapi.json --name myplatform --auth oauth2
+    gnat codegen   xsoar   --connector threatq --output ./packs/
     gnat report    list
     gnat report    run --config daily_healthcare
     gnat report    run --config daily_healthcare --formats pdf,html --no-ai
     gnat config    --show
     gnat config    --validate
+    gnat client    capabilities --platform threatq
+    gnat client    call         --platform threatq --method list_objects --args type=indicator
 
 Global flags
 ------------
@@ -177,19 +180,36 @@ def _build_parser() -> argparse.ArgumentParser:
                           help="JSON key containing the array of records")
 
     # ── codegen ───────────────────────────────────────────────────────────
-    p_cg = subs.add_parser("codegen",
-                            help="Generate a connector from an OpenAPI spec")
-    p_cg.add_argument("--spec",     required=True, metavar="PATH",
-                      help="OpenAPI spec file (JSON or YAML)")
-    p_cg.add_argument("--name",     required=True, metavar="NAME",
-                      help="Connector name (snake_case)")
-    p_cg.add_argument("--auth",     default="oauth2",
-                      choices=["oauth2", "api_key", "basic"])
-    p_cg.add_argument("--out-dir",  default="./gnat/connectors",
-                      metavar="DIR")
-    p_cg.add_argument("--test-dir", default="./tests/unit/connectors",
-                      metavar="DIR")
-    p_cg.add_argument("--overwrite", action="store_true")
+    p_cg = subs.add_parser("codegen", help="Code generation utilities")
+    cg_subs = p_cg.add_subparsers(dest="codegen_command", title="codegen commands",
+                                   metavar="<codegen_command>")
+    cg_subs.required = True
+
+    p_cg_oa = cg_subs.add_parser("openapi",
+                                  help="Generate a connector from an OpenAPI spec")
+    p_cg_oa.add_argument("--spec",     required=True, metavar="PATH",
+                         help="OpenAPI spec file (JSON or YAML)")
+    p_cg_oa.add_argument("--name",     required=True, metavar="NAME",
+                         help="Connector name (snake_case)")
+    p_cg_oa.add_argument("--auth",     default="oauth2",
+                         choices=["oauth2", "api_key", "basic"])
+    p_cg_oa.add_argument("--out-dir",  default="./gnat/connectors", metavar="DIR")
+    p_cg_oa.add_argument("--test-dir", default="./tests/unit/connectors", metavar="DIR")
+    p_cg_oa.add_argument("--overwrite", action="store_true")
+
+    p_cg_xs = cg_subs.add_parser("xsoar",
+                                  help="Generate an XSOAR content pack from a GNAT connector")
+    p_cg_xs.add_argument("--connector", required=True, metavar="NAME",
+                         help="GNAT connector key (e.g. threatq, crowdstrike)")
+    p_cg_xs.add_argument("--output",    default="./packs", metavar="DIR",
+                         help="Output directory for the generated .zip (default: ./packs)")
+    p_cg_xs.add_argument("--version",   default="1.0.0", metavar="X.Y.Z",
+                         help="Pack semantic version (default: 1.0.0)")
+    p_cg_xs.add_argument("--auth",      default=None,
+                         choices=["oauth2", "api_key", "basic"],
+                         help="Override auth type (auto-detected when omitted)")
+    p_cg_xs.add_argument("--overwrite", action="store_true",
+                         help="Overwrite existing zip file")
 
     # ── viz ───────────────────────────────────────────────────────────────
     p_viz = subs.add_parser("viz", help="Workspace visualization")
@@ -266,6 +286,31 @@ def _build_parser() -> argparse.ArgumentParser:
                      help="Validate that all required keys are present")
     grp.add_argument("--init",     action="store_true",
                      help="Create a starter config.ini at the default location")
+
+    # ── client ────────────────────────────────────────────────────────────
+    p_cl = subs.add_parser("client", help="Connector introspection and dynamic dispatch")
+    cl_subs = p_cl.add_subparsers(dest="client_command", title="client commands",
+                                   metavar="<client_command>")
+    cl_subs.required = True
+
+    p_cl_caps = cl_subs.add_parser("capabilities",
+                                    help="List all operations available on a connector")
+    p_cl_caps.add_argument("--platform", required=True, metavar="NAME",
+                           help="Connector platform name (e.g. threatq, crowdstrike)")
+    p_cl_caps.add_argument("--type", dest="cap_type", metavar="TYPE",
+                           choices=["auth", "read", "write", "helper"],
+                           help="Filter by operation type")
+    p_cl_caps.add_argument("--platform-specific", action="store_true",
+                           help="Show only platform-specific (non-standard) methods")
+
+    p_cl_call = cl_subs.add_parser("call", help="Dynamically dispatch a connector method")
+    p_cl_call.add_argument("--platform",    required=True, metavar="NAME")
+    p_cl_call.add_argument("--method",      required=True, metavar="METHOD",
+                           help="Method name (must appear in capabilities)")
+    p_cl_call.add_argument("--args",        nargs="*", metavar="KEY=VALUE",
+                           help="Method arguments as KEY=VALUE pairs")
+    p_cl_call.add_argument("--allow-write", action="store_true",
+                           help="Permit write operations (upsert_object, delete_object)")
 
     return parser
 
@@ -427,21 +472,50 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
 
 
 def _cmd_codegen(args: argparse.Namespace) -> int:
-    from gnat.codegen.openapi_generator import generate_connector
-    _info(args, f"Generating connector {_bold(args.name)} from {_dim(args.spec)} …")
-    try:
-        generate_connector(
-            spec_path=args.spec,
-            connector_name=args.name,
-            auth_type=args.auth,
-            out_dir=args.out_dir,
-            test_dir=args.test_dir,
-            overwrite=args.overwrite,
-        )
-        return 0
-    except Exception as exc:
-        print(_red(f"Error: {exc}"), file=sys.stderr)
-        return 1
+    if args.codegen_command == "openapi":
+        from gnat.codegen.openapi_generator import generate_connector
+        _info(args, f"Generating connector {_bold(args.name)} from {_dim(args.spec)} …")
+        try:
+            generate_connector(
+                spec_path=args.spec,
+                connector_name=args.name,
+                auth_type=args.auth,
+                out_dir=args.out_dir,
+                test_dir=args.test_dir,
+                overwrite=args.overwrite,
+            )
+            return 0
+        except Exception as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+
+    elif args.codegen_command == "xsoar":
+        from gnat.codegen.xsoar_generator import generate_xsoar_pack
+        _info(args, f"Generating XSOAR pack for {_bold(args.connector)} …")
+        try:
+            zip_path = generate_xsoar_pack(
+                connector_name=args.connector,
+                output_dir=args.output,
+                version=args.version,
+                auth_type=args.auth,
+                overwrite=args.overwrite,
+            )
+            print(_green(f"✓  Pack written: {zip_path}"))
+            return 0
+        except KeyError as exc:
+            print(_red(f"Unknown connector: {exc}"), file=sys.stderr)
+            return 1
+        except FileExistsError as exc:
+            print(_red(f"File exists: {exc}"), file=sys.stderr)
+            return 1
+        except Exception as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            if args.debug:
+                import traceback
+                traceback.print_exc()
+            return 1
+
+    return 0
 
 
 def _cmd_config(args: argparse.Namespace) -> int:
@@ -698,6 +772,101 @@ def _cmd_schedule(args) -> int:
     return 0
 
 
+def _cmd_client(args) -> int:
+    """client subcommand — capabilities, call."""
+    from gnat.client import SAKClient
+    from gnat.clients.base import SAKClientError
+
+    try:
+        cli = SAKClient(config_path=args.config)
+        cli.connect(target=args.platform)
+        connector = cli.client
+    except Exception as exc:
+        print(_red(f"Error connecting to '{args.platform}': {exc}"), file=sys.stderr)
+        return 1
+
+    if args.client_command == "capabilities":
+        caps = connector.capabilities()
+
+        # Apply filters
+        if getattr(args, "cap_type", None):
+            caps = {k: v for k, v in caps.items() if v["type"] == args.cap_type}
+        if getattr(args, "platform_specific", False):
+            caps = {k: v for k, v in caps.items() if v["platform_specific"]}
+
+        if not caps:
+            print(_dim("No capabilities match the given filters."))
+            return 0
+
+        if args.format == "json":
+            import json
+            print(json.dumps(caps, indent=2))
+            return 0
+
+        # Table output
+        col_name = max(len(n) for n in caps) + 2
+        header = (
+            f"{'Method':<{col_name}}  {'Type':<8}  {'Sig':<40}  Doc"
+        )
+        print(_bold(f"\nCapabilities: {args.platform}"))
+        print(_dim("─" * min(len(header) + 4, 120)))
+        print(_bold(header))
+        print(_dim("─" * min(len(header) + 4, 120)))
+        for name, meta in sorted(caps.items()):
+            type_label = meta["type"]
+            type_colored = {
+                "auth":   _bold(type_label),
+                "read":   _green(type_label),
+                "write":  _red(type_label),
+                "helper": _dim(type_label),
+            }.get(type_label, type_label)
+
+            ps_flag = " *" if meta["platform_specific"] else "  "
+            sig = meta["signature"]
+            if len(sig) > 38:
+                sig = sig[:35] + "..."
+            doc = meta["doc"]
+            if len(doc) > 60:
+                doc = doc[:57] + "..."
+            print(f"{name + ps_flag:<{col_name}}  {type_colored:<8}  {sig:<40}  {_dim(doc)}")
+
+        print(_dim(f"\n  * = platform-specific method   "
+                   f"{len(caps)} method(s) shown"))
+        return 0
+
+    elif args.client_command == "call":
+        # Parse KEY=VALUE args into a kwargs dict
+        kwargs: Dict[str, Any] = {}
+        for kv in (getattr(args, "args", None) or []):
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                # Basic type coercion
+                if v.isdigit():
+                    kwargs[k] = int(v)
+                elif v.lower() in ("true", "false"):
+                    kwargs[k] = v.lower() == "true"
+                else:
+                    kwargs[k] = v
+            else:
+                print(_red(f"Argument '{kv}' is not in KEY=VALUE format"), file=sys.stderr)
+                return 1
+
+        allow_write = getattr(args, "allow_write", False)
+        _info(args, f"Calling {_bold(args.method)} on {_bold(args.platform)} …")
+        try:
+            result = connector.call(args.method, allow_write=allow_write, **kwargs)
+            _output(args, result)
+            return 0
+        except ValueError as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+        except SAKClientError as exc:
+            print(_red(f"API error: {exc}"), file=sys.stderr)
+            return 1
+
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """
     Main CLI entry point.
@@ -736,6 +905,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "ingest":   _cmd_ingest,
         "codegen":  _cmd_codegen,
         "config":   _cmd_config,
+        "client":   _cmd_client,
     }
 
     handler = handlers.get(args.command)

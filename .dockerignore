@@ -1,0 +1,41 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+
+# Test / coverage artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
+
+# Version control
+.git/
+.gitignore
+
+# Docs
+docs/
+*.md
+
+# Dev containers / IDE
+.devcontainer/
+.vscode/
+.idea/
+
+# Secrets — never copy into image
+.env
+config/config.ini
+*.ini
+*.key
+*.pem
+*.p12
+
+# Generated packs / output
+packs/
+htmlcov/
+rust_core/target/

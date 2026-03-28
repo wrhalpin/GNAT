@@ -220,22 +220,21 @@ coverage, and correct test placement (all connector tests in
 
 **Priority:** HIGH — depends on #15 audit confirming current connector state
 
-**What:** Ensure investigative intelligence (STIX objects) can be pushed to
-and linked within incident/case records on three platforms:
+**Status:** ✅ COMPLETE
 
-- **XSOAR:** `POST /incident/{id}/linkedIncidents` — link STIX indicators
-  to existing incidents; `upsert_object()` should accept an `incident_id`
-  kwarg to associate on write.
-- **ServiceNow:** `sys_relationship` table — create relationship records
-  linking a `sn_si_incident` to STIX-derived CIs. New helper method
-  `annotate_incident(incident_sys_id, stix_obj)`.
-- **GreyMatter:** Investigation objects support `linked_cases` — verify
-  current `upsert_object()` populates this; add `link_investigation()`
-  helper if not.
-
-**Config:** No new INI keys required; incident IDs passed as kwargs.
-
-**Tests:** Per-platform unit tests covering the link path + error cases.
+**Implemented:**
+- **XSOAR:** `XSOARClient.link_incident(incident_id, stix_obj)` — calls
+  `POST /incident/{id}/linkedIncidents`. `upsert_object()` now accepts
+  `incident_id` kwarg; automatically links on write when provided. 4 unit tests.
+- **ServiceNow:** New `ServiceNowClient` (`gnat/connectors/servicenow/`) —
+  `BaseClient + ConnectorMixin` for `sn_si_incident` Table API. Basic auth
+  (username+password) and Bearer token. `annotate_incident(sys_id, stix_obj)`
+  appends a structured work note via `PUT /api/now/table/sn_si_incident/{sys_id}`.
+  Registered in `CLIENT_REGISTRY` and `config.ini.example`. 13 unit tests.
+- **GreyMatter:** `GreyMatterClient.link_investigation(case_id, stix_obj)` —
+  calls `POST /v1/incidents/{case_id}/linked_observables`; infers observable
+  type from STIX pattern. `upsert_object()` now accepts `linked_cases` list
+  kwarg merged into request payload. 4 unit tests.
 
 ---
 
@@ -243,28 +242,17 @@ and linked within incident/case records on three platforms:
 
 **Priority:** MEDIUM
 
-**What:** Two new `BaseClient + ConnectorMixin` connectors for IT service
-management / ticketing:
+**Status:** ✅ COMPLETE
 
-**Jira** (`gnat/connectors/jira/`):
-- Auth: API token (Basic with email + token), OAuth2 supported
-- `get_object(issue_key)` → `GET /rest/api/3/issue/{key}`
-- `list_objects(jql)` → `POST /rest/api/3/issue/search` with JQL
-- `upsert_object(stix_obj)` → `POST /rest/api/3/issue` (create) or
-  `PUT /rest/api/3/issue/{key}` (update); maps STIX to Jira fields
-- `annotate_ticket(key, stix_obj)` → `POST /rest/api/3/issue/{key}/comment`
-- `to_stix()` → maps Jira issue to STIX `note` or `course-of-action` SDO
-- `from_stix()` → builds JQL from STIX fields
-
-**ServiceNow** (`gnat/connectors/servicenow/`):
-- Auth: Basic (username + password) or OAuth2
-- `get_object(sys_id)` → `GET /api/now/table/sn_si_incident/{sys_id}`
-- `list_objects(query)` → `GET /api/now/table/sn_si_incident?sysparm_query=...`
-- `upsert_object(stix_obj)` → create/update security incident
-- `annotate_ticket(sys_id, stix_obj)` → add work note
-- `to_stix()` → maps SI record to STIX `observed-data` or `course-of-action`
-
-**Config sections:** `[jira]` and `[servicenow]` in `config.ini.example`.
+**Implemented:**
+- **ServiceNow** ✅ — completed in item #16.
+- **Jira** (`gnat/connectors/jira/client.py`): `BaseClient + ConnectorMixin`
+  for Jira REST API v3 (Cloud + Server/DC). Basic auth (email + API token)
+  or Bearer token. `list_objects()` via JQL (`POST /rest/api/3/issue/search`);
+  `upsert_object()` create/update; `to_stix()` maps issues to `note` /
+  `course-of-action`; `from_stix()` builds JQL; `annotate_ticket()` posts
+  ADF-formatted comment; `search_by_label()` helper. Registered in
+  `CLIENT_REGISTRY`, `[jira]` section in `config.ini.example`. 15 unit tests.
 
 ---
 
@@ -323,36 +311,20 @@ uses existing `[agents]` Claude client.
 
 **Priority:** MEDIUM
 
-**What:** `ConnectorMixin` gains a `capabilities()` method that returns a
-structured inventory of available operations, combining:
-1. The standard 7-method interface (always present)
-2. Any public extra methods on the connector subclass (platform-specific)
-3. Metadata: method signatures, docstrings, read/write classification
+**Status:** ✅ COMPLETE
 
-**API:**
-```python
-caps = client.capabilities()
-# → {
-#     "authenticate": {"signature": "...", "type": "auth"},
-#     "list_objects": {"signature": "...", "type": "read"},
-#     "get_indicators": {"signature": "...", "type": "read", "platform_specific": True},
-#     ...
-# }
-
-# Dynamic dispatch (safe — no eval, no arbitrary attr chains):
-result = client.call("get_indicators", limit=100, since="2026-01-01")
-```
-
-**Safety rules for `call()`:**
-- Only dispatches to methods in `capabilities()` (whitelist, not blacklist)
-- Read-only by default; write methods require `allow_write=True` kwarg
-- No recursion, no chained attribute access
-
-**CLI integration:** `gnat client capabilities --platform threatq` prints
-the capability table.
-
-**Scope:** Changes to `gnat/connectors/base_connector.py` +
-`gnat/clients/__init__.py` + CLI subcommand.
+**Implemented:**
+- `ConnectorMixin.capabilities()` (`gnat/connectors/base_connector.py`):
+  MRO walk returns all public, non-plumbing methods with `signature`,
+  `doc`, `type` (`auth`/`read`/`write`/`helper`), and `platform_specific`
+  flag. Private, HTTP-plumbing (`get`, `post`, etc.), and meta methods
+  (`capabilities`, `call`) excluded.
+- `ConnectorMixin.call(method_name, *args, allow_write=False, **kwargs)`:
+  whitelist-only dispatch; write-type methods require `allow_write=True`.
+- CLI: `gnat client capabilities --platform <name>` (colour table + JSON);
+  `gnat client call --platform <name> --method <m> --args KEY=VALUE ...`
+  with `--allow-write` guard.
+- 31 unit tests in `tests/unit/test_capabilities.py`.
 
 ---
 
@@ -393,33 +365,21 @@ Eleven new connectors in priority order. Each follows the standard
 
 **Priority:** MEDIUM-LOW
 
-**What:** `gnat codegen xsoar --connector <name>` generates a valid XSOAR
-content pack zip from an existing GNAT connector. Promotes code reuse for
-shops that run XSOAR natively and want a native integration without
-maintaining two separate codebases.
+**Status:** ✅ COMPLETE
 
-**XSOAR content pack structure:**
-```
-MyConnector/
-├── pack_metadata.json
-├── Integrations/
-│   └── MyConnector/
-│       ├── MyConnector.yml      # integration definition (commands, args, outputs)
-│       └── MyConnector.py       # Python script wrapping GNAT client methods
-└── ReleaseNotes/
-    └── 1_0_0.md
-```
-
-**Generator logic** (in `gnat/codegen/xsoar_generator.py`):
-1. Introspect connector class via `capabilities()` (see item #19)
-2. Map GNAT method signatures → XSOAR command definitions in YAML
-3. Render `MyConnector.py` that imports the GNAT client and delegates
-4. Render `pack_metadata.json` from connector metadata
-5. Zip the output
-
-**CLI:** `gnat codegen xsoar --connector threatq --output ./packs/`
-
-**Depends on:** #19 (capability reflection provides introspection input)
+**Implemented:**
+- `gnat/codegen/xsoar_generator.py` — `generate_xsoar_pack(connector_name,
+  output_dir, version, auth_type, overwrite)`. Introspects any registered
+  connector via `capabilities()`, maps methods to XSOAR command defs, and
+  writes a valid XSOAR 6 content pack zip. Write methods flagged
+  `dangerous: true`; auth type auto-detected from constructor signature.
+- Pack layout: `pack_metadata.json`, `Integrations/<Name>/<Name>.yml`,
+  `Integrations/<Name>/<Name>.py`, `ReleaseNotes/<ver>.md`.
+- `gnat codegen` restructured to `openapi`/`xsoar` sub-subcommands.
+  CLI: `gnat codegen xsoar --connector threatq --output ./packs/`.
+- Platform-specific helpers (`link_incident`, `link_investigation`,
+  `annotate_incident`) auto-surface as XSOAR commands.
+- 40 unit tests in `tests/unit/test_xsoar_generator.py`.
 
 ---
 
@@ -427,55 +387,20 @@ MyConnector/
 
 **Priority:** MEDIUM-LOW
 
-**What:** Package GNAT's three operational services as Docker containers
-with a `docker-compose.yml` for single-host deployment. No change to
-application code — pure infrastructure.
+**Status:** ✅ COMPLETE
 
-**Files to create:**
-```
-docker/
-├── scheduler/Dockerfile     # gnat-scheduler service
-├── edl/Dockerfile           # gnat-edl server
-├── monitor/Dockerfile       # gnat-monitor health endpoint
-docker-compose.yml            # orchestrates all three + named volumes
-.env.example                  # GNAT_CONFIG path, port bindings
-.dockerignore
-```
-
-**Service design:**
-```yaml
-services:
-  scheduler:
-    build: docker/scheduler
-    volumes:
-      - ./config:/etc/gnat:ro
-      - workspace:/var/gnat/workspace
-    restart: unless-stopped
-
-  edl:
-    build: docker/edl
-    ports: ["8080:8080"]
-    volumes:
-      - workspace:/var/gnat/workspace:ro
-    restart: unless-stopped
-    depends_on: [scheduler]
-
-  monitor:
-    build: docker/monitor
-    ports: ["8090:8090"]
-    volumes:
-      - workspace:/var/gnat/workspace:ro
-    restart: unless-stopped
-
-volumes:
-  workspace:
-```
-
-**Dev container:** `.devcontainer/devcontainer.json` for VS Code / Codespaces,
-includes Rust toolchain (for `make build-rust`).
-
-**Makefile targets added:** `make docker-build`, `make docker-up`,
-`make docker-down`, `make docker-logs`.
+**Implemented:**
+- `docker/scheduler/Dockerfile`, `docker/edl/Dockerfile`,
+  `docker/monitor/Dockerfile` — slim Python 3.11 images with targeted
+  extras; workspace bind-mounted via named volume `gnat-workspace`.
+- `docker-compose.yml` — orchestrates scheduler, edl (port 8080), monitor
+  (port 8090) with health-checks and `restart: unless-stopped`.
+- `.env.example` — `GNAT_CONFIG_DIR`, `EDL_PORT`, `MONITOR_PORT` vars.
+- `.dockerignore` — excludes secrets, test artifacts, Rust build products.
+- `.devcontainer/devcontainer.json` — VS Code / Codespaces dev container;
+  Rust toolchain + Docker-in-Docker + Ruff extension.
+- `Makefile` — added `docker-build`, `docker-up`, `docker-down`,
+  `docker-logs` targets.
 
 ---
 

@@ -163,14 +163,77 @@ class SplunkClient(BaseClient, ConnectorMixin):
             return {}
 
     def health_check(self) -> bool:
-        return True
+        """Return True if the Splunk management API is reachable."""
+        try:
+            self.get("server/info", namespaced=False)
+            return True
+        except Exception:
+            return False
 
     def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
-        return {}
+        """
+        Fetch a single Splunk object by ID and return as a STIX dict.
+
+        For ``stix_type="indicator"`` the object_id is a threat-intel entry
+        key; fetches from the Splunk threat-intel framework (IP or URL intel).
+        For ``stix_type="observed-data"`` the object_id is a notable event ID;
+        runs a search for ``event_id=<object_id>``.
+        """
+        if stix_type == "indicator":
+            result = self.get(
+                f"data/threat_intel/ip_intel/{object_id}",
+                namespaced=False,
+            )
+            entries = (result or {}).get("entry", [])
+            if not entries:
+                raise SAKClientError(
+                    f"Splunk threat-intel entry {object_id!r} not found.", status=404
+                )
+            return self.to_stix(entries[0].get("content", entries[0]))
+        # observed-data: search for notable event by ID
+        spl = f"search index=notable event_id=\"{object_id}\" | head 1"
+        rows = self._run_oneshot_search(spl)
+        if not rows:
+            raise SAKClientError(
+                f"Splunk notable event {object_id!r} not found.", status=404
+            )
+        return self.to_stix(rows[0])
 
     def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
                      page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
-        return []
+        """
+        Return a list of STIX objects from Splunk.
+
+        For ``stix_type="indicator"`` fetches threat-intel IP entries from the
+        Splunk threat-intelligence framework.
+        For other types runs a saved-search or notable-event search.
+        """
+        if stix_type == "indicator":
+            result = self.get(
+                "data/threat_intel/ip_intel",
+                params={"count": page_size, "offset": (page - 1) * page_size},
+                namespaced=False,
+            )
+            entries = (result or {}).get("entry", [])
+            return [self.to_stix(e.get("content", e)) for e in entries]
+        # observed-data / default: search notable events
+        spl = f"search index=notable | head {page_size}"
+        rows = self._run_oneshot_search(spl)
+        return [self.to_stix(row) for row in rows]
+
+    def _run_oneshot_search(self, spl: str) -> List[Dict[str, Any]]:
+        """
+        Execute a blocking Splunk one-shot search and return result rows.
+
+        Uses POST /services/search/jobs/oneshot which runs the search
+        synchronously and returns results directly.
+        """
+        resp = self.post(
+            "search/jobs/oneshot",
+            data={"search": spl, "output_mode": "json"},
+            namespaced=False,
+        )
+        return (resp or {}).get("results", [])
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         raise SAKClientError("SplunkClient: upsert not supported via generic interface.")

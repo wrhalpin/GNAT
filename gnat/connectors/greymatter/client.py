@@ -168,10 +168,26 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/v1/{resource}", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Create or update a GreyMatter object."""
+    def upsert_object(self, stix_type: str, payload: Dict[str, Any],
+                      linked_cases: Optional[List[str]] = None,
+                      **kwargs: Any) -> Dict[str, Any]:
+        """
+        Create or update a GreyMatter object.
+
+        Parameters
+        ----------
+        stix_type : str
+            STIX type; resolves the API resource path.
+        payload : dict
+            Object fields.  An ``"id"`` key triggers an update (PUT).
+        linked_cases : list of str, optional
+            GreyMatter investigation / case IDs to link.  When provided,
+            ``linked_cases`` is merged into *payload* before the request.
+        """
         resource = self._resolve(stix_type)
         gm_id    = payload.pop("id", None)
+        if linked_cases:
+            payload["linked_cases"] = linked_cases
         if gm_id:
             return self.put(f"/v1/{resource}/{gm_id}", json=payload)
         return self.post(f"/v1/{resource}", json=payload)
@@ -228,6 +244,50 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             "tlp":         stix_dict.get("x_tlp", "white"),
             "tags":        stix_dict.get("x_gm_tags", []),
         }
+
+    # ── Investigation linking ─────────────────────────────────────────────
+
+    def link_investigation(
+        self,
+        case_id: str,
+        stix_obj: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Link a STIX object to an existing GreyMatter investigation (case).
+
+        Calls ``POST /v1/incidents/{case_id}/linked_observables`` with the
+        observable value derived from *stix_obj*, associating the threat
+        intelligence with the investigation record.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter investigation / incident UUID.
+        stix_obj : dict
+            STIX 2.1 indicator SDO (or any dict with ``name``/``pattern``).
+
+        Returns
+        -------
+        dict
+            Raw GreyMatter API response.
+
+        Raises
+        ------
+        SAKClientError
+            If the link request fails.
+        """
+        gm_type  = self._infer_gm_type(stix_obj.get("pattern", ""))
+        value    = self._extract_value(stix_obj.get("pattern", ""))
+        if not value:
+            value = stix_obj.get("name", "")
+        payload = {
+            "case_id":     case_id,
+            "type":        gm_type,
+            "value":       value,
+            "stix_id":     stix_obj.get("id", ""),
+            "description": stix_obj.get("description", ""),
+        }
+        return self.post(f"/v1/incidents/{case_id}/linked_observables", json=payload)
 
     # ── Helpers ────────────────────────────────────────────────────────────
 
