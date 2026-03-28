@@ -135,13 +135,12 @@ and for cases where the server restarts.
 
 **File:** `gnat/context/workspace.py`
 
-**Status:** `ResearchLibrary.default()` calls `WorkspaceManager.default()`
-which may not exist — needs verification.
-
-**Action required:**
-- Check `WorkspaceManager` for a `default()` class method.
-- If absent, add it: opens the default SQLite store at
-  `~/.gnat/workspaces/` and connects with a dummy GlobalContext.
+**Status:** ✅ COMPLETE — `WorkspaceManager.default()` exists and is fully
+implemented. Builds a `GlobalContextRegistry` from config and a SQLite
+`WorkspaceStore` (falls back to `FlatFileStore` if SQLAlchemy unavailable).
+`ResearchLibrary.default()` chains through it correctly. Added 3 unit tests
+to `TestWorkspaceManager` covering the happy path, missing config error, and
+return type.
 
 ---
 
