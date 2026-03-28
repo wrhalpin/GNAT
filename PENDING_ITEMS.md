@@ -479,12 +479,72 @@ includes Rust toolchain (for `make build-rust`).
 
 ---
 
-### 23. Web UI
+### 23a. Terminal UI (Textual) — Workstation / SSH Analyst Tool
 
 **Priority:** LOW
 
-**What:** Browser-based UI for analyst-facing GNAT features. FastAPI
-(already in `[serve]` extras) serves a lightweight single-page app.
+**What:** Interactive terminal UI for analysts running GNAT on a local
+workstation or over SSH. Built with [Textual](https://github.com/Textualize/textual)
+— a modern TUI framework from the `rich` authors. Zero browser required;
+works on any terminal, including remote sessions.
+
+**Why Textual over tkinter:**
+- Works over SSH (no display server needed) — same binary on workstation
+  and server
+- Modern look (colors, panels, tables, input widgets) vs tkinter's dated
+  appearance
+- Pure Python, pip-installable; one new dependency vs zero for tkinter, but
+  the UX difference is significant
+- `rich` is already a de facto standard in Python tooling
+
+**Scope (MVP views):**
+1. **NLP query bar** — type a natural language query (item #18), results
+   displayed in a scrollable STIX object table
+2. **Research library browser** — search, filter by topic/TLP/date, view
+   STIX object detail, promote/reject staging entries
+3. **Scheduler status** — live-updating job table (last run, next run,
+   status, error count); trigger job manually
+4. **Report list** — list generated reports with metadata; open rendered
+   HTML in system browser via `webbrowser.open()`
+
+**Architecture:** `gnat/tui/` package:
+```
+gnat/tui/
+├── __init__.py
+├── app.py          # GNATApp(textual.App) — root, screen routing
+├── screens/
+│   ├── query.py    # NLP query screen
+│   ├── library.py  # Research library browser
+│   ├── scheduler.py# Scheduler status / control
+│   └── reports.py  # Report list
+└── widgets/
+    ├── stix_table.py   # Reusable STIX object DataTable
+    └── job_table.py    # Scheduler job DataTable
+```
+
+**Launch:**
+```bash
+gnat tui          # launch interactive TUI
+gnat tui query    # launch directly on query screen
+```
+
+**Extras group:** `[tui]` → `textual>=0.60`
+
+**INI config:** None required beyond existing GNAT config — TUI reads
+the same `GNAT_CONFIG` the library uses.
+
+**Depends on:** #18 (NLP query) for the query screen; gracefully degrades
+to structured filter input if NLP not configured.
+
+---
+
+### 23b. Web UI (FastAPI) — Server / Dashboard
+
+**Priority:** LOW
+
+**What:** Browser-based dashboard for server deployments. FastAPI
+(already in `[serve]` extras) serves a lightweight app accessible over
+the network for teams sharing a central GNAT instance.
 
 **Scope (MVP):**
 1. **Research library browser** — search, filter by topic/TLP/date, view
@@ -496,12 +556,12 @@ includes Rust toolchain (for `make build-rust`).
 **Security requirements (non-negotiable):**
 - API key auth (`X-Api-Key` header) — no unauthenticated access
 - Bind to `localhost` by default; nginx+TLS for external exposure
-- No config/credentials visible in any UI response
-- Input validation on all query parameters (no STIX injection)
+- No config/credentials visible in any API response
+- Input validation on all query parameters
 - Rate limiting on all endpoints (100 req/min per key)
 
 **Architecture:** `gnat/serve/` (FastAPI app) + `gnat/serve/static/`
-(minimal JS, no build step required — vanilla JS or htmx).
+(minimal JS, no build step — vanilla JS or htmx).
 
 **INI config:**
 ```ini
@@ -511,6 +571,11 @@ bind    = 127.0.0.1
 port    = 8088
 api_key = <random 32-char hex>
 ```
+
+**Relationship to 23a:** Both TUI and web UI share the same backend logic
+(`gnat/context/`, `gnat/research/`, `gnat/schedule/`). The TUI calls
+Python objects directly; the web UI calls FastAPI endpoints that call the
+same objects. No duplication of business logic.
 
 **Note:** Pyramid was considered and rejected — FastAPI is already a
 declared dependency and is a better fit for a JSON API + minimal HTML server.
