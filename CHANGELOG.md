@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- `CopilotReader`: DirectLine token exchange and auto-refresh (`use_token_exchange = true` in `[copilot]` INI section). Exchanges secret for short-lived token via `POST /tokens/generate`; refreshes automatically before expiry via `POST /tokens/refresh`. Falls back to secret on failure. 20 unit tests.
+
+### Fixed
+- `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`
+- `AgeFilter._get()`: reads `_properties` exclusively so auto-defaulted ORM `created`/`modified` core attributes do not shadow explicitly-set timestamps
+- `AgeFilter._timestamp()`: ensure timezone-awareness for naive ISO datetimes
+- `LogDelivery.deliver()`: catch `TypeError` from non-JSON-serializable payloads, fall back to `str()`
+- `Workspace.commit()`: fix `list & set` `TypeError` in deletion handling
+- `_TOPIC_KEYWORDS` ordering: check `threat_actor` before `campaign` so "Volt Typhoon campaign" → `threat_actor`
+- `FeedJob.next_run_at()`: return `_utcnow()` when no history (job is immediately due)
+- `FeedScheduler.run_all_now()`: include disabled jobs as `status="skipped"` entries in result dict
+- `RunRecord`: add `run_count` field; `CurationJob.execute()` now populates it
+- `ParsingAgent._common_fields()`: apply `ai_confidence_ceiling` so STIX objects inherit the cap
+- `GraphView._render_intent()`: intent methods always use sigma.js for consistent `GRAPH_DATA` output
+- `GraphView._timeline_layout()`: `_parse_ts` reads only `_properties` so auto-set ORM core timestamps are not treated as explicit values
+- `SplunkClient`: refactored to `BaseClient + ConnectorMixin`; accepts `host`, `api_token`, `username`, `password` keyword args; adds `authenticate()`, `to_stix()`, `from_stix()`
+
 ### Planned
 - STIX 2.1 pattern validator integration
 - Docker-based integration test harness

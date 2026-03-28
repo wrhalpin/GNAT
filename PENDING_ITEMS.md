@@ -148,15 +148,12 @@ return type.
 
 **File:** `gnat/agents/copilot.py`
 
-**Status:** The DirectLine secret is passed directly as a Bearer token.
-DirectLine secrets are long-lived, but if token-based auth is configured
-(exchanging a secret for a token via the token endpoint), refresh logic
-is needed.
-
-**Action required:**
-- Test with the actual Bot Framework DirectLine endpoint.
-- If token exchange is required, add `_refresh_token()` logic before
-  `_open_conversation()`.
+**Status:** ✅ COMPLETE — Added `use_token_exchange` flag (INI: `use_token_exchange = true`).
+When enabled, `_ensure_token()` exchanges the DirectLine secret for a 30-minute
+token via `POST /tokens/generate` on first use, and refreshes automatically via
+`POST /tokens/refresh` when fewer than 5 minutes remain. `_bearer()` returns the
+current token (or secret as fallback). `_query_source` calls `_ensure_token()`
+before opening each conversation. 20 unit tests added.
 
 ---
 
