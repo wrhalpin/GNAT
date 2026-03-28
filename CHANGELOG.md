@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `GET/POST /api/scheduler/jobs` — list registered feed jobs; trigger any job in a background thread
   - `GET /health` — unauthenticated liveness check
   - `GET /` — embedded single-page dashboard (vanilla JS, no build step, dark theme)
+- **Connector health monitor** (`gnat/agents/health_monitor.py`): `ConnectorHealthJob` — a `FeedJob` subclass for periodic connector health checking and API schema drift detection. Each run calls `health_check()` on all configured connectors, optionally samples a schema fingerprint via `list_objects(limit=1)`, compares it against a stored JSON baseline (`SchemaSnapshot`), and reports drift (`DriftReport`) when changed fields exceed `drift_threshold` (default 20%). Slack webhook alerts via `_post_slack_webhook()`. `gnat health check` and `gnat health baseline` CLI subcommands. `ConnectorHealthJob.from_config()` factory auto-discovers connectors from INI. 74 unit tests in `tests/unit/test_health_monitor.py`.
 - `WebUIConfig` (`gnat/serve/config.py`): reads `[webui]` INI section (`enabled`, `bind`, `port`, `api_key`, `reports_dir`); falls back to safe defaults.
 - `APIKeyAuth` (`gnat/serve/auth.py`): `hmac.compare_digest` constant-time key validation as a FastAPI callable dependency.
 - `RateLimiter` (`gnat/serve/rate_limit.py`): sliding-window in-memory rate limiter (thread-safe) as a FastAPI callable dependency.

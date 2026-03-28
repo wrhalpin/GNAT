@@ -517,6 +517,8 @@ declared dependency and is a better fit for a JSON API + minimal HTML server.
 
 ### 24. Connector Health + Drift Monitoring Agent (3a)
 
+**Status:** ✅ Complete — `gnat/agents/health_monitor.py`, `ConnectorHealthJob`, `SchemaSnapshot`, `DriftReport`, `gnat health` CLI, 74 unit tests.
+
 **Priority:** LOW
 
 **What:** A new `FeedJob` subclass (`ConnectorHealthJob`) that periodically:
