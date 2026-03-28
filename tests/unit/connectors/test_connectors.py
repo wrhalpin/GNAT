@@ -2293,3 +2293,148 @@ class TestGreyMatterIncidentLinking:
         client.upsert_object("indicator", payload, linked_cases=["case-10", "case-11"])
         _, kwargs = mock_post.call_args
         assert kwargs["json"].get("linked_cases") == ["case-10", "case-11"]
+
+
+# ===========================================================================
+# Jira
+# ===========================================================================
+
+class TestJiraClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.jira.client import JiraClient
+        c = JiraClient(host="https://fake.atlassian.net",
+                       email="user@example.com", api_token="tok")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_basic_sets_header(self):
+        from gnat.connectors.jira.client import JiraClient
+        c = JiraClient(host="https://fake.atlassian.net",
+                       email="u@example.com", api_token="mytoken")
+        c.authenticate()
+        assert c._auth_headers["Authorization"].startswith("Basic ")
+
+    def test_authenticate_bearer_when_api_key(self):
+        from gnat.connectors.jira.client import JiraClient
+        c = JiraClient(host="https://jira.corp.example.com", api_key="bearer-tok")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer bearer-tok"
+
+    def test_health_check_success(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"version": "9.0"}))
+        assert client.health_check() is True
+
+    def test_health_check_failure_raises(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            MagicMock(side_effect=SAKClientError("down")))
+        with pytest.raises(SAKClientError):
+            client.health_check()
+
+    def test_get_object_returns_issue(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            MagicMock(return_value={"id": "10001", "key": "PROJ-1",
+                                                    "fields": {}}))
+        result = client.get_object("note", "PROJ-1")
+        assert result["key"] == "PROJ-1"
+
+    def test_list_objects_uses_post(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"issues": [{"id": "10001"}]})
+        monkeypatch.setattr(client, "post", mock_post)
+        results = client.list_objects("note", jql="project = SEC")
+        assert isinstance(results, list)
+        assert results[0]["id"] == "10001"
+        _, kwargs = mock_post.call_args
+        assert kwargs["json"]["jql"] == "project = SEC"
+
+    def test_list_objects_default_jql(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"issues": []})
+        monkeypatch.setattr(client, "post", mock_post)
+        client.list_objects("note")
+        _, kwargs = mock_post.call_args
+        assert "order by created" in kwargs["json"]["jql"].lower()
+
+    def test_upsert_creates_new(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post",
+                            MagicMock(return_value={"id": "10002", "key": "SEC-5"}))
+        result = client.upsert_object("note",
+                                      {"name": "ThreatActor campaign",
+                                       "description": "APT28 activity"})
+        assert result.get("key") == "SEC-5"
+
+    def test_upsert_updates_existing(self, client, monkeypatch):
+        mock_put = MagicMock(return_value=None)
+        monkeypatch.setattr(client, "put", mock_put)
+        result = client.upsert_object("note", {"name": "Updated"}, issue_key="SEC-5")
+        assert result["key"] == "SEC-5"
+        mock_put.assert_called_once()
+
+    def test_to_stix_note_contract(self, client):
+        native = {
+            "id": "10001", "key": "SEC-1",
+            "fields": {
+                "summary":   "Malware IOC",
+                "issuetype": {"name": "Task"},
+                "created":   "2026-01-01T00:00:00Z",
+                "updated":   "2026-01-01T00:00:00Z",
+                "status":    {"name": "Open"},
+                "priority":  {"name": "High"},
+                "labels":    ["threat-intel"],
+                "assignee":  {"displayName": "Alice"},
+            }
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] in ("note", "course-of-action")
+        assert stix["x_jira_key"] == "SEC-1"
+        assert stix["x_jira_status"] == "Open"
+
+    def test_to_stix_course_of_action_for_action_type(self, client):
+        native = {
+            "id": "10002", "key": "SEC-2",
+            "fields": {
+                "summary":   "Patch KB12345",
+                "issuetype": {"name": "Action Item"},
+                "created":   "2026-01-01T00:00:00Z",
+            }
+        }
+        stix = client.to_stix(native)
+        assert stix["type"] == "course-of-action"
+
+    def test_from_stix_returns_jql(self, client):
+        stix = {"type": "indicator", "id": "indicator--abc", "name": "evil.com"}
+        result = client.from_stix(stix)
+        assert isinstance(result, str)
+        assert "evil.com" in result
+
+    def test_annotate_ticket_calls_comment_endpoint(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"id": "comment-1"})
+        monkeypatch.setattr(client, "post", mock_post)
+        stix = {"type": "indicator", "id": "indicator--xyz", "name": "bad.com"}
+        result = client.annotate_ticket("PROJ-10", stix)
+        assert result.get("id") == "comment-1"
+        url = mock_post.call_args[0][0]
+        assert "PROJ-10" in url
+        assert "comment" in url
+
+    def test_annotate_ticket_body_contains_stix_id(self, client, monkeypatch):
+        captured = {}
+
+        def fake_post(path, **kwargs):
+            captured.update(kwargs.get("json", {}))
+            return {}
+
+        monkeypatch.setattr(client, "post", fake_post)
+        stix = {"type": "indicator", "id": "indicator--aaa", "name": "1.2.3.4"}
+        client.annotate_ticket("SEC-99", stix)
+        body_text = str(captured.get("body", ""))
+        assert "indicator--aaa" in body_text
+
+    def test_search_by_label(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"issues": [{"id": "x"}]})
+        monkeypatch.setattr(client, "post", mock_post)
+        results = client.search_by_label("threat-intel")
+        assert isinstance(results, list)
+        _, kwargs = mock_post.call_args
+        assert "threat-intel" in kwargs["json"]["jql"]
