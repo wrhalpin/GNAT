@@ -186,3 +186,456 @@ in `pyproject.toml` remain correct.
 **Canonical field:** `x_target_sectors` — list of strings on any STIX object.
 **Alias config:** `[sector_aliases]` section in `config.ini`.
 **Filter class:** `gnat/export/filters.py::SectorFilter` (re-exported from `gnat/reports/base.py`).
+
+---
+
+## ROADMAP — NEW ITEMS (evaluated 2026-03-28)
+
+Items below were accepted after design review. Each requires a plan pass
+before any code changes. Ordered by implementation dependency / priority.
+
+---
+
+### 15. Connector Structure Audit
+
+**Priority:** HIGH — prerequisite for items 16, 19, 20
+
+**What:** Audit all 29 connectors against the standard `BaseClient + ConnectorMixin`
+contract. Produce a compliance matrix covering: auth, `get_object`, `list_objects`,
+`upsert_object`, `delete_object`, `to_stix`, `from_stix`, `health_check`, unit test
+coverage, and correct test placement (all connector tests in
+`tests/unit/connectors/test_connectors.py`).
+
+**Deliverables:**
+- Compliance matrix (29 rows × 9 columns)
+- List of gaps per connector
+- Moved/added tests where needed
+- Updated `IMPLEMENTATION_PLAN.md` connector map
+
+**Scope:** Read-only audit pass first; fixes in a second commit.
+
+---
+
+### 16. Incident Linking: XSOAR / ServiceNow / GreyMatter
+
+**Priority:** HIGH — depends on #15 audit confirming current connector state
+
+**What:** Ensure investigative intelligence (STIX objects) can be pushed to
+and linked within incident/case records on three platforms:
+
+- **XSOAR:** `POST /incident/{id}/linkedIncidents` — link STIX indicators
+  to existing incidents; `upsert_object()` should accept an `incident_id`
+  kwarg to associate on write.
+- **ServiceNow:** `sys_relationship` table — create relationship records
+  linking a `sn_si_incident` to STIX-derived CIs. New helper method
+  `annotate_incident(incident_sys_id, stix_obj)`.
+- **GreyMatter:** Investigation objects support `linked_cases` — verify
+  current `upsert_object()` populates this; add `link_investigation()`
+  helper if not.
+
+**Config:** No new INI keys required; incident IDs passed as kwargs.
+
+**Tests:** Per-platform unit tests covering the link path + error cases.
+
+---
+
+### 17. Jira + ServiceNow Connectors
+
+**Priority:** MEDIUM
+
+**What:** Two new `BaseClient + ConnectorMixin` connectors for IT service
+management / ticketing:
+
+**Jira** (`gnat/connectors/jira/`):
+- Auth: API token (Basic with email + token), OAuth2 supported
+- `get_object(issue_key)` → `GET /rest/api/3/issue/{key}`
+- `list_objects(jql)` → `POST /rest/api/3/issue/search` with JQL
+- `upsert_object(stix_obj)` → `POST /rest/api/3/issue` (create) or
+  `PUT /rest/api/3/issue/{key}` (update); maps STIX to Jira fields
+- `annotate_ticket(key, stix_obj)` → `POST /rest/api/3/issue/{key}/comment`
+- `to_stix()` → maps Jira issue to STIX `note` or `course-of-action` SDO
+- `from_stix()` → builds JQL from STIX fields
+
+**ServiceNow** (`gnat/connectors/servicenow/`):
+- Auth: Basic (username + password) or OAuth2
+- `get_object(sys_id)` → `GET /api/now/table/sn_si_incident/{sys_id}`
+- `list_objects(query)` → `GET /api/now/table/sn_si_incident?sysparm_query=...`
+- `upsert_object(stix_obj)` → create/update security incident
+- `annotate_ticket(sys_id, stix_obj)` → add work note
+- `to_stix()` → maps SI record to STIX `observed-data` or `course-of-action`
+
+**Config sections:** `[jira]` and `[servicenow]` in `config.ini.example`.
+
+---
+
+### 18. NLP Query Interface
+
+**Priority:** MEDIUM
+
+**What:** Natural-language query layer on top of `SAKClient.list_objects()`.
+"Give me everything on APT-128 from the last 30 days" → structured query
+dispatched to one or all connectors.
+
+**Architecture:** New `gnat/nlp/` package:
+
+```
+gnat/nlp/
+├── __init__.py          # exports: NLPQueryEngine
+├── parser.py            # NLPQueryEngine — dispatches to backend
+├── builtin.py           # BuiltinParser — rule-based, no AI deps
+│                        #   extracts: entity names, time ranges,
+│                        #   IOC types, platform filters via regex + keywords
+└── claude_backend.py    # ClaudeParser — structured extraction via Claude API
+                         #   returns same QuerySpec as BuiltinParser
+```
+
+**QuerySpec** (internal dataclass):
+```python
+@dataclass
+class QuerySpec:
+    entities: list[str]           # APT-128, Cobalt Strike, ...
+    ioc_types: list[str]          # ip, domain, hash, ...
+    since: datetime | None
+    until: datetime | None
+    platforms: list[str]          # connector names to query, empty = all
+    limit: int
+```
+
+**Config:**
+```ini
+[nlp]
+backend = builtin          # builtin | claude
+model   = claude-sonnet-4-6
+```
+
+**SAKClient API:**
+```python
+client.natural_language_query("Get all IPs related to Lazarus Group since January")
+# → list[STIXBase]
+```
+
+**Extras:** `[nlp]` group; built-in backend has no new deps; Claude backend
+uses existing `[agents]` Claude client.
+
+---
+
+### 19. Client Capability Reflection
+
+**Priority:** MEDIUM
+
+**What:** `ConnectorMixin` gains a `capabilities()` method that returns a
+structured inventory of available operations, combining:
+1. The standard 7-method interface (always present)
+2. Any public extra methods on the connector subclass (platform-specific)
+3. Metadata: method signatures, docstrings, read/write classification
+
+**API:**
+```python
+caps = client.capabilities()
+# → {
+#     "authenticate": {"signature": "...", "type": "auth"},
+#     "list_objects": {"signature": "...", "type": "read"},
+#     "get_indicators": {"signature": "...", "type": "read", "platform_specific": True},
+#     ...
+# }
+
+# Dynamic dispatch (safe — no eval, no arbitrary attr chains):
+result = client.call("get_indicators", limit=100, since="2026-01-01")
+```
+
+**Safety rules for `call()`:**
+- Only dispatches to methods in `capabilities()` (whitelist, not blacklist)
+- Read-only by default; write methods require `allow_write=True` kwarg
+- No recursion, no chained attribute access
+
+**CLI integration:** `gnat client capabilities --platform threatq` prints
+the capability table.
+
+**Scope:** Changes to `gnat/connectors/base_connector.py` +
+`gnat/clients/__init__.py` + CLI subcommand.
+
+---
+
+### 20. Additional Connectors (Batch 2)
+
+**Priority:** MEDIUM — depends on #15 audit to ensure consistent baseline
+
+Eleven new connectors in priority order. Each follows the standard
+`BaseClient + ConnectorMixin` pattern established in CLAUDE.md.
+
+| # | Platform | Auth | Primary Value | Notes |
+|---|----------|------|---------------|-------|
+| 1 | ThreatConnect | OAuth2 / API token | Major enterprise TI platform | TC Exchange API v3 |
+| 2 | Mandiant | OAuth2 (client_credentials) | APT/malware intel feeds | Mandiant Advantage API |
+| 3 | MS Defender Threat Intelligence | OAuth2 (Azure AD) | Azure shop TI; MSTI API | Same auth as Sentinel |
+| 4 | TheHive | API key | SOAR/case management; STIX-native | TheHive 5.x API |
+| 5 | ThreatStream (Anomali) | API key + username | Enterprise TI aggregation | OPTIC API v2 |
+| 6 | Stellar Cyber | API key | XDR/open XDR platform | Starlight API |
+| 7 | FLARE | API key | Google/Mandiant sandbox enrichment | Flare Systems API |
+| 8 | SOCRadar | API key | CTI + attack surface mgmt | SOCRadar TI API |
+| 9 | PulseDive | API key | Community TI enrichment | PulseDive API v1 |
+| 10 | Yeti | API key | FOSS TI (STIX-native) | Yeti REST API |
+| 11 | CloudSEK | API key | ASM / digital risk | CloudSEK XVigil API |
+
+**Per-connector deliverables:**
+- `gnat/connectors/<platform>/client.py` — full `BaseClient + ConnectorMixin`
+- `gnat/connectors/<platform>/__init__.py`
+- `CLIENT_REGISTRY` entry in `gnat/clients/__init__.py`
+- `[<platform>]` section in `config/config.ini.example`
+- Minimum 5 unit tests per connector
+- `CHANGELOG.md` entry
+
+**Implement one at a time**; each gets its own commit.
+
+---
+
+### 21. XSOAR Content Pack Generator
+
+**Priority:** MEDIUM-LOW
+
+**What:** `gnat codegen xsoar --connector <name>` generates a valid XSOAR
+content pack zip from an existing GNAT connector. Promotes code reuse for
+shops that run XSOAR natively and want a native integration without
+maintaining two separate codebases.
+
+**XSOAR content pack structure:**
+```
+MyConnector/
+├── pack_metadata.json
+├── Integrations/
+│   └── MyConnector/
+│       ├── MyConnector.yml      # integration definition (commands, args, outputs)
+│       └── MyConnector.py       # Python script wrapping GNAT client methods
+└── ReleaseNotes/
+    └── 1_0_0.md
+```
+
+**Generator logic** (in `gnat/codegen/xsoar_generator.py`):
+1. Introspect connector class via `capabilities()` (see item #19)
+2. Map GNAT method signatures → XSOAR command definitions in YAML
+3. Render `MyConnector.py` that imports the GNAT client and delegates
+4. Render `pack_metadata.json` from connector metadata
+5. Zip the output
+
+**CLI:** `gnat codegen xsoar --connector threatq --output ./packs/`
+
+**Depends on:** #19 (capability reflection provides introspection input)
+
+---
+
+### 22. Docker Containerization
+
+**Priority:** MEDIUM-LOW
+
+**What:** Package GNAT's three operational services as Docker containers
+with a `docker-compose.yml` for single-host deployment. No change to
+application code — pure infrastructure.
+
+**Files to create:**
+```
+docker/
+├── scheduler/Dockerfile     # gnat-scheduler service
+├── edl/Dockerfile           # gnat-edl server
+├── monitor/Dockerfile       # gnat-monitor health endpoint
+docker-compose.yml            # orchestrates all three + named volumes
+.env.example                  # GNAT_CONFIG path, port bindings
+.dockerignore
+```
+
+**Service design:**
+```yaml
+services:
+  scheduler:
+    build: docker/scheduler
+    volumes:
+      - ./config:/etc/gnat:ro
+      - workspace:/var/gnat/workspace
+    restart: unless-stopped
+
+  edl:
+    build: docker/edl
+    ports: ["8080:8080"]
+    volumes:
+      - workspace:/var/gnat/workspace:ro
+    restart: unless-stopped
+    depends_on: [scheduler]
+
+  monitor:
+    build: docker/monitor
+    ports: ["8090:8090"]
+    volumes:
+      - workspace:/var/gnat/workspace:ro
+    restart: unless-stopped
+
+volumes:
+  workspace:
+```
+
+**Dev container:** `.devcontainer/devcontainer.json` for VS Code / Codespaces,
+includes Rust toolchain (for `make build-rust`).
+
+**Makefile targets added:** `make docker-build`, `make docker-up`,
+`make docker-down`, `make docker-logs`.
+
+---
+
+### 23a. Terminal UI (Textual) — Workstation / SSH Analyst Tool
+
+**Priority:** LOW
+
+**What:** Interactive terminal UI for analysts running GNAT on a local
+workstation or over SSH. Built with [Textual](https://github.com/Textualize/textual)
+— a modern TUI framework from the `rich` authors. Zero browser required;
+works on any terminal, including remote sessions.
+
+**Why Textual over tkinter:**
+- Works over SSH (no display server needed) — same binary on workstation
+  and server
+- Modern look (colors, panels, tables, input widgets) vs tkinter's dated
+  appearance
+- Pure Python, pip-installable; one new dependency vs zero for tkinter, but
+  the UX difference is significant
+- `rich` is already a de facto standard in Python tooling
+
+**Scope (MVP views):**
+1. **NLP query bar** — type a natural language query (item #18), results
+   displayed in a scrollable STIX object table
+2. **Research library browser** — search, filter by topic/TLP/date, view
+   STIX object detail, promote/reject staging entries
+3. **Scheduler status** — live-updating job table (last run, next run,
+   status, error count); trigger job manually
+4. **Report list** — list generated reports with metadata; open rendered
+   HTML in system browser via `webbrowser.open()`
+
+**Architecture:** `gnat/tui/` package:
+```
+gnat/tui/
+├── __init__.py
+├── app.py          # GNATApp(textual.App) — root, screen routing
+├── screens/
+│   ├── query.py    # NLP query screen
+│   ├── library.py  # Research library browser
+│   ├── scheduler.py# Scheduler status / control
+│   └── reports.py  # Report list
+└── widgets/
+    ├── stix_table.py   # Reusable STIX object DataTable
+    └── job_table.py    # Scheduler job DataTable
+```
+
+**Launch:**
+```bash
+gnat tui          # launch interactive TUI
+gnat tui query    # launch directly on query screen
+```
+
+**Extras group:** `[tui]` → `textual>=0.60`
+
+**INI config:** None required beyond existing GNAT config — TUI reads
+the same `GNAT_CONFIG` the library uses.
+
+**Depends on:** #18 (NLP query) for the query screen; gracefully degrades
+to structured filter input if NLP not configured.
+
+---
+
+### 23b. Web UI (FastAPI) — Server / Dashboard
+
+**Priority:** LOW
+
+**What:** Browser-based dashboard for server deployments. FastAPI
+(already in `[serve]` extras) serves a lightweight app accessible over
+the network for teams sharing a central GNAT instance.
+
+**Scope (MVP):**
+1. **Research library browser** — search, filter by topic/TLP/date, view
+   STIX object detail, promote/demote staging entries
+2. **Report viewer** — list generated reports, serve rendered HTML inline
+3. **Scheduler status** — job list, last run time, next run, error counts;
+   manual trigger button
+
+**Security requirements (non-negotiable):**
+- API key auth (`X-Api-Key` header) — no unauthenticated access
+- Bind to `localhost` by default; nginx+TLS for external exposure
+- No config/credentials visible in any API response
+- Input validation on all query parameters
+- Rate limiting on all endpoints (100 req/min per key)
+
+**Architecture:** `gnat/serve/` (FastAPI app) + `gnat/serve/static/`
+(minimal JS, no build step — vanilla JS or htmx).
+
+**INI config:**
+```ini
+[webui]
+enabled = true
+bind    = 127.0.0.1
+port    = 8088
+api_key = <random 32-char hex>
+```
+
+**Relationship to 23a:** Both TUI and web UI share the same backend logic
+(`gnat/context/`, `gnat/research/`, `gnat/schedule/`). The TUI calls
+Python objects directly; the web UI calls FastAPI endpoints that call the
+same objects. No duplication of business logic.
+
+**Note:** Pyramid was considered and rejected — FastAPI is already a
+declared dependency and is a better fit for a JSON API + minimal HTML server.
+
+---
+
+### 24. Connector Health + Drift Monitoring Agent (3a)
+
+**Priority:** LOW
+
+**What:** A new `FeedJob` subclass (`ConnectorHealthJob`) that periodically:
+1. Calls `health_check()` on all configured connectors
+2. Compares response schema shape (field presence, type) against a stored
+   baseline snapshot
+3. Reports drift (new fields, missing fields, type changes) as structured
+   alerts
+4. Optionally posts a summary to a configured Slack webhook or email
+
+**Implementation:** `gnat/agents/health_monitor.py` — `ConnectorHealthJob`
+extends `FeedJob`; `SchemaSnapshot` persists baseline to workspace JSON.
+
+**Config:**
+```ini
+[health_monitor]
+enabled          = true
+interval_minutes = 60
+alert_webhook    = https://hooks.slack.com/...   # optional
+drift_threshold  = 0.2                           # 20% field change triggers alert
+```
+
+---
+
+### 25. Upstream Contribution Pipeline (3b)
+
+**Priority:** LOW — opt-in only
+
+**What:** Opt-in workflow that packages a new/updated GNAT connector as a
+GitHub pull request against the upstream `wrhalpin/GNAT` repository.
+
+**CLI:**
+```bash
+gnat contribute --connector myplatform --message "Add MyPlatform connector"
+# → validates connector structure (item #15 compliance matrix)
+# → runs unit tests
+# → creates a branch, commits, pushes to configured fork
+# → opens a draft PR via GitHub API (opt-in, requires PAT config)
+```
+
+**Config:**
+```ini
+[contribute]
+enabled          = false       # explicit opt-in
+github_token     = ghp_...     # PAT with repo scope on user's fork
+fork_remote      = origin
+upstream_remote  = upstream
+draft_pr         = true        # always draft; human must mark ready
+```
+
+**Safety rules:**
+- `draft_pr = true` is not overridable via CLI (only draft PRs created)
+- Runs full test suite before creating branch; aborts on failure
+- Never pushes directly to `main` or `master`
+- Connector must pass the #15 compliance matrix before PR is allowed
