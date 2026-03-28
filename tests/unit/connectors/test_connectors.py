@@ -106,6 +106,106 @@ class TestThreatQClient:
         assert stix["type"] == "indicator"
         assert "1.2.3.4" in stix.get("pattern", "")
 
+    def test_to_stix_extracts_targeted_industry(self, client):
+        native = {"data": {
+            "id": 1, "value": "evil.com", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [
+                {"name": "Targeted Industry", "value": "Healthcare"},
+            ],
+        }}
+        stix = client.to_stix(native)
+        assert stix.get("x_target_sectors") == ["Healthcare"]
+
+    def test_to_stix_extracts_targeted_sector(self, client):
+        native = {"data": {
+            "id": 2, "value": "1.2.3.4", "type": "IP Address", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [{"name": "Targeted Sector", "value": "Finance"}],
+        }}
+        stix = client.to_stix(native)
+        assert "Finance" in stix.get("x_target_sectors", [])
+
+    def test_to_stix_attr_name_case_insensitive(self, client):
+        native = {"data": {
+            "id": 3, "value": "bad.ru", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [{"name": "TARGETED INDUSTRY", "value": "Energy"}],
+        }}
+        stix = client.to_stix(native)
+        assert stix.get("x_target_sectors") == ["Energy"]
+
+    def test_to_stix_targets_attr_name(self, client):
+        """'Targets' is used by the Adversary Reader CDF feed."""
+        native = {"data": {
+            "id": 4, "value": "apt28.example", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [{"name": "Targets", "value": "Government"}],
+        }}
+        stix = client.to_stix(native)
+        assert "Government" in stix.get("x_target_sectors", [])
+
+    def test_to_stix_multiple_sector_attrs(self, client):
+        native = {"data": {
+            "id": 5, "value": "evil.com", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [
+                {"name": "Targeted Industry", "value": "Healthcare"},
+                {"name": "Targeted Sector",   "value": "Pharmaceuticals"},
+                {"name": "Description",        "value": "some notes"},
+            ],
+        }}
+        stix = client.to_stix(native)
+        sectors = stix.get("x_target_sectors", [])
+        assert "Healthcare" in sectors
+        assert "Pharmaceuticals" in sectors
+        assert "some notes" not in sectors
+
+    def test_to_stix_no_attributes_omits_sector_key(self, client):
+        native = {"data": {"id": 6, "value": "1.2.3.4", "type": "IP Address",
+                            "class": "malicious", "created_at": "", "updated_at": ""}}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_to_stix_unrelated_attrs_ignored(self, client):
+        native = {"data": {
+            "id": 7, "value": "evil.com", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [
+                {"name": "Description", "value": "Some description"},
+                {"name": "Source",      "value": "internal"},
+            ],
+        }}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_get_object_requests_attributes(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": {"id": 1, "value": "x"}})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.get_object("indicator", "1")
+        _, kwargs = mock_get.call_args
+        assert "attributes" in kwargs.get("params", {}).get("with", "")
+
+    def test_list_objects_requests_attributes(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_objects("indicator")
+        _, kwargs = mock_get.call_args
+        assert "attributes" in kwargs.get("params", {}).get("with", "")
+
+    def test_get_attribute_types(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={
+            "data": [
+                {"name": "Targeted Industry"},
+                {"name": "Description"},
+                {"name": "Source"},
+            ]
+        }))
+        names = client.get_attribute_types()
+        assert "Targeted Industry" in names
+        assert "Description" in names
+        assert len(names) == 3
+
     def test_from_stix_returns_dict(self, client):
         stix = {"type": "indicator", "id": "indicator--1", "name": "evil.com",
                  "pattern": "[domain-name:value = 'evil.com']"}
