@@ -8,12 +8,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- `CopilotReader`: DirectLine token exchange and auto-refresh (`use_token_exchange = true` in `[copilot]` INI section). Exchanges secret for short-lived token via `POST /tokens/generate`; refreshes automatically before expiry via `POST /tokens/refresh`. Falls back to secret on failure. 20 unit tests.
+- `ReportGenerator._extract_email_body_html()`: auto-populates the `body_html` argument of `EmailDelivery` — reads the rendered `.html` file when available; falls back to an HTML snippet of the first 2 000 characters of the Executive Summary section for PDF/DOCX-only deliveries. 4 unit tests in `TestEmailBodyHTML`.
+- `ReportJob` yearly scheduling: defaults to cron `"0 6 1 1 *"` (06:00 UTC Jan 1) instead of a 365-day interval, preventing drift after server restarts. `config/config.ini.example` documents recommended cron expressions for daily (`0 6 * * *`), weekly trends (`0 6 * * 1`), and yearly (`0 6 1 1 *`) report types. 3 unit tests.
+
+### Fixed
+- `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`
+- `AgeFilter._get()`: reads `_properties` exclusively so auto-defaulted ORM `created`/`modified` core attributes do not shadow explicitly-set timestamps
+- `AgeFilter._timestamp()`: ensure timezone-awareness for naive ISO datetimes
+- `LogDelivery.deliver()`: catch `TypeError` from non-JSON-serializable payloads, fall back to `str()`
+- `Workspace.commit()`: fix `list & set` `TypeError` in deletion handling
+- `_TOPIC_KEYWORDS` ordering: check `threat_actor` before `campaign` so "Volt Typhoon campaign" → `threat_actor`
+- `FeedJob.next_run_at()`: return `_utcnow()` when no history (job is immediately due)
+- `FeedScheduler.run_all_now()`: include disabled jobs as `status="skipped"` entries in result dict
+- `RunRecord`: add `run_count` field; `CurationJob.execute()` now populates it
+- `ParsingAgent._common_fields()`: apply `ai_confidence_ceiling` so STIX objects inherit the cap
+- `GraphView._render_intent()`: intent methods always use sigma.js for consistent `GRAPH_DATA` output
+- `GraphView._timeline_layout()`: `_parse_ts` reads only `_properties` so auto-set ORM core timestamps are not treated as explicit values
+- `SplunkClient`: refactored to `BaseClient + ConnectorMixin`; accepts `host`, `api_token`, `username`, `password` keyword args; adds `authenticate()`, `to_stix()`, `from_stix()`
+
 ### Planned
-- Async client variant (`asyncio` / `httpx`)
 - STIX 2.1 pattern validator integration
-- CLI entry point (`gnat query`, `gnat ingest`)
 - Docker-based integration test harness
-- Sphinx API documentation
+- ThreatQ sector/industry field name verification (see PENDING_ITEMS.md §1)
+- Solr search UI / Grafana dashboard integration for `gnat/search` sidecar
 
 ---
 
