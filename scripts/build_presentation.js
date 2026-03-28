@@ -222,7 +222,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const problems = [
-    ["26 Different APIs", "Each platform has its own auth scheme, data model, and SDK. ThreatQ OAuth2 ≠ CrowdStrike OAuth2 ≠ VirusTotal API key."],
+    ["29 Different APIs", "Each platform has its own auth scheme, data model, and SDK. ThreatQ OAuth2 ≠ CrowdStrike OAuth2 ≠ VirusTotal API key."],
     ["No Shared Data Model", "An indicator in ThreatQ looks nothing like one in CrowdStrike or Splunk. Correlation requires manual mapping."],
     ["Custom Code Per Integration", "Every new source or destination means new scripts with no shared error handling, retry logic, or scheduling."],
     ["Fragile Automation", "Ad-hoc scripts break when APIs change. No tests, no versioning, no consistent patterns."],
@@ -327,7 +327,7 @@ pres.author = "wrhalpin@gmail.com";
     { label: "ANALYST / AUTOMATION LAYER", sub: "Workstations · SOAR · Scheduled jobs · CLI", col: C.navy2, textCol: C.white, y: 0.85 },
     { label: "GNAT CORE", sub: "Ingest · Export · Agents · Research Library · Reports · Visualization", col: C.steel, textCol: C.white, y: 1.52 },
     { label: "STIX 2.1 ORM + WORKSPACE", sub: "Indicator · ThreatActor · Vulnerability · AttackPattern · Relationship", col: C.teal, textCol: C.white, y: 2.19 },
-    { label: "CONNECTOR LAYER (26 platforms)", sub: "ThreatQ · CrowdStrike · Splunk · Elastic · Wazuh · QRadar · Sentinel · Zeek · Suricata · Snort · MISP · OTX · Graylog · …", col: C.navy2, textCol: C.offwhite, y: 2.86 },
+    { label: "CONNECTOR LAYER (29 platforms)", sub: "ThreatQ · CrowdStrike · Splunk · Elastic · Wazuh · QRadar · Sentinel · Zeek · Suricata · Snort · MISP · OTX · Graylog · …", col: C.navy2, textCol: C.offwhite, y: 2.86 },
     { label: "EXTERNAL PLATFORMS", sub: "APIs, feeds, SIEMs, EDRs, vulnerability scanners, threat intel platforms", col: "6B7280", textCol: C.white, y: 3.53 },
   ];
 
@@ -361,7 +361,7 @@ pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 5: Connectors ─────────────────────────────────────────────────
 {
-  const sl = contentSlide(pres, "26 Platform Connectors — One Interface");
+  const sl = contentSlide(pres, "29 Platform Connectors — One Interface");
 
   const connectors = [
     ["ThreatQ", "OAuth2 · Full CRUD", C.steel],
@@ -979,7 +979,7 @@ pres.author = "wrhalpin@gmail.com";
     },
     {
       title: "Maintenance Simplicity",
-      body: "API changes affect one connector file, not every script. Tests cover all 26 connectors uniformly. One library version number covers the entire integration stack.",
+      body: "API changes affect one connector file, not every script. Tests cover all 29 connectors uniformly. One library version number covers the entire integration stack.",
       col: C.steel,
     },
     {
@@ -1089,7 +1089,7 @@ pres.author = "wrhalpin@gmail.com";
   const sl = contentSlide(pres, "By the Numbers");
 
   const stats = [
-    ["26", "Platform\nConnectors", C.teal],
+    ["29", "Platform\nConnectors", C.teal],
     ["784", "Unit\nTests", C.steel],
     ["96", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
@@ -1267,7 +1267,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const summary = [
-    "26 connectors · STIX 2.1 · Ingest + Export pipelines",
+    "29 connectors · STIX 2.1 · Ingest + Export pipelines",
     "AI agents (Claude + Copilot) · Research library · Report generation",
     "784 tests · ~$50/month Azure · Incremental adoption",
   ];

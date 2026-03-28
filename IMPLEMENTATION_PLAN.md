@@ -63,7 +63,7 @@ by changing one string in the config file.
 gnat/
 ├── orm/                    STIX 2.1 ORM (Indicator, ThreatActor, Vulnerability, ...)
 ├── clients/                BaseClient (urllib3), CLIENT_REGISTRY
-├── connectors/             26 platform connectors
+├── connectors/             29 platform connectors
 │   ├── threatq/
 │   ├── crowdstrike/
 │   ├── splunk/
