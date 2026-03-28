@@ -31,6 +31,9 @@ Sub-commands
     gnat nlq       "Lazarus Group domains since January" --platform threatq --backend claude
     gnat serve     --api-key mysecret --port 8088
     gnat serve     --host 0.0.0.0 --port 8088 --reports-dir /var/gnat/reports
+    gnat health    check
+    gnat health    check --platform threatq --no-schema
+    gnat health    baseline threatq
 
 Global flags
 ------------
@@ -364,6 +367,47 @@ def _build_parser() -> argparse.ArgumentParser:
                        help="X-Api-Key secret; auto-generated if omitted")
     p_srv.add_argument("--reports-dir", default=None, metavar="DIR",
                        help="Directory to scan for generated reports")
+
+    # ── health ────────────────────────────────────────────────────────────
+    p_hlt = subs.add_parser(
+        "health",
+        help="Connector health check and schema drift detection",
+        description=(
+            "Run a one-shot health check on all configured connectors, "
+            "or capture/reset a schema baseline for a specific platform."
+        ),
+    )
+    hlt_subs = p_hlt.add_subparsers(
+        dest="health_command", title="health commands", metavar="<command>"
+    )
+
+    p_hlt_chk = hlt_subs.add_parser(
+        "check",
+        help="Run health check on all (or selected) connectors",
+    )
+    p_hlt_chk.add_argument(
+        "--platform", dest="health_platform", default=None, metavar="NAME",
+        help="Restrict check to a single platform (default: all configured)",
+    )
+    p_hlt_chk.add_argument(
+        "--no-schema", action="store_true",
+        help="Skip schema sampling (faster, only tests connectivity)",
+    )
+    p_hlt_chk.add_argument(
+        "--snapshot-dir", default=None, metavar="DIR",
+        help="Directory for schema snapshots (default: ~/.gnat/snapshots)",
+    )
+
+    p_hlt_bl = hlt_subs.add_parser(
+        "baseline",
+        help="Capture or reset the schema baseline for a connector",
+    )
+    p_hlt_bl.add_argument("platform", metavar="PLATFORM",
+                          help="Connector name (e.g. threatq)")
+    p_hlt_bl.add_argument(
+        "--snapshot-dir", default=None, metavar="DIR",
+        help="Directory for schema snapshots",
+    )
 
     return parser
 
@@ -1008,6 +1052,104 @@ def _cmd_tui(args) -> int:
     return 0
 
 
+def _cmd_health(args) -> int:
+    """health subcommand — connector health check and schema drift detection."""
+    from gnat.agents.health_monitor import (
+        ConnectorHealthJob,
+        HealthCheckResult,
+        _try_sample_schema,
+        save_snapshot,
+    )
+
+    health_cmd   = getattr(args, "health_command", None)
+    config_path  = getattr(args, "config", None)
+    snapshot_dir = getattr(args, "snapshot_dir", None)
+
+    if health_cmd == "check" or health_cmd is None:
+        platform = getattr(args, "health_platform", None)
+        no_schema = getattr(args, "no_schema", False)
+        platforms = [platform] if platform else None
+
+        try:
+            job = ConnectorHealthJob.from_config(
+                config_path  = config_path or "",
+                platforms    = platforms,
+                sample_schema = not no_schema,
+                snapshot_dir = snapshot_dir,
+            )
+        except FileNotFoundError as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+
+        if not job._connectors:
+            print(
+                _yellow("No connectors found in config — nothing to check."),
+                file=sys.stderr,
+            )
+            return 0
+
+        print(_bold(f"Checking {len(job._connectors)} connector(s) …"))
+        run = job._run_health_checks()
+
+        any_problem = False
+        for c in run.checks:
+            icon   = _green("✓") if c.reachable else _red("✗")
+            ms_str = f"{c.response_ms:.0f} ms"
+            line   = f"  {icon}  {_bold(c.connector):<20} {ms_str}"
+            if not c.reachable and c.error:
+                line += f"  {_dim(c.error[:60])}"
+            elif c.drift and c.drift.is_significant:
+                line += f"  {_yellow(c.drift.summary())}"
+            print(line)
+            if not c.reachable or (c.drift and c.drift.is_significant):
+                any_problem = True
+
+        total = len(run.checks)
+        healthy = run.healthy_count
+        print()
+        status_line = (
+            f"{_green(str(healthy))} / {total} healthy"
+            if healthy == total
+            else f"{_red(str(total - healthy))} unreachable, "
+                 f"{_green(str(healthy))} healthy"
+        )
+        if run.drift_count:
+            status_line += f", {_yellow(str(run.drift_count))} drift"
+        print(status_line)
+        return 1 if any_problem else 0
+
+    elif health_cmd == "baseline":
+        platform = args.platform
+        try:
+            from gnat.client import SAKClient
+            sak = SAKClient(config_path=config_path).connect(platform)
+            connector = sak.client
+        except Exception as exc:
+            print(_red(f"Error connecting to {platform!r}: {exc}"), file=sys.stderr)
+            return 1
+
+        print(f"Sampling schema from {_bold(platform)} …")
+        fingerprint = _try_sample_schema(connector)
+        if not fingerprint:
+            print(
+                _yellow(
+                    f"Could not sample schema from {platform!r} — "
+                    "list_objects() returned no objects."
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
+        save_snapshot(platform, fingerprint, snapshot_dir)
+        print(_green(f"✓  Baseline saved for {_bold(platform)} ({len(fingerprint)} fields)"))
+        return 0
+
+    else:
+        # No sub-subcommand — print help
+        print("Usage: gnat health check | gnat health baseline PLATFORM")
+        return 1
+
+
 def _cmd_serve(args) -> int:
     """serve subcommand — start the GNAT web dashboard."""
     try:
@@ -1099,6 +1241,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "nlq":      _cmd_nlq,
         "tui":      _cmd_tui,
         "serve":    _cmd_serve,
+        "health":   _cmd_health,
     }
 
     handler = handlers.get(args.command)
