@@ -46,6 +46,9 @@ from gnat.connectors.mandiant.client import MandiantClient
 from gnat.connectors.defenderti.client import DefenderTIClient
 from gnat.connectors.thehive.client import TheHiveClient
 from gnat.connectors.threatstream.client import ThreatStreamClient
+from gnat.connectors.socradar.client import SOCRadarClient
+from gnat.connectors.pulsedive.client import PulseDiveClient
+from gnat.connectors.flare.client import FlareClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -85,6 +88,9 @@ CLIENT_REGISTRY: dict = {
     "defenderti":     DefenderTIClient,
     "thehive":        TheHiveClient,
     "threatstream":   ThreatStreamClient,
+    "socradar":       SOCRadarClient,
+    "pulsedive":      PulseDiveClient,
+    "flare":          FlareClient,
 }
 
 __all__ = [

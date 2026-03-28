@@ -2914,3 +2914,211 @@ class TestThreatStreamClient:
         assert payload["value"] == "evil.com"
         assert payload["type"] == "domain"
         assert payload["status"] == "active"
+
+
+# ---------------------------------------------------------------------------
+# SOCRadarClient
+# ---------------------------------------------------------------------------
+
+class TestSOCRadarClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.socradar.client import SOCRadarClient
+        return SOCRadarClient(host="https://platform.socradar.com", api_key="sr-key")
+
+    def test_authenticate_sets_header(self, client):
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "sr-key"
+
+    def test_health_check_success(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": []})
+        assert client.health_check() is True
+
+    def test_list_objects_returns_data(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"data": [{"id": 1, "value": "1.2.3.4"}]})
+        results = client.list_objects("indicator")
+        assert len(results) == 1
+        assert results[0]["value"] == "1.2.3.4"
+
+    def test_list_objects_results_key(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"results": [{"id": 2}]})
+        results = client.list_objects("indicator")
+        assert results[0]["id"] == 2
+
+    def test_get_object(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"id": 42})
+        obj = client.get_object("indicator", "42")
+        assert obj["id"] == 42
+
+    def test_upsert_raises(self, client):
+        from gnat.clients.base import SAKClientError
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("indicator", {"value": "1.2.3.4"})
+
+    def test_to_stix_ip(self, client):
+        native = {"id": 1, "ioc_type": "ip", "value": "1.2.3.4",
+                  "severity": "high", "created_at": "2026-01-01"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "indicator"
+        assert "ipv4-addr" in stix["pattern"]
+        assert stix["confidence"] == 75
+        assert stix["x_source_platform"] == "socradar"
+
+    def test_to_stix_actor(self, client):
+        native = {"type": "threat_actor", "id": 5, "name": "Cobalt Group",
+                  "description": "FIN group", "created_at": "2026-01-01"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "threat-actor"
+
+    def test_to_stix_malware(self, client):
+        native = {"type": "malware", "id": 6, "name": "BlackCat",
+                  "description": "Ransomware", "created_at": "2026-01-01"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "malware"
+        assert stix["is_family"] is True
+
+    def test_from_stix_returns_dict(self, client):
+        stix = {"pattern": "[domain-name:value = 'evil.com']", "name": "evil.com"}
+        payload = client.from_stix(stix)
+        assert payload["value"] == "evil.com"
+        assert payload["ioc_type"] == "domain"
+
+
+# ---------------------------------------------------------------------------
+# PulseDiveClient
+# ---------------------------------------------------------------------------
+
+class TestPulseDiveClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.pulsedive.client import PulseDiveClient
+        return PulseDiveClient(host="https://pulsedive.com", api_key="pd-key")
+
+    def test_authenticate_is_noop(self, client):
+        client.authenticate()  # Should not raise; key injected via params
+        assert "Authorization" not in client._auth_headers
+
+    def test_pd_params_includes_key(self, client):
+        assert client._pd_params["key"] == "pd-key"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"version": "1"})
+        assert client.health_check() is True
+
+    def test_list_objects_indicators(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"results": [{"iid": 1, "indicator": "1.2.3.4"}]})
+        results = client.list_objects("indicator")
+        assert results[0]["iid"] == 1
+
+    def test_get_object_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"iid": 7, "indicator": "x.com"})
+        obj = client.get_object("indicator", "7")
+        assert obj["iid"] == 7
+
+    def test_enrich(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"iid": 9, "indicator": "evil.com"})
+        result = client.enrich("evil.com")
+        assert result["indicator"] == "evil.com"
+
+    def test_upsert_posts(self, client, monkeypatch):
+        captured = {}
+        def fake_post(path, **kw):
+            captured["json"] = kw.get("json", {})
+            return {}
+        monkeypatch.setattr(client, "post", fake_post)
+        client.upsert_object("indicator", {"value": "evil.com", "type": "domain"})
+        assert captured["json"]["indicator"] == "evil.com"
+
+    def test_to_stix_domain(self, client):
+        native = {"iid": 1, "type": "domain", "indicator": "evil.com",
+                  "risk": "high", "stamp_added": "2026-01-01", "threats": []}
+        stix = client.to_stix(native)
+        assert "domain-name" in stix["pattern"]
+        assert stix["confidence"] == 75
+        assert stix["x_source_platform"] == "pulsedive"
+
+    def test_to_stix_threat(self, client):
+        native = {"type": "threat", "tid": 2, "name": "Lazarus",
+                  "risk": "critical", "stamp_added": "2026-01-01"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "threat-actor"
+
+    def test_from_stix(self, client):
+        stix = {"pattern": "[ipv4-addr:value = '10.0.0.1']", "name": "10.0.0.1"}
+        payload = client.from_stix(stix)
+        assert payload["indicator"] == "10.0.0.1"
+        assert payload["type"] == "ip"
+
+
+# ---------------------------------------------------------------------------
+# FlareClient
+# ---------------------------------------------------------------------------
+
+class TestFlareClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.flare.client import FlareClient
+        return FlareClient(host="https://api.flare.io", api_key="flare-key")
+
+    def test_authenticate_sets_bearer(self, client):
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "Bearer flare-key"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"sources": []})
+        assert client.health_check() is True
+
+    def test_list_objects_items(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"items": [{"id": "f1"}]})
+        results = client.list_objects("indicator")
+        assert results[0]["id"] == "f1"
+
+    def test_list_objects_hits(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"hits": [{"id": "f2"}]})
+        results = client.list_objects("observed-data")
+        assert results[0]["id"] == "f2"
+
+    def test_get_object(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"id": "f99"})
+        obj = client.get_object("indicator", "f99")
+        assert obj["id"] == "f99"
+
+    def test_upsert_raises(self, client):
+        from gnat.clients.base import SAKClientError
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("indicator", {})
+
+    def test_search_leaks(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get",
+                            lambda path, **kw: {"items": [{"id": "lk1"}]})
+        results = client.search_leaks("victim@example.com")
+        assert results[0]["id"] == "lk1"
+
+    def test_to_stix_credential_leak(self, client):
+        native = {"id": "f1", "type": "credential", "email": "user@example.com",
+                  "severity": "high", "created_at": "2026-01-01", "source": "darkweb"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "indicator"
+        assert "email" in stix["pattern"]
+        assert stix["x_source_platform"] == "flare"
+
+    def test_to_stix_actor(self, client):
+        native = {"type": "actor", "id": "a1", "name": "DarkTeam",
+                  "description": "Dark web actor", "created_at": "2026-01-01"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "threat-actor"
+
+    def test_from_stix(self, client):
+        stix = {"pattern": "[domain-name:value = 'leak.example.com']",
+                "name": "leak.example.com"}
+        payload = client.from_stix(stix)
+        assert payload["query"] == "leak.example.com"

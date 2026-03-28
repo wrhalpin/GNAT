@@ -316,3 +316,29 @@ host      = https://api.threatstream.com
 username  = your@email.com
 api_key   = YOUR_THREATSTREAM_API_KEY
 auth_type = api_key
+
+# =============================================================================
+# SOCRadar CTI + Attack Surface Management
+# =============================================================================
+[socradar]
+host       = https://platform.socradar.com
+api_key    = YOUR_SOCRADAR_API_KEY
+# company_id = YOUR_COMPANY_ID   # required for attack-surface endpoints
+auth_type  = token
+
+# =============================================================================
+# PulseDive Community Threat Intelligence
+# =============================================================================
+[pulsedive]
+host    = https://pulsedive.com
+api_key = YOUR_PULSEDIVE_API_KEY
+auth_type = token
+
+# =============================================================================
+# Flare Systems Threat Exposure Intelligence
+# =============================================================================
+[flare]
+host       = https://api.flare.io
+api_key    = YOUR_FLARE_API_KEY
+# tenant_id = YOUR_TENANT_ID     # optional: multi-tenant
+auth_type  = token
