@@ -1048,3 +1048,471 @@ class TestControlUpClient:
     def test_from_stix_unknown_type(self, client):
         payload = client.from_stix({"type": "malware", "name": "BadThing"})
         assert payload["type"] == "malware"
+
+
+# ---------------------------------------------------------------------------
+# AlienVault OTX
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.alienvault.client import AlienVaultClient
+
+
+class TestAlienVaultClient:
+
+    @pytest.fixture
+    def client(self):
+        return _authenticated(AlienVaultClient, api_key="otx-key-123")
+
+    def test_authenticate_sets_header(self):
+        c = AlienVaultClient(host="https://otx.alienvault.com", api_key="mykey")
+        c.authenticate()
+        assert c._auth_headers["X-OTX-API-KEY"] == "mykey"
+
+    def test_list_objects_pulses(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"results": [{"id": "p1"}]}))
+        result = client.list_objects("report")
+        assert isinstance(result, list)
+        assert result[0]["id"] == "p1"
+
+    def test_list_objects_indicators(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"results": [{"indicator": "1.2.3.4", "type": "IPv4"}]}))
+        result = client.list_objects("indicator")
+        assert isinstance(result, list)
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("indicator", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.delete_object("indicator", "x")
+
+    def test_to_stix_pulse(self, client):
+        pulse = {"id": "abc123", "name": "Evil Pulse", "created": "2024-01-01T00:00:00Z"}
+        stix = client.to_stix(pulse)
+        assert stix["type"] == "report"
+        assert "pulse--" not in stix["id"]  # should be report--
+        assert stix["name"] == "Evil Pulse"
+
+    def test_to_stix_indicator_ipv4(self, client):
+        ind = {"type": "IPv4", "indicator": "1.2.3.4"}
+        stix = client.to_stix(ind)
+        assert stix["type"] == "indicator"
+        assert "1.2.3.4" in stix["pattern"]
+        _assert_stix_contract(stix)
+
+    def test_to_stix_indicator_hash(self, client):
+        ind = {"type": "FileHash-SHA256", "indicator": "abc" * 21 + "ab"}
+        stix = client.to_stix(ind)
+        assert stix["type"] == "indicator"
+        assert "SHA-256" in stix["pattern"]
+
+    def test_from_stix_returns_note(self, client):
+        result = client.from_stix({"type": "indicator", "id": "indicator--x"})
+        assert "read-only" in result["note"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Graylog
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.graylog.client import GraylogClient
+
+
+class TestGraylogClient:
+
+    @pytest.fixture
+    def client(self):
+        return _authenticated(GraylogClient, username="admin", password="pass")
+
+    def test_authenticate_sets_basic_header(self):
+        import base64
+        c = GraylogClient(host="https://graylog.example.com", username="u", password="p")
+        c.authenticate()
+        expected = "Basic " + base64.b64encode(b"u:p").decode()
+        assert c._auth_headers["Authorization"] == expected
+
+    def test_list_objects_messages(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"messages": [{"message": {"_id": "m1"}}]}))
+        result = client.list_objects("observed-data")
+        assert isinstance(result, list)
+        assert result[0]["message"]["_id"] == "m1"
+
+    def test_to_stix_with_ips(self, client):
+        msg = {"message": {"src_ip": "10.0.0.1", "dst_ip": "8.8.8.8", "timestamp": "2024-01-01T00:00:00Z"}}
+        stix = client.to_stix(msg)
+        assert stix["type"] == "observed-data"
+        _assert_stix_contract(stix)
+
+    def test_to_stix_no_ips(self, client):
+        msg = {"message": {"_id": "x", "source": "server1", "message": "test log"}}
+        stix = client.to_stix(msg)
+        assert stix["type"] == "observed-data"
+        assert stix["x_graylog_message"]["source"] == "server1"
+
+    def test_from_stix_builds_query(self, client):
+        stix = {
+            "type": "observed-data",
+            "id": "observed-data--abc",
+            "x_graylog_message": {"source": "myhost", "level": 3},
+        }
+        result = client.from_stix(stix)
+        assert "source:myhost" in result["query"]
+
+    def test_from_stix_wrong_type_raises(self, client):
+        with pytest.raises(SAKClientError):
+            client.from_stix({"type": "indicator", "id": "indicator--x"})
+
+
+# ---------------------------------------------------------------------------
+# OSSIM
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.ossim.client import OSSIMClient
+
+
+class TestOSSIMClient:
+
+    @pytest.fixture
+    def client(self):
+        return _authenticated(OSSIMClient, api_key="ossim-key")
+
+    def test_authenticate_sets_header(self):
+        c = OSSIMClient(host="https://ossim.example.com", api_key="testkey")
+        c.authenticate()
+        assert c._auth_headers["X-USM-API-KEY"] == "testkey"
+
+    def test_list_objects_alarms(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"uuid": "u1", "rule_name": "Scan"}]}))
+        result = client.list_objects("observed-data")
+        assert isinstance(result, list)
+        assert result[0]["uuid"] == "u1"
+
+    def test_to_stix_alarm(self, client):
+        alarm = {
+            "uuid": "abc-123",
+            "rule_name": "Port Scan",
+            "priority": 3,
+            "src_ip": "192.168.1.1",
+            "dst_ip": "10.0.0.5",
+            "timestamp": "2024-01-01T12:00:00Z",
+        }
+        stix = client.to_stix(alarm)
+        assert stix["type"] == "observed-data"
+        assert stix["x_ossim_alarm"]["name"] == "Port Scan"
+        _assert_stix_contract(stix)
+
+    def test_to_stix_no_ips(self, client):
+        alarm = {"uuid": "x", "rule_name": "Test", "priority": 1}
+        stix = client.to_stix(alarm)
+        assert stix["type"] == "observed-data"
+        assert stix["object_refs"] == []
+
+    def test_from_stix_returns_id(self, client):
+        stix = {
+            "type": "observed-data",
+            "id": "observed-data--xyz",
+            "x_ossim_alarm": {"alarm_id": "alarm-99", "status": "open"},
+        }
+        result = client.from_stix(stix)
+        assert result["id"] == "alarm-99"
+
+
+# ---------------------------------------------------------------------------
+# Security Onion
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.security_onion.client import SecurityOnionClient
+
+
+class TestSecurityOnionClient:
+
+    @pytest.fixture
+    def client(self):
+        return _authenticated(SecurityOnionClient, username="analyst", password="secret")
+
+    def test_authenticate_sets_bearer(self, monkeypatch):
+        c = SecurityOnionClient(
+            host="https://so.example.com", username="u", password="p"
+        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"token": "jwt-abc"}))
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer jwt-abc"
+
+    def test_authenticate_raises_on_missing_token(self, monkeypatch):
+        c = SecurityOnionClient(
+            host="https://so.example.com", username="u", password="p"
+        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={}))
+        with pytest.raises(SAKClientError, match="login failed"):
+            c.authenticate()
+
+    def test_list_objects_alerts(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={
+            "hits": {"hits": [{"_source": {"uid": "a1", "@timestamp": "2024-01-01"}}]}
+        }))
+        result = client.list_objects("observed-data")
+        assert isinstance(result, list)
+        assert result[0]["uid"] == "a1"
+
+    def test_list_objects_cases(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[{"id": "c1"}]))
+        result = client.list_objects("case")
+        assert isinstance(result, list)
+
+    def test_to_stix_alert(self, client):
+        alert = {
+            "uid": "so-alert-1",
+            "@timestamp": "2024-01-01T00:00:00Z",
+            "rule": {"name": "Lateral Movement", "uuid": "r-123"},
+            "source": {"ip": "192.168.1.5", "port": 4444},
+            "destination": {"ip": "10.0.0.1", "port": 443},
+            "network": {"transport": "tcp"},
+            "observer": {"name": "sensor-01"},
+            "event": {"severity": 2},
+        }
+        stix = client.to_stix(alert)
+        assert stix["type"] == "observed-data"
+        assert stix["x_security_onion_alert"]["rule_name"] == "Lateral Movement"
+        _assert_stix_contract(stix)
+
+    def test_from_stix_returns_alert_id(self, client):
+        stix = {
+            "type": "observed-data",
+            "id": "observed-data--abc",
+            "x_security_onion_alert": {"alert_id": "so-99"},
+        }
+        result = client.from_stix(stix)
+        assert result["id"] == "so-99"
+
+
+# ---------------------------------------------------------------------------
+# Snort
+# ---------------------------------------------------------------------------
+
+import json as _json
+import tempfile
+import os
+
+from gnat.connectors.snort.client import SnortClient
+
+
+class TestSnortClient:
+
+    @pytest.fixture
+    def client(self):
+        return SnortClient(host="", alert_log_path="/tmp/nonexistent.json", log_format="json")
+
+    def test_health_check_missing_file(self, client):
+        with pytest.raises(SAKClientError, match="not found"):
+            client.health_check()
+
+    def test_health_check_existing_file(self, client, tmp_path):
+        f = tmp_path / "alert.json"
+        f.write_text("")
+        client.alert_log_path = str(f)
+        assert client.health_check() is True
+
+    def test_list_objects_json(self, tmp_path):
+        f = tmp_path / "alert.json"
+        alert = {"timestamp": "2024-01-01T00:00:00", "msg": "ET MALWARE", "gid": 1,
+                 "sid": 1000, "rev": 1, "priority": 2, "proto": "TCP",
+                 "src_addr": "1.2.3.4", "src_port": 4444, "dst_addr": "5.6.7.8", "dst_port": 80}
+        f.write_text(_json.dumps(alert) + "\n")
+        c = SnortClient(host="", alert_log_path=str(f), log_format="json")
+        result = c.list_objects("observed-data")
+        assert len(result) == 1
+        assert result[0]["src_ip"] == "1.2.3.4"
+
+    def test_list_objects_fast(self, tmp_path):
+        f = tmp_path / "alert.log"
+        line = "01/15-12:00:00.000000  [**] [1:1000001:1] ET MALWARE [**] [Priority: 2] {TCP} 192.168.1.1:49152 -> 1.2.3.4:443\n"
+        f.write_text(line)
+        c = SnortClient(host="", alert_log_path=str(f), log_format="fast")
+        result = c.list_objects("observed-data")
+        assert len(result) == 1
+        assert result[0]["src_ip"] == "192.168.1.1"
+
+    def test_to_stix_alert(self):
+        c = SnortClient(host="")
+        alert = {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "signature": "ET MALWARE Bad Thing",
+            "sid": 12345, "gid": 1, "rev": 3,
+            "priority": 1, "severity": 4,
+            "proto": "TCP",
+            "src_ip": "10.0.0.1", "src_port": 5555,
+            "dst_ip": "8.8.8.8", "dst_port": 53,
+            "action": "alert",
+        }
+        stix = c.to_stix(alert)
+        assert stix["type"] == "observed-data"
+        assert stix["x_snort_alert"]["signature"] == "ET MALWARE Bad Thing"
+        assert stix["x_snort_alert"]["sid"] == 12345
+        _assert_stix_contract(stix)
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_from_stix_returns_note(self, client):
+        result = client.from_stix({"type": "observed-data", "id": "observed-data--x"})
+        assert "read-only" in result["note"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Suricata
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.suricata.client import SuricataClient
+
+
+class TestSuricataClient:
+
+    @pytest.fixture
+    def client(self):
+        return SuricataClient(host="", eve_log_path="/tmp/nonexistent.json")
+
+    def test_health_check_missing_file(self, client):
+        with pytest.raises(SAKClientError, match="not found"):
+            client.health_check()
+
+    def test_health_check_existing_file(self, client, tmp_path):
+        f = tmp_path / "eve.json"
+        f.write_text("")
+        client.eve_log_path = str(f)
+        assert client.health_check() is True
+
+    def test_list_objects_eve_json(self, tmp_path):
+        f = tmp_path / "eve.json"
+        event = {
+            "timestamp": "2024-01-01T00:00:00.000000+0000",
+            "event_type": "alert",
+            "src_ip": "192.168.1.100",
+            "src_port": 12345,
+            "dest_ip": "8.8.8.8",
+            "dest_port": 443,
+            "proto": "TCP",
+            "alert": {
+                "signature": "ET MALWARE CnC",
+                "signature_id": 9001,
+                "category": "A Network Trojan",
+                "severity": 1,
+                "action": "allowed",
+                "rev": 5,
+                "gid": 1,
+            }
+        }
+        f.write_text(_json.dumps(event) + "\n")
+        c = SuricataClient(host="", eve_log_path=str(f))
+        result = c.list_objects("observed-data")
+        assert len(result) == 1
+        assert result[0]["src_ip"] == "192.168.1.100"
+        assert result[0]["signature"] == "ET MALWARE CnC"
+
+    def test_to_stix_alert(self):
+        c = SuricataClient(host="")
+        alert = {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "flow_id": 123456,
+            "src_ip": "10.1.1.1",
+            "src_port": 5000,
+            "dst_ip": "203.0.113.5",
+            "dst_port": 80,
+            "proto": "TCP",
+            "signature": "ET EXPLOIT Something",
+            "signature_id": 2001,
+            "category": "Exploit Kit",
+            "severity": 4,
+            "severity_raw": 1,
+            "action": "blocked",
+        }
+        stix = c.to_stix(alert)
+        assert stix["type"] == "observed-data"
+        assert stix["x_suricata_alert"]["signature"] == "ET EXPLOIT Something"
+        assert stix["x_suricata_alert"]["severity_raw"] == 1
+        _assert_stix_contract(stix)
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_from_stix_returns_note(self, client):
+        result = client.from_stix({"type": "observed-data", "id": "observed-data--x"})
+        assert "read-only" in result["note"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Zeek
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.zeek.client import ZeekClient
+
+
+class TestZeekClient:
+
+    @pytest.fixture
+    def client(self, tmp_path):
+        return ZeekClient(host="", log_dir=str(tmp_path), log_format="json")
+
+    def test_health_check_valid_dir(self, client):
+        assert client.health_check() is True
+
+    def test_health_check_missing_dir(self):
+        c = ZeekClient(host="", log_dir="/tmp/does_not_exist_zeek_xyz")
+        with pytest.raises(SAKClientError, match="not found"):
+            c.health_check()
+
+    def test_list_objects_notices(self, tmp_path):
+        f = tmp_path / "notice.json"
+        record = {
+            "ts": "1704067200.0",
+            "uid": "Cx1234",
+            "id.orig_h": "10.0.0.1",
+            "id.orig_p": "52341",
+            "id.resp_h": "8.8.8.8",
+            "id.resp_p": "53",
+            "proto": "udp",
+            "note": "DNS::External_Name",
+            "msg": "Suspicious DNS",
+        }
+        f.write_text(_json.dumps(record) + "\n")
+        c = ZeekClient(host="", log_dir=str(tmp_path), log_format="json")
+        result = c.list_objects("observed-data", filters={"log_name": "notice"})
+        assert len(result) == 1
+
+    def test_list_objects_tsv(self, tmp_path):
+        f = tmp_path / "notice.log"
+        f.write_text(
+            "#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tnote\tmsg\n"
+            "1704067200.0\tCx1\t192.168.1.1\t4321\t10.0.0.5\t80\ttcp\tScan::Address_Scan\tScan detected\n"
+        )
+        c = ZeekClient(host="", log_dir=str(tmp_path), log_format="tsv")
+        result = c.list_objects("observed-data", filters={"log_name": "notice"})
+        assert len(result) == 1
+        assert result[0]["id.orig_h"] == "192.168.1.1"
+
+    def test_to_stix_notice(self, client):
+        record = {
+            "ts": "1704067200.0",
+            "uid": "Cx5678",
+            "id.orig_h": "172.16.0.1",
+            "id.orig_p": "1234",
+            "id.resp_h": "203.0.113.1",
+            "id.resp_p": "443",
+            "proto": "tcp",
+            "note": "SSL::Invalid_Server_Cert",
+            "msg": "Invalid cert from 203.0.113.1",
+        }
+        stix = client.to_stix(record)
+        assert stix["type"] == "observed-data"
+        assert stix["x_zeek_notice"]["note"] == "SSL::Invalid_Server_Cert"
+        _assert_stix_contract(stix)
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(SAKClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_from_stix_returns_note(self, client):
+        result = client.from_stix({"type": "observed-data", "id": "observed-data--x"})
+        assert "read-only" in result["note"].lower()
