@@ -325,7 +325,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
             "attack-pattern", "threat-actor", "malware"
         ):
             stix_type = data.get("type", "attack-pattern")
-            return {
+            ttp: Dict[str, Any] = {
                 "type":         stix_type,
                 "id":           f"{stix_type}--{data.get('id', '')}",
                 "name":         data.get("name", ""),
@@ -336,6 +336,13 @@ class FeedlyClient(BaseClient, ConnectorMixin):
                 "x_feedly_sources": [s.get("title", "") for s in data.get("sources", [])],
                 "confidence":   data.get("confidence", 50),
             }
+            # Feedly Enterprise threat-intel entities carry a `sectors` list
+            # of industry vertical strings on threat-actor and attack-pattern
+            # entries (e.g. ["Healthcare", "Financial Services"]).
+            sectors = data.get("sectors", [])
+            if isinstance(sectors, list) and sectors:
+                ttp["x_target_sectors"] = sectors
+            return ttp
 
         # IOC entry (default)
         ioc_type = data.get("type", "")

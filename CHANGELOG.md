@@ -16,6 +16,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `RecordedFutureClient.to_stix()`: extracts `relatedEntities[type=Industry].entity.name` into `x_target_sectors`; `get_object()` now requests `relatedEntities` field. 3 unit tests.
 - `CrowdStrikeClient.to_stix()`: maps `target_industries[]` (present on adversary profile objects) to `x_target_sectors`. 3 unit tests.
 - `pyproject.toml` item #14: confirmed no new pip dependencies required for VirusTotal, ShadowServer, Rapid7, or Nucleus connectors — all use stdlib + urllib3 only.
+- `RiskReconClient.to_stix()`: company objects now also write `x_rr_industries` to `x_target_sectors`. 2 unit tests.
+- `WhisticClient.to_stix()`: vendor `categories` (industry classifications) now also written to `x_target_sectors`. 2 unit tests.
+- `FeedlyClient.to_stix()`: threat-actor/attack-pattern TTP entries now extract `sectors` field into `x_target_sectors`. 2 unit tests.
+- Sector normalization complete across all 10 implemented connectors with sector data (ThreatQ, RecordedFuture, CrowdStrike, VirusTotal, ShadowServer, Nucleus, RiskRecon, Whistic, Feedly, plus CrowdStrike adversary profiles).
 
 ### Fixed
 - `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`

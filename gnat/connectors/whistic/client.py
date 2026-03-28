@@ -286,7 +286,8 @@ class WhisticClient(BaseClient, ConnectorMixin):
         carried as ``x_whistic_trust_score``.
         """
         data = native.get("data", native)
-        return {
+        categories = data.get("categories", [])
+        stix: Dict[str, Any] = {
             "type":               "threat-actor",
             "id":                 f"threat-actor--{data.get('id', '')}",
             "name":               data.get("name", ""),
@@ -296,10 +297,13 @@ class WhisticClient(BaseClient, ConnectorMixin):
             "threat_actor_types": ["vendor"],
             "x_whistic_trust_score":      data.get("trust_score"),
             "x_whistic_status":           data.get("assessment_status", ""),
-            "x_whistic_categories":       data.get("categories", []),
+            "x_whistic_categories":       categories,
             "x_whistic_vendor_id":        data.get("id", ""),
             "x_whistic_profile_complete": data.get("profile_complete", False),
         }
+        if categories:
+            stix["x_target_sectors"] = categories
+        return stix
 
     def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
         """

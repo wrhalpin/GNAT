@@ -550,6 +550,17 @@ class TestWhisticClient:
         assert s["type"] == "threat-actor"
         assert s["x_whistic_trust_score"] == 85
 
+    def test_to_stix_categories_map_to_sectors(self, client):
+        s = client.to_stix({"id": "v2", "name": "HealthCo",
+                             "categories": ["Healthcare", "Pharmaceuticals"],
+                             "trust_score": 70, "created_at": "", "updated_at": ""})
+        assert s.get("x_target_sectors") == ["Healthcare", "Pharmaceuticals"]
+
+    def test_to_stix_no_categories_omits_sectors(self, client):
+        s = client.to_stix({"id": "v3", "name": "Acme",
+                             "trust_score": 60, "created_at": "", "updated_at": ""})
+        assert "x_target_sectors" not in s
+
     def test_upsert_raises_for_vendor(self, client):
         with pytest.raises(SAKClientError):
             client.upsert_object("threat-actor", {"name": "New Vendor"})
@@ -592,6 +603,20 @@ class TestRiskReconClient:
         assert s["type"] == "threat-actor"
         assert s["x_rr_score"] == 7.5
         assert s["x_rr_domain"] == "corp.com"
+
+    def test_to_stix_company_industries_map_to_sectors(self, client):
+        s = client.to_stix({"id": "c2", "name": "HealthCorp", "domain": "hc.com",
+                             "score": 8.0, "grade": "B",
+                             "industries": ["Healthcare", "Insurance"],
+                             "created_at": "", "updated_at": ""})
+        assert s.get("x_rr_industries") == ["Healthcare", "Insurance"]
+        assert s.get("x_target_sectors") == ["Healthcare", "Insurance"]
+
+    def test_to_stix_company_no_industries_omits_sectors(self, client):
+        s = client.to_stix({"id": "c3", "name": "Corp B", "domain": "b.com",
+                             "score": 6.0, "grade": "C",
+                             "created_at": "", "updated_at": ""})
+        assert "x_target_sectors" not in s
 
     def test_to_stix_finding(self, client):
         s = client.to_stix({"id": "f1", "criterion": "TLS/SSL",
@@ -654,6 +679,19 @@ class TestFeedlyClient:
                              "description": "", "first_seen": 0, "sources": []})
         assert s["type"] == "attack-pattern"
         assert s["x_mitre_id"] == "T1190"
+
+    def test_to_stix_ttp_sectors(self, client):
+        s = client.to_stix({"id": "t2", "type": "threat-actor",
+                             "name": "APT-X", "description": "",
+                             "first_seen": 0, "sources": [],
+                             "sectors": ["Healthcare", "Energy"]})
+        assert s.get("x_target_sectors") == ["Healthcare", "Energy"]
+
+    def test_to_stix_ttp_no_sectors_omits_key(self, client):
+        s = client.to_stix({"id": "t3", "type": "attack-pattern",
+                             "mitre_id": "T1059", "name": "Command Execution",
+                             "description": "", "first_seen": 0, "sources": []})
+        assert "x_target_sectors" not in s
 
     def test_upsert_raises(self, client):
         with pytest.raises(SAKClientError, match="read-only"):
