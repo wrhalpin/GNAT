@@ -71,7 +71,7 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
         self.delete(f"/indicators/entities/iocs/v1?ids={object_id}")
 
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
-        return {
+        stix: Dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
             "name": native.get("value", ""),
@@ -81,6 +81,12 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
             "modified": native.get("modified_timestamp", ""),
             "indicator_types": [native.get("type", "unknown")],
         }
+        # target_industries is present on adversary profile objects
+        # (GET /intel/combined/adversaries/v1) but absent on IOC objects.
+        industries = native.get("target_industries", [])
+        if isinstance(industries, list) and industries:
+            stix["x_target_sectors"] = industries
+        return stix
 
     def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
         return {

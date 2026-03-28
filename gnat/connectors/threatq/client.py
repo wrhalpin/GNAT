@@ -31,12 +31,43 @@ STIX Type Mapping
 +--------------------+---------------------------+
 | attack-pattern     | attack-pattern            |
 +--------------------+---------------------------+
+
+Sector / Industry attributes
+-----------------------------
+ThreatQ stores sector and industry context as entries in a generic
+``attributes`` array (not as top-level fields).  Attributes are only
+returned when ``?with=attributes`` is included in the request.
+
+The attribute ``name`` strings are configured per-deployment and are not
+standardised across ThreatQ instances.  GNAT matches against the following
+known variants (case-insensitive):
+
+* ``"Targeted Industry"`` / ``"Target Industry"``
+* ``"Targeted Sector"``  / ``"Target Sector"`` / ``"Sector"``
+* ``"Targets"`` (used by the Adversary Reader CDF feed)
+* ``"Victim Industry"``
+
+Use :meth:`get_attribute_types` to discover the exact names used in a
+specific deployment.  Matched values are written to ``x_target_sectors``
+on the returned STIX dict.
 """
 
 from typing import Any, Dict, List, Optional
 
 from gnat.clients.base import BaseClient, SAKClientError
 from gnat.connectors.base_connector import ConnectorMixin
+
+
+# Attribute name variants recognised as sector/industry — case-insensitive.
+_SECTOR_ATTR_NAMES: frozenset = frozenset({
+    "targeted industry",
+    "target industry",
+    "targeted sector",
+    "target sector",
+    "sector",
+    "targets",
+    "victim industry",
+})
 
 
 class ThreatQClient(BaseClient, ConnectorMixin):
@@ -129,11 +160,14 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         Returns
         -------
         dict
-            Raw ThreatQ API response.
+            Raw ThreatQ API response (includes ``attributes`` array).
         """
         resource = self._resolve_resource(stix_type)
         tq_id = self._extract_numeric_id(object_id)
-        return self.get(f"/api/{resource}/{tq_id}", params={"with": "tags,score"})
+        return self.get(
+            f"/api/{resource}/{tq_id}",
+            params={"with": "tags,score,attributes"},
+        )
 
     def list_objects(
         self,
@@ -142,9 +176,13 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> List[Dict[str, Any]]:
-        """Return a paginated list of ThreatQ objects."""
+        """Return a paginated list of ThreatQ objects (includes attributes)."""
         resource = self._resolve_resource(stix_type)
-        params: Dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
+        params: Dict[str, Any] = {
+            "limit": page_size,
+            "offset": (page - 1) * page_size,
+            "with": "attributes",
+        }
         if filters:
             params.update(filters)
         resp = self.get(f"/api/{resource}", params=params)
@@ -164,6 +202,27 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         tq_id = self._extract_numeric_id(object_id)
         self.delete(f"/api/{resource}/{tq_id}")
 
+    def get_attribute_types(self) -> List[str]:
+        """
+        Return all attribute type names configured in this ThreatQ deployment.
+
+        Use this to discover the exact attribute name strings for sector/industry
+        fields — they vary between deployments.  The names returned can be
+        compared against :data:`_SECTOR_ATTR_NAMES` or used to extend it via
+        the ``[sector_aliases]`` INI section.
+
+        Returns
+        -------
+        list of str
+            Attribute type names (e.g. ``["Targeted Industry", "Source", ...]``).
+        """
+        resp = self.get("/api/attribute_types")
+        return [
+            item.get("name", "")
+            for item in (resp.get("data", []) if isinstance(resp, dict) else [])
+            if item.get("name")
+        ]
+
     # ------------------------------------------------------------------
     # ConnectorMixin — STIX translation
     # ------------------------------------------------------------------
@@ -171,6 +230,11 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         """
         Translate a ThreatQ indicator dict to STIX 2.1 format.
+
+        Sector and industry context is extracted from the ``attributes`` array
+        when present (requires ``?with=attributes`` on the originating request,
+        which :meth:`get_object` and :meth:`list_objects` both include).
+        Matched attribute values are written to ``x_target_sectors``.
 
         Parameters
         ----------
@@ -183,7 +247,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             Partial STIX Indicator dict.
         """
         data = native.get("data", native)
-        return {
+        stix: Dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{data.get('id', '')}",
             "name": data.get("value", ""),
@@ -193,6 +257,10 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             "modified": data.get("updated_at", ""),
             "indicator_types": [data.get("class", "unknown")],
         }
+        sectors = self._extract_sectors(data.get("attributes", []))
+        if sectors:
+            stix["x_target_sectors"] = sectors
+        return stix
 
     def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -223,6 +291,33 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         if not resource:
             raise SAKClientError(f"ThreatQ: unsupported STIX type '{stix_type}'")
         return resource + "s"  # ThreatQ uses plural endpoints
+
+    @staticmethod
+    def _extract_sectors(attributes: List[Dict[str, Any]]) -> List[str]:
+        """
+        Extract sector/industry values from a ThreatQ attributes array.
+
+        Matches ``attributes[].name`` case-insensitively against the known
+        sector attribute name variants (:data:`_SECTOR_ATTR_NAMES`).
+
+        Parameters
+        ----------
+        attributes : list of dict
+            The ``attributes`` array from a ThreatQ API response.
+
+        Returns
+        -------
+        list of str
+            Sector/industry string values (may be empty).
+        """
+        sectors = []
+        for attr in attributes:
+            name = str(attr.get("name", "")).lower().strip()
+            if name in _SECTOR_ATTR_NAMES:
+                val = str(attr.get("value", "")).strip()
+                if val:
+                    sectors.append(val)
+        return sectors
 
     @staticmethod
     def _extract_numeric_id(stix_or_numeric_id: str) -> str:

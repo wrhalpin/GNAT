@@ -106,6 +106,106 @@ class TestThreatQClient:
         assert stix["type"] == "indicator"
         assert "1.2.3.4" in stix.get("pattern", "")
 
+    def test_to_stix_extracts_targeted_industry(self, client):
+        native = {"data": {
+            "id": 1, "value": "evil.com", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [
+                {"name": "Targeted Industry", "value": "Healthcare"},
+            ],
+        }}
+        stix = client.to_stix(native)
+        assert stix.get("x_target_sectors") == ["Healthcare"]
+
+    def test_to_stix_extracts_targeted_sector(self, client):
+        native = {"data": {
+            "id": 2, "value": "1.2.3.4", "type": "IP Address", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [{"name": "Targeted Sector", "value": "Finance"}],
+        }}
+        stix = client.to_stix(native)
+        assert "Finance" in stix.get("x_target_sectors", [])
+
+    def test_to_stix_attr_name_case_insensitive(self, client):
+        native = {"data": {
+            "id": 3, "value": "bad.ru", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [{"name": "TARGETED INDUSTRY", "value": "Energy"}],
+        }}
+        stix = client.to_stix(native)
+        assert stix.get("x_target_sectors") == ["Energy"]
+
+    def test_to_stix_targets_attr_name(self, client):
+        """'Targets' is used by the Adversary Reader CDF feed."""
+        native = {"data": {
+            "id": 4, "value": "apt28.example", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [{"name": "Targets", "value": "Government"}],
+        }}
+        stix = client.to_stix(native)
+        assert "Government" in stix.get("x_target_sectors", [])
+
+    def test_to_stix_multiple_sector_attrs(self, client):
+        native = {"data": {
+            "id": 5, "value": "evil.com", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [
+                {"name": "Targeted Industry", "value": "Healthcare"},
+                {"name": "Targeted Sector",   "value": "Pharmaceuticals"},
+                {"name": "Description",        "value": "some notes"},
+            ],
+        }}
+        stix = client.to_stix(native)
+        sectors = stix.get("x_target_sectors", [])
+        assert "Healthcare" in sectors
+        assert "Pharmaceuticals" in sectors
+        assert "some notes" not in sectors
+
+    def test_to_stix_no_attributes_omits_sector_key(self, client):
+        native = {"data": {"id": 6, "value": "1.2.3.4", "type": "IP Address",
+                            "class": "malicious", "created_at": "", "updated_at": ""}}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_to_stix_unrelated_attrs_ignored(self, client):
+        native = {"data": {
+            "id": 7, "value": "evil.com", "type": "FQDN", "class": "malicious",
+            "created_at": "", "updated_at": "",
+            "attributes": [
+                {"name": "Description", "value": "Some description"},
+                {"name": "Source",      "value": "internal"},
+            ],
+        }}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_get_object_requests_attributes(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": {"id": 1, "value": "x"}})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.get_object("indicator", "1")
+        _, kwargs = mock_get.call_args
+        assert "attributes" in kwargs.get("params", {}).get("with", "")
+
+    def test_list_objects_requests_attributes(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_objects("indicator")
+        _, kwargs = mock_get.call_args
+        assert "attributes" in kwargs.get("params", {}).get("with", "")
+
+    def test_get_attribute_types(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={
+            "data": [
+                {"name": "Targeted Industry"},
+                {"name": "Description"},
+                {"name": "Source"},
+            ]
+        }))
+        names = client.get_attribute_types()
+        assert "Targeted Industry" in names
+        assert "Description" in names
+        assert len(names) == 3
+
     def test_from_stix_returns_dict(self, client):
         stix = {"type": "indicator", "id": "indicator--1", "name": "evil.com",
                  "pattern": "[domain-name:value = 'evil.com']"}
@@ -155,6 +255,26 @@ class TestCrowdStrikeClient:
                   "created_timestamp": "", "modified_timestamp": ""}
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
+
+    def test_to_stix_target_industries(self, client):
+        native = {"id": "cs-2", "value": "apt28", "type": "actor",
+                  "created_timestamp": "", "modified_timestamp": "",
+                  "target_industries": ["Healthcare", "Government"]}
+        stix = client.to_stix(native)
+        assert stix.get("x_target_sectors") == ["Healthcare", "Government"]
+
+    def test_to_stix_no_industries_omits_key(self, client):
+        native = {"id": "cs-3", "value": "1.2.3.4", "type": "ipv4",
+                  "created_timestamp": "", "modified_timestamp": ""}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_to_stix_empty_industries_omits_key(self, client):
+        native = {"id": "cs-4", "value": "1.2.3.4", "type": "ipv4",
+                  "created_timestamp": "", "modified_timestamp": "",
+                  "target_industries": []}
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
 
     def test_from_stix_returns_dict(self, client):
         result = client.from_stix({"name": "1.2.3.4"})
@@ -314,6 +434,39 @@ class TestRecordedFutureClient:
         _assert_stix_contract(stix)
         assert stix.get("x_rf_risk_score") == 90
 
+    def test_to_stix_extracts_related_industries(self, client):
+        native = {
+            "entity": {"id": "rf-2", "name": "ThreatActor-X"},
+            "risk": {"score": 75, "criticalityLabel": "Malicious"},
+            "timestamps": {"firstSeen": "", "lastSeen": ""},
+            "relatedEntities": [
+                {"type": "Industry", "entity": {"name": "Healthcare"}},
+                {"type": "Industry", "entity": {"name": "Finance"}},
+                {"type": "Country",  "entity": {"name": "United States"}},
+            ],
+        }
+        stix = client.to_stix(native)
+        sectors = stix.get("x_target_sectors", [])
+        assert "Healthcare" in sectors
+        assert "Finance" in sectors
+        assert "United States" not in sectors
+
+    def test_to_stix_no_related_entities_omits_key(self, client):
+        native = {
+            "entity": {"id": "rf-3", "name": "1.2.3.4"},
+            "risk": {"score": 50, "criticalityLabel": "Suspicious"},
+            "timestamps": {"firstSeen": "", "lastSeen": ""},
+        }
+        stix = client.to_stix(native)
+        assert "x_target_sectors" not in stix
+
+    def test_get_object_requests_related_entities(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"data": {}})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.get_object("indicator", "rf-1")
+        _, kwargs = mock_get.call_args
+        assert "relatedEntities" in kwargs.get("params", {}).get("fields", "")
+
     def test_list_objects_returns_list(self, client, monkeypatch):
         monkeypatch.setattr(client, "get", MagicMock(
             return_value={"data": {"results": [{"id": "r1"}]}}
@@ -397,6 +550,17 @@ class TestWhisticClient:
         assert s["type"] == "threat-actor"
         assert s["x_whistic_trust_score"] == 85
 
+    def test_to_stix_categories_map_to_sectors(self, client):
+        s = client.to_stix({"id": "v2", "name": "HealthCo",
+                             "categories": ["Healthcare", "Pharmaceuticals"],
+                             "trust_score": 70, "created_at": "", "updated_at": ""})
+        assert s.get("x_target_sectors") == ["Healthcare", "Pharmaceuticals"]
+
+    def test_to_stix_no_categories_omits_sectors(self, client):
+        s = client.to_stix({"id": "v3", "name": "Acme",
+                             "trust_score": 60, "created_at": "", "updated_at": ""})
+        assert "x_target_sectors" not in s
+
     def test_upsert_raises_for_vendor(self, client):
         with pytest.raises(SAKClientError):
             client.upsert_object("threat-actor", {"name": "New Vendor"})
@@ -439,6 +603,20 @@ class TestRiskReconClient:
         assert s["type"] == "threat-actor"
         assert s["x_rr_score"] == 7.5
         assert s["x_rr_domain"] == "corp.com"
+
+    def test_to_stix_company_industries_map_to_sectors(self, client):
+        s = client.to_stix({"id": "c2", "name": "HealthCorp", "domain": "hc.com",
+                             "score": 8.0, "grade": "B",
+                             "industries": ["Healthcare", "Insurance"],
+                             "created_at": "", "updated_at": ""})
+        assert s.get("x_rr_industries") == ["Healthcare", "Insurance"]
+        assert s.get("x_target_sectors") == ["Healthcare", "Insurance"]
+
+    def test_to_stix_company_no_industries_omits_sectors(self, client):
+        s = client.to_stix({"id": "c3", "name": "Corp B", "domain": "b.com",
+                             "score": 6.0, "grade": "C",
+                             "created_at": "", "updated_at": ""})
+        assert "x_target_sectors" not in s
 
     def test_to_stix_finding(self, client):
         s = client.to_stix({"id": "f1", "criterion": "TLS/SSL",
@@ -501,6 +679,19 @@ class TestFeedlyClient:
                              "description": "", "first_seen": 0, "sources": []})
         assert s["type"] == "attack-pattern"
         assert s["x_mitre_id"] == "T1190"
+
+    def test_to_stix_ttp_sectors(self, client):
+        s = client.to_stix({"id": "t2", "type": "threat-actor",
+                             "name": "APT-X", "description": "",
+                             "first_seen": 0, "sources": [],
+                             "sectors": ["Healthcare", "Energy"]})
+        assert s.get("x_target_sectors") == ["Healthcare", "Energy"]
+
+    def test_to_stix_ttp_no_sectors_omits_key(self, client):
+        s = client.to_stix({"id": "t3", "type": "attack-pattern",
+                             "mitre_id": "T1059", "name": "Command Execution",
+                             "description": "", "first_seen": 0, "sources": []})
+        assert "x_target_sectors" not in s
 
     def test_upsert_raises(self, client):
         with pytest.raises(SAKClientError, match="read-only"):

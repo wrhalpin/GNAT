@@ -299,7 +299,8 @@ class RiskReconClient(BaseClient, ConnectorMixin):
 
         # Company → threat-actor
         if "score" in data and "domain" in data:
-            return {
+            industries = data.get("industries", [])
+            stix: Dict[str, Any] = {
                 "type":               "threat-actor",
                 "id":                 f"threat-actor--{data.get('id', '')}",
                 "name":               data.get("name", data.get("domain", "")),
@@ -310,8 +311,11 @@ class RiskReconClient(BaseClient, ConnectorMixin):
                 "x_rr_score":         data.get("score"),
                 "x_rr_grade":         data.get("grade", ""),
                 "x_rr_domain":        data.get("domain", ""),
-                "x_rr_industries":    data.get("industries", []),
+                "x_rr_industries":    industries,
             }
+            if industries:
+                stix["x_target_sectors"] = industries
+            return stix
 
         # Finding → vulnerability
         if "criterion" in data or "finding_type" in data:

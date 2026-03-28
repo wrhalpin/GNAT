@@ -12,6 +12,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `CopilotReader`: DirectLine token exchange and auto-refresh (`use_token_exchange = true` in `[copilot]` INI section). Exchanges secret for short-lived token via `POST /tokens/generate`; refreshes automatically before expiry via `POST /tokens/refresh`. Falls back to secret on failure. 20 unit tests.
 - `ReportGenerator._extract_email_body_html()`: auto-populates the `body_html` argument of `EmailDelivery` — reads the rendered `.html` file when available; falls back to an HTML snippet of the first 2 000 characters of the Executive Summary section for PDF/DOCX-only deliveries. 4 unit tests in `TestEmailBodyHTML`.
 - `ReportJob` yearly scheduling: defaults to cron `"0 6 1 1 *"` (06:00 UTC Jan 1) instead of a 365-day interval, preventing drift after server restarts. `config/config.ini.example` documents recommended cron expressions for daily (`0 6 * * *`), weekly trends (`0 6 * * 1`), and yearly (`0 6 1 1 *`) report types. 3 unit tests.
+- `ThreatQClient` sector/industry extraction: `get_object()` and `list_objects()` now include `?with=attributes`; new `_extract_sectors()` helper matches `attributes[].name` case-insensitively against known variants (`"Targeted Industry"`, `"Target Industry"`, `"Targeted Sector"`, `"Targets"`, `"Victim Industry"`, etc.) and writes matched values to `x_target_sectors`; new `get_attribute_types()` method calls `GET /api/attribute_types` to discover deployment-specific attribute names. 11 unit tests.
+- `RecordedFutureClient.to_stix()`: extracts `relatedEntities[type=Industry].entity.name` into `x_target_sectors`; `get_object()` now requests `relatedEntities` field. 3 unit tests.
+- `CrowdStrikeClient.to_stix()`: maps `target_industries[]` (present on adversary profile objects) to `x_target_sectors`. 3 unit tests.
+- `pyproject.toml` item #14: confirmed no new pip dependencies required for VirusTotal, ShadowServer, Rapid7, or Nucleus connectors — all use stdlib + urllib3 only.
+- `RiskReconClient.to_stix()`: company objects now also write `x_rr_industries` to `x_target_sectors`. 2 unit tests.
+- `WhisticClient.to_stix()`: vendor `categories` (industry classifications) now also written to `x_target_sectors`. 2 unit tests.
+- `FeedlyClient.to_stix()`: threat-actor/attack-pattern TTP entries now extract `sectors` field into `x_target_sectors`. 2 unit tests.
+- Sector normalization complete across all 10 implemented connectors with sector data (ThreatQ, RecordedFuture, CrowdStrike, VirusTotal, ShadowServer, Nucleus, RiskRecon, Whistic, Feedly, plus CrowdStrike adversary profiles).
 
 ### Fixed
 - `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`

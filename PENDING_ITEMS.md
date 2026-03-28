@@ -8,54 +8,39 @@ identified.
 
 ## HIGH PRIORITY
 
-### 1. ThreatQ Sector / Industry Field Normalization
+### 1. ThreatQ Sector / Industry Field Normalization — ✅ COMPLETE
 
-**File:** `gnat/connectors/threatq/client.py` — `to_stix()` method
+**File:** `gnat/connectors/threatq/client.py`
 
-**Status:** Placeholder — needs field name verification
+**Implemented:**
+Research confirmed that ThreatQ stores sector/industry as entries in a
+generic `attributes` array (never as top-level fields), only present when
+`?with=attributes` is appended to the request. The attribute `name` strings
+are free-form and deployment-configurable — there is no platform-wide
+controlled vocabulary.
 
-**Background:**
-ThreatQ has Target Industry and Target Sector attributes on threat objects.
-GNAT uses `x_target_sectors` as the canonical field for sector-based
-filtering (used by `SectorFilter` in the reports layer and the export
-pipeline). The ThreatQ connector's `to_stix()` method needs to read
-ThreatQ's field names and write them to `x_target_sectors`.
+Changes made:
+- `get_object()` and `list_objects()` now include `attributes` in the
+  `?with=` parameter.
+- Added `_extract_sectors()` static helper: iterates `attributes[]`,
+  matches `name` case-insensitively against known variants
+  (`"Targeted Industry"`, `"Target Industry"`, `"Targeted Sector"`,
+  `"Target Sector"`, `"Sector"`, `"Targets"`, `"Victim Industry"`),
+  and collects `value` strings.
+- `to_stix()` calls `_extract_sectors()` and writes results to
+  `x_target_sectors` when non-empty.
+- Added `get_attribute_types()` method: calls `GET /api/attribute_types`
+  to let operators discover the exact names used in their deployment.
+- 11 new unit tests covering all attribute name variants, case
+  insensitivity, multiple attrs, unrelated attrs ignored, and the
+  `get_attribute_types()` / `?with=attributes` request behaviour.
 
-**Action required:**
-1. In ThreatQ, export a sample STIX bundle for an object with Target
-   Industry and Target Sector values set.
-2. Check the STIX export field names — likely something like
-   `x_threatq_target_industries` or inside an `extensions` block.
-3. Also check whether Target Industry and Target Sector are separate
-   fields in the ThreatQ API response (`/api/types/`, `/api/indicators/`
-   etc.) or combined.
-4. Determine whether ThreatQ uses a controlled vocabulary (defined list)
-   or free-form strings. Note: known values include "Healthcare",
-   "Insurance", "Hospitals and Health Centers", "Opportunistic" — check
-   if these are from a ThreatQ-defined list or user-entered.
-5. Update `to_stix()` in `gnat/connectors/threatq/client.py`:
-
-```python
-# In ThreatQClient.to_stix() — fill in actual field names:
-industries = native.get("x_threatq_target_industries")  # VERIFY field name
-sectors    = native.get("x_threatq_target_sectors")      # VERIFY field name
-if industries or sectors:
-    combined = []
-    if isinstance(industries, list): combined.extend(industries)
-    elif isinstance(industries, str): combined.append(industries)
-    if isinstance(sectors, list):    combined.extend(sectors)
-    elif isinstance(sectors, str):   combined.append(sectors)
-    stix_dict["x_target_sectors"] = combined
-```
-
-6. Add INI `[sector_aliases]` mappings if ThreatQ strings don't exactly
-   match values from other sources (e.g., RF uses "health" vs ThreatQ
-   "Healthcare").
-
-**Other connectors to check (same pattern):**
-- `recordedfuture/client.py` — RF tags sectors on its alerts/entities
-- `crowdstrike/client.py` — CS Adversary profiles have target industries
-- `splunk/client.py` — Depends on data in Splunk; may be in alert fields
+**Other connectors — all now complete:**
+- `recordedfuture/client.py` ✅ — `relatedEntities[type=Industry]` → `x_target_sectors`
+- `crowdstrike/client.py` ✅ — `target_industries[]` → `x_target_sectors`
+- `virustotal/client.py` ✅ — `popular_threat_category` → `x_target_sectors`
+- `shadowserver/client.py` ✅ — `sector` → `x_target_sectors`
+- `nucleus/client.py` ✅ — `asset.industry` + tags → `x_target_sectors`
 
 ---
 
@@ -180,25 +165,24 @@ python-docx DOCXRenderer, SectorFilter move).
 
 ### 14. pyproject.toml — `[project.optional-dependencies]` for new connectors
 
-Once VirusTotal, ShadowServer, Rapid7, and Nucleus connectors are built,
-add their pip dependencies (if any beyond stdlib + urllib3) to pyproject.toml.
+✅ COMPLETE — No new pip dependencies required. VirusTotal, ShadowServer,
+Rapid7, and Nucleus connectors use only Python stdlib (`hashlib`, `hmac`,
+`json`) plus GNAT's own `BaseClient` (urllib3). All existing extras groups
+in `pyproject.toml` remain correct.
 
 ---
 
 ## NORMALIZATION REFERENCE
 
-Once ThreatQ field names are confirmed, update this table:
+| Platform        | Native Field / Path                          | Maps to              | Status    |
+|-----------------|----------------------------------------------|----------------------|-----------|
+| ThreatQ         | `attributes[].name` ∈ sector variants, `attributes[].value` | `x_target_sectors` | ✅ DONE |
+| Recorded Future | `relatedEntities[type=Industry].entity.name` | `x_target_sectors`   | ✅ DONE   |
+| CrowdStrike     | `target_industries[]` (adversary objects)    | `x_target_sectors`   | ✅ DONE   |
+| VirusTotal      | `popular_threat_category{}.value`            | `x_target_sectors`   | ✅ DONE   |
+| ShadowServer    | `sector` (top-level report field)            | `x_target_sectors`   | ✅ DONE   |
+| Nucleus         | `asset.industry` + `asset.tags[]`            | `x_target_sectors`   | ✅ DONE   |
 
-| Platform       | Native Field Name         | Maps to              | Status    |
-|----------------|--------------------------|----------------------|-----------|
-| ThreatQ        | TBD — verify in API      | `x_target_sectors`   | PENDING   |
-| Recorded Future | `entities[].type`        | `x_target_sectors`   | PENDING   |
-| CrowdStrike     | `adversary.target_industries` | `x_target_sectors` | PENDING |
-| VirusTotal      | `popular_threat_category` | `x_target_sectors`  | PENDING   |
-| ShadowServer    | `sector` (report field)  | `x_target_sectors`   | PENDING   |
-| Nucleus         | `asset.industry`         | `x_target_sectors`   | PENDING   |
-
-**Canonical field:** `x_target_sectors` — list of strings on any STIX object.  
-**Alias config:** `[sector_aliases]` section in `config.ini`.  
-**Filter class:** `gnat/reports/base.py::SectorFilter` (move to
-`gnat/export/filters.py` — see item 12).
+**Canonical field:** `x_target_sectors` — list of strings on any STIX object.
+**Alias config:** `[sector_aliases]` section in `config.ini`.
+**Filter class:** `gnat/export/filters.py::SectorFilter` (re-exported from `gnat/reports/base.py`).
