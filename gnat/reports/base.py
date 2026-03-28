@@ -239,137 +239,37 @@ class ReportConfig:
 
 
 # ---------------------------------------------------------------------------
-# SectorFilter
+# SectorFilter — canonical location is gnat.export.filters; re-exported here
 # ---------------------------------------------------------------------------
 
-class SectorFilter:
+from gnat.export.filters import SectorFilter as _SectorFilter
+
+
+class SectorFilter(_SectorFilter):
     """
     Filters STIX objects by the canonical ``x_target_sectors`` field.
 
-    Supports alias expansion for cross-platform normalisation and both
-    ``any`` / ``all`` matching modes.
+    This class lives in :mod:`gnat.export.filters` and is re-exported here
+    for backwards compatibility.  Prefer importing from the export module
+    directly when using in export pipelines.
 
-    Parameters
-    ----------
-    sectors : list of str
-        Sector strings to match against.
-    match : str
-        ``"any"`` or ``"all"``.
-    strict : bool
-        If ``False`` (default), untagged objects pass through alongside
-        tagged matches.  If ``True``, only explicitly-tagged objects are
-        included.
-    aliases : dict, optional
-        ``{canonical: [alias, alias, ...]}`` mapping loaded from the
-        ``[sector_aliases]`` INI section.
-
-    Examples
-    --------
-    ::
-
-        f = SectorFilter(
-            sectors=["Healthcare", "Opportunistic"],
-            aliases={"healthcare": ["Healthcare", "Health", "Medical"]},
-        )
-        filtered = f.apply(workspace_objects)
+    Adds :meth:`apply` (list → list) and :meth:`from_config` helpers
+    that are specific to the report layer.
     """
 
-    _SECTOR_FIELDS = [
-        "x_target_sectors",        # GNAT canonical
-        "x_threatq_industries",    # ThreatQ placeholder — update when verified
-        "x_threatq_sectors",       # ThreatQ placeholder — update when verified
-        "x_rf_target_sectors",     # Recorded Future
-        "x_cs_target_industries",  # CrowdStrike
-    ]
-
-    def __init__(
-        self,
-        sectors: List[str],
-        match: str = "any",
-        strict: bool = False,
-        aliases: Optional[Dict[str, List[str]]] = None,
-    ):
-        self._sectors = [s.lower().strip() for s in sectors]
-        self._match   = match.lower()
-        self._strict  = strict
-        self._aliases = self._build_alias_set(aliases or {})
-
-    def _build_alias_set(self, aliases: Dict[str, List[str]]) -> Dict[str, List[str]]:
-        """Expand alias dict so every sector value has its alias list."""
-        result: Dict[str, List[str]] = {}
-        for canonical, alias_list in aliases.items():
-            key = canonical.lower().strip()
-            result[key] = [a.lower().strip() for a in alias_list]
-        return result
-
-    def _sector_values(self, obj: "STIXBase") -> List[str]:
-        """Collect all sector strings from an object across known fields."""
-        values: List[str] = []
-        for field_name in self._SECTOR_FIELDS:
-            raw = obj._properties.get(field_name)
-            if raw is None:
-                continue
-            if isinstance(raw, list):
-                values.extend(str(v).lower().strip() for v in raw)
-            elif isinstance(raw, str):
-                values.extend(v.lower().strip()
-                               for v in raw.split(",") if v.strip())
-        return values
-
-    def _matches_sector(self, obj_sector: str, target: str) -> bool:
-        """Check if an object sector value matches a target (with aliases)."""
-        if target in obj_sector or obj_sector in target:
-            return True
-        for aliases in self._aliases.values():
-            if target in aliases and obj_sector in aliases:
-                return True
-        return False
-
-    def _object_matches(self, obj: "STIXBase") -> bool:
-        obj_sectors = self._sector_values(obj)
-        if not obj_sectors:
-            return not self._strict   # untagged: pass if not strict
-        if self._match == "all":
-            return all(
-                any(self._matches_sector(os, target) for os in obj_sectors)
-                for target in self._sectors
-            )
-        # "any"
-        return any(
-            any(self._matches_sector(os, target) for os in obj_sectors)
-            for target in self._sectors
-        )
-
     def apply(self, objects: List["STIXBase"]) -> List["STIXBase"]:
-        """Return objects that pass the sector filter."""
-        if not self._sectors:
-            return list(objects)
-        return [obj for obj in objects if self._object_matches(obj)]
+        """Return objects that pass the sector filter (list interface)."""
+        return list(self(iter(objects)))
 
     @classmethod
-    def from_config(cls, config: ReportConfig,
+    def from_config(cls, config: "ReportConfig",
                     ini_config_path: Optional[str] = None) -> "SectorFilter":
         """Construct from a ``ReportConfig``, loading aliases from INI."""
-        aliases: Dict[str, List[str]] = {}
-        if ini_config_path or True:
-            try:
-                from gnat.config import SAKConfig
-                cfg = SAKConfig(ini_config_path)
-                try:
-                    section = cfg.get("sector_aliases")
-                    for key, val in section.items():
-                        aliases[key] = [v.strip() for v in val.split(",")
-                                        if v.strip()]
-                except KeyError:
-                    pass
-            except Exception:
-                pass
-
-        return cls(
-            sectors = config.sectors,
-            match   = config.sector_match,
-            strict  = config.sector_strict,
-            aliases = aliases,
+        return cls.from_ini(
+            ini_config_path=ini_config_path,
+            sectors=config.sectors,
+            match=config.sector_match,
+            strict=config.sector_strict,
         )
 
 

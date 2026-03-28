@@ -19,6 +19,9 @@ Sub-commands
     gnat ingest    --target threatq --source export.csv --format csv
     gnat ingest    --target threatq --source events.json --format misp
     gnat codegen   --spec openapi.json --name myplatform --auth oauth2
+    gnat report    list
+    gnat report    run --config daily_healthcare
+    gnat report    run --config daily_healthcare --formats pdf,html --no-ai
     gnat config    --show
     gnat config    --validate
 
@@ -219,6 +222,26 @@ def _build_parser() -> argparse.ArgumentParser:
     p_vpb = viz_subs.add_parser("powerbi", help="Export workspace to Power BI Excel")
     p_vpb.add_argument("--workspace", required=True, metavar="NAME")
     p_vpb.add_argument("--file",      default="workspace.xlsx")
+
+    # ── report ────────────────────────────────────────────────────────────
+    p_rp = subs.add_parser("report", help="Generate or list configured reports")
+    rp_subs = p_rp.add_subparsers(dest="report_command", title="report commands",
+                                   metavar="<report_command>")
+    rp_subs.required = True
+
+    p_rp_run = rp_subs.add_parser("run", help="Generate a report immediately")
+    p_rp_run.add_argument("--config", dest="report_config", required=True,
+                          metavar="NAME",
+                          help="Report config name from ini, e.g. daily_healthcare")
+    p_rp_run.add_argument("--output-dir", default=None, metavar="DIR",
+                          help="Override output directory from config")
+    p_rp_run.add_argument("--formats", default=None, metavar="FORMATS",
+                          help="Comma-separated formats to render, "
+                               "e.g. pdf,html,markdown (overrides config)")
+    p_rp_run.add_argument("--no-ai", action="store_true",
+                          help="Disable AI narrative generation for this run")
+
+    rp_subs.add_parser("list", help="List configured report profiles from ini")
 
     # ── schedule ──────────────────────────────────────────────────────────
     p_sc = subs.add_parser("schedule", help="Manage scheduled feed jobs")
@@ -580,6 +603,85 @@ def _cmd_viz(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_report(args) -> int:
+    """report subcommand — run, list."""
+    report_cmd = getattr(args, "report_command", None)
+
+    if report_cmd == "list":
+        try:
+            from gnat.config import SAKConfig
+            cfg = SAKConfig(getattr(args, "config_path", None))
+            profiles = [
+                s[len("report."):] for s in cfg._parser.sections()
+                if s.startswith("report.")
+            ]
+            if not profiles:
+                _info(args, "No [report.<name>] sections found in config.")
+                return 0
+            rows = [{"profile": p} for p in sorted(profiles)]
+            _print_table(rows, fields=["profile"])
+            return 0
+        except FileNotFoundError as exc:
+            print(_red(f"Config not found: {exc}"), file=sys.stderr)
+            return 1
+
+    if report_cmd == "run":
+        profile = args.report_config
+        try:
+            from gnat.config import SAKConfig
+            from gnat.reports import ReportConfig, ReportGenerator, AIMode
+            from gnat.context.workspace import WorkspaceManager
+
+            cfg_path = getattr(args, "config_path", None)
+            manager  = WorkspaceManager.default(config_path=cfg_path)
+            report_cfg = ReportConfig.from_ini(
+                section=f"report.{profile}",
+                config_path=cfg_path,
+            )
+
+            if args.no_ai:
+                report_cfg = ReportConfig(
+                    **{**report_cfg.__dict__, "ai_mode": AIMode.DISABLED}
+                )
+            if args.output_dir:
+                report_cfg = ReportConfig(
+                    **{**report_cfg.__dict__, "output_dir": args.output_dir}
+                )
+            if args.formats:
+                fmt_list = [f.strip() for f in args.formats.split(",") if f.strip()]
+                report_cfg = ReportConfig(
+                    **{**report_cfg.__dict__, "formats": fmt_list}
+                )
+
+            _info(args, f"Running report: {profile}")
+            result = ReportGenerator(manager, report_cfg).run()
+
+            if result.success:
+                print(_green(f"Report generated: {result.title}"))
+                for path in result.files_written:
+                    print(f"  {_dim('→')} {path}")
+            else:
+                print(_yellow(f"Report completed with errors: {result.title}"))
+                for err in result.errors:
+                    print(_red(f"  ✗ {err}"), file=sys.stderr)
+                for path in result.files_written:
+                    print(f"  {_dim('→')} {path}")
+                return 2
+            return 0
+
+        except FileNotFoundError as exc:
+            print(_red(f"Config not found: {exc}"), file=sys.stderr)
+            return 1
+        except KeyError as exc:
+            print(_red(f"Report profile not found in config: {exc}"), file=sys.stderr)
+            return 1
+        except ImportError as exc:
+            print(_red(f"Missing dependency: {exc}"), file=sys.stderr)
+            return 1
+
+    return 0
+
+
 def _cmd_schedule(args) -> int:
     """schedule subcommand — list, run, crontab."""
     from gnat.schedule import FeedScheduler
@@ -625,14 +727,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         logging.basicConfig(level=logging.WARNING)
 
     handlers = {
-        "ping":    _cmd_ping,
-        "viz":     _cmd_viz,
+        "ping":     _cmd_ping,
+        "viz":      _cmd_viz,
+        "report":   _cmd_report,
         "schedule": _cmd_schedule,
-        "query":   _cmd_query,
-        "list":    _cmd_list,
-        "ingest":  _cmd_ingest,
-        "codegen": _cmd_codegen,
-        "config":  _cmd_config,
+        "query":    _cmd_query,
+        "list":     _cmd_list,
+        "ingest":   _cmd_ingest,
+        "codegen":  _cmd_codegen,
+        "config":   _cmd_config,
     }
 
     handler = handlers.get(args.command)

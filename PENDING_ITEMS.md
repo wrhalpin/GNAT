@@ -166,37 +166,26 @@ is needed.
 
 **File:** `gnat/cli/main.py`
 
-**Status:** CLI has a `schedule` subcommand stub but no `report` subcommand.
-
-**Action required:**
-- Add `gnat report run --config report.daily_healthcare` to trigger
-  on-demand report generation from the CLI.
-- Add `gnat report list` to show configured report profiles.
+**Status:** ✅ COMPLETE — Added `gnat report list` and `gnat report run`.
+`run` accepts `--config <name>`, `--formats`, `--output-dir`, `--no-ai`.
 
 ### 12. Export Pipeline — `SectorFilter` integration
 
 **File:** `gnat/export/filters.py`
 
-**Status:** The export filter library has `TypeFilter`, `ConfidenceFilter`,
-`TLPFilter` etc. but no `SectorFilter`. The report layer has its own in
-`gnat/reports/base.py`.
-
-**Action required:**
-- Move `SectorFilter` to `gnat/export/filters.py` so it's available
-  in both the export pipeline and the report layer.
-- Update `gnat/reports/base.py` to import from the new location.
+**Status:** ✅ COMPLETE — `SectorFilter` moved to `gnat/export/filters.py`
+as a proper `ExportFilter` subclass (composable via `&`). Re-exported from
+`gnat/reports/base.py` with `apply()` and `from_config()` helpers for
+backwards compatibility. Available as `gnat.export.SectorFilter`.
 
 ### 13. CHANGELOG.md — versions 0.6.0 through 1.0.0
 
 **File:** `CHANGELOG.md`
 
-**Status:** Last logged version was 0.5.0. Needs entries for:
-- 0.6.0 — FeedScheduler, CurationJob
-- 0.7.0 — ExportPipeline, ExportJob, EDLTransform, NetskopeCETransform
-- 0.8.0 — AI Agents (ResearchAgent, ParsingAgent, CopilotReader)
-- 0.9.0 — ResearchLibrary three-tier knowledge base
-- 1.0.0 — Report generation (daily, trends, yearly), four formats,
-           email + SharePoint delivery
+**Status:** ✅ COMPLETE — Added entries for 0.6.0 (FeedScheduler),
+0.7.0 (ExportPipeline + filters), 0.8.0 (AI Agents), 0.9.0 (ResearchLibrary),
+and 1.0.0 (Reports, 29 connectors, search sidecar, CLI report subcommand,
+python-docx DOCXRenderer, SectorFilter move).
 
 ### 14. pyproject.toml — `[project.optional-dependencies]` for new connectors
 

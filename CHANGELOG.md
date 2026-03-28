@@ -9,11 +9,143 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Planned
-- Async client variant (`asyncio` / `httpx`)
 - STIX 2.1 pattern validator integration
-- CLI entry point (`gnat query`, `gnat ingest`)
 - Docker-based integration test harness
-- Sphinx API documentation
+- ThreatQ sector/industry field name verification (see PENDING_ITEMS.md §1)
+- Solr search UI / Grafana dashboard integration for `gnat/search` sidecar
+
+---
+
+## [1.0.0] — 2026-03-28
+
+### Added
+
+#### 29 Platform Connectors
+- **AlienVault OTX** — API key, pulse/IOC queries, STIX `Indicator` mapping
+- **Elastic SIEM** — API key/Basic, ECS document queries, Kibana alert/rule/case management
+- **Graylog** — API key/Basic, stream alerts and search, STIX `Indicator` mapping
+- **MISP** — API key, full event/attribute/feed/galaxy/sighting/tag CRUD, STIX ↔ MISP translation
+- **OpenCTI** — API key, GraphQL-based connector scaffold
+- **OSSIM** — Basic auth, AlienVault SIEM event queries, STIX mapping
+- **IBM QRadar** — API token, Ariel search, offenses, assets, reference data, rules
+- **Security Onion** — API key, alert/hunt queries, STIX `Indicator` mapping
+- **Microsoft Sentinel** — OAuth2/Azure AD, incidents, alerts, analytic rules, watchlists, hunting
+- **Snort IDS** — File/Syslog, rule parsing, alert log reading, STIX mapping
+- **Suricata IDS/IPS** — File/Syslog, EVE JSON log consumption, STIX mapping
+- **Wazuh SIEM/XDR** — API key/Basic, agents, alerts, rules, syscheck, active response, vuln data
+- **Zeek Network Monitor** — File/Syslog, conn/dns/http/ssl log parsing, STIX mapping
+- **ControlUp DEX** — Bearer token, device/session/alert/vulnerability STIX translation
+
+#### Search Sidecar (`gnat/search/`)
+- `GNATIndexer` — Solr 9.x document indexing, querying, and batch management
+- `SearchMixin` — drop-in connector mixin that auto-indexes on `upsert_object()`
+- ORM integration helpers (`orm_with_mixin.py`) — mixin-enhanced STIX objects
+- Ingest pipeline patch (`pipeline_patch.py`) — routes records through Solr post-map
+- ResearchLibrary patch (`library_patch.py`) — search-backed cross-source lookups
+- `solr_schema_gnat.xml` — Solr 9.x schema for GNAT threat intel fields
+- Configure via `[search]` section: `solr_url`, `enabled`, `batch_size`
+
+#### Reports (`gnat/reports/`)
+- `ReportGenerator` — pluggable pipeline: aggregate → AI narrate → render → deliver
+- `DataAggregator` — volume, IOC breakdown, threat actors, CVEs, sectors, sources,
+  confidence distribution, time series, period-over-period delta
+- Four renderers: `MarkdownRenderer`, `HTMLRenderer`, `PDFRenderer` (reportlab),
+  `DOCXRenderer` (python-docx, pure Python — no Node.js required)
+- `ReportJob` — scheduled report via `FeedScheduler`; configurable via INI `[report.*]`
+- `AIMode` — `DISABLED` / `ASSISTED` / `FULL` per-report AI involvement
+- Email delivery (`EmailDelivery`) and SharePoint delivery (`SharePointDelivery`)
+- `SectorFilter` moved to `gnat/export/filters.py` — available in both export
+  and report layers; re-exported from `gnat/reports/base.py` for backwards compatibility
+
+#### CLI additions
+- `gnat report list` — list configured `[report.*]` profiles from ini
+- `gnat report run --config <name>` — generate a report on demand;
+  supports `--formats`, `--output-dir`, `--no-ai` overrides
+
+#### AI Agents (`gnat/agents/`)
+- `ResearchAgent` — topic-driven and feed-driven AI threat research via Claude API
+- `ParsingAgent` — extract structured STIX from unstructured text (IOCs, TTPs, CVEs)
+- `CopilotReader` — Microsoft Copilot via DirectLine for M365/SharePoint content
+- Config via `[claude]` INI section: `api_key`, `model`, `ai_confidence_ceiling`
+
+#### Research Library (`gnat/research/`)
+- `ResearchLibrary` — three-tier knowledge base: personal workspaces → staging → library
+- `CurationJob` — scheduled promotion from staging to library with TTL enforcement
+- `ResearchEntry` — typed entry with category, freshness, confidence, and source tracking
+- `WorkspaceManager.default()` — zero-config factory (SQLite or FlatFileStore fallback)
+
+### Changed
+- `DOCXRenderer` replaced Node.js/npm subprocess implementation with pure-Python
+  `python-docx`; `python-docx>=1.1` added to `[reports]` and `[all]` extras
+- `SectorFilter` canonical location moved to `gnat.export.filters`; `gnat.reports.base`
+  re-exports it for backwards compatibility
+
+---
+
+## [0.9.0] — 2025-09-15
+
+### Added
+
+#### Research Library (`gnat/research/`)
+- `ResearchLibrary` three-tier knowledge base (personal / staging / library workspaces)
+- `ResearchEntry` — typed entry: category, status, TTL, confidence, source, narrative
+- `CurationJob` — scheduled promotion, TTL expiry, staged→library gating
+- `ResearchLibrary.default()` / `from_manager()` factory methods
+- INI configuration: `[research]` section with `staging_name`, `library_name`,
+  TTL overrides per category (`ttl_threat_actor`, `ttl_vulnerability`, etc.)
+
+---
+
+## [0.8.0] — 2025-07-01
+
+### Added
+
+#### AI Agents (`gnat/agents/`)
+- `ResearchAgent` — topic-driven synthesis and feed-driven monitoring via Claude API
+  (`web_search` tool, configurable topic list, confidence ceiling)
+- `ParsingAgent` — unstructured text → STIX objects (IOCs, TTPs, actors, CVEs)
+  with `x_source_type = "ai_extracted"` and confidence ≤ `ai_confidence_ceiling`
+- `CopilotReader` — Microsoft Copilot DirectLine source reader; polls
+  SharePoint, mailboxes, and Teams channels for threat content
+- `ClaudeClient` — thin wrapper around Claude API with retry and token tracking
+- Config: `[claude]` INI section — `api_key`, `model` (default `claude-sonnet-4-6`),
+  `ai_confidence_ceiling` (default 60)
+
+---
+
+## [0.7.0] — 2025-05-15
+
+### Added
+
+#### Export pipeline (`gnat/export/`)
+- `ExportPipeline` — fluent builder: `.read_from()`, `.filter_with()`,
+  `.transform_with()`, `.deliver_to()`, `.run()`
+- `ExportJob` — scheduled export via `FeedScheduler`; `pipeline_factory` pattern
+- `ExportResult`, `TransformResult`, `DeliveryResult` — typed outcome dataclasses
+- **Filters:** `TypeFilter`, `ConfidenceFilter`, `TLPFilter`, `TagFilter`,
+  `AgeFilter`, `PatternFilter`, `IOCTypeFilter`, `LimitFilter`,
+  `DeduplicateFilter`, `FunctionFilter`, `SectorFilter`
+- **Transforms:** `EDLTransform` (plaintext IOC lists), `NetskopeCETransform`
+  (Netskope CE API payload format)
+- **Delivery targets:** `FileDelivery`, `HTTPDelivery`, `EDLServer` (FastAPI,
+  per-type endpoint, poll-based firewall integration), `PlatformDelivery`,
+  `EmailDelivery`
+
+---
+
+## [0.6.0] — 2025-04-01
+
+### Added
+
+#### Feed scheduling (`gnat/schedule/`)
+- `FeedScheduler` — APScheduler/Celery-compatible job runner;
+  `add()`, `remove()`, `start()`, `stop()`, `statuses()`, context manager
+- `FeedJob` — typed job: `job_id`, `pipeline_factory`, `interval_seconds`,
+  `cron_expr`, `max_retries`, `on_success`/`on_error` callbacks
+- `IngestJob` — convenience subclass that wires `IngestPipeline` into scheduler
+- CLI: `gnat schedule list`, `gnat schedule run [--job JOB_ID]`,
+  `gnat schedule crontab`
+- New optional extra: `pip install "gnat[schedule]"` (installs croniter)
 
 ---
 
