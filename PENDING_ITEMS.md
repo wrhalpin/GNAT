@@ -322,36 +322,20 @@ uses existing `[agents]` Claude client.
 
 **Priority:** MEDIUM
 
-**What:** `ConnectorMixin` gains a `capabilities()` method that returns a
-structured inventory of available operations, combining:
-1. The standard 7-method interface (always present)
-2. Any public extra methods on the connector subclass (platform-specific)
-3. Metadata: method signatures, docstrings, read/write classification
+**Status:** ✅ COMPLETE
 
-**API:**
-```python
-caps = client.capabilities()
-# → {
-#     "authenticate": {"signature": "...", "type": "auth"},
-#     "list_objects": {"signature": "...", "type": "read"},
-#     "get_indicators": {"signature": "...", "type": "read", "platform_specific": True},
-#     ...
-# }
-
-# Dynamic dispatch (safe — no eval, no arbitrary attr chains):
-result = client.call("get_indicators", limit=100, since="2026-01-01")
-```
-
-**Safety rules for `call()`:**
-- Only dispatches to methods in `capabilities()` (whitelist, not blacklist)
-- Read-only by default; write methods require `allow_write=True` kwarg
-- No recursion, no chained attribute access
-
-**CLI integration:** `gnat client capabilities --platform threatq` prints
-the capability table.
-
-**Scope:** Changes to `gnat/connectors/base_connector.py` +
-`gnat/clients/__init__.py` + CLI subcommand.
+**Implemented:**
+- `ConnectorMixin.capabilities()` (`gnat/connectors/base_connector.py`):
+  MRO walk returns all public, non-plumbing methods with `signature`,
+  `doc`, `type` (`auth`/`read`/`write`/`helper`), and `platform_specific`
+  flag. Private, HTTP-plumbing (`get`, `post`, etc.), and meta methods
+  (`capabilities`, `call`) excluded.
+- `ConnectorMixin.call(method_name, *args, allow_write=False, **kwargs)`:
+  whitelist-only dispatch; write-type methods require `allow_write=True`.
+- CLI: `gnat client capabilities --platform <name>` (colour table + JSON);
+  `gnat client call --platform <name> --method <m> --args KEY=VALUE ...`
+  with `--allow-write` guard.
+- 31 unit tests in `tests/unit/test_capabilities.py`.
 
 ---
 
