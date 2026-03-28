@@ -33,12 +33,12 @@ from gnat.connectors.security_onion.client import SecurityOnionClient
 from gnat.connectors.snort.client import SnortClient
 from gnat.connectors.suricata.client import SuricataClient
 from gnat.connectors.zeek.client import ZeekClient
-from gnat.connectors.elastic.client import ElasticClient
-from gnat.connectors.misp.client import MISPClient
+from gnat.connectors.elastic.connector import ElasticConnector
+from gnat.connectors.misp.connector import MISPConnector
 from gnat.connectors.opencti.client import OpenCTIClient
-from gnat.connectors.qradar.client import QRadarClient
-from gnat.connectors.sentinel.client import SentinelClient
-from gnat.connectors.wazuh.client import WazuhClient
+from gnat.connectors.qradar.connector import QRadarConnector
+from gnat.connectors.sentinel.connector import SentinelConnector
+from gnat.connectors.wazuh.connector import WazuhConnector
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -65,12 +65,12 @@ CLIENT_REGISTRY: dict = {
     "snort":          SnortClient,
     "suricata":       SuricataClient,
     "zeek":           ZeekClient,
-    "elastic":        ElasticClient,
-    "misp":           MISPClient,
+    "elastic":        ElasticConnector,
+    "misp":           MISPConnector,
     "opencti":        OpenCTIClient,
-    "qradar":         QRadarClient,
-    "sentinel":       SentinelClient,
-    "wazuh":          WazuhClient,
+    "qradar":         QRadarConnector,
+    "sentinel":       SentinelConnector,
+    "wazuh":          WazuhConnector,
 }
 
 __all__ = [
