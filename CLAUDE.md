@@ -6,7 +6,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 
 ## Project Overview
 
-**GNAT** (Cybersecurity Threat Management Swiss Army Knife) is a production-ready Python library providing:
+**GNAT** (CTM Toolkit) is a production-ready Python library providing:
 - A unified client interface for 29 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
@@ -17,7 +17,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 **Import root:** `gnat`
 **Version:** 0.1.0
 **Python support:** 3.9, 3.10, 3.11, 3.12
-**License:** MIT
+**License:** Apache-2.0
 
 ---
 

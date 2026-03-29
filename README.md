@@ -1,4 +1,4 @@
-# GNAT 🪰💪
+# GNAT 🪰
 
 **GNAT's Not Another TIP**
 
@@ -336,7 +336,7 @@ ORM Objects (Indicator, ThreatActor, Malware, ...)
 
 ## License
 
-MIT
+Apache 2.0
 
 ---
 
@@ -359,6 +359,7 @@ IngestPipeline ──(optionally writes to)──► GNATClient
 ### Quick Examples
 
 **Plaintext IOC list → ThreatQ:**
+
 ```python
 import gnat
 
@@ -377,6 +378,7 @@ print(result)  # IngestResult: 1204 records → 1198 STIX objects, 1102 written 
 ```
 
 **STIX/TAXII feed → CrowdStrike:**
+
 ```python
 from taxii2client.v21 import Server
 
@@ -394,6 +396,7 @@ result = (
 ```
 
 **Relational database → XSOAR:**
+
 ```python
 import psycopg2
 
@@ -418,6 +421,7 @@ result = (
 ```
 
 **MISP export → Recorded Future:**
+
 ```python
 result = (
     gnat.IngestPipeline("misp-export")
@@ -441,6 +445,7 @@ result = (
 ```
 
 **Phishing email folder:**
+
 ```python
 result = (
     gnat.IngestPipeline("phish-samples")
@@ -453,6 +458,7 @@ objs = list(pipeline.iter_objects())   # collect without writing
 ```
 
 **SIEM (Splunk / Elastic) → platform:**
+
 ```python
 # Splunk
 result = (
