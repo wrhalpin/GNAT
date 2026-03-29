@@ -4,7 +4,7 @@ conftest.py — shared pytest fixtures for GNAT test suite.
 
 import pytest
 from unittest.mock import MagicMock, patch
-from gnat.client import SAKClient
+from gnat.client import GNATClient
 
 
 # ---------------------------------------------------------------------------
@@ -76,5 +76,5 @@ def minimal_config(tmp_path):
 
 @pytest.fixture
 def sak_client(minimal_config):
-    """Return a SAKClient loaded from the minimal test config."""
-    return SAKClient(config_path=minimal_config)
+    """Return a GNATClient loaded from the minimal test config."""
+    return GNATClient(config_path=minimal_config)

@@ -6,10 +6,10 @@ HTTP client implementations for each supported security platform.
 
 All clients inherit from :class:`~gnat.clients.base.BaseClient` and are
 registered in the :data:`CLIENT_REGISTRY` dict so that
-:class:`~gnat.client.SAKClient` can resolve them by name.
+:class:`~gnat.client.GNATClient` can resolve them by name.
 """
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.threatq.client import ThreatQClient
 from gnat.connectors.proofpoint.client import ProofpointClient
 from gnat.connectors.netskope.client import NetskopeClient
@@ -101,6 +101,6 @@ CLIENT_REGISTRY: dict = {
 
 __all__ = [
     "BaseClient",
-    "SAKClientError",
+    "GNATClientError",
     "CLIENT_REGISTRY",
 ]

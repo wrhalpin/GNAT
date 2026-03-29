@@ -53,7 +53,7 @@ from gnat.orm.relationship import Relationship
 from gnat.orm.base import STIXBase
 
 if TYPE_CHECKING:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class FlatIOCMapper(RecordMapper):
         Dict key for per-record confidence override.
     extra_stix_fields : dict, optional
         Static key/value pairs added to every produced STIX object.
-    client : SAKClient, optional
+    client : GNATClient, optional
         Bound client.
 
     Examples

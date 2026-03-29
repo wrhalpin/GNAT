@@ -11,7 +11,7 @@ implement :meth:`authenticate`.  The base class provides:
 * JSON request/response helpers
 * Retry logic with exponential back-off
 * Configurable SSL verification and timeout
-* Structured error handling via :class:`SAKClientError`
+* Structured error handling via :class:`GNATClientError`
 
 Example (connector authors)::
 
@@ -34,7 +34,7 @@ from urllib3.util.retry import Retry
 logger = logging.getLogger(__name__)
 
 
-class SAKClientError(Exception):
+class GNATClientError(Exception):
     """
     Raised when an HTTP request to a security platform fails.
 
@@ -67,7 +67,7 @@ class BaseClient:
     max_retries : int
         Number of automatic retries on transient failures.  Defaults to ``3``.
     config : dict, optional
-        Raw config dict (typically from :class:`~gnat.config.SAKConfig`)
+        Raw config dict (typically from :class:`~gnat.config.GNATConfig`)
         for subclass use.
 
     Attributes
@@ -241,7 +241,7 @@ class BaseClient:
 
         if response.status >= 400:
             body_text = response.data.decode("utf-8", errors="replace")
-            raise SAKClientError(
+            raise GNATClientError(
                 f"HTTP {response.status} from {url}",
                 status=response.status,
                 body=body_text,

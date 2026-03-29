@@ -20,7 +20,7 @@ Notes
 -----
 * There is no Snort REST API — all data comes from local log files.
 * ``upsert_object`` and ``delete_object`` are not supported.
-* ``list_objects`` raises ``SAKClientError``; use ``parse_log_file()``
+* ``list_objects`` raises ``GNATClientError``; use ``parse_log_file()``
   or the ``SnortLogReader`` from ``gnat.connectors.snort`` instead.
 """
 
@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -100,13 +100,13 @@ class SnortClient(BaseClient, ConnectorMixin):
         """Verify the alert log file exists and is readable."""
         path = Path(self.alert_log_path)
         if not path.exists():
-            raise SAKClientError(
+            raise GNATClientError(
                 f"Snort alert log not found: {self.alert_log_path}"
             )
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
-        raise SAKClientError(
+        raise GNATClientError(
             "Snort is file-based — individual alert lookup by id is not supported."
         )
 
@@ -142,10 +142,10 @@ class SnortClient(BaseClient, ConnectorMixin):
         return alerts
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("Snort is read-only — no write API available.")
+        raise GNATClientError("Snort is read-only — no write API available.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Snort is read-only — no delete API available.")
+        raise GNATClientError("Snort is read-only — no delete API available.")
 
     # ── Domain-specific operations ────────────────────────────────────────
 
@@ -284,7 +284,7 @@ class SnortClient(BaseClient, ConnectorMixin):
         """Yield normalised alerts from the log file."""
         log_path = Path(path)
         if not log_path.exists():
-            raise SAKClientError(f"Snort alert log not found: {path}")
+            raise GNATClientError(f"Snort alert log not found: {path}")
         if self.log_format == "json":
             yield from self._iter_json_alerts(log_path)
         else:

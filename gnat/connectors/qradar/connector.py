@@ -18,7 +18,7 @@ Offenses are read-only (QRadar manages offense lifecycle internally).
 
 from __future__ import annotations
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 from .client import QRadarClient
@@ -80,7 +80,7 @@ class QRadarConnector(BaseClient, ConnectorMixin):
             self._qradar.get("system/about")
             return True
         except Exception as exc:
-            raise SAKClientError(f"QRadar health check failed: {exc}") from exc
+            raise GNATClientError(f"QRadar health check failed: {exc}") from exc
 
     def get_object(self, stix_type: str, object_id: str, **kwargs) -> dict:
         """
@@ -94,7 +94,7 @@ class QRadarConnector(BaseClient, ConnectorMixin):
             QRadar offense ID (integer string).
         """
         if stix_type == "indicator":
-            raise SAKClientError(
+            raise GNATClientError(
                 "QRadar reference sets do not support single-item lookup by ID. "
                 "Use list_objects(stix_type='indicator') to retrieve all IOCs."
             )
@@ -154,7 +154,7 @@ class QRadarConnector(BaseClient, ConnectorMixin):
             STIX 2.1 bundle or indicator SDO.
         """
         if stix_type == "observed-data":
-            raise SAKClientError(
+            raise GNATClientError(
                 "QRadar offenses are read-only; upsert is not supported for "
                 "stix_type='observed-data'."
             )
@@ -171,11 +171,11 @@ class QRadarConnector(BaseClient, ConnectorMixin):
     def delete_object(self, stix_type: str, object_id: str, **kwargs) -> None:
         """Delete a value from a QRadar reference set."""
         if stix_type == "observed-data":
-            raise SAKClientError(
+            raise GNATClientError(
                 "QRadar offenses cannot be deleted via the API. "
                 "Use close_offense() on the underlying client instead."
             )
-        raise SAKClientError(
+        raise GNATClientError(
             "delete_object for QRadar reference sets requires set_name and value. "
             "Use the underlying _refdata client directly."
         )

@@ -215,8 +215,8 @@ class CopilotReader(SourceReader):
         KeyError
             If ``[copilot]`` section or ``directline_secret`` key is missing.
         """
-        from gnat.config import SAKConfig
-        cfg = SAKConfig(config_path)
+        from gnat.config import GNATConfig
+        cfg = GNATConfig(config_path)
         try:
             section = cfg.get("copilot")
         except KeyError:

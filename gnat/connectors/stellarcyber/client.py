@@ -21,7 +21,7 @@ https://stellarcyber.ai/docs/api/
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _AUTH_PATH = "/connect/api/v1/access_token"
@@ -77,7 +77,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         )
         token = resp.get("access_token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError("StellarCyber: failed to obtain access token")
+            raise GNATClientError("StellarCyber: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     def health_check(self) -> bool:

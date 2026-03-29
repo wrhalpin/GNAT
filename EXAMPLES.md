@@ -51,11 +51,11 @@ financial  = Financial Services, Finance, Banking, FS-ISAC
 ### Loading config
 
 ```python
-from gnat.config import SAKConfig
+from gnat.config import GNATConfig
 
-cfg = SAKConfig()                          # auto-finds ~/.gnat/config.ini
-cfg = SAKConfig("/path/to/config.ini")     # explicit path
-cfg = SAKConfig(os.environ["MY_CONFIG"])   # from env var
+cfg = GNATConfig()                          # auto-finds ~/.gnat/config.ini
+cfg = GNATConfig("/path/to/config.ini")     # explicit path
+cfg = GNATConfig(os.environ["MY_CONFIG"])   # from env var
 
 section = cfg.get("threatq")
 print(section["host"])
@@ -90,12 +90,12 @@ new_ind = client.upsert_object("indicator", {
 })
 ```
 
-### Connect via SAKClient (config-driven)
+### Connect via GNATClient (config-driven)
 
 ```python
-from gnat.client import SAKClient
+from gnat.client import GNATClient
 
-client = SAKClient.from_config("threatq")   # reads [threatq] from config.ini
+client = GNATClient.from_config("threatq")   # reads [threatq] from config.ini
 client.connect()
 client.ping()
 ```
@@ -785,10 +785,10 @@ view.to_excel("intel.xlsx")             # Excel / Power BI
 
 ```python
 import asyncio
-from gnat.async_client import AsyncSAKClient
+from gnat.async_client import AsyncGNATClient
 
 async def gather_all():
-    async with AsyncSAKClient() as client:
+    async with AsyncGNATClient() as client:
         results = await client.gather(
             platforms  = ["threatq", "crowdstrike", "splunk"],
             stix_type  = "indicator",

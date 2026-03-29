@@ -450,10 +450,10 @@ def _build_parser() -> argparse.ArgumentParser:
 # ── Command handlers ───────────────────────────────────────────────────────
 
 def _cmd_ping(args: argparse.Namespace) -> int:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
     _info(args, f"Pinging {_bold(args.target)} …")
     try:
-        cli = SAKClient(config_path=args.config)
+        cli = GNATClient(config_path=args.config)
         cli.connect(target=args.target)
         ok = cli.ping()
         if ok:
@@ -468,10 +468,10 @@ def _cmd_ping(args: argparse.Namespace) -> int:
 
 
 def _cmd_query(args: argparse.Namespace) -> int:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
     _info(args, f"Querying {_bold(args.target)} for {args.type} {_dim(args.id)} …")
     try:
-        cli = SAKClient(config_path=args.config)
+        cli = GNATClient(config_path=args.config)
         cli.connect(target=args.target)
         raw = cli.client.get_object(args.type, args.id)
         stix = cli.client.to_stix(raw)
@@ -483,10 +483,10 @@ def _cmd_query(args: argparse.Namespace) -> int:
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
     _info(args, f"Listing {args.type} from {_bold(args.target)} …")
     try:
-        cli = SAKClient(config_path=args.config)
+        cli = GNATClient(config_path=args.config)
         cli.connect(target=args.target)
         filters: Dict[str, str] = {}
         for kv in (args.filters or []):
@@ -513,7 +513,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
 
 
 def _cmd_ingest(args: argparse.Namespace) -> int:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
     from gnat.ingest import IngestPipeline
     from gnat.ingest.sources import (
         PlainTextReader, CSVReader, JSONReader, JSONLReader,
@@ -582,7 +582,7 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
             print(_yellow(f"Dry-run: {len(objs)} objects would be written"))
             return 0
 
-        cli = SAKClient(config_path=args.config)
+        cli = GNATClient(config_path=args.config)
         cli.connect(target=args.target)
         pipeline.write_to(cli)
         result = pipeline.run()
@@ -651,7 +651,7 @@ def _cmd_codegen(args: argparse.Namespace) -> int:
 
 
 def _cmd_config(args: argparse.Namespace) -> int:
-    from gnat.config import SAKConfig
+    from gnat.config import GNATConfig
 
     _REQUIRED_KEYS = {
         "threatq":       {"host", "client_id", "client_secret"},
@@ -678,7 +678,7 @@ def _cmd_config(args: argparse.Namespace) -> int:
         return 0
 
     try:
-        cfg = SAKConfig(args.config)
+        cfg = GNATConfig(args.config)
     except FileNotFoundError as exc:
         print(_red(f"Config not found: {exc}"))
         print(_dim("  Run: gnat config --init"))
@@ -815,8 +815,8 @@ def _cmd_report(args) -> int:
 
     if report_cmd == "list":
         try:
-            from gnat.config import SAKConfig
-            cfg = SAKConfig(getattr(args, "config_path", None))
+            from gnat.config import GNATConfig
+            cfg = GNATConfig(getattr(args, "config_path", None))
             profiles = [
                 s[len("report."):] for s in cfg._parser.sections()
                 if s.startswith("report.")
@@ -834,7 +834,7 @@ def _cmd_report(args) -> int:
     if report_cmd == "run":
         profile = args.report_config
         try:
-            from gnat.config import SAKConfig
+            from gnat.config import GNATConfig
             from gnat.reports import ReportConfig, ReportGenerator, AIMode
             from gnat.context.workspace import WorkspaceManager
 
@@ -906,11 +906,11 @@ def _cmd_schedule(args) -> int:
 
 def _cmd_client(args) -> int:
     """client subcommand — capabilities, call."""
-    from gnat.client import SAKClient
-    from gnat.clients.base import SAKClientError
+    from gnat.client import GNATClient
+    from gnat.clients.base import GNATClientError
 
     try:
-        cli = SAKClient(config_path=args.config)
+        cli = GNATClient(config_path=args.config)
         cli.connect(target=args.platform)
         connector = cli.client
     except Exception as exc:
@@ -992,7 +992,7 @@ def _cmd_client(args) -> int:
         except ValueError as exc:
             print(_red(f"Error: {exc}"), file=sys.stderr)
             return 1
-        except SAKClientError as exc:
+        except GNATClientError as exc:
             print(_red(f"API error: {exc}"), file=sys.stderr)
             return 1
 
@@ -1008,9 +1008,9 @@ def _cmd_nlq(args) -> int:
     backend = getattr(args, "backend", None) or "builtin"
     if backend == "claude":
         try:
-            from gnat.config import SAKConfig
+            from gnat.config import GNATConfig
             from gnat.agents.base import AgentConfig
-            cfg = SAKConfig(args.config)
+            cfg = GNATConfig(args.config)
             agent_cfg = AgentConfig.from_config(cfg._parser)
             engine = NLPQueryEngine(backend="claude", claude_config=agent_cfg)
         except Exception as exc:
@@ -1044,8 +1044,8 @@ def _cmd_nlq(args) -> int:
         return 0
 
     try:
-        from gnat.client import SAKClient
-        cli = SAKClient(config_path=args.config)
+        from gnat.client import GNATClient
+        cli = GNATClient(config_path=args.config)
         cli.connect(target=platform)
         _info(args, f"Querying {_bold(platform)} …")
         results = cli.natural_language_query(query)
@@ -1236,8 +1236,8 @@ def _cmd_health(args) -> int:
     elif health_cmd == "baseline":
         platform = args.platform
         try:
-            from gnat.client import SAKClient
-            sak = SAKClient(config_path=config_path).connect(platform)
+            from gnat.client import GNATClient
+            sak = GNATClient(config_path=config_path).connect(platform)
             connector = sak.client
         except Exception as exc:
             print(_red(f"Error connecting to {platform!r}: {exc}"), file=sys.stderr)

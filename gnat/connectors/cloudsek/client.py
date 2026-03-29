@@ -21,7 +21,7 @@ https://docs.cloudsek.com/
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _API = "/xvigil/v1"
@@ -117,14 +117,14 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     def upsert_object(
         self, stix_type: str, payload: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """CloudSEK XVigil API is read-only — raises :class:`SAKClientError`."""
-        raise SAKClientError(
+        """CloudSEK XVigil API is read-only — raises :class:`GNATClientError`."""
+        raise GNATClientError(
             "CloudSEK XVigil API is read-only. "
             "Alerts are generated automatically from passive monitoring."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("CloudSEK XVigil API is read-only — delete not supported.")
+        raise GNATClientError("CloudSEK XVigil API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
     # Extra helpers

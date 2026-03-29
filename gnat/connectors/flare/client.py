@@ -21,7 +21,7 @@ https://docs.flare.io/
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _API_V2 = "/api/v2"
@@ -121,13 +121,13 @@ class FlareClient(BaseClient, ConnectorMixin):
     def upsert_object(
         self, stix_type: str, payload: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Flare API is read-only — raises :class:`SAKClientError`."""
-        raise SAKClientError(
+        """Flare API is read-only — raises :class:`GNATClientError`."""
+        raise GNATClientError(
             "Flare Systems API is read-only. Exposure data is sourced passively."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Flare Systems API is read-only — delete not supported.")
+        raise GNATClientError("Flare Systems API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
     # Extra helpers

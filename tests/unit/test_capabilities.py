@@ -8,7 +8,7 @@ Unit tests for ConnectorMixin.capabilities() and ConnectorMixin.call().
 import pytest
 from unittest.mock import MagicMock
 
-from gnat.clients.base import SAKClientError
+from gnat.clients.base import GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 

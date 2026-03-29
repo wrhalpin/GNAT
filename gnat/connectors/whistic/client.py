@@ -46,7 +46,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -99,7 +99,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
             return self.get_vendor(object_id)
         if stix_type == "x-assessment":
             return self.get_assessment(object_id)
-        raise SAKClientError(f"Whistic: unsupported STIX type '{stix_type}'")
+        raise GNATClientError(f"Whistic: unsupported STIX type '{stix_type}'")
 
     def list_objects(
         self,
@@ -116,7 +116,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
             vendor_id = (filters or {}).get("vendor_id")
             return self.list_assessments(vendor_id=vendor_id,
                                          page=page, page_size=page_size)
-        raise SAKClientError(f"Whistic: unsupported STIX type '{stix_type}'")
+        raise GNATClientError(f"Whistic: unsupported STIX type '{stix_type}'")
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -129,7 +129,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
             vendor_id  = payload.get("vendor_id", "")
             profile_id = payload.get("profile_id", "")
             return self.request_assessment(vendor_id, profile_id)
-        raise SAKClientError(
+        raise GNATClientError(
             "Whistic: direct vendor creation is not supported. "
             "Vendors are added via the Whistic network invitation flow."
         )
@@ -139,7 +139,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         if stix_type == "threat-actor":
             self.delete(f"/v1/vendors/{object_id}")
             return
-        raise SAKClientError(f"Whistic: delete not supported for '{stix_type}'")
+        raise GNATClientError(f"Whistic: delete not supported for '{stix_type}'")
 
     # ── Domain-specific operations ────────────────────────────────────────
 

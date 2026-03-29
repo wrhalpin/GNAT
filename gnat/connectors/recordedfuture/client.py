@@ -13,7 +13,7 @@ INI config::
 """
 
 from typing import Any, Dict, List, Optional
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -57,10 +57,10 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("Recorded Future API is read-only -- upsert not supported.")
+        raise GNATClientError("Recorded Future API is read-only -- upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Recorded Future API is read-only -- delete not supported.")
+        raise GNATClientError("Recorded Future API is read-only -- delete not supported.")
 
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         entity = native.get("entity", {})

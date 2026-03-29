@@ -93,17 +93,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **TheHive connector (#20.4):** `TheHiveClient` (`gnat/connectors/thehive/client.py`) — TheHive 5.x SOAR/case-management API. Bearer token auth; optional `X-Organisation` header for multi-tenant deployments. `list_objects()` uses `POST /api/v1/query` with JSON filter body; `upsert_object()` creates via `POST` or updates via `PATCH`; `add_observable(case_id, stix_obj)` posts IOCs directly to cases; `to_stix()` handles cases, alerts, and observables; `from_stix()` builds a case payload from any STIX object. 13 unit tests.
 - **ThreatStream connector (#20.5):** `ThreatStreamClient` (`gnat/connectors/threatstream/client.py`) — Anomali ThreatStream OPTIC API v2. Credential injection as query parameters (`username` + `api_key`); `list_objects()` supports OPTIC filter params (`type`, `status`, `confidence__gte`, `modified_ts__gte`); `upsert_object()` wraps in `{"objects": [...]}` envelope on create; `to_stix()` maps all IOC types; `from_stix()` produces import payload. 11 unit tests.
 - **ThreatConnect connector (#20.1):** `ThreatConnectClient` (`gnat/connectors/threatconnect/client.py`) — TC Exchange API v3. Supports TC-Token (`auth_type = token`) and per-request HMAC-SHA256 (`auth_type = hmac`) auth. `list_objects()` supports TQL filter expressions; `upsert_object()` creates or updates indicators/groups; `to_stix()` maps TC indicators → STIX with `ipv4/domain/url/hash` pattern dispatch; `from_stix()` generates a TC payload. 12 unit tests.
-- **Mandiant connector (#20.2):** `MandiantClient` (`gnat/connectors/mandiant/client.py`) — Mandiant Advantage TI API v4. OAuth2 `client_credentials` via HTTP Basic (API key + secret); `list_objects()` supports `start_epoch`/`end_epoch`/`gte_mscore` filters; `to_stix()` handles indicators, threat actors, malware families, and vulnerabilities; read-only (`upsert_object` raises `SAKClientError`). 10 unit tests.
+- **Mandiant connector (#20.2):** `MandiantClient` (`gnat/connectors/mandiant/client.py`) — Mandiant Advantage TI API v4. OAuth2 `client_credentials` via HTTP Basic (API key + secret); `list_objects()` supports `start_epoch`/`end_epoch`/`gte_mscore` filters; `to_stix()` handles indicators, threat actors, malware families, and vulnerabilities; read-only (`upsert_object` raises `GNATClientError`). 10 unit tests.
 - **MS Defender TI connector (#20.3):** `DefenderTIClient` (`gnat/connectors/defenderti/client.py`) — Microsoft Graph Security `tiIndicators` API. Azure AD OAuth2 token via `login.microsoftonline.com`; full CRUD (create via `POST`, update via `PATCH`, delete); `to_stix()` maps all Graph TI indicator field types (IPv4/IPv6/domain/URL/hash/email); `from_stix()` generates the correct Graph field (`networkIPv4`, `domainName`, etc.). 10 unit tests.
 - **NLP query interface (#18):** New `gnat/nlp/` package with two interchangeable backends and a unified `QuerySpec` dataclass:
   - `QuerySpec` — dataclass with `entities`, `ioc_types`, `since`, `until`, `platforms`, `limit`, `raw_query`; `to_dict()` serialises datetimes as ISO-8601.
   - `BuiltinParser` — zero-dependency regex-based parser; extracts threat-actor entities (APT/TA/FIN/G patterns, CVE IDs, malware families), IOC types (ip/domain/hash/url/email keywords), relative/absolute time ranges (`last N days/weeks/months`, ISO dates, month names, `yesterday`, `today`), platform filters, and result limits.
   - `ClaudeParser` — sends the query to Claude API with a structured JSON-schema prompt; falls back to `BuiltinParser` on any API or JSON parse error.
   - `NLPQueryEngine` — facade with `from_config()` factory (reads `[nlp]` INI section for `backend`/`default_limit`); `parse()` returns a `QuerySpec`; `query()` dispatches to named connectors, tags results with `_source`, and returns the serialised spec when no live connectors are provided.
-  - `SAKClient.natural_language_query(query, extra_connectors)` — convenience method that auto-includes the connected client and delegates to `NLPQueryEngine`.
+  - `GNATClient.natural_language_query(query, extra_connectors)` — convenience method that auto-includes the connected client and delegates to `NLPQueryEngine`.
   - CLI: `gnat nlq "<query>" [--platform <key>] [--backend builtin|claude] [--parse-only] [--limit N]` — parses the query, optionally connects a platform, and prints results as JSON.
   - `pyproject.toml`: new `[nlp]` optional-dependency group (zero new deps for builtin backend; Claude backend reuses existing `[agents]` client).
-  - 46 unit tests covering `QuerySpec`, `BuiltinParser` (time/IOC/entity/limit extraction), `NLPQueryEngine` (connector dispatch, platform filtering, error handling), `ClaudeParser` (mocked API, fallback paths, markdown fence stripping), and `SAKClient.natural_language_query()`.
+  - 46 unit tests covering `QuerySpec`, `BuiltinParser` (time/IOC/entity/limit extraction), `NLPQueryEngine` (connector dispatch, platform filtering, error handling), `ClaudeParser` (mocked API, fallback paths, markdown fence stripping), and `GNATClient.natural_language_query()`.
 
 ### Fixed
 - `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`
@@ -266,10 +266,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 #### Core client layer
-- `SAKClient` top-level facade with `connect()`, `disconnect()`, `ping()`
-- `SAKConfig` INI-file loader with env-var and default-path fallback
+- `GNATClient` top-level facade with `connect()`, `disconnect()`, `ping()`
+- `GNATConfig` INI-file loader with env-var and default-path fallback
 - `BaseClient` — urllib3 `PoolManager` with retry/back-off, auth header injection,
-  JSON encoding, and structured `SAKClientError`
+  JSON encoding, and structured `GNATClientError`
 - `CLIENT_REGISTRY` mapping target names to connector classes
 
 #### ORM layer (STIX 2.1)
@@ -321,7 +321,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 #### Tests
 - `tests/unit/test_orm.py` — 40+ assertions: all ORM types, serialisation, CRUD guards
-- `tests/unit/test_client.py` — `SAKConfig`, `SAKClient` (all 6 targets), `BaseClient`
+- `tests/unit/test_client.py` — `GNATConfig`, `GNATClient` (all 6 targets), `BaseClient`
   HTTP layer
 - `tests/unit/connectors/test_connectors.py` — auth, CRUD, translation for all 6 connectors
 - `tests/unit/ingest/test_ingest.py` — 300+ assertions: all readers, mappers, pipeline
@@ -349,7 +349,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 #### Async client (`gnat/async_client/`)
 - `AsyncBaseClient` on `httpx` with retry transport, async context manager
-- `AsyncSAKClient` — async mirror of `SAKClient` supporting `async with` and `asyncio.gather` concurrent multi-platform queries
+- `AsyncGNATClient` — async mirror of `GNATClient` supporting `async with` and `asyncio.gather` concurrent multi-platform queries
 - `AsyncSTIXBase` — awaitable `select()`, `save()`, `delete()`, `refresh()`
 - Async connectors for all six platforms: `AsyncThreatQClient`, `AsyncCrowdStrikeClient`, `AsyncProofpointClient`, `AsyncNetskopeClient`, `AsyncXSOARClient`, `AsyncRecordedFutureClient`
 - New optional extra: `pip install "gnat[async]"` (installs httpx)
@@ -404,7 +404,7 @@ Barnes-Hut uses a custom pure-Python quad-tree with centre-of-mass approximation
 - New CLI subcommand tree: `gnat viz table`, `graph`, `serve`, `dashboard`, `powerbi`
 - New optional extras: `pip install gnat[viz]` (plotly + networkx + openpyxl), `gnat[serve]` (fastapi + uvicorn)
 #### Context system (`gnat/context/`)
-- **`GlobalContext`** — wraps a `SAKClient`, adds read-only flag and priority
+- **`GlobalContext`** — wraps a `GNATClient`, adds read-only flag and priority
 - **`GlobalContextRegistry`** — manages multiple global contexts; `from_config()` and `from_clients()` factories; default write target, `writable()` / `read_only_contexts()` helpers
 - **`Workspace`** — analyst working set with:
   - `load(stix_type, filters, source)` — pull from global context

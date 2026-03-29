@@ -18,7 +18,7 @@ token acquisition and refresh transparently.
 
 from __future__ import annotations
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 from .client import SentinelClient
@@ -109,7 +109,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
             self._sentinel.auth.get_headers()
             self._authenticated = True
         except Exception as exc:
-            raise SAKClientError(f"Sentinel authentication failed: {exc}") from exc
+            raise GNATClientError(f"Sentinel authentication failed: {exc}") from exc
 
     def health_check(self) -> bool:
         """Return True if the Sentinel workspace endpoint is reachable."""
@@ -117,7 +117,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
             self._sentinel.get("incidents", params={"$top": "1"})
             return True
         except Exception as exc:
-            raise SAKClientError(f"Sentinel health check failed: {exc}") from exc
+            raise GNATClientError(f"Sentinel health check failed: {exc}") from exc
 
     def get_object(self, stix_type: str, object_id: str, **kwargs) -> dict:
         """
@@ -182,7 +182,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
             STIX 2.1 indicator SDO.
         """
         if stix_type == "observed-data":
-            raise SAKClientError(
+            raise GNATClientError(
                 "Sentinel incidents cannot be created via upsert_object. "
                 "Use the underlying _incidents client to create incidents."
             )
@@ -192,7 +192,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
     def delete_object(self, stix_type: str, object_id: str, **kwargs) -> None:
         """Delete a Sentinel TI indicator by resource name."""
         if stix_type == "observed-data":
-            raise SAKClientError(
+            raise GNATClientError(
                 "Sentinel incidents cannot be deleted via this interface."
             )
         self._ti.delete_indicator(object_id)

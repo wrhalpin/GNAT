@@ -258,11 +258,11 @@ coverage, and correct test placement (all connector tests in
 
 ### 18. NLP Query Interface
 
-**Status:** ✅ Complete — `gnat/nlp/` package, `SAKClient.natural_language_query()`, `gnat nlq` CLI, 46 unit tests.
+**Status:** ✅ Complete — `gnat/nlp/` package, `GNATClient.natural_language_query()`, `gnat nlq` CLI, 46 unit tests.
 
 **Priority:** MEDIUM
 
-**What:** Natural-language query layer on top of `SAKClient.list_objects()`.
+**What:** Natural-language query layer on top of `GNATClient.list_objects()`.
 "Give me everything on APT-128 from the last 30 days" → structured query
 dispatched to one or all connectors.
 
@@ -298,7 +298,7 @@ backend = builtin          # builtin | claude
 model   = claude-sonnet-4-6
 ```
 
-**SAKClient API:**
+**GNATClient API:**
 ```python
 client.natural_language_query("Get all IPs related to Lazarus Group since January")
 # → list[STIXBase]

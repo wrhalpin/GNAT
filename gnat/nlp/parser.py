@@ -7,9 +7,9 @@ and dispatches natural-language queries to all matching connectors.
 Usage::
 
     from gnat.nlp import NLPQueryEngine
-    from gnat.config import SAKConfig
+    from gnat.config import GNATConfig
 
-    cfg  = SAKConfig()
+    cfg  = GNATConfig()
     engine = NLPQueryEngine.from_config(cfg)
     results = engine.query("Get all IPs for APT28 from the last 30 days")
     # → list of STIX dicts
@@ -74,14 +74,14 @@ class NLPQueryEngine:
     @classmethod
     def from_config(cls, config: Any) -> "NLPQueryEngine":
         """
-        Instantiate from a :class:`~gnat.config.SAKConfig` object.
+        Instantiate from a :class:`~gnat.config.GNATConfig` object.
 
         Reads the ``[nlp]`` section (``backend``, ``model``) and the
         ``[claude]`` section when ``backend = claude``.
 
         Parameters
         ----------
-        config : SAKConfig
+        config : GNATConfig
             Loaded configuration object.
 
         Returns

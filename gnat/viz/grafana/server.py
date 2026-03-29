@@ -57,14 +57,29 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# FastAPI imports at module level so that `from __future__ import annotations`
+# does not prevent FastAPI from resolving Request type hints via get_type_hints().
+try:
+    from fastapi import FastAPI, Request
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import JSONResponse
+    _FASTAPI_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _FASTAPI_AVAILABLE = False
 
-def _require_fastapi():
-    try:
-        import fastapi   # noqa: F401
-        import uvicorn   # noqa: F401
-    except ImportError:
+
+def _require_fastapi() -> None:
+    """Raise a helpful ImportError when FastAPI / uvicorn are not installed."""
+    if not _FASTAPI_AVAILABLE:
         raise ImportError(
             "FastAPI and uvicorn are required for the Grafana server: "
+            "pip install 'gnat[serve]'"
+        )
+    try:
+        import uvicorn  # noqa: F401
+    except ImportError:
+        raise ImportError(
+            "uvicorn is required for the Grafana server: "
             "pip install 'gnat[serve]'"
         )
 
@@ -82,11 +97,6 @@ def build_app(manager: "WorkspaceManager") -> Any:
     -------
     fastapi.FastAPI
     """
-    _require_fastapi()
-    from fastapi import FastAPI, Request
-    from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse
-
     app = FastAPI(
         title="GNAT Grafana Datasource",
         description="Serves GNAT workspace data as a Grafana SimpleJSON datasource",

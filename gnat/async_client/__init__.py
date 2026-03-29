@@ -12,7 +12,7 @@ Quick start::
     import gnat.async_client as async_ctm
 
     async def main():
-        async with async_ctm.AsyncSAKClient() as cli:
+        async with async_ctm.AsyncGNATClient() as cli:
             await cli.connect("threatq")
             print(await cli.ping())
 
@@ -20,7 +20,7 @@ Quick start::
 """
 
 from gnat.async_client.base import AsyncBaseClient
-from gnat.async_client.client import AsyncSAKClient, AsyncSTIXBase
+from gnat.async_client.client import AsyncGNATClient, AsyncSTIXBase
 from gnat.async_client.connectors import (
     AsyncThreatQClient,
     AsyncCrowdStrikeClient,
@@ -37,7 +37,7 @@ from gnat.async_client.connectors import (
 
 __all__ = [
     "AsyncBaseClient",
-    "AsyncSAKClient",
+    "AsyncGNATClient",
     "AsyncSTIXBase",
     "AsyncThreatQClient",
     "AsyncCrowdStrikeClient",

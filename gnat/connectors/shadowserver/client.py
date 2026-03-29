@@ -34,7 +34,7 @@ import hashlib
 import hmac as _hmac
 import json
 from typing import Any, Dict, List, Optional
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -128,12 +128,12 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
 
     def upsert_object(self, stix_type: str,
                       payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError(
+        raise GNATClientError(
             "Shadowserver API is read-only — upsert not supported."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError(
+        raise GNATClientError(
             "Shadowserver API is read-only — delete not supported."
         )
 

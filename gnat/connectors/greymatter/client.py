@@ -46,7 +46,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -105,7 +105,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             If the token request fails or the response has no access_token.
         """
         resp = self.post(
@@ -118,7 +118,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         )
         token = resp.get("access_token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError("GreyMatter: failed to obtain access token")
+            raise GNATClientError("GreyMatter: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     # ── ConnectorMixin — CRUD ─────────────────────────────────────────────
@@ -273,7 +273,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             If the link request fails.
         """
         gm_type  = self._infer_gm_type(stix_obj.get("pattern", ""))
@@ -294,7 +294,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     def _resolve(self, stix_type: str) -> str:
         resource = self.stix_type_map.get(stix_type)
         if not resource:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"GreyMatter: unsupported STIX type '{stix_type}'. "
                 f"Supported: {sorted(self.stix_type_map.keys())}"
             )

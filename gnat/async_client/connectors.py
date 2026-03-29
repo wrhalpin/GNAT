@@ -17,7 +17,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from gnat.async_client.base import AsyncBaseClient
-from gnat.clients.base import SAKClientError
+from gnat.clients.base import GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         })
         token = resp.get("access_token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError("AsyncThreatQ: failed to obtain access token")
+            raise GNATClientError("AsyncThreatQ: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     async def health_check(self) -> bool:
@@ -103,7 +103,7 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
     def _resolve(self, stix_type: str) -> str:
         r = self.stix_type_map.get(stix_type)
         if not r:
-            raise SAKClientError(f"AsyncThreatQ: unsupported STIX type '{stix_type}'")
+            raise GNATClientError(f"AsyncThreatQ: unsupported STIX type '{stix_type}'")
         return r + "s"
 
 
@@ -128,7 +128,7 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
         })
         token = resp.get("access_token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError("AsyncCrowdStrike: failed to obtain access token")
+            raise GNATClientError("AsyncCrowdStrike: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     async def health_check(self) -> bool:
@@ -209,10 +209,10 @@ class AsyncProofpointClient(AsyncBaseClient, ConnectorMixin):
         return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("Proofpoint TAP API does not support object creation.")
+        raise GNATClientError("Proofpoint TAP API does not support object creation.")
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Proofpoint TAP API does not support object deletion.")
+        raise GNATClientError("Proofpoint TAP API does not support object deletion.")
 
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -381,10 +381,10 @@ class AsyncRecordedFutureClient(AsyncBaseClient, ConnectorMixin):
         return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("Recorded Future API is read-only.")
+        raise GNATClientError("Recorded Future API is read-only.")
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Recorded Future API is read-only.")
+        raise GNATClientError("Recorded Future API is read-only.")
 
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         entity = native.get("entity", {})
@@ -421,7 +421,7 @@ class AsyncGreyMatterClient(AsyncBaseClient, ConnectorMixin):
             "grant_type": "client_credentials",
             "client_id": self._client_id, "client_secret": self._client_secret})
         token = resp.get("access_token") if isinstance(resp, dict) else None
-        if not token: raise SAKClientError("AsyncGreyMatter: no token")
+        if not token: raise GNATClientError("AsyncGreyMatter: no token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
     async def health_check(self): await self.get("/v1/health"); return True
     async def get_object(self, t, oid): return await self.get(f"/v1/{t}/{oid.split('--')[-1]}")
@@ -459,7 +459,7 @@ class AsyncWhisticClient(AsyncBaseClient, ConnectorMixin):
         ep = "/v1/vendors" if t == "threat-actor" else "/v1/assessments"
         r = await self.get(ep, params={"limit": ps, "offset": (page-1)*ps})
         return r.get("vendors", r.get("assessments", [])) if isinstance(r, dict) else []
-    async def upsert_object(self, t, p): raise SAKClientError("Whistic: direct create not supported")
+    async def upsert_object(self, t, p): raise GNATClientError("Whistic: direct create not supported")
     async def delete_object(self, t, oid): await self.delete(f"/v1/vendors/{oid}")
     def to_stix(self, n):
         from gnat.connectors.whistic.client import WhisticClient
@@ -484,7 +484,7 @@ class AsyncRiskReconClient(AsyncBaseClient, ConnectorMixin):
             "grant_type": "client_credentials",
             "client_id": self._client_id, "client_secret": self._client_secret})
         token = resp.get("access_token") if isinstance(resp, dict) else None
-        if not token: raise SAKClientError("AsyncRiskRecon: no token")
+        if not token: raise GNATClientError("AsyncRiskRecon: no token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
     async def health_check(self): await self.get("/companies", params={"limit": 1}); return True
     async def get_object(self, t, oid): return await self.get(f"/{t}/{oid.split('--')[-1]}")
@@ -519,8 +519,8 @@ class AsyncFeedlyClient(AsyncBaseClient, ConnectorMixin):
         endpoint = "/v3/enterprise/iocFeed" if t == "indicator" else "/v3/enterprise/cvesFeed"
         r = await self.get(endpoint, params={"newerThan": nt, "count": ps})
         return r.get("indicators", r.get("cves", [])) if isinstance(r, dict) else []
-    async def upsert_object(self, t, p): raise SAKClientError("Feedly is read-only")
-    async def delete_object(self, t, oid): raise SAKClientError("Feedly is read-only")
+    async def upsert_object(self, t, p): raise GNATClientError("Feedly is read-only")
+    async def delete_object(self, t, oid): raise GNATClientError("Feedly is read-only")
     def to_stix(self, n):
         from gnat.connectors.feedly.client import FeedlyClient
         return FeedlyClient(host=self.host).to_stix(n)
@@ -544,7 +544,7 @@ class AsyncSplunkClient(AsyncBaseClient, ConnectorMixin):
                                data={"username": self._username, "password": self._password,
                                      "output_mode": "json"})
         key = resp.get("sessionKey") if isinstance(resp, dict) else None
-        if not key: raise SAKClientError("AsyncSplunk: auth failed")
+        if not key: raise GNATClientError("AsyncSplunk: auth failed")
         self._auth_headers["Authorization"] = f"Splunk {key}"
     async def health_check(self):
         await self.get("/services/server/info", params={"output_mode": "json"}); return True

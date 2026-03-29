@@ -23,7 +23,7 @@ Public surface
 
 Factory helper
 --------------
-:func:`build_search_index` reads ``[search]`` from a :class:`~gnat.config.SAKConfig`
+:func:`build_search_index` reads ``[search]`` from a :class:`~gnat.config.GNATConfig`
 and returns the appropriate concrete implementation::
 
     from gnat.search import build_search_index
@@ -36,10 +36,10 @@ from gnat.search.index import SearchIndex, SolrSearchIndex, NullSearchIndex
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gnat.config import SAKConfig
+    from gnat.config import GNATConfig
 
 
-def build_search_index(config: "SAKConfig") -> SearchIndex:
+def build_search_index(config: "GNATConfig") -> SearchIndex:
     """
     Factory that reads ``[search]`` from *config* and returns the
     appropriate :class:`SearchIndex` implementation.
@@ -60,9 +60,9 @@ def build_search_index(config: "SAKConfig") -> SearchIndex:
 
     Examples
     --------
-    >>> from gnat.config import SAKConfig
+    >>> from gnat.config import GNATConfig
     >>> from gnat.search import build_search_index
-    >>> idx = build_search_index(SAKConfig())
+    >>> idx = build_search_index(GNATConfig())
     """
     try:
         cfg = config.get("search")

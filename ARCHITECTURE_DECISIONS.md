@@ -57,7 +57,7 @@ Retry(
 ```
 Note: `allowed_methods` (not `method_whitelist`) — urllib3 ≥ 2.0 API.
 
-**`SAKClientError` carries `status` and `body`:**
+**`GNATClientError` carries `status` and `body`:**
 Always check `exc.status` in connector tests — 401 vs 403 vs 429 all
 need different handling.
 
@@ -141,7 +141,7 @@ Use `x_` prefix for platform-specific extension fields.
 
 **Read-only connectors:**
 Platforms that don't support writes (Recorded Future, Proofpoint, Feedly)
-should raise `SAKClientError` from `upsert_object` and `delete_object`
+should raise `GNATClientError` from `upsert_object` and `delete_object`
 with a clear "read-only" message. The `GlobalContextRegistry` marks them
 with `read_only=True` which prevents `Workspace.commit()` targeting them.
 
@@ -312,7 +312,7 @@ no benefit to making them async, and it would complicate callers.
 
 **Concurrent multi-platform queries:**
 ```python
-async with AsyncSAKClient() as tq, AsyncSAKClient() as rf:
+async with AsyncGNATClient() as tq, AsyncGNATClient() as rf:
     await asyncio.gather(tq.connect("threatq"), rf.connect("recordedfuture"))
     tq_res, rf_res = await asyncio.gather(
         tq.client.get_object("indicator", ioc_id),
@@ -614,7 +614,7 @@ cli.connect("threatq", client_secret="runtime-secret")
 ```
 tests/unit/
 ├── test_orm.py          # 40+ assertions: STIXBase + all domain types
-├── test_client.py       # SAKConfig, SAKClient (6 targets), BaseClient HTTP
+├── test_client.py       # GNATConfig, GNATClient (6 targets), BaseClient HTTP
 ├── connectors/
 │   └── test_connectors.py   # auth, CRUD, to_stix/from_stix for all connectors
 ├── ingest/
@@ -758,13 +758,13 @@ class MyMapper(RecordMapper):
 ## Quick Reference: Workspace Investigation Workflow
 
 ```python
-from gnat import SAKClient
+from gnat import GNATClient
 from gnat.context import WorkspaceManager, GlobalContextRegistry
 
 # Setup (once per session)
-tq = SAKClient().connect("threatq")
-rf = SAKClient().connect("recordedfuture")  # read-only
-cs = SAKClient().connect("crowdstrike")
+tq = GNATClient().connect("threatq")
+rf = GNATClient().connect("recordedfuture")  # read-only
+cs = GNATClient().connect("crowdstrike")
 
 manager = WorkspaceManager.from_clients(
     {"threatq": tq, "rf": rf, "crowdstrike": cs},

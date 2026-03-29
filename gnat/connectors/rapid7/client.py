@@ -35,7 +35,7 @@ https://docs.rapid7.com/threat-command/
 """
 
 from typing import Any, Dict, List, Optional
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -101,20 +101,20 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     def upsert_object(self, stix_type: str,
                       payload: Dict[str, Any]) -> Dict[str, Any]:
         if self._product == "insightvm":
-            raise SAKClientError(
+            raise GNATClientError(
                 "InsightVM is read-only via GNAT. "
                 "Use the InsightVM console for remediation tracking."
             )
         # Threat Command supports IOC submissions
         if stix_type != "indicator":
-            raise SAKClientError(
+            raise GNATClientError(
                 f"Threat Command upsert only supports 'indicator', not {stix_type!r}"
             )
         return self.post("/public/v2/iocs", json_body=payload)
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         if self._product == "insightvm":
-            raise SAKClientError("InsightVM is read-only — delete not supported.")
+            raise GNATClientError("InsightVM is read-only — delete not supported.")
         self.delete(f"/public/v2/iocs/{object_id}")
 
     # ── InsightVM ──────────────────────────────────────────────────────────

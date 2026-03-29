@@ -3,16 +3,15 @@ GNAT: Cybersecurity Threat Management Swiss Army Knife
 ==========================================================
 
 A universal client and ORM library for interacting with security platforms.
-Provides a uniform abstraction layer over ThreatQ, Proofpoint, Netskope,
-CrowdStrike, XSOAR 6, and Recorded Future, with STIX 2.1-compatible ORM
-objects and urllib3-based HTTP clients.
+Provides a uniform abstraction layer over 29 threat intelligence and security
+platforms, with STIX 2.1-compatible ORM objects and urllib3-based HTTP clients.
 
 Quick Start::
 
     import gnat
 
     # Connect to a security platform
-    cli = gnat.SAKClient()
+    cli = gnat.GNATClient()
     cli.connect(target="threatq")
 
     # ORM usage — object-oriented, client-bound
@@ -22,15 +21,38 @@ Quick Start::
     print(ind.value)
 
 Supported Targets:
-    - ``threatq``       – ThreatQ Threat Intelligence Platform
-    - ``proofpoint``    – Proofpoint Email Security
-    - ``netskope``      – Netskope SASE/SSE Platform
-    - ``crowdstrike``   – CrowdStrike Falcon Platform
-    - ``xsoar``         – Palo Alto XSOAR 6
-    - ``recordedfuture``– Recorded Future Intelligence Platform
+    - ``threatq``        – ThreatQ Threat Intelligence Platform
+    - ``proofpoint``     – Proofpoint TAP Email Security
+    - ``netskope``       – Netskope SASE/SSE Platform
+    - ``crowdstrike``    – CrowdStrike Falcon Platform
+    - ``xsoar``          – Palo Alto XSOAR 6
+    - ``recordedfuture`` – Recorded Future Intelligence Platform
+    - ``splunk``         – Splunk Enterprise / Splunk ES
+    - ``virustotal``     – VirusTotal
+    - ``shadowserver``   – Shadowserver Foundation
+    - ``rapid7``         – Rapid7 InsightVM / InsightIDR
+    - ``nucleus``        – Nucleus Security
+    - ``greymatter``     – GreyMatter
+    - ``whistic``        – Whistic
+    - ``riskrecon``      – RiskRecon
+    - ``feedly``         – Feedly Threat Intelligence
+    - ``controlup``      – ControlUp DEX
+    - ``alienvault``     – AlienVault OTX
+    - ``elastic``        – Elastic SIEM / Security
+    - ``graylog``        – Graylog SIEM
+    - ``misp``           – MISP
+    - ``opencti``        – OpenCTI
+    - ``ossim``          – AlienVault OSSIM
+    - ``qradar``         – IBM QRadar
+    - ``security_onion`` – Security Onion
+    - ``sentinel``       – Microsoft Sentinel
+    - ``snort``          – Snort IDS
+    - ``suricata``       – Suricata IDS
+    - ``wazuh``          – Wazuh SIEM
+    - ``zeek``           – Zeek Network Monitor
 """
 
-from gnat.client import SAKClient
+from gnat.client import GNATClient
 from gnat.orm.indicator import Indicator
 from gnat.orm.threat_actor import ThreatActor
 from gnat.orm.malware import Malware
@@ -38,17 +60,10 @@ from gnat.orm.vulnerability import Vulnerability
 from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.observable import Observable
 from gnat.orm.relationship import Relationship
-from gnat.config import SAKConfig
-
-
-
-
-
+from gnat.config import GNATConfig
 
 from gnat.export import ExportPipeline, ExportResult
 from gnat.export.jobs import ExportJob
-
-
 
 from gnat.reports import (
     ReportGenerator, ReportJob, ReportConfig, AIMode, SectorFilter,
@@ -74,11 +89,12 @@ from gnat.ingest.mappers import (
     EmailIOCMapper, OpenIOCMapper, SplunkResultMapper,
     ElasticResultMapper, NVDCVEMapper,
 )
+
 __version__ = "0.1.0"
 __author__ = "GNAT Contributors"
 __all__ = [
-    "SAKClient",
-    "SAKConfig",
+    "GNATClient",
+    "GNATConfig",
     "Indicator",
     "ThreatActor",
     "Malware",
@@ -98,6 +114,19 @@ __all__ = [
     "CEFMapper", "SQLRowMapper", "CSVIndicatorMapper", "RSSEntryMapper",
     "EmailIOCMapper", "OpenIOCMapper", "SplunkResultMapper",
     "ElasticResultMapper", "NVDCVEMapper",
+    # Export
+    "ExportPipeline", "ExportResult", "ExportJob",
+    # Reports
+    "ReportGenerator", "ReportJob", "ReportConfig", "AIMode", "SectorFilter",
+    # Research
+    "ResearchLibrary", "ResearchEntry", "CurationJob",
+    # Agents
+    "AgentConfig", "ResearchAgent", "ParsingAgent", "CopilotReader",
+    # Scheduling
+    "FeedJob", "FeedScheduler", "JobRunContext", "RunRecord",
+    # Visualization
+    "TabularView", "GraphView", "PowerBIExporter",
+    "grafana_dashboard", "save_grafana_dashboard",
     # Context system
     "GlobalContext", "GlobalContextRegistry",
     "Workspace", "WorkspaceManager", "CommitResult", "FlatFileStore",

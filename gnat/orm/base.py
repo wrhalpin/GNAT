@@ -11,7 +11,7 @@ Design Goals
 ------------
 * **STIX 2.1 wire-format compatible** – ``to_dict()`` / ``from_dict()``
   produce/consume valid STIX bundles.
-* **Client-bound** – objects carry an optional :class:`~gnat.client.SAKClient`
+* **Client-bound** – objects carry an optional :class:`~gnat.client.GNATClient`
   reference so CRUD methods work transparently.
 * **Platform-agnostic** – translators in each connector package convert
   between STIX and the target platform's native schema.
@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
 
 
 def _utcnow() -> str:
@@ -54,7 +54,7 @@ class STIXBase:
 
     Parameters
     ----------
-    client : SAKClient, optional
+    client : GNATClient, optional
         Bound client used for CRUD operations.  If omitted objects can still
         be constructed and serialised but CRUD methods will raise
         :class:`RuntimeError`.
@@ -72,7 +72,7 @@ class STIXBase:
 
     def __init__(
         self,
-        client: Optional["SAKClient"] = None,
+        client: Optional["GNATClient"] = None,
         **kwargs: Any,
     ):
         self._client = client
@@ -131,7 +131,7 @@ class STIXBase:
     def from_dict(
         cls,
         data: Dict[str, Any],
-        client: Optional["SAKClient"] = None,
+        client: Optional["GNATClient"] = None,
     ) -> "STIXBase":
         """
         Construct an instance from a STIX-format dictionary.
@@ -140,7 +140,7 @@ class STIXBase:
         ----------
         data : dict
             STIX object dictionary (e.g. parsed from a JSON bundle).
-        client : SAKClient, optional
+        client : GNATClient, optional
             Client to bind to the new instance.
 
         Returns
@@ -239,7 +239,7 @@ class STIXBase:
             raise RuntimeError(
                 f"No client bound to this {type(self).__name__}. "
                 "Pass client= when constructing the object or call "
-                "SAKClient.connect() first."
+                "GNATClient.connect() first."
             )
 
     def _merge(self, data: Dict[str, Any]) -> None:

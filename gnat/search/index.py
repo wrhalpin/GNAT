@@ -90,7 +90,7 @@ import urllib3
 from urllib3.util.retry import Retry
 
 if TYPE_CHECKING:
-    from gnat.config import SAKConfig
+    from gnat.config import GNATConfig
     from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
@@ -299,7 +299,7 @@ class SolrSearchIndex(SearchIndex):
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_config(cls, config: "SAKConfig") -> "SolrSearchIndex":
+    def from_config(cls, config: "GNATConfig") -> "SolrSearchIndex":
         """
         Construct a :class:`SolrSearchIndex` from a ``[search]`` INI section.
 
@@ -315,7 +315,7 @@ class SolrSearchIndex(SearchIndex):
 
         Parameters
         ----------
-        config : SAKConfig
+        config : GNATConfig
             Loaded configuration object.
 
         Returns

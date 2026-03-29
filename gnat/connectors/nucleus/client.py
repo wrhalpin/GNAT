@@ -30,7 +30,7 @@ https://docs.nucleussec.com/api/
 """
 
 from typing import Any, Dict, List, Optional
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -140,7 +140,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         exploited by a known actor.
         """
         if stix_type != "indicator":
-            raise SAKClientError(
+            raise GNATClientError(
                 f"Nucleus upsert only supports 'indicator', not {stix_type!r}"
             )
         project = self._project
@@ -155,7 +155,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
             project = self._project
             self.delete(f"/v2/projects/{project}/threat-intel/{object_id}")
         else:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"Nucleus delete only supports 'indicator', not {stix_type!r}"
             )
 

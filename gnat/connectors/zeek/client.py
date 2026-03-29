@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -87,13 +87,13 @@ class ZeekClient(BaseClient, ConnectorMixin):
         """Verify the Zeek log directory exists and is readable."""
         path = Path(self.log_dir)
         if not path.is_dir():
-            raise SAKClientError(
+            raise GNATClientError(
                 f"Zeek log directory not found: {self.log_dir}"
             )
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
-        raise SAKClientError(
+        raise GNATClientError(
             "Zeek is file-based — individual record lookup by id is not supported."
         )
 
@@ -134,10 +134,10 @@ class ZeekClient(BaseClient, ConnectorMixin):
         return records
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("Zeek is read-only — no write API available.")
+        raise GNATClientError("Zeek is read-only — no write API available.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Zeek is read-only — no delete API available.")
+        raise GNATClientError("Zeek is read-only — no delete API available.")
 
     # ── Domain-specific operations ────────────────────────────────────────
 
@@ -314,7 +314,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         """Yield raw record dicts from a Zeek log file."""
         log_path = Path(path) if path else self._log_path(log_name)
         if not log_path.exists():
-            raise SAKClientError(f"Zeek log not found: {log_path}")
+            raise GNATClientError(f"Zeek log not found: {log_path}")
         if self.log_format == "json":
             yield from self._iter_json(log_path)
         else:

@@ -80,7 +80,7 @@ def _make_stix_dict(stix_id: str = None, name: str = "evil.com",
 
 def _mock_global_context(name: str = "threatq", read_only: bool = False,
                          objects: list = None) -> GlobalContext:
-    """Create a GlobalContext with a mocked SAKClient."""
+    """Create a GlobalContext with a mocked GNATClient."""
     mock_cli = MagicMock()
     mock_cli.target = name
     mock_cli.ping.return_value = True

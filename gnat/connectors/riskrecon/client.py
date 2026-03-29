@@ -47,7 +47,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -99,7 +99,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             If the token endpoint returns no ``access_token``.
         """
         resp = self.post(
@@ -112,7 +112,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         )
         token = resp.get("access_token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError("RiskRecon: failed to obtain access token")
+            raise GNATClientError("RiskRecon: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     # ── ConnectorMixin — CRUD ─────────────────────────────────────────────
@@ -137,7 +137,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
             return self.get(f"/findings/{rr_id}")
         if stix_type == "observable":
             return self.get(f"/assets/{rr_id}")
-        raise SAKClientError(f"RiskRecon: unsupported STIX type '{stix_type}'")
+        raise GNATClientError(f"RiskRecon: unsupported STIX type '{stix_type}'")
 
     def list_objects(
         self,
@@ -175,7 +175,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
             resp = self.get("/companies", params=params)
             return resp.get("companies", []) if isinstance(resp, dict) else []
 
-        raise SAKClientError(
+        raise GNATClientError(
             f"RiskRecon: list_objects for '{stix_type}' requires "
             "filters={'company_id': '...'}"
         )
@@ -189,11 +189,11 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         if stix_type == "threat-actor":
             domain = payload.get("domain", "")
             if not domain:
-                raise SAKClientError(
+                raise GNATClientError(
                     "RiskRecon: 'domain' is required to add a company to monitoring."
                 )
             return self.post("/companies", json={"domain": domain})
-        raise SAKClientError(
+        raise GNATClientError(
             f"RiskRecon: create/update not supported for '{stix_type}'"
         )
 
@@ -202,7 +202,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         if stix_type == "threat-actor":
             self.delete(f"/companies/{object_id.split('--', 1)[-1]}")
             return
-        raise SAKClientError(
+        raise GNATClientError(
             f"RiskRecon: delete not supported for '{stix_type}'"
         )
 

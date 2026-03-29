@@ -44,7 +44,7 @@ import uuid as _uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -147,7 +147,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         """
         alarm_id = payload.get("id")
         if not alarm_id:
-            raise SAKClientError("OSSIM upsert_object: 'id' is required in payload.")
+            raise GNATClientError("OSSIM upsert_object: 'id' is required in payload.")
         return self.put(f"/api/1.0/alarms/{alarm_id}", json={"status": payload.get("status", "open")})
 
     def delete_object(self, stix_type: str, object_id: str) -> None:

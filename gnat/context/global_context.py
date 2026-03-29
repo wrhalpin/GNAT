@@ -42,7 +42,7 @@ import logging
 from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
     from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class GlobalContext:
     """
     A named, connected security platform context.
 
-    A global context wraps a :class:`~gnat.client.SAKClient` and adds
+    A global context wraps a :class:`~gnat.client.GNATClient` and adds
     metadata (name, read-only flag, priority) used by workspaces to decide
     which platform to load from and write to.
 
@@ -60,7 +60,7 @@ class GlobalContext:
     ----------
     name : str
         Unique human-readable identifier (e.g. ``"threatq_prod"``).
-    client : SAKClient
+    client : GNATClient
         A connected platform client.
     read_only : bool
         If ``True``, this context is never used as a write target.
@@ -73,15 +73,15 @@ class GlobalContext:
 
     Examples
     --------
-    >>> from gnat import SAKClient
-    >>> cli = SAKClient().connect("threatq")
+    >>> from gnat import GNATClient
+    >>> cli = GNATClient().connect("threatq")
     >>> gc = GlobalContext("threatq_prod", cli, priority=1)
     """
 
     def __init__(
         self,
         name: str,
-        client: "SAKClient",
+        client: "GNATClient",
         read_only: bool = False,
         priority: int = 10,
         description: str = "",
@@ -205,17 +205,17 @@ class GlobalContextRegistry:
         ----------
         config_path : str, optional
             Explicit path to config.ini.  If omitted the default search
-            order is used (see :class:`~gnat.config.SAKConfig`).
+            order is used (see :class:`~gnat.config.GNATConfig`).
 
         Returns
         -------
         GlobalContextRegistry
             Populated registry, with all clients connected.
         """
-        from gnat.config import SAKConfig
-        from gnat.client import SAKClient
+        from gnat.config import GNATConfig
+        from gnat.client import GNATClient
 
-        cfg = SAKConfig(config_path)
+        cfg = GNATConfig(config_path)
         registry = cls()
 
         # Read [global] section for defaults
@@ -243,7 +243,7 @@ class GlobalContextRegistry:
                 continue
 
             try:
-                cli = SAKClient(config_path=config_path)
+                cli = GNATClient(config_path=config_path)
                 cli.connect(target=target, **section_cfg)
                 gc = GlobalContext(
                     name=name, client=cli,
@@ -268,19 +268,19 @@ class GlobalContextRegistry:
     @classmethod
     def from_clients(
         cls,
-        clients: Dict[str, "SAKClient"],
+        clients: Dict[str, "GNATClient"],
         default: Optional[str] = None,
         read_only: Optional[List[str]] = None,
     ) -> "GlobalContextRegistry":
         """
-        Build a registry directly from a dict of connected SAKClients.
+        Build a registry directly from a dict of connected GNATClients.
 
         Convenient for programmatic setup without an INI file.
 
         Parameters
         ----------
         clients : dict
-            ``{name: SAKClient}`` mapping.
+            ``{name: GNATClient}`` mapping.
         default : str, optional
             Name of the default write context.
         read_only : list of str, optional

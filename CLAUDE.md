@@ -25,8 +25,8 @@ This file provides context for AI assistants (Claude Code and similar) working i
 
 ```
 gnat/                        # Main Python package
-├── __init__.py              # Public API surface (SAKClient, ORM types, connectors)
-├── client.py                # SAKClient — top-level facade
+├── __init__.py              # Public API surface (GNATClient, ORM types, connectors)
+├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based configuration management
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
@@ -124,7 +124,7 @@ Always run `make fmt && make lint` before committing.
 
 ### Error Handling
 
-- Raise `SAKClientError` (from `gnat.clients.base`) for HTTP-level failures — includes `status` and `body`.
+- Raise `GNATClientError` (from `gnat.clients.base`) for HTTP-level failures — includes `status` and `body`.
 - Never use bare `except Exception` — log or re-raise with context.
 - Use the connector's custom exception subclass when a platform-specific error is meaningful.
 
@@ -185,7 +185,7 @@ See `ARCHITECTURE_DECISIONS.md` for the full rationale. Key choices:
 - `mock_http_response()` — Factory for fake `urllib3.HTTPResponse` objects (no real HTTP)
 - `mock_pool_manager()` — Patches `urllib3.PoolManager` at the process level
 - `minimal_config()` — Writes a temporary INI config file; returns its path
-- `sak_client()` — Returns a `SAKClient` pre-loaded from the test config
+- `sak_client()` — Returns a `GNATClient` pre-loaded from the test config
 
 **Integration tests** are gated by `@pytest.mark.integration` and the `--run-integration` flag. They require real credentials in `GNAT_CONFIG`.
 

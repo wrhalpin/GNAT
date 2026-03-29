@@ -88,7 +88,7 @@ Then:
 Every connector must inherit from both `BaseClient` and `ConnectorMixin`:
 
 ```python
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 class MyplatformClient(BaseClient, ConnectorMixin):

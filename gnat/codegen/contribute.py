@@ -164,6 +164,7 @@ class ComplianceResult:
 
     @property
     def passed(self) -> bool:
+        """``True`` when every required method is implemented and a test file exists."""
         return (
             all(s.implemented for s in self.method_statuses)
             and self.has_tests
@@ -283,6 +284,7 @@ class SubprocessRunner:
         capture: bool = True,
         check: bool = False,
     ) -> subprocess.CompletedProcess:
+        """Execute *cmd* and return the :class:`subprocess.CompletedProcess` result."""
         return subprocess.run(
             cmd,
             cwd=cwd,

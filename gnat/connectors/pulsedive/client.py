@@ -21,7 +21,7 @@ https://pulsedive.com/api/
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _API = "/api"
@@ -153,7 +153,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         return resp if isinstance(resp, dict) else {}
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("PulseDive API does not support delete operations.")
+        raise GNATClientError("PulseDive API does not support delete operations.")
 
     # ------------------------------------------------------------------
     # STIX translation

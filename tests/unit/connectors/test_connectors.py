@@ -14,7 +14,7 @@ Tests cover:
 import pytest
 from unittest.mock import MagicMock
 
-from gnat.clients.base import SAKClientError
+from gnat.clients.base import GNATClientError
 from gnat.connectors.greymatter.client import GreyMatterClient
 from gnat.connectors.whistic.client import WhisticClient
 from gnat.connectors.riskrecon.client import RiskReconClient
@@ -66,7 +66,7 @@ class TestThreatQClient:
     def test_authenticate_raises_on_missing_token(self, monkeypatch):
         c = ThreatQClient(host="https://fake.example.com", client_id="x", client_secret="y")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
-        with pytest.raises(SAKClientError, match="access token"):
+        with pytest.raises(GNATClientError, match="access token"):
             c.authenticate()
 
     def test_get_object(self, client, monkeypatch):
@@ -214,7 +214,7 @@ class TestThreatQClient:
         assert "value" in result
 
     def test_unsupported_type_raises(self, client):
-        with pytest.raises(SAKClientError, match="unsupported"):
+        with pytest.raises(GNATClientError, match="unsupported"):
             client.get_object("bundle", "1")
 
 
@@ -237,7 +237,7 @@ class TestCrowdStrikeClient:
     def test_authenticate_missing_token_raises(self, monkeypatch):
         c = CrowdStrikeClient(host="https://fake.example.com", client_id="x", client_secret="y")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             c.authenticate()
 
     def test_get_object_returns_first_resource(self, client, monkeypatch):
@@ -302,11 +302,11 @@ class TestProofpointClient:
         assert c._auth_headers["Authorization"] == expected
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="not support"):
+        with pytest.raises(GNATClientError, match="not support"):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
-        with pytest.raises(SAKClientError, match="not support"):
+        with pytest.raises(GNATClientError, match="not support"):
             client.delete_object("indicator", "1")
 
     def test_to_stix_contract(self, client):
@@ -417,11 +417,11 @@ class TestRecordedFutureClient:
         assert c._auth_headers["X-RFToken"] == "rf-tok"
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.delete_object("indicator", "1")
 
     def test_to_stix_contract(self, client):
@@ -498,7 +498,7 @@ class TestGreyMatterClient:
     def test_authenticate_raises_on_no_token(self, monkeypatch):
         c = GreyMatterClient(host="https://fake.example.com", client_id="x", client_secret="y")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             c.authenticate()
 
     def test_to_stix_ipv4(self, client):
@@ -521,7 +521,7 @@ class TestGreyMatterClient:
         assert p["value"] == "evil.com"
 
     def test_unsupported_type_raises(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.get_object("bundle", "id")
 
 
@@ -562,7 +562,7 @@ class TestWhisticClient:
         assert "x_target_sectors" not in s
 
     def test_upsert_raises_for_vendor(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.upsert_object("threat-actor", {"name": "New Vendor"})
 
     def test_list_vendors(self, client, monkeypatch):
@@ -572,7 +572,7 @@ class TestWhisticClient:
         assert isinstance(result, list)
 
     def test_unsupported_type_raises(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.list_objects("indicator")
 
 
@@ -694,11 +694,11 @@ class TestFeedlyClient:
         assert "x_target_sectors" not in s
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.delete_object("indicator", "id")
 
     def test_ms_to_iso(self, client):
@@ -735,7 +735,7 @@ class TestSplunkClient:
 
     def test_authenticate_no_credentials_raises(self):
         c = SplunkClient(host="https://splunk.example.com:8089")
-        with pytest.raises(SAKClientError, match="no credentials"):
+        with pytest.raises(GNATClientError, match="no credentials"):
             c.authenticate()
 
     def test_to_stix_notable(self, client):
@@ -817,7 +817,7 @@ class TestControlUpClient:
         assert client.health_check() is True
 
     def test_health_check_failure(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(side_effect=SAKClientError("err")))
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=GNATClientError("err")))
         assert client.health_check() is False
 
     # -- get_object -----------------------------------------------------------
@@ -828,7 +828,7 @@ class TestControlUpClient:
         assert result["deviceId"] == "d1"
 
     def test_get_object_unsupported_type(self, client):
-        with pytest.raises(SAKClientError, match="does not support"):
+        with pytest.raises(GNATClientError, match="does not support"):
             client.get_object("malware", "x")
 
     # -- list_objects ---------------------------------------------------------
@@ -851,7 +851,7 @@ class TestControlUpClient:
         assert kwargs["params"]["page"] == 2   # page 3 → 0-based index 2
 
     def test_list_objects_unsupported_type(self, client):
-        with pytest.raises(SAKClientError, match="does not support"):
+        with pytest.raises(GNATClientError, match="does not support"):
             client.list_objects("threat-actor")
 
     # -- list_devices / list_sessions / list_alerts helpers ------------------
@@ -887,17 +887,17 @@ class TestControlUpClient:
         assert result["success"] is True
 
     def test_upsert_missing_device_id_raises(self, client):
-        with pytest.raises(SAKClientError, match="device_id"):
+        with pytest.raises(GNATClientError, match="device_id"):
             client.upsert_object("infrastructure", {"tags": ["prod"]})
 
     def test_upsert_unsupported_type_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {})
 
     # -- delete_object --------------------------------------------------------
 
     def test_delete_raises(self, client):
-        with pytest.raises(SAKClientError, match="does not expose delete"):
+        with pytest.raises(GNATClientError, match="does not expose delete"):
             client.delete_object("infrastructure", "d1")
 
     # -- query_data_index -----------------------------------------------------
@@ -1080,11 +1080,11 @@ class TestAlienVaultClient:
         assert isinstance(result, list)
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.delete_object("indicator", "x")
 
     def test_to_stix_pulse(self, client):
@@ -1160,7 +1160,7 @@ class TestGraylogClient:
         assert "source:myhost" in result["query"]
 
     def test_from_stix_wrong_type_raises(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.from_stix({"type": "indicator", "id": "indicator--x"})
 
 
@@ -1244,7 +1244,7 @@ class TestSecurityOnionClient:
             host="https://so.example.com", username="u", password="p"
         )
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
-        with pytest.raises(SAKClientError, match="login failed"):
+        with pytest.raises(GNATClientError, match="login failed"):
             c.authenticate()
 
     def test_list_objects_alerts(self, client, monkeypatch):
@@ -1304,7 +1304,7 @@ class TestSnortClient:
         return SnortClient(host="", alert_log_path="/tmp/nonexistent.json", log_format="json")
 
     def test_health_check_missing_file(self, client):
-        with pytest.raises(SAKClientError, match="not found"):
+        with pytest.raises(GNATClientError, match="not found"):
             client.health_check()
 
     def test_health_check_existing_file(self, client, tmp_path):
@@ -1352,7 +1352,7 @@ class TestSnortClient:
         _assert_stix_contract(stix)
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_from_stix_returns_note(self, client):
@@ -1374,7 +1374,7 @@ class TestSuricataClient:
         return SuricataClient(host="", eve_log_path="/tmp/nonexistent.json")
 
     def test_health_check_missing_file(self, client):
-        with pytest.raises(SAKClientError, match="not found"):
+        with pytest.raises(GNATClientError, match="not found"):
             client.health_check()
 
     def test_health_check_existing_file(self, client, tmp_path):
@@ -1434,7 +1434,7 @@ class TestSuricataClient:
         _assert_stix_contract(stix)
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_from_stix_returns_note(self, client):
@@ -1460,7 +1460,7 @@ class TestZeekClient:
 
     def test_health_check_missing_dir(self):
         c = ZeekClient(host="", log_dir="/tmp/does_not_exist_zeek_xyz")
-        with pytest.raises(SAKClientError, match="not found"):
+        with pytest.raises(GNATClientError, match="not found"):
             c.health_check()
 
     def test_list_objects_notices(self, tmp_path):
@@ -1510,7 +1510,7 @@ class TestZeekClient:
         _assert_stix_contract(stix)
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_from_stix_returns_note(self, client):
@@ -1536,8 +1536,8 @@ class TestVirusTotalClient:
         assert client.health_check() is True
 
     def test_health_check_failure(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(side_effect=SAKClientError("err")))
-        with pytest.raises(SAKClientError):
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=GNATClientError("err")))
+        with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects_indicator(self, client, monkeypatch):
@@ -1566,7 +1566,7 @@ class TestVirusTotalClient:
         assert isinstance(result, dict)
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.upsert_object("indicator", {})
 
 
@@ -1590,8 +1590,8 @@ class TestShadowServerClient:
 
     def test_health_check_failure(self, client, monkeypatch):
         monkeypatch.setattr(client, "_signed_post",
-                            MagicMock(side_effect=SAKClientError("err")))
-        with pytest.raises(SAKClientError):
+                            MagicMock(side_effect=GNATClientError("err")))
+        with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects(self, client, monkeypatch):
@@ -1613,7 +1613,7 @@ class TestShadowServerClient:
         assert isinstance(result, dict)
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.upsert_object("indicator", {})
 
 
@@ -1652,7 +1652,7 @@ class TestRapid7Client:
         assert isinstance(result, dict)
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
 
@@ -1723,8 +1723,8 @@ class TestElasticConnector:
 
     def test_health_check_failure(self, client, monkeypatch):
         monkeypatch.setattr(client._elastic, "es_get",
-                            MagicMock(side_effect=SAKClientError("err")))
-        with pytest.raises(SAKClientError):
+                            MagicMock(side_effect=GNATClientError("err")))
+        with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects_indicators(self, client, monkeypatch):
@@ -1752,11 +1752,11 @@ class TestElasticConnector:
         assert isinstance(result, dict)
 
     def test_upsert_observed_data_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_delete_observed_data_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.delete_object("observed-data", "alert-1")
 
 
@@ -1780,8 +1780,8 @@ class TestMISPConnector:
 
     def test_health_check_failure(self, client, monkeypatch):
         monkeypatch.setattr(client._misp, "get_json",
-                            MagicMock(side_effect=SAKClientError("err")))
-        with pytest.raises(SAKClientError):
+                            MagicMock(side_effect=GNATClientError("err")))
+        with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects(self, client, monkeypatch):
@@ -1842,8 +1842,8 @@ class TestQRadarConnector:
 
     def test_health_check_failure(self, client, monkeypatch):
         monkeypatch.setattr(client._qradar, "get",
-                            MagicMock(side_effect=SAKClientError("err")))
-        with pytest.raises(SAKClientError):
+                            MagicMock(side_effect=GNATClientError("err")))
+        with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects_offenses(self, client, monkeypatch):
@@ -1865,11 +1865,11 @@ class TestQRadarConnector:
         assert isinstance(result, dict)
 
     def test_get_indicator_raises(self, client):
-        with pytest.raises(SAKClientError, match="single-item lookup"):
+        with pytest.raises(GNATClientError, match="single-item lookup"):
             client.get_object("indicator", "some-id")
 
     def test_upsert_observed_data_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_from_stix(self, client):
@@ -1907,7 +1907,7 @@ class TestSentinelConnector:
     def test_authenticate_failure(self, client, monkeypatch):
         monkeypatch.setattr(client._sentinel.auth, "get_headers",
                             MagicMock(side_effect=Exception("invalid_client")))
-        with pytest.raises(SAKClientError, match="authentication"):
+        with pytest.raises(GNATClientError, match="authentication"):
             client.authenticate()
 
     def test_health_check(self, client, monkeypatch):
@@ -1944,7 +1944,7 @@ class TestSentinelConnector:
         assert isinstance(result, dict)
 
     def test_upsert_incident_raises(self, client):
-        with pytest.raises(SAKClientError, match="cannot be created"):
+        with pytest.raises(GNATClientError, match="cannot be created"):
             client.upsert_object("observed-data", {})
 
     def test_from_stix(self, client):
@@ -1992,15 +1992,15 @@ class TestWazuhConnector:
         assert isinstance(results, list)
 
     def test_list_vuln_no_agent_raises(self, client):
-        with pytest.raises(SAKClientError, match="agent_id"):
+        with pytest.raises(GNATClientError, match="agent_id"):
             client.list_objects("vulnerability")
 
     def test_upsert_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_delete_raises(self, client):
-        with pytest.raises(SAKClientError, match="read-only"):
+        with pytest.raises(GNATClientError, match="read-only"):
             client.delete_object("observed-data", "alert-1")
 
     def test_from_stix_returns_xml(self, client):
@@ -2144,8 +2144,8 @@ class TestServiceNowClient:
 
     def test_health_check_failure_raises(self, client, monkeypatch):
         monkeypatch.setattr(client, "get",
-                            MagicMock(side_effect=SAKClientError("unreachable")))
-        with pytest.raises(SAKClientError):
+                            MagicMock(side_effect=GNATClientError("unreachable")))
+        with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_get_object_returns_result(self, client, monkeypatch):
@@ -2227,7 +2227,7 @@ class TestServiceNowClient:
         assert "indicator--xyz" in captured.get("work_notes", "")
 
     def test_unsupported_stix_type_raises(self, client):
-        with pytest.raises(SAKClientError):
+        with pytest.raises(GNATClientError):
             client.list_objects("malware")
 
 
@@ -2328,8 +2328,8 @@ class TestJiraClient:
 
     def test_health_check_failure_raises(self, client, monkeypatch):
         monkeypatch.setattr(client, "get",
-                            MagicMock(side_effect=SAKClientError("down")))
-        with pytest.raises(SAKClientError):
+                            MagicMock(side_effect=GNATClientError("down")))
+        with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_get_object_returns_issue(self, client, monkeypatch):
@@ -2562,9 +2562,9 @@ class TestMandiantClient:
         assert client._auth_headers["Authorization"] == "Bearer tok_abc"
 
     def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
-        from gnat.clients.base import SAKClientError
+        from gnat.clients.base import GNATClientError
         monkeypatch.setattr(client, "post", lambda path, **kw: {})
-        with pytest.raises(SAKClientError, match="Mandiant"):
+        with pytest.raises(GNATClientError, match="Mandiant"):
             client.authenticate()
 
     def test_health_check_returns_true(self, client, monkeypatch):
@@ -2584,8 +2584,8 @@ class TestMandiantClient:
         assert results[0]["name"] == "APT1"
 
     def test_upsert_raises(self, client):
-        from gnat.clients.base import SAKClientError
-        with pytest.raises(SAKClientError, match="read-only"):
+        from gnat.clients.base import GNATClientError
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {"value": "1.2.3.4"})
 
     def test_to_stix_indicator(self, client):
@@ -2649,13 +2649,13 @@ class TestDefenderTIClient:
     def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
         import json as _json
         import urllib3 as _u3
-        from gnat.clients.base import SAKClientError
+        from gnat.clients.base import GNATClientError
         fake_response = MagicMock()
         fake_response.data = _json.dumps({}).encode()
         fake_pool = MagicMock()
         fake_pool.request.return_value = fake_response
         monkeypatch.setattr(_u3, "PoolManager", lambda **kw: fake_pool)
-        with pytest.raises(SAKClientError, match="DefenderTI"):
+        with pytest.raises(GNATClientError, match="DefenderTI"):
             client.authenticate()
 
     def test_health_check_success(self, client, monkeypatch):
@@ -2954,8 +2954,8 @@ class TestSOCRadarClient:
         assert obj["id"] == 42
 
     def test_upsert_raises(self, client):
-        from gnat.clients.base import SAKClientError
-        with pytest.raises(SAKClientError, match="read-only"):
+        from gnat.clients.base import GNATClientError
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {"value": "1.2.3.4"})
 
     def test_to_stix_ip(self, client):
@@ -3093,8 +3093,8 @@ class TestFlareClient:
         assert obj["id"] == "f99"
 
     def test_upsert_raises(self, client):
-        from gnat.clients.base import SAKClientError
-        with pytest.raises(SAKClientError, match="read-only"):
+        from gnat.clients.base import GNATClientError
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {})
 
     def test_search_leaks(self, client, monkeypatch):
@@ -3146,9 +3146,9 @@ class TestStellarCyberClient:
         assert client._auth_headers["Authorization"] == "Bearer jwt_tok"
 
     def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
-        from gnat.clients.base import SAKClientError
+        from gnat.clients.base import GNATClientError
         monkeypatch.setattr(client, "post", lambda path, **kw: {})
-        with pytest.raises(SAKClientError, match="StellarCyber"):
+        with pytest.raises(GNATClientError, match="StellarCyber"):
             client.authenticate()
 
     def test_health_check(self, client, monkeypatch):
@@ -3322,8 +3322,8 @@ class TestCloudSEKClient:
         assert obj["id"] == "cs42"
 
     def test_upsert_raises(self, client):
-        from gnat.clients.base import SAKClientError
-        with pytest.raises(SAKClientError, match="read-only"):
+        from gnat.clients.base import GNATClientError
+        with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_update_alert_status(self, client, monkeypatch):

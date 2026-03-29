@@ -37,7 +37,7 @@ https://support.controlup.com/docs/create-an-api-key
 import re
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -115,7 +115,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             else:
                 resp = self.get(self._url("devices"), params={"pageSize": 1})
             return isinstance(resp, dict)
-        except SAKClientError:
+        except GNATClientError:
             return False
 
     # ── CRUD ─────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         }
         route = route_map.get(stix_type)
         if route is None:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"ControlUp connector does not support stix_type={stix_type!r}"
             )
         resp = self.get(self._url(route))
@@ -188,7 +188,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         }
         route = route_map.get(stix_type)
         if route is None:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"ControlUp connector does not support stix_type={stix_type!r}"
             )
         params: Dict[str, Any] = {
@@ -223,13 +223,13 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             API response confirming the tag update.
         """
         if stix_type != "infrastructure":
-            raise SAKClientError(
+            raise GNATClientError(
                 f"ControlUp only supports upsert for 'infrastructure' (device tags), "
                 f"not {stix_type!r}. The API is read-only for other resource types."
             )
         device_id = payload.get("device_id")
         if not device_id:
-            raise SAKClientError("payload must include 'device_id' for tag upsert.")
+            raise GNATClientError("payload must include 'device_id' for tag upsert.")
         tags = payload.get("tags", [])
         return self.put(
             self._url(f"devices/{device_id}/tags"),
@@ -242,10 +242,10 @@ class ControlUpClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             Always, as the API offers no delete endpoints.
         """
-        raise SAKClientError(
+        raise GNATClientError(
             "ControlUp does not expose delete operations via the REST API. "
             "Use the ControlUp web console to remove objects."
         )

@@ -268,7 +268,7 @@ def _render_client(
         """
 
         from typing import Any, Dict, List, Optional
-        from gnat.clients.base import BaseClient, SAKClientError
+        from gnat.clients.base import BaseClient, GNATClientError
         from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -358,7 +358,7 @@ def _auth_snippet(auth_type: str) -> str:
                 })
                 token = resp.get("access_token") if isinstance(resp, dict) else None
                 if not token:
-                    raise SAKClientError("Failed to obtain access token")
+                    raise GNATClientError("Failed to obtain access token")
                 self._auth_headers["Authorization"] = f"Bearer {token}"
             '''), "    ")
     if auth_type == "api_key":
@@ -454,9 +454,9 @@ def _render_tests(name: str, class_name: str) -> str:
                 assert isinstance(result, dict)
 
             def test_raises_on_http_error(self, client, monkeypatch):
-                from gnat.clients.base import SAKClientError
-                monkeypatch.setattr(client, "get", MagicMock(side_effect=SAKClientError("404", 404)))
-                with pytest.raises(SAKClientError):
+                from gnat.clients.base import GNATClientError
+                monkeypatch.setattr(client, "get", MagicMock(side_effect=GNATClientError("404", 404)))
+                with pytest.raises(GNATClientError):
                     client.get_object("indicator", "bad-id")
 
 
