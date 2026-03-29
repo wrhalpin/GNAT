@@ -37,6 +37,11 @@ from gnat.context.workspace import (
     CommitResult,
 )
 from gnat.context.store import FlatFileStore
+from gnat.context.tenant import (
+    Tenant,
+    TenantRegistry,
+    TenantWorkspaceManager,
+)
 
 try:
     from gnat.context.store import WorkspaceStore
@@ -52,4 +57,7 @@ __all__ = [
     "CommitResult",
     "FlatFileStore",
     "WorkspaceStore",
+    "Tenant",
+    "TenantRegistry",
+    "TenantWorkspaceManager",
 ]
