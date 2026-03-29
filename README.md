@@ -1,4 +1,4 @@
-# GNAT 🪰💪
+# GNAT 🪰
 
 **GNAT's Not Another TIP**
 
