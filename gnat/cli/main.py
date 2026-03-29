@@ -34,6 +34,9 @@ Sub-commands
     gnat health    check
     gnat health    check --platform threatq --no-schema
     gnat health    baseline threatq
+    gnat contribute --connector myplatform --message "Add MyPlatform connector"
+    gnat contribute --connector myplatform --dry-run
+    gnat contribute --connector myplatform --no-pr
 
 Global flags
 ------------
@@ -407,6 +410,38 @@ def _build_parser() -> argparse.ArgumentParser:
     p_hlt_bl.add_argument(
         "--snapshot-dir", default=None, metavar="DIR",
         help="Directory for schema snapshots",
+    )
+
+    # ── contribute ────────────────────────────────────────────────────────
+    p_ctr = subs.add_parser(
+        "contribute",
+        help="Submit a connector as a draft PR to the upstream repository",
+        description=(
+            "Opt-in pipeline: validates compliance, runs tests, creates a "
+            "branch, commits connector files, pushes to your fork, and "
+            "optionally opens a draft PR on github.com/wrhalpin/GNAT.  "
+            "Requires [contribute] enabled = true in config.ini."
+        ),
+    )
+    p_ctr.add_argument(
+        "--connector", required=True, metavar="NAME",
+        help="Connector platform name (must match a CLIENT_REGISTRY key)",
+    )
+    p_ctr.add_argument(
+        "--message", default=None, metavar="MSG",
+        help="Commit / PR title (default: 'feat(connectors): add <name> connector')",
+    )
+    p_ctr.add_argument(
+        "--no-pr", action="store_true",
+        help="Skip PR creation (push branch only)",
+    )
+    p_ctr.add_argument(
+        "--no-tests", action="store_true",
+        help="Skip running the test suite (not recommended)",
+    )
+    p_ctr.add_argument(
+        "--dry-run", action="store_true",
+        help="Show what would happen without making any git changes",
     )
 
     return parser
@@ -1052,6 +1087,86 @@ def _cmd_tui(args) -> int:
     return 0
 
 
+def _cmd_contribute(args) -> int:
+    """contribute subcommand — submit a connector as a draft PR."""
+    from gnat.codegen.contribute import (
+        ComplianceMatrix,
+        ContributeConfig,
+        ContributionPipeline,
+    )
+
+    connector    = args.connector
+    config_path  = getattr(args, "config", None) or ""
+    no_pr        = getattr(args, "no_pr", False)
+    no_tests     = getattr(args, "no_tests", False)
+    dry_run      = getattr(args, "dry_run", False)
+    message      = (
+        getattr(args, "message", None)
+        or f"feat(connectors): add {connector} connector"
+    )
+
+    # Load config
+    try:
+        config = ContributeConfig.from_ini(config_path)
+    except Exception as exc:
+        print(_red(f"Config error: {exc}"), file=sys.stderr)
+        return 1
+
+    if not config.enabled and not dry_run:
+        print(
+            _red(
+                "Contribution pipeline is disabled.  "
+                "Set [contribute] enabled = true in config.ini to opt in."
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
+    # Always show compliance report first
+    print(_bold(f"Checking compliance for {_bold(connector)} …"))
+    compliance = ComplianceMatrix.check(connector)
+    for s in compliance.method_statuses:
+        mark = _green("✓") if s.implemented else _red("✗")
+        print(f"  {mark}  {s.name}" + (f"  {_dim(s.note)}" if s.note else ""))
+    test_mark = _green("✓") if compliance.has_tests else _red("✗")
+    print(f"  {test_mark}  unit tests")
+    print()
+
+    if not compliance.passed:
+        print(_red("Compliance check FAILED — fix the issues above before contributing."))
+        return 1
+    print(_green("✓  Compliance check passed"))
+
+    if dry_run:
+        print(_dim("\n[dry-run] Would run tests, create branch, commit, push, open PR."))
+        return 0
+
+    # Run pipeline
+    pipeline = ContributionPipeline()
+
+    if no_tests:
+        # Monkey-patch the test runner for --no-tests
+        pipeline._run_tests = lambda: (True, "skipped")  # type: ignore[method-assign]
+
+    result = pipeline.run(
+        connector_name = connector,
+        message        = message,
+        config         = config,
+        create_pr      = not no_pr,
+    )
+
+    if not result.success:
+        print(_red(f"\nContribution failed:\n{result.error}"), file=sys.stderr)
+        return 1
+
+    print(_green(f"\n✓  Branch:   {_bold(result.branch)}"))
+    if result.pr_url:
+        print(_green(f"✓  Draft PR: {_bold(result.pr_url)}"))
+    else:
+        print(_dim("   (No PR created — either --no-pr or no github_token configured)"))
+    return 0
+
+
 def _cmd_health(args) -> int:
     """health subcommand — connector health check and schema drift detection."""
     from gnat.agents.health_monitor import (
@@ -1241,7 +1356,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         "nlq":      _cmd_nlq,
         "tui":      _cmd_tui,
         "serve":    _cmd_serve,
-        "health":   _cmd_health,
+        "health":      _cmd_health,
+        "contribute":  _cmd_contribute,
     }
 
     handler = handlers.get(args.command)

@@ -543,9 +543,13 @@ drift_threshold  = 0.2                           # 20% field change triggers ale
 
 ---
 
-### 25. Upstream Contribution Pipeline (3b)
+### 25. Upstream Contribution Pipeline (3b) — ✅ COMPLETE
 
 **Priority:** LOW — opt-in only
+
+**Implemented:** `gnat/codegen/contribute.py` — `ContributionPipeline`, `ComplianceMatrix`,
+`ContributeConfig`, `SubprocessRunner`. `gnat contribute` CLI subcommand in `gnat/cli/main.py`.
+47 unit tests in `tests/unit/test_contribute.py`.
 
 **What:** Opt-in workflow that packages a new/updated GNAT connector as a
 GitHub pull request against the upstream `wrhalpin/GNAT` repository.
@@ -553,10 +557,13 @@ GitHub pull request against the upstream `wrhalpin/GNAT` repository.
 **CLI:**
 ```bash
 gnat contribute --connector myplatform --message "Add MyPlatform connector"
-# → validates connector structure (item #15 compliance matrix)
-# → runs unit tests
-# → creates a branch, commits, pushes to configured fork
-# → opens a draft PR via GitHub API (opt-in, requires PAT config)
+# → validates connector structure (#15 compliance matrix)
+# → runs unit tests (aborts on failure)
+# → creates a branch contribute/{platform}-{timestamp}, commits, pushes to fork
+# → opens a draft PR via GitHub API (requires PAT config)
+
+gnat contribute --connector myplatform --dry-run   # compliance check only, no git ops
+gnat contribute --connector myplatform --no-pr     # push branch but skip PR creation
 ```
 
 **Config:**
@@ -570,7 +577,7 @@ draft_pr         = true        # always draft; human must mark ready
 ```
 
 **Safety rules:**
-- `draft_pr = true` is not overridable via CLI (only draft PRs created)
+- `draft_pr = true` is not overridable (hardcoded in `ContributeConfig.from_ini()`)
 - Runs full test suite before creating branch; aborts on failure
-- Never pushes directly to `main` or `master`
-- Connector must pass the #15 compliance matrix before PR is allowed
+- Never pushes directly to `main` or `master` (`_PROTECTED_BRANCHES` guard)
+- Connector must pass the compliance matrix before PR is allowed

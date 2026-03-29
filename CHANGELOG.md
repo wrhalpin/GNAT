@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- **Upstream contribution pipeline** (`gnat/codegen/contribute.py`): opt-in workflow that validates, tests, and packages a connector as a draft GitHub PR. `ContributionPipeline.run()` enforces a 7-step gate: enabled guard → connector exists in registry → compliance matrix (all 8 `ConnectorMixin` methods + test file presence) → full test suite (aborts on failure) → branch creation (`contribute/{platform}-{timestamp}`) → commit + push → draft PR via GitHub REST API. `ContributeConfig` reads `[contribute]` INI section; `draft_pr` is hardcoded to `True` and cannot be overridden. `_PROTECTED_BRANCHES` prevents pushing to `main`/`master`. `SubprocessRunner` is injectable for testing. `gnat contribute` CLI subcommand with `--connector`, `--message`, `--no-pr`, `--dry-run`, and `--config` flags. 47 unit tests in `tests/unit/test_contribute.py`.
 - **Web dashboard** (`gnat/serve/`): FastAPI-based browser UI for server deployments, accessible via `gnat serve`. Secured by `X-Api-Key` header; binds to `127.0.0.1` by default; rate-limited to 100 req/min per key. Three API routers:
   - `GET/POST /api/library` — search, fetch, promote, and reject Research Library entries
   - `GET /api/reports` — list reports; serve HTML reports inline; return metadata for PDF/DOCX
