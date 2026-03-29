@@ -56,7 +56,9 @@ from gnat.connectors.grok.uclient import GrokClient
 from gnat.connectors.gemini.client import GeminiClient
 from gnat.connectors.copilot.client import CopilotClient
 from gnat.connectors.chatgpt import ChatGPTClient
+from gnat.connectors.cyble_vision.client import CybleVisionClient
 
+CLIENT_REGISTRY["cyble_vision"] = CybleVisionClient
     CLIENT_REGISTRY = {
         # existing entries...
         "copilot": CopilotClient,
@@ -110,6 +112,7 @@ CLIENT_REGISTRY: dict = {
     "gemini":         GeminiClient,
     "copilot":        CopilotClient, 
     "chatgpt"         ChatGPTClient,
+    "cyble_vision":   CybleVisionClient,
 }
 
 __all__ = [
