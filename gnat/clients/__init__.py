@@ -52,6 +52,7 @@ from gnat.connectors.flare.client import FlareClient
 from gnat.connectors.stellarcyber.client import StellarCyberClient
 from gnat.connectors.yeti.client import YetiClient
 from gnat.connectors.cloudsek.client import CloudSEKClient
+from gnat.connectors.grok.client import GrokClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -97,6 +98,7 @@ CLIENT_REGISTRY: dict = {
     "stellarcyber":   StellarCyberClient,
     "yeti":           YetiClient,
     "cloudsek":       CloudSEKClient,
+    "grok":           GrokClient
 }
 
 __all__ = [

@@ -368,3 +368,7 @@ host    = https://api.cloudsek.com
 api_key = YOUR_CLOUDSEK_API_KEY
 # org_id = YOUR_ORG_ID    # optional: multi-tenant
 auth_type = token
+# 
+[grok]
+host = https://api.x.ai
+api_key = xai-...
