@@ -357,7 +357,7 @@ New connectors follow the pattern in `tests/unit/connectors/test_connectors.py`.
 
 ### Core (no extras required)
 
-- Python 3.10+
+- Python 3.9+
 - `urllib3` — HTTP client foundation
 - Standard library only for: STIX ORM, INI config, schedule, HMAC signing,
   JSON handling, email delivery
@@ -367,38 +367,58 @@ New connectors follow the pattern in `tests/unit/connectors/test_connectors.py`.
 ```bash
 pip install "gnat[async]"      # httpx — AsyncGNATClient
 pip install "gnat[taxii]"      # taxii2-client — TAXIICollectionReader
+pip install "gnat[ingest]"     # taxii2-client + feedparser — full ingest pipeline
 pip install "gnat[persist]"    # sqlalchemy — WorkspaceStore (SQLite/PostgreSQL)
 pip install "gnat[viz]"        # plotly, networkx, openpyxl — GraphView, TabularView
 pip install "gnat[schedule]"   # croniter — cron expression scheduling
-pip install "gnat[reports]"    # reportlab — PDF rendering
-pip install "gnat[serve]"      # fastapi, uvicorn — GrafanaServer
-npm install -g docx               # Node.js — DOCX report rendering
+pip install "gnat[reports]"    # reportlab + python-docx — PDF and DOCX rendering
+pip install "gnat[serve]"      # fastapi, uvicorn — Web dashboard + TAXII server
+pip install "gnat[tui]"        # textual — Terminal UI
+pip install "gnat[nlp]"        # NLP query interface (builtin backend; zero extra deps)
+pip install "gnat[all]"        # All of the above
+pip install "gnat[dev]"        # All + dev tools (ruff, mypy, pytest, bandit)
 ```
 
 ### Full install
 
 ```bash
-pip install "gnat[async,taxii,persist,viz,schedule,reports,serve]"
-npm install -g docx
+pip install "gnat[all]"
 ```
 
 ---
 
 ## Roadmap
 
-### Near term
-- Complete ThreatQ sector normalization (see PENDING_ITEMS.md)
-- Add sector normalization to RF, CrowdStrike connectors
-- Move `SectorFilter` to `gnat/export/filters.py`
-- CLI `gnat report run` subcommand
-- CHANGELOG.md update through v1.0.0
+### Completed ✅
+
+All near-term and medium-term roadmap items have shipped:
+
+| Item | Status |
+|------|--------|
+| ThreatQ / RF / CrowdStrike sector normalization | ✅ Done |
+| `SectorFilter` moved to `gnat/export/filters.py` | ✅ Done |
+| `gnat report run` CLI subcommand | ✅ Done |
+| Web UI — research library, scheduler, report viewer | ✅ Done (#23b) |
+| Terminal UI — 4 screens, NLP query bar | ✅ Done (#23a) |
+| Connector health + drift monitoring agent | ✅ Done (#24) |
+| Upstream contribution pipeline | ✅ Done (#25) |
+| DOCX rendering (python-docx, no Node.js) | ✅ Done |
+| Docker containerization (`docker/`, `docker-compose.yml`) | ✅ Done (#22) |
+| XSOAR content pack generator | ✅ Done (#21) |
+| NLP query interface | ✅ Done (#18) |
+| Client capability reflection | ✅ Done (#19) |
+
+### In progress / Near term
+- **TAXII 2.1 server** — expose GNAT workspaces as TAXII 2.1 collections
+  (`gnat/serve/taxii/`); `gnat serve taxii` CLI subcommand
 
 ### Medium term
-- Web UI for research library browsing and report viewing
+- STIX 2.1 pattern validator — validate `Indicator.pattern` syntax
+- Docker-based integration test harness
+- Solr search UI / Grafana dashboard integration for `gnat/search` sidecar
 - Multi-tenant workspace isolation for MSP deployments
-- Solr search UI / dashboard integration
 
 ### Long term
-- TAXII 2.1 server — expose GNAT as a TAXII collection for downstream consumers
-- STIX 2.1 validation against official spec
-- Analyst workflow UI (review AI-extracted intel before promotion)
+- STIX 2.1 validation against official spec (full object-level)
+- Analyst workflow UI — structured review/approval queue before promoting
+  AI-extracted intel to production workspaces
