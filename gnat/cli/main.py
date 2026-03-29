@@ -242,11 +242,20 @@ def _build_parser() -> argparse.ArgumentParser:
     p_vs = viz_subs.add_parser("serve", help="Start Grafana datasource server")
     p_vs.add_argument("--port",  type=int, default=3001)
     p_vs.add_argument("--host",  default="0.0.0.0")  # nosec B104 — user-facing CLI arg
+    p_vs.add_argument("--with-solr", action="store_true",
+                      help="Mount /solr/ endpoints from the configured search index")
 
     p_vd = viz_subs.add_parser("dashboard", help="Export Grafana dashboard JSON")
     p_vd.add_argument("--workspace", required=True, metavar="NAME")
     p_vd.add_argument("--file",      default="dashboard.json")
     p_vd.add_argument("--datasource", default="GNAT")
+
+    p_vsd = viz_subs.add_parser("solr-dashboard",
+                                 help="Export Grafana dashboard JSON for Solr search sidecar")
+    p_vsd.add_argument("--file",       default="solr_dashboard.json")
+    p_vsd.add_argument("--datasource", default="GNAT-Solr",
+                       help="Grafana datasource name for /solr/ endpoints (default: GNAT-Solr)")
+    p_vsd.add_argument("--title",      default="GNAT Search Index")
 
     p_vpb = viz_subs.add_parser("powerbi", help="Export workspace to Power BI Excel")
     p_vpb.add_argument("--workspace", required=True, metavar="NAME")
@@ -889,8 +898,21 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         from gnat.context import WorkspaceManager
         from gnat.viz.grafana.server import GrafanaServer
         manager = WorkspaceManager.default(config_path=args.config)
-        server  = GrafanaServer(manager, host=args.host, port=args.port)
+        search_index = None
+        if getattr(args, "with_solr", False):
+            try:
+                from gnat.config import GNATConfig
+                from gnat.search import build_search_index
+                cfg = GNATConfig(config_path=args.config)
+                search_index = build_search_index(cfg)
+                print(_dim("  Solr search index mounted at /solr/"))
+            except Exception as _exc:  # noqa: BLE001
+                print(_yellow(f"Warning: could not load search index: {_exc}"), file=sys.stderr)
+        server = GrafanaServer(manager, host=args.host, port=args.port,
+                               search_index=search_index)
         print(_green(f"✓  Grafana datasource: {server.url()}"))
+        if search_index is not None:
+            print(_dim(f"  Solr endpoints:      {server.url()}/solr/"))
         print(_dim("  Configure in Grafana: Add data source → SimpleJSON → URL above"))
         server.run()
         return 0
@@ -899,6 +921,11 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         manager = WorkspaceManager.default(config_path=args.config)
         save_grafana_dashboard(args.workspace, args.file, args.datasource)
         print(_green(f"✓  Dashboard JSON saved to {args.file}"))
+        return 0
+
+    if viz_cmd == "solr-dashboard":
+        from gnat.viz.export import save_solr_dashboard
+        save_solr_dashboard(args.file, args.datasource, args.title)
         return 0
 
     if viz_cmd == "powerbi":

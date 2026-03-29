@@ -1,0 +1,269 @@
+{
+  "uid": "gnat-solr-index",
+  "title": "GNAT Search Index",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Indexed Documents",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT-Solr"
+      },
+      "targets": [
+        {
+          "target": "stats/total",
+          "refId": "A",
+          "type": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 100000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Objects by STIX Type",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 4,
+        "y": 0
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT-Solr"
+      },
+      "targets": [
+        {
+          "target": "facet/stix_type",
+          "refId": "A",
+          "type": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "options": {
+        "xField": "STIX Type"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Objects by Source Platform",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 14,
+        "y": 0
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT-Solr"
+      },
+      "targets": [
+        {
+          "target": "facet/source_platform",
+          "refId": "A",
+          "type": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "options": {
+        "xField": "source_platform"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Ingest Rate (documents / day)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT-Solr"
+      },
+      "targets": [
+        {
+          "target": "timeseries/ingest",
+          "refId": "A",
+          "type": "timeserie"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Type Breakdown",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT-Solr"
+      },
+      "targets": [
+        {
+          "target": "stats/type_counts",
+          "refId": "A",
+          "type": "table"
+        },
+        {
+          "target": "stats/platform_counts",
+          "refId": "B",
+          "type": "table"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Doc Count",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "title": "Platform Counts",
+      "type": "table",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT-Solr"
+      },
+      "targets": [
+        {
+          "target": "stats/platform_counts",
+          "refId": "A",
+          "type": "table"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Doc Count",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Search Results",
+      "type": "table",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT-Solr"
+      },
+      "targets": [
+        {
+          "target": "search/*:*",
+          "refId": "A",
+          "type": "table"
+        }
+      ],
+      "description": "Change target to 'search/<your-query>' to filter by any indexed text."
+    }
+  ],
+  "tags": [
+    "gnat",
+    "solr",
+    "search",
+    "threat-intelligence"
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  }
+}

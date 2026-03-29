@@ -1,0 +1,19 @@
+# docker/grafana/provisioning/dashboards/provider.yaml
+# ---------------------------------------------------------------------------
+# Tells Grafana to watch /var/lib/grafana/dashboards for JSON dashboard
+# files and auto-import them at startup.
+# ---------------------------------------------------------------------------
+
+apiVersion: 1
+
+providers:
+  - name: GNAT
+    orgId: 1
+    folder: GNAT
+    folderUid: gnat
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

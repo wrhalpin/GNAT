@@ -467,4 +467,196 @@ def save_grafana_dashboard(
     logger.info("Grafana dashboard JSON written to %s", path)
     print(f"Dashboard saved: {path}")
     print("To import: Grafana → Dashboards → Import → Upload JSON file")
+
+
+def solr_dashboard(
+    datasource_name: str = "GNAT-Solr",
+    title: str = "GNAT Search Index",
+) -> dict:
+    """
+    Generate a pre-built Grafana dashboard JSON for the GNAT Solr search sidecar.
+
+    Targets the ``/solr/`` sub-router on the GNAT Grafana datasource server.
+
+    Panels
+    ------
+    * **Total Indexed Documents** — single stat
+    * **Objects by STIX Type** — bar chart
+    * **Objects by Source Platform** — bar chart
+    * **Ingest Rate (docs/day)** — time-series
+    * **Full Index Breakdown (type × platform)** — table with both facets
+    * **Recent Ingest Activity** — table of type counts
+
+    Parameters
+    ----------
+    datasource_name : str
+        The Grafana datasource name pointing at the GNAT server's ``/solr/``
+        base URL.  Default ``"GNAT-Solr"``.
+    title : str
+        Dashboard title.  Default ``"GNAT Search Index"``.
+
+    Returns
+    -------
+    dict
+        Grafana dashboard JSON ready for import.
+
+    Examples
+    --------
+    ::
+
+        from gnat.viz.export import solr_dashboard
+        import json, pathlib
+        pathlib.Path("solr_dashboard.json").write_text(
+            json.dumps(solr_dashboard(), indent=2)
+        )
+    """
+    ds = {"type": "simplejson", "uid": datasource_name}
+
+    def _tgt(target_str: str, ref_id: str = "A") -> dict:
+        return {"target": target_str, "refId": ref_id, "type": "timeserie"}
+
+    def _tbl(target_str: str, ref_id: str = "A") -> dict:
+        return {"target": target_str, "refId": ref_id, "type": "table"}
+
+    panels = [
+        # ── 1. Total indexed documents (stat) ─────────────────────────────
+        {
+            "id": 1,
+            "title": "Total Indexed Documents",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+            "datasource": ds,
+            "targets": [_tbl("stats/total")],
+            "options": {
+                "reduceOptions": {"calcs": ["lastNotNull"]},
+                "colorMode": "value",
+                "graphMode": "none",
+            },
+            "fieldConfig": {
+                "defaults": {"color": {"mode": "thresholds"},
+                              "thresholds": {"steps": [
+                                  {"color": "green", "value": 0},
+                                  {"color": "yellow", "value": 1000},
+                                  {"color": "red",   "value": 100000},
+                              ]}},
+            },
+        },
+
+        # ── 2. Objects by STIX Type (bar chart) ──────────────────────────
+        {
+            "id": 2,
+            "title": "Objects by STIX Type",
+            "type": "barchart",
+            "gridPos": {"h": 8, "w": 10, "x": 4, "y": 0},
+            "datasource": ds,
+            "targets": [_tbl("facet/stix_type")],
+            "fieldConfig": {
+                "defaults": {"color": {"mode": "palette-classic"}},
+            },
+            "options": {"xField": "STIX Type"},
+        },
+
+        # ── 3. Objects by Source Platform (bar chart) ─────────────────────
+        {
+            "id": 3,
+            "title": "Objects by Source Platform",
+            "type": "barchart",
+            "gridPos": {"h": 8, "w": 10, "x": 14, "y": 0},
+            "datasource": ds,
+            "targets": [_tbl("facet/source_platform")],
+            "fieldConfig": {
+                "defaults": {"color": {"mode": "palette-classic"}},
+            },
+            "options": {"xField": "source_platform"},
+        },
+
+        # ── 4. Ingest rate (time-series docs/day) ─────────────────────────
+        {
+            "id": 4,
+            "title": "Ingest Rate (documents / day)",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "datasource": ds,
+            "targets": [_tgt("timeseries/ingest")],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {"mode": "palette-classic"},
+                    "custom": {"lineWidth": 2, "fillOpacity": 10},
+                },
+            },
+            "options": {"tooltip": {"mode": "single"}},
+        },
+
+        # ── 5. Type × platform breakdown (table) ─────────────────────────
+        {
+            "id": 5,
+            "title": "Type Breakdown",
+            "type": "table",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "datasource": ds,
+            "targets": [_tbl("stats/type_counts", "A"), _tbl("stats/platform_counts", "B")],
+            "options": {"sortBy": [{"displayName": "Doc Count", "desc": True}]},
+        },
+
+        # ── 6. Platform counts table ──────────────────────────────────────
+        {
+            "id": 6,
+            "title": "Platform Counts",
+            "type": "table",
+            "gridPos": {"h": 6, "w": 12, "x": 0, "y": 16},
+            "datasource": ds,
+            "targets": [_tbl("stats/platform_counts")],
+            "options": {"sortBy": [{"displayName": "Doc Count", "desc": True}]},
+        },
+
+        # ── 7. Search result table (variable-driven) ───────────────────────
+        {
+            "id": 7,
+            "title": "Search Results",
+            "type": "table",
+            "gridPos": {"h": 6, "w": 12, "x": 12, "y": 16},
+            "datasource": ds,
+            "targets": [_tbl("search/*:*")],
+            "description": (
+                "Change target to 'search/<your-query>' to filter by any indexed text."
+            ),
+        },
+    ]
+
+    return {
+        "uid":           "gnat-solr-index",
+        "title":         title,
+        "schemaVersion": 38,
+        "version":       1,
+        "refresh":       "1m",
+        "time":          {"from": "now-30d", "to": "now"},
+        "panels":        panels,
+        "tags":          ["gnat", "solr", "search", "threat-intelligence"],
+        "templating":    {"list": []},
+        "annotations":   {"list": []},
+    }
+
+
+def save_solr_dashboard(
+    path: str,
+    datasource_name: str = "GNAT-Solr",
+    title: str = "GNAT Search Index",
+) -> None:
+    """
+    Write the Solr search sidecar Grafana dashboard JSON to disk.
+
+    Parameters
+    ----------
+    path : str
+        Output ``.json`` file path.
+    datasource_name : str
+        Grafana datasource name for the ``/solr/`` endpoints.
+    title : str
+        Dashboard title.
+    """
+    dashboard = solr_dashboard(datasource_name=datasource_name, title=title)
+    Path(path).write_text(json.dumps(dashboard, indent=2))
+    logger.info("Solr dashboard JSON written to %s", path)
+    print(f"Solr dashboard saved: {path}")
+    print("To import: Grafana → Dashboards → Import → Upload JSON file")
     print(f"Configure datasource: SimpleJSON → http://localhost:3001")

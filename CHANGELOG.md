@@ -114,6 +114,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `gnat validate bundle <file.json>` — validate all indicator patterns in a STIX bundle file; `--fail-fast` flag; exit 0 on all-valid, 1 on any invalid.
   - `pyproject.toml`: new `[stix-validate]` extra (`stix2-patterns>=1.3`).
   - 87 unit tests in `tests/unit/test_stix_validator.py`.
+- **Solr/Grafana observability integration** (`gnat/viz/grafana/`, `docker/grafana/`): wires the GNAT Solr search sidecar into Grafana for live index dashboards.
+  - `gnat/viz/grafana/search_endpoints.py` — new FastAPI `APIRouter` (prefix `/solr/`) that exposes Solr index data as a Grafana SimpleJSON datasource: `GET /solr/` (health/ping), `POST /solr/search` (available metric names), `POST /solr/query` (table/time-series for `stats/total`, `stats/type_counts`, `stats/platform_counts`, `timeseries/ingest`, `facet/<field>`, `search/<query>`), `POST /solr/tag-keys`, `POST /solr/tag-values`. All Solr HTTP calls use stdlib `urllib.request` — no new deps.
+  - `GrafanaServer` (`gnat/viz/grafana/server.py`) — `__init__` gains optional `search_index` parameter; `build_app` mounts the `/solr/` router when `search_index` is provided.
+  - `solr_dashboard()` / `save_solr_dashboard()` (`gnat/viz/export.py`) — generate a purpose-built 7-panel Grafana dashboard JSON for the Solr sidecar: total-docs stat, type/platform bar charts, ingest-rate time-series, breakdown tables, and a search-results table.
+  - `gnat viz serve --with-solr` — loads the configured `SearchIndex` and mounts it on the running Grafana server; prints both the workspace URL and the `/solr/` sub-URL.
+  - `gnat viz solr-dashboard --file <path> [--datasource GNAT-Solr] [--title ...]` — exports the Solr dashboard JSON to disk.
+  - `docker/grafana/provisioning/datasources/gnat.yaml` — auto-provisions `GNAT` (workspace data) and `GNAT-Solr` (Solr index) datasources via Grafana's provisioning API.
+  - `docker/grafana/provisioning/dashboards/provider.yaml` — file-based dashboard provider pointing at `/var/lib/grafana/dashboards`.
+  - `docker/grafana/provisioning/dashboards/gnat_solr.json` — pre-built Solr dashboard bundled in the container image.
+  - `docker/grafana/provisioning/dashboards/gnat_workspace.json` — pre-built workspace overview dashboard.
+  - `docker-compose.yml` — `solr` service (profile `search` / `full`) and `grafana` service (profile `monitoring` / `full`) with auto-provisioned datasources; `make docker-search` and `make docker-full` Makefile targets; `SOLR_PORT`, `GRAFANA_PORT`, `GRAFANA_ADMIN_PASSWORD`, `GNAT_GRAFANA_HOST`, `GNAT_VIZ_PORT` in `.env.example`.
+  - 44 unit tests in `tests/unit/test_grafana_search.py` covering health, search targets, all 7 query target types, tag endpoints, `GrafanaServer` with/without `search_index`, `solr_dashboard` structure, `save_solr_dashboard`, and CLI.
 - **Docker integration test harness** (`docker/test/`, `tests/integration/`): isolated, self-contained Docker-based test suite for external service connectors and GNAT's own HTTP services.
   - `docker/test/docker-compose.test.yml` — test-only compose file with Elasticsearch 8.13.4 (single-node, security disabled, 512 MB heap, port 19200) and Solr 9.6 with a pre-created `gnat` core (port 18983). Separate `gnat-test-network`; no shared state with production compose.
   - `docker/test/gnat.test.ini` — minimal GNAT config pointing at the test containers; used by fixture-level setup only.
@@ -156,10 +168,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `SplunkClient`: refactored to `BaseClient + ConnectorMixin`; accepts `host`, `api_token`, `username`, `password` keyword args; adds `authenticate()`, `to_stix()`, `from_stix()`
 
 ### Planned
-- STIX 2.1 pattern validator integration
-- Docker-based integration test harness
-- TAXII 2.1 server — expose GNAT workspaces as TAXII collections
-- Solr search UI / Grafana dashboard integration for `gnat/search` sidecar
+*(all previously planned items now complete)*
 
 ---
 

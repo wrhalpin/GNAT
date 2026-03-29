@@ -1,0 +1,283 @@
+{
+  "__inputs": [
+    {
+      "name": "GNAT",
+      "label": "GNAT Datasource",
+      "description": "SimpleJSON datasource pointing at gnat viz serve",
+      "type": "datasource",
+      "pluginId": "simplejson",
+      "pluginName": "SimpleJSON"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "datasource": {
+          "type": "simplejson",
+          "uid": "GNAT"
+        },
+        "enable": true,
+        "name": "Enrichment Events",
+        "query": "default",
+        "iconColor": "blue"
+      }
+    ]
+  },
+  "title": "GNAT Workspace Overview",
+  "uid": "ctmsak-default",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Object Count by Type",
+      "type": "barchart",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT"
+      },
+      "targets": [
+        {
+          "target": "default/summary",
+          "refId": "A",
+          "type": "table"
+        }
+      ],
+      "options": {
+        "barWidth": 0.9,
+        "fillOpacity": 80,
+        "gradientMode": "opacity"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Indicator RF Risk Scores",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 16,
+        "h": 8
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT"
+      },
+      "targets": [
+        {
+          "target": "default/indicator/x_rf_risk_score",
+          "refId": "A",
+          "type": "timeserie"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 25
+              },
+              {
+                "color": "orange",
+                "value": 65
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Vulnerability CVSS Scores",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT"
+      },
+      "targets": [
+        {
+          "target": "default/vulnerability/x_cvss_score",
+          "refId": "A",
+          "type": "timeserie"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 4.0
+              },
+              {
+                "color": "orange",
+                "value": 7.0
+              },
+              {
+                "color": "red",
+                "value": 9.0
+              }
+            ]
+          },
+          "min": 0,
+          "max": 10
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Indicator Confidence",
+      "type": "gauge",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 4,
+        "h": 8
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT"
+      },
+      "targets": [
+        {
+          "target": "default/indicator/confidence",
+          "refId": "A",
+          "type": "timeserie"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 40
+              },
+              {
+                "color": "green",
+                "value": 70
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Indicators",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT"
+      },
+      "targets": [
+        {
+          "target": "default/indicator",
+          "refId": "A",
+          "type": "table"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "confidence",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": true,
+          "reducer": [
+            "count"
+          ],
+          "fields": [
+            "name"
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Relationships",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "simplejson",
+        "uid": "GNAT"
+      },
+      "targets": [
+        {
+          "target": "default/relationship",
+          "refId": "A",
+          "type": "table"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "gnat",
+    "threat-intelligence",
+    "default"
+  ]
+}

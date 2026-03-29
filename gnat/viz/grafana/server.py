@@ -83,7 +83,10 @@ def _require_fastapi() -> None:
         )
 
 
-def build_app(manager: "WorkspaceManager") -> Any:
+def build_app(
+    manager: "WorkspaceManager",
+    search_index: "Optional[Any]" = None,
+) -> Any:
     """
     Build and return the FastAPI application.
 
@@ -91,6 +94,10 @@ def build_app(manager: "WorkspaceManager") -> Any:
     ----------
     manager : WorkspaceManager
         The workspace manager to serve data from.
+    search_index : SearchIndex, optional
+        A ``SolrSearchIndex`` (or ``NullSearchIndex``) to mount under
+        ``/solr/`` as a second datasource target for Solr-specific panels.
+        When omitted the ``/solr/`` sub-router is not mounted.
 
     Returns
     -------
@@ -307,6 +314,14 @@ def build_app(manager: "WorkspaceManager") -> Any:
             return [{"text": t} for t in ("white", "green", "amber", "red")]
         return []
 
+    # ── Optional Solr search sub-router ──────────────────────────────────────
+    if search_index is not None:
+        try:
+            from gnat.viz.grafana.search_endpoints import build_search_router
+            app.include_router(build_search_router(search_index))
+        except ImportError:
+            logger.warning("search_endpoints could not be loaded; /solr/ endpoints disabled")
+
     return app
 
 
@@ -339,16 +354,18 @@ class GrafanaServer:
         manager: "WorkspaceManager",
         host: str = "0.0.0.0",  # nosec B104 — overridable via --host flag
         port: int = 3001,
+        search_index: "Optional[Any]" = None,
     ):
-        self._manager = manager
-        self._host    = host
-        self._port    = port
-        self._app     = None
+        self._manager      = manager
+        self._host         = host
+        self._port         = port
+        self._search_index = search_index
+        self._app          = None
 
     @property
     def app(self) -> Any:
         if self._app is None:
-            self._app = build_app(self._manager)
+            self._app = build_app(self._manager, search_index=self._search_index)
         return self._app
 
     def run(self, **kwargs: Any) -> None:
