@@ -95,6 +95,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **ThreatConnect connector (#20.1):** `ThreatConnectClient` (`gnat/connectors/threatconnect/client.py`) — TC Exchange API v3. Supports TC-Token (`auth_type = token`) and per-request HMAC-SHA256 (`auth_type = hmac`) auth. `list_objects()` supports TQL filter expressions; `upsert_object()` creates or updates indicators/groups; `to_stix()` maps TC indicators → STIX with `ipv4/domain/url/hash` pattern dispatch; `from_stix()` generates a TC payload. 12 unit tests.
 - **Mandiant connector (#20.2):** `MandiantClient` (`gnat/connectors/mandiant/client.py`) — Mandiant Advantage TI API v4. OAuth2 `client_credentials` via HTTP Basic (API key + secret); `list_objects()` supports `start_epoch`/`end_epoch`/`gte_mscore` filters; `to_stix()` handles indicators, threat actors, malware families, and vulnerabilities; read-only (`upsert_object` raises `GNATClientError`). 10 unit tests.
 - **MS Defender TI connector (#20.3):** `DefenderTIClient` (`gnat/connectors/defenderti/client.py`) — Microsoft Graph Security `tiIndicators` API. Azure AD OAuth2 token via `login.microsoftonline.com`; full CRUD (create via `POST`, update via `PATCH`, delete); `to_stix()` maps all Graph TI indicator field types (IPv4/IPv6/domain/URL/hash/email); `from_stix()` generates the correct Graph field (`networkIPv4`, `domainName`, etc.). 10 unit tests.
+- **TAXII 2.1 server** (`gnat/serve/taxii/`): FastAPI application implementing the full TAXII 2.1 protocol, exposing GNAT workspaces as TAXII collections.
+  - `build_taxii_app(manager, api_key, title, contact)` — returns a FastAPI app with all 9 mandatory TAXII 2.1 endpoints: discovery (unauthenticated), API root info (unauthenticated), collections list/detail, objects GET (bundle, paginated, filterable by `match[type]`, `match[id]`, `added_after`), objects POST (bundle ingest → workspace upsert), manifest, single-object GET, and object versions.
+  - `run_taxii_server(manager, host, port, api_key, title, contact)` — wraps `build_taxii_app` and starts uvicorn.
+  - `_TaxiiAPIKeyAuth` — `hmac.compare_digest` constant-time key validation as a FastAPI callable dependency.
+  - Pagination via opaque base64 cursor tokens (`?next=<token>&limit=<n>`); TAXII 2.1 media type (`application/taxii+json;version=2.1`) enforced on all responses.
+  - `gnat taxii` CLI subcommand: `--host`, `--port`, `--api-key` (auto-generated with warning if omitted), `--title`, `--contact`, `--config` flags.
+  - 44 unit tests in `tests/unit/test_taxii_server.py` covering cursor encoding, discovery, API root, auth guard, collections, objects GET/POST, manifest, single-object, and versions endpoints.
 - **NLP query interface (#18):** New `gnat/nlp/` package with two interchangeable backends and a unified `QuerySpec` dataclass:
   - `QuerySpec` — dataclass with `entities`, `ioc_types`, `since`, `until`, `platforms`, `limit`, `raw_query`; `to_dict()` serialises datetimes as ISO-8601.
   - `BuiltinParser` — zero-dependency regex-based parser; extracts threat-actor entities (APT/TA/FIN/G patterns, CVE IDs, malware families), IOC types (ip/domain/hash/url/email keywords), relative/absolute time ranges (`last N days/weeks/months`, ISO dates, month names, `yesterday`, `today`), platform filters, and result limits.
@@ -123,7 +130,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Planned
 - STIX 2.1 pattern validator integration
 - Docker-based integration test harness
-- ThreatQ sector/industry field name verification (see PENDING_ITEMS.md §1)
+- TAXII 2.1 server — expose GNAT workspaces as TAXII collections
 - Solr search UI / Grafana dashboard integration for `gnat/search` sidecar
 
 ---
