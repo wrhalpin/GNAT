@@ -39,6 +39,37 @@ A universal CTM toolkit including Python client and STIX 2.1-compatible ORM for 
 | `suricata` | Suricata IDS/IPS |
 | `wazuh` | Wazuh SIEM/XDR |
 | `zeek` | Zeek Network Monitor |
+| `servicenow` | ServiceNow ITSM / SecOps |
+| `jira` | Atlassian Jira |
+| `threatconnect` | ThreatConnect TIP |
+| `mandiant` | Mandiant Advantage Threat Intelligence |
+| `defenderti` | Microsoft Defender Threat Intelligence |
+| `thehive` | TheHive Security Incident Response |
+| `threatstream` | Anomali ThreatStream |
+| `socradar` | SOCRadar Extended Threat Intelligence |
+| `pulsedive` | Pulsedive Threat Intelligence |
+| `flare` | Flare (Darknet/Threat Exposure Monitoring) |
+| `stellarcyber` | Stellar Cyber Open XDR |
+| `yeti` | YETI (Your Everyday Threat Intelligence) |
+| `cloudsek` | CloudSEK Digital Risk Protection |
+| `grok` | Grok AI (LLM assistant integration) |
+| `gemini` | Google Gemini AI (LLM assistant integration) |
+| `copilot` | Microsoft Copilot for Security |
+| `chatgpt` | OpenAI ChatGPT (LLM assistant integration) |
+| `cyble_vision` | Cyble Vision (Threat Intelligence) |
+| `armis` | Armis Centrix (Cyber Exposure Management / IT/OT/IoT) |
+| `axonius` | Axonius Cybersecurity Asset Management |
+| `cortex_xpanse` | Cortex Xpanse (External Attack Surface Management) |
+| `cycognito` | CyCognito Attack Surface Management |
+| `defectdojo` | DefectDojo Vulnerability Management |
+| `greenbone` | Greenbone / OpenVAS Vulnerability Management |
+| `group_ib` | Group-IB Threat Intelligence |
+| `orca` | Orca Security (Agentless Cloud CNAPP) |
+| `qualys` | Qualys VMDR (Vulnerability Management) |
+| `sentinelone` | SentinelOne Singularity XDR |
+| `tenable_one` | Tenable One Exposure Management |
+| `wiz` | Wiz CNAPP (Cloud Native Application Protection) |
+| `zerofox` | ZeroFox Digital Risk Protection |
 
 ---
 
