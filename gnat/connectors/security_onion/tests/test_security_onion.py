@@ -4,9 +4,9 @@ from unittest.mock import MagicMock, patch
 
 from gnat.connectors.security_onion import (
     SecurityOnionConfig, SecurityOnionConfigError, SecurityOnionAuthError,
-    SecurityOnionAPIError, SecurityOnionNotFoundError,
+    SecurityOnionNotFoundError,
     SecurityOnionClient, SecurityOnionAlertCommands, SecurityOnionCaseCommands,
-    SecurityOnionGridCommands, SecurityOnionSTIXMapper,
+    SecurityOnionSTIXMapper,
     load_security_onion_config,
 )
 import configparser

@@ -48,11 +48,39 @@ References
 - https://www.ibm.com/docs/en/qradar-siem/7.5?topic=language-ariel-query
 """
 
+import re
 import time
 from typing import Iterator
 
 from .client import QRadarClient
 from .exceptions import QRadarArielError, QRadarAPIError
+
+# Allowlist pattern for AQL field identifiers.  Permits bare identifiers,
+# AQL built-in functions (DATEFORMAT, QIDNAME, CATEGORYNAME, etc.), and
+# quoted aliases produced by "expr AS alias" forms.
+_AQL_FIELD_RE = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]*"   # bare identifier / function name
+    r"(\([^)]*\))?$"              # optional single-level call args
+    r"|^[A-Za-z_][A-Za-z0-9_]*"  # leading identifier …
+    r"(\([^)]*\))?"               # … optional call …
+    r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*$",  # … AS alias
+    re.IGNORECASE,
+)
+
+
+def _validate_aql_fields(fields: list) -> None:
+    """Raise ValueError if any entry in *fields* contains characters that are
+    unsafe in an AQL SELECT clause (prevents AQL injection).
+
+    Only bare identifiers, ``FUNCTION(...)`` expressions, and
+    ``expr AS alias`` forms are accepted.
+    """
+    for field in fields:
+        if not _AQL_FIELD_RE.match(field.strip()):
+            raise ValueError(
+                f"Unsafe AQL field expression rejected: {field!r}. "
+                "Only identifiers, function calls, and 'expr AS alias' forms are allowed."
+            )
 
 
 # Job poll settings
@@ -420,8 +448,10 @@ class QRadarArielCommands:
             "destinationport", "protocol", "username", "qid",
             "QIDNAME(qid) AS eventname", "eventcount",
         ]
-        select_fields = ", ".join(fields or default_fields)
-        aql = f"SELECT {select_fields} FROM events"
+        effective_fields = fields or default_fields
+        _validate_aql_fields(effective_fields)
+        select_fields = ", ".join(effective_fields)
+        aql = f"SELECT {select_fields} FROM events"  # nosec B608 — fields validated by _validate_aql_fields
         if where:
             aql += f" WHERE {where}"
         aql += f" {time_range}"
@@ -443,8 +473,10 @@ class QRadarArielCommands:
             "protocol", "sourcebytes", "destinationbytes",
             "sourcepayload", "destinationpayload",
         ]
-        select_fields = ", ".join(fields or default_fields)
-        aql = f"SELECT {select_fields} FROM flows"
+        effective_fields = fields or default_fields
+        _validate_aql_fields(effective_fields)
+        select_fields = ", ".join(effective_fields)
+        aql = f"SELECT {select_fields} FROM flows"  # nosec B608 — fields validated by _validate_aql_fields
         if where:
             aql += f" WHERE {where}"
         aql += f" {time_range}"

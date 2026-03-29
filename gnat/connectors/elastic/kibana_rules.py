@@ -47,7 +47,6 @@ import urllib.parse
 from typing import Iterator
 
 from .client import ElasticClient
-from .exceptions import ElasticKibanaNotFoundError
 
 _RULES_BASE = "api/detection_engine/rules"
 

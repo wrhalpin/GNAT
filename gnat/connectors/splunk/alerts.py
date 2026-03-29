@@ -33,7 +33,7 @@ informational -> 0
 import urllib.parse
 
 from .client import SplunkClient
-from .exceptions import SplunkAPIError, SplunkThreatIntelError
+from .exceptions import SplunkThreatIntelError
 
 # ── Severity mapping ──────────────────────────────────────────────────────────
 

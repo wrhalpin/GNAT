@@ -41,7 +41,6 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -322,7 +321,7 @@ class ClaudeClient:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=self._cfg.timeout) as resp:
+            with urllib.request.urlopen(req, timeout=self._cfg.timeout) as resp:  # nosec B310 — hardcoded Anthropic API URL
                 raw = resp.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             body_text = exc.read().decode("utf-8", errors="replace")

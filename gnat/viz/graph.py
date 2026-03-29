@@ -1074,7 +1074,7 @@ class GraphView:
         X = timestamp (0-20 scale), Y = type lane (4 units apart).
         Objects without parseable timestamps get X = -5.
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         def _parse_ts(obj):
             # Only read from _properties so that auto-defaulted core
@@ -1269,8 +1269,8 @@ class GraphView:
         if offline:
             try:
                 import urllib.request
-                graphology_js = urllib.request.urlopen(_SIGMA_CDN[0]).read().decode()
-                sigma_js      = urllib.request.urlopen(_SIGMA_CDN[1]).read().decode()
+                graphology_js = urllib.request.urlopen(_SIGMA_CDN[0]).read().decode()  # nosec B310 — hardcoded CDN URL
+                sigma_js      = urllib.request.urlopen(_SIGMA_CDN[1]).read().decode()  # nosec B310 — hardcoded CDN URL
                 script_tags   = (
                     f"<script>{graphology_js}</script>\n"
                     f"<script>{sigma_js}</script>"

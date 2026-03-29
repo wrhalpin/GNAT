@@ -38,7 +38,7 @@ Analysis values
 """
 
 import configparser
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .exceptions import MISPConfigError
 

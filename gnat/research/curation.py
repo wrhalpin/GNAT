@@ -43,10 +43,10 @@ The curation job can also be run manually::
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from datetime import datetime
+from typing import Dict, Optional, TYPE_CHECKING
 
-from gnat.schedule.job import FeedJob, JobRunContext, RunRecord, _utcnow
+from gnat.schedule.job import FeedJob, RunRecord, _utcnow
 from gnat.ingest.base import IngestResult, SourceReader, RecordMapper, RawRecord
 
 if TYPE_CHECKING:

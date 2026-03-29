@@ -43,7 +43,7 @@ from dataclasses import dataclass
 from typing import Iterator
 import uuid as _uuid
 from datetime import datetime, timezone
-import re
+
 
 
 # ── Exceptions ────────────────────────────────────────────────────────────────

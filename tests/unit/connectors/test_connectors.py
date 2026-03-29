@@ -1291,8 +1291,6 @@ class TestSecurityOnionClient:
 # ---------------------------------------------------------------------------
 
 import json as _json
-import tempfile
-import os
 
 from gnat.connectors.snort.client import SnortClient
 

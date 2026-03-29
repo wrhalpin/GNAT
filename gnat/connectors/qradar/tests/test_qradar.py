@@ -34,7 +34,7 @@ Running
 import configparser
 import json
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 from gnat.connectors.qradar.config import QRadarConfig, load_qradar_config
 from gnat.connectors.qradar.exceptions import (

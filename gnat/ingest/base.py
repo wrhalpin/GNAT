@@ -45,7 +45,7 @@ import hashlib
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generator, Iterable, Iterator, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, Iterable, Iterator, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gnat.orm.base import STIXBase

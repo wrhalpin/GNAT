@@ -43,7 +43,6 @@ References
 - https://www.ibm.com/docs/en/qradar-siem/7.5?topic=api-reference-data
 """
 
-from typing import Iterator
 from .client import QRadarClient
 from .exceptions import QRadarNotFoundError
 

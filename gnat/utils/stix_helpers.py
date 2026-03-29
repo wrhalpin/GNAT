@@ -3,10 +3,9 @@ gnat.utils.stix_helpers
 ===========================
 Utility functions for working with STIX 2.1 objects and bundles.
 """
-import json
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 def utcnow() -> str:

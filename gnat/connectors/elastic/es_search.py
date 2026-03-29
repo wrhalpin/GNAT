@@ -311,7 +311,6 @@ class ElasticSearchCommands:
             headers = self._client.auth.get_es_headers(
                 {"Content-Type": "application/x-ndjson"}
             )
-            import urllib3 as _urllib3
             response = self._client._http.request(
                 "POST", url,
                 body=ndjson.encode("utf-8"),

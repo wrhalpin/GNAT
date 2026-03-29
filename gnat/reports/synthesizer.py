@@ -32,11 +32,10 @@ handle all document structure.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gnat.agents.base import AgentConfig, ClaudeClient
+    from gnat.agents.base import AgentConfig
     from gnat.reports.base import ReportConfig, ReportSection
     from gnat.reports.aggregator import ReportAggregates
 
@@ -112,7 +111,6 @@ class ReportSynthesizer:
         list of ReportSection
             Sections with ``narrative`` populated.
         """
-        from gnat.reports.base import ReportSection
 
         sections: List[ReportSection] = []
 

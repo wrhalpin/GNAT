@@ -58,9 +58,9 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from gnat.reports.base import (
     AIMode, ReportConfig, ReportDocument, ReportResult,
@@ -260,7 +260,6 @@ class ReportGenerator:
         self, doc: ReportDocument, agg: "ReportAggregates"
     ) -> None:
         """Add pure-data sections — always present regardless of AI mode."""
-        from gnat.reports.aggregator import ReportAggregates
 
         # Intel volume summary
         doc.add_section(ReportSection(

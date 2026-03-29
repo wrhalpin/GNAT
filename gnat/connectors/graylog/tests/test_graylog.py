@@ -6,7 +6,7 @@ from gnat.connectors.graylog import (
     GraylogConfig, GraylogConfigError, GraylogAuthError,
     GraylogAPIError, GraylogNotFoundError,
     GraylogClient, GraylogSearchCommands, GraylogStreamCommands,
-    GraylogSystemCommands, GraylogAlertCommands, GraylogSTIXMapper,
+    GraylogSystemCommands, GraylogSTIXMapper,
     load_graylog_config,
 )
 

@@ -37,11 +37,10 @@ The generator inspects the spec's ``paths`` and ``components/schemas`` to:
 
 import argparse
 import json
-import os
 import sys
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 try:
     import yaml  # PyYAML is optional; json specs work without it

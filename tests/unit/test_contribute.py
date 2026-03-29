@@ -39,9 +39,7 @@ Tests cover:
 from __future__ import annotations
 
 import subprocess
-import sys
-from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -52,7 +50,6 @@ from gnat.codegen.contribute import (
     ComplianceResult,
     ContributeConfig,
     ContributionPipeline,
-    ContributionResult,
     MethodStatus,
     SubprocessRunner,
     _PROTECTED_BRANCHES,

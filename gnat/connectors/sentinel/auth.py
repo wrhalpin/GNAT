@@ -38,11 +38,10 @@ Azure's token endpoint rather than Wazuh's /security/user/authenticate.
 
 import json
 import time
-import urllib.parse
 import urllib3
 
 from .config import SentinelConfig
-from .exceptions import SentinelAuthError, SentinelTokenExpiredError
+from .exceptions import SentinelAuthError
 
 
 class SentinelAuthManager:

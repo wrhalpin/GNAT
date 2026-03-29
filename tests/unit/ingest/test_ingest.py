@@ -31,11 +31,7 @@ Covers:
 import json
 import sqlite3
 import textwrap
-import xml.etree.ElementTree as ET
-from io import StringIO
-from pathlib import Path
-from typing import Iterator
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 

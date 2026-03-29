@@ -25,16 +25,12 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from datetime import datetime, timezone, timedelta
-from typing import List
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
-from gnat.orm.vulnerability import Vulnerability
 
 from gnat.export import ExportPipeline, TransformResult, DeliveryResult
 from gnat.export.filters import (

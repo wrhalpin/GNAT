@@ -121,6 +121,7 @@ from typing import Any, Dict, Iterator, List, Optional
 
 from gnat.ingest.base import RawRecord, SourceReader
 from gnat.agents.prompts import COPILOT_QUERY_TEMPLATE, COPILOT_NEWER_HINT
+from gnat.utils.url_security import validate_url_scheme
 
 logger = logging.getLogger(__name__)
 
@@ -467,6 +468,7 @@ class CopilotReader(SourceReader):
         method: str = "GET",
     ) -> Optional[Dict[str, Any]]:
         """Make a DirectLine API request and return the parsed JSON body."""
+        validate_url_scheme(url, allow_http=False)
         req = urllib.request.Request(
             url,
             data=data,
@@ -474,7 +476,7 @@ class CopilotReader(SourceReader):
             method=method,
         )
         try:
-            with urllib.request.urlopen(req, timeout=self._timeout) as resp:
+            with urllib.request.urlopen(req, timeout=self._timeout) as resp:  # nosec B310 — scheme validated above
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
