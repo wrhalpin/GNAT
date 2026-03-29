@@ -368,7 +368,40 @@ host    = https://api.cloudsek.com
 api_key = YOUR_CLOUDSEK_API_KEY
 # org_id = YOUR_ORG_ID    # optional: multi-tenant
 auth_type = token
-# 
+
+# =============================================================================
+# Grok/xAI
+# =============================================================================
 [grok]
 host = https://api.x.ai
 api_key = xai-...
+
+# =============================================================================
+# Google Gemini AI
+# =============================================================================
+[gemini]
+host = https://generativelanguage.googleapis.com
+api_key = YOUR_GEMINI_API_KEY
+
+# =============================================================================
+# ChatGPT
+# =============================================================================
+[chatgpt]
+host = https://api.openai.com
+api_key = <openai-api-key>
+
+# =============================================================================
+# MS/ Internal Copilot
+# =============================================================================
+[copilot]
+# Base URL for Microsoft Copilot or an internal Copilot-like LLM
+host = https://your-copilot-endpoint
+
+# Authentication mode: "api_key", "azure", or "none"
+auth_type = api_key
+
+# API key for internal deployments (used when auth_type = "api_key")
+api_key = your-api-key-here
+
+# Azure AD token for Microsoft Copilot (used when auth_type = "azure")
+azure_token = your-azure-ad-token-here

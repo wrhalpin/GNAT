@@ -52,7 +52,15 @@ from gnat.connectors.flare.client import FlareClient
 from gnat.connectors.stellarcyber.client import StellarCyberClient
 from gnat.connectors.yeti.client import YetiClient
 from gnat.connectors.cloudsek.client import CloudSEKClient
-from gnat.connectors.grok.client import GrokClient
+from gnat.connectors.grok.uclient import GrokClient
+from gnat.connectors.gemini.client import GeminiClient
+from gnat.connectors.copilot.client import CopilotClient
+from gnat.connectors.chatgpt import ChatGPTClient
+
+    CLIENT_REGISTRY = {
+        # existing entries...
+        "copilot": CopilotClient,
+    }
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -98,7 +106,10 @@ CLIENT_REGISTRY: dict = {
     "stellarcyber":   StellarCyberClient,
     "yeti":           YetiClient,
     "cloudsek":       CloudSEKClient,
-    "grok":           GrokClient
+    "grok":           GrokClient,
+    "gemini":         GeminiClient,
+    "copilot":        CopilotClient, 
+    "chatgpt"         ChatGPTClient,
 }
 
 __all__ = [
