@@ -960,6 +960,35 @@ class WorkspaceManager:
             return self._store.delete_workspace(name)
         return self._store.delete_workspace(name)
 
+    def for_tenant(self, tenant_id: str) -> "Any":
+        """
+        Return a :class:`~gnat.context.tenant.TenantWorkspaceManager` scoped
+        to *tenant_id*.
+
+        All workspace operations through the returned manager are transparently
+        prefixed with ``{tenant_id}::`` — providing complete isolation between
+        tenants sharing this backing store.
+
+        Parameters
+        ----------
+        tenant_id : str
+            Lowercase alphanumeric tenant identifier (e.g. ``"acme"``).
+
+        Returns
+        -------
+        TenantWorkspaceManager
+
+        Examples
+        --------
+        ::
+
+            manager = WorkspaceManager.default()
+            acme = manager.for_tenant("acme")
+            ws = acme.create("apt28-investigation")
+        """
+        from gnat.context.tenant import TenantWorkspaceManager
+        return TenantWorkspaceManager(tenant_id, self)
+
     # ── Internal ────────────────────────────────────────────────────────────
 
     @staticmethod
