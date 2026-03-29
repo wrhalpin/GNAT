@@ -370,6 +370,27 @@ def _build_parser() -> argparse.ArgumentParser:
     p_srv.add_argument("--reports-dir", default=None, metavar="DIR",
                        help="Directory to scan for generated reports")
 
+    # ── taxii ─────────────────────────────────────────────────────────────
+    p_tax = subs.add_parser(
+        "taxii",
+        help="Start TAXII 2.1 server (requires gnat[serve])",
+        description=(
+            "Launch a TAXII 2.1-compliant server that exposes GNAT workspaces "
+            "as TAXII collections.  Each workspace becomes a collection under a "
+            "single API root.  Requires FastAPI and uvicorn (gnat[serve])."
+        ),
+    )
+    p_tax.add_argument("--host", default="127.0.0.1", metavar="HOST",
+                       help="Host/IP to bind to (default: 127.0.0.1)")
+    p_tax.add_argument("--port", type=int, default=8090, metavar="PORT",
+                       help="TCP port (default: 8090)")
+    p_tax.add_argument("--api-key", default=None, metavar="KEY",
+                       help="X-Api-Key secret; auto-generated if omitted")
+    p_tax.add_argument("--title", default="GNAT TAXII 2.1 Server", metavar="TITLE",
+                       help="Server title shown in TAXII discovery response")
+    p_tax.add_argument("--contact", default="", metavar="EMAIL",
+                       help="Contact e-mail shown in TAXII discovery response")
+
     # ── health ────────────────────────────────────────────────────────────
     p_hlt = subs.add_parser(
         "health",
@@ -1261,6 +1282,55 @@ def _cmd_health(args) -> int:
         return 1
 
 
+def _cmd_serve_taxii(args) -> int:
+    """taxii subcommand — start the GNAT TAXII 2.1 server."""
+    try:
+        from gnat.serve.taxii import run_taxii_server
+    except ImportError:
+        print(
+            _red("Error: FastAPI/uvicorn is not installed.  "
+                 "Run: pip install \"gnat[serve]\""),
+            file=sys.stderr,
+        )
+        return 1
+
+    import secrets
+
+    host        = getattr(args, "host", "127.0.0.1") or "127.0.0.1"
+    port        = getattr(args, "port", 8090) or 8090
+    api_key     = getattr(args, "api_key", None)
+    title       = getattr(args, "title", "GNAT TAXII 2.1 Server")
+    contact     = getattr(args, "contact", "")
+    config_path = getattr(args, "config", None)
+
+    if not api_key:
+        api_key = secrets.token_hex(16)
+        print(
+            _yellow("No API key supplied — generated a random key:"),
+            file=sys.stderr,
+        )
+        print(f"  X-Api-Key: {_bold(api_key)}", file=sys.stderr)
+        print("  Store this value — it will not be shown again.\n", file=sys.stderr)
+
+    from gnat.context import WorkspaceManager
+    manager = WorkspaceManager.default(config_path=config_path)
+
+    url = f"http://{host}:{port}"
+    print(_green(f"✓  GNAT TAXII 2.1 Server: {_bold(url)}"), file=sys.stderr)
+    print(_dim("   Discovery: " + url + "/taxii2/"), file=sys.stderr)
+    print(_dim("   Press Ctrl+C to stop."), file=sys.stderr)
+
+    run_taxii_server(
+        manager=manager,
+        host=host,
+        port=port,
+        api_key=api_key,
+        title=title,
+        contact=contact,
+    )
+    return 0
+
+
 def _cmd_serve(args) -> int:
     """serve subcommand — start the GNAT web dashboard."""
     try:
@@ -1351,6 +1421,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "nlq":      _cmd_nlq,
         "tui":      _cmd_tui,
         "serve":    _cmd_serve,
+        "taxii":    _cmd_serve_taxii,
         "health":      _cmd_health,
         "contribute":  _cmd_contribute,
     }
