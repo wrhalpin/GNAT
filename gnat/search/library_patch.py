@@ -214,9 +214,9 @@ class _ResearchLibrarySearchPatch:
             return cls(..., search_index=search_index)
         """
         try:
-            from gnat.config import SAKConfig
+            from gnat.config import GNATConfig
             from gnat.search import build_search_index
-            cfg = SAKConfig()
+            cfg = GNATConfig()
             return build_search_index(cfg)
         except Exception as exc:
             logger.debug("Search index not configured: %s", exc)

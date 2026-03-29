@@ -2,7 +2,7 @@
 tests/unit/test_nlp.py
 ========================
 Unit tests for gnat.nlp — QuerySpec, BuiltinParser, NLPQueryEngine,
-ClaudeParser (mocked), and SAKClient.natural_language_query().
+ClaudeParser (mocked), and GNATClient.natural_language_query().
 """
 
 import json
@@ -362,27 +362,27 @@ class TestClaudeParserMocked:
 
 
 # ---------------------------------------------------------------------------
-# SAKClient.natural_language_query()
+# GNATClient.natural_language_query()
 # ---------------------------------------------------------------------------
 
-class TestSAKClientNLQ:
+class TestGNATClientNLQ:
 
     def test_returns_list_without_connector(self):
-        from gnat.client import SAKClient
-        cli = SAKClient()
+        from gnat.client import GNATClient
+        cli = GNATClient()
         results = cli.natural_language_query("APT28 domains last 7 days")
         assert isinstance(results, list)
 
     def test_returns_spec_when_no_connector(self):
-        from gnat.client import SAKClient
-        cli = SAKClient()
+        from gnat.client import GNATClient
+        cli = GNATClient()
         results = cli.natural_language_query("APT28 IPs last 14 days")
         assert results[0]["_type"] == "query_spec"
         assert "APT28" in str(results[0])
 
     def test_queries_connected_platform(self):
-        from gnat.client import SAKClient
-        cli = SAKClient()
+        from gnat.client import GNATClient
+        cli = GNATClient()
         mock_connector = MagicMock()
         mock_connector.list_objects.return_value = [{"id": "ind-1"}]
         cli.client = mock_connector

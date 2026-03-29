@@ -19,7 +19,7 @@ refreshed automatically when it expires (Wazuh error code 4009).
 
 from __future__ import annotations
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 from .agents import WazuhAgentCommands
@@ -90,7 +90,7 @@ class WazuhConnector(BaseClient, ConnectorMixin):
             self._wazuh.auth.get_auth_headers()
             self._authenticated = True
         except Exception as exc:
-            raise SAKClientError(f"Wazuh authentication failed: {exc}") from exc
+            raise GNATClientError(f"Wazuh authentication failed: {exc}") from exc
 
     def health_check(self) -> bool:
         """Return True if the Wazuh manager API is reachable."""
@@ -98,7 +98,7 @@ class WazuhConnector(BaseClient, ConnectorMixin):
             self._wazuh.get("", params={"pretty": "true"})
             return True
         except Exception as exc:
-            raise SAKClientError(f"Wazuh health check failed: {exc}") from exc
+            raise GNATClientError(f"Wazuh health check failed: {exc}") from exc
 
     def get_object(self, stix_type: str, object_id: str, **kwargs) -> dict:
         """
@@ -116,12 +116,12 @@ class WazuhConnector(BaseClient, ConnectorMixin):
             raw = self._agent_cmds.get_agent(object_id)
             return self._mapper.agent_to_stix_identity(raw)
         if stix_type == "vulnerability":
-            raise SAKClientError(
+            raise GNATClientError(
                 "Wazuh vulnerabilities are queried per-agent. "
                 "Use list_objects(stix_type='vulnerability', agent_id=<id>)."
             )
         # observed-data: alerts don't support single-item lookup by ID
-        raise SAKClientError(
+        raise GNATClientError(
             "Wazuh alerts do not support single-item lookup. "
             "Use list_objects(stix_type='observed-data') for time-based queries."
         )
@@ -152,7 +152,7 @@ class WazuhConnector(BaseClient, ConnectorMixin):
         if stix_type == "vulnerability":
             agent_id = kwargs.get("agent_id")
             if not agent_id:
-                raise SAKClientError(
+                raise GNATClientError(
                     "agent_id is required for list_objects(stix_type='vulnerability')."
                 )
             vulns = self._vuln_cmds.get_agent_vulnerabilities(agent_id, limit=limit)
@@ -173,10 +173,10 @@ class WazuhConnector(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             Always raised; Wazuh data cannot be pushed via this interface.
         """
-        raise SAKClientError(
+        raise GNATClientError(
             "Wazuh is a read-only platform. upsert_object is not supported. "
             "Use the Wazuh manager console or API directly to manage agents/rules."
         )
@@ -187,10 +187,10 @@ class WazuhConnector(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             Always raised.
         """
-        raise SAKClientError(
+        raise GNATClientError(
             "Wazuh is a read-only platform. delete_object is not supported."
         )
 

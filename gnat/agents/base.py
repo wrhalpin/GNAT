@@ -98,8 +98,8 @@ class AgentConfig:
         FileNotFoundError
             If no config file is found.
         """
-        from gnat.config import SAKConfig
-        cfg = SAKConfig(config_path)
+        from gnat.config import GNATConfig
+        cfg = GNATConfig(config_path)
         try:
             section = cfg.get("claude")
         except KeyError:

@@ -6,7 +6,7 @@ Natural-language query layer for GNAT.
 Translates free-text queries like
 ``"Get all IPs related to Lazarus Group since January"``
 into structured :class:`QuerySpec` objects, which are then dispatched to
-one or more connectors via :meth:`~gnat.client.SAKClient.natural_language_query`.
+one or more connectors via :meth:`~gnat.client.GNATClient.natural_language_query`.
 
 Two backends are provided:
 

@@ -15,7 +15,7 @@ INI config::
 
 from typing import Any, Dict, List, Optional
 import base64
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -56,10 +56,10 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("Proofpoint TAP API does not support object creation.")
+        raise GNATClientError("Proofpoint TAP API does not support object creation.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Proofpoint TAP API does not support object deletion.")
+        raise GNATClientError("Proofpoint TAP API does not support object deletion.")
 
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         return {

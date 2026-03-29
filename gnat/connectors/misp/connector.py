@@ -10,7 +10,7 @@ through events. upsert_object creates or updates a MISP event.
 
 from __future__ import annotations
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 from .client import MISPClient
@@ -71,7 +71,7 @@ class MISPConnector(BaseClient, ConnectorMixin):
             self._misp.get_json("users/view/me")
             return True
         except Exception as exc:
-            raise SAKClientError(f"MISP health check failed: {exc}") from exc
+            raise GNATClientError(f"MISP health check failed: {exc}") from exc
 
     def get_object(self, stix_type: str, object_id: str, **kwargs) -> dict:
         """

@@ -2,7 +2,7 @@
 gnat.client
 ==============
 
-Top-level :class:`SAKClient` facade.  This is the primary entry point for
+Top-level :class:`GNATClient` facade.  This is the primary entry point for
 library users — it resolves configuration, selects the correct connector
 client, and exposes a unified interface to the rest of the library.
 
@@ -11,15 +11,15 @@ Usage::
     import gnat
 
     # Auto-load config from ~/.gnat/config.ini
-    cli = gnat.SAKClient()
+    cli = gnat.GNATClient()
     cli.connect(target="threatq")
 
     # Explicit config path
-    cli = gnat.SAKClient(config_path="/path/to/my.ini")
+    cli = gnat.GNATClient(config_path="/path/to/my.ini")
     cli.connect(target="crowdstrike")
 
     # Pass config dict directly (no INI file needed)
-    cli = gnat.SAKClient()
+    cli = gnat.GNATClient()
     cli.connect(
         target="netskope",
         host="https://tenant.goskope.com",
@@ -30,15 +30,15 @@ Usage::
 
 from typing import Any, Dict, List, Optional
 
-from gnat.config import SAKConfig
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.config import GNATConfig
+from gnat.clients.base import BaseClient, GNATClientError
 
 
-class SAKClient:
+class GNATClient:
     """
     Universal security platform client.
 
-    :class:`SAKClient` is the primary object users interact with.  Call
+    :class:`GNATClient` is the primary object users interact with.  Call
     :meth:`connect` to establish a connection to a named target system;
     after that, :attr:`client` exposes the raw connector client and ORM
     objects can be instantiated with ``client=`` this instance.
@@ -47,7 +47,7 @@ class SAKClient:
     ----------
     config_path : str, optional
         Path to an INI configuration file.  If omitted the library searches
-        the default locations (see :class:`~gnat.config.SAKConfig`).
+        the default locations (see :class:`~gnat.config.GNATConfig`).
 
     Attributes
     ----------
@@ -59,7 +59,7 @@ class SAKClient:
 
     def __init__(self, config_path: Optional[str] = None):
         self._config_path = config_path
-        self._config: Optional[SAKConfig] = None
+        self._config: Optional[GNATConfig] = None
         self.client: Optional[BaseClient] = None
         self.target: Optional[str] = None
 
@@ -67,7 +67,7 @@ class SAKClient:
     # Public API
     # ------------------------------------------------------------------
 
-    def connect(self, target: str, **override_kwargs: Any) -> "SAKClient":
+    def connect(self, target: str, **override_kwargs: Any) -> "GNATClient":
         """
         Connect to a security platform by name.
 
@@ -86,20 +86,20 @@ class SAKClient:
 
         Returns
         -------
-        SAKClient
+        GNATClient
             Returns ``self`` for optional method chaining.
 
         Raises
         ------
         KeyError
             If *target* is not a recognised connector name.
-        SAKClientError
+        GNATClientError
             If the connector cannot be instantiated.
 
         Examples
         --------
-        >>> cli = SAKClient().connect("threatq")
-        >>> cli = SAKClient().connect("netskope", api_token="tok123")
+        >>> cli = GNATClient().connect("threatq")
+        >>> cli = GNATClient().connect("netskope", api_token="tok123")
         """
         # Import here to avoid circular imports at module load time
         from gnat.clients import CLIENT_REGISTRY
@@ -156,7 +156,7 @@ class SAKClient:
         # Try to load from INI — not required if all params are in overrides
         if self._config is None:
             try:
-                self._config = SAKConfig(self._config_path)
+                self._config = GNATConfig(self._config_path)
             except FileNotFoundError:
                 pass
 
@@ -169,7 +169,7 @@ class SAKClient:
         cfg.update({k: v for k, v in overrides.items() if v is not None})
 
         if not cfg.get("host"):
-            raise SAKClientError(
+            raise GNATClientError(
                 f"No 'host' found for target {target!r}. "
                 "Set it in config.ini or pass host= to connect()."
             )
@@ -207,7 +207,7 @@ class SAKClient:
 
         Examples
         --------
-        >>> cli = SAKClient().connect("threatq")
+        >>> cli = GNATClient().connect("threatq")
         >>> results = cli.natural_language_query(
         ...     "Show me all domains for Lazarus Group since January"
         ... )
@@ -216,7 +216,7 @@ class SAKClient:
 
         if self._config is None:
             try:
-                self._config = SAKConfig(self._config_path)
+                self._config = GNATConfig(self._config_path)
             except FileNotFoundError:
                 pass
 
@@ -234,4 +234,4 @@ class SAKClient:
         return engine.query(query, connectors=connectors if connectors else None)
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"SAKClient(target={self.target!r}, connected={self.client is not None})"
+        return f"GNATClient(target={self.target!r}, connected={self.client is not None})"

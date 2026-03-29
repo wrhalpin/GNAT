@@ -2,7 +2,7 @@
 tests/unit/test_client.py
 =========================
 
-Unit tests for SAKClient, SAKConfig, and the BaseClient HTTP layer.
+Unit tests for GNATClient, GNATConfig, and the BaseClient HTTP layer.
 """
 
 import json
@@ -10,52 +10,52 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from gnat.config import SAKConfig
-from gnat.client import SAKClient
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.config import GNATConfig
+from gnat.client import GNATClient
+from gnat.clients.base import BaseClient, GNATClientError
 
 
 # ---------------------------------------------------------------------------
-# SAKConfig
+# GNATConfig
 # ---------------------------------------------------------------------------
 
-class TestSAKConfig:
+class TestGNATConfig:
 
     def test_loads_valid_ini(self, minimal_config):
-        cfg = SAKConfig(minimal_config)
+        cfg = GNATConfig(minimal_config)
         assert "threatq" in cfg.sections
 
     def test_get_returns_dict(self, minimal_config):
-        cfg = SAKConfig(minimal_config)
+        cfg = GNATConfig(minimal_config)
         d = cfg.get("threatq")
         assert d["host"] == "https://fake-threatq.example.com"
         assert d["client_id"] == "test-id"
 
     def test_get_unknown_section_raises(self, minimal_config):
-        cfg = SAKConfig(minimal_config)
+        cfg = GNATConfig(minimal_config)
         with pytest.raises(KeyError, match="nosuchplatform"):
             cfg.get("nosuchplatform")
 
     def test_missing_file_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
-            SAKConfig(str(tmp_path / "nonexistent.ini"))
+            GNATConfig(str(tmp_path / "nonexistent.ini"))
 
     def test_sections_property(self, minimal_config):
-        cfg = SAKConfig(minimal_config)
+        cfg = GNATConfig(minimal_config)
         for target in ("threatq", "crowdstrike", "proofpoint", "netskope", "xsoar", "recordedfuture"):
             assert target in cfg.sections
 
     def test_config_path_property(self, minimal_config):
-        cfg = SAKConfig(minimal_config)
+        cfg = GNATConfig(minimal_config)
         assert str(cfg.config_path) == minimal_config
 
     def test_env_var_resolution(self, minimal_config, monkeypatch):
         monkeypatch.setenv("GNAT_CONFIG", minimal_config)
-        cfg = SAKConfig()   # no explicit path
+        cfg = GNATConfig()   # no explicit path
         assert "threatq" in cfg.sections
 
     def test_default_values_inherited(self, minimal_config):
-        cfg = SAKConfig(minimal_config)
+        cfg = GNATConfig(minimal_config)
         d = cfg.get("threatq")
         # DEFAULT section provides timeout and verify_ssl
         assert d["timeout"] == "10"
@@ -63,17 +63,17 @@ class TestSAKConfig:
 
 
 # ---------------------------------------------------------------------------
-# SAKClient
+# GNATClient
 # ---------------------------------------------------------------------------
 
-class TestSAKClient:
+class TestGNATClient:
 
     def test_connect_returns_self(self, minimal_config, monkeypatch):
         monkeypatch.setattr(
             "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         result = cli.connect("threatq")
         assert result is cli
 
@@ -82,7 +82,7 @@ class TestSAKClient:
             "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         cli.connect("threatq")
         assert cli.target == "threatq"
 
@@ -91,20 +91,20 @@ class TestSAKClient:
             "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         cli.connect("ThreatQ")
         assert cli.target == "threatq"
 
     def test_connect_unknown_target_raises(self, minimal_config):
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         with pytest.raises(KeyError, match="nosuchplatform"):
             cli.connect("nosuchplatform")
 
     def test_connect_no_host_raises(self, tmp_path):
         cfg = tmp_path / "bad.ini"
         cfg.write_text("[threatq]\nclient_id = x\n")
-        cli = SAKClient(config_path=str(cfg))
-        with pytest.raises(SAKClientError, match="host"):
+        cli = GNATClient(config_path=str(cfg))
+        with pytest.raises(GNATClientError, match="host"):
             cli.connect("threatq")
 
     def test_disconnect_clears_client(self, minimal_config, monkeypatch):
@@ -112,14 +112,14 @@ class TestSAKClient:
             "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         cli.connect("threatq")
         cli.disconnect()
         assert cli.client is None
         assert cli.target is None
 
     def test_ping_returns_false_when_not_connected(self):
-        cli = SAKClient()
+        cli = GNATClient()
         assert cli.ping() is False
 
     def test_ping_returns_true_on_healthy_client(self, minimal_config, monkeypatch):
@@ -131,7 +131,7 @@ class TestSAKClient:
             "gnat.connectors.threatq.client.ThreatQClient.health_check",
             lambda self: True,
         )
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         cli.connect("threatq")
         assert cli.ping() is True
 
@@ -144,7 +144,7 @@ class TestSAKClient:
             "gnat.connectors.threatq.client.ThreatQClient.health_check",
             MagicMock(side_effect=Exception("unreachable")),
         )
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         cli.connect("threatq")
         assert cli.ping() is False
 
@@ -153,7 +153,7 @@ class TestSAKClient:
             "gnat.connectors.threatq.client.ThreatQClient.authenticate",
             lambda self: None,
         )
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         cli.connect("threatq", client_id="override-id")
         assert cli.client._client_id == "override-id"
 
@@ -165,7 +165,7 @@ class TestSAKClient:
         from gnat.clients import CLIENT_REGISTRY
         connector_cls = CLIENT_REGISTRY[target]
         monkeypatch.setattr(connector_cls, "authenticate", lambda self: None)
-        cli = SAKClient(config_path=minimal_config)
+        cli = GNATClient(config_path=minimal_config)
         cli.connect(target)
         assert cli.target == target
         assert cli.client is not None
@@ -212,7 +212,7 @@ class TestBaseClient:
         c._http.request = MagicMock(
             return_value=self._mock_response(404, {"error": "not found"})
         )
-        with pytest.raises(SAKClientError) as exc_info:
+        with pytest.raises(GNATClientError) as exc_info:
             c.get("/missing")
         assert exc_info.value.status == 404
 
@@ -221,7 +221,7 @@ class TestBaseClient:
         c._http.request = MagicMock(
             return_value=self._mock_response(500, {"error": "server error"})
         )
-        with pytest.raises(SAKClientError) as exc_info:
+        with pytest.raises(GNATClientError) as exc_info:
             c.get("/broken")
         assert exc_info.value.status == 500
 

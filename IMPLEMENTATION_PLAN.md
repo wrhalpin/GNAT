@@ -102,7 +102,7 @@ gnat/
 ├── research/               ResearchLibrary, ResearchEntry, CurationJob
 ├── reports/                ReportGenerator, ReportJob, 4 renderers, 2 delivery targets
 ├── viz/                    TabularView, GraphView (5 intent methods), GrafanaServer
-├── async_client/           AsyncBaseClient, AsyncSAKClient (httpx)
+├── async_client/           AsyncBaseClient, AsyncGNATClient (httpx)
 └── codegen/                OpenAPI connector scaffold generator
 ```
 
@@ -206,14 +206,14 @@ External Source (ThreatQ, RF, Feedly, TAXII, CSV, ...)
   ↓  RecordMapper.map()
   ↓  STIXBase objects
   ↓  DeduplicationCache (optional)
-  ↓  Workspace.add() or SAKClient.upsert_object()
+  ↓  Workspace.add() or GNATClient.upsert_object()
   ↓  IngestResult (total_records, written_objects, errors)
 ```
 
 ### Export flow
 
 ```
-Workspace or SAKClient
+Workspace or GNATClient
   ↓  ExportFilter.apply() (type, confidence, TLP, sector, ...)
   ↓  ExportTransform.transform() (EDL text, Netskope CE JSON, STIX bundle, CSV)
   ↓  ExportDelivery.deliver() (file, HTTP, EDL server, platform, email, SP)
@@ -365,7 +365,7 @@ New connectors follow the pattern in `tests/unit/connectors/test_connectors.py`.
 ### Optional extras
 
 ```bash
-pip install "gnat[async]"      # httpx — AsyncSAKClient
+pip install "gnat[async]"      # httpx — AsyncGNATClient
 pip install "gnat[taxii]"      # taxii2-client — TAXIICollectionReader
 pip install "gnat[persist]"    # sqlalchemy — WorkspaceStore (SQLite/PostgreSQL)
 pip install "gnat[viz]"        # plotly, networkx, openpyxl — GraphView, TabularView

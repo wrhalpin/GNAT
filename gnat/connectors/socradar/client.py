@@ -19,7 +19,7 @@ https://docs.socradar.io/
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _API = "/api"
@@ -113,13 +113,13 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     def upsert_object(
         self, stix_type: str, payload: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """SOCRadar TI API is read-only — raises :class:`SAKClientError`."""
-        raise SAKClientError(
+        """SOCRadar TI API is read-only — raises :class:`GNATClientError`."""
+        raise GNATClientError(
             "SOCRadar TI API is read-only. Use the SOCRadar portal to manage IOCs."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("SOCRadar TI API is read-only — delete not supported.")
+        raise GNATClientError("SOCRadar TI API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
     # STIX translation

@@ -5,7 +5,7 @@ ConnectorMixin facade for the Elastic Security connector.
 
 Wraps the rich ElasticClient HTTP transport + domain command objects
 in the standard GNAT 7-method interface so that ElasticConnector can
-be used via SAKClient like any other connector.
+be used via GNATClient like any other connector.
 
 STIX type routing
 -----------------
@@ -17,7 +17,7 @@ list_objects / get_object dispatch on stix_type:
 
 from __future__ import annotations
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 from .client import ElasticClient
@@ -90,7 +90,7 @@ class ElasticConnector(BaseClient, ConnectorMixin):
             self._elastic.es_get("_cluster/health")
             return True
         except Exception as exc:
-            raise SAKClientError(f"Elastic health check failed: {exc}") from exc
+            raise GNATClientError(f"Elastic health check failed: {exc}") from exc
 
     def get_object(self, stix_type: str, object_id: str, **kwargs) -> dict:
         """
@@ -106,7 +106,7 @@ class ElasticConnector(BaseClient, ConnectorMixin):
         if stix_type == "observed-data":
             alert = self._alerts.get_alert_by_id(object_id)
             if alert is None:
-                raise SAKClientError(f"Alert {object_id!r} not found", status=404)
+                raise GNATClientError(f"Alert {object_id!r} not found", status=404)
             return self._mapper.alert_to_stix_bundle(
                 self._alerts.normalise_alert(alert)
             )
@@ -155,7 +155,7 @@ class ElasticConnector(BaseClient, ConnectorMixin):
         alerts are read-only.
         """
         if stix_type == "observed-data":
-            raise SAKClientError(
+            raise GNATClientError(
                 "Elastic alerts are read-only; upsert is not supported for "
                 "stix_type='observed-data'."
             )
@@ -165,7 +165,7 @@ class ElasticConnector(BaseClient, ConnectorMixin):
     def delete_object(self, stix_type: str, object_id: str, **kwargs) -> None:
         """Delete a TI indicator by Elastic document ID."""
         if stix_type == "observed-data":
-            raise SAKClientError(
+            raise GNATClientError(
                 "Elastic alerts are read-only; delete is not supported for "
                 "stix_type='observed-data'."
             )

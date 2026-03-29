@@ -32,7 +32,7 @@ https://docs.virustotal.com/reference/overview
 """
 
 from typing import Any, Dict, List, Optional
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -135,14 +135,14 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
 
     def upsert_object(self, stix_type: str,
                       payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError(
+        raise GNATClientError(
             "VirusTotal API is read-only — upsert not supported. "
             "Use VT Intelligence to submit files: "
             "https://docs.virustotal.com/reference/files"
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError(
+        raise GNATClientError(
             "VirusTotal API is read-only — delete not supported."
         )
 

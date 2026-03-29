@@ -194,8 +194,8 @@ class ReportConfig:
         config_path : str, optional
             Explicit path to config.ini.
         """
-        from gnat.config import SAKConfig
-        cfg = SAKConfig(config_path)
+        from gnat.config import GNATConfig
+        cfg = GNATConfig(config_path)
         try:
             s = cfg.get(section_name)
         except KeyError:

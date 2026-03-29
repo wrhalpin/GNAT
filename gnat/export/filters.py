@@ -703,8 +703,8 @@ class SectorFilter(ExportFilter):
         """
         aliases: Dict[str, List[str]] = {}
         try:
-            from gnat.config import SAKConfig
-            cfg = SAKConfig(ini_config_path)
+            from gnat.config import GNATConfig
+            cfg = GNATConfig(ini_config_path)
             try:
                 section = cfg.get("sector_aliases")
                 for key, val in section.items():

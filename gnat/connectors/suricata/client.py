@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -81,13 +81,13 @@ class SuricataClient(BaseClient, ConnectorMixin):
         """Verify the EVE log file exists and is readable."""
         path = Path(self.eve_log_path)
         if not path.exists():
-            raise SAKClientError(
+            raise GNATClientError(
                 f"Suricata EVE log not found: {self.eve_log_path}"
             )
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
-        raise SAKClientError(
+        raise GNATClientError(
             "Suricata is file-based — individual alert lookup by id is not supported."
         )
 
@@ -123,10 +123,10 @@ class SuricataClient(BaseClient, ConnectorMixin):
         return alerts
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("Suricata is read-only — no write API available.")
+        raise GNATClientError("Suricata is read-only — no write API available.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("Suricata is read-only — no delete API available.")
+        raise GNATClientError("Suricata is read-only — no delete API available.")
 
     # ── Domain-specific operations ────────────────────────────────────────
 
@@ -278,7 +278,7 @@ class SuricataClient(BaseClient, ConnectorMixin):
         """Yield normalised alert dicts from the EVE log."""
         log_path = Path(path)
         if not log_path.exists():
-            raise SAKClientError(f"Suricata EVE log not found: {path}")
+            raise GNATClientError(f"Suricata EVE log not found: {path}")
         sev_map = {1: 4, 2: 3, 3: 2, 4: 1}
         with log_path.open("r", encoding="utf-8", errors="replace") as fh:
             for line in fh:

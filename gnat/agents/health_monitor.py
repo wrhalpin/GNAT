@@ -219,14 +219,17 @@ class HealthRun:
 
     @property
     def healthy_count(self) -> int:
+        """Number of connectors that responded successfully this run."""
         return sum(1 for c in self.checks if c.reachable)
 
     @property
     def unhealthy_count(self) -> int:
+        """Number of connectors that failed to respond this run."""
         return sum(1 for c in self.checks if not c.reachable)
 
     @property
     def drift_count(self) -> int:
+        """Number of connectors with significant schema drift this run."""
         return sum(
             1 for c in self.checks
             if c.drift and c.drift.is_significant
@@ -749,10 +752,10 @@ class ConnectorHealthJob(FeedJob):
         ConnectorHealthJob
         """
         from gnat.clients import CLIENT_REGISTRY
-        from gnat.client import SAKClient
-        from gnat.config import SAKConfig
+        from gnat.client import GNATClient
+        from gnat.config import GNATConfig
 
-        cfg_obj  = SAKConfig(config_path)
+        cfg_obj  = GNATConfig(config_path)
         hm_cfg   = HealthMonitorConfig.from_ini(config_path)
 
         platform_filter = set(platforms or hm_cfg.platforms or [])
@@ -765,7 +768,7 @@ class ConnectorHealthJob(FeedJob):
             if platform_filter and name not in platform_filter:
                 continue
             try:
-                sak = SAKClient(config_path=config_path).connect(name)
+                sak = GNATClient(config_path=config_path).connect(name)
                 connectors[name] = sak.client
             except Exception as exc:
                 logger.debug(

@@ -23,7 +23,7 @@ Configuration files use standard INI format with one section per target::
     auth_type = oauth2
 
 Default config file search order:
-    1. Path passed explicitly to ``SAKConfig``
+    1. Path passed explicitly to ``GNATConfig``
     2. ``GNAT_CONFIG`` environment variable
     3. ``~/.gnat/config.ini``
     4. ``./gnat.ini``
@@ -41,7 +41,7 @@ _DEFAULT_SEARCH_PATHS = [
 ]
 
 
-class SAKConfig:
+class GNATConfig:
     """
     Loads and exposes per-target configuration from INI files.
 
@@ -58,7 +58,7 @@ class SAKConfig:
 
     Examples
     --------
-    >>> cfg = SAKConfig()
+    >>> cfg = GNATConfig()
     >>> threatq_cfg = cfg.get("threatq")
     >>> print(threatq_cfg["host"])
     """
@@ -140,4 +140,4 @@ class SAKConfig:
         return None
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"SAKConfig(path={self._path!r}, sections={self.sections})"
+        return f"GNATConfig(path={self._path!r}, sections={self.sections})"

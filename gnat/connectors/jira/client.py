@@ -48,7 +48,7 @@ from __future__ import annotations
 import base64
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 # Jira REST API v3 base path
@@ -124,14 +124,14 @@ class JiraClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             On connection failure or non-2xx response.
         """
         try:
             self.get(f"{_API_V3}/serverInfo")
             return True
         except Exception as exc:
-            raise SAKClientError(f"Jira health check failed: {exc}") from exc
+            raise GNATClientError(f"Jira health check failed: {exc}") from exc
 
     def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> Dict[str, Any]:
         """
@@ -298,7 +298,7 @@ class JiraClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             If the comment POST fails.
         """
         stix_type = stix_obj.get("type", "unknown")

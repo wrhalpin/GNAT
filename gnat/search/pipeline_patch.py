@@ -30,9 +30,9 @@ Usage
 
     from gnat.ingest import IngestPipeline
     from gnat.search import build_search_index
-    from gnat.config import SAKConfig
+    from gnat.config import GNATConfig
 
-    cfg = SAKConfig()
+    cfg = GNATConfig()
     idx = build_search_index(cfg)   # NullSearchIndex if [search] absent
 
     result = (
@@ -62,7 +62,7 @@ from gnat.search.index import NullSearchIndex, SearchIndex
 
 if TYPE_CHECKING:
     from gnat.orm.base import STIXBase
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class IngestPipeline:
         self._name = name
         self._reader: Optional[SourceReader] = None
         self._mapper: Optional[RecordMapper] = None
-        self._client: Optional["SAKClient"] = None
+        self._client: Optional["GNATClient"] = None
         self._dedup: Optional[DeduplicationCache] = None
         self._filters: List[Callable[["STIXBase"], bool]] = []
         self._transforms: List[Callable[["STIXBase"], "STIXBase"]] = []
@@ -104,7 +104,7 @@ class IngestPipeline:
         self._mapper = mapper
         return self
 
-    def write_to(self, client: "SAKClient") -> "IngestPipeline":
+    def write_to(self, client: "GNATClient") -> "IngestPipeline":
         self._client = client
         return self
 

@@ -1,4 +1,4 @@
-# GNAT 🔪
+# GNAT 🪰💪
 
 **GNAT's Not Another TIP**
 
@@ -82,7 +82,7 @@ auth_type     = oauth2
 import gnat
 
 # --- Classic client usage ---
-cli = gnat.SAKClient()
+cli = gnat.GNATClient()
 cli.connect(target="threatq")
 
 # Ping to verify connectivity
@@ -145,7 +145,7 @@ ind.save()
 ### 4. Override config at runtime
 
 ```python
-cli = gnat.SAKClient()
+cli = gnat.GNATClient()
 cli.connect(
     target="netskope",
     host="https://mytenant.goskope.com",
@@ -220,11 +220,11 @@ CLIENT_REGISTRY = {
 ```
 gnat/
 ├── __init__.py              # Public API surface
-├── client.py                # SAKClient — top-level facade
+├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI file loader
 ├── clients/
 │   ├── __init__.py          # CLIENT_REGISTRY
-│   └── base.py              # urllib3 BaseClient + SAKClientError
+│   └── base.py              # urllib3 BaseClient + GNATClientError
 ├── orm/
 │   ├── base.py              # STIXBase — STIX 2.1 ORM base
 │   ├── indicator.py
@@ -281,7 +281,7 @@ tests/
 ├── conftest.py              # Shared fixtures
 ├── unit/
 │   ├── test_orm.py          # ORM + STIXBase tests
-│   ├── test_client.py       # SAKClient, SAKConfig, BaseClient tests
+│   ├── test_client.py       # GNATClient, GNATConfig, BaseClient tests
 │   └── connectors/
 │       └── test_connectors.py  # Connector tests
 └── integration/
@@ -311,7 +311,7 @@ GNAT_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
 ## Architecture
 
 ```
-SAKClient
+GNATClient
     └── connect(target) ──► CLIENT_REGISTRY[target] ──► ConnectorClient
                                                               │
                                          ┌────────────────────┘
@@ -353,7 +353,7 @@ SourceReader  ──yields──►  RawRecord (plain dict)
 RecordMapper  ──yields──►  STIXBase (Indicator, ThreatActor, …)
      │
      ▼
-IngestPipeline ──(optionally writes to)──► SAKClient
+IngestPipeline ──(optionally writes to)──► GNATClient
 ```
 
 ### Quick Examples
@@ -362,7 +362,7 @@ IngestPipeline ──(optionally writes to)──► SAKClient
 ```python
 import gnat
 
-cli = gnat.SAKClient().connect("threatq")
+cli = gnat.GNATClient().connect("threatq")
 
 result = (
     gnat.IngestPipeline("daily-blocklist")
@@ -398,7 +398,7 @@ result = (
 import psycopg2
 
 conn = psycopg2.connect("host=db dbname=ti user=ro password=secret")
-cli = gnat.SAKClient().connect("xsoar")
+cli = gnat.GNATClient().connect("xsoar")
 
 result = (
     gnat.IngestPipeline("postgres-iocs")

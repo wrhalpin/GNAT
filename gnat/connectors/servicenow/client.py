@@ -41,7 +41,7 @@ from __future__ import annotations
 import json as _json
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -108,7 +108,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             On connection failure or non-2xx response.
         """
         try:
@@ -116,7 +116,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
                      params={"sysparm_limit": "1", "sysparm_fields": "name"})
             return True
         except Exception as exc:
-            raise SAKClientError(f"ServiceNow health check failed: {exc}") from exc
+            raise GNATClientError(f"ServiceNow health check failed: {exc}") from exc
 
     def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> Dict[str, Any]:
         """
@@ -266,7 +266,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             If the incident does not exist or the update fails.
         """
         stix_type = stix_obj.get("type", "unknown")
@@ -295,7 +295,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         }
         table = mapping.get(stix_type)
         if not table:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"ServiceNow: unsupported STIX type '{stix_type}'. "
                 f"Supported: {sorted(mapping.keys())}"
             )

@@ -327,7 +327,7 @@ class Workspace:
         --------
         ::
 
-            async with AsyncSAKClient() as cli:
+            async with AsyncGNATClient() as cli:
                 await cli.connect("threatq")
                 ws = manager.open("investigation")
                 await ws.aenrich(sources=["recorded_future", "crowdstrike"])
@@ -861,12 +861,12 @@ class WorkspaceManager:
         db_url: Optional[str] = None,
     ) -> "WorkspaceManager":
         """
-        Create a WorkspaceManager from a dict of connected SAKClients.
+        Create a WorkspaceManager from a dict of connected GNATClients.
 
         Parameters
         ----------
         clients : dict
-            ``{name: SAKClient}`` mapping.
+            ``{name: GNATClient}`` mapping.
         default : str, optional
             Name of the default write context.
         read_only : list of str, optional
@@ -878,9 +878,9 @@ class WorkspaceManager:
         --------
         ::
 
-            tq_cli = SAKClient().connect("threatq")
-            rf_cli = SAKClient().connect("recordedfuture")
-            cs_cli = SAKClient().connect("crowdstrike")
+            tq_cli = GNATClient().connect("threatq")
+            rf_cli = GNATClient().connect("recordedfuture")
+            cs_cli = GNATClient().connect("crowdstrike")
 
             manager = WorkspaceManager.from_clients(
                 {"threatq": tq_cli, "rf": rf_cli, "cs": cs_cli},

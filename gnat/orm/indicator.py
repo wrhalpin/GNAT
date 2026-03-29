@@ -19,7 +19,7 @@ class Indicator(STIXBase):
 
     Parameters
     ----------
-    client : SAKClient, optional
+    client : GNATClient, optional
         Bound client for CRUD operations.
     name : str, optional
         Human-readable name of the indicator.

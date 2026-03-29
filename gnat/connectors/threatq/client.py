@@ -54,7 +54,7 @@ on the returned STIX dict.
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -123,7 +123,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
 
         Raises
         ------
-        SAKClientError
+        GNATClientError
             If the token request fails.
         """
         payload = {
@@ -134,7 +134,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         resp = self.post("/api/token", data=payload)
         token = resp.get("access_token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError("ThreatQ: failed to obtain access token")
+            raise GNATClientError("ThreatQ: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     # ------------------------------------------------------------------
@@ -289,7 +289,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     def _resolve_resource(self, stix_type: str) -> str:
         resource = self.stix_type_map.get(stix_type)
         if not resource:
-            raise SAKClientError(f"ThreatQ: unsupported STIX type '{stix_type}'")
+            raise GNATClientError(f"ThreatQ: unsupported STIX type '{stix_type}'")
         return resource + "s"  # ThreatQ uses plural endpoints
 
     @staticmethod

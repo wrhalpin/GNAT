@@ -53,7 +53,7 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -154,15 +154,15 @@ class FeedlyClient(BaseClient, ConnectorMixin):
                 newer_than=filters.pop("newer_than", None),
                 count=count,
             )
-        raise SAKClientError(f"Feedly: unsupported STIX type '{stix_type}'")
+        raise GNATClientError(f"Feedly: unsupported STIX type '{stix_type}'")
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError(
+        raise GNATClientError(
             "Feedly is read-only — object creation is not supported."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError(
+        raise GNATClientError(
             "Feedly is read-only — object deletion is not supported."
         )
 

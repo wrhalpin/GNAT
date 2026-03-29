@@ -46,7 +46,7 @@ import uuid as _uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -104,7 +104,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         )
         token = resp.get("token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError(
+            raise GNATClientError(
                 "Security Onion login failed — no token in response."
             )
         self._auth_headers["Authorization"] = f"Bearer {token}"
@@ -202,14 +202,14 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         # Alert action
         alert_id = payload.get("id")
         if not alert_id:
-            raise SAKClientError(
+            raise GNATClientError(
                 "SecurityOnionClient.upsert_object: 'id' required for alert action."
             )
         action = payload.get("action", "acknowledge")
         return self.post(f"/api/alerts/{alert_id}/{action}")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError(
+        raise GNATClientError(
             "Security Onion does not support alert/case deletion via the API."
         )
 

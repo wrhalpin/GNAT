@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from gnat.export.base import ExportDelivery, DeliveryResult, TransformResult
 
 if TYPE_CHECKING:
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
 
 logger = logging.getLogger(__name__)
 
@@ -307,14 +307,14 @@ class EDLServer(ExportDelivery):
 
 class PlatformDelivery(ExportDelivery):
     """
-    Push objects through an existing SAKClient connector.
+    Push objects through an existing GNATClient connector.
 
     Calls ``client.client.upsert_object()`` for each object in the
     ``"objects"`` payload or the ``bundle.json`` payload.
 
     Parameters
     ----------
-    client : SAKClient
+    client : GNATClient
         Connected platform client.
 
     Examples
@@ -324,7 +324,7 @@ class PlatformDelivery(ExportDelivery):
         delivery = PlatformDelivery(xsoar_client)
     """
 
-    def __init__(self, client: "SAKClient"):
+    def __init__(self, client: "GNATClient"):
         self._client = client
 
     def deliver(self, result: TransformResult) -> DeliveryResult:

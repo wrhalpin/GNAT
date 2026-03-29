@@ -38,7 +38,7 @@ import urllib.parse
 import urllib3
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 from .auth import SplunkAuthManager
 from .config import SplunkConfig
@@ -145,7 +145,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
             self._auth_headers["Authorization"] = f"Splunk {session_key}"
             self._authenticated = True
         else:
-            raise SAKClientError("SplunkClient: no credentials provided (no token or username/password).")
+            raise GNATClientError("SplunkClient: no credentials provided (no token or username/password).")
 
     def post_raw(self, url: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """POST form-encoded data to an absolute URL and return parsed JSON."""
@@ -186,7 +186,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
             )
             entries = (result or {}).get("entry", [])
             if not entries:
-                raise SAKClientError(
+                raise GNATClientError(
                     f"Splunk threat-intel entry {object_id!r} not found.", status=404
                 )
             return self.to_stix(entries[0].get("content", entries[0]))
@@ -194,7 +194,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         spl = f"search index=notable event_id=\"{object_id}\" | head 1"
         rows = self._run_oneshot_search(spl)
         if not rows:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"Splunk notable event {object_id!r} not found.", status=404
             )
         return self.to_stix(rows[0])
@@ -236,10 +236,10 @@ class SplunkClient(BaseClient, ConnectorMixin):
         return (resp or {}).get("results", [])
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("SplunkClient: upsert not supported via generic interface.")
+        raise GNATClientError("SplunkClient: upsert not supported via generic interface.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("SplunkClient: delete not supported via generic interface.")
+        raise GNATClientError("SplunkClient: delete not supported via generic interface.")
 
     def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
         """Convert a Splunk event row to a minimal STIX dict."""

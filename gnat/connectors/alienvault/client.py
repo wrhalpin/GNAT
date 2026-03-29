@@ -43,7 +43,7 @@ import uuid as _uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -172,10 +172,10 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         )
 
     def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise SAKClientError("AlienVault OTX is read-only — object creation is not supported.")
+        raise GNATClientError("AlienVault OTX is read-only — object creation is not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError("AlienVault OTX is read-only — object deletion is not supported.")
+        raise GNATClientError("AlienVault OTX is read-only — object deletion is not supported.")
 
     # ── Domain-specific operations ────────────────────────────────────────
 

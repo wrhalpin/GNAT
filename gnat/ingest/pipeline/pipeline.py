@@ -42,7 +42,7 @@ from gnat.ingest.base import (
 
 if TYPE_CHECKING:
     from gnat.orm.base import STIXBase
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class IngestPipeline:
         self._name = name
         self._reader: Optional[SourceReader] = None
         self._mapper: Optional[RecordMapper] = None
-        self._client: Optional["SAKClient"] = None
+        self._client: Optional["GNATClient"] = None
         self._dedup: Optional[DeduplicationCache] = None
         self._filters: List[Callable[["STIXBase"], bool]] = []
         self._transforms: List[Callable[["STIXBase"], "STIXBase"]] = []
@@ -130,14 +130,14 @@ class IngestPipeline:
         self._mapper = mapper
         return self
 
-    def write_to(self, client: "SAKClient") -> "IngestPipeline":
+    def write_to(self, client: "GNATClient") -> "IngestPipeline":
         """
         Set the platform client to write results to.
 
         Parameters
         ----------
-        client : SAKClient
-            A connected :class:`~gnat.client.SAKClient`.
+        client : GNATClient
+            A connected :class:`~gnat.client.GNATClient`.
 
         Returns
         -------

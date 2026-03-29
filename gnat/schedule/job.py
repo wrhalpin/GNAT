@@ -10,7 +10,7 @@ A ``FeedJob`` binds together:
   (called fresh each run so the reader can carry per-run state like
   ``newer_than`` derived from the previous run's timestamp).
 * **How to map** — a :class:`~gnat.ingest.base.RecordMapper` factory.
-* **Where to write** — an optional :class:`~gnat.client.SAKClient`.
+* **Where to write** — an optional :class:`~gnat.client.GNATClient`.
 * **When to run** — interval in seconds, or a cron expression.
 * **Run history** — a rolling log of :class:`~gnat.ingest.base.IngestResult`
   objects from past runs, used for health monitoring and backfill.
@@ -55,7 +55,7 @@ from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gnat.ingest.base import SourceReader, RecordMapper, IngestResult
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ class FeedJob:
         Cron expression (``"*/15 * * * *"`` = every 15 minutes).
         Requires ``croniter``: ``pip install "gnat[schedule]"``.
         Mutually exclusive with ``interval_seconds``.
-    client : SAKClient, optional
+    client : GNATClient, optional
         Connected platform client to write results to.  If omitted, results
         are collected but not written (dry-run mode).
     deduplicate : bool
@@ -261,7 +261,7 @@ class FeedJob:
         mapper_factory: Callable[["JobRunContext"], "RecordMapper"],
         interval_seconds: Optional[int] = None,
         cron: Optional[str] = None,
-        client: Optional["SAKClient"] = None,
+        client: Optional["GNATClient"] = None,
         deduplicate: bool = True,
         dedup_key_fields: Optional[List[str]] = None,
         confidence: int = 50,

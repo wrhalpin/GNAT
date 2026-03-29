@@ -30,7 +30,7 @@ import urllib.parse
 import urllib3
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _GRAPH = "https://graph.microsoft.com"
@@ -106,7 +106,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
         token = data.get("access_token")
         if not token:
-            raise SAKClientError("DefenderTI: failed to obtain Azure AD access token")
+            raise GNATClientError("DefenderTI: failed to obtain Azure AD access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Content-Type"]  = "application/json"
 

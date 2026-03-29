@@ -42,7 +42,7 @@ import uuid as _uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -321,7 +321,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
         """
         stix_type = stix_dict.get("type", "")
         if stix_type != "observed-data":
-            raise SAKClientError(
+            raise GNATClientError(
                 f"GraylogClient.from_stix: expected 'observed-data', got '{stix_type}'"
             )
         graylog = stix_dict.get("x_graylog_message", {})

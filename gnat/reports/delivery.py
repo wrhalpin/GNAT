@@ -108,8 +108,8 @@ class EmailDelivery:
         config_path: Optional[str] = None,
     ) -> "EmailDelivery":
         """Load SMTP settings from the ``[email]`` INI section."""
-        from gnat.config import SAKConfig
-        cfg = SAKConfig(config_path)
+        from gnat.config import GNATConfig
+        cfg = GNATConfig(config_path)
         try:
             s = cfg.get("email")
         except KeyError:
@@ -279,8 +279,8 @@ class SharePointDelivery:
         config_path: Optional[str] = None,
     ) -> "SharePointDelivery":
         """Load Graph API credentials from the ``[sharepoint]`` INI section."""
-        from gnat.config import SAKConfig
-        cfg = SAKConfig(config_path)
+        from gnat.config import GNATConfig
+        cfg = GNATConfig(config_path)
         try:
             s = cfg.get("sharepoint")
         except KeyError:

@@ -2,19 +2,19 @@
 gnat.async_client.client
 ============================
 
-Async counterpart to :class:`~gnat.client.SAKClient`.
+Async counterpart to :class:`~gnat.client.GNATClient`.
 
-:class:`AsyncSAKClient` exposes the same ``connect`` / ``disconnect`` / ``ping``
+:class:`AsyncGNATClient` exposes the same ``connect`` / ``disconnect`` / ``ping``
 API but all I/O is non-blocking.  It is designed to be used as an async
 context manager so ``httpx`` sessions are properly closed::
 
-    async with AsyncSAKClient() as cli:
+    async with AsyncGNATClient() as cli:
         await cli.connect("threatq")
         ...
 
 It also enables concurrent multi-platform queries::
 
-    async with AsyncSAKClient() as tq, AsyncSAKClient() as cs:
+    async with AsyncGNATClient() as tq, AsyncGNATClient() as cs:
         await asyncio.gather(tq.connect("threatq"), cs.connect("crowdstrike"))
         tq_data, cs_data = await asyncio.gather(
             tq.client.get_object("indicator", ioc_id),
@@ -28,8 +28,8 @@ import asyncio
 import logging
 from typing import Any, Optional
 
-from gnat.config import SAKConfig
-from gnat.clients.base import SAKClientError
+from gnat.config import GNATConfig
+from gnat.clients.base import GNATClientError
 from gnat.async_client.base import AsyncBaseClient
 
 logger = logging.getLogger(__name__)
@@ -78,27 +78,27 @@ def _build_async_registry() -> dict:
 ASYNC_CLIENT_REGISTRY: dict = {}   # populated on first use
 
 
-class AsyncSAKClient:
+class AsyncGNATClient:
     """
     Async universal security platform client.
 
     Parameters
     ----------
     config_path : str, optional
-        Path to an INI configuration file (same as sync :class:`~gnat.client.SAKClient`).
+        Path to an INI configuration file (same as sync :class:`~gnat.client.GNATClient`).
 
     Examples
     --------
     Single platform::
 
-        async with AsyncSAKClient() as cli:
+        async with AsyncGNATClient() as cli:
             await cli.connect("threatq")
             data = await cli.client.get_object("indicator", "123")
 
     Concurrent multi-platform enrichment::
 
         async def enrich(ioc_id: str) -> dict:
-            async with AsyncSAKClient() as tq, AsyncSAKClient() as rf:
+            async with AsyncGNATClient() as tq, AsyncGNATClient() as rf:
                 await asyncio.gather(
                     tq.connect("threatq"),
                     rf.connect("recordedfuture"),
@@ -112,7 +112,7 @@ class AsyncSAKClient:
 
     def __init__(self, config_path: Optional[str] = None):
         self._config_path = config_path
-        self._config: Optional[SAKConfig] = None
+        self._config: Optional[GNATConfig] = None
         self.client: Optional[AsyncBaseClient] = None
         self.target: Optional[str] = None
 
@@ -120,7 +120,7 @@ class AsyncSAKClient:
     # Async context manager
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "AsyncSAKClient":
+    async def __aenter__(self) -> "AsyncGNATClient":
         return self
 
     async def __aexit__(self, *_: Any) -> None:
@@ -130,7 +130,7 @@ class AsyncSAKClient:
     # Public API
     # ------------------------------------------------------------------
 
-    async def connect(self, target: str, **overrides: Any) -> "AsyncSAKClient":
+    async def connect(self, target: str, **overrides: Any) -> "AsyncGNATClient":
         """
         Connect to a security platform asynchronously.
 
@@ -143,7 +143,7 @@ class AsyncSAKClient:
 
         Returns
         -------
-        AsyncSAKClient
+        AsyncGNATClient
             ``self`` for optional chaining (``await cli.connect("tq")``).
         """
         global ASYNC_CLIENT_REGISTRY
@@ -189,7 +189,7 @@ class AsyncSAKClient:
         cfg: dict = {}
         if self._config is None:
             try:
-                self._config = SAKConfig(self._config_path)
+                self._config = GNATConfig(self._config_path)
             except FileNotFoundError:
                 pass
         if self._config is not None:
@@ -199,13 +199,13 @@ class AsyncSAKClient:
                 pass
         cfg.update({k: v for k, v in overrides.items() if v is not None})
         if not cfg.get("host"):
-            raise SAKClientError(
+            raise GNATClientError(
                 f"No 'host' found for async target {target!r}."
             )
         return cfg
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"AsyncSAKClient(target={self.target!r}, connected={self.client is not None})"
+        return f"AsyncGNATClient(target={self.target!r}, connected={self.client is not None})"
 
 
 # ---------------------------------------------------------------------------
@@ -219,7 +219,7 @@ class AsyncSTIXBase:
 
     Parameters
     ----------
-    client : AsyncSAKClient, optional
+    client : AsyncGNATClient, optional
         Bound async client.
     **kwargs
         STIX property values forwarded to the underlying sync ORM object.
@@ -237,7 +237,7 @@ class AsyncSTIXBase:
 
     _sync_cls: Any = None   # set by concrete subclasses
 
-    def __init__(self, client: Optional["AsyncSAKClient"] = None, **kwargs: Any):
+    def __init__(self, client: Optional["AsyncGNATClient"] = None, **kwargs: Any):
         self._async_client = client
         # Instantiate the underlying sync ORM object (no client — async manages I/O)
         if self._sync_cls:
@@ -262,7 +262,7 @@ class AsyncSTIXBase:
         if self._async_client is None or self._async_client.client is None:
             raise RuntimeError(
                 f"No async client bound to {type(self).__name__}. "
-                "Pass client= when constructing or await AsyncSAKClient.connect() first."
+                "Pass client= when constructing or await AsyncGNATClient.connect() first."
             )
 
     async def select(self) -> "AsyncSTIXBase":

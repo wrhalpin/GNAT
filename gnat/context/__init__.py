@@ -6,13 +6,13 @@ Global/local context system for GNAT analyst workspaces.
 
 Quick start::
 
-    from gnat import SAKClient
+    from gnat import GNATClient
     from gnat.context import WorkspaceManager, GlobalContextRegistry
 
     # Build registry from connected clients
-    tq = SAKClient().connect("threatq")
-    rf = SAKClient().connect("recordedfuture")
-    cs = SAKClient().connect("crowdstrike")
+    tq = GNATClient().connect("threatq")
+    rf = GNATClient().connect("recordedfuture")
+    cs = GNATClient().connect("crowdstrike")
 
     manager = WorkspaceManager.from_clients(
         {"threatq": tq, "recorded_future": rf, "crowdstrike": cs},

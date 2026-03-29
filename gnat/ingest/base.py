@@ -16,7 +16,7 @@ The ingestion layer is built from three composable abstractions:
     RecordMapper  ──yields──►  STIXBase  (Indicator, ThreatActor, …)
          │
          ▼
-    IngestPipeline ──pushes──► SAKClient  (optional, via .write_to())
+    IngestPipeline ──pushes──► GNATClient  (optional, via .write_to())
 
 **SourceReader**
     Knows how to open a data source (file, database, HTTP endpoint, …) and
@@ -30,7 +30,7 @@ The ingestion layer is built from three composable abstractions:
 
 **IngestPipeline**
     Chains a reader and a mapper, applies optional filters and deduplication,
-    and optionally writes results to a connected :class:`~gnat.client.SAKClient`.
+    and optionally writes results to a connected :class:`~gnat.client.GNATClient`.
 
 This design means you can:
 * Swap sources without touching mappers (e.g. read same CSV from disk or S3).
@@ -49,7 +49,7 @@ from typing import Any, Dict, Generator, Iterable, Iterator, List, Optional, TYP
 
 if TYPE_CHECKING:
     from gnat.orm.base import STIXBase
-    from gnat.client import SAKClient
+    from gnat.client import GNATClient
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ class RecordMapper(ABC):
 
     Parameters
     ----------
-    client : SAKClient, optional
+    client : GNATClient, optional
         If provided, all produced STIX objects are bound to this client so
         CRUD methods work immediately.
     tlp_marking : str, optional
@@ -196,7 +196,7 @@ class RecordMapper(ABC):
 
     def __init__(
         self,
-        client: Optional["SAKClient"] = None,
+        client: Optional["GNATClient"] = None,
         tlp_marking: str = "white",
         confidence: int = 50,
     ):

@@ -19,7 +19,7 @@ INI config::
 import base64
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _TOKEN_PATH = "/token"
@@ -91,7 +91,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
 
         token = resp.get("access_token") if isinstance(resp, dict) else None
         if not token:
-            raise SAKClientError("Mandiant: failed to obtain access token")
+            raise GNATClientError("Mandiant: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["X-App-Name"]    = "gnat"
         self._auth_headers["Accept"]        = "application/json"
@@ -146,16 +146,16 @@ class MandiantClient(BaseClient, ConnectorMixin):
         """
         Mandiant Advantage API is read-only for most tiers.
 
-        Raises :class:`~gnat.clients.base.SAKClientError` — submit indicators
+        Raises :class:`~gnat.clients.base.GNATClientError` — submit indicators
         via the Mandiant portal or SubmitSuspected API if licensed.
         """
-        raise SAKClientError(
+        raise GNATClientError(
             "Mandiant Advantage API is read-only for standard subscriptions. "
             "Use the Mandiant portal to submit indicators."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise SAKClientError(
+        raise GNATClientError(
             "Mandiant Advantage API is read-only — delete not supported."
         )
 

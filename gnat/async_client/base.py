@@ -12,7 +12,7 @@ Design
 ------
 * Drop-in async mirror: same method signatures as the sync client,
   but all HTTP methods are ``async def`` and must be ``await``-ed.
-* Shares the same :class:`~gnat.clients.base.SAKClientError` exception.
+* Shares the same :class:`~gnat.clients.base.GNATClientError` exception.
 * Uses ``httpx.AsyncClient`` with a connection pool, retry middleware, and
   configurable timeouts.
 * ``authenticate()`` is also ``async def`` — suited for platforms whose
@@ -24,7 +24,7 @@ Usage::
     import gnat.async_client as async_ctm
 
     async def main():
-        cli = async_ctm.AsyncSAKClient()
+        cli = async_ctm.AsyncGNATClient()
         await cli.connect("threatq")
 
         ind = async_ctm.AsyncIndicator(client=cli,
@@ -33,8 +33,8 @@ Usage::
         print(ind.name)
 
         # Concurrent enrichment across platforms
-        cs_cli  = async_ctm.AsyncSAKClient()
-        rf_cli  = async_ctm.AsyncSAKClient()
+        cs_cli  = async_ctm.AsyncGNATClient()
+        rf_cli  = async_ctm.AsyncGNATClient()
         await asyncio.gather(
             cs_cli.connect("crowdstrike"),
             rf_cli.connect("recordedfuture"),
@@ -54,7 +54,7 @@ import logging
 from typing import Any, Dict, Optional
 from urllib.parse import urljoin, urlencode
 
-from gnat.clients.base import SAKClientError
+from gnat.clients.base import GNATClientError
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +246,7 @@ class AsyncBaseClient:
         )
 
         if response.status_code >= 400:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"HTTP {response.status_code} from {url}",
                 status=response.status_code,
                 body=response.text,

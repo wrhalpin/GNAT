@@ -25,7 +25,7 @@ Prerequisites (per target):
 import os
 import pytest
 
-from gnat.client import SAKClient
+from gnat.client import GNATClient
 from gnat.orm.indicator import Indicator
 
 
@@ -60,9 +60,9 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="module")
 def cli():
-    """Return a SAKClient using the real integration config."""
+    """Return a GNATClient using the real integration config."""
     config_path = os.environ.get("GNAT_CONFIG")
-    return SAKClient(config_path=config_path)
+    return GNATClient(config_path=config_path)
 
 
 # ---------------------------------------------------------------------------

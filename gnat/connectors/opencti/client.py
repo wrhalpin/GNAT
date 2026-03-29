@@ -50,7 +50,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, SAKClientError
+from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 
@@ -157,7 +157,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
         filters  = dict(filters or {})
         gql_type = self._GQL_TYPES.get(stix_type)
         if not gql_type:
-            raise SAKClientError(
+            raise GNATClientError(
                 f"OpenCTI: unsupported STIX type '{stix_type}'"
             )
         search     = filters.pop("search", None)
