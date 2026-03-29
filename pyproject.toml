@@ -67,6 +67,7 @@ testpaths = ["tests"]
 addopts   = "-v --tb=short -p no:warnings"
 markers   = [
     "integration: live API tests requiring real credentials (opt-in with --run-integration)",
+    "docker: Docker-based integration tests requiring a running Docker daemon (opt-in with --run-docker)",
     "slow: tests that take >5s",
 ]
 

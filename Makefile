@@ -8,7 +8,7 @@ MYPY    ?= mypy
 SRC     := gnat
 TESTS   := tests
 
-.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen build-rust build-rust-dev docker-build docker-up docker-down docker-logs
+.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen build-rust build-rust-dev docker-build docker-up docker-down docker-logs test-docker test-docker-up test-docker-down
 
 help:
 	@echo ""
@@ -31,6 +31,9 @@ help:
 	@echo "  make docker-up     Start all services (detached)"
 	@echo "  make docker-down   Stop all services"
 	@echo "  make docker-logs   Tail logs for all services"
+	@echo "  make test-docker-up    Start test containers (ES + Solr)"
+	@echo "  make test-docker-down  Stop and remove test containers"
+	@echo "  make test-docker       Run Docker integration test suite"
 	@echo ""
 
 build-rust:
@@ -90,3 +93,15 @@ docker-down:
 
 docker-logs:
 	docker compose logs -f
+
+DOCKER_TEST_COMPOSE := docker/test/docker-compose.test.yml
+
+test-docker-up:
+	docker compose -f $(DOCKER_TEST_COMPOSE) up -d --pull missing
+
+test-docker-down:
+	docker compose -f $(DOCKER_TEST_COMPOSE) down -v
+
+test-docker: test-docker-up
+	$(PYTEST) $(TESTS)/integration/ --run-docker -v --tb=short ; \
+	$(MAKE) test-docker-down
