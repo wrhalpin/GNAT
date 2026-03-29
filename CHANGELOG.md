@@ -9,6 +9,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- **13 new platform connectors** registered in `CLIENT_REGISTRY` and documented:
+  - `ArmisClient` (`gnat/connectors/armis/`) — Armis Centrix Cyber Exposure Management (IT/OT/IoT); API Secret Key auth.
+  - `AxoniusClient` (`gnat/connectors/axonius/`) — Axonius Cybersecurity Asset Management; API Key + Secret via Basic Auth.
+  - `CortexXpanseClient` (`gnat/connectors/cortex_xpanse/`) — Cortex Xpanse External Attack Surface Management; Cortex API Key auth.
+  - `CyCognitoClient` (`gnat/connectors/cycognito/`) — CyCognito Attack Surface Management; Bearer token auth.
+  - `DefectDojoClient` (`gnat/connectors/defectdojo/`) — DefectDojo Open Source Vulnerability Management; API Token auth.
+  - `GreenboneClient` (`gnat/connectors/greenbone/`) — Greenbone / OpenVAS Vulnerability Management; GMP username/password auth.
+  - `GroupIBClient` (`gnat/connectors/group_ib/`) — Group-IB Threat Intelligence; API token auth.
+  - `OrcaClient` (`gnat/connectors/orca/`) — Orca Security Agentless Cloud CNAPP; Bearer token auth.
+  - `QualysVMDRClient` (`gnat/connectors/qualys/`) — Qualys VMDR Vulnerability Management; Basic Auth.
+  - `SentinelOneClient` (`gnat/connectors/sentinelone/`) — SentinelOne Singularity XDR; ApiToken auth.
+  - `TenableOneClient` (`gnat/connectors/tenable_one/`) — Tenable One Exposure Management; X-ApiKeys header auth.
+  - `WizClient` (`gnat/connectors/wiz/`) — Wiz CNAPP Cloud Native Application Protection; OAuth2 client credentials.
+  - `ZeroFoxClient` (`gnat/connectors/zerofox/`) — ZeroFox Digital Risk Protection; Bearer token auth.
+- Added `__init__.py` package initializers to 15 connector directories that were missing them: `armis`, `axonius`, `cortex_xpanse`, `cycognito`, `cyble_vision`, `defectdojo`, `gemini`, `greenbone`, `group_ib`, `orca`, `qualys`, `sentinelone`, `tenable_one`, `wiz`, `zerofox`.
+- Fixed syntax error in `gnat/clients/__init__.py` (missing colon in `"chatgpt"` registry entry) and removed leftover merge-artifact code block.
+- `README.md` Supported Platforms table expanded from 29 to 60 entries to cover all registered connectors.
 - **Upstream contribution pipeline** (`gnat/codegen/contribute.py`): opt-in workflow that validates, tests, and packages a connector as a draft GitHub PR. `ContributionPipeline.run()` enforces a 7-step gate: enabled guard → connector exists in registry → compliance matrix (all 8 `ConnectorMixin` methods + test file presence) → full test suite (aborts on failure) → branch creation (`contribute/{platform}-{timestamp}`) → commit + push → draft PR via GitHub REST API. `ContributeConfig` reads `[contribute]` INI section; `draft_pr` is hardcoded to `True` and cannot be overridden. `_PROTECTED_BRANCHES` prevents pushing to `main`/`master`. `SubprocessRunner` is injectable for testing. `gnat contribute` CLI subcommand with `--connector`, `--message`, `--no-pr`, `--dry-run`, and `--config` flags. 47 unit tests in `tests/unit/test_contribute.py`.
 - **Web dashboard** (`gnat/serve/`): FastAPI-based browser UI for server deployments, accessible via `gnat serve`. Secured by `X-Api-Key` header; binds to `127.0.0.1` by default; rate-limited to 100 req/min per key. Three API routers:
   - `GET/POST /api/library` — search, fetch, promote, and reject Research Library entries

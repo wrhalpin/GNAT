@@ -108,4 +108,85 @@ class WizClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[
+        filters: Optional[Dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """List Wiz vulnerability findings or issues."""
+        filters = dict(filters or {})
+        if stix_type == "vulnerability":
+            query = """
+            query VulnerabilityFindings($first: Int) {
+              vulnerabilityFindings(first: $first) {
+                nodes { id name severity status cve { id } asset { id name } }
+              }
+            }
+            """
+            data = self._graphql_query(query, variables={"first": page_size})
+            return data.get("vulnerabilityFindings", {}).get("nodes", [])
+        # Default: issues
+        query = """
+        query Issues($first: Int) {
+          issues(first: $first) {
+            nodes { id title severity status type createdAt }
+          }
+        }
+        """
+        data = self._graphql_query(query, variables={"first": page_size})
+        return data.get("issues", {}).get("nodes", [])
+
+    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        raise GNATClientError("Wiz is read-only — upsert not supported.")
+
+    def delete_object(self, stix_type: str, object_id: str) -> None:
+        raise GNATClientError("Wiz is read-only — delete not supported.")
+
+    # ── STIX conversion ───────────────────────────────────────────────────
+
+    def to_stix(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+        """Map a Wiz finding/issue dict to a STIX object."""
+        obj_id = str(obj.get("id", _uuid.uuid4()))
+        # Vulnerability finding → STIX vulnerability
+        if "cve" in obj:
+            cve_id = (obj.get("cve") or {}).get("id", "")
+            name = obj.get("name", cve_id or obj_id)
+            return {
+                "type": "vulnerability",
+                "spec_version": "2.1",
+                "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, obj_id)}",
+                "name": name,
+                "x_wiz_severity": obj.get("severity", ""),
+                "x_wiz_status": obj.get("status", ""),
+                "external_references": [{"source_name": "cve", "external_id": cve_id}] if cve_id else [],
+            }
+        # Issue → STIX report
+        return {
+            "type": "report",
+            "spec_version": "2.1",
+            "id": f"report--{_uuid.uuid5(_STIX_NS, obj_id)}",
+            "name": obj.get("title", obj_id),
+            "published": obj.get("createdAt", _now_ts()),
+            "object_refs": [],
+            "x_wiz_severity": obj.get("severity", ""),
+            "x_wiz_status": obj.get("status", ""),
+            "x_wiz_type": obj.get("type", ""),
+            "x_wiz_raw": obj,
+        }
+
+    def from_stix(self, stix_obj: Dict[str, Any]) -> Dict[str, Any]:
+        """Wiz is read-only — from_stix not supported."""
+        raise GNATClientError("Wiz is read-only — from_stix not supported.")
+
+    # ── Private helpers ───────────────────────────────────────────────────
+
+    def _graphql_query(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Execute a GraphQL query against /graphql and return the ``data`` dict."""
+        payload: Dict[str, Any] = {"query": query}
+        if variables:
+            payload["variables"] = variables
+        resp = self.post("/graphql", json=payload)
+        if not isinstance(resp, dict):
+            raise GNATClientError(f"Unexpected Wiz GraphQL response type: {type(resp)}")
+        if "errors" in resp:
+            raise GNATClientError(f"Wiz GraphQL error: {resp['errors']}")
+        return resp.get("data", {})

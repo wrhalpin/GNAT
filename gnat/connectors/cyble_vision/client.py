@@ -167,4 +167,52 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
             params["end_date"] = end_date.replace("-", "/")
         if priority:
             params["priority"] = priority.lower()
-        resp = self.get("/alerts
+        resp = self.get("/alerts", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ── STIX conversion ───────────────────────────────────────────────────
+
+    def to_stix(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+        """Map a Cyble Vision alert or IOC dict to a STIX object."""
+        # IOC → STIX indicator
+        if "ioc_value" in obj or "type" in obj:
+            ioc_val = obj.get("ioc_value", obj.get("value", ""))
+            ioc_type = obj.get("type", "unknown").lower()
+            pattern_map = {
+                "ipv4": f"[ipv4-addr:value = '{ioc_val}']",
+                "domain": f"[domain-name:value = '{ioc_val}']",
+                "url": f"[url:value = '{ioc_val}']",
+                "md5": f"[file:hashes.MD5 = '{ioc_val}']",
+                "sha256": f"[file:hashes.'SHA-256' = '{ioc_val}']",
+                "email": f"[email-addr:value = '{ioc_val}']",
+            }
+            pattern = pattern_map.get(ioc_type, f"[x-cyble:value = '{ioc_val}']")
+            return {
+                "type": "indicator",
+                "spec_version": "2.1",
+                "id": f"indicator--{_uuid.uuid5(_STIX_NS, ioc_val)}",
+                "name": ioc_val,
+                "pattern": pattern,
+                "pattern_type": "stix",
+                "valid_from": obj.get("first_seen", _now_ts()),
+                "x_cyble_type": ioc_type,
+                "x_cyble_confidence": obj.get("confidence"),
+            }
+        # Alert/event → STIX report
+        alert_id = str(obj.get("id", _uuid.uuid4()))
+        title = obj.get("title", obj.get("event_type", "Cyble Alert"))
+        return {
+            "type": "report",
+            "spec_version": "2.1",
+            "id": f"report--{_uuid.uuid5(_STIX_NS, alert_id)}",
+            "name": title,
+            "published": obj.get("date", _now_ts()),
+            "object_refs": [],
+            "x_cyble_event_type": obj.get("event_type", ""),
+            "x_cyble_priority": obj.get("priority", ""),
+            "x_cyble_raw": obj,
+        }
+
+    def from_stix(self, stix_obj: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert a STIX object back to a Cyble Vision payload (no-op — read-only)."""
+        raise GNATClientError("Cyble Vision is read-only — from_stix not supported.")
