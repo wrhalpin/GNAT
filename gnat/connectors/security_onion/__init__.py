@@ -41,7 +41,6 @@ import time
 import urllib.parse
 import urllib3
 from dataclasses import dataclass, field
-from typing import Iterator
 
 
 # ── Exceptions ────────────────────────────────────────────────────────────────

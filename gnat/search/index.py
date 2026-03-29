@@ -84,7 +84,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urlencode
 
 import urllib3
 from urllib3.util.retry import Retry

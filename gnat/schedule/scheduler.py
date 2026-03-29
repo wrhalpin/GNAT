@@ -90,7 +90,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Callable, Dict, Iterator, List, Optional, TYPE_CHECKING
 
 from gnat.schedule.job import FeedJob, RunRecord, _utcnow

@@ -25,10 +25,10 @@ import logging
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gnat.context.workspace import Workspace, WorkspaceManager
+    from gnat.context.workspace import WorkspaceManager
     from gnat.orm.base import STIXBase
     from gnat.reports.base import ReportConfig, SectorFilter
 

@@ -54,7 +54,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gnat.ingest.base import SourceReader, RecordMapper, IngestResult
+    from gnat.ingest.base import SourceReader, RecordMapper
     from gnat.client import GNATClient
 
 logger = logging.getLogger(__name__)

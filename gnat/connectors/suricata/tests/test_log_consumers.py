@@ -6,7 +6,6 @@ so tests use temporary files and StringIO rather than HTTP mocks.
 """
 
 import configparser
-import io
 import json
 import os
 import tempfile
@@ -14,12 +13,12 @@ import unittest
 
 from gnat.connectors.suricata import (
     SuricataConfig, SuricataConfigError, SuricataLogError,
-    SuricataEVEReader, SuricataSocketCommands, SuricataSTIXMapper,
+    SuricataEVEReader, SuricataSTIXMapper,
     load_suricata_config,
 )
 from gnat.connectors.snort import (
     SnortConfig, SnortConfigError, SnortLogError,
-    SnortJSONReader, SnortFastReader, SnortAlertReader, SnortSTIXMapper,
+    SnortJSONReader, SnortFastReader, SnortSTIXMapper,
     load_snort_config,
 )
 from gnat.connectors.zeek import (
@@ -77,9 +76,9 @@ class TestSuricataConfig(unittest.TestCase):
 
     def test_load_from_ini(self):
         p = configparser.ConfigParser()
-        p.read_dict({"suricata": {"eve_log_path": "/tmp/eve.json"}})
+        p.read_dict({"suricata": {"eve_log_path": "/tmp/eve.json"  # nosec B108 — test path}})
         cfg = load_suricata_config(p)
-        self.assertEqual(cfg.eve_log_path, "/tmp/eve.json")
+        self.assertEqual(cfg.eve_log_path, "/tmp/eve.json"  # nosec B108 — test path)
 
     def test_load_missing_section_raises(self):
         with self.assertRaises(SuricataConfigError):
@@ -216,7 +215,7 @@ class TestSnortConfig(unittest.TestCase):
 
     def test_load_from_ini(self):
         p = configparser.ConfigParser()
-        p.read_dict({"snort": {"alert_log_path": "/tmp/snort.json", "log_format": "fast"}})
+        p.read_dict({"snort": {"alert_log_path": "/tmp/snort.json"  # nosec B108 — test path, "log_format": "fast"}})
         cfg = load_snort_config(p)
         self.assertEqual(cfg.log_format, "fast")
 
@@ -351,11 +350,11 @@ class TestZeekConfig(unittest.TestCase):
             ZeekConfig(log_format="xml")
 
     def test_log_path(self):
-        cfg = ZeekConfig(log_dir="/tmp/zeek")
+        cfg = ZeekConfig(log_dir="/tmp/zeek"  # nosec B108 — test path)
         self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.log")
 
     def test_log_path_json(self):
-        cfg = ZeekConfig(log_dir="/tmp/zeek", log_format="json")
+        cfg = ZeekConfig(log_dir="/tmp/zeek"  # nosec B108 — test path, log_format="json")
         self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.json")
 
     def test_load_from_ini(self):

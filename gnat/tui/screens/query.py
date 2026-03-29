@@ -10,13 +10,13 @@ the screen degrades gracefully to the ``builtin`` regex parser.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, Label, Static
+from textual.widgets import Button, Footer, Header, Input, Label
 
 from gnat.tui.widgets.stix_table import STIXTable
 

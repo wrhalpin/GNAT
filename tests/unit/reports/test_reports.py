@@ -25,15 +25,13 @@ Covers:
 from __future__ import annotations
 
 import os
-import tempfile
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from gnat.reports import (
-    AIMode, ReportConfig, SectorFilter, DataAggregator, ReportAggregates,
-    MarkdownRenderer, HTMLRenderer, PDFRenderer,
+    AIMode, ReportConfig, SectorFilter, DataAggregator, MarkdownRenderer, HTMLRenderer, PDFRenderer,
     ReportGenerator, ReportJob, ReportResult,
     ReportSection, ReportDocument,
 )

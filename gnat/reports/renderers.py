@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gnat.reports.base import ReportDocument, ReportSection
@@ -222,7 +222,7 @@ class PDFRenderer:
             from reportlab.lib import colors
             from reportlab.platypus import (
                 SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-                HRFlowable, PageBreak,
+                HRFlowable,
             )
         except ImportError:
             raise ImportError(
@@ -369,7 +369,7 @@ class DOCXRenderer:
     def render(self, doc: "ReportDocument", path: str) -> str:
         try:
             from docx import Document
-            from docx.shared import Pt, RGBColor
+            from docx.shared import Pt
             from docx.enum.text import WD_ALIGN_PARAGRAPH
         except ImportError:
             raise ImportError(
@@ -479,8 +479,6 @@ class DOCXRenderer:
 
     def _table(self, d, headers: List[str], rows: List[List[str]]) -> None:
         from docx.shared import Pt
-        from docx.oxml.ns import qn
-        from docx.oxml import OxmlElement
 
         tbl = d.add_table(rows=1 + len(rows), cols=len(headers))
         tbl.style = "Table Grid"

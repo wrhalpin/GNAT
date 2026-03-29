@@ -12,9 +12,7 @@ fastapi) are tested with graceful skips if not installed.
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
-from typing import Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest

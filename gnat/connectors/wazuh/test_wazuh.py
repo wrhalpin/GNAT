@@ -30,7 +30,7 @@ import configparser
 import json
 import time
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 from gnat.connectors.wazuh.config import WazuhConfig, load_wazuh_config
 from gnat.connectors.wazuh.exceptions import (
@@ -830,7 +830,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_fim_observed_data_has_extension(self):
-        fim = {"file": "/tmp/test", "event_type": "added", "sha256": "abc123"}
+        fim = {"file": "/tmp/test"  # nosec B108 — test fixture path, "event_type": "added", "sha256": "abc123"}
         bundle = self.mapper.fim_event_to_stix_bundle(fim, agent_id="002")
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
         self.assertIn("x_wazuh_fim", obs)

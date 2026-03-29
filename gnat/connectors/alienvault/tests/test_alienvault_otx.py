@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from gnat.connectors.alienvault_otx import (
     OTXConfig, OTXConfigError, OTXAuthError, OTXAPIError, OTXNotFoundError,
     OTXRateLimitError, OTXClient, OTXPulseCommands, OTXIndicatorCommands,
-    OTXFeedCommands, OTXSTIXMapper, OTXSTIXError, load_otx_config,
+    OTXSTIXMapper, load_otx_config,
 )
 
 

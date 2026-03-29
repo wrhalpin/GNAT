@@ -3,9 +3,9 @@ import configparser, json, unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.ossim import (
-    OSSIMConfig, OSSIMConfigError, OSSIMAuthError, OSSIMAPIError, OSSIMNotFoundError,
-    OSSIMClient, OSSIMAlarmCommands, OSSIMEventCommands, OSSIMAssetCommands,
-    OSSIMSensorCommands, OSSIMSTIXMapper, load_ossim_config,
+    OSSIMConfig, OSSIMConfigError, OSSIMAuthError, OSSIMNotFoundError,
+    OSSIMClient, OSSIMAlarmCommands, OSSIMAssetCommands,
+    OSSIMSTIXMapper, load_ossim_config,
 )
 
 

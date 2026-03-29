@@ -54,7 +54,7 @@ import configparser
 import json
 import os
 import socket as _socket
-import time
+
 from dataclasses import dataclass
 from typing import Iterator
 import uuid as _uuid

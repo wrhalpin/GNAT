@@ -14,9 +14,10 @@ import os
 import tempfile
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from gnat.export.base import ExportDelivery, DeliveryResult, TransformResult
+from gnat.utils.url_security import validate_url_scheme
 
 if TYPE_CHECKING:
     from gnat.client import GNATClient
@@ -168,6 +169,7 @@ class HTTPDelivery(ExportDelivery):
             else:
                 body = content
 
+            validate_url_scheme(target_url)
             req = urllib.request.Request(
                 target_url, data=body, method="POST",
                 headers=dict(self._headers),
@@ -179,7 +181,7 @@ class HTTPDelivery(ExportDelivery):
                 req.add_header("Authorization", f"Basic {creds}")
 
             try:
-                with urllib.request.urlopen(req, timeout=self._timeout) as resp:
+                with urllib.request.urlopen(req, timeout=self._timeout) as resp:  # nosec B310 — scheme validated above
                     status = resp.getcode()
                 if status in self._success_codes:
                     dr.delivered.append(name)
@@ -232,7 +234,7 @@ class EDLServer(ExportDelivery):
         # Palo Alto config: EDL URL → http://<host>:8080/indicators-ipv4.txt
     """
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8080):
+    def __init__(self, host: str = "0.0.0.0", port: int = 8080):  # nosec B104 — overridable via --host flag
         self._host   = host
         self._port   = port
         self._files: Dict[str, str] = {}
@@ -254,7 +256,7 @@ class EDLServer(ExportDelivery):
             self._start()
 
         dr = DeliveryResult()
-        host = "localhost" if self._host in ("0.0.0.0", "") else self._host
+        host = "localhost" if self._host in ("0.0.0.0", "") else self._host  # nosec B104 — comparing, not binding
         for name in result.payloads:
             url = f"http://{host}:{self._port}/{name}"
             dr.delivered.append(name)
@@ -298,7 +300,7 @@ class EDLServer(ExportDelivery):
             self._server = None
 
     def url(self, filename: str = "") -> str:
-        host = "localhost" if self._host in ("0.0.0.0", "") else self._host
+        host = "localhost" if self._host in ("0.0.0.0", "") else self._host  # nosec B104 — comparing, not binding
         return f"http://{host}:{self._port}/{filename}"
 
     def __repr__(self) -> str:

@@ -49,7 +49,7 @@ from gnat.viz.graph   import GraphView
 from gnat.viz.export  import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
 
 try:
-    from gnat.viz.grafana.server import GrafanaServer, build_app
+    from gnat.viz.grafana.server import GrafanaServer
     _HAS_GRAFANA = True
 except ImportError:
     _HAS_GRAFANA = False

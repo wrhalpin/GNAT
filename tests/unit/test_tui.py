@@ -11,14 +11,9 @@ Tests cover:
 5. CLI tui subcommand registration
 """
 
-import datetime
-import json
-import os
 import sys
-import tempfile
-from pathlib import Path
 from typing import Any, Dict, List
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 

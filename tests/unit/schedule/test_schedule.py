@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import time
 import threading
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest

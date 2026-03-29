@@ -38,7 +38,6 @@ field update, keeping full audit history.
 
 from __future__ import annotations
 
-import json as _json
 from typing import Any, Dict, List, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError

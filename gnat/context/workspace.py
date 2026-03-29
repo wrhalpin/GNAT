@@ -47,16 +47,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import uuid
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Iterator, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
 
 from gnat.orm.base import STIXBase, _utcnow
-from gnat.orm.indicator import Indicator
 from gnat.orm.relationship import Relationship
 
 if TYPE_CHECKING:
-    from gnat.context.store import WorkspaceStore, FlatFileStore
     from gnat.context.global_context import GlobalContext, GlobalContextRegistry
 
 logger = logging.getLogger(__name__)
@@ -148,7 +144,7 @@ class Workspace:
 
     def _init_store(self) -> None:
         """Ensure the workspace record exists in the store and load cached objects."""
-        from gnat.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore
 
         if isinstance(self._store, WorkspaceStore):
             ws_model = self._store.get_or_create_workspace(
@@ -645,7 +641,7 @@ class Workspace:
             return False
         del self.objects[stix_id]
         self.dirty.add(stix_id)
-        from gnat.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             self._store.soft_delete_object(self._ws_id, stix_id)
         else:
@@ -922,7 +918,7 @@ class WorkspaceManager:
         KeyError
             If no workspace with this name exists.
         """
-        from gnat.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
             if self._store.get_workspace(name) is None:
                 raise KeyError(

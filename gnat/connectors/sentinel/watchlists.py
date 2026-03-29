@@ -12,7 +12,6 @@ References
 - https://learn.microsoft.com/en-us/rest/api/securityinsights/watchlists
 """
 
-from typing import Iterator
 from .client import SentinelClient
 
 

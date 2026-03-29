@@ -77,7 +77,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Callable, List, Optional, TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 
 from gnat.schedule.job import FeedJob, JobRunContext, RunRecord, _utcnow
 

@@ -9,7 +9,6 @@ opens rendered HTML in the system browser via ``webbrowser.open()``.
 
 from __future__ import annotations
 
-import os
 import webbrowser
 from pathlib import Path
 from typing import Any, List, Optional

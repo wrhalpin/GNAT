@@ -28,7 +28,6 @@ permission. Restrict this to dedicated service accounts.
   """
 
 from .client import WazuhClient
-from .exceptions import WazuhPermissionError
 
 class WazuhActiveResponseCommands:
     """
