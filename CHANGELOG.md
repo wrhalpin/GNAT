@@ -114,6 +114,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `gnat validate bundle <file.json>` — validate all indicator patterns in a STIX bundle file; `--fail-fast` flag; exit 0 on all-valid, 1 on any invalid.
   - `pyproject.toml`: new `[stix-validate]` extra (`stix2-patterns>=1.3`).
   - 87 unit tests in `tests/unit/test_stix_validator.py`.
+- **Docker integration test harness** (`docker/test/`, `tests/integration/`): isolated, self-contained Docker-based test suite for external service connectors and GNAT's own HTTP services.
+  - `docker/test/docker-compose.test.yml` — test-only compose file with Elasticsearch 8.13.4 (single-node, security disabled, 512 MB heap, port 19200) and Solr 9.6 with a pre-created `gnat` core (port 18983). Separate `gnat-test-network`; no shared state with production compose.
+  - `docker/test/gnat.test.ini` — minimal GNAT config pointing at the test containers; used by fixture-level setup only.
+  - `tests/integration/conftest_docker.py` — session-scoped pytest fixtures managed via stdlib `subprocess` (no `testcontainers` or `pytest-docker`): `docker_services` (compose up/down lifecycle), `elasticsearch_url` + `solr_url` (health-poll helpers), `gnat_taxii_server` (spawns a GNAT TAXII subprocess on a free port; gracefully terminated at session end). `--run-docker` pytest flag; `@pytest.mark.docker` marker.
+  - `tests/integration/test_docker_taxii.py` — 20 TAXII 2.1 round-trip tests covering discovery, auth guard, collection CRUD, objects POST/GET, single-object fetch, manifest, versions, pagination (cursor traversal + next-page detection), non-bundle 422, and invalid-JSON 400/422.
+  - `tests/integration/test_docker_elastic.py` — 14 tests covering ES cluster health, index/document CRUD, bulk indexing (100 docs), and the live `ElasticConnector` (health_check, upsert, get, list, delete).
+  - `tests/integration/test_docker_solr.py` — 14 tests covering Solr core health, raw document add/query/delete, and the live `GNATIndexer` (index, search, batch-index, delete).
+  - `Makefile`: `test-docker-up`, `test-docker-down`, and `test-docker` targets (up → run suite → down).
+  - `pyproject.toml`: `docker` pytest marker registered.
 - **TAXII 2.1 server** (`gnat/serve/taxii/`): FastAPI application implementing the full TAXII 2.1 protocol, exposing GNAT workspaces as TAXII collections.
   - `build_taxii_app(manager, api_key, title, contact)` — returns a FastAPI app with all 9 mandatory TAXII 2.1 endpoints: discovery (unauthenticated), API root info (unauthenticated), collections list/detail, objects GET (bundle, paginated, filterable by `match[type]`, `match[id]`, `added_after`), objects POST (bundle ingest → workspace upsert), manifest, single-object GET, and object versions.
   - `run_taxii_server(manager, host, port, api_key, title, contact)` — wraps `build_taxii_app` and starts uvicorn.

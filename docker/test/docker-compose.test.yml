@@ -1,0 +1,54 @@
+# docker/test/docker-compose.test.yml
+# ---------------------------------------------------------------------------
+# Test-only services used by the Docker integration test harness.
+# These containers are NOT used in production — see docker-compose.yml for that.
+#
+# Usage:
+#   docker compose -f docker/test/docker-compose.test.yml up -d
+#   make test-docker
+#   docker compose -f docker/test/docker-compose.test.yml down -v
+# ---------------------------------------------------------------------------
+
+version: "3.9"
+
+services:
+
+  # ── Elasticsearch 8.x (security disabled, single-node) ───────────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "19200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  # ── Solr 9.x with gnat core ───────────────────────────────────────────────
+  solr:
+    image: solr:9.6
+    ports:
+      - "18983:8983"
+    command: >
+      bash -c "
+        /opt/solr/bin/solr start -c -f &
+        sleep 10 &&
+        /opt/solr/bin/solr create_core -c gnat -p 8983 2>/dev/null || true &&
+        wait
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/gnat/admin/ping | grep -q '\"status\":\"OK\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 45s
+
+networks:
+  default:
+    name: gnat-test-network

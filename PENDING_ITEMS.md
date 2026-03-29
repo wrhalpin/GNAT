@@ -621,6 +621,32 @@ gnat tenant delete acme --yes
 
 ---
 
+### 29. Docker Integration Test Harness — ✅ COMPLETE
+
+**Priority:** MEDIUM — reproducible CI integration tests without live credentials
+
+**Implemented:**
+- `docker/test/docker-compose.test.yml` — test-only Elasticsearch 8.13.4 + Solr 9.6 containers on non-conflicting ports (19200, 18983).
+- `docker/test/gnat.test.ini` — minimal GNAT config for test containers.
+- `tests/integration/conftest_docker.py` — session-scoped fixtures: `docker_services` (compose lifecycle), `elasticsearch_url`, `solr_url` (health-poll), `gnat_taxii_server` (subprocess TAXII server on a free port). `--run-docker` flag; `@pytest.mark.docker` marker.
+- `tests/integration/test_docker_taxii.py` — 20 TAXII 2.1 round-trip integration tests.
+- `tests/integration/test_docker_elastic.py` — 14 Elasticsearch + ElasticConnector integration tests.
+- `tests/integration/test_docker_solr.py` — 14 Solr + GNATIndexer integration tests.
+- `Makefile`: `test-docker-up`, `test-docker-down`, `test-docker` targets.
+- `pyproject.toml`: `docker` pytest marker registered.
+
+**Usage:**
+```bash
+make test-docker           # Up → run suite → down (automated)
+make test-docker-up        # Start containers only
+pytest tests/integration/ --run-docker -v
+make test-docker-down      # Teardown + remove volumes
+```
+
+**No new dependencies** — uses stdlib `subprocess`, `urllib.request`, `socket` only.
+
+---
+
 ### 27. STIX 2.1 Pattern Validator — ✅ COMPLETE
 
 **Priority:** MEDIUM — core data quality for Indicator objects
