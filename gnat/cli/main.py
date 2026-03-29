@@ -432,6 +432,42 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Directory for schema snapshots",
     )
 
+    # ── validate ──────────────────────────────────────────────────────────
+    p_val = subs.add_parser(
+        "validate",
+        help="Validate STIX 2.1 patterns or bundles",
+        description=(
+            "Validate STIX 2.1 Indicator pattern syntax.  "
+            "Use 'gnat validate pattern' for a single pattern string or "
+            "'gnat validate bundle' to validate all indicator patterns in a "
+            "STIX bundle JSON file.  Install gnat[stix-validate] for full "
+            "ANTLR grammar support."
+        ),
+    )
+    val_subs = p_val.add_subparsers(
+        dest="validate_command", title="validate commands", metavar="<command>"
+    )
+
+    p_val_pat = val_subs.add_parser(
+        "pattern",
+        help="Validate a single STIX 2.1 pattern string",
+    )
+    p_val_pat.add_argument("pattern_string", metavar="PATTERN",
+                           help="STIX 2.1 pattern to validate (quote it: \"[ipv4-addr:value = '1.2.3.4']\")")
+    p_val_pat.add_argument("--strict", action="store_true",
+                           help="Use stix2-patterns ANTLR grammar if installed (pip install 'gnat[stix-validate]')")
+
+    p_val_bnd = val_subs.add_parser(
+        "bundle",
+        help="Validate all indicator patterns in a STIX bundle JSON file",
+    )
+    p_val_bnd.add_argument("file", metavar="FILE",
+                           help="Path to a STIX bundle JSON file")
+    p_val_bnd.add_argument("--strict", action="store_true",
+                           help="Use stix2-patterns ANTLR grammar if installed")
+    p_val_bnd.add_argument("--fail-fast", action="store_true",
+                           help="Stop at first invalid pattern")
+
     # ── contribute ────────────────────────────────────────────────────────
     p_ctr = subs.add_parser(
         "contribute",
@@ -1282,6 +1318,91 @@ def _cmd_health(args) -> int:
         return 1
 
 
+def _cmd_validate(args) -> int:
+    """validate subcommand — validate STIX 2.1 patterns."""
+    from gnat.stix.pattern_validator import validate_pattern
+
+    sub = getattr(args, "validate_command", None)
+    strict = getattr(args, "strict", False)
+
+    if sub == "pattern":
+        pattern = args.pattern_string
+        result = validate_pattern(pattern, strict=strict)
+        if result.valid:
+            tier = "strict (stix2-patterns)" if result.strict else "pure-python"
+            print(_green(f"✓  Pattern is valid [{tier}]"), file=sys.stderr)
+            return 0
+        else:
+            print(_red("✗  Pattern is INVALID"), file=sys.stderr)
+            for err in result.errors:
+                print(f"   {_red('Error:')} {err}", file=sys.stderr)
+            for warn in result.warnings:
+                print(f"   {_yellow('Warning:')} {warn}", file=sys.stderr)
+            return 1
+
+    elif sub == "bundle":
+        bundle_path = Path(args.file)
+        if not bundle_path.exists():
+            print(_red(f"Error: file not found: {bundle_path}"), file=sys.stderr)
+            return 1
+
+        try:
+            import json as _json
+            data = _json.loads(bundle_path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            print(_red(f"Error reading bundle: {exc}"), file=sys.stderr)
+            return 1
+
+        objects = data.get("objects") or []
+        indicators = [o for o in objects if o.get("type") == "indicator"
+                      and o.get("pattern_type", "stix") == "stix"
+                      and o.get("pattern")]
+
+        if not indicators:
+            print(_yellow("No STIX-type indicator patterns found in bundle."), file=sys.stderr)
+            return 0
+
+        fail_fast = getattr(args, "fail_fast", False)
+        invalid_count = 0
+        for ind in indicators:
+            pattern = ind["pattern"]
+            obj_id  = ind.get("id", "<unknown>")
+            result  = validate_pattern(pattern, strict=strict)
+            if result.valid:
+                tier = "strict" if result.strict else "pure-python"
+                print(f"  {_green('✓')} {obj_id}  [{tier}]")
+            else:
+                invalid_count += 1
+                print(f"  {_red('✗')} {obj_id}")
+                for err in result.errors:
+                    print(f"      {_red('Error:')} {err}")
+                if fail_fast:
+                    break
+
+        total = len(indicators)
+        valid_count = total - invalid_count
+        summary = f"{valid_count}/{total} patterns valid"
+        if invalid_count == 0:
+            print(_green(f"\n✓  {summary}"), file=sys.stderr)
+            return 0
+        else:
+            print(_red(f"\n✗  {summary} ({invalid_count} invalid)"), file=sys.stderr)
+            return 1
+
+    else:
+        # No subcommand — print help
+        print(
+            "Usage:\n"
+            "  gnat validate pattern \"[ipv4-addr:value = '1.2.3.4']\"\n"
+            "  gnat validate bundle   indicators.json\n"
+            "\nOptions:\n"
+            "  --strict      Use stix2-patterns ANTLR grammar (pip install 'gnat[stix-validate]')\n"
+            "  --fail-fast   (bundle only) stop at first invalid pattern\n",
+            file=sys.stderr,
+        )
+        return 0
+
+
 def _cmd_serve_taxii(args) -> int:
     """taxii subcommand — start the GNAT TAXII 2.1 server."""
     try:
@@ -1420,6 +1541,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "client":   _cmd_client,
         "nlq":      _cmd_nlq,
         "tui":      _cmd_tui,
+        "validate": _cmd_validate,
         "serve":    _cmd_serve,
         "taxii":    _cmd_serve_taxii,
         "health":      _cmd_health,

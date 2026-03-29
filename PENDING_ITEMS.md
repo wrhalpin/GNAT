@@ -576,6 +576,41 @@ draft_pr         = true        # always draft; human must mark ready
 
 ---
 
+### 27. STIX 2.1 Pattern Validator — ✅ COMPLETE
+
+**Priority:** MEDIUM — core data quality for Indicator objects
+
+**Implemented:** `gnat/stix/__init__.py`, `gnat/stix/pattern_validator.py`. 87 unit tests in
+`tests/unit/test_stix_validator.py`. `gnat validate` CLI subcommand in `gnat/cli/main.py`.
+`Indicator.__init__` gains `validate=True` kwarg. `pyproject.toml` gains `[stix-validate]` extra.
+
+**What:** Two-tier STIX 2.1 Indicator pattern validator. Tier 1 is a pure-Python recursive
+descent parser (no deps). Tier 2 uses the official `stix2-patterns` ANTLR grammar when
+`pip install "gnat[stix-validate]"` is present.
+
+**CLI:**
+```bash
+gnat validate pattern "[ipv4-addr:value = '1.2.3.4']"
+gnat validate bundle indicators.json --fail-fast
+gnat validate bundle indicators.json --strict   # uses stix2-patterns if installed
+```
+
+**Python API:**
+```python
+from gnat.stix import validate_pattern, PatternValidationError
+
+result = validate_pattern("[ipv4-addr:value = '1.2.3.4']")
+assert result.valid
+
+validate_pattern("[bad", raise_on_error=True)  # raises PatternValidationError
+
+# ORM integration (non-breaking, opt-in):
+from gnat.orm.indicator import Indicator
+ind = Indicator(pattern="[ipv4-addr:value = '1.2.3.4']", validate=True)
+```
+
+---
+
 ### 26. TAXII 2.1 Server — ✅ COMPLETE
 
 **Priority:** MEDIUM — standard threat intelligence sharing protocol
