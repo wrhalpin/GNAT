@@ -621,6 +621,33 @@ gnat tenant delete acme --yes
 
 ---
 
+### 30. Solr/Grafana Observability Integration — ✅ COMPLETE
+
+**Priority:** MEDIUM — live search index dashboards for ops teams
+
+**Implemented:**
+- `gnat/viz/grafana/search_endpoints.py` — `/solr/` FastAPI sub-router exposing Solr index data as a Grafana SimpleJSON datasource. Targets: `stats/total`, `stats/type_counts`, `stats/platform_counts`, `timeseries/ingest`, `facet/<field>`, `search/<query>`. Zero new dependencies (stdlib `urllib.request`).
+- `GrafanaServer` extended with optional `search_index` param; mounts `/solr/` router when provided.
+- `solr_dashboard()` / `save_solr_dashboard()` in `gnat/viz/export.py` — 7-panel dashboard JSON.
+- `gnat viz serve --with-solr` and `gnat viz solr-dashboard` CLI subcommands.
+- `docker/grafana/provisioning/` — auto-provisioned GNAT + GNAT-Solr datasources; bundled dashboard JSON files.
+- `docker-compose.yml` — `solr` (profile: `search`/`full`) + `grafana` (profile: `monitoring`/`full`) services; `make docker-search`, `make docker-full`.
+- 44 unit tests in `tests/unit/test_grafana_search.py`.
+
+**Usage:**
+```bash
+# Start Grafana + Solr sidecar via Docker Compose
+make docker-full      # or: docker compose --profile full up -d
+
+# Run GrafanaServer locally with Solr endpoints
+gnat viz serve --with-solr --port 3001
+
+# Export the Solr dashboard JSON (import into any Grafana instance)
+gnat viz solr-dashboard --file solr_dashboard.json
+```
+
+---
+
 ### 29. Docker Integration Test Harness — ✅ COMPLETE
 
 **Priority:** MEDIUM — reproducible CI integration tests without live credentials

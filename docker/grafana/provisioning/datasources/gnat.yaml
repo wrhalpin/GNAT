@@ -1,0 +1,36 @@
+# docker/grafana/provisioning/datasources/gnat.yaml
+# ---------------------------------------------------------------------------
+# Auto-provisions two GNAT Grafana datasources when the Grafana container
+# starts.  Both point at the GrafanaServer that must be running on the host
+# network (or via Docker service name if using an extended compose).
+#
+# GNAT       — workspace STIX data   (/query, /search, /annotations, ...)
+# GNAT-Solr  — Solr index stats      (/solr/query, /solr/search, ...)
+#
+# To override the host/port set GNAT_GRAFANA_HOST in your .env file.
+# ---------------------------------------------------------------------------
+
+apiVersion: 1
+
+datasources:
+  - name: GNAT
+    type: simplejson
+    uid: gnat-workspace
+    url: http://${GNAT_GRAFANA_HOST:-host.docker.internal}:${GNAT_VIZ_PORT:-3001}
+    access: proxy
+    isDefault: true
+    jsonData:
+      timeInterval: "30s"
+    version: 1
+    editable: true
+
+  - name: GNAT-Solr
+    type: simplejson
+    uid: gnat-solr
+    url: http://${GNAT_GRAFANA_HOST:-host.docker.internal}:${GNAT_VIZ_PORT:-3001}/solr
+    access: proxy
+    isDefault: false
+    jsonData:
+      timeInterval: "60s"
+    version: 1
+    editable: true

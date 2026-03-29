@@ -78,7 +78,64 @@ services:
       timeout: 5s
       retries: 3
 
+  # ── Solr search sidecar (optional) ──────────────────────────────────────
+  # Provides full-text search over indexed STIX objects.
+  # Enable with: docker compose --profile search up -d
+  solr:
+    image: solr:9.6
+    container_name: gnat-solr
+    profiles: ["search", "full"]
+    ports:
+      - "${SOLR_PORT:-8983}:8983"
+    command: >
+      bash -c "
+        /opt/solr/bin/solr start -c -f &
+        sleep 10 &&
+        /opt/solr/bin/solr create_core -c gnat -p 8983 2>/dev/null || true &&
+        wait
+      "
+    volumes:
+      - solr-data:/var/solr
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/gnat/admin/ping | grep -q '\"status\":\"OK\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+
+  # ── Grafana (optional) ───────────────────────────────────────────────────
+  # Pre-provisioned with GNAT datasources and dashboards.
+  # Enable with: docker compose --profile monitoring up -d
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: gnat-grafana
+    profiles: ["monitoring", "full"]
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-gnat-admin}
+      GF_INSTALL_PLUGINS: grafana-simple-json-datasource
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GNAT_GRAFANA_HOST: ${GNAT_GRAFANA_HOST:-host.docker.internal}
+      GNAT_VIZ_PORT: ${GNAT_VIZ_PORT:-3001}
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health | grep -q '\"database\":\"ok\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
 # ── Named volumes ────────────────────────────────────────────────────────
 volumes:
   workspace:
     name: gnat-workspace
+  solr-data:
+    name: gnat-solr-data
+  grafana-data:
+    name: gnat-grafana-data

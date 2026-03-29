@@ -8,7 +8,7 @@ MYPY    ?= mypy
 SRC     := gnat
 TESTS   := tests
 
-.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen build-rust build-rust-dev docker-build docker-up docker-down docker-logs test-docker test-docker-up test-docker-down
+.PHONY: help install test coverage integration lint fmt typecheck check build clean docs codegen build-rust build-rust-dev docker-build docker-up docker-search docker-full docker-down docker-logs test-docker test-docker-up test-docker-down
 
 help:
 	@echo ""
@@ -28,7 +28,9 @@ help:
 	@echo "  make build-rust    Build + install the Rust native extension (release)"
 	@echo "  make build-rust-dev  Build Rust extension in dev mode (faster, no optimisations)"
 	@echo "  make docker-build  Build all Docker service images"
-	@echo "  make docker-up     Start all services (detached)"
+	@echo "  make docker-up     Start core services (detached)"
+	@echo "  make docker-search Start core + Solr search sidecar"
+	@echo "  make docker-full   Start all services including Grafana"
 	@echo "  make docker-down   Stop all services"
 	@echo "  make docker-logs   Tail logs for all services"
 	@echo "  make test-docker-up    Start test containers (ES + Solr)"
@@ -87,6 +89,12 @@ docker-build:
 
 docker-up:
 	docker compose up -d
+
+docker-search:
+	docker compose --profile search up -d
+
+docker-full:
+	docker compose --profile full up -d
 
 docker-down:
 	docker compose down
