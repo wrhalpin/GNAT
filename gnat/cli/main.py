@@ -432,6 +432,91 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Directory for schema snapshots",
     )
 
+    # ── tenant ────────────────────────────────────────────────────────────
+    p_tnt = subs.add_parser(
+        "tenant",
+        help="Manage tenants for multi-tenant MSP deployments",
+        description=(
+            "Register and manage tenants for multi-tenant GNAT deployments.  "
+            "Each tenant gets an isolated workspace namespace.  Use "
+            "'gnat tenant create <id>' to register a tenant, then use "
+            "'WorkspaceManager.for_tenant(id)' or 'TenantWorkspaceManager' "
+            "in Python to scope workspace operations."
+        ),
+    )
+    tnt_subs = p_tnt.add_subparsers(
+        dest="tenant_command", title="tenant commands", metavar="<command>"
+    )
+
+    p_tnt_lst = tnt_subs.add_parser("list", help="List all registered tenants")
+    p_tnt_lst.add_argument("--registry", default=None, metavar="PATH",
+                           help="Path to tenants.json registry (default: ~/.gnat/tenants.json)")
+
+    p_tnt_crt = tnt_subs.add_parser("create", help="Register a new tenant")
+    p_tnt_crt.add_argument("tenant_id", metavar="ID",
+                           help="Unique tenant ID (lowercase alphanumeric, hyphens, underscores)")
+    p_tnt_crt.add_argument("--display-name", default="", metavar="NAME",
+                           help="Human-readable display name")
+    p_tnt_crt.add_argument("--description", default="", metavar="DESC",
+                           help="Optional description")
+    p_tnt_crt.add_argument("--config", dest="tenant_config", default=None, metavar="PATH",
+                           help="Path to tenant-specific gnat.ini config file")
+    p_tnt_crt.add_argument("--registry", default=None, metavar="PATH",
+                           help="Path to tenants.json registry")
+
+    p_tnt_del = tnt_subs.add_parser("delete", help="Remove a tenant from the registry")
+    p_tnt_del.add_argument("tenant_id", metavar="ID", help="Tenant ID to delete")
+    p_tnt_del.add_argument("--yes", action="store_true",
+                           help="Skip confirmation prompt")
+    p_tnt_del.add_argument("--registry", default=None, metavar="PATH",
+                           help="Path to tenants.json registry")
+
+    p_tnt_inf = tnt_subs.add_parser("info", help="Show details for a tenant")
+    p_tnt_inf.add_argument("tenant_id", metavar="ID", help="Tenant ID")
+    p_tnt_inf.add_argument("--registry", default=None, metavar="PATH",
+                           help="Path to tenants.json registry")
+
+    p_tnt_ws = tnt_subs.add_parser("workspaces", help="List workspaces for a tenant")
+    p_tnt_ws.add_argument("tenant_id", metavar="ID", help="Tenant ID")
+    p_tnt_ws.add_argument("--registry", default=None, metavar="PATH",
+                          help="Path to tenants.json registry")
+
+    # ── validate ──────────────────────────────────────────────────────────
+    p_val = subs.add_parser(
+        "validate",
+        help="Validate STIX 2.1 patterns or bundles",
+        description=(
+            "Validate STIX 2.1 Indicator pattern syntax.  "
+            "Use 'gnat validate pattern' for a single pattern string or "
+            "'gnat validate bundle' to validate all indicator patterns in a "
+            "STIX bundle JSON file.  Install gnat[stix-validate] for full "
+            "ANTLR grammar support."
+        ),
+    )
+    val_subs = p_val.add_subparsers(
+        dest="validate_command", title="validate commands", metavar="<command>"
+    )
+
+    p_val_pat = val_subs.add_parser(
+        "pattern",
+        help="Validate a single STIX 2.1 pattern string",
+    )
+    p_val_pat.add_argument("pattern_string", metavar="PATTERN",
+                           help="STIX 2.1 pattern to validate (quote it: \"[ipv4-addr:value = '1.2.3.4']\")")
+    p_val_pat.add_argument("--strict", action="store_true",
+                           help="Use stix2-patterns ANTLR grammar if installed (pip install 'gnat[stix-validate]')")
+
+    p_val_bnd = val_subs.add_parser(
+        "bundle",
+        help="Validate all indicator patterns in a STIX bundle JSON file",
+    )
+    p_val_bnd.add_argument("file", metavar="FILE",
+                           help="Path to a STIX bundle JSON file")
+    p_val_bnd.add_argument("--strict", action="store_true",
+                           help="Use stix2-patterns ANTLR grammar if installed")
+    p_val_bnd.add_argument("--fail-fast", action="store_true",
+                           help="Stop at first invalid pattern")
+
     # ── contribute ────────────────────────────────────────────────────────
     p_ctr = subs.add_parser(
         "contribute",
@@ -1282,6 +1367,225 @@ def _cmd_health(args) -> int:
         return 1
 
 
+def _cmd_tenant(args) -> int:
+    """tenant subcommand — manage multi-tenant workspace namespaces."""
+    from gnat.context.tenant import TenantRegistry, TenantWorkspaceManager
+
+    sub          = getattr(args, "tenant_command", None)
+    registry_path = getattr(args, "registry", None)
+    registry     = TenantRegistry(registry_path)
+
+    if sub == "list":
+        tenants = registry.list()
+        if not tenants:
+            print(_yellow("No tenants registered.  Use: gnat tenant create <id>"),
+                  file=sys.stderr)
+            return 0
+        print(f"{'ID':<20} {'Display Name':<30} {'Config':<20} {'Created'}")
+        print("-" * 90)
+        for t in tenants:
+            cfg  = t.config_path or "(global)"
+            date = t.created_at[:10] if t.created_at else ""
+            print(f"{t.tenant_id:<20} {t.display_name:<30} {cfg:<20} {date}")
+        return 0
+
+    elif sub == "create":
+        tenant_id   = args.tenant_id
+        display     = getattr(args, "display_name", "") or ""
+        description = getattr(args, "description", "") or ""
+        cfg_path    = getattr(args, "tenant_config", None)
+        try:
+            tenant = registry.register(
+                tenant_id,
+                display_name=display,
+                description=description,
+                config_path=cfg_path,
+            )
+        except ValueError as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+        print(_green(f"✓  Tenant {_bold(tenant_id)!r} registered."), file=sys.stderr)
+        print(f"   Display name : {tenant.display_name}", file=sys.stderr)
+        if cfg_path:
+            print(f"   Config       : {cfg_path}", file=sys.stderr)
+        print(
+            f"\nWorkspaces for this tenant are namespaced as: "
+            f"{_bold(tenant_id + '::workspace-name')}",
+            file=sys.stderr,
+        )
+        return 0
+
+    elif sub == "delete":
+        tenant_id = args.tenant_id
+        tenant    = registry.get(tenant_id)
+        if tenant is None:
+            print(_red(f"Error: Tenant {tenant_id!r} not found."), file=sys.stderr)
+            return 1
+
+        if not getattr(args, "yes", False):
+            print(
+                _yellow(
+                    f"Warning: This removes the tenant metadata record.  "
+                    f"Workspace data is NOT deleted automatically.  "
+                    f"Use 'gnat tenant workspaces {tenant_id}' first to "
+                    f"review existing workspaces."
+                ),
+                file=sys.stderr,
+            )
+            try:
+                confirm = input(f"Delete tenant {tenant_id!r}? [y/N] ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                confirm = ""
+            if confirm not in ("y", "yes"):
+                print("Aborted.", file=sys.stderr)
+                return 0
+
+        registry.delete(tenant_id)
+        print(_green(f"✓  Tenant {tenant_id!r} deleted from registry."), file=sys.stderr)
+        return 0
+
+    elif sub == "info":
+        tenant_id = args.tenant_id
+        tenant    = registry.get(tenant_id)
+        if tenant is None:
+            print(_red(f"Error: Tenant {tenant_id!r} not found."), file=sys.stderr)
+            return 1
+
+        print(f"  Tenant ID    : {_bold(tenant.tenant_id)}")
+        print(f"  Display name : {tenant.display_name}")
+        print(f"  Description  : {tenant.description or '(none)'}")
+        print(f"  Config path  : {tenant.config_path or '(global)'}")
+        print(f"  Created      : {tenant.created_at}")
+
+        # Show workspace count if possible
+        config_path = getattr(args, "config", None)
+        try:
+            twm = TenantWorkspaceManager.default(tenant_id, config_path=config_path)
+            workspaces = twm.list()
+            print(f"  Workspaces   : {len(workspaces)}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"  Workspaces   : (unavailable — {exc})")
+        return 0
+
+    elif sub == "workspaces":
+        tenant_id   = args.tenant_id
+        config_path = getattr(args, "config", None)
+        try:
+            twm = TenantWorkspaceManager.default(tenant_id, config_path=config_path)
+            workspaces = twm.list()
+        except ValueError as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+
+        if not workspaces:
+            print(_yellow(f"No workspaces for tenant {tenant_id!r}."), file=sys.stderr)
+            return 0
+        print(f"{'Name':<30} {'Objects':>8}  {'Description'}")
+        print("-" * 70)
+        for ws in workspaces:
+            print(f"{ws['name']:<30} {ws.get('object_count', '?'):>8}  "
+                  f"{ws.get('description', '')}")
+        return 0
+
+    else:
+        print(
+            "Usage:\n"
+            "  gnat tenant list\n"
+            "  gnat tenant create <id> [--display-name NAME] [--description DESC] "
+            "[--config PATH]\n"
+            "  gnat tenant delete <id> [--yes]\n"
+            "  gnat tenant info <id>\n"
+            "  gnat tenant workspaces <id>\n",
+            file=sys.stderr,
+        )
+        return 0
+
+
+def _cmd_validate(args) -> int:
+    """validate subcommand — validate STIX 2.1 patterns."""
+    from gnat.stix.pattern_validator import validate_pattern
+
+    sub = getattr(args, "validate_command", None)
+    strict = getattr(args, "strict", False)
+
+    if sub == "pattern":
+        pattern = args.pattern_string
+        result = validate_pattern(pattern, strict=strict)
+        if result.valid:
+            tier = "strict (stix2-patterns)" if result.strict else "pure-python"
+            print(_green(f"✓  Pattern is valid [{tier}]"), file=sys.stderr)
+            return 0
+        else:
+            print(_red("✗  Pattern is INVALID"), file=sys.stderr)
+            for err in result.errors:
+                print(f"   {_red('Error:')} {err}", file=sys.stderr)
+            for warn in result.warnings:
+                print(f"   {_yellow('Warning:')} {warn}", file=sys.stderr)
+            return 1
+
+    elif sub == "bundle":
+        bundle_path = Path(args.file)
+        if not bundle_path.exists():
+            print(_red(f"Error: file not found: {bundle_path}"), file=sys.stderr)
+            return 1
+
+        try:
+            import json as _json
+            data = _json.loads(bundle_path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            print(_red(f"Error reading bundle: {exc}"), file=sys.stderr)
+            return 1
+
+        objects = data.get("objects") or []
+        indicators = [o for o in objects if o.get("type") == "indicator"
+                      and o.get("pattern_type", "stix") == "stix"
+                      and o.get("pattern")]
+
+        if not indicators:
+            print(_yellow("No STIX-type indicator patterns found in bundle."), file=sys.stderr)
+            return 0
+
+        fail_fast = getattr(args, "fail_fast", False)
+        invalid_count = 0
+        for ind in indicators:
+            pattern = ind["pattern"]
+            obj_id  = ind.get("id", "<unknown>")
+            result  = validate_pattern(pattern, strict=strict)
+            if result.valid:
+                tier = "strict" if result.strict else "pure-python"
+                print(f"  {_green('✓')} {obj_id}  [{tier}]")
+            else:
+                invalid_count += 1
+                print(f"  {_red('✗')} {obj_id}")
+                for err in result.errors:
+                    print(f"      {_red('Error:')} {err}")
+                if fail_fast:
+                    break
+
+        total = len(indicators)
+        valid_count = total - invalid_count
+        summary = f"{valid_count}/{total} patterns valid"
+        if invalid_count == 0:
+            print(_green(f"\n✓  {summary}"), file=sys.stderr)
+            return 0
+        else:
+            print(_red(f"\n✗  {summary} ({invalid_count} invalid)"), file=sys.stderr)
+            return 1
+
+    else:
+        # No subcommand — print help
+        print(
+            "Usage:\n"
+            "  gnat validate pattern \"[ipv4-addr:value = '1.2.3.4']\"\n"
+            "  gnat validate bundle   indicators.json\n"
+            "\nOptions:\n"
+            "  --strict      Use stix2-patterns ANTLR grammar (pip install 'gnat[stix-validate]')\n"
+            "  --fail-fast   (bundle only) stop at first invalid pattern\n",
+            file=sys.stderr,
+        )
+        return 0
+
+
 def _cmd_serve_taxii(args) -> int:
     """taxii subcommand — start the GNAT TAXII 2.1 server."""
     try:
@@ -1420,6 +1724,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         "client":   _cmd_client,
         "nlq":      _cmd_nlq,
         "tui":      _cmd_tui,
+        "tenant":   _cmd_tenant,
+        "validate": _cmd_validate,
         "serve":    _cmd_serve,
         "taxii":    _cmd_serve_taxii,
         "health":      _cmd_health,
