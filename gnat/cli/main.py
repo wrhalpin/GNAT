@@ -54,7 +54,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import sys
 import textwrap
 from pathlib import Path
@@ -242,7 +241,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_vs = viz_subs.add_parser("serve", help="Start Grafana datasource server")
     p_vs.add_argument("--port",  type=int, default=3001)
-    p_vs.add_argument("--host",  default="0.0.0.0")
+    p_vs.add_argument("--host",  default="0.0.0.0")  # nosec B104 — user-facing CLI arg
 
     p_vd = viz_subs.add_parser("dashboard", help="Export Grafana dashboard JSON")
     p_vd.add_argument("--workspace", required=True, metavar="NAME")
@@ -890,7 +889,6 @@ def _cmd_report(args) -> int:
 
 def _cmd_schedule(args) -> int:
     """schedule subcommand — list, run, crontab."""
-    from gnat.schedule import FeedScheduler
     # Scheduler must be defined in the user's project; here we show a stub
     # that reads job definitions from a Python module specified in config.
     schedule_cmd = getattr(args, "schedule_command", None)
@@ -1002,7 +1000,6 @@ def _cmd_client(args) -> int:
 def _cmd_nlq(args) -> int:
     """nlq subcommand — natural-language threat-intel query."""
     from gnat.nlp.parser import NLPQueryEngine
-    from gnat.nlp.builtin import BuiltinParser
 
     # Build engine
     backend = getattr(args, "backend", None) or "builtin"
@@ -1171,7 +1168,6 @@ def _cmd_health(args) -> int:
     """health subcommand — connector health check and schema drift detection."""
     from gnat.agents.health_monitor import (
         ConnectorHealthJob,
-        HealthCheckResult,
         _try_sample_schema,
         save_snapshot,
     )
@@ -1268,7 +1264,7 @@ def _cmd_health(args) -> int:
 def _cmd_serve(args) -> int:
     """serve subcommand — start the GNAT web dashboard."""
     try:
-        from gnat.serve.app import create_app, run as _serve_run
+        from gnat.serve.app import run as _serve_run
     except ImportError:
         print(
             _red("Error: FastAPI/uvicorn is not installed.  "
@@ -1277,7 +1273,6 @@ def _cmd_serve(args) -> int:
         )
         return 1
 
-    import os
     import secrets
 
     host        = getattr(args, "host", "127.0.0.1") or "127.0.0.1"

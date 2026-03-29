@@ -39,7 +39,7 @@ import json
 import urllib.parse
 
 from .client import SplunkClient
-from .exceptions import SplunkAPIError, SplunkNotFoundError
+from .exceptions import SplunkNotFoundError
 
 class SplunkKVStoreCommands:
     """

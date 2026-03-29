@@ -47,7 +47,7 @@ Configuration (gnat.ini):
 import configparser
 import json
 import os
-import re
+
 from dataclasses import dataclass
 from typing import Iterator
 import uuid as _uuid

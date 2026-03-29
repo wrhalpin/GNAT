@@ -37,7 +37,7 @@ import urllib3
 import urllib.parse
 
 from .config import SplunkConfig
-from .exceptions import SplunkAuthError, SplunkAPIError
+from .exceptions import SplunkAuthError
 
 # Splunk session keys typically expire after 3600s idle; renew 5 min early.
 

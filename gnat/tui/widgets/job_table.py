@@ -6,7 +6,7 @@ Reusable DataTable widget for displaying FeedScheduler job status.
 Columns: job_id, enabled, last_run, next_run, run_count, status.
 """
 
-from typing import Any, List
+from typing import List
 
 from textual.widgets import DataTable
 

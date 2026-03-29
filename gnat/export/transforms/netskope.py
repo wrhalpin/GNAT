@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from gnat.export.base import ExportTransform, TransformResult
 

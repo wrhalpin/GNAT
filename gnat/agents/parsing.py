@@ -62,7 +62,7 @@ from __future__ import annotations
 import logging
 import re
 import uuid
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, Optional
 
 from gnat.ingest.base import RawRecord, RecordMapper
 from gnat.orm.indicator import Indicator

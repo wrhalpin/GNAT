@@ -47,9 +47,8 @@ Examples:
 
 from __future__ import annotations
 
-import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -62,7 +61,7 @@ logger = logging.getLogger(__name__)
 try:
     from fastapi import FastAPI, Request
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse
+
     _FASTAPI_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _FASTAPI_AVAILABLE = False
@@ -338,7 +337,7 @@ class GrafanaServer:
     def __init__(
         self,
         manager: "WorkspaceManager",
-        host: str = "0.0.0.0",
+        host: str = "0.0.0.0",  # nosec B104 — overridable via --host flag
         port: int = 3001,
     ):
         self._manager = manager
@@ -381,7 +380,7 @@ class GrafanaServer:
         return thread
 
     def url(self) -> str:
-        host = "localhost" if self._host in ("0.0.0.0", "") else self._host
+        host = "localhost" if self._host in ("0.0.0.0", "") else self._host  # nosec B104 — comparing, not binding
         return f"http://{host}:{self._port}"
 
     def __repr__(self) -> str:  # pragma: no cover

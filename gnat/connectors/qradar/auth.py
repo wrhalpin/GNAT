@@ -36,7 +36,7 @@ import json
 import urllib3
 
 from .config import QRadarConfig
-from .exceptions import QRadarAuthError, QRadarAPIError
+from .exceptions import QRadarAuthError
 
 
 class QRadarAuthManager:

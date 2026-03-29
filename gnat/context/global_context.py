@@ -43,7 +43,6 @@ from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gnat.client import GNATClient
-    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 

@@ -35,7 +35,7 @@ import time
 import urllib3
 
 from .config import WazuhConfig
-from .exceptions import WazuhAuthError, WazuhTokenExpiredError
+from .exceptions import WazuhAuthError
 
 class WazuhAuthManager:
     """

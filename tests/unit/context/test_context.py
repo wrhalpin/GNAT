@@ -21,11 +21,9 @@ Covers:
 
 from __future__ import annotations
 
-import json
-import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -34,8 +32,6 @@ from gnat.context.global_context import GlobalContext, GlobalContextRegistry
 from gnat.context.workspace import Workspace, WorkspaceManager, CommitResult
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
-from gnat.orm.vulnerability import Vulnerability
-from gnat.orm.relationship import Relationship
 
 
 # ===========================================================================

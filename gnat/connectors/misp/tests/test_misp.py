@@ -40,7 +40,6 @@ from gnat.connectors.misp.client import MISPClient
 from gnat.connectors.misp.events import MISPEventCommands
 from gnat.connectors.misp.attributes import MISPAttributeCommands
 from gnat.connectors.misp.tags import MISPTagCommands
-from gnat.connectors.misp.galaxies import MISPGalaxyCommands
 from gnat.connectors.misp.feeds import MISPFeedCommands
 from gnat.connectors.misp.sightings import MISPSightingCommands
 from gnat.connectors.misp.stix_mapper import MISPSTIXMapper

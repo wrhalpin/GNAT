@@ -39,11 +39,8 @@ from gnat.connectors.sentinel.exceptions import (
 from gnat.connectors.sentinel.auth import SentinelAuthManager
 from gnat.connectors.sentinel.client import SentinelClient
 from gnat.connectors.sentinel.incidents import SentinelIncidentCommands
-from gnat.connectors.sentinel.alerts import SentinelAlertCommands
-from gnat.connectors.sentinel.watchlists import SentinelWatchlistCommands
 from gnat.connectors.sentinel.analytic_rules import SentinelAnalyticRuleCommands
 from gnat.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
-from gnat.connectors.sentinel.hunting import SentinelHuntingCommands
 from gnat.connectors.sentinel.stix_mapper import SentinelSTIXMapper
 
 

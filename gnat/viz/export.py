@@ -78,7 +78,7 @@ class PowerBIExporter:
 
         Requires ``openpyxl``.
         """
-        from gnat.viz.tabular import TabularView, _COLUMNS, _get_field, _coerce
+        from gnat.viz.tabular import _COLUMNS, _get_field, _coerce
 
         try:
             import openpyxl

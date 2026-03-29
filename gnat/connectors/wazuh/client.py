@@ -57,7 +57,6 @@ WazuhAuthError,
 WazuhNotFoundError,
 WazuhPermissionError,
 WazuhRateLimitError,
-WazuhTokenExpiredError,
 )
 
 _RETRYABLE_STATUS = {500, 502, 503, 504}

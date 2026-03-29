@@ -48,12 +48,11 @@ from gnat.orm.malware import Malware
 from gnat.orm.vulnerability import Vulnerability
 from gnat.orm.threat_actor import ThreatActor
 from gnat.orm.attack_pattern import AttackPattern
-from gnat.orm.observable import IPv4Address, DomainName, URL, FileObject, EmailAddress
 from gnat.orm.relationship import Relationship
 from gnat.orm.base import STIXBase
 
 if TYPE_CHECKING:
-    from gnat.client import GNATClient
+    pass
 
 logger = logging.getLogger(__name__)
 

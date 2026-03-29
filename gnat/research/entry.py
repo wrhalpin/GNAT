@@ -40,7 +40,6 @@ All TTLs are overridable via the ``[research_library]`` INI section::
 from __future__ import annotations
 
 import hashlib
-import json
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional

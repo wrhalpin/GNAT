@@ -68,7 +68,6 @@ calls per ``_iter_records`` invocation to prevent runaway cost.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, Iterator, List, Optional
 
 from gnat.ingest.base import RawRecord, SourceReader

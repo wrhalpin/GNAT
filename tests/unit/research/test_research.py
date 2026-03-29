@@ -20,7 +20,6 @@ Covers:
 
 from __future__ import annotations
 
-import tempfile
 import time
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock
@@ -36,7 +35,6 @@ from gnat.context import (
 )
 from gnat.context.workspace import WorkspaceManager
 from gnat.orm.indicator import Indicator
-from gnat.orm.threat_actor import ThreatActor
 
 
 # ===========================================================================

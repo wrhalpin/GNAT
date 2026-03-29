@@ -7,8 +7,7 @@ Unit tests for GNATClient, GNATConfig, and the BaseClient HTTP layer.
 
 import json
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from gnat.config import GNATConfig
 from gnat.client import GNATClient

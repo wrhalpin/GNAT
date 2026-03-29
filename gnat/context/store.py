@@ -58,7 +58,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, List, Optional
 
 logger = logging.getLogger(__name__)
 

@@ -42,7 +42,6 @@ patterns (``APT\d+``, ``TA\d+``, ``CVE-\d{4}-\d+``, ``FIN\d+``).
 from __future__ import annotations
 
 import re
-from calendar import monthrange
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 

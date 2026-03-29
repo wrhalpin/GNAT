@@ -82,12 +82,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from gnat.research.entry import (
-    ResearchEntry, DEFAULT_TTLS, categorise_topic, topic_key, topic_fingerprint,
+    ResearchEntry, DEFAULT_TTLS, categorise_topic, topic_key,
 )
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace, WorkspaceManager
-    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -458,7 +457,6 @@ class ResearchLibrary:
                 "Run research first or check lib.search() for similar topics."
             )
 
-        from gnat.context.workspace import Workspace as _WS
         count = 0
         for stix_dict in entry.stix_objects:
             workspace._add_object(stix_dict, mark_dirty=mark_dirty)
@@ -564,7 +562,7 @@ class ResearchLibrary:
         ws = self._manager.open(workspace_name)
         store = self._manager._store
 
-        from gnat.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore
 
         if isinstance(store, WorkspaceStore):
             ws_model = store.get_workspace(workspace_name)
@@ -602,7 +600,7 @@ class ResearchLibrary:
         """Load all ResearchEntry objects from a workspace's store."""
         store = self._manager._store
 
-        from gnat.context.store import WorkspaceStore, FlatFileStore
+        from gnat.context.store import WorkspaceStore
 
         raw_entries: List[Dict[str, Any]] = []
 

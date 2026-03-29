@@ -385,7 +385,7 @@ class SharePointDelivery:
         try:
             import json as _json
             req = urllib.request.Request(url, data=data, method="POST")
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310 — hardcoded Azure AD URL
                 result = _json.loads(resp.read())
                 return result.get("access_token")
         except Exception as exc:
@@ -402,7 +402,7 @@ class SharePointDelivery:
             headers={"Authorization": f"Bearer {token}"},
         )
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310 — hardcoded Graph API URL
                 return _json.loads(resp.read())
         except Exception as exc:
             logger.debug("SharePointDelivery: GET %s → %s", path, exc)
@@ -463,7 +463,7 @@ class SharePointDelivery:
         )
         try:
             import json as _json
-            with urllib.request.urlopen(req, timeout=120) as resp:
+            with urllib.request.urlopen(req, timeout=120) as resp:  # nosec B310 — hardcoded Graph API URL
                 result = _json.loads(resp.read())
                 return result.get("webUrl")
         except Exception as exc:

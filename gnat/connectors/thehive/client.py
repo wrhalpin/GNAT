@@ -22,7 +22,7 @@ https://docs.strangebee.com/thehive/api-docs/
 
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, GNATClientError
+from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
 
 _API = "/api/v1"

@@ -25,7 +25,6 @@ max_results     = 10000
 
 import configparser
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .exceptions import SplunkConfigError
 

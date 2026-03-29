@@ -17,10 +17,7 @@ Tests cover:
 
 from __future__ import annotations
 
-import os
 import sys
-from pathlib import Path
-from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -172,7 +169,6 @@ class TestRateLimiter:
         assert rl.check("b") is True  # b not exhausted
 
     def test_window_expires(self):
-        import time
         rl = RateLimiter(max_requests=1, window_seconds=0)  # 0-sec window
         rl.check("k")
         # With 0-second window every request is outside the window immediately
@@ -465,7 +461,6 @@ class TestSchedulerRouter:
         assert r.status_code == 404
 
     def test_trigger_job_starts_thread(self):
-        import threading
         job = self._make_job("feed1")
         mock_sched = MagicMock()
         mock_sched.get_job.return_value = job
@@ -543,7 +538,6 @@ class TestCLIServeSubcommand:
 
     def test_serve_generates_key_when_none(self, monkeypatch, capsys):
         """When no --api-key given, a random key is generated and printed."""
-        from gnat.cli.main import _cmd_serve
 
         # Patch run to avoid actually starting uvicorn
         mock_run = MagicMock()

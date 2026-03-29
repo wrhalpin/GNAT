@@ -28,7 +28,7 @@ import base64
 import configparser
 import json
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 from gnat.connectors.elastic.config import ElasticConfig, load_elastic_config
 from gnat.connectors.elastic.exceptions import (
