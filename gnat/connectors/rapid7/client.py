@@ -110,7 +110,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 f"Threat Command upsert only supports 'indicator', not {stix_type!r}"
             )
-        return self.post("/public/v2/iocs", json_body=payload)
+        return self.post("/public/v2/iocs", json=payload)
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         if self._product == "insightvm":

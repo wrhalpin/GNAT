@@ -1266,6 +1266,7 @@ class GraphView:
 
         # Fetch CDN scripts inline for offline mode
         graphology_js = sigma_js = ""
+        script_tags = ""
         if offline:
             try:
                 import urllib.request

@@ -120,6 +120,42 @@ class AgentConfig:
             ai_confidence_ceiling = int(section.get("ai_confidence_ceiling", 60)),
         )
 
+    @classmethod
+    def from_config(cls, parser: Any) -> "AgentConfig":
+        """
+        Load from an existing :class:`configparser.ConfigParser` instance.
+
+        Parameters
+        ----------
+        parser : configparser.ConfigParser
+            Already-loaded config parser object.
+
+        Raises
+        ------
+        KeyError
+            If the ``[claude]`` section or ``api_key`` key is missing.
+        """
+        try:
+            section = dict(parser.items("claude"))
+        except Exception as exc:
+            raise KeyError(
+                "No [claude] section found in config. Add:\n\n"
+                "  [claude]\n"
+                "  api_key = sk-ant-...\n"
+                "  model   = claude-sonnet-4-6\n"
+            ) from exc
+        if "api_key" not in section:
+            raise KeyError(
+                "[claude] section found but 'api_key' is missing from config"
+            )
+        return cls(
+            api_key               = section["api_key"],
+            model                 = section.get("model", "claude-sonnet-4-6"),
+            max_tokens            = int(section.get("max_tokens", 4096)),
+            timeout               = int(section.get("timeout", 120)),
+            ai_confidence_ceiling = int(section.get("ai_confidence_ceiling", 60)),
+        )
+
 
 # ---------------------------------------------------------------------------
 # Result types

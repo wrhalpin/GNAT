@@ -155,7 +155,7 @@ class WazuhConnector(BaseClient, ConnectorMixin):
                 raise GNATClientError(
                     "agent_id is required for list_objects(stix_type='vulnerability')."
                 )
-            vulns = self._vuln_cmds.get_agent_vulnerabilities(agent_id, limit=limit)
+            vulns = self._vuln_cmds.get_vulnerabilities(agent_id, limit=limit)
             return [self._mapper.vulnerability_to_stix(v) for v in vulns]
 
         # Default: alerts → observed-data

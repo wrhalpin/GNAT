@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from gnat.connectors.recordedfuture.base import RecordedFutureBase
+from gnat.connectors.recordedfuture.client import RecordedFutureClient as RecordedFutureBase
 
 class RecordedFutureClientV3(RecordedFutureBase):
     """Recorded Future Connect API v3 client."""

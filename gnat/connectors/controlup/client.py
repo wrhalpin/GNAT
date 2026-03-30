@@ -233,7 +233,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         tags = payload.get("tags", [])
         return self.put(
             self._url(f"devices/{device_id}/tags"),
-            json_body={"tags": tags},
+            json={"tags": tags},
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -448,7 +448,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             body["filters"] = filters
         if time_range:
             body["timeRange"] = time_range
-        resp = self.post(self._url("data/query"), json_body=body)
+        resp = self.post(self._url("data/query"), json=body)
         return resp if isinstance(resp, dict) else {"data": [], "totalCount": 0}
 
     def get_session_statistics(

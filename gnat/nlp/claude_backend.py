@@ -105,9 +105,8 @@ class ClaudeParser:
 
         try:
             raw = self._client.complete(
+                user=user,
                 system=system,
-                messages=[{"role": "user", "content": user}],
-                max_tokens=512,
             )
             return self._parse_response(raw, query, default_limit)
         except Exception as exc:

@@ -911,7 +911,7 @@ class TestControlUpClient:
             filters={"deviceId": "d1"},
         )
         assert result["totalCount"] == 1
-        body = mock_post.call_args[1]["json_body"]
+        body = mock_post.call_args[1]["json"]
         assert body["index"] == "processes"
         assert body["metrics"] == ["processName", "cpuUsage"]
         assert body["filters"]["deviceId"] == "d1"

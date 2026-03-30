@@ -1,0 +1,54 @@
+[MASTER]
+# Files or directories to ignore
+ignore=CVS,.git,__pycache__
+
+[MESSAGES CONTROL]
+# Disable messages that produce too many false positives or are covered by
+# other tools (ruff handles style/formatting).
+disable=
+    # Duplicate code — intentional in a connector-heavy codebase where many
+    # platforms share very similar STIX translation patterns.
+    R0801,
+    # Import errors — optional extras (textual, fastapi, uvicorn, reportlab,
+    # python-docx, etc.) are not installed in the default/CI environment.
+    E0401,
+    # Line too long — enforced by ruff instead.
+    C0301,
+    # Import outside toplevel — used for optional lazy imports throughout.
+    C0415,
+    # Broad exception caught — connector resilience requires catching Exception
+    # to prevent one bad response from crashing the whole pipeline.
+    W0718,
+    # Access to protected member — connectors and helpers need internal access.
+    W0212,
+    # Unused argument — common in connector overrides that match an interface.
+    W0613,
+    # Possibly used before assignment — false positive for SQLAlchemy models
+    # defined inside `if _HAS_SQLALCHEMY:` blocks (context/store.py).
+    E0606,
+    # Too few public methods — many data/config/helper classes intentionally
+    # expose only one or two methods.
+    R0903,
+    # Too many arguments — connector constructors often need many parameters.
+    R0913,
+    # Too many positional arguments — same rationale as R0913.
+    R0917,
+    # Too many local variables — complex STIX mappers legitimately need many.
+    R0914,
+    # Too many return statements — parsers and mappers have many exit paths.
+    R0911,
+    # No member — too many false positives from optional-dependency classes
+    # (textual, fastapi) and dynamically-generated SQLAlchemy/dataclass attrs.
+    E1101,
+    # Anomalous backslash in string — false positives in RST docstrings that
+    # document regex patterns (e.g. ``APT\d+``).
+    W1401,
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+max-args=10
+max-locals=20
+max-returns=10
+max-branches=15
