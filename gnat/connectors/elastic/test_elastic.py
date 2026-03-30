@@ -415,7 +415,7 @@ class TestElasticSearchCommands(unittest.TestCase):
         mock_http.request.return_value = _make_response(
             200, _es_hits([{"kibana.alert.rule.name": "Test Rule"}])
         )
-        results = search.search_alerts(severity="high", size=10)
+        results = search.search_alerts(min_severity=50, size=10)
         self.assertEqual(len(results), 1)
 
     def test_aggregate_by_field(self):

@@ -63,7 +63,18 @@ include = ["gnat*"]
 "gnat" = ["py.typed"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = [
+    "tests",
+    "gnat/connectors/qradar/tests",
+    "gnat/connectors/elastic",
+    "gnat/connectors/misp/tests",
+    "gnat/connectors/sentinel/tests",
+    "gnat/connectors/graylog/tests",
+    "gnat/connectors/ossim/tests",
+    "gnat/connectors/security_onion/tests",
+    "gnat/connectors/suricata/tests",
+    "gnat/connectors/wazuh",
+]
 addopts   = "-v --tb=short -p no:warnings"
 markers   = [
     "integration: live API tests requiring real credentials (opt-in with --run-integration)",
@@ -73,7 +84,7 @@ markers   = [
 
 [tool.coverage.run]
 source = ["gnat"]
-omit   = ["tests/*", "gnat/codegen/*"]
+omit   = ["tests/*", "gnat/codegen/*", "gnat/connectors/*/tests/*", "gnat/connectors/*/test_*.py"]
 branch = true
 
 [tool.coverage.report]

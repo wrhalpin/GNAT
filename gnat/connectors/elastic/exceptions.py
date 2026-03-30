@@ -58,7 +58,16 @@ class ElasticAuthError(ElasticError):
     Raised on authentication failures.
     - Missing or invalid API key (HTTP 401)
     - API key lacks required cluster/index privileges (HTTP 403)
+
+    Attributes
+    ----------
+    status_code : int | None
+        HTTP status code (401 or 403).
     """
+
+    def __init__(self, message: str, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
 
     # ── Elasticsearch API ─────────────────────────────────────────────────────────
 

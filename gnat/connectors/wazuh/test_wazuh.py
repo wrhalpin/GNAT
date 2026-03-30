@@ -830,7 +830,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_fim_observed_data_has_extension(self):
-        fim = {"file": "/tmp/test"  # nosec B108 — test fixture path, "event_type": "added", "sha256": "abc123"}
+        fim = {"file": "/tmp/test", "event_type": "added", "sha256": "abc123"}  # nosec B108
         bundle = self.mapper.fim_event_to_stix_bundle(fim, agent_id="002")
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
         self.assertIn("x_wazuh_fim", obs)

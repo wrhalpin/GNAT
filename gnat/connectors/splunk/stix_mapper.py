@@ -606,20 +606,22 @@ class SplunkSTIXMapper:
         # If refs are dicts (inlined), return them directly
         return [r for r in refs if isinstance(r, dict)]
 
-    # ── Utility functions ─────────────────────────────────────────────────────────
 
-    def _deterministic_uuid(stix_type: str, value: str) -> str:
-        """
-        Generate a deterministic UUID5 for a STIX object.
 
-        Uses the STIX 2.1 spec namespace UUID for identity objects.
-        Ensures the same (type, value) pair always produces the same ID,
-        enabling deduplication without round-tripping to the platform.
-        """
-        # STIX 2.1 spec namespace UUID
-        STIX_NAMESPACE = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
-        return str(uuid.uuid5(STIX_NAMESPACE, f"{stix_type}:{value}"))
+# ── Module-level utility functions ────────────────────────────────────────────
 
-    def _now_stix_ts() -> str:
-        """Return current UTC time in STIX 2.1 timestamp format."""
-        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+def _deterministic_uuid(stix_type: str, value: str) -> str:
+    """
+    Generate a deterministic UUID5 for a STIX object.
+
+    Uses the STIX 2.1 spec namespace UUID for identity objects.
+    Ensures the same (type, value) pair always produces the same ID,
+    enabling deduplication without round-tripping to the platform.
+    """
+    STIX_NAMESPACE = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
+    return str(uuid.uuid5(STIX_NAMESPACE, f"{stix_type}:{value}"))
+
+
+def _now_stix_ts() -> str:
+    """Return current UTC time in STIX 2.1 timestamp format."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
