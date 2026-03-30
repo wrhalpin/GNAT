@@ -6,7 +6,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
-## [Unreleased]
+## [1.1.0] — 2026-03-30
 
 ### Added
 - **13 new platform connectors** registered in `CLIENT_REGISTRY` and documented:
@@ -53,7 +53,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `AlienVaultClient` (`gnat/connectors/alienvault/client.py`): new `BaseClient + ConnectorMixin` wrapper for AlienVault OTX REST API; `authenticate()` injects `X-OTX-API-KEY`; `list_objects()` dispatches to pulse feed or indicator export by STIX type; `to_stix()` maps OTX pulses → STIX reports and OTX indicators → STIX indicator SDOs with correct patterns. 9 unit tests.
 - `GraylogClient` (`gnat/connectors/graylog/client.py`): new `BaseClient + ConnectorMixin` wrapper for Graylog SIEM REST API; HTTP Basic auth; `list_objects()` uses relative-range search; `to_stix()` maps Graylog messages → STIX `observed-data` with `x_graylog_message` extension; `from_stix()` builds Lucene query from STIX fields. 6 unit tests.
 - `OSSIMClient` (`gnat/connectors/ossim/client.py`): new `BaseClient + ConnectorMixin` wrapper for AlienVault OSSIM 5.x REST API; `X-USM-API-KEY` auth; `to_stix()` maps OSSIM alarms → STIX `observed-data` with IP SCOs, network-traffic SCO, and `x_ossim_alarm` extension. 5 unit tests.
-- `SecurityOnionClient` (`gnat/connectors/security_onion/client.py`): new `BaseClient + ConnectorMixin` wrapper for Security Onion so-api; Bearer token auth via `POST /api/login`; `list_objects()` dispatches to ES DSL alert search or case listing; `to_stix()` maps SO alerts → STIX `observed-data` with `x_security_onion_alert` extension. 7 unit tests.
+- `SecurityOnionClient` (`gnat/connectors/security_onion/client.py`): new `BaseClient + ConnectorMixin` wrapper for Security Onion so-api; Bearer token auth via `POST /api/login`; `list_objects()` dispatches to ES DSL alert search or case listing; `to_stix()` maps SO alerts → STIX `lobserved-data` with `x_security_onion_alert` extension. 7 unit tests.
 - `SnortClient` (`gnat/connectors/snort/client.py`): new file-based `BaseClient + ConnectorMixin` for Snort alert logs; supports both Snort 3 JSON and Snort 2 fast-alert text formats; `list_objects()` reads from the configured log file; `to_stix()` maps Snort alerts → STIX `observed-data` with `x_snort_alert` extension. 7 unit tests.
 - `SuricataClient` (`gnat/connectors/suricata/client.py`): new file-based `BaseClient + ConnectorMixin` for Suricata EVE JSON logs; `list_objects()` reads alert events from EVE log with optional event_type filter; `to_stix()` maps Suricata alerts → STIX `observed-data` with `x_suricata_alert` extension. 6 unit tests.
 - `ZeekClient` (`gnat/connectors/zeek/client.py`): new file-based `BaseClient + ConnectorMixin` for Zeek log files; supports both TSV (default) and JSON formats; `list_objects()` reads from notice.log by default; `to_stix()` maps Zeek notice records → STIX `observed-data` with `x_zeek_notice` extension; `iter_stix_connections()` maps conn.log → `x_zeek_conn`. 7 unit tests.
