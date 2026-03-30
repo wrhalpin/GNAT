@@ -24,6 +24,19 @@ subsystems.
 13. [Configuration](#13-configuration)
 14. [Testing Strategy](#14-testing-strategy)
 15. [Packaging and Extras](#15-packaging-and-extras)
+16. [Feed Scheduling](#16-feed-scheduling)
+17. [Export / Integration Pipeline](#17-export--integration-pipeline)
+18. [Shared Research Library](#18-shared-research-library)
+19. [NLP Query Layer](#19-nlp-query-layer)
+20. [Rust Native Extension](#20-rust-native-extension-gnat-core)
+21. [Web Dashboard](#21-web-dashboard-gnatserve)
+22. [Terminal UI (TUI)](#22-terminal-ui--textual)
+23. [XSOAR Content Pack Generator](#23-xsoar-content-pack-generator)
+24. [Upstream Contribution Pipeline](#24-upstream-contribution-pipeline)
+25. [Connector Health Monitor](#25-connector-health-monitor)
+26. [Multi-Tenant Workspace Isolation](#26-multi-tenant-workspace-isolation)
+27. [TAXII 2.1 Server](#27-taxii-21-server)
+28. [Docker Containerization](#28-docker-containerization)
 
 ---
 
@@ -1268,3 +1281,282 @@ Four hours is a reasonable default — staging entries don't sit unreviewed for
 long, but the curation job doesn't run so frequently that it becomes noisy in
 the scheduler status output. For teams that need faster promotion, `cron="0 * * * *"`
 (hourly) works equally well.
+
+---
+
+## 19. NLP Query Layer
+
+**Decision:** Two-backend NLP engine: a regex/keyword `BuiltinParser` (zero deps) with an optional `ClaudeParser` upgrade.
+
+**Why two backends:**
+- Security environments often prohibit sending query text to external AI APIs.
+- The builtin parser covers the 80% case (STIX type filters, date ranges, confidence
+  bounds, actor/CVE name matching) without any dependencies.
+- The Claude backend handles the long tail — ambiguous phrasing, multi-hop references,
+  compound temporal expressions — using structured extraction via the Claude API with
+  strict JSON schema validation.
+
+**`QuerySpec` design:**
+All parsed queries materialise as a `QuerySpec` dataclass: `stix_type`, `filters`
+(dict), `time_range` (start/end ISO), `confidence_min`, `limit`, `sources`. This
+decouples query parsing from query execution and makes both backends swappable.
+
+**Fallback behaviour:**
+`NLPQueryEngine` prefers the configured backend and silently falls back to builtin if
+Claude API is unavailable. This ensures the TUI query bar always works even without
+a Claude API key.
+
+**TUI integration:**
+The Textual Query screen passes user input directly to `NLPQueryEngine.parse()` and
+dispatches the resulting `QuerySpec` to `GNATClient.natural_language_query()`. No
+intermediate serialisation.
+
+---
+
+## 20. Rust Native Extension (`gnat-core`)
+
+**Decision:** Optional PyO3/maturin Rust extension for hot-path IOC functions; pure Python always available as fallback.
+
+**Why Rust for IOC classification:**
+- Every ingested line passes through `classify_ioc()` and `defang()`.
+- At 100K IOCs/run these functions are measurable in profiles.
+- The logic is purely computational (regex automata, string transforms) — ideal for Rust.
+- PyO3 + maturin make integration seamless: the wheel installs as `gnat._core` and is
+  imported via a shim in `gnat/ingest/_ioc_classifier.py`.
+
+**Shim pattern:**
+```python
+try:
+    from gnat._core import classify_ioc, defang, refang, ...
+    RUST_AVAILABLE = True
+except ImportError:
+    RUST_AVAILABLE = False
+    def classify_ioc(value): ...   # pure-Python equivalent
+```
+This means `RUST_AVAILABLE` is a public API flag; all callers check it in tests.
+
+**Build targets:**
+- `make build-rust` — `maturin build --release` + pip install wheel (CI/CD)
+- `make build-rust-dev` — `maturin develop` (local iteration)
+
+**Extras group:**
+`pip install "gnat[fast]"` documents the native extension as optional. The core library
+never requires it — the extra is purely for performance-critical deployments.
+
+---
+
+## 21. Web Dashboard (`gnat/serve/`)
+
+**Decision:** Minimal FastAPI application with vanilla-JS single-page frontend; no frontend build step.
+
+**Why no JS framework:**
+- The dashboard is an operational tool, not a product UI. Complexity must stay low.
+- A self-contained HTML string returned by a FastAPI route requires zero build infrastructure
+  and no npm. The dark-theme vanilla-JS dashboard loads in < 50 ms.
+
+**Security model:**
+- `X-Api-Key` header validated via `hmac.compare_digest` (constant-time, no timing oracle).
+- `APIKeyAuth` is a FastAPI callable dependency injected on every authenticated route.
+- `RateLimiter` uses a sliding-window in-memory counter (thread-safe `threading.Lock`) —
+  100 req/min per key. Prevents brute-force key guessing without requiring Redis.
+- Binds to `127.0.0.1` by default (not `0.0.0.0`) — requires explicit override for
+  external exposure.
+- Auto-generates an API key if `--api-key` is omitted; prints it to `stderr` with a warning.
+
+**Why not the existing EDL FastAPI app:**
+The EDL server (`gnat/export/`) serves static IOC lists and must stay lightweight and
+independent. The dashboard needs auth, rate limiting, and multiple routers — mixing them
+would create a dependency between the export pipeline and the UI.
+
+---
+
+## 22. Terminal UI — Textual
+
+**Decision:** Textual 8.x TUI with four screens; NLP query bar delegates to `NLPQueryEngine`.
+
+**Why Textual over curses / urwid:**
+- Textual provides a CSS-like layout engine, reactive data binding, and a rich widget
+  library — features that would require thousands of lines in raw curses.
+- Works over SSH without X11 forwarding — critical for server deployments.
+- Textual's async event loop integrates cleanly with GNAT's async client layer.
+
+**Screen architecture:**
+Each screen is a self-contained `textual.Screen` subclass that owns its data fetching.
+The `GNATApp` root composes them into a `TabbedContent` layout with F1–F4 hot keys.
+Screens do not share state directly — they communicate via `app.post_message()`.
+
+**`STIXTable` / `JobTable` widgets:**
+Thin `DataTable` subclasses that define standard column layouts. This avoids repeating
+column definitions across screens and provides a typed `selected_job_id()` helper.
+
+**Graceful degradation:**
+The Query screen works without a Claude API key (falls back to builtin NLP parser).
+The Library and Scheduler screens work without a Research Library or active scheduler
+(they render empty tables with a status bar message).
+
+---
+
+## 23. XSOAR Content Pack Generator
+
+**Decision:** Introspect any `ConnectorMixin` via `capabilities()` and generate a complete XSOAR 6 content pack zip.
+
+**Why introspection over templates:**
+- Hardcoded templates would need manual updates every time a connector grows new methods.
+- `capabilities()` already has the method signatures, docstrings, and classification
+  (`read` / `write` / `helper`). The generator maps these directly to XSOAR command YAML.
+
+**Pack layout:**
+```
+<Name>/
+  pack_metadata.json         # Version, author, description
+  Integrations/<Name>/
+    <Name>.yml               # Command manifest (write methods flagged dangerous: true)
+    <Name>.py                # Delegating script — calls ConnectorMixin.call()
+  ReleaseNotes/
+    1_0_0.md
+```
+
+**Auth detection:**
+Auth type is inferred from the connector constructor signature (`client_id`/`client_secret`
+→ `oauth2`; `api_token`/`api_key` → `api_key`; `username`/`password` → `basic`).
+Overrideable via `--auth` flag.
+
+**Write safety:**
+Write-classified methods are flagged `dangerous: true` in the YAML. The generated
+Python script calls `ConnectorMixin.call(method, allow_write=False)` by default —
+XSOAR operators must explicitly set `allow_write=True` per-command.
+
+---
+
+## 24. Upstream Contribution Pipeline
+
+**Decision:** 7-step gate enforced by `ContributionPipeline`; draft PR is always true and cannot be overridden.
+
+**Why a programmatic gate:**
+Contributing a connector to upstream without a compliance check would allow incomplete
+or untested connectors to land in the shared codebase. The 7 steps enforce the minimum
+bar automatically so contributors don't need to read a checklist.
+
+**The 7 steps:**
+1. **Enabled guard** — `contribute.enabled = true` must be set in INI; prevents accidental runs.
+2. **Registry check** — connector must exist in `CLIENT_REGISTRY`.
+3. **Compliance matrix** — all 8 `ConnectorMixin` methods implemented + test file present.
+4. **Test suite** — `pytest tests/unit/` must pass; aborts on any failure.
+5. **Branch creation** — `contribute/{platform}-{timestamp}`; `_PROTECTED_BRANCHES` blocks `main`/`master`.
+6. **Commit + push** — uses `SubprocessRunner` (injectable for testing).
+7. **Draft PR** — GitHub REST API `POST /repos/{owner}/{repo}/pulls` with `draft: true`.
+
+**`draft_pr` hardcoded:**
+The PR is always a draft. This is intentional — human review before merge is non-negotiable
+for a shared security library. No config knob exposes this.
+
+---
+
+## 25. Connector Health Monitor
+
+**Decision:** `ConnectorHealthJob` — a `FeedJob` subclass that runs in the shared `FeedScheduler`; schema drift tracked via JSON fingerprint comparison.
+
+**Why FeedJob subclass:**
+Health checks are just another scheduled job. Reusing `FeedScheduler` means health monitoring
+gets retry logic, overlap protection, and on-success/on-failure callbacks for free.
+
+**Drift detection algorithm:**
+1. Sample `list_objects(limit=1)` from each connector.
+2. Extract field names from the response (recursive key extraction).
+3. Compute a frozenset fingerprint and serialize to `SchemaSnapshot` JSON.
+4. On each run, compare current fingerprint against the stored baseline.
+5. If changed fields exceed `drift_threshold` (default 20%), emit a `DriftReport`.
+
+**Slack alerts:**
+`_post_slack_webhook()` is called when drift is detected. The webhook URL is read from
+`[health]` INI section. This provides zero-dependency alerting without requiring a
+monitoring framework.
+
+**Baseline command:**
+`gnat health baseline` runs one sampling pass and writes the initial `SchemaSnapshot`
+files. Production deployments should run baseline after initial connector setup and
+after planned API migrations.
+
+---
+
+## 26. Multi-Tenant Workspace Isolation
+
+**Decision:** Transparent name prefixing (`{tenant_id}::name`) over per-tenant databases.
+
+**Why name prefixing over separate databases:**
+- Zero schema migration required — works with existing SQLite and FlatFile stores.
+- A single `WorkspaceManager` instance serves all tenants; no per-tenant connection pools.
+- Isolation is enforced at the API layer, not the storage layer, which keeps the persistence
+  backend simple and testable.
+
+**`WorkspaceManager.for_tenant(tenant_id)`:**
+Returns a `TenantWorkspaceManager` that intercepts all workspace names and applies the
+prefix before delegating to the underlying `WorkspaceManager`. Existing workspaces that
+have no prefix are implicitly in the `"default"` tenant.
+
+**`TenantRegistry`:**
+Stores tenant metadata (display name, optional per-tenant config path). Per-tenant
+config allows different Claude API keys, sector aliases, or EDL targets per tenant —
+critical for MSP deployments.
+
+**CLI:**
+`gnat tenant list/create/info/workspaces/delete` — all standard CRUD; `--yes` flag
+required for destructive operations.
+
+---
+
+## 27. TAXII 2.1 Server
+
+**Decision:** FastAPI implementation of TAXII 2.1; each GNAT workspace is exposed as a collection under a single `gnat` API root.
+
+**Why workspace-as-collection:**
+TAXII collections map naturally to GNAT workspaces — both are bounded sets of STIX objects
+with a defined identity. The workspace name becomes the collection ID. Creating a new
+workspace automatically makes it available as a TAXII collection.
+
+**Authentication:**
+TAXII 2.1 requires HTTPS + HTTP Basic auth in production. The server validates credentials
+against the `[taxii]` INI section. The discovery endpoint (`GET /taxii2/`) is intentionally
+unauthenticated per the TAXII 2.1 spec.
+
+**Pagination:**
+`GET /collections/{id}/objects/` uses `added_after` (ISO timestamp) and `limit`/`next`
+link headers per the TAXII 2.1 pagination model. GNAT's `WorkspaceStore.list_objects_after()`
+implements the server-side cursor.
+
+**STIX version filtering:**
+The `Accept` header (`application/taxii+json;version=2.1`) is enforced; only STIX 2.1
+bundles are served. Clients requesting TAXII 2.0 receive a `406 Not Acceptable`.
+
+---
+
+## 28. Docker Containerization
+
+**Decision:** Three slim Python 3.11 containers (scheduler, EDL server, health monitor) sharing a named `gnat-workspace` volume; Compose profiles for optional services.
+
+**Why three containers:**
+Each service has a different availability requirement:
+- The EDL server must be highly available (firewalls poll it every 5–15 min).
+- The scheduler can restart without data loss (jobs re-run on schedule).
+- The health monitor can tolerate brief outages.
+
+Running them in separate containers means an EDL outage doesn't affect scheduling
+and a scheduler crash doesn't take down the EDL server.
+
+**Named volume:**
+`gnat-workspace` is the shared persistence layer. All three containers mount it read-write.
+The `WorkspaceManager` handles concurrent access safely (SQLite WAL mode; FlatFileStore
+uses atomic writes).
+
+**Compose profiles:**
+- `search` — adds Solr for full-text indexing
+- `monitoring` — adds Grafana for dashboards
+- `full` — all services
+
+This keeps the base deployment minimal while allowing operators to opt into observability
+components.
+
+**`.devcontainer` integration:**
+The devcontainer config includes the Rust toolchain and Docker-in-Docker so that Rust
+extension development and Docker testing both work in VS Code / Codespaces without
+local tool installation.
