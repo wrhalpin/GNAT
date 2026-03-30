@@ -152,6 +152,9 @@ gnat/
 | Wiz CNAPP           | wiz               | OAuth2        | ✓    | —     | Stable  |
 | ZeroFox             | zerofox           | Bearer        | ✓    | —     | Stable  |
 
+*Status legend:* **Stable** = full ConnectorMixin interface implemented and tested.
+**LLM** = LLM assistant connector; wraps an AI API rather than a security platform; read-only, no STIX write-back.
+
 ---
 
 ## Deployment Architecture

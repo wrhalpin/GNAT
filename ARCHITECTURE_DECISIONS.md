@@ -1520,7 +1520,7 @@ against the `[taxii]` INI section. The discovery endpoint (`GET /taxii2/`) is in
 unauthenticated per the TAXII 2.1 spec.
 
 **Pagination:**
-`GET /collections/{id}/objects/` uses `added_after` (ISO timestamp) and `limit`/`next`
+`GET /collections/{collection-id}/objects/` uses `added_after` (ISO timestamp) and `limit`/`next`
 link headers per the TAXII 2.1 pagination model. GNAT's `WorkspaceStore.list_objects_after()`
 implements the server-side cursor.
 

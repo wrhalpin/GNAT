@@ -89,7 +89,7 @@ pip install "gnat[reports]"  # PDF/DOCX reports (reportlab + python-docx)
 pip install "gnat[viz]"      # Visualization (plotly, networkx, openpyxl)
 pip install "gnat[serve]"    # Web dashboard + TAXII 2.1 server (fastapi, uvicorn)
 pip install "gnat[tui]"      # Interactive terminal UI (textual)
-pip install "gnat[nlp]"      # NLP query interface (builtin backend; Claude backend uses existing [agents] config)
+pip install "gnat[nlp]"      # NLP query interface (builtin backend has zero deps; Claude backend requires [agents])
 pip install "gnat[fast]"     # Rust native extension for IOC hot-path (maturin wheel)
 pip install "gnat[all]"      # All of the above
 ```
@@ -372,7 +372,7 @@ make build-rust        # release build
 make build-rust-dev    # development build (editable)
 ```
 
-Pure-Python fallback is always available. Check `gnat.ingest._ioc_classifier.RUST_AVAILABLE`.
+Pure-Python fallback is always available. Check `gnat.ingest.RUST_AVAILABLE` (re-exported from `gnat.ingest._ioc_classifier.RUST_AVAILABLE`).
 Install: `pip install "gnat[fast]"`
 
 ---
