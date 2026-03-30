@@ -32,12 +32,10 @@ upserts each object into the target workspace.
 from __future__ import annotations
 
 import base64
-import hashlib
-import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gnat.context.workspace import WorkspaceManager
@@ -64,9 +62,8 @@ def _require_fastapi() -> None:
         raise ImportError(
             "FastAPI and uvicorn are required: pip install 'gnat[serve]'"
         )
-    try:
-        import uvicorn  # noqa: F401
-    except ImportError:
+    import importlib.util
+    if importlib.util.find_spec("uvicorn") is None:
         raise ImportError(
             "uvicorn is required: pip install 'gnat[serve]'"
         )
