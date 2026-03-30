@@ -1,97 +1,207 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP**
+**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 60+ security platforms.
 
-A modular data-centric CTM toolkit including a universal Python client and STIX 2.1-compatible ORM for building data integrations and analyst workflows without platform dependency. GNAT provides a uniform abstraction layer over top of your implemented tools, creating a single interface for work flows and queries.
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![Pylint](https://github.com/wrhalpin/GNAT/actions/workflows/pylint.yml/badge.svg)](https://github.com/wrhalpin/GNAT/actions/workflows/pylint.yml)
+[![Tests](https://img.shields.io/badge/tests-1500%2B-brightgreen)](#running-tests)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A570%25-green)](pyproject.toml)
+[![STIX](https://img.shields.io/badge/STIX-2.1-blueviolet)](https://oasis-open.github.io/cti-documentation/stix/intro.html)
+
+---
+
+GNAT provides a single, consistent abstraction layer over 60+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+
+```
+[ 60+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
+```
+
+---
+
+## Table of Contents
+
+- [Key Capabilities](#key-capabilities)
+- [Supported Platforms](#supported-platforms)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Core Concepts](#core-concepts)
+- [Ingest Pipelines](#ingest-pipelines)
+- [Export Pipelines](#export-pipelines)
+- [Scheduling](#scheduling)
+- [AI Agents & Research Library](#ai-agents--research-library)
+- [Natural Language Queries](#natural-language-queries)
+- [Sector Targeting Intelligence](#sector-targeting-intelligence)
+- [Automated Reports](#automated-reports)
+- [Solr Search Sidecar](#solr-search-sidecar)
+- [TAXII 2.1 Server](#taxii-21-server)
+- [STIX Pattern Validation](#stix-pattern-validation)
+- [Multi-Tenant Deployments](#multi-tenant-deployments)
+- [Terminal UI & Web Dashboard](#terminal-ui--web-dashboard)
+- [Docker & Containerization](#docker--containerization)
+- [Connector Capabilities & Code Generation](#connector-capabilities--code-generation)
+- [Quality & Security](#quality--security)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Architecture](#architecture)
+- [License](#license)
+
+---
+
+## Key Capabilities
+
+| Layer | What it does |
+|-------|-------------|
+| **60+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
+| **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
+| **Ingest Pipelines** | 14 source readers × 12 mappers; pull from any platform, file, feed, or database |
+| **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
+| **FeedScheduler** | Drift-corrected cron scheduling for all job types; APScheduler/Celery adapters |
+| **AI Agents** | ResearchAgent (Claude), ParsingAgent (STIX extraction from text), CopilotReader (M365) |
+| **NLP Queries** | Natural-language query engine — built-in rule-based or Claude-backed structured extraction |
+| **Research Library** | Team knowledge base with staging/curation workflow, TTL management, and deduplication |
+| **Automated Reports** | PDF, HTML, DOCX, Markdown; daily/weekly/annual; AI-assisted synthesis; email + SharePoint delivery |
+| **Sector Intelligence** | `x_target_sectors` normalized across all connectors with alias expansion and composable filters |
+| **Solr Search** | Full-text search sidecar; auto-indexes on write; Grafana SimpleJSON dashboards |
+| **TAXII 2.1 Server** | Each GNAT workspace exposed as a TAXII 2.1 collection; full protocol compliance |
+| **STIX Validator** | Two-tier pattern validator (built-in + ANTLR `stix2-patterns`); ORM `validate=True` opt-in |
+| **Multi-Tenant** | Transparent workspace namespace isolation for MSP deployments |
+| **Terminal UI** | Textual TUI — works over SSH; NLP query, library browser, scheduler, report viewer |
+| **Web Dashboard** | FastAPI SPA — API key auth, rate-limited, research library + reports + scheduler |
+| **Docker** | 3-service Compose stack; DevContainer for VS Code/Codespaces; Docker integration test harness |
+| **Capability Reflection** | Introspect any connector's methods at runtime; safe guarded dispatch via `call()` |
+| **Health Monitoring** | `ConnectorHealthJob` — periodic ping + schema drift detection with Slack/email alerts |
+| **XSOAR Pack Generator** | Generate XSOAR 6 content pack zips from any connector via `gnat codegen xsoar` |
+| **Contribution Pipeline** | 7-step compliance gate → draft GitHub PR via `gnat contribute` |
+| **Rust Extension** | Optional `gnat._core` for hot-path IOC classify/defang/refang/extract_pattern_value |
+| **1,500+ Tests** | 70% minimum coverage enforced; Docker integration harness for Elasticsearch + Solr |
 
 ---
 
 ## Supported Platforms
 
-| Target key | Platform |
-|---|---|
-| `threatq` | ThreatQ Threat Intelligence Platform |
-| `proofpoint` | Proofpoint TAP (Targeted Attack Protection) |
-| `netskope` | Netskope SASE / SSE |
-| `crowdstrike` | CrowdStrike Falcon |
-| `xsoar` | Palo Alto XSOAR 6 |
-| `recordedfuture` | Recorded Future Connect API |
-| `splunk` | Splunk Enterprise / Splunk ES |
-| `virustotal` | VirusTotal |
-| `shadowserver` | Shadowserver Foundation |
-| `rapid7` | Rapid7 InsightVM / InsightIDR |
-| `nucleus` | Nucleus Security |
-| `greymatter` | GreyMatter |
-| `whistic` | Whistic |
-| `riskrecon` | RiskRecon |
-| `feedly` | Feedly Threat Intelligence |
-| `controlup` | ControlUp DEX |
-| `alienvault` | AlienVault OTX |
-| `elastic` | Elastic SIEM / Security |
-| `graylog` | Graylog |
-| `misp` | MISP Threat Sharing Platform |
-| `opencti` | OpenCTI |
-| `ossim` | OSSIM / AlienVault SIEM |
-| `qradar` | IBM QRadar |
-| `security_onion` | Security Onion |
-| `sentinel` | Microsoft Sentinel |
-| `snort` | Snort IDS |
-| `suricata` | Suricata IDS/IPS |
-| `wazuh` | Wazuh SIEM/XDR |
-| `zeek` | Zeek Network Monitor |
-| `servicenow` | ServiceNow ITSM / SecOps |
-| `jira` | Atlassian Jira |
-| `threatconnect` | ThreatConnect TIP |
-| `mandiant` | Mandiant Advantage Threat Intelligence |
-| `defenderti` | Microsoft Defender Threat Intelligence |
-| `thehive` | TheHive Security Incident Response |
-| `threatstream` | Anomali ThreatStream |
-| `socradar` | SOCRadar Extended Threat Intelligence |
-| `pulsedive` | Pulsedive Threat Intelligence |
-| `flare` | Flare (Darknet/Threat Exposure Monitoring) |
-| `stellarcyber` | Stellar Cyber Open XDR |
-| `yeti` | YETI (Your Everyday Threat Intelligence) |
-| `cloudsek` | CloudSEK Digital Risk Protection |
-| `grok` | Grok AI (LLM assistant integration) |
-| `gemini` | Google Gemini AI (LLM assistant integration) |
-| `copilot` | Microsoft Copilot for Security |
-| `chatgpt` | OpenAI ChatGPT (LLM assistant integration) |
-| `cyble_vision` | Cyble Vision (Threat Intelligence) |
-| `armis` | Armis Centrix (Cyber Exposure Management / IT/OT/IoT) |
-| `axonius` | Axonius Cybersecurity Asset Management |
-| `cortex_xpanse` | Cortex Xpanse (External Attack Surface Management) |
-| `cycognito` | CyCognito Attack Surface Management |
-| `defectdojo` | DefectDojo Vulnerability Management |
-| `greenbone` | Greenbone / OpenVAS Vulnerability Management |
-| `group_ib` | Group-IB Threat Intelligence |
-| `orca` | Orca Security (Agentless Cloud CNAPP) |
-| `qualys` | Qualys VMDR (Vulnerability Management) |
-| `sentinelone` | SentinelOne Singularity XDR |
-| `tenable_one` | Tenable One Exposure Management |
-| `wiz` | Wiz CNAPP (Cloud Native Application Protection) |
-| `zerofox` | ZeroFox Digital Risk Protection |
-| `zeek` | Zeek (Network Monitoring) |
+### Threat Intelligence Platforms
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `threatq` | ThreatQ Threat Intelligence Platform | OAuth2 |
+| `crowdstrike` | CrowdStrike Falcon | OAuth2 |
+| `recordedfuture` | Recorded Future Connect API | API key |
+| `alienvault` | AlienVault OTX | API key |
+| `virustotal` | VirusTotal | API key |
+| `shadowserver` | Shadowserver Foundation | API key |
+| `feedly` | Feedly Threat Intelligence | Bearer / API key |
+| `threatconnect` | ThreatConnect | OAuth2 / API token |
+| `mandiant` | Mandiant Advantage | OAuth2 |
+| `defenderti` | Microsoft Defender Threat Intelligence | OAuth2 (Azure AD) |
+| `threatstream` | Anomali ThreatStream (OPTIC) | API key + username |
+| `socradar` | SOCRadar Extended Threat Intelligence | API key |
+| `pulsedive` | Pulsedive | API key |
+| `flare` | Flare (Darknet/Threat Exposure Monitoring) | API key |
+| `yeti` | YETI (Your Everyday Threat Intelligence) | API key |
+| `cloudsek` | CloudSEK Digital Risk Protection | API key |
+| `zerofox` | ZeroFox Digital Risk Protection | Bearer |
+| `group_ib` | Group-IB Threat Intelligence | API key |
+| `cyble_vision` | Cyble Vision | API key |
+| `misp` | MISP Threat Sharing Platform | API key |
+| `opencti` | OpenCTI | API key |
+
+### SIEMs & Log Analytics
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `splunk` | Splunk Enterprise / Splunk ES | Token / Basic |
+| `elastic` | Elastic SIEM / Security | API key / Basic |
+| `qradar` | IBM QRadar | API token |
+| `sentinel` | Microsoft Sentinel | OAuth2 (Azure AD) |
+| `graylog` | Graylog | API key / Basic |
+| `ossim` | OSSIM / AlienVault SIEM | API key |
+| `security_onion` | Security Onion | Bearer |
+| `wazuh` | Wazuh SIEM/XDR | API key / Basic |
+
+### SOAR & Incident Response
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `xsoar` | Palo Alto XSOAR 6 | API key |
+| `thehive` | TheHive Security Incident Response | API key |
+| `greymatter` | GreyMatter | OAuth2 |
+| `servicenow` | ServiceNow ITSM / SecOps | Basic / Bearer |
+| `jira` | Atlassian Jira | Basic / Bearer |
+
+### Network Detection & Response
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `snort` | Snort IDS | File / Syslog |
+| `suricata` | Suricata IDS/IPS | File / Syslog |
+| `zeek` | Zeek Network Monitor | File / Syslog |
+
+### Vulnerability Management
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `rapid7` | Rapid7 InsightVM / InsightIDR | API key |
+| `nucleus` | Nucleus Security | API key |
+| `tenable_one` | Tenable One Exposure Management | X-ApiKeys |
+| `qualys` | Qualys VMDR | Basic |
+| `greenbone` | Greenbone / OpenVAS | GMP username/password |
+| `defectdojo` | DefectDojo Vulnerability Management | API token |
+
+### Cloud Security & ASM
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `orca` | Orca Security (Agentless CNAPP) | Bearer |
+| `wiz` | Wiz CNAPP | OAuth2 |
+| `cortex_xpanse` | Cortex Xpanse (External ASM) | API key |
+| `cycognito` | CyCognito ASM | Bearer |
+| `riskrecon` | RiskRecon | OAuth2 |
+| `zerofox` | ZeroFox Digital Risk Protection | Bearer |
+
+### Asset & Endpoint Management
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `netskope` | Netskope SASE / SSE | API token |
+| `controlup` | ControlUp DEX | Bearer |
+| `sentinelone` | SentinelOne Singularity XDR | API token |
+| `armis` | Armis Centrix (IT/OT/IoT) | API secret key |
+| `axonius` | Axonius Cybersecurity Asset Management | API key + secret |
+| `stellarcyber` | Stellar Cyber Open XDR | API key |
+| `whistic` | Whistic (Vendor Risk) | API key |
+| `proofpoint` | Proofpoint TAP | Basic |
+
+### AI Assistants
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `copilot` | Microsoft Copilot for Security | DirectLine / Bearer |
+| `chatgpt` | OpenAI ChatGPT | API key |
+| `gemini` | Google Gemini | API key |
+| `grok` | Grok AI | API key |
 
 ---
 
 ## Installation
 
 ```bash
-pip install gnat
-# Optional extras
-pip install "gnat[yaml]"    # YAML support for OpenAPI code generator
-pip install "gnat[taxii]"   # TAXII 2.x reading (taxii2-client)
-pip install "gnat[ingest]"  # Full ingest pipeline (taxii2-client + feedparser)
-pip install "gnat[async]"   # Async client (httpx)
-pip install "gnat[persist]" # DB persistence (sqlalchemy)
-pip install "gnat[schedule]" # Cron scheduling (croniter)
-pip install "gnat[reports]"  # PDF/DOCX reports (reportlab + python-docx)
-pip install "gnat[viz]"      # Visualization (plotly, networkx, openpyxl)
-pip install "gnat[serve]"    # Web dashboard + TAXII 2.1 server (fastapi, uvicorn)
-pip install "gnat[tui]"      # Interactive terminal UI (textual)
-pip install "gnat[nlp]"      # NLP query interface (builtin backend has zero deps; Claude backend requires [agents])
-pip install "gnat[fast]"     # Rust native extension for IOC hot-path (maturin wheel)
-pip install "gnat[all]"      # All of the above
+pip install gnat                        # Core — urllib3 transport only
+pip install "gnat[yaml]"               # YAML support (pyyaml)
+pip install "gnat[taxii]"              # TAXII 2.x reading (taxii2-client)
+pip install "gnat[ingest]"             # Full ingest pipeline (taxii2-client + feedparser)
+pip install "gnat[async]"              # Async client (httpx)
+pip install "gnat[persist]"            # DB persistence (sqlalchemy)
+pip install "gnat[schedule]"           # Cron scheduling (croniter)
+pip install "gnat[reports]"            # PDF/DOCX reports (reportlab + python-docx)
+pip install "gnat[viz]"                # Visualization (plotly, networkx, openpyxl)
+pip install "gnat[serve]"              # Web dashboard + TAXII 2.1 server (fastapi, uvicorn)
+pip install "gnat[tui]"                # Interactive terminal UI (textual)
+pip install "gnat[nlp]"                # NLP query engine (zero deps for builtin; Claude backend requires [agents])
+pip install "gnat[stix-validate]"      # Tier-2 STIX pattern validation (stix2-patterns / ANTLR)
+pip install "gnat[fast]"               # Rust IOC hot-path extension (maturin wheel)
+pip install "gnat[all]"                # Everything above
+pip install "gnat[dev]"                # All + ruff, mypy, pytest, httpx, sqlalchemy
 ```
 
 ---
@@ -100,7 +210,7 @@ pip install "gnat[all]"      # All of the above
 
 ### 1. Configure
 
-Copy `config/config.ini.example` to `~/.gnat/config.ini` and fill in your credentials:
+Copy `config/config.ini.example` to `~/.gnat/config.ini`:
 
 ```ini
 [DEFAULT]
@@ -120,394 +230,120 @@ client_secret = cs-secret
 auth_type     = oauth2
 ```
 
-### 2. Connect and use
+### 2. Connect and query
 
 ```python
 import gnat
 
-# --- Classic client usage ---
 cli = gnat.GNATClient()
 cli.connect(target="threatq")
 
-# Ping to verify connectivity
+# Ping — verify connectivity
 print(cli.ping())   # True
 
-# --- ORM usage ---
-# Fetch an existing indicator by id
-ind = gnat.Indicator(client=cli)
-ind.id = "indicator--12345"
-ind.select()
-print(ind.name, ind.pattern)
+# List indicators
+indicators = cli.list_objects("indicator", limit=50)
+for ind in indicators:
+    print(ind.name, ind.pattern)
+```
 
-# Create a new indicator
-new_ind = gnat.Indicator(
+### 3. Work with the STIX ORM
+
+```python
+# Create
+ind = gnat.Indicator(
     client=cli,
     name="Malicious IP",
     pattern="[ipv4-addr:value = '198.51.100.99']",
     indicator_types=["malicious-activity"],
+    confidence=85,
 )
-new_ind.save()
-print(new_ind.id)   # server-assigned id after save
+ind.save()
+print(ind.id)  # stix-id assigned by platform after save
 
-# Update a field and push
-new_ind.description = "Seen in phishing campaign Q1-2025"
-new_ind.save()
+# Update
+ind.description = "Seen in phishing campaign Q1-2025"
+ind.save()
 
 # Delete
-new_ind.delete()
+ind.delete()
 
-# --- Other ORM types ---
-actor = gnat.ThreatActor(client=cli, name="APT-XYZ")
-actor.save()
-
-malware = gnat.Malware(client=cli, name="BlackCat", is_family=True)
-malware.save()
-
-vuln = gnat.Vulnerability(client=cli, name="CVE-2024-12345")
-vuln.save()
-
-rel = gnat.Relationship(
-    client=cli,
-    relationship_type="uses",
-    source_ref=actor.id,
-    target_ref=malware.id,
-)
-rel.save()
+# Other ORM types
+actor  = gnat.ThreatActor(client=cli, name="APT-XYZ").save()
+malware = gnat.Malware(client=cli, name="BlackCat", is_family=True).save()
+vuln   = gnat.Vulnerability(client=cli, name="CVE-2024-12345").save()
+rel    = gnat.Relationship(client=cli, relationship_type="uses",
+                           source_ref=actor.id, target_ref=malware.id).save()
 ```
 
-### 3. Switch platforms — zero code changes
+### 4. Switch platforms — zero code changes
 
 ```python
-# Point at CrowdStrike instead
-cli.connect(target="crowdstrike")
-
-# Exact same ORM calls work
-ind = gnat.Indicator(client=cli, name="Evil Hash")
-ind.save()
+cli.connect(target="crowdstrike")   # same ORM calls, different platform
+ind = gnat.Indicator(client=cli, name="Evil Hash").save()
 ```
 
-### 4. Override config at runtime
+### 5. Natural-language query
 
 ```python
-cli = gnat.GNATClient()
-cli.connect(
-    target="netskope",
-    host="https://mytenant.goskope.com",
-    api_token="runtime-token",
-)
-```
-
----
-
-## STIX 2.1 Serialisation
-
-Every ORM object is STIX 2.1 wire-format compatible:
-
-```python
-ind = gnat.Indicator(name="Evil Domain", pattern="[domain-name:value = 'evil.com']")
-
-# Single object as dict
-print(ind.to_dict())
-
-# Wrapped in a STIX bundle
-import json
-bundle = ind.to_stix_bundle()
-print(json.dumps(bundle, indent=2))
-
-# Restore from dict
-restored = gnat.Indicator.from_dict(ind.to_dict(), client=cli)
-```
-
----
-
-## Adding a New Connector (Code Generation)
-
-GNAT ships with an OpenAPI-based code generator. Given any OpenAPI 3.x or Swagger 2.x spec you get a fully scaffolded connector in seconds:
-
-```bash
-# CLI
-gnat-codegen \
-    --spec    ./specs/myplatform-openapi.json \
-    --name    myplatform \
-    --auth    oauth2 \
-    --out-dir ./gnat/connectors
-
-# Python API
-from gnat.codegen import generate_connector
-generate_connector(
-    spec_path="./myplatform.yaml",
-    connector_name="myplatform",
-    auth_type="api_key",
-)
-```
-
-This generates:
-- `gnat/connectors/myplatform/client.py` — fully structured, ready to fill in `to_stix()` / `from_stix()`
-- `gnat/connectors/myplatform/__init__.py`
-- `tests/unit/connectors/test_myplatform.py` — complete pytest scaffold
-
-Then register the new connector in `gnat/clients/__init__.py`:
-
-```python
-from gnat.connectors.myplatform.client import MyplatformClient
-
-CLIENT_REGISTRY = {
-    ...
-    "myplatform": MyplatformClient,
-}
-```
-
----
-
-## NLP Natural-Language Queries
-
-GNAT supports natural-language queries through `NLPQueryEngine`:
-
-```python
-from gnat import GNATClient
-cli = GNATClient()
-cli.connect("threatq")
-
-# Ask a question in plain English
 results = cli.natural_language_query(
     "Get all malicious IPs related to Lazarus Group since January"
 )
-for obj in results:
-    print(obj.type, obj.name)
-```
-
-Two backends:
-- **`builtin`** — regex + keyword rules, zero extra dependencies
-- **`claude`** — structured extraction via Claude API
-
-Configure via `[nlp]` in `config.ini`:
-```ini
-[nlp]
-backend = claude          # builtin | claude
-model   = claude-sonnet-4-6
+# → list[STIXBase] dispatched to all configured connectors
 ```
 
 ---
 
-## Terminal UI (TUI)
+## Core Concepts
 
-Interactive terminal UI — works over SSH, no browser required:
+### STIX 2.1 ORM
 
-```bash
-gnat tui
+Every object from every connector normalises into the same STIX 2.1 types:
+
+| ORM Class | STIX Type | Typical use |
+|-----------|-----------|-------------|
+| `Indicator` | `indicator` | IOCs with STIX patterns |
+| `ThreatActor` | `threat-actor` | Actor profiles, aliases, attribution |
+| `Vulnerability` | `vulnerability` | CVEs, CVSS scores, exploited flag |
+| `AttackPattern` | `attack-pattern` | MITRE ATT&CK TTPs |
+| `Malware` | `malware` | Families, capabilities, kill-chain phases |
+| `Relationship` | `relationship` | Links between objects |
+| `ObservedData` | `observed-data` | Raw SIEM/sensor observations |
+
+All types inherit from `STIXBase` (`gnat/orm/base.py`) and support:
+- `to_dict()` / `from_dict()` / `to_stix_bundle()` — serialisation
+- `save()` / `select()` / `delete()` / `refresh()` — platform I/O
+- `validate=True` kwarg on `Indicator` — validates pattern before save
+
+### Connector Contract
+
+Every connector implements `BaseClient + ConnectorMixin`:
+
+```python
+authenticate()            # set up auth headers/tokens
+health_check()            # lightweight connectivity test → bool
+get_object(id)            # fetch single object → STIXBase
+list_objects(type, ...)   # paginated fetch → list[STIXBase]
+upsert_object(stix_obj)   # create or update → id string
+delete_object(id)         # delete by id
+to_stix(raw_obj)          # platform dict → STIXBase
+from_stix(stix_obj)       # STIXBase → platform dict
 ```
 
-Four screens (F1–F4):
-- **Query** — NLP search bar + scrollable STIX results table
-- **Library** — Research Library browser with promote/reject (Ctrl+P / Ctrl+X)
-- **Scheduler** — Live job status; manual trigger with Ctrl+T
-- **Reports** — PDF/HTML/DOCX browser; open in system browser with Ctrl+O
+Capabilities are introspectable at runtime:
 
-Install: `pip install "gnat[tui]"`
-
----
-
-## Web Dashboard
-
-Browser-based dashboard for server deployments:
-
-```bash
-gnat serve --port 8080 --api-key mykey
-```
-
-Secured by `X-Api-Key` header, rate-limited to 100 req/min. Routes:
-- `GET/POST /api/library` — Research Library management
-- `GET /api/reports` — Report listing + inline HTML
-- `GET/POST /api/scheduler/jobs` — Job status + manual trigger
-- `GET /health` — Unauthenticated liveness
-- `GET /` — Single-page dashboard (dark theme, no build step)
-
-Configure via `[webui]` in `config.ini`. Install: `pip install "gnat[serve]"`
-
----
-
-## Docker Deployment
-
-Production-ready Docker deployment for all three GNAT services:
-
-```bash
-# Build and start all services
-make docker-build && make docker-up
-
-# Full stack with Solr search + Grafana dashboards
-docker compose --profile full up -d
-
-# View logs
-make docker-logs
-```
-
-Services:
-| Service | Port | Description |
-|---------|------|-------------|
-| `gnat-scheduler` | — | FeedScheduler: ingest, export, AI, reports |
-| `gnat-edl` | 8080 | EDL server for firewall integration |
-| `gnat-monitor` | 8090 | Health endpoint + connector monitoring |
-| `solr` (profile: search) | 8983 | Solr search index |
-| `grafana` (profile: monitoring) | 3000 | Grafana dashboards |
-
-Copy `.env.example` to `.env` and set `GNAT_CONFIG_DIR`, `EDL_PORT`, `MONITOR_PORT`.
-
----
-
-## Rust Native Extension (Optional)
-
-GNAT ships an optional Rust extension (`gnat-core`) that accelerates the hot-path IOC functions:
-
-| Function | Description |
-|----------|-------------|
-| `classify_ioc(value)` | Classify IOC type (ip/domain/url/hash/email/…) |
-| `classify_ioc_batch(values)` | Bulk classify without Python loop overhead |
-| `defang(value)` | Reverse `[.]`, `hxxp://` substitutions |
-| `refang(value)` | Apply defanging for safe display |
-| `extract_pattern_value(pattern)` | Extract value from STIX pattern string |
-
-Build and install:
-```bash
-make build-rust        # release build
-make build-rust-dev    # development build (editable)
-```
-
-Pure-Python fallback is always available. Check `gnat.ingest.RUST_AVAILABLE` (re-exported from `gnat.ingest._ioc_classifier.RUST_AVAILABLE`).
-Install: `pip install "gnat[fast]"`
-
----
-
-## Project Structure
-
-```
-gnat/
-├── __init__.py              # Public API surface
-├── client.py                # GNATClient — top-level facade
-├── config.py                # INI file loader
-├── clients/
-│   ├── __init__.py          # CLIENT_REGISTRY
-│   └── base.py              # urllib3 BaseClient + GNATClientError
-├── orm/
-│   ├── base.py              # STIXBase — STIX 2.1 ORM base
-│   ├── indicator.py
-│   ├── threat_actor.py
-│   ├── malware.py
-│   ├── vulnerability.py
-│   ├── attack_pattern.py
-│   ├── observable.py        # IPv4Address, DomainName, URL, File, Email
-│   └── relationship.py
-├── connectors/              # 60+ platform connectors (see Supported Platforms table above)
-│   └── base_connector.py    # ConnectorMixin (STIX translation contract)
-├── ingest/                  # SourceReaders (14), RecordMappers (12), IngestPipeline
-├── export/                  # ExportFilters, Transforms (EDL, Netskope), Delivery, ExportJob
-├── schedule/                # FeedJob, FeedScheduler, APScheduler/Celery adapters
-├── context/                 # Workspace, WorkspaceManager, GlobalContextRegistry
-│   └── tenant.py            # Multi-tenant workspace isolation (TenantRegistry)
-├── agents/                  # AI agent layer (ResearchAgent, CopilotReader, health monitor)
-│   └── health_monitor.py    # ConnectorHealthJob — periodic health + drift detection
-├── research/                # ResearchLibrary, ResearchEntry, CurationJob
-├── reports/                 # ReportGenerator, ReportJob, 4 renderers, 2 delivery targets
-├── viz/                     # TabularView, GraphView, GrafanaServer, sigma.js export
-├── nlp/                     # NLP query engine (NLPQueryEngine, QuerySpec, builtin+Claude)
-├── tui/                     # Textual TUI (GNATApp, 4 screens, STIXTable/JobTable widgets)
-├── serve/                   # Web dashboard + TAXII 2.1 server (FastAPI, X-Api-Key auth)
-│   └── taxii/               # TAXII 2.1 protocol (collections = workspaces)
-├── stix/                    # STIX pattern validator (validate_pattern, PatternValidationError)
-├── search/                  # Solr full-text search sidecar
-│   ├── index.py             # GNATIndexer (Solr document management)
-│   ├── mixin.py             # SearchMixin for connectors
-│   ├── orm_with_mixin.py    # ORM integration
-│   ├── pipeline_patch.py    # Ingest pipeline integration
-│   ├── library_patch.py     # ResearchLibrary integration
-│   └── solr_schema_gnat.xml # Solr 9.x schema
-├── async_client/            # AsyncBaseClient, AsyncGNATClient (httpx)
-├── codegen/                 # OpenAPI connector scaffold + XSOAR content pack generator
-│   └── contribute.py        # ContributionPipeline (7-step gate + draft PR)
-└── utils/
-    └── stix_helpers.py      # Bundle helpers, ID validation
-
-tests/
-├── conftest.py              # Shared fixtures
-├── unit/
-│   ├── test_orm.py          # ORM + STIXBase tests
-│   ├── test_client.py       # GNATClient, GNATConfig, BaseClient tests
-│   └── connectors/
-│       └── test_connectors.py  # Connector tests
-└── integration/
-    └── test_integration.py  # Live API tests (opt-in)
-
-config/
-└── config.ini.example       # Copy to ~/.gnat/config.ini
+```python
+from gnat.clients import get_client
+client = get_client("threatq")
+caps = client.capabilities()     # all public methods with signatures and docs
+result = client.call("list_objects", stix_type="indicator", allow_write=False)
 ```
 
 ---
 
-## Running Tests
+## Ingest Pipelines
 
-```bash
-# Unit tests (no credentials required)
-pytest tests/unit/ -v
-
-# With coverage
-pytest tests/unit/ --cov=gnat --cov-report=term-missing
-
-# Integration tests (requires real credentials in config)
-GNAT_CONFIG=/path/to/real.ini pytest tests/integration/ --run-integration -v
-```
-
----
-
-## Architecture
-
-```
-GNATClient
-    └── connect(target) ──► CLIENT_REGISTRY[target] ──► ConnectorClient
-                                                              │
-                                         ┌────────────────────┘
-                                         │
-                                    BaseClient (urllib3)
-                                    ConnectorMixin
-                                         │
-                          ┌──────────────┴──────────────┐
-                          │                             │
-                     authenticate()            to_stix() / from_stix()
-                     get/post/put/patch/delete  get_object / list_objects
-                                               upsert_object / delete_object
-
-ORM Objects (Indicator, ThreatActor, Malware, ...)
-    └── STIXBase
-            ├── to_dict() / from_dict() / to_stix_bundle()
-            └── select() / save() / delete() / refresh()
-                    └── delegates to client.get_object() / upsert_object() / ...
-```
-
----
-
-## License
-
-Apache 2.0
-
----
-
-## Ingestion Framework
-
-GNAT includes a composable ingestion layer for pulling threat intelligence from any external source into STIX 2.1 objects.
-
-### Architecture
-
-```
-SourceReader  ──yields──►  RawRecord (plain dict)
-     │
-     ▼
-RecordMapper  ──yields──►  STIXBase (Indicator, ThreatActor, …)
-     │
-     ▼
-IngestPipeline ──(optionally writes to)──► GNATClient
-```
-
-### Quick Examples
-
-**Plaintext IOC list → ThreatQ:**
+Pull threat intelligence from any source into STIX 2.1 objects:
 
 ```python
 import gnat
@@ -523,14 +359,13 @@ result = (
     .filter(lambda o: getattr(o, "confidence", 0) >= 50)
     .run()
 )
-print(result)  # IngestResult: 1204 records → 1198 STIX objects, 1102 written …
+# IngestResult: 1204 records → 1198 STIX objects, 1102 written
 ```
 
 **STIX/TAXII feed → CrowdStrike:**
 
 ```python
 from taxii2client.v21 import Server
-
 server = Server("https://limo.anomali.com/api/v1/taxii2/", user="guest", password="guest")
 collection = server.api_roots[0].collections[0]
 
@@ -544,144 +379,675 @@ result = (
 )
 ```
 
-**Relational database → XSOAR:**
-
-```python
-import psycopg2
-
-conn = psycopg2.connect("host=db dbname=ti user=ro password=secret")
-cli = gnat.GNATClient().connect("xsoar")
-
-result = (
-    gnat.IngestPipeline("postgres-iocs")
-    .read_from(gnat.SQLReader(
-        conn,
-        query="SELECT value, type, confidence, notes FROM indicators WHERE active = %s",
-        params=(True,),
-        column_map={"notes": "description"},
-    ))
-    .map_with(gnat.SQLRowMapper(
-        value_col="value", type_col="type",
-        description_col="description", client=cli,
-    ))
-    .write_to(cli)
-    .run()
-)
-```
-
-**MISP export → Recorded Future:**
-
-```python
-result = (
-    gnat.IngestPipeline("misp-export")
-    .read_from(gnat.MISPReader("misp_export.json", attribute_types=["ip-dst", "domain", "md5"]))
-    .map_with(gnat.MISPAttributeMapper(require_to_ids=True, tlp_marking="red", confidence=90))
-    .write_to(cli)
-    .deduplicate(key_fields=["name"])
-    .run()
-)
-```
-
 **NVD CVE feed → vulnerability tracking:**
+
 ```python
 result = (
     gnat.IngestPipeline("nvd-daily")
     .read_from(gnat.JSONReader("nvdcve-1.1-recent.json", records_key="CVE_Items"))
     .map_with(gnat.NVDCVEMapper(confidence=95))
-    .filter(lambda v: getattr(v, "x_cvss_score", 0) >= 7.0)   # HIGH+ only
+    .filter(lambda v: getattr(v, "x_cvss_score", 0) >= 7.0)  # HIGH+ only
     .run()
 )
 ```
 
-**Phishing email folder:**
+### Source Readers (14)
+
+| Reader | Source |
+|--------|--------|
+| `PlainTextReader` | One IOC per line, auto-classified |
+| `CSVReader` | Delimited files with column mapping |
+| `JSONReader` / `JSONLReader` | JSON array or NDJSON |
+| `STIXBundleReader` | STIX 2.x bundle files |
+| `TAXIICollectionReader` | TAXII 2.x collections |
+| `SQLReader` | Any DB-API 2.0 database |
+| `MISPReader` | MISP event export JSON |
+| `SyslogReader` | Syslog / CEF / LEEF logs |
+| `RSSReader` | RSS 2.0 / Atom 1.0 feeds |
+| `EmailReader` | RFC 2822 `.eml` files |
+| `OpenIOCReader` | OpenIOC 1.1 XML |
+| `SplunkReader` | Splunk REST Search API |
+| `ElasticReader` | Elasticsearch scroll API |
+
+### Mappers (12)
+
+| Mapper | Produces |
+|--------|---------|
+| `FlatIOCMapper` | `Indicator` |
+| `STIXPassthroughMapper` | Any STIX type |
+| `MISPAttributeMapper` | `Indicator`, `Vulnerability`, `Malware` |
+| `CEFMapper` | `Indicator` |
+| `SQLRowMapper` | Configurable |
+| `CSVIndicatorMapper` | `Indicator` |
+| `RSSEntryMapper` | `Indicator`, `Vulnerability` |
+| `EmailIOCMapper` | `Indicator` |
+| `OpenIOCMapper` | `Indicator` |
+| `SplunkResultMapper` / `ElasticResultMapper` | `Indicator` |
+| `NVDCVEMapper` | `Vulnerability` |
+
+---
+
+## Export Pipelines
+
+Push STIX objects to destinations with composable filters, transforms, and delivery targets:
 
 ```python
 result = (
-    gnat.IngestPipeline("phish-samples")
-    .read_from(gnat.EmailReader("phishing_samples/", recursive=True))
-    .map_with(gnat.EmailIOCMapper(ioc_types=["ips", "urls", "domains"]))
-    .deduplicate(key_fields=["name"])
+    gnat.ExportPipeline("tq-to-netskope")
+    .read_from(workspace)
+    .filter_with(gnat.TypeFilter("indicator"))
+    .filter_with(gnat.ConfidenceFilter(min=70))
+    .filter_with(gnat.SectorFilter(["healthcare", "financial"]))
+    .transform_with(gnat.NetskopeCETransform(
+        source_label="ThreatQ",
+        ioc_types=["domain", "url", "sha256"],
+    ))
+    .deliver_to(gnat.PlatformDelivery(netskope_client))
     .run()
 )
-objs = list(pipeline.iter_objects())   # collect without writing
 ```
 
-**SIEM (Splunk / Elastic) → platform:**
+### Filters
+
+| Filter | Purpose |
+|--------|---------|
+| `TypeFilter` | By STIX object type |
+| `ConfidenceFilter` | Minimum confidence threshold |
+| `TLPFilter` | By TLP marking (white/green/amber/red) |
+| `SectorFilter` | By `x_target_sectors` with alias expansion |
+| `IOCTypeFilter` | By IOC type (ip/domain/url/hash/…) |
+| `LimitFilter` | Hard cap on object count |
+
+### Delivery Targets
+
+| Target | Description |
+|--------|-------------|
+| `FileDelivery` | Write to local file |
+| `EDLServer` | Serve EDL over HTTP (live-updating indicator lists for firewalls) |
+| `PlatformDelivery` | Push to any registered GNAT connector |
+| `MultiDelivery` | Fan-out to multiple targets simultaneously |
+
+---
+
+## Scheduling
+
+All job types run in a single `FeedScheduler` with drift-corrected cron scheduling:
 
 ```python
-# Splunk
-result = (
-    gnat.IngestPipeline("splunk-hunt")
-    .read_from(gnat.SplunkReader(splunk_client,
-        search="search index=threat_intel type=ip | table src_ip type"))
-    .map_with(gnat.SplunkResultMapper(value_field="src_ip"))
-    .write_to(cli)
-    .run()
-)
+from gnat.schedule import FeedScheduler, FeedJob
 
-# Elasticsearch
-result = (
-    gnat.IngestPipeline("elastic-iocs")
-    .read_from(gnat.ElasticReader(elastic_client,
-        index="threat-intel-*",
-        query={"term": {"active": True}},
-        source_fields=["value", "type", "confidence"]))
-    .map_with(gnat.FlatIOCMapper())
-    .run()
-)
+scheduler = FeedScheduler()
+
+class DailyIngestJob(FeedJob):
+    name    = "daily-threatq-ingest"
+    cron    = "0 2 * * *"   # 02:00 UTC daily
+
+    def run(self, ctx):
+        # ctx.last_success_iso available for incremental ingestion
+        pipeline = IngestPipeline("threatq").read_from(...).run()
+
+scheduler.register(DailyIngestJob())
+scheduler.start()
+
+# Export + Report jobs use the same scheduler
+scheduler.register(ExportJob(...))
+scheduler.register(ReportJob(...))
 ```
 
-### Supported Source Readers
+Features: overlap protection (skip or queue policy), `on_success`/`on_failure` callbacks,
+`ctx.last_success_iso` for incremental reads, `to_cron_lines()` for static crontab export,
+APScheduler and Celery adapters for existing infrastructure.
 
-| Reader | Source | Requires |
-|---|---|---|
-| `PlainTextReader` | One IOC per line, auto-classified | — |
-| `CSVReader` | Delimited files with column mapping | — |
-| `JSONReader` | JSON array or object-wrapped array | — |
-| `JSONLReader` | Newline-delimited JSON (NDJSON) | — |
-| `STIXBundleReader` | STIX 2.x bundle JSON files | — |
-| `TAXIICollectionReader` | TAXII 2.x collection | `taxii2-client` |
-| `SQLReader` | Any DB-API 2.0 database | your DB driver |
-| `MISPReader` | MISP event export JSON | — |
-| `SyslogReader` | Syslog / CEF / LEEF log files | — |
-| `RSSReader` | RSS 2.0 / Atom 1.0 feeds | `feedparser` |
-| `EmailReader` | RFC 2822 .eml files | — |
-| `OpenIOCReader` | OpenIOC 1.1 XML files | — |
-| `SplunkReader` | Splunk REST Search API | — |
-| `ElasticReader` | Elasticsearch scroll API | — |
+---
 
-### Supported Mappers
+## AI Agents & Research Library
 
-| Mapper | Produces | Notes |
-|---|---|---|
-| `FlatIOCMapper` | `Indicator` | Generic `{value, type}` dicts |
-| `STIXPassthroughMapper` | Any STIX type | Already-STIX dicts from TAXII/bundles |
-| `MISPAttributeMapper` | `Indicator`, `Vulnerability`, `Malware` | MISP attribute records |
-| `CEFMapper` | `Indicator` | Standard CEF field names |
-| `SQLRowMapper` | Any STIX type | Configurable column bindings |
-| `CSVIndicatorMapper` | `Indicator` | CSV alias of `FlatIOCMapper` |
-| `RSSEntryMapper` | `Indicator`, `Vulnerability` | Extracts IOCs from feed text |
-| `EmailIOCMapper` | `Indicator` | IPs, domains, URLs, hashes from email |
-| `OpenIOCMapper` | `Indicator` | OpenIOC `IndicatorItem` records |
-| `SplunkResultMapper` | `Indicator` | Splunk/Elastic result rows |
-| `ElasticResultMapper` | `Indicator` | Elasticsearch alias |
-| `NVDCVEMapper` | `Vulnerability` | NVD 1.x and 2.x formats |
+### AI Agents
 
-### Pipeline Features
+| Agent | Role | Backend |
+|-------|------|---------|
+| `ResearchAgent` | Topic-driven synthesis; feed-driven monitoring | Claude API (`web_search` tool) |
+| `ParsingAgent` | Extract STIX objects from unstructured text | Claude API |
+| `CopilotReader` | Query M365 content (SharePoint, Teams, mail) via DirectLine | Microsoft Bot Framework |
+
+All AI-extracted objects are capped at `confidence_ceiling = 60` (configurable) and tagged
+`x_source_type = "ai_extracted"`. Default export pipelines use `ConfidenceFilter(min=70)`,
+ensuring AI intel requires analyst promotion before reaching production EDLs.
+
+```ini
+[claude]
+api_key            = sk-...
+model              = claude-sonnet-4-6
+ai_confidence_ceiling = 60
+```
+
+### Research Library
+
+Three-tier team knowledge base with controlled promotion:
+
+```
+Personal Workspaces  →  Staging (_gnat_staging)  →  Library (_gnat_library)
+   analyst-owned         anyone can write              curated, read-only
+                         nothing auto-promotes         CurationJob every 4h
+```
 
 ```python
-pipeline = (
-    IngestPipeline("name")
-    .read_from(reader)            # set source
-    .map_with(mapper)             # set mapper
-    .write_to(cli)                # optional: write to platform
-    .deduplicate(                 # optional: skip seen objects
-        key_fields=["name"]       #   default: ["id"]
-    )
-    .filter(predicate_fn)         # optional: drop objects
-    .transform(transform_fn)      # optional: mutate objects
-)
+from gnat.research import ResearchLibrary
 
-result = pipeline.run()           # execute + write
-objs = list(pipeline.iter_objects())  # execute, no write
+lib = ResearchLibrary.default()
+
+# Check freshness before running expensive AI research
+if not lib.is_fresh("APT29", max_age_hours=72):
+    agent = ResearchAgent(config)
+    results = agent.research("APT29 latest TTPs")
+    lib.promote(workspace, topic="APT29", researcher="analyst1", note="Q1 2025 update")
+
+# Query the library
+entries = lib.search("Cobalt Strike", tlp="amber")
 ```
+
+`CurationJob` deduplicates entries (most recent wins per topic) and enforces TTLs:
+`indicator` → 24 h, `vulnerability` → 72 h, `campaign` → 14 d, `threat_actor` → 30 d.
+
+---
+
+## Natural Language Queries
+
+```python
+cli = gnat.GNATClient()
+
+results = cli.natural_language_query(
+    "Get all malicious IPs associated with Lazarus Group in the past 30 days"
+)
+# → list[STIXBase] dispatched to all configured connectors
+```
+
+Two backends — configure via `[nlp]` section:
+
+```ini
+[nlp]
+backend = builtin   # builtin (zero deps) | claude (structured extraction)
+model   = claude-sonnet-4-6
+```
+
+The **builtin** backend uses regex and keyword rules with zero extra dependencies.
+The **claude** backend uses the Claude API for structured `QuerySpec` extraction, supporting
+complex entity, IOC-type, time-range, and platform filters.
+
+CLI: `gnat nlq "Show me all CVEs exploited in the wild this week"`
+
+---
+
+## Sector Targeting Intelligence
+
+GNAT normalizes industry/sector data from all connectors into a single canonical field
+`x_target_sectors` (list of strings on any STIX object), with platform-specific extraction:
+
+| Platform | Native field | Extraction |
+|----------|-------------|------------|
+| ThreatQ | `attributes[].name` ∈ sector variants | `_extract_sectors()` |
+| Recorded Future | `relatedEntities[type=Industry].entity.name` | JSON path |
+| CrowdStrike | `target_industries[]` (adversary objects) | JSON path |
+| VirusTotal | `popular_threat_category{}.value` | JSON path |
+| ShadowServer | `sector` (top-level report field) | JSON path |
+| Nucleus | `asset.industry` + `asset.tags[]` | Combined |
+
+Sector aliases are configured in `[sector_aliases]` and expanded automatically by `SectorFilter`:
+
+```ini
+[sector_aliases]
+healthcare = Healthcare, Health, Medical, H-ISAC, Hospitals and Health Centers
+financial  = Financial Services, Finance, Banking, FS-ISAC
+energy     = Energy, Electric, Oil and Gas, E-ISAC
+```
+
+`SectorFilter` is a composable `ExportFilter` subclass available as `gnat.export.SectorFilter`
+and re-exported from `gnat.reports.base` for backward compatibility.
+
+---
+
+## Automated Reports
+
+Three report types, fully scheduled:
+
+| Type | Schedule | AI | Formats | Audience |
+|------|----------|----|---------|----------|
+| Daily Intel | `0 6 * * *` | Assisted | PDF, HTML, Markdown | SOC / shift handoff |
+| Trends | `0 6 * * 1` | Assisted | PDF, HTML | Team leads |
+| Yearly | `0 6 1 1 *` | Full | PDF, DOCX | Management / compliance |
+
+```python
+from gnat.reports import ReportGenerator
+
+gen = ReportGenerator.from_config(config)
+gen.run("daily_healthcare", formats=["pdf", "html"], output_dir="/var/reports/")
+```
+
+Generation pipeline: `DataAggregator` → `ReportSynthesizer` (one Claude call per section) →
+`Renderers` (MD/HTML/PDF/DOCX) → `Delivery` (email body-HTML + SharePoint).
+
+CLI: `gnat report list` / `gnat report run --config report.daily_healthcare --formats pdf html`
+
+---
+
+## Solr Search Sidecar
+
+Full-text search across all STIX objects from all connectors simultaneously:
+
+```ini
+[search]
+solr_url   = http://localhost:8983/solr/gnat
+enabled    = true
+batch_size = 100
+```
+
+| Component | File | Function |
+|-----------|------|----------|
+| `GNATIndexer` | `gnat/search/index.py` | Add/update/delete Solr documents |
+| `SearchMixin` | `gnat/search/mixin.py` | Auto-index on `upsert_object()` — zero connector code change |
+| `ORM integration` | `gnat/search/orm_with_mixin.py` | Search-enhanced STIX objects |
+| `PipelinePatch` | `gnat/search/pipeline_patch.py` | Route ingest records through Solr post-map |
+| `LibraryPatch` | `gnat/search/library_patch.py` | ResearchLibrary cross-source correlation |
+| Solr schema | `gnat/search/solr_schema_gnat.xml` | Solr 9.x schema for GNAT fields |
+
+Grafana dashboards via `gnat viz serve --with-solr` or `gnat viz solr-dashboard --file dashboard.json`.
+
+---
+
+## TAXII 2.1 Server
+
+Each GNAT workspace is exposed as a TAXII 2.1 collection:
+
+```bash
+gnat taxii --port 8090 --api-key s3cr3t
+gnat taxii --title "Acme TAXII" --contact admin@acme.com --port 9000
+```
+
+Full endpoint coverage: Discovery, API Root, Collections (list/detail), Objects (GET/POST/paginated),
+Manifest, single object, and version history. Requires `gnat[serve]`.
+
+---
+
+## STIX Pattern Validation
+
+Two-tier validator — no dependencies for tier 1:
+
+```python
+from gnat.stix import validate_pattern, PatternValidationError
+
+result = validate_pattern("[ipv4-addr:value = '1.2.3.4']")
+assert result.valid
+
+validate_pattern("[bad", raise_on_error=True)   # raises PatternValidationError
+```
+
+ORM integration (non-breaking, opt-in per object):
+
+```python
+from gnat.orm.indicator import Indicator
+ind = Indicator(pattern="[ipv4-addr:value = '1.2.3.4']", validate=True)
+```
+
+CLI: `gnat validate pattern "[domain-name:value = 'evil.com']"`
+`gnat validate bundle indicators.json --strict`  (uses `stix2-patterns` ANTLR if installed)
+
+---
+
+## Multi-Tenant Deployments
+
+Transparent workspace namespace isolation — no schema migration required:
+
+```python
+from gnat.context import WorkspaceManager
+
+manager = WorkspaceManager.default()
+
+acme = manager.for_tenant("acme")
+ws   = acme.create("apt28-investigation")
+# stored as "acme::apt28-investigation"
+
+beta = manager.for_tenant("beta")
+ws2  = beta.create("apt28-investigation")
+# stored as "beta::apt28-investigation" — no collision
+```
+
+CLI: `gnat tenant list` / `gnat tenant create acme --display-name "Acme Corp"` /
+`gnat tenant workspaces acme` / `gnat tenant delete acme --yes`
+
+---
+
+## Terminal UI & Web Dashboard
+
+### Terminal UI (Textual)
+
+Works over SSH — no browser, no display server:
+
+```bash
+gnat tui            # launch on dashboard screen
+gnat tui query      # start directly on NLP query screen
+```
+
+Four screens (F1–F4):
+- **Query** — NLP search bar + scrollable STIX results table
+- **Library** — Research Library browser; promote (Ctrl+P) / reject (Ctrl+X)
+- **Scheduler** — Live job status with manual trigger (Ctrl+T)
+- **Reports** — PDF/HTML/DOCX browser; open in system browser (Ctrl+O)
+
+Install: `pip install "gnat[tui]"`
+
+### Web Dashboard (FastAPI)
+
+```bash
+gnat serve --port 8088 --api-key $(openssl rand -hex 16)
+```
+
+Secured by `X-Api-Key` header; binds to `127.0.0.1` by default; rate-limited to 100 req/min.
+Embed behind nginx + TLS for external access.
+
+| Route | Purpose |
+|-------|---------|
+| `GET/POST /api/library` | Research Library search, promote, reject |
+| `GET /api/reports` | List reports; serve HTML inline |
+| `GET/POST /api/scheduler/jobs` | Job list + manual trigger |
+| `GET /health` | Unauthenticated liveness |
+| `GET /` | Single-page dashboard (dark theme, no build step) |
+
+Install: `pip install "gnat[serve]"`
+
+---
+
+## Docker & Containerization
+
+### Production stack
+
+```bash
+make docker-build && make docker-up           # 3-service stack
+docker compose --profile full up -d           # + Solr + Grafana
+make docker-logs
+```
+
+| Service | Port | Description |
+|---------|------|-------------|
+| `gnat-scheduler` | — | FeedScheduler: ingest, export, AI, curation, reports |
+| `gnat-edl` | 8080 | EDL server for firewall EDL integration |
+| `gnat-monitor` | 8090 | Health endpoint + `GET /status` JSON |
+| `solr` *(search profile)* | 8983 | Solr full-text search index |
+| `grafana` *(monitoring profile)* | 3000 | Grafana dashboards |
+
+Copy `.env.example` to `.env`; set `GNAT_CONFIG_DIR`, `EDL_PORT`, `MONITOR_PORT`.
+
+### VS Code DevContainer
+
+`.devcontainer/devcontainer.json` provides a one-click environment with Rust toolchain,
+Docker-in-Docker, and Ruff extension — fully configured for GitHub Codespaces.
+
+### Docker Integration Test Harness
+
+```bash
+make test-docker    # start containers → run suite → teardown
+```
+
+Spins up Elasticsearch 8.13.4 and Solr 9.6 on non-conflicting ports for reproducible CI
+integration tests without live credentials. 48 integration tests across TAXII round-trips,
+Elasticsearch, and Solr indexing.
+
+---
+
+## Connector Capabilities & Code Generation
+
+### Capability Reflection
+
+```python
+client = get_client("threatq")
+caps = client.capabilities()
+# → [{name, signature, doc, type: "auth|read|write|helper", platform_specific: bool}, ...]
+
+# Safe guarded dispatch — write methods require explicit allow_write=True
+result = client.call("list_objects", stix_type="indicator")
+client.call("upsert_object", stix_obj=ind, allow_write=True)
+```
+
+CLI:
+```bash
+gnat client capabilities --platform threatq
+gnat client call --platform splunk --method list_objects --args stix_type=indicator
+```
+
+### OpenAPI Scaffold
+
+```bash
+gnat codegen openapi --spec path/to/openapi.yaml --target myplatform
+```
+
+Generates `client.py`, `__init__.py`, and a full pytest scaffold in seconds.
+
+### XSOAR Content Pack Generator
+
+```bash
+gnat codegen xsoar --connector threatq --output ./packs/
+```
+
+Introspects the connector via `capabilities()`, maps methods to XSOAR command definitions,
+and writes a valid XSOAR 6 content pack zip. Write methods are flagged `dangerous: true`.
+
+### Upstream Contribution Pipeline
+
+```bash
+gnat contribute --connector myplatform --message "Add MyPlatform connector"
+gnat contribute --connector myplatform --dry-run   # compliance check only
+```
+
+7-step gate: enabled guard → registry check → compliance matrix (all 8 required methods + tests)
+→ full test run → branch creation (`contribute/{platform}-{timestamp}`) → push → draft PR.
+`draft_pr = true` is hardcoded; PRs are always created as drafts.
+
+---
+
+## Quality & Security
+
+### Continuous Integration
+
+Every push runs the **pylint** workflow across a Python 3.8 / 3.9 / 3.10 matrix:
+
+```yaml
+# .github/workflows/pylint.yml
+on: [push]
+jobs:
+  build:
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pylint && pylint gnat
+```
+
+### Linting & Type Checking
+
+| Tool | Role | Config |
+|------|------|--------|
+| **Ruff** | Linting + formatting (E, F, W, I, UP, B, C4, SIM rules) | `pyproject.toml [tool.ruff]` |
+| **mypy** | Static type checking (Python 3.9 target, `warn_return_any`) | `pyproject.toml [tool.mypy]` |
+| **pylint** | Style + logic analysis; CI gate on every push | `.github/workflows/pylint.yml` |
+
+```bash
+make lint       # ruff check + format check
+make typecheck  # mypy
+make check      # lint + typecheck (full static analysis gate)
+make fmt        # auto-format with ruff
+```
+
+### Test Coverage
+
+- **1,500+ unit tests** across 25+ test files covering all connectors, pipeline stages, renderers, schedulers, and security boundaries
+- **70% minimum coverage enforced** (`fail_under = 70` in `pyproject.toml`)
+- **Docker integration test harness** — 48 integration tests against real Elasticsearch + Solr containers (`make test-docker`)
+
+```bash
+make test       # unit tests
+make coverage   # HTML coverage report → htmlcov/
+make test-docker # full integration suite with real containers
+```
+
+### Dependency & Vulnerability Management
+
+| Tool | Function |
+|------|----------|
+| **GitHub Dependabot** | Automated dependency update PRs — every dependency bumped via auditable PR |
+| **Snyk** | Dependency vulnerability scanning and code security analysis |
+| **GitHub Secret Scanning** | Prevents accidental credential commits; blocks known secret patterns |
+
+### GitHub Copilot Code Review
+
+GitHub Copilot is used throughout the development workflow for AI-assisted code review on pull requests, inline suggestions, and pattern detection. All AI-authored code goes through the same CI gate (pylint, ruff, mypy, tests) before merge.
+
+### Security Conventions
+
+- No credentials in source: only example values in `config/config.ini.example`; real keys via `GNAT_CONFIG` env var or `~/.gnat/config.ini`
+- AI confidence ceiling (`confidence_ceiling = 60`) prevents AI-extracted intel from reaching production EDLs without analyst promotion
+- Web dashboard defaults to `bind = 127.0.0.1`; API key required for all non-health routes
+- TAXII server uses the same `X-Api-Key` scheme; rate-limited to 100 req/min
+- Upstream contribution pipeline creates only draft PRs; `draft_pr = true` is not overridable
+- `call()` dispatch requires explicit `allow_write=True` for write-type connector methods
+
+---
+
+## Project Structure
+
+```
+gnat/
+├── __init__.py              # Public API: GNATClient, ORM types, IngestPipeline, ExportPipeline
+├── client.py                # GNATClient — top-level facade
+├── config.py                # INI-based config (GNAT_CONFIG → ~/.gnat/config.ini → ./gnat.ini)
+├── clients/
+│   ├── __init__.py          # CLIENT_REGISTRY (60+ connectors)
+│   └── base.py              # urllib3 BaseClient + GNATClientError
+├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types + observables)
+├── connectors/              # 60+ platform connectors — each: BaseClient + ConnectorMixin
+│   └── base_connector.py    # ConnectorMixin (8-method contract + capabilities() + call())
+├── ingest/                  # SourceReaders (14), RecordMappers (12), IngestPipeline
+│   └── _ioc_classifier.py   # RUST_AVAILABLE shim for optional Rust hot-path
+├── export/                  # ExportFilters, Transforms (EDL, Netskope CE), Delivery targets, ExportJob
+├── schedule/                # FeedJob, FeedScheduler, APScheduler/Celery adapters
+├── context/                 # Workspace, WorkspaceManager, GlobalContextRegistry
+│   └── tenant.py            # TenantRegistry + TenantWorkspaceManager (multi-tenant isolation)
+├── agents/                  # AI agent layer
+│   ├── copilot.py           # CopilotReader (M365 DirectLine, token refresh)
+│   ├── research.py          # ResearchAgent + ParsingAgent
+│   └── health_monitor.py    # ConnectorHealthJob — health + schema drift detection
+├── research/                # ResearchLibrary, ResearchEntry, CurationJob
+├── reports/                 # ReportGenerator, ReportJob, 4 renderers, email + SharePoint delivery
+├── viz/                     # TabularView, GraphView, GrafanaServer, sigma.js export
+│   └── grafana/
+│       └── search_endpoints.py  # Solr → Grafana SimpleJSON sub-router
+├── nlp/                     # NLPQueryEngine (BuiltinParser + ClaudeParser), QuerySpec, GNATClient.natural_language_query()
+├── tui/                     # Textual TUI — GNATApp, 4 screens, STIXTable/JobTable widgets
+├── serve/                   # Web dashboard + TAXII 2.1 server (FastAPI, auth, rate-limiting)
+│   └── taxii/               # Full TAXII 2.1 protocol (collections = workspaces)
+├── stix/                    # STIX pattern validator (validate_pattern, PatternValidationError)
+├── search/                  # Solr full-text search sidecar
+│   ├── index.py             # GNATIndexer
+│   ├── mixin.py             # SearchMixin (auto-index on upsert)
+│   ├── pipeline_patch.py    # IngestPipeline → Solr routing
+│   ├── library_patch.py     # ResearchLibrary search-backed lookups
+│   └── solr_schema_gnat.xml # Solr 9.x schema
+├── async_client/            # AsyncBaseClient, AsyncGNATClient (httpx)
+├── codegen/                 # OpenAPI connector scaffold, XSOAR pack generator
+│   └── contribute.py        # ContributionPipeline (7-step gate + draft PR)
+└── utils/
+    └── stix_helpers.py      # Bundle helpers, ID validation
+
+tests/
+├── conftest.py              # Shared fixtures (mock_http_response, mock_pool_manager, minimal_config)
+├── unit/                    # 1,500+ unit tests mirroring gnat/ layout
+└── integration/             # Live API + Docker container integration tests
+
+docker/
+├── scheduler/Dockerfile     # FeedScheduler service image
+├── edl/Dockerfile           # EDL server image
+├── monitor/Dockerfile       # Health monitor image
+├── test/                    # Docker integration test harness (ES + Solr)
+└── grafana/provisioning/    # Auto-provisioned GNAT + GNAT-Solr Grafana datasources
+
+config/
+└── config.ini.example       # All sections documented; copy to ~/.gnat/config.ini
+```
+
+---
+
+## Development
+
+```bash
+# Setup
+python -m venv .venv && source .venv/bin/activate
+make install          # pip install -e ".[dev]"
+
+# Tests
+make test             # unit tests
+make coverage         # HTML coverage report (htmlcov/)
+make test-docker      # Docker integration suite
+
+# Code quality
+make lint             # ruff check + format check
+make fmt              # auto-format with ruff
+make typecheck        # mypy
+make check            # lint + typecheck (full gate)
+
+# Build
+make build            # sdist + wheel
+make build-rust       # Rust extension (requires Rust toolchain)
+make docs             # Sphinx HTML docs (docs/build/html/)
+```
+
+---
+
+## Architecture
+
+```
+                        ┌─────────────────────────────────────────┐
+                        │       ANALYST / AUTOMATION LAYER        │
+                        │  CLI · TUI · Web Dashboard · SOAR       │
+                        └──────────────────┬──────────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────────┐
+                        │              GNAT CORE                  │
+                        │  GNATClient · IngestPipeline            │
+                        │  ExportPipeline · FeedScheduler         │
+                        │  AI Agents · ResearchLibrary            │
+                        │  ReportGenerator · NLPQueryEngine       │
+                        │  TAXII 2.1 Server · Solr Sidecar        │
+                        └──────────────────┬──────────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────────┐
+                        │         STIX 2.1 ORM + WORKSPACE        │
+                        │  Indicator · ThreatActor · Malware      │
+                        │  Vulnerability · AttackPattern          │
+                        │  Relationship · ObservedData            │
+                        └──────────────────┬──────────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────────┐
+                        │     CONNECTOR LAYER (60+ platforms)     │
+                        │  BaseClient + ConnectorMixin            │
+                        │  authenticate · health_check            │
+                        │  get/list/upsert/delete · to/from_stix  │
+                        └──────────────────┬──────────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────────┐
+                        │          EXTERNAL PLATFORMS             │
+                        │  TIPs · SIEMs · EDRs · VulnMgmt        │
+                        │  CNAPP/ASM · SOAR · NDR · AI APIs       │
+                        └─────────────────────────────────────────┘
+
+Transport: urllib3 (sync) · httpx (async) — zero cloud dependencies
+Config:    INI file — GNAT_CONFIG env var → ~/.gnat/config.ini → ./gnat.ini
+```
+
+---
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE).
+
+---
+
+*See also: [EXAMPLES.md](EXAMPLES.md) · [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) · [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) · [CHANGELOG.md](CHANGELOG.md)*

@@ -44,3 +44,6 @@ scripts/package-lock.json
 # Test workspace artifacts
 test_ws_*/
 test_ws_rg/
+
+# Generated presentation output
+*.pptx
