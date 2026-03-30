@@ -116,7 +116,7 @@ class QRadarRulesCommands:
         list[dict]
             Matching rule records.
         """
-        return self.list_rules(filter=f"name ilike '%{name_fragment}%'")
+        return self.list_rules(filter_val=f"name ilike '%{name_fragment}%'")
 
     def list_rule_groups(self) -> list[dict]:
         """

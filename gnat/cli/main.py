@@ -1386,10 +1386,9 @@ def _cmd_health(args) -> int:
         print(_green(f"✓  Baseline saved for {_bold(platform)} ({len(fingerprint)} fields)"))
         return 0
 
-    else:
-        # No sub-subcommand — print help
-        print("Usage: gnat health check | gnat health baseline PLATFORM")
-        return 1
+    # No sub-subcommand — print help
+    print("Usage: gnat health check | gnat health baseline PLATFORM")
+    return 1
 
 
 def _cmd_tenant(args) -> int:
@@ -1512,18 +1511,17 @@ def _cmd_tenant(args) -> int:
                   f"{ws.get('description', '')}")
         return 0
 
-    else:
-        print(
-            "Usage:\n"
-            "  gnat tenant list\n"
-            "  gnat tenant create <id> [--display-name NAME] [--description DESC] "
-            "[--config PATH]\n"
-            "  gnat tenant delete <id> [--yes]\n"
-            "  gnat tenant info <id>\n"
-            "  gnat tenant workspaces <id>\n",
-            file=sys.stderr,
-        )
-        return 0
+    print(
+        "Usage:\n"
+        "  gnat tenant list\n"
+        "  gnat tenant create <id> [--display-name NAME] [--description DESC] "
+        "[--config PATH]\n"
+        "  gnat tenant delete <id> [--yes]\n"
+        "  gnat tenant info <id>\n"
+        "  gnat tenant workspaces <id>\n",
+        file=sys.stderr,
+    )
+    return 0
 
 
 def _cmd_validate(args) -> int:
@@ -1547,7 +1545,7 @@ def _cmd_validate(args) -> int:
             print(f"   {_yellow('Warning:')} {warn}", file=sys.stderr)
         return 1
 
-    elif sub == "bundle":
+    if sub == "bundle":
         bundle_path = Path(args.file)
         if not bundle_path.exists():
             print(_red(f"Error: file not found: {bundle_path}"), file=sys.stderr)
@@ -1595,18 +1593,17 @@ def _cmd_validate(args) -> int:
         print(_red(f"\n✗  {summary} ({invalid_count} invalid)"), file=sys.stderr)
         return 1
 
-    else:
-        # No subcommand — print help
-        print(
-            "Usage:\n"
-            "  gnat validate pattern \"[ipv4-addr:value = '1.2.3.4']\"\n"
-            "  gnat validate bundle   indicators.json\n"
-            "\nOptions:\n"
-            "  --strict      Use stix2-patterns ANTLR grammar (pip install 'gnat[stix-validate]')\n"
-            "  --fail-fast   (bundle only) stop at first invalid pattern\n",
-            file=sys.stderr,
-        )
-        return 0
+    # No subcommand — print help
+    print(
+        "Usage:\n"
+        "  gnat validate pattern \"[ipv4-addr:value = '1.2.3.4']\"\n"
+        "  gnat validate bundle   indicators.json\n"
+        "\nOptions:\n"
+        "  --strict      Use stix2-patterns ANTLR grammar (pip install 'gnat[stix-validate]')\n"
+        "  --fail-fast   (bundle only) stop at first invalid pattern\n",
+        file=sys.stderr,
+    )
+    return 0
 
 
 def _cmd_serve_taxii(args) -> int:

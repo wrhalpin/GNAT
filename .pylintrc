@@ -95,6 +95,12 @@ disable=
     W0621,
     # Unnecessary ellipsis — correct in .pyi stub files.
     W2301,
+    # Exception chaining (raise X from Y) — widely used pattern in this codebase
+    # where re-raised exceptions intentionally drop the original context to provide
+    # cleaner error messages to end users (e.g. ImportError for missing extras,
+    # KeyError for missing config sections). Adding "from exc" everywhere would
+    # expose internal tracebacks that add no value in these contexts.
+    W0707,
 
 [FORMAT]
 max-line-length=120
