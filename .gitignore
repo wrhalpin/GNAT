@@ -45,5 +45,3 @@ scripts/package-lock.json
 test_ws_*/
 test_ws_rg/
 
-# Generated presentation output
-*.pptx
