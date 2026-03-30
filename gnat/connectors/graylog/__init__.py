@@ -359,27 +359,27 @@ class GraylogSearchCommands:
     def field_histogram(
         self,
         query: str,
-        field: str,
+        field_name: str,
         interval: str = "hour",
         time_range: int = 86400,
     ) -> dict:
         """Get a histogram of a field's values over time."""
         return self._client.get(
             "search/universal/relative/histogram",
-            params={"query": query, "field": field, "interval": interval, "range": time_range},
+            params={"query": query, "field": field_name, "interval": interval, "range": time_range},
         )
 
     def field_terms(
         self,
         query: str,
-        field: str,
+        field_name: str,
         size: int = 10,
         time_range: int = 86400,
     ) -> dict:
         """Get top terms for a field."""
         return self._client.get(
             "search/universal/relative/terms",
-            params={"query": query, "field": field, "size": size, "range": time_range},
+            params={"query": query, "field": field_name, "size": size, "range": time_range},
         )
 
     @staticmethod

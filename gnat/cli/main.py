@@ -1062,7 +1062,6 @@ def _cmd_client(args) -> int:
             return 0
 
         if args.format == "json":
-            import json
             print(json.dumps(caps, indent=2))
             return 0
 

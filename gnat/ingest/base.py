@@ -322,11 +322,11 @@ class DeduplicationCache:
 
     def _fingerprint(self, obj: "STIXBase") -> str:
         parts = []
-        for field in self._fields:
-            if field == "id":
+        for fld in self._fields:
+            if fld == "id":
                 parts.append(obj.id)
             else:
-                parts.append(str(obj._properties.get(field, "")))
+                parts.append(str(obj._properties.get(fld, "")))
         raw = "|".join(parts).encode()
         return hashlib.sha256(raw).hexdigest()
 

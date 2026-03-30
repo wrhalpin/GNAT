@@ -149,9 +149,9 @@ class SplunkClient(BaseClient, ConnectorMixin):
 
     def post_raw(self, url: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """POST form-encoded data to an absolute URL and return parsed JSON."""
-        import urllib3
+        import urllib3 as _urllib3
         encoded = urllib.parse.urlencode(data or {}).encode("utf-8")
-        pool = urllib3.PoolManager()
+        pool = _urllib3.PoolManager()
         resp = pool.request(
             "POST", url,
             body=encoded,

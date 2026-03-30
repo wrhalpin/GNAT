@@ -714,22 +714,22 @@ class Workspace:
     @staticmethod
     def _from_dict(stix_dict: dict) -> STIXBase:
         """Reconstruct the most specific ORM class from a STIX dict."""
-        from gnat.orm.base import STIXBase
+        from gnat.orm.base import STIXBase as stix_cls
         from gnat.orm.indicator import Indicator
         from gnat.orm.malware import Malware
         from gnat.orm.vulnerability import Vulnerability
         from gnat.orm.threat_actor import ThreatActor
         from gnat.orm.attack_pattern import AttackPattern
-        from gnat.orm.relationship import Relationship
+        from gnat.orm.relationship import Relationship as rel_cls
         _MAP = {
             "indicator":     Indicator,
             "malware":       Malware,
             "vulnerability": Vulnerability,
             "threat-actor":  ThreatActor,
             "attack-pattern": AttackPattern,
-            "relationship":  Relationship,
+            "relationship":  rel_cls,
         }
-        cls = _MAP.get(stix_dict.get("type", ""), STIXBase)
+        cls = _MAP.get(stix_dict.get("type", ""), stix_cls)
         return cls.from_dict(stix_dict)
 
     # ── Dunder ──────────────────────────────────────────────────────────────

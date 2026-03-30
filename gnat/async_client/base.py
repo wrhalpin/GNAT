@@ -167,32 +167,32 @@ class AsyncBaseClient:
     async def post(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Async POST request."""
         return await self._request(
-            "POST", path, body=json, form_data=data, extra_headers=headers
+            "POST", path, body=json_data, form_data=data, extra_headers=headers
         )
 
     async def put(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Async PUT request."""
-        return await self._request("PUT", path, body=json, extra_headers=headers)
+        return await self._request("PUT", path, body=json_data, extra_headers=headers)
 
     async def patch(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Async PATCH request."""
-        return await self._request("PATCH", path, body=json, extra_headers=headers)
+        return await self._request("PATCH", path, body=json_data, extra_headers=headers)
 
     async def delete(
         self,
