@@ -1115,10 +1115,10 @@ class GraphView:
         rng = random.Random(self._seed)
         positions = {}
         for nid, obj in nodes.items():
-            def _get(f):
-                v = obj._properties.get(f)
-                if v is None and hasattr(obj, f):
-                    v = getattr(obj, f, None)
+            def _get(f, _obj=obj):
+                v = _obj._properties.get(f)
+                if v is None and hasattr(_obj, f):
+                    v = getattr(_obj, f, None)
                 return v
 
             xv, yv = _get(x_field), _get(y_field)

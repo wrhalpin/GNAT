@@ -479,10 +479,11 @@ class FeedScheduler:
             task_name = f"gnat.feed.{job.job_id}"
 
             @celery_app.task(name=task_name, bind=True, max_retries=0)
-            def _celery_task(self_task, _job_id=job.job_id):
+            def _celery_task(self_task, _job_id=job.job_id, _task_name=task_name):
                 j = self._jobs.get(_job_id)
                 if j:
                     return j.execute().as_dict()
+                return None
 
             task_map[job.job_id] = _celery_task
 
