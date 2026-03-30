@@ -1,0 +1,21 @@
+{
+  "stix": {
+    "type": "indicator",
+    "spec_version": "2.1",
+    "id": "indicator--4353744e-ea2d-433f-9487-ad55f368870d",
+    "created": "2024-01-01T00:00:00Z",
+    "modified": "2024-01-01T00:00:00Z",
+    "name": "evil.com",
+    "pattern": "[domain-name:value = 'evil.com']",
+    "pattern_type": "stix",
+    "confidence": 70,
+    "x_target_sectors": [
+      "Healthcare"
+    ],
+    "x_source_platform": "threatq",
+    "indicator_types": []
+  },
+  "source_platform": "",
+  "is_dirty": false,
+  "saved_at": "2026-03-30T01:18:56.007773+00:00"
+}
