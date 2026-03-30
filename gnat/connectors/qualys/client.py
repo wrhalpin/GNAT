@@ -156,11 +156,11 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native_object: Dict[str, Any]) -> Dict[str, Any]:
         """Dispatch vulnerability vs. detection/report."""
-        if "QID" in native or "title" in native and "severity" in native:
-            return self._vuln_to_stix(native)
-        return self._detection_to_stix(native)
+        if "QID" in native_object or "title" in native_object and "severity" in native_object:
+            return self._vuln_to_stix(native_object)
+        return self._detection_to_stix(native_object)
 
     def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -191,7 +191,8 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
 
     def _detection_to_stix(self, detection: Dict[str, Any]) -> Dict[str, Any]:
         now = _now_ts()
-        report_id = f"report--{_uuid.uuid5(_STIX_NS, f'detection:{detection.get("ID", "")}')}"
+        det_id = detection.get("ID", "")
+        report_id = f"report--{_uuid.uuid5(_STIX_NS, f'detection:{det_id}')}"
         return {
             "type": "report",
             "id": report_id,
@@ -199,7 +200,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
             "created": now,
             "modified": now,
             "name": "Qualys VMDR Detection",
-            "description": f"Host detection findings from Qualys scan.",
+            "description": "Host detection findings from Qualys scan.",
             "report_types": ["vulnerability-report"],
             "x_qualys": {
                 "host_id": detection.get("ID"),
