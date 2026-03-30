@@ -5078,3 +5078,134 @@ class TestSynapseClient:
         result = client.list_users()
         assert isinstance(result, list)
         assert result[0]["name"] == "root"
+
+    # ------------------------------------------------------------------
+    # Vertex Synapse — NDJSON storm stream parsing
+    # ------------------------------------------------------------------
+
+    def test_storm_parses_ndjson_string(self, client, monkeypatch):
+        """Real Synapse returns NDJSON; BaseClient returns it as a str."""
+        import json as _json
+        ndjson = "\n".join([
+            _json.dumps({"type": "init",  "data": {"tick": 0}}),
+            _json.dumps({"type": "node",  "data": [["inet:ipv4", "5.6.7.8"],
+                                                     {"props": {}, "tags": {}, "iden": "aaa"}]}),
+            _json.dumps({"type": "fini",  "data": {"count": 1}}),
+        ])
+        monkeypatch.setattr(client, "post", lambda path, **kw: ndjson)
+        nodes = client.storm("inet:ipv4")
+        assert len(nodes) == 1
+        assert nodes[0]["ndef"] == ["inet:ipv4", "5.6.7.8"]
+
+    def test_storm_raises_on_err_message(self, client, monkeypatch):
+        """Storm ``err`` messages must propagate as SynapseStormError."""
+        import json as _json
+        from gnat.connectors.synapse.exceptions import SynapseStormError
+        ndjson = "\n".join([
+            _json.dumps({"type": "err", "data": ["BadSyntax", {"mesg": "unexpected token"}]}),
+        ])
+        monkeypatch.setattr(client, "post", lambda path, **kw: ndjson)
+        with pytest.raises(SynapseStormError):
+            client.storm("bad query !!!")
+
+    # ------------------------------------------------------------------
+    # Vertex Synapse — new / MITRE ATT&CK forms
+    # ------------------------------------------------------------------
+
+    def test_to_stix_mitre_technique(self, client):
+        """``it:mitre:attack:technique`` → ``attack-pattern`` with external_references."""
+        node = {
+            "ndef": ["it:mitre:attack:technique", "T1059"],
+            "props": {"name": "Command and Scripting Interpreter", "technique_id": "T1059"},
+            "tags": {},
+            "iden": "t1",
+        }
+        stix = client.to_stix(node)
+        assert stix["type"] == "attack-pattern"
+        assert "T1059" in stix.get("external_references", [{}])[0].get("external_id", "")
+
+    def test_to_stix_mitre_software(self, client):
+        """``it:mitre:attack:software`` → ``malware``."""
+        node = {
+            "ndef": ["it:mitre:attack:software", "Cobalt Strike"],
+            "props": {"name": "Cobalt Strike", "software_id": "S0154"},
+            "tags": {},
+            "iden": "s1",
+        }
+        stix = client.to_stix(node)
+        assert stix["type"] == "malware"
+        assert stix["name"] == "Cobalt Strike"
+
+    def test_to_stix_mitre_group(self, client):
+        """``it:mitre:attack:group`` → ``threat-actor``."""
+        node = {
+            "ndef": ["it:mitre:attack:group", "APT29"],
+            "props": {"name": "APT29", "group_id": "G0016"},
+            "tags": {},
+            "iden": "g1",
+        }
+        stix = client.to_stix(node)
+        assert stix["type"] == "threat-actor"
+        assert stix["name"] == "APT29"
+
+    def test_to_stix_asn(self, client):
+        """``inet:asn`` → ``autonomous-system``."""
+        node = {
+            "ndef": ["inet:asn", 15169],
+            "props": {"name": "GOOGLE"},
+            "tags": {},
+            "iden": "asn1",
+        }
+        stix = client.to_stix(node)
+        assert stix["type"] == "autonomous-system"
+        assert stix["number"] == 15169
+
+    def test_to_stix_vuln_with_cve(self, client):
+        """``risk:vuln`` with ``:cve`` prop → external_references CVE entry."""
+        node = {
+            "ndef": ["risk:vuln", "some-vuln-iden"],
+            "props": {"name": "Log4Shell", "cve": "CVE-2021-44228"},
+            "tags": {},
+            "iden": "v2",
+        }
+        stix = client.to_stix(node)
+        assert stix["type"] == "vulnerability"
+        ext_refs = stix.get("external_references", [])
+        assert any(r.get("external_id") == "CVE-2021-44228" for r in ext_refs)
+
+    def test_to_stix_risk_mitigation(self, client):
+        """``risk:mitigation`` → ``course-of-action``."""
+        node = {
+            "ndef": ["risk:mitigation", "patch-log4j"],
+            "props": {"name": "Patch Log4j", "desc": "Apply vendor patch"},
+            "tags": {},
+            "iden": "m1",
+        }
+        stix = client.to_stix(node)
+        assert stix["type"] == "course-of-action"
+        assert stix["name"] == "Patch Log4j"
+
+    def test_from_stix_sha256_indicator(self, client):
+        """``file:hashes.SHA-256`` STIX pattern → ``hash:sha256`` form."""
+        stix = {
+            "type": "indicator",
+            "id": "indicator--abc",
+            "pattern": "[file:hashes.'SHA-256' = 'aabbcc']",
+            "labels": [],
+        }
+        result = client.from_stix(stix)
+        assert result["form"] == "hash:sha256"
+        assert result["value"] == "aabbcc"
+
+    def test_stix_to_storm_add_with_tags(self, client):
+        """``stix_to_storm_add`` generates a valid Storm add query."""
+        stix = {
+            "type": "indicator",
+            "id": "indicator--xyz",
+            "pattern": "[ipv4-addr:value = '10.0.0.1']",
+            "labels": ["malicious-activity"],
+        }
+        query = client._mapper.stix_to_storm_add(stix)
+        assert "inet:ipv4" in query
+        assert "10.0.0.1" in query
+        assert "malicious-activity" in query

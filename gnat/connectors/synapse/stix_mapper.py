@@ -32,22 +32,34 @@ class SynapseSTIXMapper:
     _NAMESPACE = uuid.UUID("9c4b7e2d-1a3f-4d8e-b5c6-7f8a9b0c1d2e")
 
     _FORM_TO_STIX: Dict[str, str] = {
-        "inet:ipv4": "ipv4-addr",
-        "inet:ipv6": "ipv6-addr",
-        "inet:fqdn": "domain-name",
-        "inet:url": "url",
-        "inet:email": "email-addr",
-        "file:bytes": "file",
-        "hash:md5": "file",
-        "hash:sha1": "file",
+        # Network SCOs
+        "inet:ipv4":   "ipv4-addr",
+        "inet:ipv6":   "ipv6-addr",
+        "inet:fqdn":   "domain-name",
+        "inet:url":    "url",
+        "inet:email":  "email-addr",
+        "inet:asn":    "autonomous-system",
+        "inet:flow":   "network-traffic",
+        # File / hash forms
+        "file:bytes":  "file",
+        "hash:md5":    "file",
+        "hash:sha1":   "file",
         "hash:sha256": "file",
-        "risk:vuln": "vulnerability",
-        "risk:attack": "attack-pattern",
-        "risk:threat": "threat-actor",
-        "ou:org": "identity",
+        # Risk / threat intel SDOs
+        "risk:vuln":       "vulnerability",
+        "risk:attack":     "attack-pattern",
+        "risk:threat":     "threat-actor",
+        "risk:mitigation": "course-of-action",
+        # MITRE ATT&CK forms
+        "it:mitre:attack:technique": "attack-pattern",
+        "it:mitre:attack:software":  "malware",
+        "it:mitre:attack:group":     "threat-actor",
+        # Identity / people / org
+        "ou:org":    "identity",
         "ps:person": "identity",
-        "media:news": "report",
-        "meta:event": "observed-data",
+        # Reports and events
+        "media:news":  "report",
+        "meta:event":  "observed-data",
     }
 
     # ------------------------------------------------------------------
@@ -116,22 +128,28 @@ class SynapseSTIXMapper:
         form = node.get("ndef", ["", ""])[0]
 
         dispatch = {
-            "inet:ipv4": self._ipv4_to_stix,
-            "inet:ipv6": self._ipv6_to_stix,
-            "inet:fqdn": self._fqdn_to_stix,
-            "inet:url": self._url_to_stix,
-            "inet:email": self._email_to_stix,
-            "file:bytes": self._file_to_stix,
-            "hash:md5": self._file_to_stix,
-            "hash:sha1": self._file_to_stix,
+            "inet:ipv4":   self._ipv4_to_stix,
+            "inet:ipv6":   self._ipv6_to_stix,
+            "inet:fqdn":   self._fqdn_to_stix,
+            "inet:url":    self._url_to_stix,
+            "inet:email":  self._email_to_stix,
+            "inet:asn":    self._asn_to_stix,
+            "inet:flow":   self._flow_to_stix,
+            "file:bytes":  self._file_to_stix,
+            "hash:md5":    self._file_to_stix,
+            "hash:sha1":   self._file_to_stix,
             "hash:sha256": self._file_to_stix,
-            "risk:vuln": self._vuln_to_stix,
-            "risk:attack": self._attack_to_stix,
-            "risk:threat": self._threat_actor_to_stix,
-            "ou:org": self._identity_to_stix,
-            "ps:person": self._identity_to_stix,
-            "media:news": self._report_to_stix,
-            "meta:event": self._observed_data_to_stix,
+            "risk:vuln":       self._vuln_to_stix,
+            "risk:attack":     self._attack_to_stix,
+            "risk:threat":     self._threat_actor_to_stix,
+            "risk:mitigation": self._mitigation_to_stix,
+            "it:mitre:attack:technique": self._attack_to_stix,
+            "it:mitre:attack:software":  self._malware_to_stix,
+            "it:mitre:attack:group":     self._threat_actor_to_stix,
+            "ou:org":      self._identity_to_stix,
+            "ps:person":   self._identity_to_stix,
+            "media:news":  self._report_to_stix,
+            "meta:event":  self._observed_data_to_stix,
         }
 
         handler = dispatch.get(form)
@@ -248,22 +266,114 @@ class SynapseSTIXMapper:
         desc = props.get("desc", "")
         if desc:
             obj["description"] = str(desc)
+        # Expose CVE identifier when present (risk:vuln stores it as :cve)
+        cve = props.get("cve", "")
+        if cve:
+            obj["external_references"] = [
+                {"source_name": "cve", "external_id": str(cve)}
+            ]
         return obj
 
     def _attack_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
-        """Convert a ``risk:attack`` node to a STIX ``attack-pattern`` SDO."""
+        """Convert a ``risk:attack`` / ``it:mitre:attack:technique`` node to ``attack-pattern``."""
+        form = node["ndef"][0]
         value = node["ndef"][1]
         props = node.get("props", {})
         obj = self._base_fields("attack-pattern", str(value), node)
         obj["name"] = str(props.get("name", value))
+        desc = props.get("desc", "") or props.get("summary", "")
+        if desc:
+            obj["description"] = str(desc)
+        # Expose MITRE ATT&CK ID for the technique form
+        if form == "it:mitre:attack:technique":
+            technique_id = props.get("technique_id", "") or str(value)
+            obj["external_references"] = [
+                {
+                    "source_name": "mitre-attack",
+                    "external_id": technique_id,
+                    "url": f"https://attack.mitre.org/techniques/{technique_id}/",
+                }
+            ]
+        return obj
+
+    def _malware_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert an ``it:mitre:attack:software`` node to a STIX ``malware`` SDO."""
+        value = node["ndef"][1]
+        props = node.get("props", {})
+        obj = self._base_fields("malware", str(value), node)
+        obj["name"] = str(props.get("name", value))
+        obj["is_family"] = False
+        software_id = props.get("software_id", "")
+        if software_id:
+            obj["external_references"] = [
+                {
+                    "source_name": "mitre-attack",
+                    "external_id": str(software_id),
+                    "url": f"https://attack.mitre.org/software/{software_id}/",
+                }
+            ]
         return obj
 
     def _threat_actor_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
-        """Convert a ``risk:threat`` node to a STIX ``threat-actor`` SDO."""
+        """Convert a ``risk:threat`` / ``it:mitre:attack:group`` node to ``threat-actor``."""
+        form = node["ndef"][0]
         value = node["ndef"][1]
         props = node.get("props", {})
         obj = self._base_fields("threat-actor", str(value), node)
         obj["name"] = str(props.get("name", value))
+        if form == "it:mitre:attack:group":
+            group_id = props.get("group_id", "")
+            if group_id:
+                obj["external_references"] = [
+                    {
+                        "source_name": "mitre-attack",
+                        "external_id": str(group_id),
+                        "url": f"https://attack.mitre.org/groups/{group_id}/",
+                    }
+                ]
+        return obj
+
+    def _mitigation_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert a ``risk:mitigation`` node to a STIX ``course-of-action`` SDO."""
+        value = node["ndef"][1]
+        props = node.get("props", {})
+        obj = self._base_fields("course-of-action", str(value), node)
+        obj["name"] = str(props.get("name", value))
+        desc = props.get("desc", "")
+        if desc:
+            obj["description"] = str(desc)
+        return obj
+
+    def _asn_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert an ``inet:asn`` node to a STIX ``autonomous-system`` SCO."""
+        value = node["ndef"][1]
+        props = node.get("props", {})
+        obj = self._base_fields("autonomous-system", str(value), node)
+        try:
+            obj["number"] = int(value)
+        except (TypeError, ValueError):
+            obj["number"] = 0
+        name = props.get("name", "")
+        if name:
+            obj["name"] = str(name)
+        return obj
+
+    def _flow_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert an ``inet:flow`` node to a STIX ``network-traffic`` SCO."""
+        value = node["ndef"][1]
+        props = node.get("props", {})
+        obj = self._base_fields("network-traffic", str(value), node)
+        obj["src_ref"] = props.get("src:ipv4", props.get("src:ipv6", ""))
+        obj["dst_ref"] = props.get("dst:ipv4", props.get("dst:ipv6", ""))
+        src_port = props.get("src:port")
+        dst_port = props.get("dst:port")
+        if src_port:
+            obj["src_port"] = int(src_port)
+        if dst_port:
+            obj["dst_port"] = int(dst_port)
+        proto = props.get("proto", "")
+        if proto:
+            obj["protocols"] = [str(proto).lower()]
         return obj
 
     def _identity_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
@@ -283,6 +393,11 @@ class SynapseSTIXMapper:
         obj = self._base_fields("report", str(value), node)
         obj["name"] = str(props.get("title", value))
         obj["object_refs"] = []
+        published = props.get("published", _now_iso())
+        obj["published"] = str(published)
+        url = props.get("url", "")
+        if url:
+            obj["external_references"] = [{"source_name": "media:news", "url": str(url)}]
         return obj
 
     def _observed_data_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
@@ -392,16 +507,26 @@ class SynapseSTIXMapper:
 # ------------------------------------------------------------------
 
 _PATTERN_MAP: List[tuple] = [
-    (r"ipv4-addr:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:ipv4"),
-    (r"ipv6-addr:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:ipv6"),
-    (r"domain-name:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:fqdn"),
-    (r"url:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:url"),
-    (r"email-addr:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:email"),
-    (r"file:hashes\.MD5\s*=\s*['\"]([^'\"]+)['\"]", "hash:md5"),
-    (r"file:hashes\[.MD5.\]\s*=\s*['\"]([^'\"]+)['\"]", "hash:md5"),
-    (r"file:hashes\.SHA-1\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha1"),
-    (r"file:hashes\.SHA-256\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha256"),
-    (r"file:hashes\[.SHA-256.\]\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha256"),
+    (r"ipv4-addr:value\s*=\s*['\"]([^'\"]+)['\"]",           "inet:ipv4"),
+    (r"ipv6-addr:value\s*=\s*['\"]([^'\"]+)['\"]",           "inet:ipv6"),
+    (r"domain-name:value\s*=\s*['\"]([^'\"]+)['\"]",         "inet:fqdn"),
+    (r"url:value\s*=\s*['\"]([^'\"]+)['\"]",                 "inet:url"),
+    (r"email-addr:value\s*=\s*['\"]([^'\"]+)['\"]",          "inet:email"),
+    # File hashes — unquoted dot notation  (file:hashes.SHA-256 = '…')
+    (r"file:hashes\.MD5\s*=\s*['\"]([^'\"]+)['\"]",          "hash:md5"),
+    (r"file:hashes\.SHA-1\s*=\s*['\"]([^'\"]+)['\"]",        "hash:sha1"),
+    (r"file:hashes\.SHA-256\s*=\s*['\"]([^'\"]+)['\"]",      "hash:sha256"),
+    (r"file:hashes\.SHA-512\s*=\s*['\"]([^'\"]+)['\"]",      "hash:sha256"),
+    # File hashes — bracket notation  (file:hashes['SHA-256'] = '…')
+    (r"file:hashes\[.MD5.\]\s*=\s*['\"]([^'\"]+)['\"]",      "hash:md5"),
+    (r"file:hashes\[.SHA-1.\]\s*=\s*['\"]([^'\"]+)['\"]",    "hash:sha1"),
+    (r"file:hashes\[.SHA-256.\]\s*=\s*['\"]([^'\"]+)['\"]",  "hash:sha256"),
+    # File hashes — single-quoted key notation (file:hashes.'SHA-256' = '…')
+    (r"file:hashes\.'MD5'\s*=\s*['\"]([^'\"]+)['\"]",        "hash:md5"),
+    (r"file:hashes\.'SHA-1'\s*=\s*['\"]([^'\"]+)['\"]",      "hash:sha1"),
+    (r"file:hashes\.'SHA-256'\s*=\s*['\"]([^'\"]+)['\"]",    "hash:sha256"),
+    # Autonomous system
+    (r"autonomous-system:number\s*=\s*(\d+)",                 "inet:asn"),
 ]
 
 

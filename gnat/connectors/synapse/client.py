@@ -66,11 +66,12 @@ Key Endpoints
 
 from __future__ import annotations
 
+import json as _json
 from typing import Any, Dict, List, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
-from gnat.connectors.synapse.exceptions import SynapseAuthError
+from gnat.connectors.synapse.exceptions import SynapseAuthError, SynapseStormError
 from gnat.connectors.synapse.stix_mapper import SynapseSTIXMapper
 
 
@@ -96,19 +97,28 @@ class SynapseClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: Dict[str, str] = {
-        "ipv4-addr": "inet:ipv4",
-        "ipv6-addr": "inet:ipv6",
-        "domain-name": "inet:fqdn",
-        "url": "inet:url",
-        "email-addr": "inet:email",
-        "file": "file:bytes",
+        # SCOs — Vertex Synapse inet/file forms
+        "ipv4-addr":     "inet:ipv4",
+        "ipv6-addr":     "inet:ipv6",
+        "domain-name":   "inet:fqdn",
+        "url":           "inet:url",
+        "email-addr":    "inet:email",
+        "file":          "file:bytes",
+        "autonomous-system": "inet:asn",
+        "network-traffic": "inet:flow",
+        # SDOs
         "vulnerability": "risk:vuln",
-        "attack-pattern": "risk:attack",
-        "threat-actor": "risk:threat",
-        "identity": "ou:org",
-        "report": "media:news",
+        "attack-pattern": "it:mitre:attack:technique,risk:attack",
+        "malware":       "it:mitre:attack:software",
+        "tool":          "it:mitre:attack:software",
+        "campaign":      "risk:threat",
+        "threat-actor":  "risk:threat",
+        "identity":      "ou:org",
+        "report":        "media:news",
         "observed-data": "meta:event",
-        "indicator": "inet:fqdn,inet:ipv4,inet:url,file:bytes",
+        "course-of-action": "risk:mitigation",
+        # Broad indicator query: union of typical IOC forms
+        "indicator":     "inet:fqdn,inet:ipv4,inet:ipv6,inet:url,file:bytes",
     }
 
     def __init__(
@@ -343,9 +353,20 @@ class SynapseClient(BaseClient, ConnectorMixin):
         """
         Execute a Storm query and return the resulting nodes.
 
-        The ``/api/v1/storm`` endpoint returns a stream of typed message
-        dicts.  This method collects all ``"node"`` messages and normalises
-        them into the standard Synapse node format.
+        The Vertex Synapse ``/api/v1/storm`` endpoint streams NDJSON
+        (newline-delimited JSON).  Each line is a typed message dict::
+
+            {"type": "node",  "data": [[form, valu], {props, tags, iden}]}
+            {"type": "init",  "data": {"tick": ...}}
+            {"type": "fini",  "data": {"tock": ..., "count": ...}}
+            {"type": "err",   "data": [errtype, errinfo]}
+            {"type": "print", "data": {"mesg": ...}}
+
+        Because :class:`~gnat.clients.base.BaseClient` reads the entire
+        response body and attempts ``json.loads``, the NDJSON stream arrives
+        as a raw ``str`` when the multi-line body is not valid JSON by itself.
+        This method handles all three return shapes (``str`` / ``list`` /
+        ``dict``) gracefully.
 
         Parameters
         ----------
@@ -357,7 +378,13 @@ class SynapseClient(BaseClient, ConnectorMixin):
         Returns
         -------
         list of dict
-            Normalised Synapse node dicts.
+            Normalised Synapse node dicts, each with keys:
+            ``ndef``, ``props``, ``tags``, ``iden``.
+
+        Raises
+        ------
+        SynapseStormError
+            If the Storm stream contains an ``"err"`` message.
         """
         payload: Dict[str, Any] = {"query": query}
         if opts:
@@ -367,36 +394,63 @@ class SynapseClient(BaseClient, ConnectorMixin):
 
         try:
             resp = self.post("/api/v1/storm", json=payload)
-            if isinstance(resp, list):
-                messages = resp
-            elif isinstance(resp, dict):
-                messages = resp.get("result", [resp])
-            else:
-                messages = []
+        except GNATClientError:
+            raise
         except Exception:
+            return []
+
+        # --- normalise the response into a flat list of message dicts ----
+        if isinstance(resp, str):
+            # Real Synapse: NDJSON stream — parse each non-empty line
+            messages: List[Any] = []
+            for line in resp.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    messages.append(_json.loads(line))
+                except _json.JSONDecodeError:
+                    pass
+        elif isinstance(resp, list):
+            # Unit-test shim: list of already-parsed message dicts
+            messages = resp
+        elif isinstance(resp, dict):
+            # Unexpected single-object envelope — treat as a wrapped list
+            messages = resp.get("result", [resp])
+        else:
             messages = []
 
         nodes: List[Dict[str, Any]] = []
         for msg in messages:
             if not isinstance(msg, dict):
                 continue
-            if msg.get("type") != "node":
+            msg_type = msg.get("type")
+            if msg_type == "err":
+                err_data = msg.get("data", [])
+                err_name = err_data[0] if isinstance(err_data, list) and err_data else "UnknownErr"
+                err_info = err_data[1] if isinstance(err_data, list) and len(err_data) > 1 else {}
+                raise SynapseStormError(
+                    f"Storm error {err_name}: {err_info}",
+                    query=query,
+                )
+            if msg_type != "node":
                 continue
             node_data = msg.get("data", [])
-            if isinstance(node_data, list) and len(node_data) >= 2:
-                ndef_part = node_data[0]
-                info_part = node_data[1] if len(node_data) > 1 else {}
-                if isinstance(ndef_part, list) and len(ndef_part) >= 2:
-                    form = ndef_part[0]
-                    value = ndef_part[1]
-                else:
-                    form, value = "", ""
-                props = info_part.get("props", {}) if isinstance(info_part, dict) else {}
-                tags = info_part.get("tags", {}) if isinstance(info_part, dict) else {}
-                iden = info_part.get("iden", "") if isinstance(info_part, dict) else ""
-                nodes.append(
-                    {"ndef": [form, value], "props": props, "tags": tags, "iden": iden}
-                )
+            if not (isinstance(node_data, list) and len(node_data) >= 2):
+                continue
+            ndef_part = node_data[0]
+            info_part = node_data[1] if len(node_data) > 1 else {}
+            if isinstance(ndef_part, list) and len(ndef_part) >= 2:
+                form = ndef_part[0]
+                value = ndef_part[1]
+            else:
+                form, value = "", ""
+            props = info_part.get("props", {}) if isinstance(info_part, dict) else {}
+            tags = info_part.get("tags", {}) if isinstance(info_part, dict) else {}
+            iden = info_part.get("iden", "") if isinstance(info_part, dict) else ""
+            nodes.append(
+                {"ndef": [form, value], "props": props, "tags": tags, "iden": iden}
+            )
         return nodes
 
     def storm_count(self, query: str) -> int:
