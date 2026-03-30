@@ -18,6 +18,7 @@ from gnat.connectors.cloudsek.client import CloudSEKClient
 from gnat.connectors.controlup.client import ControlUpClient
 from gnat.connectors.copilot.client import CopilotClient
 from gnat.connectors.cortex_xpanse.client import CortexXpanseClient
+from gnat.connectors.cribl.client import CriblClient
 from gnat.connectors.crowdstrike.client import CrowdStrikeClient
 from gnat.connectors.cyble_vision.client import CybleVisionClient
 from gnat.connectors.cycognito.client import CyCognitoClient
@@ -57,6 +58,7 @@ from gnat.connectors.socradar.client import SOCRadarClient
 from gnat.connectors.splunk.client import SplunkClient
 from gnat.connectors.stellarcyber.client import StellarCyberClient
 from gnat.connectors.suricata.client import SuricataClient
+from gnat.connectors.synapse.client import SynapseClient
 from gnat.connectors.tenable_one.client import TenableOneClient
 from gnat.connectors.thehive.client import TheHiveClient
 from gnat.connectors.threatconnect.client import ThreatConnectClient
@@ -88,6 +90,7 @@ CLIENT_REGISTRY: dict = {
     "rapid7":         Rapid7Client,
     "nucleus":        NucleusClient,
     "controlup":      ControlUpClient,
+    "cribl":          CriblClient,
     "alienvault":     AlienVaultClient,
     "alienvault_otx": AlienVaultClient,
     "graylog":        GraylogClient,
@@ -95,6 +98,7 @@ CLIENT_REGISTRY: dict = {
     "security_onion": SecurityOnionClient,
     "snort":          SnortClient,
     "suricata":       SuricataClient,
+    "synapse":        SynapseClient,
     "zeek":           ZeekClient,
     "elastic":        ElasticConnector,
     "misp":           MISPConnector,
@@ -152,4 +156,6 @@ __all__ = [
     "TenableOneClient",
     "WizClient",
     "ZeroFoxClient",
+    "CriblClient",
+    "SynapseClient",
 ]

@@ -4821,3 +4821,260 @@ class TestSentinelOneClient:
         monkeypatch.setattr(client, "get", lambda path, **kw: {"data": [{"id": "ag1"}]})
         result = client.list_agents(limit=5)
         assert isinstance(result, list)
+
+
+# ---------------------------------------------------------------------------
+# CriblClient
+# ---------------------------------------------------------------------------
+
+class TestCriblClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.cribl.client import CriblClient
+        return CriblClient(
+            host="https://cribl.example.com",
+            username="admin",
+            password="secret",
+            worker_group="default",
+        )
+
+    @pytest.fixture
+    def token_client(self):
+        from gnat.connectors.cribl.client import CriblClient
+        return CriblClient(
+            host="https://cribl.example.com",
+            token="my-api-token",
+            worker_group="default",
+        )
+
+    def test_authenticate_with_token(self, token_client):
+        token_client.authenticate()
+        assert token_client._auth_headers["Authorization"] == "Bearer my-api-token"
+
+    def test_authenticate_with_credentials(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"token": "got-token"})
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "Bearer got-token"
+
+    def test_authenticate_failure_raises(self, client, monkeypatch):
+        from gnat.connectors.cribl.exceptions import CriblAuthError
+        monkeypatch.setattr(client, "post", lambda path, **kw: {})
+        with pytest.raises(CriblAuthError):
+            client.authenticate()
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"status": "healthy"})
+        assert client.health_check() is True
+
+    def test_list_pipelines(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"items": [{"id": "p1"}]})
+        result = client.list_pipelines()
+        assert isinstance(result, list)
+        assert result[0]["id"] == "p1"
+
+    def test_get_pipeline(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"id": "p1", "conf": {}})
+        result = client.get_pipeline("p1")
+        assert result["id"] == "p1"
+
+    def test_create_pipeline(self, client, monkeypatch):
+        captured = {}
+        def fake_post(path, **kw):
+            captured["json"] = kw.get("json", {})
+            return {"id": "p2", "conf": {}}
+        monkeypatch.setattr(client, "post", fake_post)
+        result = client.create_pipeline({"id": "p2", "conf": {}})
+        assert result["id"] == "p2"
+
+    def test_delete_pipeline(self, client, monkeypatch):
+        monkeypatch.setattr(client, "delete", lambda path, **kw: {})
+        result = client.delete_pipeline("p1")
+        assert result is None
+
+    def test_list_inputs(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"items": [{"id": "in1"}]})
+        result = client.list_inputs()
+        assert isinstance(result, list)
+        assert result[0]["id"] == "in1"
+
+    def test_search(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"id": "job1", "status": "running"})
+        result = client.search("sourcetype=syslog")
+        assert isinstance(result, dict)
+        assert "id" in result
+
+    def test_list_lookups(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"items": [{"id": "lk1"}]})
+        result = client.list_lookups()
+        assert isinstance(result, list)
+        assert result[0]["id"] == "lk1"
+
+    def test_list_objects_course_of_action(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"items": [{"id": "p1"}]})
+        result = client.list_objects("course-of-action")
+        assert isinstance(result, list)
+
+    def test_list_objects_unsupported_raises(self, client):
+        from gnat.clients.base import GNATClientError
+        with pytest.raises(GNATClientError):
+            client.list_objects("vulnerability")
+
+    def test_to_stix_pipeline(self, client):
+        native = {"id": "my-pipeline", "conf": {"functions": [{"filter": "true", "id": "comment"}]}}
+        stix = client.to_stix(native)
+        assert stix["type"] == "course-of-action"
+        assert "--" in stix["id"]
+
+    def test_to_stix_event(self, client):
+        native = {"_raw": "some log line", "_time": 1700000000, "cribl_pipe": "main", "src_ip": "1.2.3.4"}
+        stix = client.to_stix(native)
+        assert stix["type"] == "observed-data"
+        assert "--" in stix["id"]
+
+    def test_from_stix_indicator(self, client):
+        stix = {
+            "type": "indicator",
+            "id": "indicator--12345678-1234-1234-1234-123456789012",
+            "name": "malicious IP",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "pattern_type": "stix",
+        }
+        result = client.from_stix(stix)
+        assert isinstance(result, dict)
+        assert "id" in result
+
+
+# ---------------------------------------------------------------------------
+# SynapseClient
+# ---------------------------------------------------------------------------
+
+class TestSynapseClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.synapse.client import SynapseClient
+        return SynapseClient(
+            host="https://synapse.example.com",
+            username="root",
+            password="secret",
+        )
+
+    @pytest.fixture
+    def apikey_client(self):
+        from gnat.connectors.synapse.client import SynapseClient
+        return SynapseClient(
+            host="https://synapse.example.com",
+            api_key="my-api-key",
+        )
+
+    def test_authenticate_with_api_key(self, apikey_client):
+        apikey_client.authenticate()
+        assert apikey_client._auth_headers["Authorization"] == "Bearer my-api-key"
+
+    def test_authenticate_with_credentials(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post",
+                            lambda path, **kw: {"result": {"token": "sess-token"}})
+        client.authenticate()
+        assert client._auth_headers["Authorization"] == "Bearer sess-token"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"result": "ok"})
+        assert client.health_check() is True
+
+    def test_storm_returns_nodes(self, client, monkeypatch):
+        storm_messages = [
+            {"type": "node", "data": [["inet:ipv4", "1.2.3.4"], {"props": {}, "tags": {}, "iden": "abc"}]},
+        ]
+        monkeypatch.setattr(client, "post", lambda path, **kw: storm_messages)
+        nodes = client.storm("inet:ipv4")
+        assert len(nodes) == 1
+        assert nodes[0]["ndef"] == ["inet:ipv4", "1.2.3.4"]
+
+    def test_get_node_by_iden(self, client, monkeypatch):
+        node = {"ndef": ["inet:ipv4", "1.2.3.4"], "props": {}, "tags": {}, "iden": "abc"}
+        def fake_storm(query, opts=None):
+            return [node]
+        monkeypatch.setattr(client, "storm", fake_storm)
+        result = client.get_node_by_iden("abc")
+        assert result["ndef"] == ["inet:ipv4", "1.2.3.4"]
+
+    def test_get_node_by_iden_not_found(self, client, monkeypatch):
+        from gnat.clients.base import GNATClientError
+        monkeypatch.setattr(client, "storm", lambda q, **kw: [])
+        with pytest.raises(GNATClientError):
+            client.get_node_by_iden("nonexistent")
+
+    def test_list_objects_indicator(self, client, monkeypatch):
+        nodes = [
+            {"ndef": ["inet:fqdn", "evil.com"], "props": {}, "tags": {}, "iden": "n1"},
+            {"ndef": ["inet:ipv4", "1.2.3.4"], "props": {}, "tags": {}, "iden": "n2"},
+        ]
+        call_count = [0]
+        def fake_storm(query, opts=None):
+            call_count[0] += 1
+            return [nodes[call_count[0]-1]] if call_count[0] <= len(nodes) else []
+        monkeypatch.setattr(client, "storm", fake_storm)
+        result = client.list_objects("indicator", page_size=10)
+        assert isinstance(result, list)
+
+    def test_to_stix_ipv4(self, client):
+        node = {"ndef": ["inet:ipv4", "192.168.1.1"], "props": {}, "tags": {"tlp.red": [None, None]}, "iden": "abc123"}
+        stix = client.to_stix(node)
+        assert stix["type"] == "ipv4-addr"
+        assert stix["value"] == "192.168.1.1"
+
+    def test_to_stix_fqdn(self, client):
+        node = {"ndef": ["inet:fqdn", "evil.com"], "props": {}, "tags": {}, "iden": "def456"}
+        stix = client.to_stix(node)
+        assert stix["type"] == "domain-name"
+        assert stix["value"] == "evil.com"
+
+    def test_to_stix_url(self, client):
+        node = {"ndef": ["inet:url", "https://evil.com/path"], "props": {}, "tags": {}, "iden": "ghi"}
+        stix = client.to_stix(node)
+        assert stix["type"] == "url"
+        assert stix["value"] == "https://evil.com/path"
+
+    def test_to_stix_file_bytes(self, client):
+        node = {
+            "ndef": ["file:bytes", "sha256:aabbcc"],
+            "props": {"sha256": "aabbcc", "md5": "1234"},
+            "tags": {},
+            "iden": "jkl"
+        }
+        stix = client.to_stix(node)
+        assert stix["type"] == "file"
+        assert "SHA-256" in stix.get("hashes", {}) or isinstance(stix.get("hashes"), dict)
+
+    def test_to_stix_vuln(self, client):
+        node = {"ndef": ["risk:vuln", "CVE-2024-0001"], "props": {"name": "Test Vuln"}, "tags": {}, "iden": "mno"}
+        stix = client.to_stix(node)
+        assert stix["type"] == "vulnerability"
+
+    def test_to_stix_threat_actor(self, client):
+        node = {"ndef": ["risk:threat", "APT28"], "props": {"name": "APT28"}, "tags": {}, "iden": "pqr"}
+        stix = client.to_stix(node)
+        assert stix["type"] == "threat-actor"
+
+    def test_from_stix_indicator(self, client):
+        stix = {
+            "type": "indicator",
+            "id": "indicator--abcdef",
+            "pattern": "[ipv4-addr:value = '10.0.0.1']",
+            "labels": ["malicious-activity"],
+        }
+        result = client.from_stix(stix)
+        assert result["form"] == "inet:ipv4"
+        assert result["value"] == "10.0.0.1"
+
+    def test_list_views(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"result": [{"iden": "v1"}]})
+        result = client.list_views()
+        assert isinstance(result, list)
+
+    def test_list_users(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"result": [{"name": "root"}]})
+        result = client.list_users()
+        assert isinstance(result, list)
+        assert result[0]["name"] == "root"
