@@ -34,7 +34,7 @@ Phrase                     Resolution
 ``"in crowdstrike"``, ``"using splunk"``).
 
 **Entities** — proper-noun heuristic: capitalised words / known threat-actor
-patterns (``APT\d+``, ``TA\d+``, ``CVE-\d{4}-\d+``, ``FIN\d+``).
+patterns (``APT\\d+``, ``TA\\d+``, ``CVE-\\d{4}-\\d+``, ``FIN\\d+``).
 
 **Limit** — ``"top N"``, ``"first N"``, ``"limit N"``, ``"last N results"``.
 """

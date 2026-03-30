@@ -86,8 +86,8 @@ class WizClient(BaseClient, ConnectorMixin):
             "client_secret": self._client_secret,
             "audience": "wiz-api",
         }
-        # Use base client without auth headers for token request
-        resp = self.post(f"{self._auth_host}/oauth/token", json=payload, auth_headers_override=False)
+        # Use base client for token request (auth headers not yet set)
+        resp = self.post(f"{self._auth_host}/oauth/token", json=payload)
         if not isinstance(resp, dict) or "access_token" not in resp:
             raise GNATClientError(f"Failed to obtain Wiz token: {resp}")
         self._token = resp["access_token"]

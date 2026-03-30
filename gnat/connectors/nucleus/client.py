@@ -146,7 +146,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         project = self._project
         resp = self.post(
             f"/v2/projects/{project}/threat-intel",
-            json_body=self.from_stix(payload),
+            json=self.from_stix(payload),
         )
         return resp if isinstance(resp, dict) else {}
 

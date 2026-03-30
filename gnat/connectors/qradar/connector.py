@@ -131,7 +131,7 @@ class QRadarConnector(BaseClient, ConnectorMixin):
                 })
             return results
         # Default: offenses → observed-data
-        offenses = self._offenses.list_offenses(page_size=limit)
+        offenses = self._offenses.list_offenses(limit=limit)
         return [
             self._mapper.offense_to_stix_bundle(
                 self._offenses.normalise_offense(o)
