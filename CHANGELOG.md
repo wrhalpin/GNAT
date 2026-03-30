@@ -395,7 +395,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 #### Packaging
 - `pyproject.toml` with optional extras: `yaml`, `taxii`, `rss`, `ingest`, `dev`, `all`
-- `MANIFEST.in`, `LICENSE` (MIT), `py.typed` marker (PEP 561)
+- `MANIFEST.in`, `LICENSE` (Apache-2.0), `py.typed` marker (PEP 561)
 - `Makefile` with `test`, `lint`, `typecheck`, `build`, `clean` targets
 - `.gitignore` tuned for Python + security tooling
 
