@@ -192,7 +192,7 @@ def build_app(
         """
         body = await request.json()
         targets  = body.get("targets", [])
-        range_   = body.get("range", {})
+        _range   = body.get("range", {})
         results  = []
 
         for target_spec in targets:

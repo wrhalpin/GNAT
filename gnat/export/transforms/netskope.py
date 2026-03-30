@@ -236,7 +236,7 @@ class STIXBundleTransform(ExportTransform):
     def transform(self, objects: List["STIXBase"]) -> TransformResult:
         import uuid as _uuid
 
-        obj_ids = {obj.id for obj in objects}
+        _obj_ids = {obj.id for obj in objects}
         stix_objects = [obj.to_dict() for obj in objects]
 
         # Include relationships that connect objects in the set

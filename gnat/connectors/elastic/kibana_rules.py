@@ -301,7 +301,7 @@ class KibanaRulesCommands:
         dict
             Bulk action response.
         """
-        actions = [{"type": "enable", "id": rid} for rid in rule_ids]
+        _actions = [{"type": "enable", "id": rid} for rid in rule_ids]
         return self._client.kibana_patch(
             f"{_RULES_BASE}/_bulk_action",
             body={"action": "enable", "rule_ids": rule_ids},

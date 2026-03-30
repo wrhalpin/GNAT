@@ -177,7 +177,7 @@ class SentinelIncidentCommands:
         current = self._client.get(f"incidents/{incident_id}")
         etag = current.get("etag", "")
         body = {**current, "properties": {**current.get("properties", {}), **updates}}
-        headers_extra = {"If-Match": etag} if etag else {}
+        _headers_extra = {"If-Match": etag} if etag else {}
         # Use put for Sentinel incidents (patch not always supported)
         return self._client.put(f"incidents/{incident_id}", body=body)
 

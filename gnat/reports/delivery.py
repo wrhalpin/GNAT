@@ -172,7 +172,7 @@ class EmailDelivery:
                 logger.warning("EmailDelivery: file not found: %s", fp)
                 continue
             mime_type, _ = mimetypes.guess_type(str(p))
-            main_type, sub_type = (mime_type or "application/octet-stream").split("/", 1)
+            _, _ = (mime_type or "application/octet-stream").split("/", 1)
             with open(p, "rb") as f:
                 part = MIMEApplication(f.read(), Name=p.name)
                 part["Content-Disposition"] = f'attachment; filename="{p.name}"'

@@ -206,7 +206,7 @@ class PowerBIExporter:
             by_type.setdefault(obj.stix_type, []).append(obj)
 
         tables = []
-        for stype, objs in sorted(by_type.items()):
+        for stype, _objs in sorted(by_type.items()):
             if stype == "relationship":
                 continue
             cols = _COLUMNS.get(stype, _COLUMNS["_default"])

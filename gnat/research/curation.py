@@ -128,7 +128,7 @@ class _CurationMapper(RecordMapper):
         Called by :class:`CurationJob` after the pipeline finishes collecting
         all staging entries.
         """
-        for tkey, entry in self._seen_topics.items():
+        for _tkey, entry in self._seen_topics.items():
             # Apply TTL
             ttl_hours = self._lib._ttls.get(entry.category, 168)
             entry.set_ttl(ttl_hours)

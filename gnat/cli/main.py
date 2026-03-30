@@ -287,13 +287,13 @@ def _build_parser() -> argparse.ArgumentParser:
                                    metavar="<schedule_command>")
     sc_subs.required = True
 
-    p_sc_list = sc_subs.add_parser("list",   help="List registered jobs and status")
+    _p_sc_list = sc_subs.add_parser("list",   help="List registered jobs and status")
     p_sc_run  = sc_subs.add_parser("run",    help="Run one or all jobs immediately")
     p_sc_run.add_argument("--job", default=None, metavar="JOB_ID",
                           help="Run a specific job (omit to run all)")
     p_sc_run.add_argument("--parallel", action="store_true",
                           help="Run all jobs in parallel")
-    p_sc_cron = sc_subs.add_parser("crontab", help="Print crontab lines for all jobs")
+    _p_sc_cron = sc_subs.add_parser("crontab", help="Print crontab lines for all jobs")
 
     # ── config ────────────────────────────────────────────────────────────
     p_cfg = subs.add_parser("config", help="Show or validate configuration")

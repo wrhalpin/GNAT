@@ -242,7 +242,7 @@ class SplunkSearchCommands:
                 return dispatch_state
 
             if dispatch_state == "FAILED":
-                messages = content.get("messages", {})
+                _messages = content.get("messages", {})
                 raise SplunkSearchError(
                     "Search job failed.",
                     job_sid=sid,

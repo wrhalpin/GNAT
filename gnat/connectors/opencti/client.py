@@ -164,7 +164,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
         order_by   = filters.pop("orderBy", "created_at")
         order_mode = filters.pop("orderMode", "desc")
         first      = page_size
-        after      = None  # cursor-based pagination not implemented here
+        _after     = None  # cursor-based pagination not implemented here
 
         query = f"""
         query List{gql_type}($first: Int, $orderBy: String, $orderMode: OrderingMode, $search: String) {{

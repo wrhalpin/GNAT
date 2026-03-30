@@ -230,7 +230,7 @@ class TestWazuhAuthManager(unittest.TestCase):
 
     def test_token_validity_window(self):
         """Token is considered valid until renewal threshold."""
-        auth, mock_http = self._make_auth(_make_config(token_expiry_secs=900))
+        auth, _mock_http = self._make_auth(_make_config(token_expiry_secs=900))
         auth._token = "valid-token"
         auth._token_acquired_at = time.time() - 100  # 100s old
         self.assertTrue(auth._token_is_valid())
