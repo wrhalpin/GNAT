@@ -3,7 +3,7 @@ import configparser, json, unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.alienvault import (
-    OTXConfig, OTXConfigError, OTXAuthError, OTXAPIError, OTXNotFoundError,
+    OTXError, OTXConfig, OTXConfigError, OTXAuthError, OTXAPIError, OTXNotFoundError,
     OTXRateLimitError, OTXClient, OTXPulseCommands, OTXIndicatorCommands,
     OTXSTIXMapper, load_otx_config,
 )

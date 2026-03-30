@@ -148,7 +148,7 @@ def _load_spec(path: str) -> Dict[str, Any]:
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"OpenAPI spec not found: {path}")
-    text = p.read_text()
+    text = p.read_text(encoding="utf-8")
     if p.suffix in (".yaml", ".yml"):
         if not _HAS_YAML:
             raise ImportError("PyYAML required for YAML specs: pip install pyyaml")

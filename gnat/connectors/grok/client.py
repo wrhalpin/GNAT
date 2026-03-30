@@ -92,8 +92,8 @@ class GrokClient(BaseClient, ConnectorMixin):
         if stix_type == "report":
             # Could extend to retrieve previous responses if xAI adds IDs later
             raise GNATClientError(
-                f"Grok does not support retrieving persistent objects by ID. "
-                f"Use chat_completion for new inferences."
+                "Grok does not support retrieving persistent objects by ID. "
+                "Use chat_completion for new inferences."
             )
         raise GNATClientError(f"Unsupported STIX type for Grok: {stix_type}")
 

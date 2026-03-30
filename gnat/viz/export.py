@@ -255,7 +255,7 @@ class PowerBIExporter:
             ],
         }
         if path:
-            Path(path).write_text(json.dumps(model, indent=2))
+            Path(path).write_text(json.dumps(model, indent=2), encoding="utf-8")
             logger.info("PowerBIExporter: model JSON written to %s", path)
         return model
 
@@ -463,7 +463,7 @@ def save_grafana_dashboard(
         Output ``.json`` file path.
     """
     dashboard = grafana_dashboard(workspace_name, datasource_name, title)
-    Path(path).write_text(json.dumps(dashboard, indent=2))
+    Path(path).write_text(json.dumps(dashboard, indent=2), encoding="utf-8")
     logger.info("Grafana dashboard JSON written to %s", path)
     print(f"Dashboard saved: {path}")
     print("To import: Grafana → Dashboards → Import → Upload JSON file")
@@ -655,8 +655,8 @@ def save_solr_dashboard(
         Dashboard title.
     """
     dashboard = solr_dashboard(datasource_name=datasource_name, title=title)
-    Path(path).write_text(json.dumps(dashboard, indent=2))
+    Path(path).write_text(json.dumps(dashboard, indent=2), encoding="utf-8")
     logger.info("Solr dashboard JSON written to %s", path)
     print(f"Solr dashboard saved: {path}")
     print("To import: Grafana → Dashboards → Import → Upload JSON file")
-    print(f"Configure datasource: SimpleJSON → http://localhost:3001")
+    print("Configure datasource: SimpleJSON → http://localhost:3001")

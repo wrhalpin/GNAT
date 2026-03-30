@@ -145,8 +145,7 @@ class WazuhSyscheckCommands:
         if q_parts:
             params["q"] = ";".join(q_parts)
 
-        for item in self._client.paginate(f"syscheck/{agent_id}", params=params):
-            yield item
+        yield from self._client.paginate(f"syscheck/{agent_id}", params=params)
 
     def get_last_scan_time(self, agent_id: str) -> dict:
         """

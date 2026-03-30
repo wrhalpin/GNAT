@@ -251,7 +251,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
                 "type": "indicator",
                 "id": f"indicator--{uid}",
                 "name": native.get("rule_name", ""),
-                "pattern": f"[network-traffic:dst_ref.type = 'ipv4-addr']",
+                "pattern": "[network-traffic:dst_ref.type = 'ipv4-addr']",
                 "pattern_type": "stix",
                 "created": native.get("_time", ""),
                 "modified": native.get("_time", ""),
@@ -619,7 +619,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
             if response.status not in (200, 201):
                 messages = self._extract_error_messages(response.data)
                 raise SplunkAPIError(
-                    f"Unexpected response from Splunk.",
+                    "Unexpected response from Splunk.",
                     status_code=response.status,
                     endpoint=url,
                     messages=messages,

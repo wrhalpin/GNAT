@@ -124,8 +124,7 @@ class WazuhConfig:
         _idx_host = self.indexer_host or self.host
         self.indexer_url = f"{self.scheme}://{_idx_host}:{self.indexer_port}"
         # Cap max_results at Wazuh's hard limit
-        if self.max_results > WAZUH_MAX_LIMIT:
-            self.max_results = WAZUH_MAX_LIMIT
+        self.max_results = min(self.max_results, WAZUH_MAX_LIMIT)
         self._validate()
 
     def _validate(self) -> None:
@@ -139,7 +138,7 @@ class WazuhConfig:
             raise WazuhConfigError(
                 f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'."
             )
-        if not (1 <= self.port <= 65535):
+        if not 1 <= self.port <= 65535:
             raise WazuhConfigError(f"Invalid port {self.port}.")
         if self.timeout <= 0:
             raise WazuhConfigError("'timeout' must be a positive integer.")

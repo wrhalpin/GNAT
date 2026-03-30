@@ -65,7 +65,7 @@ class FileDelivery(ExportDelivery):
         for name, content in result.payloads.items():
             dest = self._dir / name
             try:
-                if isinstance(content, dict) or isinstance(content, list):
+                if isinstance(content, (dict, list)):
                     body = json.dumps(content, indent=2).encode(self._encoding)
                 elif isinstance(content, str):
                     body = content.encode(self._encoding)

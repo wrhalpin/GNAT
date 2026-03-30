@@ -127,7 +127,7 @@ class LibraryScreen(Screen):
             return
         try:
             # promote() requires a workspace; here we just move by topic key
-            self._library._manager  # ensure connected
+            _ = self._library._manager  # ensure connected
             status = self.query_one("#status-label", Label)
             status.update(f"[yellow]Promotion requires a workspace — use CLI: gnat research promote {topic}[/yellow]")
         except Exception as exc:

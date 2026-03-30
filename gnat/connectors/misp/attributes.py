@@ -140,10 +140,9 @@ class MISPAttributeCommands:
             base["to_ids"] = 1 if to_ids else 0
         if event_id:
             base["eventid"] = str(event_id)
-        for item in self._client.paginate(
+        yield from self._client.paginate(
             "attributes/restSearch", body=base, response_key="Attribute"
-        ):
-            yield item
+        )
 
     # ── CRUD ───────────────────────────────────────────────────────────────
 

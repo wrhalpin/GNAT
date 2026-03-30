@@ -225,7 +225,10 @@ class CSVReader(SourceReader):
     def _iter_records(self) -> Iterator[RawRecord]:
         with self._source.open(encoding=self._encoding, newline="") as fh:
             for _ in range(self._skip_rows):
-                next(fh)
+                try:
+                    next(fh)
+                except StopIteration:
+                    return
             reader = csv.DictReader(fh, delimiter=self._delimiter)
             for rownum, row in enumerate(reader, 1):
                 rec: RawRecord = {}

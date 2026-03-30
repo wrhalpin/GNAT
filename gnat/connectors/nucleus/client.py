@@ -65,7 +65,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
 
     def health_check(self) -> bool:
         resp = self.get("/v2/projects")
-        return isinstance(resp, dict) or isinstance(resp, list)
+        return isinstance(resp, (dict, list))
 
     def get_object(self, stix_type: str,
                    object_id: str) -> Dict[str, Any]:

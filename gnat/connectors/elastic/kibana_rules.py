@@ -130,13 +130,12 @@ class KibanaRulesCommands:
         dict
             Rule dicts.
         """
-        for rule in self._client.kibana_paginate(
+        yield from self._client.kibana_paginate(
             f"{_RULES_BASE}/_find",
             params={"sort_field": "created_at", "sort_order": "asc"},
             page_size=100,
             data_key="data",
-        ):
-            yield rule
+        )
 
     def get_rule(self, rule_id: str) -> dict:
         """

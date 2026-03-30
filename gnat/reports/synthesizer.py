@@ -462,13 +462,13 @@ class ReportSynthesizer:
                  "threats identified in this reporting period.\n"]
         if agg.exploited_vulns:
             parts.append(
-                f"Actively exploited vulnerabilities: "
+                "Actively exploited vulnerabilities: "
                 + ", ".join(v.get("cve_id") or v.get("name", "")
                              for v in agg.exploited_vulns[:5])
             )
         if agg.critical_vulns:
             parts.append(
-                f"Critical CVEs (CVSS 9+): "
+                "Critical CVEs (CVSS 9+): "
                 + ", ".join(v.get("cve_id") or v.get("name", "")
                              for v in agg.critical_vulns[:5])
             )

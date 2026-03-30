@@ -368,7 +368,7 @@ class JiraClient(BaseClient, ConnectorMixin):
     ) -> Dict[str, Any]:
         """Build a structured ADF comment block for a STIX annotation."""
         lines = [
-            f"[GNAT] Linked STIX object",
+            "[GNAT] Linked STIX object",
             f"Type: {stix_type}",
             f"ID: {stix_id}",
             f"Name/Value: {name}",

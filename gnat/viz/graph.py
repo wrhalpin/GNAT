@@ -627,7 +627,7 @@ class GraphView:
         """Return/save Plotly figure JSON."""
         spec = self._build_plotly_figure(*self._extract_graph()).to_json()
         if path:
-            Path(path).write_text(spec)
+            Path(path).write_text(spec, encoding="utf-8")
         return spec
 
     def to_graph_json(self, path: Optional[str] = None,
@@ -652,7 +652,7 @@ class GraphView:
         positions = self._compute_layout(nodes, edges)
         data = self._build_graph_data(nodes, edges, positions)
         if path:
-            Path(path).write_text(json.dumps(data, indent=2))
+            Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
         return data
 
     def to_networkx(self, stix_types=None, relationship_types=None):

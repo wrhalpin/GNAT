@@ -105,8 +105,6 @@ class SplunkSearchCommands:
         try:
             self.poll_job(sid, timeout=timeout)
             return self.fetch_results(sid, count=limit)
-        except SplunkSearchError:
-            raise
         finally:
             if not preview:
                 self.cancel_job(sid)
