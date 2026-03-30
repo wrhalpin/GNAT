@@ -166,35 +166,35 @@ class BaseClient:
     def post(
         self,
         path: str,
-        json_data: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
-        """Issue an HTTP POST request. Provide either *json_data* or *data*."""
+        """Issue an HTTP POST request. Provide either *json* or *data*."""
         return self._request(
-            "POST", path, body=json_data, form_data=data, params=params, extra_headers=headers
+            "POST", path, body=json, form_data=data, params=params, extra_headers=headers
         )
 
     def put(
         self,
         path: str,
-        json_data: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP PUT request."""
-        return self._request("PUT", path, body=json_data, params=params, extra_headers=headers)
+        return self._request("PUT", path, body=json, params=params, extra_headers=headers)
 
     def patch(
         self,
         path: str,
-        json_data: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP PATCH request."""
-        return self._request("PATCH", path, body=json_data, params=params, extra_headers=headers)
+        return self._request("PATCH", path, body=json, params=params, extra_headers=headers)
 
     def delete(
         self,

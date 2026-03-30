@@ -90,6 +90,9 @@ disable=
     W0404,
     # Import position — some imports must appear after TYPE_CHECKING guards.
     C0413,
+    # Redefining outer name — method parameters like `json` intentionally shadow
+    # the stdlib `json` module; renaming would break the public API.
+    W0621,
     # Unnecessary ellipsis — correct in .pyi stub files.
     W2301,
 
