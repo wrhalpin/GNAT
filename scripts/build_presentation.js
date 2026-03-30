@@ -303,8 +303,8 @@ pres.author = "wrhalpin@gmail.com";
     color: C.white, align: "center", margin: 0
   });
   const withItems = [
-    "SAKConfig  →  one config.ini",
-    "SAKClient  →  one interface",
+    "GNATConfig  →  one config.ini",
+    "GNATClient  →  one interface",
     "STIX 2.1 everywhere",
     "IngestPipeline  →  pull any source",
     "ExportPipeline  →  push to EDLs/CE",
@@ -327,7 +327,7 @@ pres.author = "wrhalpin@gmail.com";
     { label: "ANALYST / AUTOMATION LAYER", sub: "Workstations · SOAR · Scheduled jobs · CLI", col: C.navy2, textCol: C.white, y: 0.85 },
     { label: "GNAT CORE", sub: "Ingest · Export · Agents · Research Library · Reports · Visualization", col: C.steel, textCol: C.white, y: 1.52 },
     { label: "STIX 2.1 ORM + WORKSPACE", sub: "Indicator · ThreatActor · Vulnerability · AttackPattern · Relationship", col: C.teal, textCol: C.white, y: 2.19 },
-    { label: "CONNECTOR LAYER (29 platforms)", sub: "ThreatQ · CrowdStrike · Splunk · Elastic · Wazuh · QRadar · Sentinel · Zeek · Suricata · Snort · MISP · OTX · Graylog · …", col: C.navy2, textCol: C.offwhite, y: 2.86 },
+    { label: "CONNECTOR LAYER (60+ platforms)", sub: "ThreatQ · CrowdStrike · Splunk · Elastic · Wazuh · QRadar · Sentinel · Zeek · Suricata · Snort · MISP · OTX · Graylog · …", col: C.navy2, textCol: C.offwhite, y: 2.86 },
     { label: "EXTERNAL PLATFORMS", sub: "APIs, feeds, SIEMs, EDRs, vulnerability scanners, threat intel platforms", col: "6B7280", textCol: C.white, y: 3.53 },
   ];
 
@@ -361,7 +361,7 @@ pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 5: Connectors ─────────────────────────────────────────────────
 {
-  const sl = contentSlide(pres, "29 Platform Connectors — One Interface");
+  const sl = contentSlide(pres, "60+ Platform Connectors — One Interface");
 
   const connectors = [
     ["ThreatQ", "OAuth2 · Full CRUD", C.steel],
@@ -774,6 +774,7 @@ pres.author = "wrhalpin@gmail.com";
 
   const reportTypes = [
     { name: "Daily Intel", interval: "06:00 daily", ai: "Assisted", audience: "SOC analysts / shift handoff", formats: "PDF · HTML · Markdown", color: C.teal },
+    
     { name: "Trends", interval: "Weekly", ai: "Assisted", audience: "Team leads / analysts", formats: "PDF · HTML", color: C.steel },
     { name: "Yearly Intel", interval: "Annual / manual", ai: "Full", audience: "Management / compliance", formats: "PDF · DOCX", color: C.navy2 },
   ];
