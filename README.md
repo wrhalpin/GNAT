@@ -2,7 +2,7 @@
 
 **GNAT's Not Another TIP**
 
-A modular data-centric CTM toolkit including a universal Python client and STIX 2.1-compatible ORM for building data integrations and analyst workflows without platform dependency. GNAT provides a uniform abstraction layer so you can write the same code regardless of which platform sits underneath.
+A modular data-centric CTM toolkit including a universal Python client and STIX 2.1-compatible ORM for building data integrations and analyst workflows without platform dependency. GNAT provides a uniform abstraction layer over top of your implemented tools, creating a single interface for work flows and queries.
 
 ---
 
