@@ -420,3 +420,25 @@ api_token = your_token_here
 host = https://api.xpanse.paloaltonetworks.com
 api_key = your_api_key_here
 api_key_id = your_api_key_id_here
+# =============================================================================
+# Cribl Stream
+# =============================================================================
+[cribl]
+host = https://your-cribl-leader.example.com
+username = admin
+password = your_password_here
+# OR use a direct API token instead of username/password:
+# token = your_api_token_here
+worker_group = default
+
+# =============================================================================
+# Synapse (Vertex Project)
+# =============================================================================
+[synapse]
+host = https://your-synapse.example.com
+username = root
+password = your_password_here
+# OR use API key:
+# api_key = your_api_key_here
+# Default view iden (optional):
+# view = <view_iden>
