@@ -973,13 +973,13 @@ def _cmd_report(args) -> int:
             cfg_path = getattr(args, "config_path", None)
             manager  = WorkspaceManager.default(config_path=cfg_path)
             report_cfg = ReportConfig.from_ini(
-                section=f"report.{profile}",
+                section_name=f"report.{profile}",
                 config_path=cfg_path,
             )
 
             if args.no_ai:
                 report_cfg = ReportConfig(
-                    **{**report_cfg.__dict__, "ai_mode": AIMode.DISABLED}
+                    **{**report_cfg.__dict__, "ai_mode": AIMode.NONE}
                 )
             if args.output_dir:
                 report_cfg = ReportConfig(

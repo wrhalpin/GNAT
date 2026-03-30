@@ -81,7 +81,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         if not _HAS_GVM:
             raise GNATClientError("python-gvm library is required for Greenbone connector. Install with: pip install python-gvm")
 
-        connection = TLSConnection(hostname=self._host, port=self._port)
+        connection = TLSConnection(hostname=self.host, port=self._port)
         transform = EtreeTransform()
 
         self._gmp = Gmp(connection=connection, transform=transform)

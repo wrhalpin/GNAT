@@ -23,6 +23,7 @@ Example (connector authors)::
             self._auth_headers["Authorization"] = f"Bearer {resp['access_token']}"
 """
 
+import base64
 import json
 import logging
 from typing import Any, Dict, Optional
@@ -131,6 +132,12 @@ class BaseClient:
     # HTTP helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _basic_auth(username: str, password: str) -> str:
+        """Return a Basic Auth header value for *username* and *password*."""
+        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        return f"Basic {token}"
+
     def get(
         self,
         path: str,
@@ -161,38 +168,42 @@ class BaseClient:
         path: str,
         json: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP POST request. Provide either *json* or *data*."""
         return self._request(
-            "POST", path, body=json, form_data=data, extra_headers=headers
+            "POST", path, body=json, form_data=data, params=params, extra_headers=headers
         )
 
     def put(
         self,
         path: str,
         json: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP PUT request."""
-        return self._request("PUT", path, body=json, extra_headers=headers)
+        return self._request("PUT", path, body=json, params=params, extra_headers=headers)
 
     def patch(
         self,
         path: str,
         json: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP PATCH request."""
-        return self._request("PATCH", path, body=json, extra_headers=headers)
+        return self._request("PATCH", path, body=json, params=params, extra_headers=headers)
 
     def delete(
         self,
         path: str,
+        params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP DELETE request."""
-        return self._request("DELETE", path, extra_headers=headers)
+        return self._request("DELETE", path, params=params, extra_headers=headers)
 
     # ------------------------------------------------------------------
     # Internal

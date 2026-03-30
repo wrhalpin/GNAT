@@ -213,4 +213,4 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         signed_body = dict(body)
         signed_body["hmac"] = signature
 
-        return self.post(path, json_body=signed_body)
+        return self.post(path, json=signed_body)

@@ -156,7 +156,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
             Maximum results. Default 100.
         """
         if stix_type == "observed-data":
-            incidents = self._incidents.list_incidents(top=limit)
+            incidents = self._incidents.list_incidents(limit=limit)
             return [
                 self._mapper.incident_to_stix_bundle(
                     self._incidents.normalise_incident(inc)
@@ -164,7 +164,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
                 for inc in incidents
             ]
         # Default: TI indicators
-        indicators = self._ti.list_indicators(top=limit)
+        indicators = self._ti.list_indicators(limit=limit)
         return [
             self._mapper.ti_indicator_to_stix(self._ti.normalise_indicator(ind))
             for ind in indicators
