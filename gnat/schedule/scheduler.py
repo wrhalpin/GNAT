@@ -478,7 +478,7 @@ class FeedScheduler:
         for job in self._jobs.values():
             task_name = f"gnat.feed.{job.job_id}"
 
-            @celery_app.task(name=task_name, bind=True, max_retries=0)
+            @celery_app.task(name=task_name, bind=True, max_retries=0)  # pylint: disable=cell-var-from-loop
             def _celery_task(self_task, _job_id=job.job_id, _task_name=task_name):
                 j = self._jobs.get(_job_id)
                 if j:

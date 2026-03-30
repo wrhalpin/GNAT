@@ -91,7 +91,7 @@ class QRadarAssetCommands:
             Matching asset records.
         """
         return self.list_assets(
-            filter=f"interfaces contains (ip_addresses contains (value='{ip}'))"
+            filter_val=f"interfaces contains (ip_addresses contains (value='{ip}'))"
         )
 
     def list_properties(self) -> list[dict]:
