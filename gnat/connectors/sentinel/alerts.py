@@ -16,7 +16,7 @@ class SentinelAlertCommands:
 
     def list_alerts(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
         """
@@ -24,7 +24,7 @@ class SentinelAlertCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             OData $filter expression.
         limit : int | None
             Max results.
@@ -34,8 +34,8 @@ class SentinelAlertCommands:
         list[dict]
         """
         params: dict = {}
-        if filter:
-            params["$filter"] = filter
+        if filter_val:
+            params["$filter"] = filter_val
         items = []
         for item in self._client.paginate("alerts", params=params):
             items.append(item)

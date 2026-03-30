@@ -26,7 +26,7 @@ class QRadarAssetCommands:
 
     def list_assets(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
@@ -35,7 +35,7 @@ class QRadarAssetCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             QRadar filter expression.
         fields : str | None
             Comma-separated fields to return.
@@ -48,8 +48,8 @@ class QRadarAssetCommands:
             Asset records.
         """
         params: dict = {}
-        if filter:
-            params["filter"] = filter
+        if filter_val:
+            params["filter"] = filter_val
         if fields:
             params["fields"] = fields
 

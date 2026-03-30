@@ -745,13 +745,13 @@ class SyslogReader(SourceReader):
     def __init__(
         self,
         source: Union[str, Path],
-        format: str = "auto",
+        fmt: str = "auto",
         encoding: str = "utf-8",
         **kwargs: Any,
     ):
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
-        self._format = format
+        self._format = fmt
         self._encoding = encoding
 
     def _iter_records(self) -> Iterator[RawRecord]:

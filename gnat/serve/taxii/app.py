@@ -254,7 +254,7 @@ def build_taxii_app(
         collection_id: str,
         request: Request,
         limit: int = 100,
-        next: Optional[str] = None,          # noqa: A002 — spec-required name
+        next_page: Optional[str] = None,
         added_after: Optional[str] = None,
         match_id: Optional[str] = None,
         match_type: Optional[str] = None,
@@ -298,7 +298,7 @@ def build_taxii_app(
             all_objects.append(d)
 
         # Pagination
-        offset = _decode_cursor(next) if next else 0
+        offset = _decode_cursor(next_page) if next_page else 0
         page   = all_objects[offset : offset + limit]
         more   = (offset + limit) < len(all_objects)
 
@@ -395,7 +395,7 @@ def build_taxii_app(
     def get_manifest(
         collection_id: str,
         limit: int = 100,
-        next: Optional[str] = None,          # noqa: A002
+        next_page: Optional[str] = None,
         added_after: Optional[str] = None,
         match_type: Optional[str] = None,
     ) -> "JSONResponse":
@@ -426,7 +426,7 @@ def build_taxii_app(
                 "media_type": "application/stix+json;version=2.1",
             })
 
-        offset = _decode_cursor(next) if next else 0
+        offset = _decode_cursor(next_page) if next_page else 0
         page   = entries[offset : offset + limit]
         more   = (offset + limit) < len(entries)
 

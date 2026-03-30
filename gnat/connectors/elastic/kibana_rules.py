@@ -71,7 +71,7 @@ class KibanaRulesCommands:
         per_page: int = 20,
         sort_field: str = "enabled",
         sort_order: str = "desc",
-        filter: str | None = None,
+        filter_val: str | None = None,
         tags: list[str] | None = None,
     ) -> dict:
         """
@@ -87,7 +87,7 @@ class KibanaRulesCommands:
             Field to sort by: 'enabled', 'created_at', 'updated_at', 'name'.
         sort_order : str
             'asc' or 'desc'.
-        filter : str | None
+        filter_val : str | None
             KQL filter string (e.g. ``'alert.attributes.name: "Malware*"'``).
         tags : list[str] | None
             Filter by rule tags (AND logic).
@@ -103,8 +103,8 @@ class KibanaRulesCommands:
             "sort_field": sort_field,
             "sort_order": sort_order,
         }
-        if filter:
-            params["filter"] = filter
+        if filter_val:
+            params["filter"] = filter_val
         if tags:
             params["tags"] = tags
 
@@ -112,7 +112,7 @@ class KibanaRulesCommands:
 
     def iter_all_rules(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         tags: list[str] | None = None,
     ) -> Iterator[dict]:
         """
@@ -120,7 +120,7 @@ class KibanaRulesCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             KQL filter.
         tags : list[str] | None
             Tag filter.
@@ -160,13 +160,13 @@ class KibanaRulesCommands:
             _RULES_BASE, params={"rule_id": rule_id}
         )
 
-    def get_rule_by_id(self, id: str) -> dict:
+    def get_rule_by_id(self, rule_id: str) -> dict:
         """
         Retrieve a rule by Kibana internal ``id``.
 
         Parameters
         ----------
-        id : str
+        rule_id : str
             Kibana internal rule UUID.
 
         Returns
@@ -174,7 +174,7 @@ class KibanaRulesCommands:
         dict
             Rule dict.
         """
-        return self._client.kibana_get(_RULES_BASE, params={"id": id})
+        return self._client.kibana_get(_RULES_BASE, params={"id": rule_id})
 
     # ── CRUD ───────────────────────────────────────────────────────────────
 

@@ -257,7 +257,7 @@ class GraylogSearchCommands:
         time_range: int = 300,
         limit: int | None = None,
         offset: int = 0,
-        filter: str | None = None,
+        filter_val: str | None = None,
         sort: str | None = None,
         fields: str | None = None,
     ) -> dict:
@@ -274,7 +274,7 @@ class GraylogSearchCommands:
             Max messages.
         offset : int
             Pagination offset.
-        filter : str | None
+        filter_val : str | None
             Stream filter, e.g. 'streams:STREAM_ID'.
         sort : str | None
             Sort field:order, e.g. 'timestamp:desc'.
@@ -287,8 +287,8 @@ class GraylogSearchCommands:
             "limit": limit or self._client.config.max_results,
             "offset": offset,
         }
-        if filter:
-            params["filter"] = filter
+        if filter_val:
+            params["filter"] = filter_val
         if sort:
             params["sort"] = sort
         if fields:

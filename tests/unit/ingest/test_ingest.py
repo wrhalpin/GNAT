@@ -640,7 +640,7 @@ class TestSyslogReader:
     def test_syslog_parse(self, tmp_path):
         f = tmp_path / "syslog.log"
         f.write_text("Mar 15 12:00:00 myhost sshd[1234]: Failed password for root\n")
-        recs = _records(SyslogReader(str(f), format="syslog"))
+        recs = _records(SyslogReader(str(f), fmt="syslog"))
         assert len(recs) == 1
         assert recs[0]["_format"] == "syslog"
 
@@ -648,7 +648,7 @@ class TestSyslogReader:
         cef = "CEF:0|Vendor|Product|1.0|100|Test Event|5|src=1.2.3.4 dst=5.6.7.8 dhost=evil.com\n"
         f = tmp_path / "cef.log"
         f.write_text(cef)
-        recs = _records(SyslogReader(str(f), format="cef"))
+        recs = _records(SyslogReader(str(f), fmt="cef"))
         assert recs[0]["src"] == "1.2.3.4"
         assert recs[0]["dst"] == "5.6.7.8"
         assert recs[0]["dhost"] == "evil.com"
@@ -656,7 +656,7 @@ class TestSyslogReader:
     def test_auto_detect_cef(self, tmp_path):
         f = tmp_path / "mixed.log"
         f.write_text("CEF:0|V|P|1|1|E|5|src=1.1.1.1\nMar 15 syslog message\n")
-        recs = _records(SyslogReader(str(f), format="auto"))
+        recs = _records(SyslogReader(str(f), fmt="auto"))
         assert recs[0]["_format"] == "cef"
         assert recs[1]["_format"] == "syslog"
 
@@ -664,7 +664,7 @@ class TestSyslogReader:
         leef = "LEEF:2.0|IBM|QRadar|7.3|1234|src=2.2.2.2\tdst=3.3.3.3\n"
         f = tmp_path / "leef.log"
         f.write_text(leef)
-        recs = _records(SyslogReader(str(f), format="leef"))
+        recs = _records(SyslogReader(str(f), fmt="leef"))
         assert recs[0]["_format"] == "leef"
 
 
