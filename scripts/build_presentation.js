@@ -222,7 +222,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const problems = [
-    ["29 Different APIs", "Each platform has its own auth scheme, data model, and SDK. ThreatQ OAuth2 ≠ CrowdStrike OAuth2 ≠ VirusTotal API key."],
+    ["Numerous Different APIs", "Each platform has its own auth scheme, data model, and SDK. ThreatQ OAuth2 ≠ CrowdStrike OAuth2 ≠ VirusTotal API key."],
     ["No Shared Data Model", "An indicator in ThreatQ looks nothing like one in CrowdStrike or Splunk. Correlation requires manual mapping."],
     ["Custom Code Per Integration", "Every new source or destination means new scripts with no shared error handling, retry logic, or scheduling."],
     ["Fragile Automation", "Ad-hoc scripts break when APIs change. No tests, no versioning, no consistent patterns."],
