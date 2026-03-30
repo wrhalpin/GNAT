@@ -70,6 +70,7 @@ A CTM toolkit including a universal Python client and STIX 2.1-compatible ORM fo
 | `tenable_one` | Tenable One Exposure Management |
 | `wiz` | Wiz CNAPP (Cloud Native Application Protection) |
 | `zerofox` | ZeroFox Digital Risk Protection |
+| `zeek` | Zeek (Network Monitoring) |
 
 ---
 
