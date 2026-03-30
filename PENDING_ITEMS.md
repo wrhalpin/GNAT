@@ -525,6 +525,7 @@ declared dependency and is a better fit for a JSON API + minimal HTML server.
 extends `FeedJob`; `SchemaSnapshot` persists baseline to workspace JSON.
 
 **Config:**
+
 ```ini
 [health_monitor]
 enabled          = true
@@ -547,6 +548,7 @@ drift_threshold  = 0.2                           # 20% field change triggers ale
 GitHub pull request against the upstream `wrhalpin/GNAT` repository.
 
 **CLI:**
+
 ```bash
 gnat contribute --connector myplatform --message "Add MyPlatform connector"
 # → validates connector structure (#15 compliance matrix)
@@ -590,6 +592,7 @@ migration required — works with existing SQLite and FlatFile stores. Existing 
 implicitly in the "default" tenant.
 
 **Python API:**
+
 ```python
 from gnat.context import WorkspaceManager, TenantRegistry, TenantWorkspaceManager
 
@@ -611,6 +614,7 @@ print(beta.list())  # [{"name": "apt28-investigation", "tenant_id": "beta", ...}
 ```
 
 **CLI:**
+
 ```bash
 gnat tenant list
 gnat tenant create acme --display-name "Acme Corp" --config /etc/gnat/acme.ini
@@ -626,15 +630,17 @@ gnat tenant delete acme --yes
 **Priority:** MEDIUM — live search index dashboards for ops teams
 
 **Implemented:**
+
 - `gnat/viz/grafana/search_endpoints.py` — `/solr/` FastAPI sub-router exposing Solr index data as a Grafana SimpleJSON datasource. Targets: `stats/total`, `stats/type_counts`, `stats/platform_counts`, `timeseries/ingest`, `facet/<field>`, `search/<query>`. Zero new dependencies (stdlib `urllib.request`).
 - `GrafanaServer` extended with optional `search_index` param; mounts `/solr/` router when provided.
 - `solr_dashboard()` / `save_solr_dashboard()` in `gnat/viz/export.py` — 7-panel dashboard JSON.
 - `gnat viz serve --with-solr` and `gnat viz solr-dashboard` CLI subcommands.
 - `docker/grafana/provisioning/` — auto-provisioned GNAT + GNAT-Solr datasources; bundled dashboard JSON files.
 - `docker-compose.yml` — `solr` (profile: `search`/`full`) + `grafana` (profile: `monitoring`/`full`) services; `make docker-search`, `make docker-full`.
-- 44 unit tests in `tests/unit/test_grafana_search.py`.
+- 44 unit tests in `tests/unit/test_grafana_searchi.py`.
 
 **Usage:**
+
 ```bash
 # Start Grafana + Solr sidecar via Docker Compose
 make docker-full      # or: docker compose --profile full up -d
@@ -663,6 +669,7 @@ gnat viz solr-dashboard --file solr_dashboard.json
 - `pyproject.toml`: `docker` pytest marker registered.
 
 **Usage:**
+
 ```bash
 make test-docker           # Up → run suite → down (automated)
 make test-docker-up        # Start containers only
@@ -687,6 +694,7 @@ descent parser (no deps). Tier 2 uses the official `stix2-patterns` ANTLR gramma
 `pip install "gnat[stix-validate]"` is present.
 
 **CLI:**
+
 ```bash
 gnat validate pattern "[ipv4-addr:value = '1.2.3.4']"
 gnat validate bundle indicators.json --fail-fast
@@ -694,6 +702,7 @@ gnat validate bundle indicators.json --strict   # uses stix2-patterns if install
 ```
 
 **Python API:**
+
 ```python
 from gnat.stix import validate_pattern, PatternValidationError
 
