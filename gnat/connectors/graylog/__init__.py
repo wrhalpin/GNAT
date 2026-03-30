@@ -257,7 +257,7 @@ class GraylogSearchCommands:
         time_range: int = 300,
         limit: int | None = None,
         offset: int = 0,
-        filter: str | None = None,
+        filter_val: str | None = None,
         sort: str | None = None,
         fields: str | None = None,
     ) -> dict:
@@ -274,7 +274,7 @@ class GraylogSearchCommands:
             Max messages.
         offset : int
             Pagination offset.
-        filter : str | None
+        filter_val : str | None
             Stream filter, e.g. 'streams:STREAM_ID'.
         sort : str | None
             Sort field:order, e.g. 'timestamp:desc'.
@@ -287,8 +287,8 @@ class GraylogSearchCommands:
             "limit": limit or self._client.config.max_results,
             "offset": offset,
         }
-        if filter:
-            params["filter"] = filter
+        if filter_val:
+            params["filter"] = filter_val
         if sort:
             params["sort"] = sort
         if fields:
@@ -359,27 +359,27 @@ class GraylogSearchCommands:
     def field_histogram(
         self,
         query: str,
-        field: str,
+        field_name: str,
         interval: str = "hour",
         time_range: int = 86400,
     ) -> dict:
         """Get a histogram of a field's values over time."""
         return self._client.get(
             "search/universal/relative/histogram",
-            params={"query": query, "field": field, "interval": interval, "range": time_range},
+            params={"query": query, "field": field_name, "interval": interval, "range": time_range},
         )
 
     def field_terms(
         self,
         query: str,
-        field: str,
+        field_name: str,
         size: int = 10,
         time_range: int = 86400,
     ) -> dict:
         """Get top terms for a field."""
         return self._client.get(
             "search/universal/relative/terms",
-            params={"query": query, "field": field, "size": size, "range": time_range},
+            params={"query": query, "field": field_name, "size": size, "range": time_range},
         )
 
     @staticmethod

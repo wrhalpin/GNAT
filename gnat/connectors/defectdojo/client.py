@@ -42,9 +42,9 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-from gnat.clients.base import BaseClient, GNATClientError
+from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2f")

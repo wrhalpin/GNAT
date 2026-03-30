@@ -75,7 +75,7 @@ class MISPConfig:
         if not self.api_key:
             raise MISPConfigError("'api_key' is required in [misp] config.")
         if not self.url.startswith(("http://", "https://")):
-            raise MISPConfigError(f"'url' must start with http:// or https://.")
+            raise MISPConfigError("'url' must start with http:// or https://.")
 
     def endpoint(self, path: str) -> str:
         """Build a full MISP API URL."""

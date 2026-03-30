@@ -105,8 +105,6 @@ class SplunkSearchCommands:
         try:
             self.poll_job(sid, timeout=timeout)
             return self.fetch_results(sid, count=limit)
-        except SplunkSearchError:
-            raise
         finally:
             if not preview:
                 self.cancel_job(sid)
@@ -244,7 +242,7 @@ class SplunkSearchCommands:
                 return dispatch_state
 
             if dispatch_state == "FAILED":
-                messages = content.get("messages", {})
+                _messages = content.get("messages", {})
                 raise SplunkSearchError(
                     "Search job failed.",
                     job_sid=sid,

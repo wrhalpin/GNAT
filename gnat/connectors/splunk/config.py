@@ -115,7 +115,7 @@ class SplunkConfig:
                 raise SplunkConfigError(
                     f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'."
                 )
-            if not (1 <= self.port <= 65535):
+            if not 1 <= self.port <= 65535:
                 raise SplunkConfigError(f"Invalid port {self.port}.")
             if self.timeout <= 0:
                 raise SplunkConfigError("'timeout' must be a positive integer.")

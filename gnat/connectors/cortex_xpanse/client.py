@@ -203,7 +203,7 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
             "created": now,
             "modified": now,
             "name": f"Xpanse Asset: {asset.get('name', aid)}",
-            "description": f"Internet-facing asset discovered by Xpanse",
+            "description": "Internet-facing asset discovered by Xpanse",
             "report_types": ["asset-inventory"],
             "x_xpanse": {
                 "asset_id": aid,

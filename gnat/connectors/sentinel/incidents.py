@@ -47,7 +47,7 @@ class SentinelIncidentCommands:
         self,
         status: str | None = None,
         severity: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
         order_by: str = "properties/createdTimeUtc desc",
         limit: int | None = None,
     ) -> list[dict]:
@@ -60,7 +60,7 @@ class SentinelIncidentCommands:
             'New', 'Active', or 'Closed'.
         severity : str | None
             'High', 'Medium', 'Low', or 'Informational'.
-        filter : str | None
+        filter_val : str | None
             OData $filter expression (appended to status/severity filters).
         order_by : str
             OData $orderby expression.
@@ -76,8 +76,8 @@ class SentinelIncidentCommands:
             odata_parts.append(f"properties/status eq '{status}'")
         if severity:
             odata_parts.append(f"properties/severity eq '{severity}'")
-        if filter:
-            odata_parts.append(filter)
+        if filter_val:
+            odata_parts.append(filter_val)
 
         params: dict = {"$orderby": order_by}
         if odata_parts:
@@ -177,7 +177,7 @@ class SentinelIncidentCommands:
         current = self._client.get(f"incidents/{incident_id}")
         etag = current.get("etag", "")
         body = {**current, "properties": {**current.get("properties", {}), **updates}}
-        headers_extra = {"If-Match": etag} if etag else {}
+        _headers_extra = {"If-Match": etag} if etag else {}
         # Use put for Sentinel incidents (patch not always supported)
         return self._client.put(f"incidents/{incident_id}", body=body)
 

@@ -249,7 +249,7 @@ class MISPSTIXMapper:
         seen_values: set[str] = set()
 
         for obj in objects:
-            obj_type = obj.get("type", "")
+            _obj_type = obj.get("type", "")
             attrs = self._stix_object_to_misp_attributes(obj)
             for attr in attrs:
                 key = f"{attr['type']}:{attr['value']}"

@@ -38,7 +38,7 @@ class SentinelThreatIntelCommands:
 
     def list_indicators(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         order_by: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
@@ -47,7 +47,7 @@ class SentinelThreatIntelCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             OData $filter expression.
         order_by : str | None
             OData $orderby expression.
@@ -59,8 +59,8 @@ class SentinelThreatIntelCommands:
         list[dict]
         """
         params: dict = {}
-        if filter:
-            params["$filter"] = filter
+        if filter_val:
+            params["$filter"] = filter_val
         if order_by:
             params["$orderby"] = order_by
         items = []

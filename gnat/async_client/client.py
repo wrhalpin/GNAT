@@ -146,7 +146,6 @@ class AsyncGNATClient:
         AsyncGNATClient
             ``self`` for optional chaining (``await cli.connect("tq")``).
         """
-        global ASYNC_CLIENT_REGISTRY
         if not ASYNC_CLIENT_REGISTRY:
             ASYNC_CLIENT_REGISTRY.update(_build_async_registry())
 
@@ -160,7 +159,7 @@ class AsyncGNATClient:
         cfg = self._load_config(target, overrides)
         connector_cls = ASYNC_CLIENT_REGISTRY[target]
         self.client = connector_cls(**cfg)
-        await self.client.__aenter__()
+        await self.client.__aenter__()  # pylint: disable=unnecessary-dunder-call
         self.target = target
         return self
 

@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 try:
-    from gvm.connections import UnixSocketConnection, TLSConnection
+    from gvm.connections import TLSConnection
     from gvm.protocols.gmp import Gmp
     from gvm.transforms import EtreeTransform
     _HAS_GVM = True

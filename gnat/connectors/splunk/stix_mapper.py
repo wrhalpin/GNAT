@@ -202,32 +202,29 @@ class SplunkSTIXMapper:
         results = []
         for obj in stix_objects:
             obj_type = obj.get("type", "")
-            try:
-                if obj_type in _SCO_COLLECTION_MAP:
-                    record_info = self._sco_to_record(obj, default_weight)
-                elif obj_type == "indicator":
-                    record_info = self._indicator_to_record(obj, default_weight)
-                elif obj_type == "observed-data":
-                    # observed-data wraps refs to SCOs; expand each ref
-                    nested = self._extract_observed_data_objects(obj)
-                    for nested_obj in nested:
-                        try:
-                            record_info = self._sco_to_record(
-                                nested_obj, default_weight
-                            )
-                            results.append(record_info)
-                        except SplunkSTIXError:
-                            pass
-                    continue
-                else:
-                    # Unsupported SDOs (threat-actor, malware, etc.)
-                    raise SplunkSTIXError(
-                        f"STIX type '{obj_type}' has no Splunk KV store mapping. "
-                        "Skipping. Use upload_stix_file() for STIX bundle upload."
-                    )
-                results.append(record_info)
-            except SplunkSTIXError:
-                raise
+            if obj_type in _SCO_COLLECTION_MAP:
+                record_info = self._sco_to_record(obj, default_weight)
+            elif obj_type == "indicator":
+                record_info = self._indicator_to_record(obj, default_weight)
+            elif obj_type == "observed-data":
+                # observed-data wraps refs to SCOs; expand each ref
+                nested = self._extract_observed_data_objects(obj)
+                for nested_obj in nested:
+                    try:
+                        record_info = self._sco_to_record(
+                            nested_obj, default_weight
+                        )
+                        results.append(record_info)
+                    except SplunkSTIXError:
+                        pass
+                continue
+            else:
+                # Unsupported SDOs (threat-actor, malware, etc.)
+                raise SplunkSTIXError(
+                    f"STIX type '{obj_type}' has no Splunk KV store mapping. "
+                    "Skipping. Use upload_stix_file() for STIX bundle upload."
+                )
+            results.append(record_info)
 
         return results
 

@@ -559,7 +559,7 @@ class ResearchLibrary:
 
     def _save_entry(self, entry: ResearchEntry, workspace_name: str) -> None:
         """Persist a ResearchEntry into the named workspace's store."""
-        ws = self._manager.open(workspace_name)
+        _ws = self._manager.open(workspace_name)
         store = self._manager._store
 
         from gnat.context.store import WorkspaceStore

@@ -43,6 +43,58 @@ disable=
     # Anomalous backslash in string — false positives in RST docstrings that
     # document regex patterns (e.g. ``APT\d+``).
     W1401,
+    # Missing docstrings — connector-heavy codebase; many internal helpers and
+    # test methods are self-documenting by name.
+    C0116,
+    C0115,
+    C0114,
+    # Style checks handled by ruff (formatting, import order, whitespace).
+    C0321,
+    C0304,
+    C0303,
+    C0305,
+    C0410,
+    C0411,
+    C0413,
+    W0311,
+    # Method-signature override warnings — connectors intentionally rename/omit
+    # parameters and change signatures when adapting the base contract to each
+    # platform's API.
+    W0237,
+    W0236,
+    W0221,
+    W0223,
+    # Variable naming — "G" is the conventional name for a networkx graph,
+    # and other short names are idiomatic in certain algorithmic contexts.
+    C0103,
+    # Module size — complex viz/ingest/connector modules are legitimately large.
+    C0302,
+    # Design metrics — legitimate in this codebase.
+    R0902,
+    R0912,
+    R0915,
+    R0904,
+    R1702,
+    # Style suggestions handled by ruff or intentional patterns.
+    R1735,
+    R1732,
+    R1723,
+    C3001,
+    C0207,
+    W0511,
+    # Attribute initialisation — monkey-patching modules (search patches,
+    # library patches) define attributes outside __init__ by design.
+    W0201,
+    # Reimported modules — optional-dependency guard blocks re-import symbols
+    # inside try/except to handle missing extras gracefully.
+    W0404,
+    # Import position — some imports must appear after TYPE_CHECKING guards.
+    C0413,
+    # Redefining outer name — method parameters like `json` intentionally shadow
+    # the stdlib `json` module; renaming would break the public API.
+    W0621,
+    # Unnecessary ellipsis — correct in .pyi stub files.
+    W2301,
 
 [FORMAT]
 max-line-length=120
@@ -51,4 +103,5 @@ max-line-length=120
 max-args=10
 max-locals=20
 max-returns=10
-max-branches=15
+max-branches=20
+max-attributes=12

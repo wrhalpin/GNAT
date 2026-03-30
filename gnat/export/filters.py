@@ -258,7 +258,7 @@ class TagFilter(ExportFilter):
             if self._required:
                 req_set = set(self._required)
                 if self._match_any:
-                    if not (obj_tags & req_set):
+                    if not obj_tags & req_set:
                         continue
                 else:
                     if not req_set.issubset(obj_tags):

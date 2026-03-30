@@ -64,11 +64,11 @@ logger = logging.getLogger("gnat.cli")
 
 # ── ANSI color helpers ─────────────────────────────────────────────────────
 
-_NO_COLOR = False
+_NO_COLOR = [False]
 
 
 def _c(code: str, text: str) -> str:
-    if _NO_COLOR or not sys.stdout.isatty():
+    if _NO_COLOR[0] or not sys.stdout.isatty():
         return text
     return f"\033[{code}m{text}\033[0m"
 
@@ -287,13 +287,13 @@ def _build_parser() -> argparse.ArgumentParser:
                                    metavar="<schedule_command>")
     sc_subs.required = True
 
-    p_sc_list = sc_subs.add_parser("list",   help="List registered jobs and status")
+    _p_sc_list = sc_subs.add_parser("list",   help="List registered jobs and status")
     p_sc_run  = sc_subs.add_parser("run",    help="Run one or all jobs immediately")
     p_sc_run.add_argument("--job", default=None, metavar="JOB_ID",
                           help="Run a specific job (omit to run all)")
     p_sc_run.add_argument("--parallel", action="store_true",
                           help="Run all jobs in parallel")
-    p_sc_cron = sc_subs.add_parser("crontab", help="Print crontab lines for all jobs")
+    _p_sc_cron = sc_subs.add_parser("crontab", help="Print crontab lines for all jobs")
 
     # ── config ────────────────────────────────────────────────────────────
     p_cfg = subs.add_parser("config", help="Show or validate configuration")
@@ -573,9 +573,8 @@ def _cmd_ping(args: argparse.Namespace) -> int:
         if ok:
             print(_green(f"✓  {args.target} is reachable"))
             return 0
-        else:
-            print(_red(f"✗  {args.target} did not respond"))
-            return 1
+        print(_red(f"✗  {args.target} did not respond"))
+        return 1
     except Exception as exc:
         print(_red(f"✗  {exc}"))
         return 1
@@ -1062,7 +1061,6 @@ def _cmd_client(args) -> int:
             return 0
 
         if args.format == "json":
-            import json
             print(json.dumps(caps, indent=2))
             return 0
 
@@ -1097,7 +1095,7 @@ def _cmd_client(args) -> int:
                    f"{len(caps)} method(s) shown"))
         return 0
 
-    elif args.client_command == "call":
+    if args.client_command == "call":
         # Parse KEY=VALUE args into a kwargs dict
         kwargs: Dict[str, Any] = {}
         for kv in (getattr(args, "args", None) or []):
@@ -1362,7 +1360,7 @@ def _cmd_health(args) -> int:
         print(status_line)
         return 1 if any_problem else 0
 
-    elif health_cmd == "baseline":
+    if health_cmd == "baseline":
         platform = args.platform
         try:
             from gnat.client import GNATClient
@@ -1416,7 +1414,7 @@ def _cmd_tenant(args) -> int:
             print(f"{t.tenant_id:<20} {t.display_name:<30} {cfg:<20} {date}")
         return 0
 
-    elif sub == "create":
+    if sub == "create":
         tenant_id   = args.tenant_id
         display     = getattr(args, "display_name", "") or ""
         description = getattr(args, "description", "") or ""
@@ -1442,7 +1440,7 @@ def _cmd_tenant(args) -> int:
         )
         return 0
 
-    elif sub == "delete":
+    if sub == "delete":
         tenant_id = args.tenant_id
         tenant    = registry.get(tenant_id)
         if tenant is None:
@@ -1471,7 +1469,7 @@ def _cmd_tenant(args) -> int:
         print(_green(f"✓  Tenant {tenant_id!r} deleted from registry."), file=sys.stderr)
         return 0
 
-    elif sub == "info":
+    if sub == "info":
         tenant_id = args.tenant_id
         tenant    = registry.get(tenant_id)
         if tenant is None:
@@ -1494,7 +1492,7 @@ def _cmd_tenant(args) -> int:
             print(f"  Workspaces   : (unavailable — {exc})")
         return 0
 
-    elif sub == "workspaces":
+    if sub == "workspaces":
         tenant_id   = args.tenant_id
         config_path = getattr(args, "config", None)
         try:
@@ -1542,13 +1540,12 @@ def _cmd_validate(args) -> int:
             tier = "strict (stix2-patterns)" if result.strict else "pure-python"
             print(_green(f"✓  Pattern is valid [{tier}]"), file=sys.stderr)
             return 0
-        else:
-            print(_red("✗  Pattern is INVALID"), file=sys.stderr)
-            for err in result.errors:
-                print(f"   {_red('Error:')} {err}", file=sys.stderr)
-            for warn in result.warnings:
-                print(f"   {_yellow('Warning:')} {warn}", file=sys.stderr)
-            return 1
+        print(_red("✗  Pattern is INVALID"), file=sys.stderr)
+        for err in result.errors:
+            print(f"   {_red('Error:')} {err}", file=sys.stderr)
+        for warn in result.warnings:
+            print(f"   {_yellow('Warning:')} {warn}", file=sys.stderr)
+        return 1
 
     elif sub == "bundle":
         bundle_path = Path(args.file)
@@ -1595,9 +1592,8 @@ def _cmd_validate(args) -> int:
         if invalid_count == 0:
             print(_green(f"\n✓  {summary}"), file=sys.stderr)
             return 0
-        else:
-            print(_red(f"\n✗  {summary} ({invalid_count} invalid)"), file=sys.stderr)
-            return 1
+        print(_red(f"\n✗  {summary} ({invalid_count} invalid)"), file=sys.stderr)
+        return 1
 
     else:
         # No subcommand — print help
@@ -1724,13 +1720,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     int
         Exit code (0 = success, 1 = error, 2 = partial success with warnings).
     """
-    global _NO_COLOR
-
     parser = _build_parser()
     args = parser.parse_args(argv)
 
     if getattr(args, "no_color", False):
-        _NO_COLOR = True
+        _NO_COLOR[0] = True
 
     if getattr(args, "debug", False):
         logging.basicConfig(level=logging.DEBUG,

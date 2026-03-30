@@ -302,7 +302,7 @@ def _barnes_hut_layout(
         )
         for i in range(n)
     ]
-    vel = [_Vec2() for _ in range(n)]
+    _vel = [_Vec2() for _ in range(n)]
 
     # Degree for mass weighting
     degree = [1 + len(adj.get(nid, [])) for nid in node_ids]
@@ -311,7 +311,7 @@ def _barnes_hut_layout(
     step = 1.0
     step_ratio = 0.95
 
-    for iteration in range(iterations):
+    for _ in range(iterations):
         forces = [_Vec2() for _ in range(n)]
 
         # ── Repulsion via Barnes-Hut ────────────────────────────────────
@@ -627,7 +627,7 @@ class GraphView:
         """Return/save Plotly figure JSON."""
         spec = self._build_plotly_figure(*self._extract_graph()).to_json()
         if path:
-            Path(path).write_text(spec)
+            Path(path).write_text(spec, encoding="utf-8")
         return spec
 
     def to_graph_json(self, path: Optional[str] = None,
@@ -652,7 +652,7 @@ class GraphView:
         positions = self._compute_layout(nodes, edges)
         data = self._build_graph_data(nodes, edges, positions)
         if path:
-            Path(path).write_text(json.dumps(data, indent=2))
+            Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
         return data
 
     def to_networkx(self, stix_types=None, relationship_types=None):
@@ -1007,7 +1007,7 @@ class GraphView:
         highlight_ids=None,
     ):
         """Common rendering path for intent methods."""
-        n = len(nodes)
+        _n = len(nodes)
 
         if hide_isolated and edges:
             connected = {e["source"] for e in edges} | {e["target"] for e in edges}
@@ -1115,10 +1115,10 @@ class GraphView:
         rng = random.Random(self._seed)
         positions = {}
         for nid, obj in nodes.items():
-            def _get(f):
-                v = obj._properties.get(f)
-                if v is None and hasattr(obj, f):
-                    v = getattr(obj, f, None)
+            def _get(f, _obj=obj):
+                v = _obj._properties.get(f)
+                if v is None and hasattr(_obj, f):
+                    v = getattr(_obj, f, None)
                 return v
 
             xv, yv = _get(x_field), _get(y_field)

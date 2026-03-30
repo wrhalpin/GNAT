@@ -32,7 +32,9 @@ from __future__ import annotations
 
 import json
 import logging
+import urllib.error
 import urllib.parse
+import urllib.request
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -59,9 +61,6 @@ def _solr_get(base_url: str, path: str, params: Dict[str, Any]) -> Optional[dict
 
     Returns the parsed JSON body, or None on failure.
     """
-    import urllib.request
-    import urllib.error
-
     qs = urllib.parse.urlencode(
         {k: v for k, v in params.items() if v is not None}, doseq=True
     )

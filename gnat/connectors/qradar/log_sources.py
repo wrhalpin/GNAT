@@ -28,7 +28,7 @@ class QRadarLogSourceCommands:
 
     def list_log_sources(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
@@ -37,7 +37,7 @@ class QRadarLogSourceCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             Filter expression, e.g. ``"enabled=true"``.
         fields : str | None
             Fields to return.
@@ -50,8 +50,8 @@ class QRadarLogSourceCommands:
             Log source records.
         """
         params: dict = {}
-        if filter:
-            params["filter"] = filter
+        if filter_val:
+            params["filter"] = filter_val
         if fields:
             params["fields"] = fields
 
@@ -76,9 +76,9 @@ class QRadarLogSourceCommands:
             self._client.paginate(f"{_LS_BASE}/log_source_types")
         )
 
-    def get_log_source_count(self, filter: str | None = None) -> int:
+    def get_log_source_count(self, filter_val: str | None = None) -> int:
         """Return the total number of configured log sources."""
-        params = {"filter": filter} if filter else None
+        params = {"filter": filter_val} if filter_val else None
         return self._client.get_total_count(
             f"{_LS_BASE}/log_sources", params=params
         )

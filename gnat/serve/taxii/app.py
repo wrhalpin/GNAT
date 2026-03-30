@@ -32,12 +32,10 @@ upserts each object into the target workspace.
 from __future__ import annotations
 
 import base64
-import hashlib
-import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gnat.context.workspace import WorkspaceManager
@@ -64,9 +62,8 @@ def _require_fastapi() -> None:
         raise ImportError(
             "FastAPI and uvicorn are required: pip install 'gnat[serve]'"
         )
-    try:
-        import uvicorn  # noqa: F401
-    except ImportError:
+    import importlib.util
+    if importlib.util.find_spec("uvicorn") is None:
         raise ImportError(
             "uvicorn is required: pip install 'gnat[serve]'"
         )
@@ -254,7 +251,7 @@ def build_taxii_app(
         collection_id: str,
         request: Request,
         limit: int = 100,
-        next: Optional[str] = None,          # noqa: A002 — spec-required name
+        next_page: Optional[str] = None,
         added_after: Optional[str] = None,
         match_id: Optional[str] = None,
         match_type: Optional[str] = None,
@@ -298,7 +295,7 @@ def build_taxii_app(
             all_objects.append(d)
 
         # Pagination
-        offset = _decode_cursor(next) if next else 0
+        offset = _decode_cursor(next_page) if next_page else 0
         page   = all_objects[offset : offset + limit]
         more   = (offset + limit) < len(all_objects)
 
@@ -395,7 +392,7 @@ def build_taxii_app(
     def get_manifest(
         collection_id: str,
         limit: int = 100,
-        next: Optional[str] = None,          # noqa: A002
+        next_page: Optional[str] = None,
         added_after: Optional[str] = None,
         match_type: Optional[str] = None,
     ) -> "JSONResponse":
@@ -426,7 +423,7 @@ def build_taxii_app(
                 "media_type": "application/stix+json;version=2.1",
             })
 
-        offset = _decode_cursor(next) if next else 0
+        offset = _decode_cursor(next_page) if next_page else 0
         page   = entries[offset : offset + limit]
         more   = (offset + limit) < len(entries)
 

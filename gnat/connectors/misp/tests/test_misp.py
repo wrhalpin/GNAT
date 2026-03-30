@@ -385,7 +385,7 @@ class TestMISPAttributeCommands(unittest.TestCase):
         mock_http.request.return_value = _make_response(
             200, {"Attribute": [_SAMPLE_ATTR]}
         )
-        results = attrs_cmd.add_hash_attributes(
+        _results = attrs_cmd.add_hash_attributes(
             42, {"sha256": "abc123", "md5": "def456"}
         )
         body = json.loads(mock_http.request.call_args[1]["body"])
@@ -465,7 +465,7 @@ class TestMISPFeedCommands(unittest.TestCase):
     def test_enable_feed(self):
         feeds_cmd, mock_http = self._make_feeds()
         mock_http.request.return_value = _make_response(200, {"Feed": {"id": "1", "enabled": True}})
-        result = feeds_cmd.enable_feed(1)
+        _result = feeds_cmd.enable_feed(1)
         url = mock_http.request.call_args[0][1]
         self.assertIn("enable", url)
 

@@ -199,13 +199,11 @@ class NetskopeCETransform(ExportTransform):
         )
 
 
-"""
-gnat.export.transforms.stix_bundle
-========================================
-
-STIX 2.1 Bundle transform — wraps filtered objects in a valid bundle
-for sharing with other TIPs, TAXII servers, or archival.
-"""
+# gnat.export.transforms.stix_bundle
+# ========================================
+#
+# STIX 2.1 Bundle transform — wraps filtered objects in a valid bundle
+# for sharing with other TIPs, TAXII servers, or archival.
 
 
 class STIXBundleTransform(ExportTransform):
@@ -238,7 +236,7 @@ class STIXBundleTransform(ExportTransform):
     def transform(self, objects: List["STIXBase"]) -> TransformResult:
         import uuid as _uuid
 
-        obj_ids = {obj.id for obj in objects}
+        _obj_ids = {obj.id for obj in objects}
         stix_objects = [obj.to_dict() for obj in objects]
 
         # Include relationships that connect objects in the set
@@ -261,12 +259,10 @@ class STIXBundleTransform(ExportTransform):
         )
 
 
-"""
-gnat.export.transforms.csv_transform
-==========================================
-
-CSV transform — flat rows of key fields, ready for Excel or SIEM import.
-"""
+# gnat.export.transforms.csv_transform
+# ==========================================
+#
+# CSV transform — flat rows of key fields, ready for Excel or SIEM import.
 
 
 class CSVTransform(ExportTransform):

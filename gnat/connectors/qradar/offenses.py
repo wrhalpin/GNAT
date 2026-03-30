@@ -105,7 +105,7 @@ class QRadarOffenseCommands:
     def list_offenses(
         self,
         status: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
         sort: str | None = None,
         limit: int | None = None,
@@ -117,7 +117,7 @@ class QRadarOffenseCommands:
         ----------
         status : str | None
             'OPEN', 'HIDDEN', or 'CLOSED'. Defaults to config.offense_status.
-        filter : str | None
+        filter_val : str | None
             QRadar filter expression, e.g. ``"magnitude>5 and status=OPEN"``.
         fields : str | None
             Comma-separated field names to return (reduces response size).
@@ -135,12 +135,12 @@ class QRadarOffenseCommands:
         effective_status = status or self._client.config.offense_status
         if effective_status:
             params["filter"] = f"status={effective_status}"
-        if filter:
+        if filter_val:
             # Merge with status filter if both provided
             if "filter" in params:
-                params["filter"] = f"({params['filter']}) and ({filter})"
+                params["filter"] = f"({params['filter']}) and ({filter_val})"
             else:
-                params["filter"] = filter
+                params["filter"] = filter_val
         if fields:
             params["fields"] = fields
         if sort:
@@ -159,7 +159,7 @@ class QRadarOffenseCommands:
     def iter_all_offenses(
         self,
         status: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
     ) -> Iterator[dict]:
         """
@@ -169,7 +169,7 @@ class QRadarOffenseCommands:
         ----------
         status : str | None
             Offense status filter.
-        filter : str | None
+        filter_val : str | None
             Additional QRadar filter expression.
         fields : str | None
             Fields to return.
@@ -183,11 +183,11 @@ class QRadarOffenseCommands:
         effective_status = status or self._client.config.offense_status
         if effective_status:
             params["filter"] = f"status={effective_status}"
-        if filter:
+        if filter_val:
             if "filter" in params:
-                params["filter"] = f"({params['filter']}) and ({filter})"
+                params["filter"] = f"({params['filter']}) and ({filter_val})"
             else:
-                params["filter"] = filter
+                params["filter"] = filter_val
         if fields:
             params["fields"] = fields
 
@@ -223,7 +223,7 @@ class QRadarOffenseCommands:
     def get_offense_count(
         self,
         status: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
     ) -> int:
         """
         Return the total count of offenses matching the given filters.
@@ -232,7 +232,7 @@ class QRadarOffenseCommands:
         ----------
         status : str | None
             Status filter.
-        filter : str | None
+        filter_val : str | None
             Additional filter expression.
 
         Returns
@@ -244,11 +244,11 @@ class QRadarOffenseCommands:
         effective_status = status or self._client.config.offense_status
         if effective_status:
             params["filter"] = f"status={effective_status}"
-        if filter:
+        if filter_val:
             if "filter" in params:
-                params["filter"] = f"({params['filter']}) and ({filter})"
+                params["filter"] = f"({params['filter']}) and ({filter_val})"
             else:
-                params["filter"] = filter
+                params["filter"] = filter_val
         return self._client.get_total_count("siem/offenses", params=params)
 
     # ── Status management ──────────────────────────────────────────────────

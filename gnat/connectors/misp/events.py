@@ -149,10 +149,9 @@ class MISPEventCommands:
         if date_from:
             base_body["date_from"] = date_from
 
-        for item in self._client.paginate(
+        yield from self._client.paginate(
             "events/restSearch", body=base_body, response_key="Event"
-        ):
-            yield item
+        )
 
     def get_event(self, event_id: int | str) -> dict:
         """

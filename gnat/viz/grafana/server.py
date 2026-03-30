@@ -74,9 +74,8 @@ def _require_fastapi() -> None:
             "FastAPI and uvicorn are required for the Grafana server: "
             "pip install 'gnat[serve]'"
         )
-    try:
-        import uvicorn  # noqa: F401
-    except ImportError:
+    import importlib.util
+    if importlib.util.find_spec("uvicorn") is None:
         raise ImportError(
             "uvicorn is required for the Grafana server: "
             "pip install 'gnat[serve]'"
@@ -192,7 +191,7 @@ def build_app(
         """
         body = await request.json()
         targets  = body.get("targets", [])
-        range_   = body.get("range", {})
+        _range   = body.get("range", {})
         results  = []
 
         for target_spec in targets:

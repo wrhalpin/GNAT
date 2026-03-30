@@ -64,7 +64,6 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """PulseDive authenticates via ``key=`` query param; no headers needed."""
         # Key is injected into params at request time via _pd_params()
-        pass
 
     def health_check(self) -> bool:
         """Verify API reachability with a simple info lookup."""

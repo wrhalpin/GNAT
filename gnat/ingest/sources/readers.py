@@ -225,7 +225,10 @@ class CSVReader(SourceReader):
     def _iter_records(self) -> Iterator[RawRecord]:
         with self._source.open(encoding=self._encoding, newline="") as fh:
             for _ in range(self._skip_rows):
-                next(fh)
+                try:
+                    next(fh)
+                except StopIteration:
+                    return
             reader = csv.DictReader(fh, delimiter=self._delimiter)
             for rownum, row in enumerate(reader, 1):
                 rec: RawRecord = {}
@@ -742,13 +745,13 @@ class SyslogReader(SourceReader):
     def __init__(
         self,
         source: Union[str, Path],
-        format: str = "auto",
+        fmt: str = "auto",
         encoding: str = "utf-8",
         **kwargs: Any,
     ):
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
-        self._format = format
+        self._format = fmt
         self._encoding = encoding
 
     def _iter_records(self) -> Iterator[RawRecord]:
