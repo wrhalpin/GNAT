@@ -2,7 +2,7 @@
 
 **GNAT's Not Another TIP**
 
-A universal CTM toolkit including Python client and STIX 2.1-compatible ORM for interacting with security platforms. GNAT provides a uniform abstraction layer so you can write the same code regardless of which platform sits underneath.
+A CTM toolkit including a universal Python client and STIX 2.1-compatible ORM for interacting with security platforms. GNAT provides a uniform abstraction layer so you can write the same code regardless of which platform sits underneath.
 
 ---
 
