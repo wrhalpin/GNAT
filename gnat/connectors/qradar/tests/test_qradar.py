@@ -732,7 +732,11 @@ class TestQRadarRulesCommands(unittest.TestCase):
         )
         rules_cmd.list_rules(enabled_only=True)
         call_url = mock_http.request.call_args[0][1]
-        self.assertIn("enabled=true", call_url)
+        # urllib may percent-encode the '=' in the filter value
+        self.assertTrue(
+            "enabled=true" in call_url or "enabled%3Dtrue" in call_url,
+            f"expected filter in URL, got: {call_url}",
+        )
 
 
 # ═════════════════════════════════════════════════════════════════════════════

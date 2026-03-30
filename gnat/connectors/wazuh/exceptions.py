@@ -49,7 +49,24 @@ class WazuhAuthError(WazuhError):
     Raised on authentication failures.
     - Bad username/password (HTTP 401, error code 4001)
     - Account locked or disabled
+
+    Attributes
+    ----------
+    status_code : int | None
+        HTTP status code (typically 401).
+    endpoint : str | None
+        The URL endpoint that returned the error.
     """
+
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        endpoint: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.endpoint = endpoint
 
 class WazuhTokenExpiredError(WazuhAuthError):
     """

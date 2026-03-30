@@ -76,9 +76,9 @@ class TestSuricataConfig(unittest.TestCase):
 
     def test_load_from_ini(self):
         p = configparser.ConfigParser()
-        p.read_dict({"suricata": {"eve_log_path": "/tmp/eve.json"  # nosec B108 — test path}})
+        p.read_dict({"suricata": {"eve_log_path": "/tmp/eve.json"}})  # nosec B108
         cfg = load_suricata_config(p)
-        self.assertEqual(cfg.eve_log_path, "/tmp/eve.json"  # nosec B108 — test path)
+        self.assertEqual(cfg.eve_log_path, "/tmp/eve.json")  # nosec B108
 
     def test_load_missing_section_raises(self):
         with self.assertRaises(SuricataConfigError):
@@ -215,7 +215,7 @@ class TestSnortConfig(unittest.TestCase):
 
     def test_load_from_ini(self):
         p = configparser.ConfigParser()
-        p.read_dict({"snort": {"alert_log_path": "/tmp/snort.json"  # nosec B108 — test path, "log_format": "fast"}})
+        p.read_dict({"snort": {"alert_log_path": "/tmp/snort.json", "log_format": "fast"}})  # nosec B108
         cfg = load_snort_config(p)
         self.assertEqual(cfg.log_format, "fast")
 
@@ -324,8 +324,8 @@ _ZEEK_TSV_NOTICE = (
     "#empty_field (empty)\n"
     "#unset_field -\n"
     "#path notice\n"
-    "#fields ts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tnote\tmsg\tsub\tactions\tdropped\n"
-    "#types time\tstring\taddr\tport\taddr\tport\tenum\tenum\tstring\tstring\tset[enum]\tbool\n"
+    "#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tnote\tmsg\tsub\tactions\tdropped\n"
+    "#types\ttime\tstring\taddr\tport\taddr\tport\tenum\tenum\tstring\tstring\tset[enum]\tbool\n"
     "1709640000.123456\tCabc123\t1.2.3.4\t49152\t10.0.0.1\t22\ttcp\tSSH::Password_Guessing\tSSH brute force\t10 attempts\tNotice::ACTION_LOG\tF\n"
 )
 
@@ -350,11 +350,11 @@ class TestZeekConfig(unittest.TestCase):
             ZeekConfig(log_format="xml")
 
     def test_log_path(self):
-        cfg = ZeekConfig(log_dir="/tmp/zeek"  # nosec B108 — test path)
+        cfg = ZeekConfig(log_dir="/tmp/zeek")  # nosec B108
         self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.log")
 
     def test_log_path_json(self):
-        cfg = ZeekConfig(log_dir="/tmp/zeek"  # nosec B108 — test path, log_format="json")
+        cfg = ZeekConfig(log_dir="/tmp/zeek", log_format="json")  # nosec B108
         self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.json")
 
     def test_load_from_ini(self):
@@ -398,8 +398,8 @@ class TestZeekTSVReader(unittest.TestCase):
     def test_unset_fields_are_none(self):
         # The TSV uses "-" for unset
         content = (
-            "#separator \\t\n#fields ts\tuid\tid.orig_h\n"
-            "#types time\tstring\taddr\n"
+            "#separator \\t\n#fields\tts\tuid\tid.orig_h\n"
+            "#types\ttime\tstring\taddr\n"
             "1234.0\t-\t1.2.3.4\n"
         )
         path = _write_temp(content, suffix=".log")
