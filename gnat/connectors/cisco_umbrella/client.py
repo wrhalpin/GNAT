@@ -53,10 +53,11 @@ Notes
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -211,7 +212,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
@@ -496,6 +497,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
                 "CiscoUmbrellaClient.add_to_allow_list requires 'management_api_key'."
             )
         import json as _json
+
         import urllib3
 
         http = urllib3.PoolManager()
@@ -538,6 +540,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
                 "CiscoUmbrellaClient.push_block_list requires 'enforcement_api_key'."
             )
         import json as _json
+
         import urllib3
 
         http = urllib3.PoolManager()
@@ -568,10 +571,8 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         )
         body = {}
         if resp.data:
-            try:
+            with contextlib.suppress(Exception):
                 body = _json.loads(resp.data.decode())
-            except Exception:  # noqa: BLE001
-                pass
         if resp.status not in (200, 202):
             raise GNATClientError(
                 f"Umbrella Enforcement API error {resp.status}: {body}"
@@ -639,6 +640,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
                 "CiscoUmbrellaClient.delete_object requires 'enforcement_api_key'."
             )
         import json as _json
+
         import urllib3
 
         http = urllib3.PoolManager()

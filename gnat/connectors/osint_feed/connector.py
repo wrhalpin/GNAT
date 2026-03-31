@@ -55,7 +55,7 @@ Notes
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -153,8 +153,8 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
         host: str,
         feed_type: str = _FEED_STIX_JSON,
         taxii_path: str = "/taxii2/",
-        collection_id: Optional[str] = None,
-        collection_title: Optional[str] = None,
+        collection_id: str | None = None,
+        collection_title: str | None = None,
         feed_path: str = "",
         auth_type: str = _AUTH_NONE,
         username: str = "",
@@ -165,8 +165,8 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
         client_id: str = "",
         client_secret: str = "",
         token_url: str = "/oauth2/token",
-        stix_types: Optional[str | list[str]] = None,
-        added_after: Optional[str] = None,
+        stix_types: str | list[str] | None = None,
+        added_after: str | None = None,
         feed_name: str = "",
         **kwargs: Any,
     ):
@@ -190,7 +190,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
 
         # Normalise stix_types to a frozenset or None
         if isinstance(stix_types, str) and stix_types.strip():
-            self._stix_types: Optional[frozenset[str]] = frozenset(
+            self._stix_types: frozenset[str] | None = frozenset(
                 t.strip() for t in stix_types.split(",") if t.strip()
             )
         elif isinstance(stix_types, (list, tuple, set)):
@@ -309,7 +309,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 500,
     ) -> list[dict[str, Any]]:
@@ -393,7 +393,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
     # ── Internal helpers ────────────────────────────────────────────────
 
     def _fetch_objects(
-        self, stix_types: Optional[set[str]] = None
+        self, stix_types: set[str] | None = None
     ) -> Any:
         """
         Fetch and yield raw STIX objects from the feed.
@@ -401,7 +401,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
         Applies the instance-level *stix_types* filter first, then the
         caller-supplied *stix_types* set.
         """
-        effective_types: Optional[set[str]] = None
+        effective_types: set[str] | None = None
         if self._stix_types is not None and stix_types is not None:
             effective_types = self._stix_types & stix_types
         elif self._stix_types is not None:
@@ -415,7 +415,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
             yield from self._fetch_stix_json(effective_types)
 
     def _fetch_stix_json(
-        self, stix_types: Optional[set[str]] = None
+        self, stix_types: set[str] | None = None
     ) -> Any:
         """Fetch a STIX 2.1 bundle from a plain HTTP endpoint."""
         if not self._feed_path:
@@ -437,7 +437,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
             yield obj
 
     def _fetch_taxii(
-        self, stix_types: Optional[set[str]] = None
+        self, stix_types: set[str] | None = None
     ) -> Any:
         """Connect to a TAXII 2.x server and yield objects from the target collection."""
         collection = self._get_taxii_collection()

@@ -51,7 +51,7 @@ Each registered entry is a *named subclass* of ``OsintFeedConnector`` so that
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from gnat.connectors.osint_feed.connector import OsintFeedConnector
 
@@ -105,9 +105,9 @@ class FeedConnectorFactory:
 
     @staticmethod
     def from_config(
-        config: "GNATConfig",
-        registry: Optional[dict[str, Any]] = None,
-    ) -> dict[str, Type[OsintFeedConnector]]:
+        config: GNATConfig,
+        registry: dict[str, Any] | None = None,
+    ) -> dict[str, type[OsintFeedConnector]]:
         """
         Scan *config* for feed sections and return a mapping of
         ``{section_name: connector_class}``.
@@ -129,7 +129,7 @@ class FeedConnectorFactory:
             ``{section_name: OsintFeedConnector subclass}`` for every
             detected feed section.
         """
-        feeds: dict[str, Type[OsintFeedConnector]] = {}
+        feeds: dict[str, type[OsintFeedConnector]] = {}
 
         for section in config.sections:
             try:
@@ -152,7 +152,7 @@ class FeedConnectorFactory:
     def _make_class(
         section_name: str,
         section_cfg: dict[str, Any],
-    ) -> Type[OsintFeedConnector]:
+    ) -> type[OsintFeedConnector]:
         """
         Create a named :class:`OsintFeedConnector` subclass whose
         ``__init__`` hard-wires the configuration values as defaults.
@@ -182,9 +182,9 @@ class FeedConnectorFactory:
 
 
 def register_feeds_from_config(
-    config: "GNATConfig",
-    registry: Optional[dict[str, Any]] = None,
-) -> dict[str, Type[OsintFeedConnector]]:
+    config: GNATConfig,
+    registry: dict[str, Any] | None = None,
+) -> dict[str, type[OsintFeedConnector]]:
     """
     Module-level shortcut for :meth:`FeedConnectorFactory.from_config`.
 
