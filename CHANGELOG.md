@@ -9,7 +9,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
-- **5 new platform connectors** (75+ total) registered in `CLIENT_REGISTRY`:
+- **12 new platform connectors** (95 total) registered in `CLIENT_REGISTRY`:
+  - `CortexXDRClient` (`gnat/connectors/cortex_xdr/`) — Palo Alto Cortex XDR / XSIAM; HMAC-signed API key pair auth; alert & incident search, endpoint isolation, IOC management.
+  - `PrismaCloudClient` (`gnat/connectors/prisma_cloud/`) — Palo Alto Prisma Cloud CSPM/CWP/CNAPP; JWT (access key + secret); alert, vulnerability, and compliance posture ingestion with RQL query support.
+  - `NozomiClient` (`gnat/connectors/nozomi/`) — Nozomi Networks Guardian / Vantage OT/IoT; API token or Basic auth; OT alert, CVE, and asset inventory for industrial control systems.
+  - `CarbonBlackClient` (`gnat/connectors/carbon_black/`) — VMware Carbon Black Cloud; composite X-Auth-Token; alert search, device management, process threat hunting, watchlist management, and device quarantine.
+  - `LogRhythmClient` (`gnat/connectors/logrhythm/`) — LogRhythm NextGen SIEM; Bearer token or OAuth2 (Axon); alarm management, case creation, log search, and list management.
+  - `ClarotyClient` (`gnat/connectors/claroty/`) — Claroty Platform OT/IoT; username/password; asset inventory and vulnerability ingestion (was missing from registry).
+  - `FortiEDRClient` (`gnat/connectors/fortiedr/`) — Fortinet FortiEDR; username/password; event, device, and collector management (was missing from registry).
+  - `FortiSIEMClient` (`gnat/connectors/fortisiem/`) — Fortinet FortiSIEM; username/password; incident and event query (was missing from registry).
+  - `FortiSOARClient` (`gnat/connectors/fortisoar/`) — Fortinet FortiSOAR; JWT or Basic auth; full CRUD on alerts, incidents, indicators, and playbook triggering. Fixed truncated `client.py`.
+  - `GoogleChronicleClient` (`gnat/connectors/google_chronicle/`) — Google Chronicle SecOps SIEM; service account / API key; UDM event search and IOC ingestion (was missing from registry).
+  - `GreyNoiseClient` (`gnat/connectors/greynoise/`) — GreyNoise; API key; IP context enrichment and GNQL queries (was missing from registry).
+  - `ShodanClient` (`gnat/connectors/shodan/`) — Shodan; API key; host search and CVE exposure (was missing from registry).
+
+- Fixed truncated `gnat/connectors/fortisoar/client.py` — rewritten with complete `ConnectorMixin` implementation including all CRUD methods, platform helpers, and STIX translation.
+- All 12 connectors registered in `gnat/clients/__init__.py` `CLIENT_REGISTRY` and `__all__`.
+- `config/config.ini.example` updated with credential sections for all 12 new connectors.
+- `README.md` Supported Platforms tables updated; platform count updated to 95+.
+- 190+ new unit tests across all 5 new connectors + `FortiSOARClient` regression tests.
+
+
   - `BitSightClient` (`gnat/connectors/bitsight/`) — BitSight Security Ratings & Vendor Risk Management; API Token auth; read-only company ratings, findings, breach insights, and portfolio management.
   - `FlashpointClient` (`gnat/connectors/flashpoint/`) — Flashpoint Underground / Dark Web CTI; Bearer token auth; read-only alerts, IOCs, threat-actor profiles, forum posts, and ransomware intelligence. Fixed timestamp format bug in `_now_ts`.
   - `HudsonRockClient` (`gnat/connectors/hudsonrock/`) — Hudson Rock Breach Intelligence & Credential Exposure; API key auth; read-only breaches, compromised credentials, IOCs, and victim intelligence.

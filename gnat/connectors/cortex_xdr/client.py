@@ -310,7 +310,6 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         sev = str(alert.get("severity", "low")).lower()
 
         # Build STIX pattern from available IOC fields
-        local_ip = alert.get("local_insert_ts", "") and alert.get("actor_process_image_path", "")
         remote_ip = alert.get("remote_ip", "")
         sha256 = alert.get("actor_process_image_sha256", "")
         if remote_ip:

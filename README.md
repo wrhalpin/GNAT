@@ -11,10 +11,10 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 75+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 95+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
-[ 75+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
+[ 95+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
 ```
 
 ---
@@ -52,7 +52,7 @@ GNAT provides a single, consistent abstraction layer over 75+ security platforms
 
 | Layer | What it does |
 |-------|-------------|
-| **75+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
+| **95+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
 | **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
 | **Ingest Pipelines** | 14 source readers × 12 mappers; pull from any platform, file, feed, or database |
 | **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
@@ -121,6 +121,8 @@ GNAT provides a single, consistent abstraction layer over 75+ security platforms
 | `ossim` | OSSIM / AlienVault SIEM | API key |
 | `security_onion` | Security Onion | Bearer |
 | `wazuh` | Wazuh SIEM/XDR | API key / Basic |
+| `google_chronicle` | Google Chronicle (SecOps SIEM) | Service account / API key |
+| `logrhythm` | LogRhythm NextGen SIEM | Bearer / OAuth2 |
 
 ### SOAR & Incident Response
 
@@ -132,6 +134,7 @@ GNAT provides a single, consistent abstraction layer over 75+ security platforms
 | `servicenow` | ServiceNow ITSM / SecOps | Basic / Bearer |
 | `servicenow_secops` | ServiceNow SecOps (SIR + VR + TIARA) | Basic / Bearer |
 | `jira` | Atlassian Jira | Basic / Bearer |
+| `fortisoar` | Fortinet FortiSOAR | JWT / Basic |
 
 ### Network Detection & Response
 
@@ -143,6 +146,7 @@ GNAT provides a single, consistent abstraction layer over 75+ security platforms
 | `vectra` | Vectra AI NDR (Network Detection & Response) | API token |
 | `extrahop` | ExtraHop Reveal(x) NDR | API key / OAuth2 |
 | `darktrace` | Darktrace Enterprise Immune System | HMAC public/private key |
+| `nozomi` | Nozomi Networks Guardian / Vantage (OT/IoT) | API token / Basic |
 
 ### Vulnerability Management
 
@@ -162,6 +166,8 @@ GNAT provides a single, consistent abstraction layer over 75+ security platforms
 | `orca` | Orca Security (Agentless CNAPP) | Bearer |
 | `wiz` | Wiz CNAPP | OAuth2 |
 | `cortex_xpanse` | Cortex Xpanse (External ASM) | API key |
+| `cortex_xdr` | Palo Alto Cortex XDR / XSIAM | API key pair (HMAC-signed) |
+| `prisma_cloud` | Palo Alto Prisma Cloud (CSPM/CNAPP) | Access key + secret (JWT) |
 | `cycognito` | CyCognito ASM | Bearer |
 | `riskrecon` | RiskRecon | OAuth2 |
 | `zerofox` | ZeroFox Digital Risk Protection | Bearer |
@@ -176,14 +182,20 @@ GNAT provides a single, consistent abstraction layer over 75+ security platforms
 | `netskope` | Netskope SASE / SSE | API token |
 | `controlup` | ControlUp DEX | Bearer |
 | `sentinelone` | SentinelOne Singularity XDR | API token |
+| `carbon_black` | VMware Carbon Black Cloud | API key + connector ID |
 | `armis` | Armis Centrix (IT/OT/IoT) | API secret key |
 | `axonius` | Axonius Cybersecurity Asset Management | API key + secret |
+| `claroty` | Claroty Platform (OT/IoT) | Username / password |
 | `stellarcyber` | Stellar Cyber Open XDR | API key |
 | `whistic` | Whistic (Vendor Risk) | API key |
 | `proofpoint` | Proofpoint TAP | Basic |
 | `trellix` | Trellix XDR / ePolicy Orchestrator (ePO) | OAuth2 |
 | `sophos` | Sophos Central (Endpoint + Threat Intelligence) | OAuth2 |
 | `lansweeper` | Lansweeper IT Asset Management | OAuth2 / Bearer |
+| `fortiedr` | Fortinet FortiEDR | Username / password |
+| `fortisiem` | Fortinet FortiSIEM | Username / password |
+| `shodan` | Shodan | API key |
+| `greynoise` | GreyNoise | API key |
 
 ### AI Assistants
 

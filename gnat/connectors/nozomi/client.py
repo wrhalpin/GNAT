@@ -331,11 +331,6 @@ class NozomiClient(BaseClient, ConnectorMixin):
         uid = str(_uuid.uuid5(_STIX_NS, f"nozomi-node-{node_id}"))
         ts = _now_ts()
         ip = node.get("ip", "")
-        pattern = (
-            f"[ipv4-addr:value = '{ip}']"
-            if ip
-            else f"[network-traffic:dst_ref.type = 'ipv4-addr']"
-        )
         return {
             "type": "infrastructure",
             "id": f"infrastructure--{uid}",
