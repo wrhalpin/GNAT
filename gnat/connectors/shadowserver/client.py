@@ -118,9 +118,12 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
             "report": report,
             "limit":  page_size,
         }
-        if date:    payload["date"]    = date
-        if asn:     payload["asn"]     = asn
-        if country: payload["country"] = country
+        if date:
+            payload["date"] = date
+        if asn:
+            payload["asn"] = asn
+        if country:
+            payload["country"] = country
 
         resp = self._signed_post("/api/report/query", payload)
         if not isinstance(resp, list):

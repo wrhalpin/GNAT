@@ -242,7 +242,7 @@ class ReportConfig:
 # SectorFilter — canonical location is gnat.export.filters; re-exported here
 # ---------------------------------------------------------------------------
 
-from gnat.export.filters import SectorFilter as _SectorFilter
+from gnat.export.filters import SectorFilter as _SectorFilter  # noqa: E402
 
 
 class SectorFilter(_SectorFilter):

@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from docx.shared import Pt, RGBColor
+
     from gnat.reports.base import ReportDocument, ReportSection
 
 logger = logging.getLogger(__name__)

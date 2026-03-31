@@ -171,7 +171,9 @@ class SentinelClient:
                 )
             except urllib3.exceptions.HTTPError as exc:
                 if attempt < _MAX_RETRIES:
-                    time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                    time.sleep(delay)
+                    delay *= _RETRY_BACKOFF
+                    continue
                 raise SentinelAPIError(f"Connection error: {exc}", endpoint=url) from exc
 
             if response.status == 401:
@@ -214,11 +216,15 @@ class SentinelClient:
 
             if response.status == 429:
                 if attempt < _MAX_RETRIES:
-                    time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                    time.sleep(delay)
+                    delay *= _RETRY_BACKOFF
+                    continue
                 raise SentinelRateLimitError("Sentinel rate limit exceeded.", status_code=429)
 
             if response.status in _RETRYABLE_STATUS and attempt < _MAX_RETRIES:
-                time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                time.sleep(delay)
+                delay *= _RETRY_BACKOFF
+                continue
 
             if response.status not in (200, 201, 202, 204):
                 err = self._safe_parse(response.data)

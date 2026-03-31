@@ -867,7 +867,8 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         try:
             ws = manager.open(args.workspace)
         except KeyError as e:
-            print(_red(str(e))); return 1
+            print(_red(str(e)))
+            return 1
         view = TabularView(ws)
         if args.file:
             ext = Path(args.file).suffix.lower()
@@ -889,7 +890,8 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         try:
             ws = manager.open(args.workspace)
         except KeyError as e:
-            print(_red(str(e))); return 1
+            print(_red(str(e)))
+            return 1
         from gnat.viz import GraphView
         gv = GraphView(ws)
         if args.file:
@@ -939,7 +941,8 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         try:
             ws = manager.open(args.workspace)
         except KeyError as e:
-            print(_red(str(e))); return 1
+            print(_red(str(e)))
+            return 1
         PowerBIExporter(ws).to_xlsx(args.file)
         print(_green(f"✓  Power BI workbook saved to {args.file}"))
         return 0

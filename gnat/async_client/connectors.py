@@ -415,15 +415,19 @@ class AsyncGreyMatterClient(AsyncBaseClient, ConnectorMixin):
                      "malware": "malware", "vulnerability": "vulnerabilities"}
     def __init__(self, host, client_id="", client_secret="", **kw):
         super().__init__(host=host, **kw)
-        self._client_id = client_id; self._client_secret = client_secret
+        self._client_id = client_id
+        self._client_secret = client_secret
     async def authenticate(self):
         resp = await self.post("/v1/auth/token", data={
             "grant_type": "client_credentials",
             "client_id": self._client_id, "client_secret": self._client_secret})
         token = resp.get("access_token") if isinstance(resp, dict) else None
-        if not token: raise GNATClientError("AsyncGreyMatter: no token")
+        if not token:
+            raise GNATClientError("AsyncGreyMatter: no token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
-    async def health_check(self): await self.get("/v1/health"); return True
+    async def health_check(self):
+        await self.get("/v1/health")
+        return True
     async def get_object(self, t, oid): return await self.get(f"/v1/{t}/{oid.split('--')[-1]}")
     async def list_objects(self, t, f=None, page=1, ps=100):
         r = await self.get(f"/v1/{t}", params={"limit": ps, "offset": (page-1)*ps})
@@ -451,7 +455,9 @@ class AsyncWhisticClient(AsyncBaseClient, ConnectorMixin):
         super().__init__(host=host, **kw)
         self._api_key = api_key
     async def authenticate(self): self._auth_headers["X-Whistic-Token"] = self._api_key
-    async def health_check(self): await self.get("/v1/vendors", params={"limit": 1}); return True
+    async def health_check(self):
+        await self.get("/v1/vendors", params={"limit": 1})
+        return True
     async def get_object(self, t, oid):
         ep = "/v1/vendors" if t == "threat-actor" else "/v1/assessments"
         return await self.get(f"{ep}/{oid}")
@@ -478,15 +484,19 @@ class AsyncRiskReconClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"threat-actor": "companies", "vulnerability": "findings"}
     def __init__(self, host, client_id="", client_secret="", **kw):
         super().__init__(host=host, **kw)
-        self._client_id = client_id; self._client_secret = client_secret
+        self._client_id = client_id
+        self._client_secret = client_secret
     async def authenticate(self):
         resp = await self.post("/oauth2/token", data={
             "grant_type": "client_credentials",
             "client_id": self._client_id, "client_secret": self._client_secret})
         token = resp.get("access_token") if isinstance(resp, dict) else None
-        if not token: raise GNATClientError("AsyncRiskRecon: no token")
+        if not token:
+            raise GNATClientError("AsyncRiskRecon: no token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
-    async def health_check(self): await self.get("/companies", params={"limit": 1}); return True
+    async def health_check(self):
+        await self.get("/companies", params={"limit": 1})
+        return True
     async def get_object(self, t, oid): return await self.get(f"/{t}/{oid.split('--')[-1]}")
     async def list_objects(self, t, f=None, page=1, ps=100):
         r = await self.get("/companies", params={"limit": ps, "offset": (page-1)*ps})
@@ -512,10 +522,13 @@ class AsyncFeedlyClient(AsyncBaseClient, ConnectorMixin):
         super().__init__(host=host, **kw)
         self._api_token = api_token
     async def authenticate(self): self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
-    async def health_check(self): await self.get("/v3/profile"); return True
+    async def health_check(self):
+        await self.get("/v3/profile")
+        return True
     async def get_object(self, t, oid): return await self.get(f"/v3/entities/{oid}")
     async def list_objects(self, t, f=None, page=1, ps=100):
-        import time; nt = int((time.time() - 86400) * 1000)
+        import time
+        nt = int((time.time() - 86400) * 1000)
         endpoint = "/v3/enterprise/iocFeed" if t == "indicator" else "/v3/enterprise/cvesFeed"
         r = await self.get(endpoint, params={"newerThan": nt, "count": ps})
         return r.get("indicators", r.get("cves", [])) if isinstance(r, dict) else []
@@ -536,18 +549,23 @@ class AsyncSplunkClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "threat_activity", "vulnerability": "notable"}
     def __init__(self, host, api_token="", username="", password="", **kw):
         super().__init__(host=host, **kw)
-        self._api_token = api_token; self._username = username; self._password = password
+        self._api_token = api_token
+        self._username = username
+        self._password = password
     async def authenticate(self):
         if self._api_token:
-            self._auth_headers["Authorization"] = f"Bearer {self._api_token}"; return
+            self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
+            return
         resp = await self.post("/services/auth/login",
                                data={"username": self._username, "password": self._password,
                                      "output_mode": "json"})
         key = resp.get("sessionKey") if isinstance(resp, dict) else None
-        if not key: raise GNATClientError("AsyncSplunk: auth failed")
+        if not key:
+            raise GNATClientError("AsyncSplunk: auth failed")
         self._auth_headers["Authorization"] = f"Splunk {key}"
     async def health_check(self):
-        await self.get("/services/server/info", params={"output_mode": "json"}); return True
+        await self.get("/services/server/info", params={"output_mode": "json"})
+        return True
     async def get_object(self, t, oid): return {}
     async def list_objects(self, t, f=None, page=1, ps=100): return []
     async def upsert_object(self, t, p): return {}

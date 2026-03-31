@@ -23,7 +23,8 @@ def _cfg(**kw):
     return OSSIMConfig(**d)
 
 def _resp(status=200, body=None):
-    r = MagicMock(); r.status = status
+    r = MagicMock()
+    r.status = status
     r.data = json.dumps(body if body is not None else {}).encode()
     return r
 
@@ -32,7 +33,8 @@ def _make_client():
     with patch("gnat.connectors.ossim.urllib3.PoolManager") as pm:
         mock_http = MagicMock()
         pm.return_value = mock_http
-        c = OSSIMClient(cfg); c._http = mock_http
+        c = OSSIMClient(cfg)
+        c._http = mock_http
     return c, mock_http
 
 _ALARM = {

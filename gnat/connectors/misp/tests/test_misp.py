@@ -36,6 +36,7 @@ from gnat.connectors.misp.exceptions import (
     MISPAuthError,
     MISPConfigError,
     MISPNotFoundError,
+    MISPRateLimitError,
     MISPSTIXError,
     MISPValidationError,
 )
@@ -239,7 +240,7 @@ class TestMISPClient(unittest.TestCase):
     def test_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"), self.assertRaises(Exception):
+        with patch("time.sleep"), self.assertRaises(MISPRateLimitError):
             client.get_json("events/index")
 
     def test_context_manager(self):

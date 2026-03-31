@@ -651,6 +651,8 @@ def _now_ts() -> str:
 
 def _listify(val: Any) -> list:
     """Normalise a value that might be str, list, or None to a list."""
-    if val is None: return []
-    if isinstance(val, list): return val
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
     return [val]

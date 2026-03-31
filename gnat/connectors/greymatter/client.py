@@ -308,14 +308,22 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     @staticmethod
     def _infer_gm_type(pattern: str) -> str:
         pattern = pattern.lower()
-        if "ipv4-addr"   in pattern: return "ipv4"
-        if "ipv6-addr"   in pattern: return "ipv6"
-        if "domain-name" in pattern: return "domain"
-        if "url:"        in pattern: return "url"
-        if "sha-256"     in pattern: return "sha256"
-        if "sha-1"       in pattern: return "sha1"
-        if "md5"         in pattern: return "md5"
-        if "email-addr"  in pattern: return "email"
+        if "ipv4-addr"   in pattern:
+            return "ipv4"
+        if "ipv6-addr"   in pattern:
+            return "ipv6"
+        if "domain-name" in pattern:
+            return "domain"
+        if "url:"        in pattern:
+            return "url"
+        if "sha-256"     in pattern:
+            return "sha256"
+        if "sha-1"       in pattern:
+            return "sha1"
+        if "md5"         in pattern:
+            return "md5"
+        if "email-addr"  in pattern:
+            return "email"
         return "unknown"
 
     @staticmethod

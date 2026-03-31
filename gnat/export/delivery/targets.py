@@ -275,7 +275,9 @@ class EDLServer(ExportDelivery):
                 with lock_ref:
                     content = files_ref.get(path)
                 if content is None:
-                    self.send_response(404); self.end_headers(); return
+                    self.send_response(404)
+                    self.end_headers()
+                    return
                 body = content.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")

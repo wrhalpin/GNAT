@@ -39,7 +39,9 @@ import configparser
 import json
 import time
 import urllib.parse
+import uuid as _uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 import urllib3
 
@@ -238,7 +240,9 @@ class SecurityOnionClient:
                 resp = self._http.request(method, url, body=encoded, headers=headers)
             except urllib3.exceptions.HTTPError as e:
                 if attempt < 3:
-                    time.sleep(delay); delay *= 2; continue
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
                 raise SecurityOnionAPIError(str(e), endpoint=url) from e
             if resp.status == 401 and attempt == 0:
                 self.auth.invalidate()
@@ -249,7 +253,9 @@ class SecurityOnionClient:
             if resp.status == 404:
                 raise SecurityOnionNotFoundError(f"Not found: {url}", 404, url)
             if resp.status in self._RETRYABLE and attempt < 3:
-                time.sleep(delay); delay *= 2; continue
+                time.sleep(delay)
+                delay *= 2
+                continue
             if resp.status not in (200, 201):
                 raise SecurityOnionAPIError(
                     f"Unexpected HTTP {resp.status}.", resp.status, url
@@ -426,9 +432,6 @@ class SecurityOnionGridCommands:
 
 # ── STIX Mapper ───────────────────────────────────────────────────────────────
 
-import uuid as _uuid
-from datetime import datetime, timezone
-
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
 
@@ -449,7 +452,8 @@ class SecurityOnionSTIXMapper:
                        "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
                        "spec_version": "2.1", "value": ip}
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         src_port = alert.get("src_port")
@@ -496,7 +500,8 @@ class SecurityOnionSTIXMapper:
         for a in alerts:
             for obj in self.alert_to_stix_bundle(a).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
         return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
                 "spec_version": "2.1", "objects": all_objects}
 

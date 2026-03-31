@@ -113,7 +113,9 @@ class TestGraylogClient(unittest.TestCase):
 
     def test_204_returns_empty_dict(self):
         c, mock_http = _make_client()
-        r = MagicMock(); r.status = 204; r.data = b""
+        r = MagicMock()
+        r.status = 204
+        r.data = b""
         mock_http.request.return_value = r
         result = c.delete("streams/s1")
         self.assertEqual(result, {})

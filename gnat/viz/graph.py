@@ -179,13 +179,16 @@ class _Vec2:
         return _Vec2(self.x + o.x, self.y + o.y)
 
     def __iadd__(self, o: _Vec2) -> _Vec2:
-        self.x += o.x; self.y += o.y; return self
+        self.x += o.x
+        self.y += o.y
+        return self
 
     def __mul__(self, s: float) -> _Vec2:
         return _Vec2(self.x * s, self.y * s)
 
     def dist2(self, o: _Vec2) -> float:
-        dx = self.x - o.x; dy = self.y - o.y
+        dx = self.x - o.x
+        dy = self.y - o.y
         return dx * dx + dy * dy
 
     def dist(self, o: _Vec2) -> float:
@@ -270,7 +273,8 @@ class _QuadTree:
         fx, fy = 0.0, 0.0
         for child in self.children:
             cfx, cfy = child.repulsion_force(x, y, kr, theta)
-            fx += cfx; fy += cfy
+            fx += cfx
+            fy += cfy
         return fx, fy
 
 
@@ -316,14 +320,16 @@ def _barnes_hut_layout(
 
         # ── Repulsion via Barnes-Hut ────────────────────────────────────
         # Find bounding box
-        min_x = min(p.x for p in pos); max_x = max(p.x for p in pos)
-        min_y = min(p.y for p in pos); max_y = max(p.y for p in pos)
+        min_x = min(p.x for p in pos)
+        max_x = max(p.x for p in pos)
+        min_y = min(p.y for p in pos)
+        max_y = max(p.y for p in pos)
         cx    = (min_x + max_x) / 2
         cy    = (min_y + max_y) / 2
         half  = max(max_x - min_x, max_y - min_y) / 2 + 1.0
 
         tree = _QuadTree(cx, cy, half)
-        for i, nid in enumerate(node_ids):
+        for i, _nid in enumerate(node_ids):
             tree.insert(i, pos[i].x, pos[i].y, float(degree[i]))
 
         for i in range(n):
@@ -1546,7 +1552,9 @@ class GraphView:
             xs, ys, zs, sizes, texts = [], [], [], [], []
             for sid, obj in items:
                 p = positions.get(sid, (0, 0, 0))
-                xs.append(p[0]); ys.append(p[1]); zs.append(p[2])
+                xs.append(p[0])
+                ys.append(p[1])
+                zs.append(p[2])
                 sizes.append(self._node_size(obj))
                 name = getattr(obj, "name", sid[:30])
                 score = obj._properties.get("x_rf_risk_score",

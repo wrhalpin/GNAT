@@ -62,7 +62,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from gnat.reports.aggregator import DataAggregator
+from gnat.reports.aggregator import DataAggregator, ReportAggregates
 from gnat.reports.base import (
     AIMode,
     ReportConfig,
@@ -84,6 +84,7 @@ if TYPE_CHECKING:
     from gnat.agents.base import AgentConfig
     from gnat.context.workspace import WorkspaceManager
     from gnat.research.library import ResearchLibrary
+    from gnat.schedule.job import RunRecord
 
 logger = logging.getLogger(__name__)
 

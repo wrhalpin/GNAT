@@ -547,29 +547,44 @@ def _parse_dt(value: Any) -> datetime | None:
 
 def _ioc_type_from_pattern(pattern: str) -> str:
     p = pattern.lower()
-    if "ipv4-addr" in p: return "ipv4"
-    if "ipv6-addr" in p: return "ipv6"
-    if "domain-name" in p: return "domain"
-    if "url:" in p: return "url"
-    if "sha-256" in p or "sha256" in p: return "sha256"
-    if "sha-1" in p or "sha1" in p: return "sha1"
-    if "md5" in p: return "md5"
-    if "email-addr" in p: return "email"
-    if "file:name" in p: return "filename"
-    if "windows-registry" in p: return "registry"
+    if "ipv4-addr" in p:
+        return "ipv4"
+    if "ipv6-addr" in p:
+        return "ipv6"
+    if "domain-name" in p:
+        return "domain"
+    if "url:" in p:
+        return "url"
+    if "sha-256" in p or "sha256" in p:
+        return "sha256"
+    if "sha-1" in p or "sha1" in p:
+        return "sha1"
+    if "md5" in p:
+        return "md5"
+    if "email-addr" in p:
+        return "email"
+    if "file:name" in p:
+        return "filename"
+    if "windows-registry" in p:
+        return "registry"
     return "other"
 
 
 def _cvss_bucket(score: float) -> str:
-    if score >= 9.0: return "Critical (9.0-10.0)"
-    if score >= 7.0: return "High (7.0-8.9)"
-    if score >= 4.0: return "Medium (4.0-6.9)"
+    if score >= 9.0:
+        return "Critical (9.0-10.0)"
+    if score >= 7.0:
+        return "High (7.0-8.9)"
+    if score >= 4.0:
+        return "Medium (4.0-6.9)"
     return "Low (0.0-3.9)"
 
 
 def _conf_bucket(score: float) -> str:
-    if score >= 80: return "High (80-100)"
-    if score >= 50: return "Medium (50-79)"
+    if score >= 80:
+        return "High (80-100)"
+    if score >= 50:
+        return "Medium (50-79)"
     return "Low (0-49)"
 
 

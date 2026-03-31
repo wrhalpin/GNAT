@@ -198,7 +198,9 @@ class OSSIMClient:
                 resp = self._http.request(method, url, body=encoded, headers=headers)
             except urllib3.exceptions.HTTPError as e:
                 if attempt < 3:
-                    time.sleep(delay); delay *= 2; continue
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
                 raise OSSIMAPIError(str(e), endpoint=url) from e
             if resp.status in (401, 403):
                 raise OSSIMAuthError(
@@ -207,7 +209,9 @@ class OSSIMClient:
             if resp.status == 404:
                 raise OSSIMNotFoundError(f"Not found: {url}", 404, url)
             if resp.status in self._RETRYABLE and attempt < 3:
-                time.sleep(delay); delay *= 2; continue
+                time.sleep(delay)
+                delay *= 2
+                continue
             if resp.status not in (200, 201, 204):
                 raise OSSIMAPIError(f"HTTP {resp.status}", resp.status, url)
             if resp.status == 204 or not resp.data:
@@ -391,7 +395,8 @@ class OSSIMSTIXMapper:
                        "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
                        "spec_version": "2.1", "value": ip}
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         src_p = alarm.get("src_port")
@@ -408,10 +413,13 @@ class OSSIMSTIXMapper:
                     "protocols": [str(alarm.get("protocol", "tcp")).lower()],
                 }
                 if src_p:
-                    with contextlib.suppress(ValueError, TypeError): nt["src_port"] = int(src_p)
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["src_port"] = int(src_p)
                 if dst_p:
-                    with contextlib.suppress(ValueError, TypeError): nt["dst_port"] = int(dst_p)
-                objects.append(nt); refs.append(nid)
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["dst_port"] = int(dst_p)
+                objects.append(nt)
+                refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         objects.append({
@@ -438,7 +446,8 @@ class OSSIMSTIXMapper:
         for a in alarms:
             for obj in self.alarm_to_stix_bundle(a).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
         return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
                 "spec_version": "2.1", "objects": all_objects}
 

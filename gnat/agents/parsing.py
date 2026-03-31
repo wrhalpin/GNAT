@@ -70,6 +70,7 @@ from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel
 from gnat.agents.prompts import PARSING_SYSTEM, PARSING_USER
 from gnat.ingest.base import RawRecord, RecordMapper
 from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.base import STIXBase
 from gnat.orm.indicator import Indicator
 from gnat.orm.threat_actor import ThreatActor
 from gnat.orm.vulnerability import Vulnerability
