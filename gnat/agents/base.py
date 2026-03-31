@@ -43,9 +43,10 @@ import json
 import logging
 import urllib.error
 import urllib.request
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -420,3 +421,31 @@ class ClaudeClient:
         except json.JSONDecodeError as exc:
             logger.warning("ClaudeClient: JSON parse failed — %s\n%.200s", exc, text)
             return None
+
+
+# ---------------------------------------------------------------------------
+# LLM Provider abstract base
+# ---------------------------------------------------------------------------
+
+
+class LLMProvider(ABC):
+    """Abstract base for all LLM providers (keeps GNAT's urllib3-only policy)."""
+
+    @abstractmethod
+    def chat(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """Return standard OpenAI-style chat completion response."""
+
+    @abstractmethod
+    def structured(
+        self,
+        prompt: str,
+        output_schema: Dict[str, Any],
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """Return structured JSON output matching the supplied schema."""

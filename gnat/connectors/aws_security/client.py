@@ -61,7 +61,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json as _json
 import uuid as _uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -228,8 +227,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single AWS finding by type and ID."""
         if stix_type in ("indicator", "vulnerability"):
-            body = _json.dumps({"FindingIds": [object_id]})
-            resp = self.post("/findings/get", body=body)
+            resp = self.post("/findings/get", json={"FindingIds": [object_id]})
             findings = resp.get("Findings", []) if isinstance(resp, dict) else []
             return findings[0] if findings else {}
         if stix_type == "report":
@@ -259,7 +257,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
                 ]
             if asff_filters:
                 body["Filters"] = asff_filters
-            resp = self.post("/findings", body=_json.dumps(body))
+            resp = self.post("/findings", json=body)
             return resp.get("Findings", []) if isinstance(resp, dict) else []
 
         if stix_type == "indicator":
@@ -273,14 +271,14 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
             }
             resp = self.post(
                 f"/detector/{detector_id}/findings",
-                body=_json.dumps(body_gd),
+                json=body_gd,
             )
             ids = resp.get("FindingIds", []) if isinstance(resp, dict) else []
             if not ids:
                 return []
             resp2 = self.post(
                 f"/detector/{detector_id}/findings/get",
-                body=_json.dumps({"FindingIds": ids[:page_size]}),
+                json={"FindingIds": ids[:page_size]},
             )
             return resp2.get("Findings", []) if isinstance(resp2, dict) else []
 
@@ -293,8 +291,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Import custom findings in ASFF format."""
         if stix_type == "vulnerability":
-            body = _json.dumps({"Findings": [payload]})
-            resp = self.post("/findings/import", body=body)
+            resp = self.post("/findings/import", json={"Findings": [payload]})
             return resp if isinstance(resp, dict) else {}
         raise GNATClientError(
             f"AWS Security: upsert not supported for STIX type '{stix_type}'"
@@ -302,12 +299,11 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Archive a Security Hub finding (soft-delete via ARCHIVED status)."""
-        body = _json.dumps({
+        self.patch("/findings", json={
             "FindingIdentifiers": [{"Id": object_id, "ProductArn": ""}],
             "Note": {"Text": "Archived by GNAT", "UpdatedBy": "gnat"},
             "RecordState": "ARCHIVED",
         })
-        self.patch("/findings", body=body)
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -332,7 +328,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
             asff["WorkflowStatus"] = [{"Value": workflow_status.upper(), "Comparison": "EQUALS"}]
         if asff:
             body["Filters"] = asff
-        resp = self.post("/findings", body=_json.dumps(body))
+        resp = self.post("/findings", json=body)
         return resp.get("Findings", []) if isinstance(resp, dict) else []
 
     def get_guardduty_findings(
@@ -357,20 +353,20 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         }
         resp = self.post(
             f"/detector/{detector_id}/findings",
-            body=_json.dumps(body),
+            json=body,
         )
         ids = resp.get("FindingIds", []) if isinstance(resp, dict) else []
         if not ids:
             return []
         resp2 = self.post(
             f"/detector/{detector_id}/findings/get",
-            body=_json.dumps({"FindingIds": ids[:max_results]}),
+            json={"FindingIds": ids[:max_results]},
         )
         return resp2.get("Findings", []) if isinstance(resp2, dict) else []
 
     def enable_security_hub(self) -> dict[str, Any]:
         """Enable Security Hub for the current account."""
-        resp = self.post("/accounts", body=_json.dumps({}))
+        resp = self.post("/accounts", json={})
         return resp if isinstance(resp, dict) else {}
 
     # ── STIX translation ───────────────────────────────────────────────────

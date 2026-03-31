@@ -90,7 +90,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
     ):
         super().__init__(host=host, **kwargs)
         if isinstance(service_account, str) and service_account:
-            with open(service_account) as f:
+            with open(service_account, encoding="utf-8") as f:
                 self._sa_key = json.load(f)
         else:
             self._sa_key = service_account or {}
@@ -138,7 +138,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
             # UDM Search API example
             return self.search_udm(query=filters.get("query", ""), limit=page_size)
 
-        elif stix_type == "indicator":
+        if stix_type == "indicator":
             # Detection Engine
             return self.list_detections(limit=page_size)
 
