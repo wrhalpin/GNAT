@@ -11,6 +11,8 @@ registered in the :data:`CLIENT_REGISTRY` dict so that
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.alienvault.client import AlienVaultClient
+from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
+from gnat.connectors.osint_feed.connector import OsintFeedConnector
 from gnat.connectors.armis.client import ArmisClient
 from gnat.connectors.aws_security.client import AWSSecurityClient
 from gnat.connectors.axonius.client import AxoniusClient
@@ -203,6 +205,9 @@ CLIENT_REGISTRY: dict = {
     "nozomi":         NozomiClient,
     "prisma_cloud":   PrismaCloudClient,
     "shodan":         ShodanClient,
+    # OSINT feed connectors
+    "osint_feed":       OsintFeedConnector,
+    "cisco_umbrella":   CiscoUmbrellaClient,
 }
 
 __all__ = [
@@ -257,4 +262,6 @@ __all__ = [
     "NozomiClient",
     "PrismaCloudClient",
     "ShodanClient",
+    "OsintFeedConnector",
+    "CiscoUmbrellaClient",
 ]
