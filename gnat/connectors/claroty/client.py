@@ -139,12 +139,12 @@ class ClarotyClient(BaseClient, ConnectorMixin):
             resp = self.get("/v1/assets", params=params)  # Common path; adjust if your instance uses different versioning
             return resp.get("data", []) if isinstance(resp, dict) else []
 
-        elif stix_type == "observed-data":  # Alerts
+        if stix_type == "observed-data":  # Alerts
             params = {"limit": limit, "page": page, **filters}
             resp = self.get("/v1/alerts", params=params)  # Adjust exact path
             return resp.get("data", []) if isinstance(resp, dict) else []
 
-        elif stix_type == "vulnerability":
+        if stix_type == "vulnerability":
             params = {"limit": limit, "page": page, **filters}
             resp = self.get("/v1/vulnerabilities", params=params)
             return resp.get("data", []) if isinstance(resp, dict) else []
@@ -188,9 +188,9 @@ class ClarotyClient(BaseClient, ConnectorMixin):
 
         if "asset_uid" in native or "device_type" in native:
             return self._asset_to_stix(native, now)
-        elif "alert_id" in native or "event_type" in native:
+        if "alert_id" in native or "event_type" in native:
             return self._alert_to_stix(native, now)
-        elif "cve" in native or "vulnerability_id" in native:
+        if "cve" in native or "vulnerability_id" in native:
             return self._vulnerability_to_stix(native, now)
 
         # Generic fallback

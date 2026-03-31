@@ -12,7 +12,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
-from gnat.agents.llm import LLMProvider
+from gnat.agents.base import LLMProvider
 
 
 class ClaudeProvider(LLMProvider, BaseClient):

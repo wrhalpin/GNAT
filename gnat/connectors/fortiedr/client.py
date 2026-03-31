@@ -135,7 +135,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
             resp = self.get("/rest/incidents", params={k: v for k, v in params.items() if v is not None})
             return resp.get("data", []) if isinstance(resp, dict) else []
 
-        elif stix_type == "report":  # Collectors / inventory
+        if stix_type == "report":  # Collectors / inventory
             params = {"limit": limit}
             resp = self.get("/rest/collectors", params=params)
             return resp.get("data", []) if isinstance(resp, dict) else []

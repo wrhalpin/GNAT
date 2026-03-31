@@ -141,7 +141,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
             resp = self.get("/phoenix/rest/pub/incident", params={k: v for k, v in params.items() if v is not None})
             return resp.get("response", []) if isinstance(resp, dict) else []
 
-        elif stix_type == "observed-data":
+        if stix_type == "observed-data":
             # Event query — adapt as needed (some paths are XML; extend with domain helper)
             raise GNATClientError("Event querying via observed-data needs specific query payload; use domain helper.")
 

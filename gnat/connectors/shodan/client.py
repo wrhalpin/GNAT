@@ -127,7 +127,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
                 **{k: v for k, v in filters.items() if k != "query"}
             )
 
-        elif stix_type == "vulnerability":
+        if stix_type == "vulnerability":
             # Use exploits search (separate base if needed)
             return self.search_exploits(
                 query=filters.get("query", ""),
@@ -197,7 +197,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
 
         if "ip_str" in native or "ports" in native:
             return self._host_to_stix(native, now)
-        elif "cve" in native or "exploit" in str(native).lower():
+        if "cve" in native or "exploit" in str(native).lower():
             return self._exploit_to_stix(native, now)
         # Generic fallback
         return {

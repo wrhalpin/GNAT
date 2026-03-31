@@ -10,34 +10,10 @@ Provides automatic fallback, structured output, and config-driven backend select
 
 from __future__ import annotations
 
-import json
-from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from gnat.clients.base import BaseClient, GNATClientError
-
-
-class LLMProvider(ABC):
-    """Abstract base for all LLM providers (keeps GNAT's urllib3-only policy)."""
-
-    @abstractmethod
-    def chat(
-        self,
-        messages: List[Dict[str, str]],
-        temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        """Return standard OpenAI-style chat completion response."""
-
-    @abstractmethod
-    def structured(
-        self,
-        prompt: str,
-        output_schema: Dict[str, Any],
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        """Return structured JSON output matching the supplied schema."""
+from gnat.agents.base import LLMProvider
+from gnat.clients.base import GNATClientError
 
 
 class LLMClient:
@@ -59,10 +35,10 @@ class LLMClient:
         if backend == "claude":
             from .claude import ClaudeProvider
             return ClaudeProvider(**config)
-        elif backend in ("openai", "grok"):
+        if backend in ("openai", "grok"):
             from .openai_compatible import OpenAICompatibleProvider
             return OpenAICompatibleProvider(provider=backend, **config)
-        elif backend == "gemini":
+        if backend == "gemini":
             raise NotImplementedError("Gemini provider coming soon (add [gemini] section)")
         raise ValueError(
             f"Unsupported LLM backend '{backend}'. "
