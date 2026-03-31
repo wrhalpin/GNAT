@@ -231,7 +231,7 @@ class AsyncSTIXBase:
         await ind.delete()
     """
 
-    _sync_cls: Any = None   # set by concrete subclasses
+    _sync_cls: type[Any] | None = None   # set by concrete subclasses
 
     def __init__(self, client: AsyncGNATClient | None = None, **kwargs: Any):
         self._async_client = client
