@@ -63,7 +63,7 @@ by changing one string in the config file.
 gnat/
 ├── orm/                    STIX 2.1 ORM (Indicator, ThreatActor, Vulnerability, ...)
 ├── clients/                BaseClient (urllib3), CLIENT_REGISTRY
-├── connectors/             60+ platform connectors
+├── connectors/             95 platform connectors
 ├── ingest/                 SourceReaders (14), RecordMappers (12), IngestPipeline
 ├── export/                 ExportFilters, Transforms (EDL, Netskope), Delivery, ExportJob
 ├── schedule/               FeedJob, FeedScheduler, APScheduler/Celery adapters

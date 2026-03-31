@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 75+ security platforms.
+**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 95 security platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -11,10 +11,10 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 95+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 95 security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
-[ 95+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
+[ 95 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
 ```
 
 ---
@@ -52,7 +52,7 @@ GNAT provides a single, consistent abstraction layer over 95+ security platforms
 
 | Layer | What it does |
 |-------|-------------|
-| **95+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
+| **95 Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
 | **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
 | **Ingest Pipelines** | 14 source readers × 12 mappers; pull from any platform, file, feed, or database |
 | **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
@@ -108,6 +108,8 @@ GNAT provides a single, consistent abstraction layer over 95+ security platforms
 | `intel471` | Intel 471 Cybercrime Intelligence | Bearer |
 | `misp` | MISP Threat Sharing Platform | API key |
 | `opencti` | OpenCTI | API key |
+| `hibp` | Have I Been Pwned (HIBP) | API key |
+| `synapse` | Vertex Project Synapse | API key / Bearer |
 
 ### SIEMs & Log Analytics
 
@@ -123,6 +125,8 @@ GNAT provides a single, consistent abstraction layer over 95+ security platforms
 | `wazuh` | Wazuh SIEM/XDR | API key / Basic |
 | `google_chronicle` | Google Chronicle (SecOps SIEM) | Service account / API key |
 | `logrhythm` | LogRhythm NextGen SIEM | Bearer / OAuth2 |
+| `datadog` | Datadog Cloud SIEM / Security Monitoring | API key + App key |
+| `cribl` | Cribl Stream / Edge (Data Pipeline) | Bearer / username+password |
 
 ### SOAR & Incident Response
 
@@ -147,6 +151,7 @@ GNAT provides a single, consistent abstraction layer over 95+ security platforms
 | `extrahop` | ExtraHop Reveal(x) NDR | API key / OAuth2 |
 | `darktrace` | Darktrace Enterprise Immune System | HMAC public/private key |
 | `nozomi` | Nozomi Networks Guardian / Vantage (OT/IoT) | API token / Basic |
+| `dragos` | Dragos Platform (OT/ICS Threat Intelligence) | Basic (API key + secret) |
 
 ### Vulnerability Management
 
@@ -170,10 +175,11 @@ GNAT provides a single, consistent abstraction layer over 95+ security platforms
 | `prisma_cloud` | Palo Alto Prisma Cloud (CSPM/CNAPP) | Access key + secret (JWT) |
 | `cycognito` | CyCognito ASM | Bearer |
 | `riskrecon` | RiskRecon | OAuth2 |
-| `zerofox` | ZeroFox Digital Risk Protection | Bearer |
 | `censys` | Censys Internet Intelligence / ASM | API ID + secret |
 | `bitsight` | BitSight Security Ratings & Vendor Risk | API token |
 | `upguard` | UpGuard Vendor Risk + CAASM + DRP | API key |
+| `aws_security` | AWS Security Hub / GuardDuty | AWS SigV4 (access key + secret) |
+| `securityscorecard` | SecurityScorecard Security Ratings | API token |
 
 ### Asset & Endpoint Management
 
@@ -197,6 +203,8 @@ GNAT provides a single, consistent abstraction layer over 95+ security platforms
 | `shodan` | Shodan | API key |
 | `greynoise` | GreyNoise | API key |
 | `cisa` | CISA KEV Catalog (public feed) | None (public) |
+| `tanium` | Tanium Endpoint Management & Security | API token / session |
+| `trendmicro_visionone` | Trend Micro Vision One XDR | Bearer token |
 
 ### AI Assistants
 
@@ -946,10 +954,10 @@ gnat/
 ├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based config (GNAT_CONFIG → ~/.gnat/config.ini → ./gnat.ini)
 ├── clients/
-│   ├── __init__.py          # CLIENT_REGISTRY (75+ connectors)
+│   ├── __init__.py          # CLIENT_REGISTRY (95 connectors)
 │   └── base.py              # urllib3 BaseClient + GNATClientError
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types + observables)
-├── connectors/              # 75+ platform connectors — each: BaseClient + ConnectorMixin
+├── connectors/              # 95 platform connectors — each: BaseClient + ConnectorMixin
 │   └── base_connector.py    # ConnectorMixin (8-method contract + capabilities() + call())
 ├── ingest/                  # SourceReaders (14), RecordMappers (12), IngestPipeline
 │   └── _ioc_classifier.py   # RUST_AVAILABLE shim for optional Rust hot-path
@@ -1052,7 +1060,7 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
-                        │     CONNECTOR LAYER (75+ platforms)     │
+                        │     CONNECTOR LAYER (95 platforms)      │
                         │  BaseClient + ConnectorMixin            │
                         │  authenticate · health_check            │
                         │  get/list/upsert/delete · to/from_stix  │
