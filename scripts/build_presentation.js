@@ -133,7 +133,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const pills = [
-    ["60+ Connectors", C.teal],
+    ["95 Connectors", C.teal],
     ["STIX 2.1", C.steel],
     ["AI-Powered", C.teal2],
     ["Scheduled", C.steel],
@@ -158,7 +158,7 @@ pres.author = "wrhalpin@gmail.com";
     color: C.muted, align: "left", margin: 0
   });
 
-  sl.addText("Version 1.1  ·  Python 3.9+  ·  STIX 2.1  ·  60+ Platform Connectors  ·  1,500+ Tests", {
+  sl.addText("Version 1.1  ·  Python 3.9+  ·  STIX 2.1  ·  95 Platform Connectors  ·  1,500+ Tests", {
     x: 0.5, y: 4.95, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, align: "left", margin: 0
   });
@@ -272,7 +272,7 @@ pres.author = "wrhalpin@gmail.com";
     { label: "ANALYST / AUTOMATION LAYER", sub: "Workstations \u00b7 SOAR \u00b7 Scheduled jobs \u00b7 CLI \u00b7 TUI \u00b7 Web Dashboard", col: C.navy2, y: 0.85 },
     { label: "GNAT CORE", sub: "Ingest \u00b7 Export \u00b7 AI Agents \u00b7 Research Library \u00b7 Reports \u00b7 NLP \u00b7 TAXII 2.1 \u00b7 Solr Search", col: C.steel, y: 1.52 },
     { label: "STIX 2.1 ORM + WORKSPACE", sub: "Indicator \u00b7 ThreatActor \u00b7 Vulnerability \u00b7 AttackPattern \u00b7 Malware \u00b7 Relationship", col: C.teal, y: 2.19 },
-    { label: "CONNECTOR LAYER (60+ platforms)", sub: "ThreatQ \u00b7 CrowdStrike \u00b7 Splunk \u00b7 Elastic \u00b7 Wazuh \u00b7 QRadar \u00b7 Sentinel \u00b7 VirusTotal \u00b7 Mandiant \u00b7 Orca \u00b7 Wiz \u00b7 MISP \u00b7 ...", col: C.navy2, y: 2.86 },
+    { label: "CONNECTOR LAYER (95 platforms)", sub: "ThreatQ \u00b7 CrowdStrike \u00b7 Splunk \u00b7 Elastic \u00b7 Wazuh \u00b7 QRadar \u00b7 Sentinel \u00b7 VirusTotal \u00b7 Mandiant \u00b7 Orca \u00b7 Wiz \u00b7 MISP \u00b7 ...", col: C.navy2, y: 2.86 },
     { label: "EXTERNAL PLATFORMS", sub: "TIPs \u00b7 SIEMs \u00b7 EDRs \u00b7 Vuln Scanners \u00b7 CNAPP/ASM \u00b7 SOAR \u00b7 NDR \u00b7 AI Assistants", col: "4B5563", y: 3.53 },
   ];
 
@@ -305,7 +305,7 @@ pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 5: Connectors (category layout) ─────────────────────────────
 {
-  const sl = contentSlide(pres, "60+ Platform Connectors \u2014 One Interface");
+  const sl = contentSlide(pres, "95 Platform Connectors \u2014 One Interface");
 
   const categories = [
     {
@@ -459,12 +459,6 @@ pres.author = "wrhalpin@gmail.com";
       x: x + 0.08, y: 1.78, w: 1.19, h: 1.3,
       fontSize: 8.5, fontFace: "Calibri", color: C.muted, margin: 0
     });
-    if (i < 2) {
-      sl.addShape("line", {
-        x: x + 1.38, y: 2.27, w: 0.12, h: 0,
-        line: { color: C.teal, width: 1.5, endArrowType: "triangle" }
-      });
-    }
   });
 
   // Export header
@@ -497,12 +491,6 @@ pres.author = "wrhalpin@gmail.com";
       x: x + 0.08, y: 1.78, w: 1.19, h: 1.3,
       fontSize: 8.5, fontFace: "Calibri", color: C.muted, margin: 0
     });
-    if (i < 2) {
-      sl.addShape("line", {
-        x: x + 1.38, y: 2.27, w: 0.12, h: 0,
-        line: { color: C.teal, width: 1.5, endArrowType: "triangle" }
-      });
-    }
   });
 
   sl.addText("Real example: ThreatQ \u2192 GNAT \u2192 Netskope CE (FQDN + URL + SHA256 every 15 min) \u2192 Tenant lists \u2192 Palo Alto EDLs", {
@@ -721,12 +709,6 @@ pres.author = "wrhalpin@gmail.com";
       x: 0.55, y: 1.32 + i * 1.05, w: 5.1, h: 0.38,
       fontSize: 9, fontFace: "Calibri", color: C.mint, margin: 0
     });
-    if (arrow) {
-      sl.addShape("line", {
-        x: 2.7, y: 1.8 + i * 1.05, w: 0, h: 0.2,
-        line: { color: C.teal2, width: 2, endArrowType: "triangle" }
-      });
-    }
   });
 
   sl.addText("TTL by Category", {
@@ -822,12 +804,6 @@ pres.author = "wrhalpin@gmail.com";
       x: x + 0.08, y: 4.2, w: 1.89, h: 0.7,
       fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.white, align: "center", margin: 0
     });
-    if (i < 3) {
-      sl.addShape("line", {
-        x: x + 2.08, y: 4.55, w: 0.24, h: 0,
-        line: { color: C.teal2, width: 1.5, endArrowType: "triangle" }
-      });
-    }
   });
 }
 
@@ -1486,7 +1462,7 @@ pres.author = "wrhalpin@gmail.com";
   const advantages = [
     { title: "Portability", body: "Switch from ThreatQ to a new TIP? Change one config line. The pipeline, scheduler, reports, and export jobs all work unchanged. Your automation is not locked to any platform.", col: C.teal },
     { title: "Maintenance Simplicity", body: "API changes affect one connector file, not every script. Tests cover all connectors uniformly. One library version number covers the entire integration stack.", col: C.steel },
-    { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 60+ platforms.", col: C.teal },
+    { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 95 platforms.", col: C.teal },
     { title: "Operational Coherence", body: "One scheduler, one health endpoint, one log stream. No more asking which of 15 scripts ran overnight and whether it worked. FeedScheduler.summary() answers all of that.", col: C.steel },
     { title: "Incremental Adoption", body: "Each layer is independently useful. Start with connectors only. Add ingest. Add export. Add AI. Add reports. The stack is additive \u2014 you never have to replace working parts.", col: C.teal },
     { title: "Test Coverage", body: "1,500+ unit tests across 25+ test files. Every connector, every pipeline stage, every renderer, every scheduler behaviour. Confidence in changes without regression fear.", col: C.steel },
@@ -1593,7 +1569,7 @@ pres.author = "wrhalpin@gmail.com";
   const sl = contentSlide(pres, "By the Numbers");
 
   const stats = [
-    ["60+", "Platform\nConnectors", C.teal],
+    ["95", "Platform\nConnectors", C.teal],
     ["1,500+", "Unit\nTests", C.steel],
     ["150+", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
@@ -1663,12 +1639,6 @@ pres.author = "wrhalpin@gmail.com";
       x: x + 0.08, y: 2.02, w: 1.29, h: 2.9,
       fontSize: 8.5, fontFace: "Calibri", color: C.offwhite
     });
-    if (i < 5) {
-      sl.addShape("line", {
-        x: x + 1.48, y: 1.17, w: 0.1, h: 0,
-        line: { color: C.steel, width: 1, endArrowType: "triangle" }
-      });
-    }
   });
 }
 
@@ -1709,7 +1679,7 @@ pres.author = "wrhalpin@gmail.com";
     ["\u2705", "Docker Integration Test Harness"],
     ["\u2705", "Solr/Grafana Observability Integration"],
     ["\u2705", "13 additional platform connectors (v1.1)"],
-    ["\u2705", "60+ connectors total in CLIENT_REGISTRY"],
+    ["\u2705", "95 connectors total in CLIENT_REGISTRY"],
     ["\u2705", "STIX validator ORM integration (validate=True)"],
     ["\u2705", "ComplianceMatrix programmatic connector audit"],
   ];
@@ -1766,7 +1736,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const summary = [
-    "60+ connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines",
+    "95 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines",
     "AI agents (Claude + Copilot) \u00b7 NLP queries \u00b7 Research library \u00b7 Report generation",
     "TAXII 2.1 \u00b7 STIX validator \u00b7 TUI + Web dashboard \u00b7 Docker \u00b7 Multi-tenant",
     "1,500+ tests \u00b7 ~$50/month Azure \u00b7 Incremental adoption \u00b7 Contribution pipeline",
