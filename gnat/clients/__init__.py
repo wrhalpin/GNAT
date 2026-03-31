@@ -85,6 +85,13 @@ from gnat.connectors.flashpoint.client import FlashpointClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
 from gnat.connectors.intel471.client import Intel471Client
 from gnat.connectors.upguard.client import UpGuardClient
+from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClient
+from gnat.connectors.hibp.client import HIBPClient
+from gnat.connectors.tanium.client import TaniumClient
+from gnat.connectors.aws_security.client import AWSSecurityClient
+from gnat.connectors.securityscorecard.client import SecurityScorecardClient
+from gnat.connectors.dragos.client import DragosClient
+from gnat.connectors.datadog.client import DatadogClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -163,6 +170,13 @@ CLIENT_REGISTRY: dict = {
     "hudsonrock":     HudsonRockClient,
     "intel471":       Intel471Client,
     "upguard":        UpGuardClient,
+    "trendmicro_visionone": TrendMicroVisionOneClient,
+    "hibp":           HIBPClient,
+    "tanium":         TaniumClient,
+    "aws_security":   AWSSecurityClient,
+    "securityscorecard": SecurityScorecardClient,
+    "dragos":         DragosClient,
+    "datadog":        DatadogClient,
 }
 
 __all__ = [
@@ -197,4 +211,11 @@ __all__ = [
     "HudsonRockClient",
     "Intel471Client",
     "UpGuardClient",
+    "TrendMicroVisionOneClient",
+    "HIBPClient",
+    "TaniumClient",
+    "AWSSecurityClient",
+    "SecurityScorecardClient",
+    "DragosClient",
+    "DatadogClient",
 ]

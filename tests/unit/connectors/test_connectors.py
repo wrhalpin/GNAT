@@ -6577,3 +6577,830 @@ class TestUpGuardClient:
         stix = {"id": "vulnerability--abc", "type": "vulnerability"}
         result = client.from_stix(stix)
         assert result["stix_id"] == "vulnerability--abc"
+
+
+# ---------------------------------------------------------------------------
+# TrendMicroVisionOneClient
+# ---------------------------------------------------------------------------
+
+class TestTrendMicroVisionOneClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClient
+        c = TrendMicroVisionOneClient(host="https://api.xdr.trendmicro.com", token="visionone-token")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_bearer(self):
+        from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClient
+        c = TrendMicroVisionOneClient(token="tok123")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer tok123"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": []}))
+        assert client.health_check() is True
+
+    def test_get_object_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "a1", "description": "Alert"}))
+        result = client.get_object("report", "a1")
+        assert result["id"] == "a1"
+
+    def test_get_object_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": [{"id": "i1"}]}))
+        result = client.get_object("indicator", "i1")
+        assert result["id"] == "i1"
+
+    def test_get_object_malware(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "m1"}))
+        result = client.get_object("malware", "m1")
+        assert result["id"] == "m1"
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="Unsupported"):
+            client.get_object("identity", "x")
+
+    def test_list_objects_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": [{"id": "a1"}]}))
+        result = client.list_objects("report")
+        assert result[0]["id"] == "a1"
+
+    def test_list_objects_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": [{"id": "i1"}]}))
+        result = client.list_objects("indicator")
+        assert result[0]["id"] == "i1"
+
+    def test_upsert_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "new"}))
+        result = client.upsert_object("indicator", {"type": "ip", "value": "1.2.3.4"})
+        assert result["id"] == "new"
+
+    def test_upsert_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.upsert_object("report", {})
+
+    def test_delete_indicator(self, client, monkeypatch):
+        mock_del = MagicMock(return_value=None)
+        monkeypatch.setattr(client, "delete", mock_del)
+        client.delete_object("indicator", "i1")
+        mock_del.assert_called_once()
+
+    def test_delete_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.delete_object("report", "a1")
+
+    def test_get_alerts(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": [{"id": "a1"}]}))
+        result = client.get_alerts(severity="high")
+        assert result[0]["id"] == "a1"
+
+    def test_search_iocs(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": [{"id": "i1"}]}))
+        result = client.search_iocs(ioc_type="ip")
+        assert result[0]["id"] == "i1"
+
+    def test_to_stix_alert_contract(self, client):
+        native = {"id": "alert-1", "description": "Malware alert", "severity": "high",
+                  "createdDateTime": "2026-01-01T00:00:00Z"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "report"
+
+    def test_to_stix_ioc_contract(self, client):
+        native = {"id": "i1", "value": "192.168.1.1", "type": "ip"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+        assert "[ipv4-addr:value = '192.168.1.1']" in stix["pattern"]
+
+    def test_to_stix_sandbox_contract(self, client):
+        native = {"id": "s1", "riskLevel": "high", "threatClassification": "ransomware",
+                  "displayName": "Ransom.WannaCry"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "malware"
+
+    def test_from_stix(self, client):
+        stix = {"id": "indicator--abc", "type": "indicator",
+                "pattern": "[ipv4-addr:value = '1.2.3.4']", "name": "1.2.3.4"}
+        result = client.from_stix(stix)
+        assert result["value"] == "1.2.3.4"
+        assert result["type"] == "ip"
+
+
+# ---------------------------------------------------------------------------
+# HIBPClient
+# ---------------------------------------------------------------------------
+
+class TestHIBPClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.hibp.client import HIBPClient
+        c = HIBPClient(host="https://haveibeenpwned.com", api_key="hibp-key")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_header(self):
+        from gnat.connectors.hibp.client import HIBPClient
+        c = HIBPClient(api_key="mykey")
+        c.authenticate()
+        assert c._auth_headers["hibp-api-key"] == "mykey"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"Name": "Adobe"}))
+        assert client.health_check() is True
+
+    def test_get_object_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"Name": "Adobe", "Title": "Adobe"}))
+        result = client.get_object("vulnerability", "Adobe")
+        assert result["Name"] == "Adobe"
+
+    def test_get_object_identity(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[{"Name": "Adobe"}]))
+        result = client.get_object("identity", "test@example.com")
+        assert "breaches" in result
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="Unsupported"):
+            client.get_object("indicator", "x")
+
+    def test_list_objects_vulnerability(self, client, monkeypatch):
+        breaches = [{"Name": "Adobe"}, {"Name": "LinkedIn"}]
+        monkeypatch.setattr(client, "get", MagicMock(return_value=breaches))
+        result = client.list_objects("vulnerability")
+        assert len(result) == 2
+
+    def test_list_objects_identity(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[{"Name": "Adobe"}]))
+        result = client.list_objects("identity", filters={"account": "test@example.com"})
+        assert result[0]["Name"] == "Adobe"
+
+    def test_list_objects_identity_without_account_raises(self, client):
+        with pytest.raises(GNATClientError, match="account"):
+            client.list_objects("identity")
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("vulnerability", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("vulnerability", "Adobe")
+
+    def test_check_account(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[{"Name": "Adobe"}]))
+        result = client.check_account("test@example.com")
+        assert result[0]["Name"] == "Adobe"
+
+    def test_get_all_breaches(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[{"Name": "Adobe"}]))
+        result = client.get_all_breaches()
+        assert len(result) == 1
+
+    def test_get_pastes(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[{"Id": "p1"}]))
+        result = client.get_pastes("test@example.com")
+        assert result[0]["Id"] == "p1"
+
+    def test_to_stix_breach_contract(self, client):
+        native = {
+            "Name": "Adobe", "Title": "Adobe", "Domain": "adobe.com",
+            "BreachDate": "2013-10-04", "PwnCount": 152445165,
+            "DataClasses": ["Email addresses", "Passwords"],
+            "IsVerified": True, "AddedDate": "2013-12-04",
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["x_hibp"]["pwn_count"] == 152445165
+
+    def test_to_stix_paste_contract(self, client):
+        native = {"Id": "p1", "Source": "Pastebin", "Date": "2026-01-01", "EmailCount": 100}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "identity"
+
+    def test_from_stix(self, client):
+        stix = {"id": "vulnerability--abc", "name": "Adobe", "type": "vulnerability"}
+        result = client.from_stix(stix)
+        assert result["name"] == "Adobe"
+
+
+# ---------------------------------------------------------------------------
+# TaniumClient
+# ---------------------------------------------------------------------------
+
+class TestTaniumClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.tanium.client import TaniumClient
+        c = TaniumClient(host="https://tanium.corp.example.com", api_key="tanium-token")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_api_key(self):
+        from gnat.connectors.tanium.client import TaniumClient
+        c = TaniumClient(host="https://fake.example.com", api_key="tok")
+        c.authenticate()
+        assert c._auth_headers["session"] == "tok"
+
+    def test_authenticate_session_login(self, monkeypatch):
+        from gnat.connectors.tanium.client import TaniumClient
+        c = TaniumClient(host="https://fake.example.com", username="admin", password="pass")
+        monkeypatch.setattr(
+            c, "post",
+            MagicMock(return_value={"data": {"session": "sess123"}})
+        )
+        c.authenticate()
+        assert c._auth_headers["session"] == "sess123"
+
+    def test_authenticate_no_credentials_raises(self):
+        from gnat.connectors.tanium.client import TaniumClient
+        c = TaniumClient(host="https://fake.example.com")
+        with pytest.raises(GNATClientError, match="provide api_key"):
+            c.authenticate()
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={}))
+        assert client.health_check() is True
+
+    def test_get_object_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "i1", "name": "test"}))
+        result = client.get_object("indicator", "i1")
+        assert result["id"] == "i1"
+
+    def test_get_object_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "a1", "name": "Alert"}))
+        result = client.get_object("report", "a1")
+        assert result["id"] == "a1"
+
+    def test_get_object_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"cveId": "CVE-2021-44228"}]}))
+        result = client.get_object("vulnerability", "CVE-2021-44228")
+        assert result["cveId"] == "CVE-2021-44228"
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="Unsupported"):
+            client.get_object("malware", "x")
+
+    def test_list_objects_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"id": "i1"}]}))
+        result = client.list_objects("indicator")
+        assert result[0]["id"] == "i1"
+
+    def test_upsert_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "new"}))
+        result = client.upsert_object("indicator", {"name": "TestIOC"})
+        assert result["id"] == "new"
+
+    def test_upsert_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.upsert_object("report", {})
+
+    def test_delete_indicator(self, client, monkeypatch):
+        mock_del = MagicMock(return_value=None)
+        monkeypatch.setattr(client, "delete", mock_del)
+        client.delete_object("indicator", "i1")
+        mock_del.assert_called_once()
+
+    def test_delete_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.delete_object("report", "a1")
+
+    def test_get_endpoints(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"data": {"endpoints": [{"id": "ep1"}]}}))
+        result = client.get_endpoints()
+        assert result[0]["id"] == "ep1"
+
+    def test_get_comply_findings(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"cveId": "CVE-2021-1"}]}))
+        result = client.get_comply_findings()
+        assert result[0]["cveId"] == "CVE-2021-1"
+
+    def test_to_stix_finding_contract(self, client):
+        native = {"cveId": "CVE-2021-44228", "summary": "Log4Shell",
+                  "severity": "critical", "cvss": {"score": 10.0}}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["x_tanium"]["cve_id"] == "CVE-2021-44228"
+
+    def test_to_stix_intel_contract(self, client):
+        native = {"id": "doc1", "name": "BadActor", "type": "stix",
+                  "iocs": [{"type": "ip_address", "value": "1.2.3.4"}]}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+
+    def test_to_stix_alert_contract(self, client):
+        native = {"id": "al1", "name": "TR Alert", "state": "unresolved", "severity": "high"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "report"
+
+    def test_from_stix(self, client):
+        stix = {"id": "indicator--abc", "type": "indicator",
+                "pattern": "[domain-name:value = 'evil.com']", "name": "evil.com"}
+        result = client.from_stix(stix)
+        assert result["iocs"][0]["value"] == "evil.com"
+
+
+# ---------------------------------------------------------------------------
+# AWSSecurityClient
+# ---------------------------------------------------------------------------
+
+class TestAWSSecurityClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.aws_security.client import AWSSecurityClient
+        c = AWSSecurityClient(
+            host="https://securityhub.us-east-1.amazonaws.com",
+            aws_access_key="AKID",
+            aws_secret_key="SECRET",
+            aws_region="us-east-1",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_service_header(self):
+        from gnat.connectors.aws_security.client import AWSSecurityClient
+        c = AWSSecurityClient(aws_access_key="AKID", aws_secret_key="SECRET")
+        c.authenticate()
+        assert "securityhub" in c._auth_headers.get("X-Gnat-AWS-Service", "")
+
+    def test_authenticate_missing_keys_raises(self):
+        from gnat.connectors.aws_security.client import AWSSecurityClient
+        c = AWSSecurityClient()
+        with pytest.raises(GNATClientError, match="aws_access_key"):
+            c.authenticate()
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={}))
+        assert client.health_check() is True
+
+    def test_get_object_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(
+            return_value={"Findings": [{"Id": "f1", "Title": "vuln"}]}))
+        result = client.get_object("vulnerability", "f1")
+        assert result["Id"] == "f1"
+
+    def test_get_object_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "ins1"}))
+        result = client.get_object("report", "ins1")
+        assert result["id"] == "ins1"
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="Unsupported"):
+            client.get_object("malware", "x")
+
+    def test_list_objects_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(
+            return_value={"Findings": [{"Id": "f1"}]}))
+        result = client.list_objects("vulnerability")
+        assert result[0]["Id"] == "f1"
+
+    def test_list_objects_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"Insights": [{"Name": "i1"}]}))
+        result = client.list_objects("report")
+        assert result[0]["Name"] == "i1"
+
+    def test_upsert_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"SuccessCount": 1}))
+        result = client.upsert_object("vulnerability", {"Title": "Test Finding"})
+        assert result["SuccessCount"] == 1
+
+    def test_upsert_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.upsert_object("report", {})
+
+    def test_get_security_hub_findings(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(
+            return_value={"Findings": [{"Id": "f1"}]}))
+        result = client.get_security_hub_findings(severity="HIGH")
+        assert result[0]["Id"] == "f1"
+
+    def test_to_stix_securityhub_contract(self, client):
+        native = {
+            "Id": "arn:aws:sh:us-east-1:123:finding/f1",
+            "Title": "S3 bucket public",
+            "Description": "Bucket is publicly accessible",
+            "CreatedAt": "2026-01-01T00:00:00Z",
+            "UpdatedAt": "2026-01-01T00:00:00Z",
+            "Severity": {"Label": "HIGH"},
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["x_aws"]["source"] == "securityhub"
+
+    def test_to_stix_guardduty_contract(self, client):
+        native = {
+            "Id": "gd-finding-1",
+            "Title": "Unusual API call",
+            "Type": "Recon:IAMUser/MaliciousIPCaller",
+            "Severity": 5.0,
+            "CreatedAt": "2026-01-01T00:00:00Z",
+            "UpdatedAt": "2026-01-01T00:00:00Z",
+            "Service": {
+                "Action": {
+                    "ActionType": "AWS_API_CALL",
+                    "NetworkConnectionAction": {
+                        "RemoteIpDetails": {"IpAddressV4": "10.0.0.1"}
+                    },
+                }
+            },
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+        assert stix["x_aws"]["source"] == "guardduty"
+
+    def test_from_stix(self, client):
+        stix = {"id": "vulnerability--abc", "name": "Test Finding", "type": "vulnerability"}
+        result = client.from_stix(stix)
+        assert result["Title"] == "Test Finding"
+
+
+# ---------------------------------------------------------------------------
+# SecurityScorecardClient
+# ---------------------------------------------------------------------------
+
+class TestSecurityScorecardClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.securityscorecard.client import SecurityScorecardClient
+        c = SecurityScorecardClient(
+            host="https://api.securityscorecard.io", api_key="ssc-key"
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_token(self):
+        from gnat.connectors.securityscorecard.client import SecurityScorecardClient
+        c = SecurityScorecardClient(api_key="mykey")
+        c.authenticate()
+        assert c._auth_headers["Token"] == "mykey"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"entries": []}))
+        assert client.health_check() is True
+
+    def test_get_object_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"domain": "example.com", "score": 90}))
+        result = client.get_object("report", "example.com")
+        assert result["domain"] == "example.com"
+
+    def test_get_object_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"entries": [{"type": "open_port"}]}))
+        result = client.get_object("vulnerability", "example.com")
+        assert "entries" in result
+
+    def test_get_object_identity(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "p1", "name": "My Portfolio"}))
+        result = client.get_object("identity", "p1")
+        assert result["id"] == "p1"
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="Unsupported"):
+            client.get_object("indicator", "x")
+
+    def test_list_objects_identity(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"entries": [{"id": "p1"}]}))
+        result = client.list_objects("identity")
+        assert result[0]["id"] == "p1"
+
+    def test_list_objects_report_requires_portfolio(self, client):
+        with pytest.raises(GNATClientError, match="portfolio_id"):
+            client.list_objects("report")
+
+    def test_list_objects_vulnerability_requires_domain(self, client):
+        with pytest.raises(GNATClientError, match="domain"):
+            client.list_objects("vulnerability")
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("report", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("report", "x")
+
+    def test_get_company_score(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"domain": "example.com", "score": 85}))
+        result = client.get_company_score("example.com")
+        assert result["score"] == 85
+
+    def test_get_company_issues(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"entries": [{"type": "open_port"}]}))
+        result = client.get_company_issues("example.com")
+        assert result[0]["type"] == "open_port"
+
+    def test_to_stix_score_contract(self, client):
+        native = {"domain": "example.com", "score": 85, "grade": "A",
+                  "industry": "technology", "last_scorecard_change": "2026-01-01"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "report"
+        assert stix["x_securityscorecard"]["score"] == 85
+
+    def test_to_stix_issue_contract(self, client):
+        native = {"id": "iss1", "type": "open_port", "severity": "medium",
+                  "factor": "network_security", "detail": "Port 22 open"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["x_securityscorecard"]["factor"] == "network_security"
+
+    def test_from_stix(self, client):
+        stix = {"id": "report--abc", "name": "example.com", "type": "report"}
+        result = client.from_stix(stix)
+        assert result["domain"] == "example.com"
+
+
+# ---------------------------------------------------------------------------
+# DragosClient
+# ---------------------------------------------------------------------------
+
+class TestDragosClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.dragos.client import DragosClient
+        c = DragosClient(
+            host="https://portal.dragos.com",
+            api_key="dragos-key",
+            api_secret="dragos-secret",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_basic_auth(self):
+        import base64
+        from gnat.connectors.dragos.client import DragosClient
+        c = DragosClient(api_key="key", api_secret="secret")
+        c.authenticate()
+        expected = "Basic " + base64.b64encode(b"key:secret").decode()
+        assert c._auth_headers["Authorization"] == expected
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"indicators": []}))
+        assert client.health_check() is True
+
+    def test_get_object_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "i1", "value": "1.2.3.4"}))
+        result = client.get_object("indicator", "i1")
+        assert result["id"] == "i1"
+
+    def test_get_object_threat_actor(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"group_name": "ELECTRUM"}))
+        result = client.get_object("threat-actor", "electrum")
+        assert result["group_name"] == "ELECTRUM"
+
+    def test_get_object_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"cve_id": "CVE-2021-1"}))
+        result = client.get_object("vulnerability", "CVE-2021-1")
+        assert result["cve_id"] == "CVE-2021-1"
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="Unsupported"):
+            client.get_object("identity", "x")
+
+    def test_list_objects_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"indicators": [{"id": "i1"}]}))
+        result = client.list_objects("indicator")
+        assert result[0]["id"] == "i1"
+
+    def test_list_objects_threat_actor(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"activity_groups": [{"group_name": "ELECTRUM"}]}))
+        result = client.list_objects("threat-actor")
+        assert result[0]["group_name"] == "ELECTRUM"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("indicator", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("indicator", "i1")
+
+    def test_get_indicators(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"indicators": [{"value": "1.2.3.4"}]}))
+        result = client.get_indicators(indicator_type="ip")
+        assert result[0]["value"] == "1.2.3.4"
+
+    def test_get_activity_groups(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"activity_groups": [{"group_name": "XENOTIME"}]}))
+        result = client.get_activity_groups()
+        assert result[0]["group_name"] == "XENOTIME"
+
+    def test_get_vulnerabilities(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"vulnerabilities": [{"cve_id": "CVE-2020-1"}]}))
+        result = client.get_vulnerabilities()
+        assert result[0]["cve_id"] == "CVE-2020-1"
+
+    def test_to_stix_ioc_ip_contract(self, client):
+        native = {"id": "i1", "value": "1.2.3.4", "indicator_type": "ip",
+                  "first_seen": "2026-01-01"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+        assert "[ipv4-addr:value = '1.2.3.4']" in stix["pattern"]
+
+    def test_to_stix_actor_contract(self, client):
+        native = {"group_name": "ELECTRUM", "profile": "ICS threat actor",
+                  "target_industries": ["electric"], "first_activity": "2017-01-01"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "threat-actor"
+        assert stix["name"] == "ELECTRUM"
+
+    def test_to_stix_vuln_contract(self, client):
+        native = {"cve_id": "CVE-2021-44228", "description": "Log4Shell",
+                  "cvss_score": 10.0, "severity": "critical"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["x_dragos"]["cvss_score"] == 10.0
+
+    def test_to_stix_report_contract(self, client):
+        native = {"serial": "YR-2026-001", "title": "ICS Advisory",
+                  "executive_summary": "Critical finding", "tlp": "amber"}
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "report"
+        assert stix["x_dragos"]["serial"] == "YR-2026-001"
+
+    def test_from_stix(self, client):
+        stix = {"id": "indicator--abc", "type": "indicator", "name": "evil.com"}
+        result = client.from_stix(stix)
+        assert result["name"] == "evil.com"
+
+
+# ---------------------------------------------------------------------------
+# DatadogClient
+# ---------------------------------------------------------------------------
+
+class TestDatadogClient:
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.datadog.client import DatadogClient
+        c = DatadogClient(
+            host="https://api.datadoghq.com",
+            api_key="dd-api-key",
+            app_key="dd-app-key",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_headers(self):
+        from gnat.connectors.datadog.client import DatadogClient
+        c = DatadogClient(api_key="apikey", app_key="appkey")
+        c.authenticate()
+        assert c._auth_headers["DD-API-KEY"] == "apikey"
+        assert c._auth_headers["DD-APPLICATION-KEY"] == "appkey"
+
+    def test_health_check(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": []}))
+        assert client.health_check() is True
+
+    def test_get_object_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"data": {"id": "sig1", "type": "security_signals"}}))
+        result = client.get_object("indicator", "sig1")
+        assert result["id"] == "sig1"
+
+    def test_get_object_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"data": {"id": "f1"}}))
+        result = client.get_object("vulnerability", "f1")
+        assert result["id"] == "f1"
+
+    def test_get_object_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"data": {"id": "inc1"}}))
+        result = client.get_object("report", "inc1")
+        assert result["id"] == "inc1"
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="Unsupported"):
+            client.get_object("malware", "x")
+
+    def test_list_objects_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"data": [{"id": "sig1"}]}))
+        result = client.list_objects("indicator")
+        assert result[0]["id"] == "sig1"
+
+    def test_list_objects_vulnerability(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"data": [{"id": "f1"}]}))
+        result = client.list_objects("vulnerability")
+        assert result[0]["id"] == "f1"
+
+    def test_list_objects_report(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(
+            return_value={"data": [{"id": "inc1"}]}))
+        result = client.list_objects("report")
+        assert result[0]["id"] == "inc1"
+
+    def test_upsert_incident(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(
+            return_value={"data": {"id": "inc-new"}}))
+        result = client.upsert_object("report", {"title": "New Incident"})
+        assert result["id"] == "inc-new"
+
+    def test_upsert_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.upsert_object("indicator", {})
+
+    def test_search_signals(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"data": [{"id": "sig1"}]}))
+        result = client.search_signals(query="@type:network")
+        assert result[0]["id"] == "sig1"
+
+    def test_get_csm_findings(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"id": "f1"}]}))
+        result = client.get_csm_findings(severity="high")
+        assert result[0]["id"] == "f1"
+
+    def test_get_security_rules(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"id": "r1"}]}))
+        result = client.get_security_rules()
+        assert result[0]["id"] == "r1"
+
+    def test_mute_signal(self, client, monkeypatch):
+        monkeypatch.setattr(client, "patch", MagicMock(return_value={}))
+        result = client.mute_signal("sig1")
+        assert isinstance(result, dict)
+
+    def test_to_stix_signal_contract(self, client):
+        native = {
+            "id": "sig1",
+            "type": "security_signals",
+            "attributes": {
+                "message": "Unusual login detected",
+                "severity": "high",
+                "timestamp": "2026-01-01T00:00:00Z",
+                "rule": {"id": "r1", "name": "Suspicious Login"},
+                "tags": ["env:prod"],
+            },
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+        assert stix["x_datadog"]["rule_name"] == "Suspicious Login"
+
+    def test_to_stix_finding_contract(self, client):
+        native = {
+            "id": "f1",
+            "type": "posture_management_findings",
+            "attributes": {
+                "rule_name": "S3 bucket public",
+                "rule_id": "r1",
+                "severity": "critical",
+                "status": "open",
+                "evaluation_changed_at": "2026-01-01T00:00:00Z",
+            },
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["x_datadog"]["rule_id"] == "r1"
+
+    def test_to_stix_incident_contract(self, client):
+        native = {
+            "id": "inc1",
+            "type": "incidents",
+            "attributes": {
+                "title": "Production Outage",
+                "status": "active",
+                "severity": "sev1",
+                "customer_impact_scope": "All prod users affected",
+                "created": "2026-01-01T00:00:00Z",
+            },
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "report"
+        assert stix["x_datadog"]["status"] == "active"
+
+    def test_from_stix(self, client):
+        stix = {"id": "report--abc", "name": "Production Incident", "type": "report"}
+        result = client.from_stix(stix)
+        assert result["title"] == "Production Incident"
