@@ -8954,3 +8954,564 @@ class TestShodanClient:
         result = client.from_stix(stix)
         assert isinstance(result, dict)
         assert "note" in result
+
+
+# ---------------------------------------------------------------------------
+# OsintFeedConnector
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.osint_feed.connector import OsintFeedConnector
+from gnat.connectors.osint_feed.feed_factory import FeedConnectorFactory
+
+
+class TestOsintFeedConnector:
+    """Tests for the generic OSINT feed connector."""
+
+    # ── Fixtures ──────────────────────────────────────────────────────────
+
+    @pytest.fixture
+    def stix_json_client(self):
+        c = OsintFeedConnector(
+            host="https://feeds.example.com",
+            feed_type="stix_json",
+            feed_path="/v1/stix",
+            auth_type="none",
+            stix_types="indicator",
+        )
+        c._authenticated = True
+        return c
+
+    @pytest.fixture
+    def basic_auth_client(self):
+        c = OsintFeedConnector(
+            host="https://feeds.example.com",
+            feed_type="stix_json",
+            feed_path="/v1/stix",
+            auth_type="basic",
+            username="user",
+            password="pass",
+        )
+        return c
+
+    @pytest.fixture
+    def api_key_client(self):
+        c = OsintFeedConnector(
+            host="https://feeds.example.com",
+            feed_type="stix_json",
+            feed_path="/v1/stix",
+            auth_type="api_key",
+            api_key="mykey",
+            api_key_header="X-Feed-Key",
+        )
+        return c
+
+    @pytest.fixture
+    def bearer_client(self):
+        c = OsintFeedConnector(
+            host="https://feeds.example.com",
+            feed_type="stix_json",
+            feed_path="/v1/stix",
+            auth_type="bearer",
+            bearer_token="tok123",
+        )
+        return c
+
+    @pytest.fixture
+    def oauth2_client(self):
+        c = OsintFeedConnector(
+            host="https://feeds.example.com",
+            feed_type="stix_json",
+            feed_path="/v1/stix",
+            auth_type="oauth2",
+            client_id="cid",
+            client_secret="sec",
+            token_url="/oauth2/token",
+        )
+        return c
+
+    # ── Authentication ─────────────────────────────────────────────────────
+
+    def test_authenticate_none_sets_accept(self, stix_json_client):
+        c = OsintFeedConnector(
+            host="https://feeds.example.com",
+            feed_type="stix_json",
+            feed_path="/v1/stix",
+            auth_type="none",
+        )
+        c.authenticate()
+        assert c._auth_headers.get("Accept") == "application/json"
+
+    def test_authenticate_basic_sets_authorization(self, basic_auth_client):
+        basic_auth_client.authenticate()
+        assert basic_auth_client._auth_headers["Authorization"].startswith("Basic ")
+
+    def test_authenticate_api_key_sets_custom_header(self, api_key_client):
+        api_key_client.authenticate()
+        assert api_key_client._auth_headers["X-Feed-Key"] == "mykey"
+
+    def test_authenticate_bearer_sets_authorization(self, bearer_client):
+        bearer_client.authenticate()
+        assert bearer_client._auth_headers["Authorization"] == "Bearer tok123"
+
+    def test_authenticate_oauth2_fetches_token(self, oauth2_client, monkeypatch):
+        monkeypatch.setattr(
+            oauth2_client, "post", MagicMock(return_value={"access_token": "mytoken"})
+        )
+        oauth2_client.authenticate()
+        assert oauth2_client._auth_headers["Authorization"] == "Bearer mytoken"
+
+    def test_authenticate_oauth2_raises_on_missing_token(self, oauth2_client, monkeypatch):
+        monkeypatch.setattr(oauth2_client, "post", MagicMock(return_value={}))
+        with pytest.raises(GNATClientError, match="access_token"):
+            oauth2_client.authenticate()
+
+    def test_authenticate_api_key_raises_if_no_key(self):
+        c = OsintFeedConnector(
+            host="https://example.com",
+            feed_type="stix_json",
+            feed_path="/",
+            auth_type="api_key",
+            api_key="",
+        )
+        with pytest.raises(GNATClientError, match="api_key"):
+            c.authenticate()
+
+    def test_authenticate_bearer_raises_if_no_token(self):
+        c = OsintFeedConnector(
+            host="https://example.com",
+            feed_type="stix_json",
+            feed_path="/",
+            auth_type="bearer",
+            bearer_token="",
+        )
+        with pytest.raises(GNATClientError, match="bearer"):
+            c.authenticate()
+
+    def test_authenticate_unknown_type_raises(self):
+        c = OsintFeedConnector(
+            host="https://example.com",
+            feed_type="stix_json",
+            feed_path="/",
+            auth_type="unknown_type",
+        )
+        with pytest.raises(GNATClientError, match="Unknown auth_type"):
+            c.authenticate()
+
+    # ── health_check ──────────────────────────────────────────────────────
+
+    def test_health_check_fetches_feed_path(self, stix_json_client, monkeypatch):
+        mock_get = MagicMock(return_value={"type": "bundle", "objects": []})
+        monkeypatch.setattr(stix_json_client, "get", mock_get)
+        assert stix_json_client.health_check() is True
+        mock_get.assert_called_once_with("/v1/stix")
+
+    # ── list_objects / get_object ─────────────────────────────────────────
+
+    def test_list_objects_returns_filtered_stix(self, stix_json_client, monkeypatch):
+        bundle = {
+            "type": "bundle",
+            "id": "bundle--1",
+            "objects": [
+                {"type": "indicator", "id": "indicator--aaa", "pattern": "[ipv4-addr:value = '1.2.3.4']"},
+                {"type": "malware", "id": "malware--bbb", "name": "BadBot"},
+            ],
+        }
+        monkeypatch.setattr(stix_json_client, "get", MagicMock(return_value=bundle))
+        results = stix_json_client.list_objects("indicator")
+        assert len(results) == 1
+        assert results[0]["type"] == "indicator"
+
+    def test_list_objects_pagination(self, stix_json_client, monkeypatch):
+        objects = [
+            {"type": "indicator", "id": f"indicator--{i:03d}"}
+            for i in range(10)
+        ]
+        bundle = {"type": "bundle", "objects": objects}
+        monkeypatch.setattr(stix_json_client, "get", MagicMock(return_value=bundle))
+        page1 = stix_json_client.list_objects("indicator", page=1, page_size=5)
+        page2 = stix_json_client.list_objects("indicator", page=2, page_size=5)
+        assert len(page1) == 5
+        assert len(page2) == 5
+        assert page1[0]["id"] != page2[0]["id"]
+
+    def test_get_object_returns_matching_id(self, stix_json_client, monkeypatch):
+        bundle = {
+            "type": "bundle",
+            "objects": [
+                {"type": "indicator", "id": "indicator--abc-123"},
+                {"type": "indicator", "id": "indicator--def-456"},
+            ],
+        }
+        monkeypatch.setattr(stix_json_client, "get", MagicMock(return_value=bundle))
+        result = stix_json_client.get_object("indicator", "indicator--abc-123")
+        assert result["id"] == "indicator--abc-123"
+
+    def test_get_object_raises_when_not_found(self, stix_json_client, monkeypatch):
+        monkeypatch.setattr(
+            stix_json_client, "get", MagicMock(return_value={"type": "bundle", "objects": []})
+        )
+        with pytest.raises(GNATClientError, match="not found"):
+            stix_json_client.get_object("indicator", "indicator--missing")
+
+    def test_list_objects_with_filter(self, stix_json_client, monkeypatch):
+        bundle = {
+            "type": "bundle",
+            "objects": [
+                {"type": "indicator", "id": "indicator--a", "name": "evil.com"},
+                {"type": "indicator", "id": "indicator--b", "name": "bad.net"},
+            ],
+        }
+        monkeypatch.setattr(stix_json_client, "get", MagicMock(return_value=bundle))
+        results = stix_json_client.list_objects("indicator", filters={"name": "evil"})
+        assert len(results) == 1
+        assert results[0]["name"] == "evil.com"
+
+    # ── Read-only write guard ─────────────────────────────────────────────
+
+    def test_upsert_raises_read_only(self, stix_json_client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            stix_json_client.upsert_object("indicator", {})
+
+    def test_delete_raises_read_only(self, stix_json_client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            stix_json_client.delete_object("indicator", "indicator--x")
+
+    # ── to_stix / from_stix passthrough ──────────────────────────────────
+
+    def test_to_stix_adds_feed_source(self, stix_json_client):
+        obj = {"type": "indicator", "id": "indicator--aaa", "pattern": "[ipv4-addr:value = '1.2.3.4']"}
+        result = stix_json_client.to_stix(obj)
+        _assert_stix_contract(result)
+        assert "x_feed_source" in result
+
+    def test_from_stix_passthrough(self, stix_json_client):
+        obj = {"type": "indicator", "id": "indicator--aaa"}
+        result = stix_json_client.from_stix(obj)
+        assert result == obj
+
+    # ── stix_types filter on construction ────────────────────────────────
+
+    def test_stix_types_comma_string_parsed(self):
+        c = OsintFeedConnector(
+            host="https://example.com",
+            feed_type="stix_json",
+            feed_path="/feed",
+            auth_type="none",
+            stix_types="indicator, malware, threat-actor",
+        )
+        assert c._stix_types == frozenset({"indicator", "malware", "threat-actor"})
+
+    def test_stix_types_list_accepted(self):
+        c = OsintFeedConnector(
+            host="https://example.com",
+            feed_type="stix_json",
+            feed_path="/feed",
+            auth_type="none",
+            stix_types=["indicator", "malware"],
+        )
+        assert c._stix_types == frozenset({"indicator", "malware"})
+
+    def test_stix_types_none_means_all(self):
+        c = OsintFeedConnector(
+            host="https://example.com",
+            feed_type="stix_json",
+            feed_path="/feed",
+            auth_type="none",
+            stix_types=None,
+        )
+        assert c._stix_types is None
+
+    # ── Missing feed_path raises ──────────────────────────────────────────
+
+    def test_fetch_stix_json_raises_if_no_feed_path(self):
+        c = OsintFeedConnector(
+            host="https://example.com",
+            feed_type="stix_json",
+            auth_type="none",
+        )
+        c._authenticated = True
+        with pytest.raises(GNATClientError, match="feed_path"):
+            c.list_objects("indicator")
+
+
+# ---------------------------------------------------------------------------
+# FeedConnectorFactory
+# ---------------------------------------------------------------------------
+
+class TestFeedConnectorFactory:
+    """Tests for config-driven feed connector registration."""
+
+    @pytest.fixture
+    def mock_config(self):
+        """Return a minimal mock GNATConfig with two feed sections."""
+
+        class _MockConfig:
+            sections = ["osint_feed_limo", "osint_feed_circl", "threatq"]
+
+            def get(self, section):
+                data = {
+                    "osint_feed_limo": {
+                        "host": "https://limo.anomali.com",
+                        "feed_type": "taxii",
+                        "taxii_path": "/api/v1/taxii2/",
+                        "auth_type": "basic",
+                        "username": "guest",
+                        "password": "guest",
+                        "collection_title": "Phish Tank",
+                        "stix_types": "indicator",
+                    },
+                    "osint_feed_circl": {
+                        "host": "https://www.circl.lu",
+                        "feed_type": "stix_json",
+                        "feed_path": "/doc/misp/feed-osint/",
+                        "auth_type": "none",
+                    },
+                    "threatq": {
+                        "host": "https://threatq.example.com",
+                        "client_id": "cid",
+                        "client_secret": "sec",
+                    },
+                }
+                if section not in data:
+                    raise KeyError(section)
+                return data[section]
+
+        return _MockConfig()
+
+    def test_from_config_detects_feed_sections(self, mock_config):
+        feeds = FeedConnectorFactory.from_config(mock_config)
+        assert "osint_feed_limo" in feeds
+        assert "osint_feed_circl" in feeds
+
+    def test_from_config_ignores_non_feed_sections(self, mock_config):
+        feeds = FeedConnectorFactory.from_config(mock_config)
+        assert "threatq" not in feeds
+
+    def test_from_config_creates_osint_feed_subclass(self, mock_config):
+        feeds = FeedConnectorFactory.from_config(mock_config)
+        cls = feeds["osint_feed_limo"]
+        assert issubclass(cls, OsintFeedConnector)
+
+    def test_from_config_registers_in_registry(self, mock_config):
+        registry: dict = {}
+        FeedConnectorFactory.from_config(mock_config, registry=registry)
+        assert "osint_feed_limo" in registry
+        assert "osint_feed_circl" in registry
+
+    def test_generated_class_instantiation(self, mock_config):
+        feeds = FeedConnectorFactory.from_config(mock_config)
+        cls = feeds["osint_feed_circl"]
+        instance = cls()
+        assert isinstance(instance, OsintFeedConnector)
+        assert instance._feed_type == "stix_json"
+        assert instance._auth_type == "none"
+
+    def test_limo_class_has_taxii_settings(self, mock_config):
+        feeds = FeedConnectorFactory.from_config(mock_config)
+        instance = feeds["osint_feed_limo"]()
+        assert instance._feed_type == "taxii"
+        assert instance._collection_title == "Phish Tank"
+        assert instance._username == "guest"
+
+    def test_class_name_is_camelcase(self, mock_config):
+        feeds = FeedConnectorFactory.from_config(mock_config)
+        assert feeds["osint_feed_limo"].__name__ == "OsintFeedLimo"
+        assert feeds["osint_feed_circl"].__name__ == "OsintFeedCircl"
+
+    def test_kwargs_override_defaults(self, mock_config):
+        feeds = FeedConnectorFactory.from_config(mock_config)
+        instance = feeds["osint_feed_circl"](feed_path="/custom/path")
+        assert instance._feed_path == "/custom/path"
+
+
+# ---------------------------------------------------------------------------
+# CiscoUmbrellaClient
+# ---------------------------------------------------------------------------
+
+from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
+
+
+class TestCiscoUmbrellaClient:
+    """Tests for the Cisco Umbrella connector."""
+
+    @pytest.fixture
+    def client(self):
+        c = CiscoUmbrellaClient(
+            host="https://investigate.api.umbrella.com",
+            investigate_api_key="test-investigate-key",
+            enforcement_api_key="test-enforcement-key",
+            management_api_key="test-management-key",
+        )
+        c._authenticated = True
+        return c
+
+    # ── Authentication ─────────────────────────────────────────────────────
+
+    def test_authenticate_sets_bearer(self):
+        c = CiscoUmbrellaClient(
+            host="https://investigate.api.umbrella.com",
+            investigate_api_key="my-inv-key",
+        )
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer my-inv-key"
+        assert c._authenticated is True
+
+    def test_authenticate_raises_without_key(self):
+        c = CiscoUmbrellaClient(
+            host="https://investigate.api.umbrella.com",
+            investigate_api_key="",
+        )
+        with pytest.raises(GNATClientError, match="investigate_api_key"):
+            c.authenticate()
+
+    # ── health_check ──────────────────────────────────────────────────────
+
+    def test_health_check_calls_investigate(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"cisco.com": {"status": 1}})
+        monkeypatch.setattr(client, "get", mock_get)
+        assert client.health_check() is True
+        mock_get.assert_called_once_with("/domains/categorization/cisco.com")
+
+    # ── classify_domain helper ────────────────────────────────────────────
+
+    def test_classify_domain_returns_parsed_result(self, client, monkeypatch):
+        raw_resp = {
+            "evil.com": {
+                "status": -1,
+                "security_categories": ["Malware"],
+                "content_categories": [],
+            }
+        }
+        monkeypatch.setattr(client, "get", MagicMock(return_value=raw_resp))
+        result = client.classify_domain("evil.com")
+        assert result["domain"] == "evil.com"
+        assert result["security_categories"] == ["Malware"]
+
+    def test_classify_domain_raises_on_bad_response(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value="not-a-dict"))
+        with pytest.raises(GNATClientError):
+            client.classify_domain("evil.com")
+
+    # ── list_objects ─────────────────────────────────────────────────────
+
+    def test_list_objects_indicator_returns_stix(self, client, monkeypatch):
+        raw_resp = {
+            "evil.com": {"status": -1, "security_categories": ["Botnet"], "content_categories": []}
+        }
+        monkeypatch.setattr(client, "get", MagicMock(return_value=raw_resp))
+        results = client.list_objects("indicator", filters={"domains": ["evil.com"]})
+        assert len(results) == 1
+        _assert_stix_contract(results[0])
+        assert results[0]["type"] == "indicator"
+
+    def test_list_objects_indicator_empty_without_domains(self, client):
+        results = client.list_objects("indicator")
+        assert results == []
+
+    def test_list_objects_unsupported_type_raises(self, client):
+        with pytest.raises(GNATClientError, match="indicator"):
+            client.list_objects("malware")
+
+    # ── get_object ─────────────────────────────────────────────────────
+
+    def test_get_object_indicator_returns_stix(self, client, monkeypatch):
+        raw_resp = {
+            "evil.com": {"status": -1, "security_categories": ["Phishing"], "content_categories": []}
+        }
+        monkeypatch.setattr(client, "get", MagicMock(return_value=raw_resp))
+        result = client.get_object("indicator", "evil.com")
+        _assert_stix_contract(result)
+        assert result["type"] == "indicator"
+
+    # ── upsert_object / delete_object ─────────────────────────────────
+
+    def test_upsert_raises_for_non_indicator(self, client):
+        with pytest.raises(GNATClientError, match="indicator"):
+            client.upsert_object("malware", {"name": "BadBot"})
+
+    def test_delete_raises_for_non_indicator(self, client):
+        with pytest.raises(GNATClientError, match="indicator"):
+            client.delete_object("malware", "malware--abc")
+
+    # ── to_stix ────────────────────────────────────────────────────────
+
+    def test_to_stix_malicious_domain(self, client):
+        native = {
+            "domain": "evil.com",
+            "status": "blocked",
+            "security_categories": ["Botnet"],
+            "content_categories": [],
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+        assert "evil.com" in stix["pattern"]
+        assert stix["confidence"] == 85
+        assert "malicious-activity" in stix["labels"]
+        assert stix["x_umbrella"]["is_malicious"] is True
+
+    def test_to_stix_benign_domain(self, client):
+        native = {
+            "domain": "cisco.com",
+            "status": "safe",
+            "security_categories": [],
+            "content_categories": ["Technology/Internet"],
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["confidence"] == 10
+        assert "benign" in stix["labels"]
+        assert stix["x_umbrella"]["is_malicious"] is False
+
+    def test_to_stix_allow_list_entry(self, client):
+        native = {
+            "type": "course-of-action",
+            "name": "trusted.example.com",
+            "comment": "Internal asset",
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["type"] == "course-of-action"
+        assert "trusted.example.com" in stix["name"]
+        assert stix["x_umbrella"]["list_type"] == "allow"
+
+    def test_to_stix_empty_domain_returns_empty(self, client):
+        native = {"domain": "", "status": "unknown", "security_categories": []}
+        stix = client.to_stix(native)
+        assert stix == {}
+
+    # ── from_stix ──────────────────────────────────────────────────────
+
+    def test_from_stix_parses_pattern(self, client):
+        stix = {
+            "type": "indicator",
+            "id": "indicator--abc",
+            "pattern": "[domain-name:value = 'evil.com']",
+        }
+        payload = client.from_stix(stix)
+        assert payload["dstDomain"] == "evil.com"
+
+    def test_from_stix_falls_back_to_name(self, client):
+        stix = {"type": "indicator", "id": "indicator--abc", "name": "evil.com"}
+        payload = client.from_stix(stix)
+        assert payload["dstDomain"] == "evil.com"
+
+    def test_from_stix_raises_on_missing_domain(self, client):
+        stix = {"type": "indicator", "id": "indicator--abc"}
+        with pytest.raises(GNATClientError, match="domain"):
+            client.from_stix(stix)
+
+    # ── bulk classify ──────────────────────────────────────────────────
+
+    def test_classify_domains_bulk(self, client, monkeypatch):
+        response = {
+            "a.com": {"status": 1, "security_categories": [], "content_categories": []},
+            "b.com": {"status": -1, "security_categories": ["Malware"], "content_categories": []},
+        }
+        monkeypatch.setattr(client, "post", MagicMock(return_value=response))
+        result = client.classify_domains(["a.com", "b.com"])
+        assert "a.com" in result
+        assert "b.com" in result
+
+    def test_classify_domains_empty_returns_empty(self, client):
+        assert client.classify_domains([]) == {}

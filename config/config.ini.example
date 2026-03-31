@@ -730,3 +730,65 @@ api_key = your_greynoise_api_key_here
 [shodan]
 host    = https://api.shodan.io
 api_key = your_shodan_api_key_here
+
+# =============================================================================
+# Cisco Umbrella — Investigate + Enforcement + Management APIs
+# =============================================================================
+# The Investigate, Enforcement, and Management APIs each use a separate key.
+# Supply only the keys required for the operations you intend to use.
+[cisco_umbrella]
+host                = https://investigate.api.umbrella.com
+investigate_api_key = YOUR_INVESTIGATE_API_KEY
+# enforcement_api_key = YOUR_ENFORCEMENT_KEY   ; required for push_block_list / upsert_object
+# management_api_key  = YOUR_MANAGEMENT_KEY    ; required for list_allow_list / add_to_allow_list
+# tlp_marking         = white                  ; optional TLP label on produced STIX objects
+
+# =============================================================================
+# Generic OSINT Feed — TAXII 2.x Example (Anomali LIMO, public guest access)
+# =============================================================================
+# Any section with a 'feed_type' key is auto-detected as an OSINT feed.
+# Use FeedConnectorFactory.from_config(config, registry=CLIENT_REGISTRY) to
+# register these sections at startup.
+[osint_feed_limo]
+host             = https://limo.anomali.com
+feed_type        = taxii
+taxii_path       = /api/v1/taxii2/
+auth_type        = basic
+username         = guest
+password         = guest
+collection_title = Phish Tank
+stix_types       = indicator
+
+# =============================================================================
+# Generic OSINT Feed — TAXII 2.x Example (MITRE ATT&CK Enterprise)
+# =============================================================================
+[osint_feed_attck]
+host             = https://cti-taxii.mitre.org
+feed_type        = taxii
+taxii_path       = /taxii/
+auth_type        = none
+collection_title = Enterprise ATT&CK
+stix_types       = attack-pattern,course-of-action,intrusion-set,malware,tool
+
+# =============================================================================
+# Generic OSINT Feed — Direct STIX-JSON HTTP Endpoint
+# =============================================================================
+# Use feed_type = stix_json for any HTTP URL that returns a STIX 2.1 Bundle.
+[osint_feed_circl]
+host      = https://www.circl.lu
+feed_type = stix_json
+feed_path = /doc/misp/feed-osint/
+auth_type = none
+stix_types = indicator,malware
+
+# =============================================================================
+# Generic OSINT Feed — API-key authenticated feed
+# =============================================================================
+[osint_feed_myfeed]
+host             = https://feeds.example.com
+feed_type        = stix_json
+feed_path        = /v1/stix/indicators
+auth_type        = api_key
+api_key          = YOUR_FEED_API_KEY
+api_key_header   = X-Api-Key
+stix_types       = indicator
