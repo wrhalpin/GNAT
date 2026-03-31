@@ -692,9 +692,9 @@ pres.author = "wrhalpin@gmail.com";
   const sl = contentSlide(pres, "Research Library \u2014 Shared Team Knowledge Base");
 
   const tiers = [
-    { label: "PERSONAL WORKSPACES", sub: "Analyst-owned \u00b7 Active investigation", col: C.navy2, arrow: true },
-    { label: "STAGING  (_gnat_staging)", sub: "lib.promote(ws, topic, researcher, note='...')  \u2014  anyone can write, nothing auto-promotes", col: C.steel, arrow: true },
-    { label: "LIBRARY  (_gnat_library)", sub: "Curated \u00b7 Read-only to analysts \u00b7 CurationJob every 4h \u00b7 deduplication \u00b7 TTL enforcement", col: C.teal, arrow: false },
+    { label: "PERSONAL WORKSPACES", sub: "Analyst-owned \u00b7 Active investigation", col: C.navy2 },
+    { label: "STAGING  (_gnat_staging)", sub: "lib.promote(ws, topic, researcher, note='...')  \u2014  anyone can write, nothing auto-promotes", col: C.steel },
+    { label: "LIBRARY  (_gnat_library)", sub: "Curated \u00b7 Read-only to analysts \u00b7 CurationJob every 4h \u00b7 deduplication \u00b7 TTL enforcement", col: C.teal },
   ];
 
   tiers.forEach(({ label, sub, col }, i) => {
