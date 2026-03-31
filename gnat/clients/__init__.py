@@ -18,6 +18,7 @@ from gnat.connectors.bitsight.client import BitSightClient
 from gnat.connectors.carbon_black.client import CarbonBlackClient
 from gnat.connectors.censys.client import CensysClient
 from gnat.connectors.chatgpt import ChatGPTClient
+from gnat.connectors.CISA.client import CISAClient
 from gnat.connectors.claroty.client import ClarotyClient
 from gnat.connectors.cloudsek.client import CloudSEKClient
 from gnat.connectors.controlup.client import ControlUpClient
@@ -190,6 +191,7 @@ CLIENT_REGISTRY: dict = {
     "dragos":         DragosClient,
     "datadog":        DatadogClient,
     "carbon_black":   CarbonBlackClient,
+    "cisa":           CISAClient,
     "claroty":        ClarotyClient,
     "cortex_xdr":     CortexXDRClient,
     "fortiedr":       FortiEDRClient,
@@ -243,6 +245,7 @@ __all__ = [
     "DragosClient",
     "DatadogClient",
     "CarbonBlackClient",
+    "CISAClient",
     "ClarotyClient",
     "CortexXDRClient",
     "FortiEDRClient",
