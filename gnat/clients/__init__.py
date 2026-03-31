@@ -71,6 +71,14 @@ from gnat.connectors.wiz.client import WizClient
 from gnat.connectors.xsoar.client import XSOARClient
 from gnat.connectors.yeti.client import YetiClient
 from gnat.connectors.zeek.client import ZeekClient
+from gnat.connectors.censys.client import CensysClient
+from gnat.connectors.darktrace.client import DarktraceClient
+from gnat.connectors.extrahop.client import ExtraHopClient
+from gnat.connectors.lansweeper.client import LansweeperClient
+from gnat.connectors.servicenow_secops.client import ServiceNowSecOpsClient
+from gnat.connectors.sophos.client import SophosClient
+from gnat.connectors.trellix.client import TrellixClient
+from gnat.connectors.vectra.client import VectraClient
 from gnat.connectors.zerofox.client import ZeroFoxClient
 
 CLIENT_REGISTRY: dict = {
@@ -137,6 +145,14 @@ CLIENT_REGISTRY: dict = {
     "tenable_one":    TenableOneClient,
     "wiz":            WizClient,
     "zerofox":        ZeroFoxClient,
+    "trellix":        TrellixClient,
+    "sophos":         SophosClient,
+    "vectra":         VectraClient,
+    "extrahop":       ExtraHopClient,
+    "darktrace":      DarktraceClient,
+    "lansweeper":     LansweeperClient,
+    "censys":         CensysClient,
+    "servicenow_secops": ServiceNowSecOpsClient,
 }
 
 __all__ = [
@@ -158,4 +174,12 @@ __all__ = [
     "ZeroFoxClient",
     "CriblClient",
     "SynapseClient",
+    "TrellixClient",
+    "SophosClient",
+    "VectraClient",
+    "ExtraHopClient",
+    "DarktraceClient",
+    "LansweeperClient",
+    "CensysClient",
+    "ServiceNowSecOpsClient",
 ]

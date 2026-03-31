@@ -6,6 +6,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [Unreleased]
+
+### Added
+- **8 new platform connectors** (70+ total) registered in `CLIENT_REGISTRY`:
+  - `TrellixClient` (`gnat/connectors/trellix/`) — Trellix XDR / ePolicy Orchestrator; OAuth2 client-credentials; IOC, detection, and vulnerability ingestion.
+  - `SophosClient` (`gnat/connectors/sophos/`) — Sophos Central endpoint protection; OAuth2; blocked-item management and SIEM alert ingestion.
+  - `VectraClient` (`gnat/connectors/vectra/`) — Vectra AI Network Detection & Response; API token; read-only detection and host-entity scoring.
+  - `ExtraHopClient` (`gnat/connectors/extrahop/`) — ExtraHop Reveal(x) NDR; API key or OAuth2; read-only detection and record search.
+  - `DarktraceClient` (`gnat/connectors/darktrace/`) — Darktrace Enterprise Immune System; HMAC public/private key; model breach alerts and custom intel feed.
+  - `LansweeperClient` (`gnat/connectors/lansweeper/`) — Lansweeper IT Asset Management; OAuth2 / Bearer; read-only asset and software inventory with GraphQL support.
+  - `CensysClient` (`gnat/connectors/censys/`) — Censys Internet Intelligence / ASM; Basic auth (API ID + secret); read-only host search, certificate search, and CVE exposure annotation.
+  - `ServiceNowSecOpsClient` (`gnat/connectors/servicenow_secops/`) — ServiceNow Security Operations full module suite (SIR + Vulnerability Response + TIARA); Basic / Bearer; full CRUD across `sn_si_incident`, `sn_vr_vulnerable_item`, `sn_ti_observable`, and `sn_si_task` tables.
+- 94 unit tests for all 8 new connectors added to `tests/unit/connectors/test_connectors.py`.
+- `README.md` Supported Platforms tables updated to include all 8 new connectors; platform count updated to 70+.
+- `pyproject.toml` keywords expanded with new platform names.
+
+---
+
 ## [1.1.0] — 2026-03-30
 
 ### Added
