@@ -617,3 +617,109 @@ api_key = your-api-key-here
 
 # Azure AD token for Microsoft Copilot (used when auth_type = "azure")
 azure_token = your-azure-ad-token-here
+
+# =============================================================================
+# Palo Alto Networks Cortex XDR / XSIAM
+# =============================================================================
+[cortex_xdr]
+host        = https://api-<tenant>.xdr.us.paloaltonetworks.com
+api_key_id  = 1
+api_key     = your_cortex_xdr_api_key_here
+auth_type   = api_key
+
+# =============================================================================
+# Palo Alto Networks Prisma Cloud
+# =============================================================================
+[prisma_cloud]
+host           = https://api.prismacloud.io
+access_key_id  = your_prisma_access_key_id_here
+secret_key     = your_prisma_secret_key_here
+auth_type      = api_key
+# For EU/APAC tenants change host to api.eu.prismacloud.io / api.sg.prismacloud.io
+
+# =============================================================================
+# Nozomi Networks Guardian / Vantage
+# =============================================================================
+[nozomi]
+host      = https://nozomi.example.com
+api_token = your_nozomi_api_token_here
+auth_type = token
+# Basic auth alternative:
+# username = admin
+# password = your_password_here
+
+# =============================================================================
+# VMware Carbon Black Cloud
+# =============================================================================
+[carbon_black]
+host         = https://defense.conferdeploy.net
+org_key      = YOUR_ORG_KEY
+api_key      = your_cbc_api_key_here
+connector_id = your_cbc_connector_id_here
+auth_type    = api_key
+
+# =============================================================================
+# LogRhythm NextGen SIEM
+# =============================================================================
+[logrhythm]
+host      = https://logrhythm.example.com:8501
+api_token = your_logrhythm_bearer_token_here
+auth_type = token
+# LogRhythm Axon (cloud) OAuth2 alternative:
+# client_id     = your_axon_client_id_here
+# client_secret = your_axon_client_secret_here
+
+# =============================================================================
+# Claroty Platform
+# =============================================================================
+[claroty]
+host     = https://claroty.example.com
+username = your_claroty_username_here
+password = your_claroty_password_here
+
+# =============================================================================
+# Fortinet FortiEDR
+# =============================================================================
+[fortiedr]
+host     = https://fortiedr.example.com
+username = your_fortiedr_username_here
+password = your_fortiedr_password_here
+
+# =============================================================================
+# Fortinet FortiSIEM
+# =============================================================================
+[fortisiem]
+host     = https://fortisiem.example.com
+username = supervisor
+password = your_fortisiem_password_here
+
+# =============================================================================
+# Fortinet FortiSOAR
+# =============================================================================
+[fortisoar]
+host     = https://fortisoar.example.com
+username = admin
+password = your_fortisoar_password_here
+
+# =============================================================================
+# Google Chronicle (SecOps SIEM)
+# =============================================================================
+[google_chronicle]
+host         = https://backstory.googleapis.com
+project_id   = your_gcp_project_id_here
+customer_id  = your_chronicle_customer_id_here
+credentials  = /path/to/service_account.json
+
+# =============================================================================
+# GreyNoise
+# =============================================================================
+[greynoise]
+host    = https://api.greynoise.io
+api_key = your_greynoise_api_key_here
+
+# =============================================================================
+# Shodan
+# =============================================================================
+[shodan]
+host    = https://api.shodan.io
+api_key = your_shodan_api_key_here

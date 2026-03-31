@@ -92,6 +92,18 @@ from gnat.connectors.aws_security.client import AWSSecurityClient
 from gnat.connectors.securityscorecard.client import SecurityScorecardClient
 from gnat.connectors.dragos.client import DragosClient
 from gnat.connectors.datadog.client import DatadogClient
+from gnat.connectors.carbon_black.client import CarbonBlackClient
+from gnat.connectors.claroty.client import ClarotyClient
+from gnat.connectors.cortex_xdr.client import CortexXDRClient
+from gnat.connectors.fortiedr.client import FortiEDRClient
+from gnat.connectors.fortisiem.client import FortiSIEMClient
+from gnat.connectors.fortisoar.client import FortiSOARClient
+from gnat.connectors.google_chronicle.client import GoogleChronicleClient
+from gnat.connectors.greynoise.client import GreyNoiseClient
+from gnat.connectors.logrhythm.client import LogRhythmClient
+from gnat.connectors.nozomi.client import NozomiClient
+from gnat.connectors.prisma_cloud.client import PrismaCloudClient
+from gnat.connectors.shodan.client import ShodanClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -177,6 +189,18 @@ CLIENT_REGISTRY: dict = {
     "securityscorecard": SecurityScorecardClient,
     "dragos":         DragosClient,
     "datadog":        DatadogClient,
+    "carbon_black":   CarbonBlackClient,
+    "claroty":        ClarotyClient,
+    "cortex_xdr":     CortexXDRClient,
+    "fortiedr":       FortiEDRClient,
+    "fortisiem":      FortiSIEMClient,
+    "fortisoar":      FortiSOARClient,
+    "google_chronicle": GoogleChronicleClient,
+    "greynoise":      GreyNoiseClient,
+    "logrhythm":      LogRhythmClient,
+    "nozomi":         NozomiClient,
+    "prisma_cloud":   PrismaCloudClient,
+    "shodan":         ShodanClient,
 }
 
 __all__ = [
@@ -218,4 +242,16 @@ __all__ = [
     "SecurityScorecardClient",
     "DragosClient",
     "DatadogClient",
+    "CarbonBlackClient",
+    "ClarotyClient",
+    "CortexXDRClient",
+    "FortiEDRClient",
+    "FortiSIEMClient",
+    "FortiSOARClient",
+    "GoogleChronicleClient",
+    "GreyNoiseClient",
+    "LogRhythmClient",
+    "NozomiClient",
+    "PrismaCloudClient",
+    "ShodanClient",
 ]
