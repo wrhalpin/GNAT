@@ -30,9 +30,9 @@ References
 - https://learn.microsoft.com/en-us/rest/api/securityinsights/incidents
 """
 
-from typing import Iterator
-from .client import SentinelClient
+from collections.abc import Iterator
 
+from .client import SentinelClient
 
 _SEVERITY_MAP = {"High": 4, "Medium": 3, "Low": 2, "Informational": 1}
 

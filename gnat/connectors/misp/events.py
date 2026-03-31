@@ -36,8 +36,9 @@ References
 - https://www.misp-project.org/openapi/#tag/Events
 """
 
-from typing import Iterator
+from collections.abc import Iterator
 from datetime import datetime, timezone
+
 from .client import MISPClient
 from .exceptions import MISPNotFoundError
 

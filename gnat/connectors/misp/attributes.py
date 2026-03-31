@@ -40,7 +40,8 @@ References
 - https://www.misp-project.org/openapi/#tag/Attributes
 """
 
-from typing import Iterator
+from collections.abc import Iterator
+
 from .client import MISPClient
 
 # Attribute type → STIX SCO type hint

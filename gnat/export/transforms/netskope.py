@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from gnat.export.base import ExportTransform, TransformResult
 
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     from gnat.orm.base import STIXBase
 
 
-_PATTERN_TO_NETSKOPE: Dict[str, str] = {
+_PATTERN_TO_NETSKOPE: dict[str, str] = {
     "ipv4-addr":         "ip",
     "ipv6-addr":         "ipv6",
     "domain-name":       "domain",
@@ -66,7 +66,7 @@ _PATTERN_TO_NETSKOPE: Dict[str, str] = {
 _VALUE_RE = re.compile(r"=\s*'([^']+)'")
 
 
-def _extract(pattern: str) -> tuple[Optional[str], Optional[str]]:
+def _extract(pattern: str) -> tuple[str | None, str | None]:
     """Return (netskope_type, value) from a STIX pattern string."""
     ns_type = None
     for stix_kw, ns in _PATTERN_TO_NETSKOPE.items():
@@ -117,7 +117,7 @@ class NetskopeCETransform(ExportTransform):
         default_reputation: int = 50,
         active_only: bool = True,
         category: str = "Malware",
-        ioc_types: Optional[List[str]] = None,
+        ioc_types: list[str] | None = None,
     ):
         super().__init__(label="NetskopeCETransform")
         self._source    = source_label
@@ -126,7 +126,7 @@ class NetskopeCETransform(ExportTransform):
         self._category  = category
         self._ioc_types = set(ioc_types) if ioc_types else None
 
-    def _reputation(self, obj: "STIXBase") -> int:
+    def _reputation(self, obj: STIXBase) -> int:
         for field in ("confidence", "x_rf_risk_score", "x_rr_score"):
             val = obj._properties.get(field)
             if val is not None:
@@ -136,7 +136,7 @@ class NetskopeCETransform(ExportTransform):
                     pass
         return self._default_r
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         indicator_list = []
         skipped = 0
 
@@ -233,7 +233,7 @@ class STIXBundleTransform(ExportTransform):
         self._include_rels = include_relationships
         self._pretty = pretty
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         import uuid as _uuid
 
         _obj_ids = {obj.id for obj in objects}
@@ -295,7 +295,7 @@ class CSVTransform(ExportTransform):
 
     def __init__(
         self,
-        fields: Optional[List[str]] = None,
+        fields: list[str] | None = None,
         filename: str = "export.csv",
         include_header: bool = True,
     ):
@@ -304,7 +304,7 @@ class CSVTransform(ExportTransform):
         self._filename = filename
         self._header   = include_header
 
-    def _get(self, obj: "STIXBase", field: str) -> str:
+    def _get(self, obj: STIXBase, field: str) -> str:
         if field == "type":
             return obj.stix_type
         val = obj._properties.get(field)
@@ -316,7 +316,7 @@ class CSVTransform(ExportTransform):
             return "|".join(str(v) for v in val)
         return str(val).replace('"', '""')
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         import io
         buf = io.StringIO()
         if self._header:

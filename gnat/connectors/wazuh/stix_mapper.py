@@ -45,6 +45,7 @@ x-wazuh-agent   -- agent identity metadata
 
 from __future__ import annotations
 
+import contextlib
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -167,13 +168,12 @@ class WazuhSTIXMapper:
             refs.append(obj["id"])
 
         # ── Destination user ───────────────────────────────────────────
-        if dst_user := alert.get("dst_user"):
-            if dst_user != alert.get("src_user"):
-                obj = _make_user_account(dst_user)
-                if obj["id"] not in seen:
-                    seen.add(obj["id"])
-                    objects.append(obj)
-                refs.append(obj["id"])
+        if (dst_user := alert.get("dst_user")) and dst_user != alert.get("src_user"):
+            obj = _make_user_account(dst_user)
+            if obj["id"] not in seen:
+                seen.add(obj["id"])
+                objects.append(obj)
+            refs.append(obj["id"])
 
         # ── Process ────────────────────────────────────────────────────
         proc_data = raw.get("data", {})
@@ -537,10 +537,8 @@ class WazuhSTIXMapper:
             obj["name"] = posixpath.basename(file_path)
             obj["parent_directory_ref"] = None  # Would need dir SCO
         if fim.get("size") is not None:
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 obj["size"] = int(fim["size"])
-            except (ValueError, TypeError):
-                pass
         hashes: dict = {}
         for h, k in (("md5", "MD5"), ("sha1", "SHA-1"), ("sha256", "SHA-256")):
             if v := fim.get(h):

@@ -54,14 +54,13 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
 
 import urllib3
 
 logger = logging.getLogger(__name__)
 
 # Required methods every connector must implement (item #15 matrix)
-REQUIRED_METHODS: List[str] = [
+REQUIRED_METHODS: list[str] = [
     "authenticate",
     "health_check",
     "get_object",
@@ -116,7 +115,7 @@ class ContributeConfig:
     draft_pr:        bool  = True   # immutable; PR always draft
 
     @classmethod
-    def from_ini(cls, config_path: str) -> "ContributeConfig":
+    def from_ini(cls, config_path: str) -> ContributeConfig:
         """Read ``[contribute]`` from an INI config file."""
         import configparser
         cp = configparser.ConfigParser()
@@ -159,7 +158,7 @@ class ComplianceResult:
     """
 
     connector:        str
-    method_statuses:  List[MethodStatus] = field(default_factory=list)
+    method_statuses:  list[MethodStatus] = field(default_factory=list)
     has_tests:        bool               = False
 
     @property
@@ -197,7 +196,7 @@ class ComplianceMatrix:
     """
 
     @staticmethod
-    def check(connector_name: str, repo_root: Optional[str] = None) -> ComplianceResult:
+    def check(connector_name: str, repo_root: str | None = None) -> ComplianceResult:
         """
         Run the compliance matrix for *connector_name*.
 
@@ -213,8 +212,8 @@ class ComplianceMatrix:
         ComplianceResult
         """
         from gnat.clients import CLIENT_REGISTRY
-        from gnat.connectors.base_connector import ConnectorMixin
         from gnat.clients.base import BaseClient
+        from gnat.connectors.base_connector import ConnectorMixin
 
         base_classes = {ConnectorMixin, BaseClient, object}
 
@@ -247,7 +246,7 @@ class ComplianceMatrix:
         return result
 
     @staticmethod
-    def _has_tests(connector_name: str, repo_root: Optional[str] = None) -> bool:
+    def _has_tests(connector_name: str, repo_root: str | None = None) -> bool:
         """Return ``True`` if test coverage exists for *connector_name*."""
         root = Path(repo_root) if repo_root else Path.cwd()
         test_file = root / "tests" / "unit" / "connectors" / "test_connectors.py"
@@ -279,8 +278,8 @@ class SubprocessRunner:
 
     def run(
         self,
-        cmd: List[str],
-        cwd: Optional[str] = None,
+        cmd: list[str],
+        cwd: str | None = None,
         capture: bool = True,
         check: bool = False,
     ) -> subprocess.CompletedProcess:
@@ -320,7 +319,7 @@ class ContributionResult:
     branch:          str       = ""
     pr_url:          str       = ""
     error:           str       = ""
-    steps_completed: List[str] = field(default_factory=list)
+    steps_completed: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -343,9 +342,9 @@ class ContributionPipeline:
 
     def __init__(
         self,
-        runner: Optional[SubprocessRunner] = None,
-        repo_root: Optional[str] = None,
-        http_client: Optional[urllib3.PoolManager] = None,
+        runner: SubprocessRunner | None = None,
+        repo_root: str | None = None,
+        http_client: urllib3.PoolManager | None = None,
     ) -> None:
         self._runner      = runner or SubprocessRunner()
         self._root        = repo_root or str(Path.cwd())

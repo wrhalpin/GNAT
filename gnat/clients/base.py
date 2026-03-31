@@ -26,8 +26,8 @@ Example (connector authors)::
 import base64
 import json
 import logging
-from typing import Any, Dict, Optional
-from urllib.parse import urljoin, urlencode
+from typing import Any, Optional
+from urllib.parse import urlencode, urljoin
 
 import urllib3
 from urllib3.util.retry import Retry
@@ -84,14 +84,14 @@ class BaseClient:
         verify_ssl: bool = True,
         timeout: float = 30.0,
         max_retries: int = 3,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None,
         **_ignored: Any,
     ):
         self.host = host.rstrip("/")
         self.verify_ssl = verify_ssl
         self.timeout = float(timeout)
         self.config = config or {}
-        self._auth_headers: Dict[str, str] = {}
+        self._auth_headers: dict[str, str] = {}
         self._authenticated = False
 
         retry = Retry(
@@ -101,7 +101,7 @@ class BaseClient:
             allowed_methods={"GET", "POST", "PUT", "PATCH", "DELETE"},
         )
 
-        kwargs: Dict[str, Any] = {
+        kwargs: dict[str, Any] = {
             "retries": retry,
             "timeout": urllib3.Timeout(connect=self.timeout, read=self.timeout),
         }
@@ -135,14 +135,14 @@ class BaseClient:
     @staticmethod
     def _basic_auth(username: str, password: str) -> str:
         """Return a Basic Auth header value for *username* and *password*."""
-        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        token = base64.b64encode(f"{username}:{password}".encode()).decode("ascii")
         return f"Basic {token}"
 
     def get(
         self,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> Any:
         """
         Issue an HTTP GET request.
@@ -166,10 +166,10 @@ class BaseClient:
     def post(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        json: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP POST request. Provide either *json* or *data*."""
         return self._request(
@@ -179,9 +179,9 @@ class BaseClient:
     def put(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        json: Optional[dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP PUT request."""
         return self._request("PUT", path, body=json, params=params, extra_headers=headers)
@@ -189,9 +189,9 @@ class BaseClient:
     def patch(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        json: Optional[dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP PATCH request."""
         return self._request("PATCH", path, body=json, params=params, extra_headers=headers)
@@ -199,8 +199,8 @@ class BaseClient:
     def delete(
         self,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> Any:
         """Issue an HTTP DELETE request."""
         return self._request("DELETE", path, params=params, extra_headers=headers)
@@ -213,10 +213,10 @@ class BaseClient:
         self,
         method: str,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        body: Optional[Dict[str, Any]] = None,
-        form_data: Optional[Dict[str, Any]] = None,
-        extra_headers: Optional[Dict[str, str]] = None,
+        params: Optional[dict[str, Any]] = None,
+        body: Optional[dict[str, Any]] = None,
+        form_data: Optional[dict[str, Any]] = None,
+        extra_headers: Optional[dict[str, str]] = None,
     ) -> Any:
         """
         Core request dispatcher.  Handles encoding, auth headers, and errors.
@@ -229,7 +229,7 @@ class BaseClient:
         if params:
             url = f"{url}?{urlencode(params, doseq=True)}"
 
-        headers: Dict[str, str] = {"Accept": "application/json"}
+        headers: dict[str, str] = {"Accept": "application/json"}
         headers.update(self._auth_headers)
         if extra_headers:
             headers.update(extra_headers)

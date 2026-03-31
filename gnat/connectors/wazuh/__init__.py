@@ -46,26 +46,26 @@ indexer_password  =
 token_expiry_secs = 900         ; mirror your Wazuh server setting
 """
 
-from .client import WazuhClient
-from .auth import WazuhAuthManager
+from .active_response import WazuhActiveResponseCommands
 from .agents import WazuhAgentCommands
 from .alerts import WazuhAlertCommands
-from .syscheck import WazuhSyscheckCommands
-from .vulnerabilities import WazuhVulnerabilityCommands
-from .rules import WazuhRulesCommands
-from .active_response import WazuhActiveResponseCommands
-from .indexer import WazuhIndexerCommands
-from .stix_mapper import WazuhSTIXMapper
+from .auth import WazuhAuthManager
+from .client import WazuhClient
 from .config import WazuhConfig, load_wazuh_config
 from .exceptions import (
-WazuhAuthError,
-WazuhAPIError,
-WazuhNotFoundError,
-WazuhPermissionError,
-WazuhConfigError,
-WazuhSTIXError,
-WazuhIndexerError,
+    WazuhAPIError,
+    WazuhAuthError,
+    WazuhConfigError,
+    WazuhIndexerError,
+    WazuhNotFoundError,
+    WazuhPermissionError,
+    WazuhSTIXError,
 )
+from .indexer import WazuhIndexerCommands
+from .rules import WazuhRulesCommands
+from .stix_mapper import WazuhSTIXMapper
+from .syscheck import WazuhSyscheckCommands
+from .vulnerabilities import WazuhVulnerabilityCommands
 
 __all__ = [
 "WazuhClient",

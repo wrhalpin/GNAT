@@ -33,8 +33,9 @@ service accounts connecting to Splunk Cloud.
 
 import json
 import time
-import urllib3
 import urllib.parse
+
+import urllib3
 
 from .config import SplunkConfig
 from .exceptions import SplunkAuthError

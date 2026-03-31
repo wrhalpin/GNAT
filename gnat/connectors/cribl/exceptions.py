@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 
 class CriblError(Exception):
     """
@@ -22,8 +20,8 @@ class CriblError(Exception):
     def __init__(
         self,
         message: str,
-        status_code: Optional[int] = None,
-        response_body: Optional[str] = None,
+        status_code: int | None = None,
+        response_body: str | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code

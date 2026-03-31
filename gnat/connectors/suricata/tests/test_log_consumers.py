@@ -11,22 +11,33 @@ import os
 import tempfile
 import unittest
 
-from gnat.connectors.suricata import (
-    SuricataConfig, SuricataConfigError, SuricataLogError,
-    SuricataEVEReader, SuricataSTIXMapper,
-    load_suricata_config,
-)
 from gnat.connectors.snort import (
-    SnortConfig, SnortConfigError, SnortLogError,
-    SnortJSONReader, SnortFastReader, SnortSTIXMapper,
+    SnortConfig,
+    SnortConfigError,
+    SnortFastReader,
+    SnortJSONReader,
+    SnortLogError,
+    SnortSTIXMapper,
     load_snort_config,
 )
+from gnat.connectors.suricata import (
+    SuricataConfig,
+    SuricataConfigError,
+    SuricataEVEReader,
+    SuricataLogError,
+    SuricataSTIXMapper,
+    load_suricata_config,
+)
 from gnat.connectors.zeek import (
-    ZeekConfig, ZeekConfigError, ZeekLogError,
-    ZeekTSVReader, ZeekJSONReader, ZeekLogCommands, ZeekSTIXMapper,
+    ZeekConfig,
+    ZeekConfigError,
+    ZeekJSONReader,
+    ZeekLogCommands,
+    ZeekLogError,
+    ZeekSTIXMapper,
+    ZeekTSVReader,
     load_zeek_config,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

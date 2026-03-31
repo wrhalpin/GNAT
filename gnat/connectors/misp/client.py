@@ -39,6 +39,7 @@ Usage
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import MISPAuthManager

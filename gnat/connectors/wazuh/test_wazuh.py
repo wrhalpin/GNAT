@@ -32,32 +32,32 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch
 
-from gnat.connectors.wazuh.config import WazuhConfig, load_wazuh_config
-from gnat.connectors.wazuh.exceptions import (
-WazuhAuthError,
-WazuhAPIError,
-WazuhConfigError,
-WazuhNotFoundError,
-WazuhPermissionError,
-WazuhRateLimitError,
-WazuhSTIXError,
-WazuhIndexerError,
-)
-from gnat.connectors.wazuh.auth import WazuhAuthManager
-from gnat.connectors.wazuh.client import WazuhClient
+from gnat.connectors.wazuh.active_response import WazuhActiveResponseCommands
 from gnat.connectors.wazuh.agents import WazuhAgentCommands
 from gnat.connectors.wazuh.alerts import WazuhAlertCommands, _level_to_severity
+from gnat.connectors.wazuh.auth import WazuhAuthManager
+from gnat.connectors.wazuh.client import WazuhClient
+from gnat.connectors.wazuh.config import WazuhConfig, load_wazuh_config
+from gnat.connectors.wazuh.exceptions import (
+    WazuhAPIError,
+    WazuhAuthError,
+    WazuhConfigError,
+    WazuhIndexerError,
+    WazuhNotFoundError,
+    WazuhPermissionError,
+    WazuhRateLimitError,
+    WazuhSTIXError,
+)
+from gnat.connectors.wazuh.indexer import WazuhIndexerCommands
+from gnat.connectors.wazuh.rules import WazuhRulesCommands
+from gnat.connectors.wazuh.stix_mapper import WazuhSTIXMapper
 from gnat.connectors.wazuh.syscheck import WazuhSyscheckCommands
 from gnat.connectors.wazuh.vulnerabilities import WazuhVulnerabilityCommands
-from gnat.connectors.wazuh.rules import WazuhRulesCommands
-from gnat.connectors.wazuh.active_response import WazuhActiveResponseCommands
-from gnat.connectors.wazuh.indexer import WazuhIndexerCommands
-from gnat.connectors.wazuh.stix_mapper import WazuhSTIXMapper
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def _make_config(**overrides) -> WazuhConfig:
-    defaults = dict(host="wazuh.test.local", username="wazuh", password="Password1!")
+    defaults = {"host": "wazuh.test.local", "username": "wazuh", "password": "Password1!"}
     defaults.update(overrides)
     return WazuhConfig(**defaults)
 
@@ -323,9 +323,8 @@ class TestWazuhClient(unittest.TestCase):
     def test_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"):
-            with self.assertRaises(WazuhRateLimitError):
-                client.get("agents")
+        with patch("time.sleep"), self.assertRaises(WazuhRateLimitError):
+            client.get("agents")
 
     def test_context_manager(self):
         cfg = _make_config()

@@ -41,7 +41,7 @@ import csv
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 # ── STIX type → display columns ────────────────────────────────────────────
 
-_COLUMNS: Dict[str, List[str]] = {
+_COLUMNS: dict[str, list[str]] = {
     "indicator":     ["id", "name", "indicator_types", "pattern", "confidence",
                       "x_tlp", "x_rf_risk_score", "created"],
     "malware":       ["id", "name", "malware_types", "is_family", "confidence",
@@ -68,7 +68,7 @@ _COLUMNS: Dict[str, List[str]] = {
 
 # ── STIX type → terminal color ─────────────────────────────────────────────
 
-_TYPE_COLORS: Dict[str, str] = {
+_TYPE_COLORS: dict[str, str] = {
     "indicator":      "cyan",
     "malware":        "red",
     "vulnerability":  "yellow",
@@ -77,7 +77,7 @@ _TYPE_COLORS: Dict[str, str] = {
     "relationship":   "green",
 }
 
-_TLP_COLORS: Dict[str, str] = {
+_TLP_COLORS: dict[str, str] = {
     "white": "white",
     "green": "green",
     "amber": "yellow",
@@ -98,7 +98,7 @@ def _coerce(val: Any) -> str:
     return str(val)
 
 
-def _get_field(obj: "STIXBase", field: str) -> Any:
+def _get_field(obj: STIXBase, field: str) -> Any:
     """Safely retrieve a field from a STIXBase object."""
     if field == "type":
         return obj.stix_type
@@ -107,7 +107,7 @@ def _get_field(obj: "STIXBase", field: str) -> Any:
     return obj._properties.get(field)
 
 
-def _to_rows(objects: List["STIXBase"], columns: List[str]) -> List[Dict[str, str]]:
+def _to_rows(objects: list[STIXBase], columns: list[str]) -> list[dict[str, str]]:
     return [{col: _coerce(_get_field(obj, col)) for col in columns}
             for obj in objects]
 
@@ -131,7 +131,7 @@ class TabularView:
     >>> view.to_excel("analysis.xlsx")
     """
 
-    def __init__(self, workspace: "Workspace", default_top: int = 100):
+    def __init__(self, workspace: Workspace, default_top: int = 100):
         self._ws       = workspace
         self._top      = default_top
 
@@ -139,10 +139,10 @@ class TabularView:
 
     def show(
         self,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
-        top: Optional[int] = None,
-        fields: Optional[List[str]] = None,
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
+        top: int | None = None,
+        fields: list[str] | None = None,
     ) -> None:
         """
         Print a formatted table to the terminal.
@@ -171,8 +171,8 @@ class TabularView:
 
     def display(
         self,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
         top: int = 200,
     ) -> None:
         """
@@ -181,7 +181,7 @@ class TabularView:
         Falls back to :meth:`show` outside of Jupyter.
         """
         try:
-            from IPython.display import display, HTML  # type: ignore
+            from IPython.display import HTML, display  # type: ignore
             html = self._build_html(self._group_objects(stix_type), sort_by, top)
             display(HTML(html))
         except ImportError:
@@ -189,9 +189,9 @@ class TabularView:
 
     def to_html(
         self,
-        path: Optional[str] = None,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
+        path: str | None = None,
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
         top: int = 5000,
     ) -> str:
         """
@@ -219,8 +219,8 @@ class TabularView:
     def to_csv(
         self,
         path: str,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
         top: int = 100_000,
     ) -> None:
         """
@@ -234,8 +234,8 @@ class TabularView:
             If omitted all objects are written; ``type`` is included as a column.
         """
         groups = self._group_objects(stix_type)
-        rows: List[Dict[str, str]] = []
-        all_cols: List[str] = []
+        rows: list[dict[str, str]] = []
+        all_cols: list[str] = []
 
         for stype, objs in groups.items():
             cols = _COLUMNS.get(stype, _COLUMNS["_default"])
@@ -261,7 +261,7 @@ class TabularView:
     def to_excel(
         self,
         path: str,
-        sort_by: Optional[str] = "created",
+        sort_by: str | None = "created",
         top: int = 100_000,
     ) -> None:
         """
@@ -279,7 +279,7 @@ class TabularView:
         """
         try:
             import openpyxl
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Alignment, Font, PatternFill
             from openpyxl.utils import get_column_letter
         except ImportError:
             raise ImportError(
@@ -342,7 +342,7 @@ class TabularView:
         wb.save(path)
         logger.info("TabularView: Excel written to %s", path)
 
-    def to_dataframe(self, stix_type: Optional[str] = None):
+    def to_dataframe(self, stix_type: str | None = None):
         """
         Return a ``pandas.DataFrame`` of workspace objects.
 
@@ -370,10 +370,10 @@ class TabularView:
     # ── Internals ────────────────────────────────────────────────────────────
 
     def _group_objects(
-        self, stix_type: Optional[str] = None
-    ) -> Dict[str, List["STIXBase"]]:
+        self, stix_type: str | None = None
+    ) -> dict[str, list[STIXBase]]:
         """Group workspace objects by stix_type."""
-        result: Dict[str, List["STIXBase"]] = {}
+        result: dict[str, list[STIXBase]] = {}
         for obj in self._ws.objects.values():
             if stix_type and obj.stix_type != stix_type:
                 continue
@@ -381,7 +381,7 @@ class TabularView:
         return dict(sorted(result.items()))
 
     @staticmethod
-    def _sort(objs: List["STIXBase"], sort_by: Optional[str]) -> List["STIXBase"]:
+    def _sort(objs: list[STIXBase], sort_by: str | None) -> list[STIXBase]:
         if not sort_by:
             return objs
         def _key(obj):
@@ -394,9 +394,9 @@ class TabularView:
         return sorted(objs, key=_key)
 
     def _show_rich(self, groups, sort_by, limit, fields) -> None:
+        from rich import box as rich_box
         from rich.console import Console
         from rich.table import Table
-        from rich import box as rich_box
 
         console = Console()
         console.print(f"\n[bold]Workspace:[/bold] [cyan]{self._ws.name}[/cyan]  "

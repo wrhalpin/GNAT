@@ -62,24 +62,24 @@ Configuration section (gnat.ini):
   default_analysis      = 0    ; 0=initial, 1=ongoing, 2=complete
 """
 
-from .client import MISPClient
-from .auth import MISPAuthManager
-from .events import MISPEventCommands
 from .attributes import MISPAttributeCommands
-from .tags import MISPTagCommands
-from .galaxies import MISPGalaxyCommands
+from .auth import MISPAuthManager
+from .client import MISPClient
+from .config import MISPConfig, load_misp_config
+from .events import MISPEventCommands
+from .exceptions import (
+    MISPAPIError,
+    MISPAuthError,
+    MISPConfigError,
+    MISPNotFoundError,
+    MISPSTIXError,
+    MISPValidationError,
+)
 from .feeds import MISPFeedCommands
+from .galaxies import MISPGalaxyCommands
 from .sightings import MISPSightingCommands
 from .stix_mapper import MISPSTIXMapper
-from .config import MISPConfig, load_misp_config
-from .exceptions import (
-    MISPAuthError,
-    MISPAPIError,
-    MISPNotFoundError,
-    MISPConfigError,
-    MISPValidationError,
-    MISPSTIXError,
-)
+from .tags import MISPTagCommands
 
 __all__ = [
     "MISPClient",

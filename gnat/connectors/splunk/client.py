@@ -35,18 +35,20 @@ import json
 import re
 import time
 import urllib.parse
+from typing import Any, Optional
+
 import urllib3
-from typing import Any, Dict, List, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+
 from .auth import SplunkAuthManager
 from .config import SplunkConfig
 from .exceptions import (
-SplunkAPIError,
-SplunkAuthError,
-SplunkNotFoundError,
-SplunkRateLimitError,
+    SplunkAPIError,
+    SplunkAuthError,
+    SplunkNotFoundError,
+    SplunkRateLimitError,
 )
 
 # ── Retry configuration ───────────────────────────────────────────────────────
@@ -147,7 +149,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         else:
             raise GNATClientError("SplunkClient: no credentials provided (no token or username/password).")
 
-    def post_raw(self, url: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def post_raw(self, url: str, data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """POST form-encoded data to an absolute URL and return parsed JSON."""
         import urllib3 as _urllib3
         encoded = urllib.parse.urlencode(data or {}).encode("utf-8")
@@ -170,7 +172,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         except Exception:
             return False
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single Splunk object by ID and return as a STIX dict.
 
@@ -199,8 +201,8 @@ class SplunkClient(BaseClient, ConnectorMixin):
             )
         return self.to_stix(rows[0])
 
-    def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+    def list_objects(self, stix_type: str, filters: Optional[dict[str, Any]] = None,
+                     page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
         """
         Return a list of STIX objects from Splunk.
 
@@ -221,7 +223,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         rows = self._run_oneshot_search(spl)
         return [self.to_stix(row) for row in rows]
 
-    def _run_oneshot_search(self, spl: str) -> List[Dict[str, Any]]:
+    def _run_oneshot_search(self, spl: str) -> list[dict[str, Any]]:
         """
         Execute a blocking Splunk one-shot search and return result rows.
 
@@ -235,13 +237,13 @@ class SplunkClient(BaseClient, ConnectorMixin):
         )
         return (resp or {}).get("results", [])
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("SplunkClient: upsert not supported via generic interface.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("SplunkClient: delete not supported via generic interface.")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Splunk event row to a minimal STIX dict."""
         import uuid
         # Notable event (rule_name present)
@@ -279,7 +281,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
             "modified": native.get("_time", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX indicator dict to a Splunk threat-intel row."""
         pattern = stix_dict.get("pattern", "")
         ioc_type = "unknown"

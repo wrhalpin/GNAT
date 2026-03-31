@@ -62,6 +62,7 @@ Usage
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import QRadarAuthManager
@@ -73,7 +74,6 @@ from .exceptions import (
     QRadarNotFoundError,
     QRadarRateLimitError,
 )
-
 
 _RETRYABLE_STATUS = {500, 502, 503, 504}
 _MAX_RETRIES = 3

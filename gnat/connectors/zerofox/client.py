@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -65,7 +65,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         ZeroFox API token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "threats",
         "report":    "alerts",
     }
@@ -89,7 +89,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         self.get("/v1/alerts", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "report":
             return self.get(f"/v1/alerts/{object_id}")
         if stix_type == "indicator":
@@ -100,12 +100,12 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size}
+        params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
 
         if stix_type == "indicator":
@@ -116,7 +116,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         resp = self.get("/v1/alerts", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("ZeroFox connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -127,10 +127,10 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
     def fetch_alerts(
         self,
         limit: int = 50,
-        alert_type: Optional[str] = None,  # e.g., impersonation, phishing
-    ) -> List[Dict[str, Any]]:
+        alert_type: str | None = None,  # e.g., impersonation, phishing
+    ) -> list[dict[str, Any]]:
         """Fetch brand protection and digital risk alerts."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if alert_type:
             params["type"] = alert_type
         resp = self.get("/v1/alerts", params=params)
@@ -139,10 +139,10 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
     def fetch_cti_threats(
         self,
         limit: int = 50,
-        threat_type: Optional[str] = None,  # botnet, malware, ransomware, etc.
-    ) -> List[Dict[str, Any]]:
+        threat_type: str | None = None,  # botnet, malware, ransomware, etc.
+    ) -> list[dict[str, Any]]:
         """Fetch CTI feeds (botnets, malware, C2, phishing, etc.)."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if threat_type:
             params["type"] = threat_type
         resp = self.get("/cti/threats", params=params)
@@ -150,19 +150,19 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch alert (report) vs. threat/IOC (indicator)."""
         if "ioc" in native or "hash" in native or "url" in native:
             return self._threat_to_stix(native)
         return self._alert_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "ZeroFox is read-only for brand protection and CTI data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _alert_to_stix(self, alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         aid = alert.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'zerofox:{aid}')}"
@@ -184,7 +184,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _threat_to_stix(self, threat: Dict[str, Any]) -> Dict[str, Any]:
+    def _threat_to_stix(self, threat: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         tid = threat.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'zerofox:{tid}')}"
@@ -206,7 +206,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _build_pattern(self, threat: Dict[str, Any]) -> Optional[str]:
+    def _build_pattern(self, threat: dict[str, Any]) -> str | None:
         """Basic STIX pattern builder (expand as needed)."""
         if "url" in threat:
             return f"[url:value = '{threat['url']}']"

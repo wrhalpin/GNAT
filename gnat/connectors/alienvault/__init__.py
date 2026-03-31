@@ -38,13 +38,12 @@ import configparser
 import json
 import time
 import urllib.parse
-import urllib3
-from dataclasses import dataclass
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
-
+import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 

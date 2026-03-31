@@ -34,7 +34,8 @@ https://docs.rapid7.com/insightvm/api/v3/
 https://docs.rapid7.com/threat-command/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
@@ -55,7 +56,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         Threat Command account id (required for Threat Command).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilities",
         "indicator":     "iocs",
         "threat-actor":  "threat-actors",
@@ -85,21 +86,21 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         return isinstance(resp, dict)
 
     def get_object(self, stix_type: str,
-                   object_id: str) -> Dict[str, Any]:
+                   object_id: str) -> dict[str, Any]:
         if self._product == "insightvm":
             return self._insightvm_get(stix_type, object_id)
         return self._tc_get(stix_type, object_id)
 
     def list_objects(self, stix_type: str,
-                     filters: Optional[Dict[str, Any]] = None,
+                     filters: Optional[dict[str, Any]] = None,
                      page: int = 1,
-                     page_size: int = 100) -> List[Dict[str, Any]]:
+                     page_size: int = 100) -> list[dict[str, Any]]:
         if self._product == "insightvm":
             return self._insightvm_list(stix_type, filters, page, page_size)
         return self._tc_list(stix_type, filters, page, page_size)
 
     def upsert_object(self, stix_type: str,
-                      payload: Dict[str, Any]) -> Dict[str, Any]:
+                      payload: dict[str, Any]) -> dict[str, Any]:
         if self._product == "insightvm":
             raise GNATClientError(
                 "InsightVM is read-only via GNAT. "
@@ -120,7 +121,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     # ── InsightVM ──────────────────────────────────────────────────────────
 
     def _insightvm_get(self, stix_type: str,
-                       object_id: str) -> Dict[str, Any]:
+                       object_id: str) -> dict[str, Any]:
         if stix_type == "vulnerability":
             resp = self.get(f"/vm/v4/integration/vulnerabilities/{object_id}")
             return resp if isinstance(resp, dict) else {}
@@ -130,9 +131,9 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         return {}
 
     def _insightvm_list(self, stix_type: str,
-                        filters: Optional[Dict[str, Any]],
-                        page: int, page_size: int) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {
+                        filters: Optional[dict[str, Any]],
+                        page: int, page_size: int) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {
             "page":      page - 1,
             "size":      page_size,
         }
@@ -149,7 +150,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     # ── Threat Command ─────────────────────────────────────────────────────
 
     def _tc_get(self, stix_type: str,
-                object_id: str) -> Dict[str, Any]:
+                object_id: str) -> dict[str, Any]:
         if stix_type == "indicator":
             resp = self.get("/public/v2/iocs/ioc-by-value",
                             params={"iocValue": object_id})
@@ -160,9 +161,9 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         return {}
 
     def _tc_list(self, stix_type: str,
-                 filters: Optional[Dict[str, Any]],
-                 page: int, page_size: int) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {
+                 filters: Optional[dict[str, Any]],
+                 page: int, page_size: int) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {
             "limit":  page_size,
             "offset": (page - 1) * page_size,
         }
@@ -178,12 +179,12 @@ class Rapid7Client(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         if self._product == "insightvm":
             return self._vuln_to_stix(native)
         return self._ioc_to_stix(native)
 
-    def _vuln_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """InsightVM vulnerability → STIX Vulnerability."""
         vuln_id     = native.get("id", "")
         cves        = native.get("cves", [])
@@ -213,7 +214,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
             "x_r7_vuln_id":      vuln_id,
         }
 
-    def _ioc_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Threat Command IOC → STIX Indicator."""
         ioc_type  = native.get("type", "Domain").lower()
         value     = native.get("value", "")
@@ -253,7 +254,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
             "x_target_sectors": sectors,  # canonical sector field
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         import re
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)

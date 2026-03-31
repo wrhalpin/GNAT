@@ -290,11 +290,10 @@ class SplunkSTIXMapper:
             refs.append(ip_id)
 
         # dest IP
-        if dest := notable.get("dest"):
-            if dest != notable.get("src"):
-                dst_id = f"ipv4-addr--{_deterministic_uuid('ipv4-addr', dest)}"
-                objects.append({"type": "ipv4-addr", "id": dst_id, "value": dest})
-                refs.append(dst_id)
+        if (dest := notable.get("dest")) and dest != notable.get("src"):
+            dst_id = f"ipv4-addr--{_deterministic_uuid('ipv4-addr', dest)}"
+            objects.append({"type": "ipv4-addr", "id": dst_id, "value": dest})
+            refs.append(dst_id)
 
         # user account
         if user := notable.get("user"):

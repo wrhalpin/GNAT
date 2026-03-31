@@ -21,7 +21,6 @@ Rules of thumb
 from gnat.orm.base import STIXBase
 from gnat.search.mixin import STIXSearchMixin
 
-
 # ---------------------------------------------------------------------------
 # Indicator SDO
 # ---------------------------------------------------------------------------

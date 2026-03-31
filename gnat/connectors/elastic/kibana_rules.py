@@ -44,7 +44,7 @@ Kibana Detection Engine API base path:
   """
 
 import urllib.parse
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import ElasticClient
 

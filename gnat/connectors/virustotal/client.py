@@ -31,7 +31,8 @@ References
 https://docs.virustotal.com/reference/overview
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
@@ -50,7 +51,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         VirusTotal API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":    "files",
         "malware":      "collections",
         "threat-actor": "threat_actors",
@@ -58,7 +59,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
     }
 
     # Mapping VT entity type → STIX pattern template
-    _PATTERN_MAP: Dict[str, str] = {
+    _PATTERN_MAP: dict[str, str] = {
         "ip_address":    "[ipv4-addr:value = '{v}']",
         "domain":        "[domain-name:value = '{v}']",
         "url":           "[url:value = '{v}']",
@@ -80,7 +81,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         return isinstance(resp, dict) and "data" in resp
 
     def get_object(self, stix_type: str,
-                   object_id: str) -> Dict[str, Any]:
+                   object_id: str) -> dict[str, Any]:
         """
         Retrieve one VT entity.
 
@@ -100,9 +101,9 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
     def list_objects(self, stix_type: str,
-                     filters: Optional[Dict[str, Any]] = None,
+                     filters: Optional[dict[str, Any]] = None,
                      page: int = 1,
-                     page_size: int = 40) -> List[Dict[str, Any]]:
+                     page_size: int = 40) -> list[dict[str, Any]]:
         """
         Search VT entities by STIX type.
 
@@ -113,7 +114,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         """
         query  = (filters or {}).get("query", "")
         cursor = (filters or {}).get("cursor", "")
-        params: Dict[str, Any] = {"limit": min(page_size, 300)}
+        params: dict[str, Any] = {"limit": min(page_size, 300)}
         if query:
             params["query"] = query
         if cursor:
@@ -134,7 +135,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         return data if isinstance(data, list) else []
 
     def upsert_object(self, stix_type: str,
-                      payload: Dict[str, Any]) -> Dict[str, Any]:
+                      payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError(
             "VirusTotal API is read-only — upsert not supported. "
             "Use VT Intelligence to submit files: "
@@ -148,7 +149,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a VT API ``data`` object to a STIX dict.
 
@@ -167,11 +168,11 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
 
     def _entity_to_indicator(
         self,
-        native: Dict[str, Any],
-        attrs:  Dict[str, Any],
+        native: dict[str, Any],
+        attrs:  dict[str, Any],
         vt_id:  str,
         vt_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build an Indicator STIX dict from a VT file/domain/IP/URL."""
         # Determine IOC value and pattern
         if vt_type == "file":
@@ -222,10 +223,10 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
 
     def _collection_to_malware(
         self,
-        native: Dict[str, Any],
-        attrs:  Dict[str, Any],
+        native: dict[str, Any],
+        attrs:  dict[str, Any],
         vt_id:  str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build a Malware STIX dict from a VT collection/threat_actor."""
         return {
             "type":             "malware",
@@ -239,7 +240,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
             "x_vt_collection_id": vt_id,
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract a VT-queryable identifier from a STIX dict."""
         name    = stix_dict.get("name", "")
         pattern = stix_dict.get("pattern", "")

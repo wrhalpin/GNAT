@@ -32,12 +32,12 @@ handle all document structure.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.agents.base import AgentConfig
-    from gnat.reports.base import ReportConfig, ReportSection
     from gnat.reports.aggregator import ReportAggregates
+    from gnat.reports.base import ReportConfig, ReportSection
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,8 @@ class ReportSynthesizer:
 
     def __init__(
         self,
-        config: "ReportConfig",
-        agent_config: "AgentConfig",
+        config: ReportConfig,
+        agent_config: AgentConfig,
         research_library=None,
     ):
         self._config = config
@@ -93,9 +93,9 @@ class ReportSynthesizer:
 
     def synthesize(
         self,
-        agg: "ReportAggregates",
+        agg: ReportAggregates,
         report_type: str,
-    ) -> List["ReportSection"]:
+    ) -> list[ReportSection]:
         """
         Generate all narrative sections for a report.
 
@@ -112,7 +112,7 @@ class ReportSynthesizer:
             Sections with ``narrative`` populated.
         """
 
-        sections: List[ReportSection] = []
+        sections: list[ReportSection] = []
 
         if report_type == "daily":
             sections = self._synthesize_daily(agg)
@@ -126,8 +126,8 @@ class ReportSynthesizer:
     # ── Daily synthesis ────────────────────────────────────────────────────
 
     def _synthesize_daily(
-        self, agg: "ReportAggregates"
-    ) -> List["ReportSection"]:
+        self, agg: ReportAggregates
+    ) -> list[ReportSection]:
         from gnat.reports.base import ReportSection
 
         sections = []
@@ -187,8 +187,8 @@ class ReportSynthesizer:
     # ── Trends synthesis ───────────────────────────────────────────────────
 
     def _synthesize_trends(
-        self, agg: "ReportAggregates"
-    ) -> List["ReportSection"]:
+        self, agg: ReportAggregates
+    ) -> list[ReportSection]:
         from gnat.reports.base import ReportSection
         sections = []
 
@@ -277,8 +277,8 @@ class ReportSynthesizer:
     # ── Yearly synthesis ───────────────────────────────────────────────────
 
     def _synthesize_yearly(
-        self, agg: "ReportAggregates"
-    ) -> List["ReportSection"]:
+        self, agg: ReportAggregates
+    ) -> list[ReportSection]:
         from gnat.reports.base import ReportSection
         sections = []
 
@@ -438,7 +438,7 @@ class ReportSynthesizer:
 
     # ── User prompts ───────────────────────────────────────────────────────
 
-    def _daily_summary_prompt(self, agg: "ReportAggregates") -> str:
+    def _daily_summary_prompt(self, agg: ReportAggregates) -> str:
         return (
             f"Write a concise executive summary (2-3 paragraphs) for a "
             f"daily threat intelligence report covering the last "
@@ -457,7 +457,7 @@ class ReportSynthesizer:
             f"\nFocus on what is operationally significant today."
         )
 
-    def _threat_highlights_prompt(self, agg: "ReportAggregates") -> str:
+    def _threat_highlights_prompt(self, agg: ReportAggregates) -> str:
         parts = ["Write 1-2 paragraphs highlighting the most significant "
                  "threats identified in this reporting period.\n"]
         if agg.exploited_vulns:
@@ -479,7 +479,7 @@ class ReportSynthesizer:
             )
         return "\n".join(parts)
 
-    def _trends_summary_prompt(self, agg: "ReportAggregates") -> str:
+    def _trends_summary_prompt(self, agg: ReportAggregates) -> str:
         pop = agg.period_over_period
         lines = [
             f"Write a 3-paragraph trends summary for a {agg.window_days}-day "
@@ -506,7 +506,7 @@ class ReportSynthesizer:
         return "\n".join(lines)
 
     def _actor_trends_prompt(
-        self, agg: "ReportAggregates", lib_ctx: str
+        self, agg: ReportAggregates, lib_ctx: str
     ) -> str:
         actor_names = [a["name"] for a in agg.top_actors[:8]]
         motivations = _fmt_dict(agg.actor_motivations, top=5)
@@ -524,7 +524,7 @@ class ReportSynthesizer:
         )
         return prompt
 
-    def _vuln_trends_prompt(self, agg: "ReportAggregates") -> str:
+    def _vuln_trends_prompt(self, agg: ReportAggregates) -> str:
         return (
             f"Write 2-3 paragraphs analysing vulnerability trends over "
             f"the past {agg.window_days} days.\n\n"
@@ -539,7 +539,7 @@ class ReportSynthesizer:
             + "\n\nFocus on patching priorities and exploitation velocity."
         )
 
-    def _sector_trends_prompt(self, agg: "ReportAggregates") -> str:
+    def _sector_trends_prompt(self, agg: ReportAggregates) -> str:
         sector_org = self._config.org_name or "your organisation"
         return (
             f"Write 1-2 paragraphs analysing sector targeting trends.\n\n"
@@ -550,7 +550,7 @@ class ReportSynthesizer:
             f"targeted ratio indicates about adversary intent."
         )
 
-    def _year_in_review_prompt(self, agg: "ReportAggregates") -> str:
+    def _year_in_review_prompt(self, agg: ReportAggregates) -> str:
         return (
             "Write a 3-4 paragraph executive 'Year in Review' narrative "
             "for a threat intelligence annual report.\n\n"
@@ -567,7 +567,7 @@ class ReportSynthesizer:
         )
 
     def _threat_landscape_prompt(
-        self, agg: "ReportAggregates", lib_ctx: str
+        self, agg: ReportAggregates, lib_ctx: str
     ) -> str:
         actor_names = [a["name"] for a in agg.top_actors[:8]]
         top_ttps    = [t["name"] for t in agg.top_ttps[:6]]
@@ -586,7 +586,7 @@ class ReportSynthesizer:
         )
         return prompt
 
-    def _vuln_year_prompt(self, agg: "ReportAggregates") -> str:
+    def _vuln_year_prompt(self, agg: ReportAggregates) -> str:
         return (
             "Write 2-3 paragraphs summarising the vulnerability landscape "
             "for the year.\n\n"
@@ -603,7 +603,7 @@ class ReportSynthesizer:
             "and which vulnerability classes dominated the year."
         )
 
-    def _sector_year_prompt(self, agg: "ReportAggregates") -> str:
+    def _sector_year_prompt(self, agg: ReportAggregates) -> str:
         org = self._config.org_name or "the organisation"
         sectors = ", ".join(self._config.sectors[:5]) if self._config.sectors else "all sectors"
         return (
@@ -617,7 +617,7 @@ class ReportSynthesizer:
             f"implies for {org}'s risk exposure."
         )
 
-    def _programme_performance_prompt(self, agg: "ReportAggregates") -> str:
+    def _programme_performance_prompt(self, agg: ReportAggregates) -> str:
         return (
             "Write 2-3 paragraphs evaluating the intelligence programme's "
             "performance over the year.\n\n"
@@ -632,7 +632,7 @@ class ReportSynthesizer:
         )
 
     def _recommendations_prompt(
-        self, agg: "ReportAggregates", report_type: str
+        self, agg: ReportAggregates, report_type: str
     ) -> str:
         timeframe = {
             "daily":  "immediate (next 24-48 hours)",
@@ -664,7 +664,7 @@ class ReportSynthesizer:
 
     # ── Research library context ───────────────────────────────────────────
 
-    def _library_context(self, actors: List[Dict[str, Any]]) -> str:
+    def _library_context(self, actors: list[dict[str, Any]]) -> str:
         """
         Query the research library for entries relevant to top actors
         and return a brief context string for inclusion in prompts.
@@ -708,7 +708,7 @@ class ReportSynthesizer:
         return ctx[:_MAX_LIB_CONTEXT] if ctx else ""
 
 
-def _fmt_dict(d: Dict[str, Any], top: int = 10) -> str:
+def _fmt_dict(d: dict[str, Any], top: int = 10) -> str:
     """Format a count dict as a readable string."""
     if not d:
         return "none"

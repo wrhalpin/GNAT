@@ -43,7 +43,7 @@ Notes
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -64,7 +64,7 @@ class CISAClient(BaseClient, ConnectorMixin):
         Base URL, default ``"https://www.cisa.gov"``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "kev",
         "report": "catalog",
     }
@@ -85,7 +85,7 @@ class CISAClient(BaseClient, ConnectorMixin):
         self.get("/sites/default/files/feeds/known_exploited_vulnerabilities.json", params={"_": "1"})  # cache-buster if needed
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch the full catalog and filter for a specific CVE (object_id = CVE-ID)."""
         if stix_type == "vulnerability":
             catalog = self.list_objects("vulnerability")
@@ -93,22 +93,22 @@ class CISAClient(BaseClient, ConnectorMixin):
                 if entry.get("cveID") == object_id:
                     return entry
             raise GNATClientError(f"CVE {object_id} not found in CISA KEV catalog")
-        raise GNATClientError(f"get_object limited to vulnerability/CVE lookup in CISA")
+        raise GNATClientError("get_object limited to vulnerability/CVE lookup in CISA")
 
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 1000,  # KEV catalog is small (~1000-2000 entries)
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch the KEV Catalog (full list or filtered).
 
         Filters example: {"vendorProject": "Microsoft", "dateAdded__gte": "2025-01-01"}
         """
         if stix_type not in ("vulnerability", "report"):
-            raise GNATClientError(f"list_objects supports vulnerability/report for CISA KEV")
+            raise GNATClientError("list_objects supports vulnerability/report for CISA KEV")
 
         resp = self.get("/sites/default/files/feeds/known_exploited_vulnerabilities.json")
         catalog = resp.get("vulnerabilities", []) if isinstance(resp, dict) else []
@@ -120,9 +120,7 @@ class CISAClient(BaseClient, ConnectorMixin):
             for entry in catalog:
                 match = True
                 for key, value in filters.items():
-                    if key == "cveID" and entry.get("cveID") != value:
-                        match = False
-                    elif key.endswith("__gte") and entry.get(key.replace("__gte", "")) < value:
+                    if key == "cveID" and entry.get("cveID") != value or key.endswith("__gte") and entry.get(key.replace("__gte", "")) < value:
                         match = False
                     # Add more simple filters as needed
                 if match:
@@ -133,7 +131,7 @@ class CISAClient(BaseClient, ConnectorMixin):
         start = (page - 1) * page_size
         return catalog[start : start + page_size]
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("CISA connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -141,11 +139,11 @@ class CISAClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def get_kev_catalog(self) -> Dict[str, Any]:
+    def get_kev_catalog(self) -> dict[str, Any]:
         """Fetch the full raw KEV catalog with metadata."""
         return self.get("/sites/default/files/feeds/known_exploited_vulnerabilities.json")
 
-    def get_kev_by_cve(self, cve_id: str) -> Optional[Dict[str, Any]]:
+    def get_kev_by_cve(self, cve_id: str) -> dict[str, Any] | None:
         """Convenience: Find a specific KEV entry by CVE ID."""
         catalog = self.list_objects("vulnerability")
         for entry in catalog:
@@ -155,7 +153,7 @@ class CISAClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a CISA KEV entry to STIX 2.1 vulnerability object.
 
@@ -203,7 +201,7 @@ class CISAClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """CISA is read-only. Returns informational dict."""
         return {
             "note": "CISA connector is read-only. Use get_kev_by_cve or list_objects for KEV enrichment.",

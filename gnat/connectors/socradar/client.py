@@ -17,7 +17,7 @@ References
 https://docs.socradar.io/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -39,7 +39,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         SOCRadar company / tenant ID (required for attack-surface endpoints).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "ioc",
         "threat-actor":  "threat_actor",
         "malware":       "malware",
@@ -74,7 +74,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve a single SOCRadar object by ID."""
         resource = self.stix_type_map.get(stix_type, "ioc")
         resp = self.get(f"{_API}/cti/{resource}/{object_id}/")
@@ -83,10 +83,10 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List SOCRadar CTI objects.
 
@@ -98,7 +98,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         * ``search``: keyword search string
         """
         resource = self.stix_type_map.get(stix_type, "ioc")
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  min(page_size, 500),
             "offset": (page - 1) * page_size,
         }
@@ -111,8 +111,8 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         return resp.get("data", resp.get("results", []))
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """SOCRadar TI API is read-only — raises :class:`GNATClientError`."""
         raise GNATClientError(
             "SOCRadar TI API is read-only. Use the SOCRadar portal to manage IOCs."
@@ -125,7 +125,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a SOCRadar IOC/actor/malware dict to a STIX dict."""
         obj_type = native.get("type", native.get("ioc_type", ""))
         if obj_type in ("threat_actor", "actor"):
@@ -134,7 +134,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
             return self._malware_to_stix(native)
         return self._ioc_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a SOCRadar IOC search payload from a STIX dict."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -149,7 +149,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _ioc_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         sr_type = native.get("ioc_type", native.get("type", ""))
         value   = native.get("value", native.get("indicator", ""))
         pattern = self._make_pattern(sr_type, value)
@@ -173,7 +173,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
             "x_sr_ioc_type":     sr_type,
         }
 
-    def _actor_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "threat-actor",
             "id":                f"threat-actor--sr-{native.get('id', '')}",
@@ -185,7 +185,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
             "x_source_platform": "socradar",
         }
 
-    def _malware_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _malware_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "malware",
             "id":                f"malware--sr-{native.get('id', '')}",

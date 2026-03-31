@@ -1,16 +1,27 @@
 """tests for AlienVault OTX connector"""
-import configparser, json, unittest
+import configparser
+import json
+import unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.alienvault import (
-    OTXError, OTXConfig, OTXConfigError, OTXAuthError, OTXAPIError, OTXNotFoundError,
-    OTXRateLimitError, OTXClient, OTXPulseCommands, OTXIndicatorCommands,
-    OTXSTIXMapper, load_otx_config,
+    OTXAPIError,
+    OTXAuthError,
+    OTXClient,
+    OTXConfig,
+    OTXConfigError,
+    OTXError,
+    OTXIndicatorCommands,
+    OTXNotFoundError,
+    OTXPulseCommands,
+    OTXRateLimitError,
+    OTXSTIXMapper,
+    load_otx_config,
 )
 
 
 def _cfg(**kw):
-    d = dict(api_key="test-otx-key")
+    d = {"api_key": "test-otx-key"}
     d.update(kw)
     return OTXConfig(**d)
 
@@ -95,9 +106,8 @@ class TestOTXClient(unittest.TestCase):
     def test_429_raises_rate_limit(self):
         c, mock_http = _make_client()
         mock_http.request.return_value = _resp(429)
-        with patch("time.sleep"):
-            with self.assertRaises(OTXRateLimitError):
-                c.get("pulses/subscribed")
+        with patch("time.sleep"), self.assertRaises(OTXRateLimitError):
+            c.get("pulses/subscribed")
 
     def test_paginate_follows_next(self):
         c, mock_http = _make_client()

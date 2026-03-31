@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -64,7 +64,7 @@ class WizClient(BaseClient, ConnectorMixin):
         Service account client secret.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilityFindings",
         "report":        "issues",  # covers toxic combinations, misconfigs, etc.
     }
@@ -73,7 +73,7 @@ class WizClient(BaseClient, ConnectorMixin):
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
-        self._token: Optional[str] = None
+        self._token: str | None = None
         self._auth_host = "https://auth.app.wiz.io"  # usually fixed; can be auth.wiz.io for some tenants
 
     # ── Authentication ─────────────────────────────────────────────────────
@@ -102,16 +102,16 @@ class WizClient(BaseClient, ConnectorMixin):
         self._graphql_query(query)
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         raise GNATClientError("Wiz get_object by single ID not directly supported; use filtered list_objects.")
 
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Wiz vulnerability findings or issues."""
         filters = dict(filters or {})
         if stix_type == "vulnerability":
@@ -135,7 +135,7 @@ class WizClient(BaseClient, ConnectorMixin):
         data = self._graphql_query(query, variables={"first": page_size})
         return data.get("issues", {}).get("nodes", [])
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Wiz is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -143,7 +143,7 @@ class WizClient(BaseClient, ConnectorMixin):
 
     # ── STIX conversion ───────────────────────────────────────────────────
 
-    def to_stix(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, obj: dict[str, Any]) -> dict[str, Any]:
         """Map a Wiz finding/issue dict to a STIX object."""
         obj_id = str(obj.get("id", _uuid.uuid4()))
         # Vulnerability finding → STIX vulnerability
@@ -173,15 +173,15 @@ class WizClient(BaseClient, ConnectorMixin):
             "x_wiz_raw": obj,
         }
 
-    def from_stix(self, stix_obj: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_obj: dict[str, Any]) -> dict[str, Any]:
         """Wiz is read-only — from_stix not supported."""
         raise GNATClientError("Wiz is read-only — from_stix not supported.")
 
     # ── Private helpers ───────────────────────────────────────────────────
 
-    def _graphql_query(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _graphql_query(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         """Execute a GraphQL query against /graphql and return the ``data`` dict."""
-        payload: Dict[str, Any] = {"query": query}
+        payload: dict[str, Any] = {"query": query}
         if variables:
             payload["variables"] = variables
         resp = self.post("/graphql", json=payload)

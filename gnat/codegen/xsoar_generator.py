@@ -42,8 +42,7 @@ import re
 import textwrap
 import zipfile
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -61,9 +60,9 @@ def _to_kebab(name: str) -> str:
 
 def _method_to_xsoar_command(
     method_name: str,
-    meta: Dict[str, Any],
+    meta: dict[str, Any],
     connector_prefix: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convert a capabilities() entry to an XSOAR command definition dict.
 
@@ -92,7 +91,7 @@ def _method_to_xsoar_command(
     raw_params = [p.strip() for p in inner.split(",") if p.strip()] if inner else []
 
     # Build XSOAR argument list — skip *args/**kwargs indicators
-    arguments: List[Dict[str, Any]] = []
+    arguments: list[dict[str, Any]] = []
     for param in raw_params:
         # Strip type annotations and defaults for display
         param_clean = re.split(r"[=:]", param)[0].strip()
@@ -105,7 +104,7 @@ def _method_to_xsoar_command(
             "type":        "String",
         })
 
-    cmd: Dict[str, Any] = {
+    cmd: dict[str, Any] = {
         "name":        xsoar_name,
         "description": doc or f"Call {method_name}() on the GNAT {connector_prefix} connector.",
         "arguments":   arguments,
@@ -129,7 +128,7 @@ def _method_to_xsoar_command(
 def _render_integration_yml(
     connector_name: str,
     pascal_name: str,
-    commands: List[Dict[str, Any]],
+    commands: list[dict[str, Any]],
     auth_type: str,
 ) -> str:
     """
@@ -187,7 +186,7 @@ def _render_integration_yml(
     }.get(auth_type, "")
 
     # Render commands block (hand-crafted YAML to avoid pyyaml dependency)
-    cmd_lines: List[str] = ["script:"]
+    cmd_lines: list[str] = ["script:"]
     cmd_lines.append("  commands:")
     for cmd in commands:
         cmd_lines.append(f"  - name: {cmd['name']}")
@@ -236,7 +235,7 @@ def _render_integration_yml(
 def _render_integration_py(
     pascal_name: str,
     connector_key: str,
-    commands: List[Dict[str, Any]],
+    commands: list[dict[str, Any]],
     auth_type: str,
 ) -> str:
     """
@@ -286,7 +285,7 @@ def _render_integration_py(
     }.get(auth_type, "init_kwargs = {\"host\": demisto.params().get(\"url\", \"\")}\n")
 
     # Build dispatch table
-    dispatch_lines: List[str] = []
+    dispatch_lines: list[str] = []
     for cmd in commands:
         method = cmd["name"].split("-", 1)[-1].replace("-", "_")
         arg_names = [a["name"] for a in cmd.get("arguments", [])]
@@ -401,7 +400,7 @@ def generate_xsoar_pack(
     connector_name: str,
     output_dir: str = ".",
     version: str = "1.0.0",
-    auth_type: Optional[str] = None,
+    auth_type: str | None = None,
     overwrite: bool = False,
 ) -> str:
     """
@@ -469,7 +468,7 @@ def generate_xsoar_pack(
     try:
         import inspect
         params = inspect.signature(cls.__init__).parameters
-        dummy_kwargs: Dict[str, Any] = {}
+        dummy_kwargs: dict[str, Any] = {}
         for pname, param in params.items():
             if pname in ("self", "args", "kwargs"):
                 continue
@@ -485,7 +484,7 @@ def generate_xsoar_pack(
     caps = instance.capabilities()
 
     # Filter to non-auth callable methods (auth is handled at integration level)
-    commands: List[Dict[str, Any]] = []
+    commands: list[dict[str, Any]] = []
     for method_name, meta in sorted(caps.items()):
         if meta["type"] == "auth":
             continue  # handled at integration level

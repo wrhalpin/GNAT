@@ -45,7 +45,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class AgentConfig:
     ai_confidence_ceiling: int = 60
 
     @classmethod
-    def from_ini(cls, config_path: Optional[str] = None) -> "AgentConfig":
+    def from_ini(cls, config_path: str | None = None) -> AgentConfig:
         """
         Load from the ``[claude]`` section of the GNAT INI file.
 
@@ -121,7 +121,7 @@ class AgentConfig:
         )
 
     @classmethod
-    def from_config(cls, parser: Any) -> "AgentConfig":
+    def from_config(cls, parser: Any) -> AgentConfig:
         """
         Load from an existing :class:`configparser.ConfigParser` instance.
 
@@ -193,10 +193,10 @@ class ResearchResult:
     url:          str          = ""
     title:        str          = ""
     retrieved_at: datetime     = field(default_factory=lambda: datetime.now(timezone.utc))
-    source_urls:  List[str]    = field(default_factory=list)
-    metadata:     Dict[str, Any] = field(default_factory=dict)
+    source_urls:  list[str]    = field(default_factory=list)
+    metadata:     dict[str, Any] = field(default_factory=dict)
 
-    def to_raw_record(self) -> Dict[str, Any]:
+    def to_raw_record(self) -> dict[str, Any]:
         """Convert to a ``RawRecord`` dict for the ingest pipeline."""
         return {
             "text":         self.text,
@@ -240,11 +240,11 @@ class ParsedIntel:
     """
 
     summary:           str
-    indicators:        List[Dict[str, Any]] = field(default_factory=list)
-    ttps:              List[Dict[str, Any]] = field(default_factory=list)
-    actors:            List[Dict[str, Any]] = field(default_factory=list)
-    vulnerabilities:   List[Dict[str, Any]] = field(default_factory=list)
-    affected_products: List[str]            = field(default_factory=list)
+    indicators:        list[dict[str, Any]] = field(default_factory=list)
+    ttps:              list[dict[str, Any]] = field(default_factory=list)
+    actors:            list[dict[str, Any]] = field(default_factory=list)
+    vulnerabilities:   list[dict[str, Any]] = field(default_factory=list)
+    affected_products: list[str]            = field(default_factory=list)
     confidence:        int                  = 50
     source_url:        str                  = ""
     source_topic:      str                  = ""
@@ -303,9 +303,9 @@ class ClaudeClient:
         self,
         user: str,
         system: str = "",
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         temperature: float = 0.2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Send a single-turn completion request to Claude.
 
@@ -332,7 +332,7 @@ class ClaudeClient:
         RuntimeError
             On HTTP errors or JSON decode failures.
         """
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "model":      self._cfg.model,
             "max_tokens": self._cfg.max_tokens,
             "messages":   [{"role": "user", "content": user}],
@@ -372,7 +372,7 @@ class ClaudeClient:
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"Claude API bad JSON: {raw[:200]}") from exc
 
-    def text_from(self, response: Dict[str, Any]) -> str:
+    def text_from(self, response: dict[str, Any]) -> str:
         """
         Extract the first text block from a Claude API response.
 
@@ -391,7 +391,7 @@ class ClaudeClient:
                 return block.get("text", "")
         return ""
 
-    def json_from(self, response: Dict[str, Any]) -> Any:
+    def json_from(self, response: dict[str, Any]) -> Any:
         """
         Extract and parse JSON from the first text block of a Claude response.
 

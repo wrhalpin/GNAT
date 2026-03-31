@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -66,7 +66,7 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
         Cyble Vision access token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "iocs",
         "report":    "alerts",
     }
@@ -90,7 +90,7 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
         self.get("/alerts", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch single alert or IOC by ID."""
         if stix_type == "report":
             return self.get(f"/events/{object_id}")
@@ -101,10 +101,10 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List alerts or IOCs with pagination/filters."""
         filters = dict(filters or {})
         if stix_type == "indicator":
@@ -123,7 +123,7 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
             limit=page_size,
         )
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Cyble Vision is read-only — no upsert support.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -133,14 +133,14 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
 
     def fetch_iocs(
         self,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        ioc_type: Optional[str] = None,
-        keyword: Optional[str] = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        ioc_type: str | None = None,
+        keyword: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch indicators of compromise."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if start_date:
             params["start_date"] = start_date
         if end_date:
@@ -154,13 +154,13 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
 
     def fetch_alerts(
         self,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        priority: Optional[str] = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        priority: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch alerts/events (leaked_credentials, darkweb_*, vulnerability, etc.)."""
-        params: Dict[str, Any] = {"limit": limit, "order_by": "Descending"}
+        params: dict[str, Any] = {"limit": limit, "order_by": "Descending"}
         if start_date:
             params["start_date"] = start_date.replace("-", "/")  # Cyble expects YYYY/MM/DD
         if end_date:
@@ -172,7 +172,7 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
 
     # ── STIX conversion ───────────────────────────────────────────────────
 
-    def to_stix(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, obj: dict[str, Any]) -> dict[str, Any]:
         """Map a Cyble Vision alert or IOC dict to a STIX object."""
         # IOC → STIX indicator
         if "ioc_value" in obj or "type" in obj:
@@ -213,6 +213,6 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
             "x_cyble_raw": obj,
         }
 
-    def from_stix(self, stix_obj: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_obj: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX object back to a Cyble Vision payload (no-op — read-only)."""
         raise GNATClientError("Cyble Vision is read-only — from_stix not supported.")

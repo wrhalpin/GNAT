@@ -55,7 +55,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -83,7 +83,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         Password for session-based auth (fallback).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "intel",
         "vulnerability": "findings",
         "report":        "alerts",
@@ -129,7 +129,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         self.get("/api/v2/server_info")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single Tanium object by type and ID."""
         if stix_type == "indicator":
             return self.get(
@@ -151,13 +151,13 @@ class TaniumClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Tanium objects by STIX type."""
         f = filters or {}
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit": page_size,
             "offset": (page - 1) * page_size,
         }
@@ -180,7 +180,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("data", resp.get("items", []))
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update a Tanium intel document."""
         if stix_type == "indicator":
             resp = self.post(
@@ -204,17 +204,17 @@ class TaniumClient(BaseClient, ConnectorMixin):
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
-    def ask_question(self, question_text: str) -> Dict[str, Any]:
+    def ask_question(self, question_text: str) -> dict[str, Any]:
         """Ask a Tanium live question and return results."""
         payload = {"query_text": question_text}
         resp = self.post("/api/v2/questions", json=payload)
         return resp if isinstance(resp, dict) else {}
 
     def get_endpoints(
-        self, count: int = 100, filter_text: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, count: int = 100, filter_text: str | None = None
+    ) -> list[dict[str, Any]]:
         """List managed endpoints."""
-        params: Dict[str, Any] = {"count": count}
+        params: dict[str, Any] = {"count": count}
         if filter_text:
             params["filter"] = filter_text
         resp = self.get("/api/v2/endpoints", params=params)
@@ -224,12 +224,12 @@ class TaniumClient(BaseClient, ConnectorMixin):
 
     def get_comply_findings(
         self,
-        cve_id: Optional[str] = None,
-        severity: Optional[str] = None,
+        cve_id: str | None = None,
+        severity: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch Comply CVE findings."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if cve_id:
             params["cveId"] = cve_id
         if severity:
@@ -239,11 +239,11 @@ class TaniumClient(BaseClient, ConnectorMixin):
 
     def get_threat_response_alerts(
         self,
-        state: Optional[str] = None,
+        state: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch Threat Response alerts."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if state:
             params["state"] = state
         resp = self.get(
@@ -251,7 +251,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         )
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def deploy_action(self, package_name: str, target_filter: str) -> Dict[str, Any]:
+    def deploy_action(self, package_name: str, target_filter: str) -> dict[str, Any]:
         """Deploy a Tanium action/package to endpoints."""
         payload = {
             "package_spec": {"name": package_name},
@@ -263,7 +263,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Tanium object to STIX."""
         # Comply finding → vulnerability
         if "cveId" in native or "cvss" in native:
@@ -279,7 +279,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         # Alert → report
         return self._alert_to_stix(native)
 
-    def _finding_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _finding_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         cve_id = native.get("cveId", native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"tanium-vuln-{cve_id}"))
         cvss = native.get("cvss", {})
@@ -300,7 +300,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _intel_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _intel_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         doc_id = str(native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"tanium-intel-{doc_id}"))
         name = native.get("name", doc_id)
@@ -336,7 +336,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _alert_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"tanium-alert-{alert_id}"))
         return {
@@ -358,7 +358,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX dict to a Tanium intel document payload."""
         import re
         pattern = stix_dict.get("pattern", "")

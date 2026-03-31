@@ -34,7 +34,6 @@ import os
 from pathlib import Path
 from typing import Optional
 
-
 _DEFAULT_SEARCH_PATHS = [
     Path.home() / ".gnat" / "config.ini",
     Path("gnat.ini"),

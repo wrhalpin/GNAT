@@ -10,6 +10,7 @@ Rule and decoder management commands for the Wazuh connector.
 
 from .client import WazuhClient
 
+
 class WazuhRulesCommands:
     """
     Ruleset inspection and management operations.

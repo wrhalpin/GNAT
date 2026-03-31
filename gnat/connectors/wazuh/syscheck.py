@@ -32,6 +32,7 @@ These map naturally to STIX 2.1 file SCOs.
 
 from .client import WazuhClient
 
+
 class WazuhSyscheckCommands:
     """
     File Integrity Monitoring (syscheck) operations.

@@ -60,21 +60,29 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from gnat.reports.base import (
-    AIMode, ReportConfig, ReportDocument, ReportResult,
-    ReportSection, SectorFilter, _utcnow,
-)
 from gnat.reports.aggregator import DataAggregator
+from gnat.reports.base import (
+    AIMode,
+    ReportConfig,
+    ReportDocument,
+    ReportResult,
+    ReportSection,
+    SectorFilter,
+    _utcnow,
+)
 from gnat.reports.renderers import (
-    MarkdownRenderer, HTMLRenderer, PDFRenderer, DOCXRenderer,
+    DOCXRenderer,
+    HTMLRenderer,
+    MarkdownRenderer,
+    PDFRenderer,
 )
 from gnat.schedule.job import FeedJob
 
 if TYPE_CHECKING:
-    from gnat.context.workspace import WorkspaceManager
     from gnat.agents.base import AgentConfig
+    from gnat.context.workspace import WorkspaceManager
     from gnat.research.library import ResearchLibrary
 
 logger = logging.getLogger(__name__)
@@ -125,10 +133,10 @@ class ReportGenerator:
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
+        manager: WorkspaceManager,
         config: ReportConfig,
-        agent_config: Optional["AgentConfig"] = None,
-        research_library: Optional["ResearchLibrary"] = None,
+        agent_config: AgentConfig | None = None,
+        research_library: ResearchLibrary | None = None,
     ):
         self._manager = manager
         self._config  = config
@@ -257,7 +265,7 @@ class ReportGenerator:
     # ── Data sections (no AI) ─────────────────────────────────────────────
 
     def _add_data_sections(
-        self, doc: ReportDocument, agg: "ReportAggregates"
+        self, doc: ReportDocument, agg: ReportAggregates
     ) -> None:
         """Add pure-data sections — always present regardless of AI mode."""
 
@@ -364,7 +372,7 @@ class ReportGenerator:
 
     # ── Delivery ───────────────────────────────────────────────────────────
 
-    def _deliver(self, result: ReportResult, doc: Optional["ReportDocument"] = None) -> None:
+    def _deliver(self, result: ReportResult, doc: ReportDocument | None = None) -> None:
         """Dispatch to configured delivery targets."""
         for target in self._config.delivery:
             t = target.lower().strip()
@@ -379,7 +387,7 @@ class ReportGenerator:
                 logger.warning("ReportGenerator: unknown delivery target %r", t)
 
     def _deliver_email(
-        self, result: ReportResult, doc: Optional["ReportDocument"] = None
+        self, result: ReportResult, doc: ReportDocument | None = None
     ) -> None:
         if not self._config.email_to:
             logger.warning("ReportGenerator: email delivery but no email_to configured")
@@ -412,7 +420,7 @@ class ReportGenerator:
             logger.error("ReportGenerator: email delivery failed — %s", exc)
 
     def _extract_email_body_html(
-        self, result: ReportResult, doc: Optional["ReportDocument"] = None
+        self, result: ReportResult, doc: ReportDocument | None = None
     ) -> str:
         """Return HTML content for the email body.
 
@@ -450,8 +458,9 @@ class ReportGenerator:
             )
             return
         try:
-            from gnat.reports.delivery import SharePointDelivery
             from urllib.parse import urlparse
+
+            from gnat.reports.delivery import SharePointDelivery
             parsed   = urlparse(self._config.sharepoint_url)
             # Split site path from library
             path_parts = parsed.path.strip("/").split("/")
@@ -554,11 +563,11 @@ class ReportJob(FeedJob):
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
+        manager: WorkspaceManager,
         config: ReportConfig,
-        agent_config: Optional["AgentConfig"] = None,
-        research_library: Optional["ResearchLibrary"] = None,
-        job_id: Optional[str] = None,
+        agent_config: AgentConfig | None = None,
+        research_library: ResearchLibrary | None = None,
+        job_id: str | None = None,
         on_success=None,
         on_failure=None,
     ):
@@ -598,10 +607,10 @@ class ReportJob(FeedJob):
             on_failure      = on_failure,
         )
 
-    def execute(self, scheduled_at=None) -> "RunRecord":
+    def execute(self, scheduled_at=None) -> RunRecord:
         """Run the report generator, wrapped in FeedJob state management."""
-        from gnat.schedule.job import RunRecord, _utcnow
         from gnat.ingest.base import IngestResult
+        from gnat.schedule.job import RunRecord, _utcnow
 
         if not self.enabled:
             return RunRecord(

@@ -28,10 +28,11 @@ Usage::
     )
 """
 
-from typing import Any, Dict, List, Optional
+import contextlib
+from typing import Any, Optional
 
-from gnat.config import GNATConfig
 from gnat.clients.base import BaseClient, GNATClientError
+from gnat.config import GNATConfig
 
 
 class GNATClient:
@@ -155,10 +156,8 @@ class GNATClient:
 
         # Try to load from INI — not required if all params are in overrides
         if self._config is None:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 self._config = GNATConfig(self._config_path)
-            except FileNotFoundError:
-                pass
 
         if self._config is not None:
             try:
@@ -178,8 +177,8 @@ class GNATClient:
     def natural_language_query(
         self,
         query: str,
-        extra_connectors: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        extra_connectors: Optional[dict[str, Any]] = None,
+    ) -> list[dict[str, Any]]:
         """
         Translate a free-text query into STIX results using the NLP engine.
 
@@ -215,17 +214,15 @@ class GNATClient:
         from gnat.nlp.parser import NLPQueryEngine
 
         if self._config is None:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 self._config = GNATConfig(self._config_path)
-            except FileNotFoundError:
-                pass
 
         if self._config is not None:
             engine = NLPQueryEngine.from_config(self._config)
         else:
             engine = NLPQueryEngine()
 
-        connectors: Dict[str, Any] = {}
+        connectors: dict[str, Any] = {}
         if self.client is not None and self.target is not None:
             connectors[self.target] = self.client
         if extra_connectors:

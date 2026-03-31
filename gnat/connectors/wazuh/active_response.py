@@ -29,6 +29,7 @@ permission. Restrict this to dedicated service accounts.
 
 from .client import WazuhClient
 
+
 class WazuhActiveResponseCommands:
     """
     Active Response command execution.

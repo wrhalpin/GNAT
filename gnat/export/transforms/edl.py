@@ -49,11 +49,13 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gnat.export.base import ExportTransform, TransformResult
 from gnat.ingest._ioc_classifier import (
     defang as _fast_defang,
+)
+from gnat.ingest._ioc_classifier import (
     extract_pattern_value as _fast_extract_pattern_value,
 )
 
@@ -62,7 +64,7 @@ if TYPE_CHECKING:
 
 
 # Pattern strings → IOC type keywords (in STIX pattern format)
-_PATTERN_KEYWORDS: Dict[str, str] = {
+_PATTERN_KEYWORDS: dict[str, str] = {
     "ipv4":   "ipv4-addr",
     "ipv6":   "ipv6-addr",
     "domain": "domain-name",
@@ -91,12 +93,12 @@ def _refang(value: str) -> str:
     return _fast_defang(value)
 
 
-def _extract_value(pattern_str: str) -> Optional[str]:
+def _extract_value(pattern_str: str) -> str | None:
     """Pull the quoted value from a STIX pattern string."""
     return _fast_extract_pattern_value(pattern_str)
 
 
-def _detect_ioc_type(pattern_str: str) -> Optional[str]:
+def _detect_ioc_type(pattern_str: str) -> str | None:
     """Detect IOC type from a STIX pattern string."""
     for ioc_type, keyword in _PATTERN_KEYWORDS.items():
         if keyword in pattern_str:
@@ -151,7 +153,7 @@ class EDLTransform(ExportTransform):
 
     def __init__(
         self,
-        ioc_types: Optional[List[str]] = None,
+        ioc_types: list[str] | None = None,
         filename_prefix: str = "indicators",
         header_comment: bool = True,
         max_per_file: int = 500_000,
@@ -175,7 +177,7 @@ class EDLTransform(ExportTransform):
         self._combine         = combine
         self._deduplicate     = deduplicate
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         """
         Extract IOC values from STIX Indicator objects and render EDL files.
 
@@ -190,8 +192,8 @@ class EDLTransform(ExportTransform):
             ``payloads`` contains one entry per IOC type file.
             ``metadata`` contains per-type counts and any truncation warnings.
         """
-        buckets: Dict[str, List[str]] = {t: [] for t in self._ioc_types}
-        seen:    Dict[str, Set[str]]  = {t: set() for t in self._ioc_types}
+        buckets: dict[str, list[str]] = {t: [] for t in self._ioc_types}
+        seen:    dict[str, set[str]]  = {t: set() for t in self._ioc_types}
         skipped = 0
         processed = 0
 
@@ -228,7 +230,7 @@ class EDLTransform(ExportTransform):
             processed += 1
 
         # Sort and cap
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "processed": processed,
             "skipped":   skipped,
             "truncated": {},
@@ -244,10 +246,10 @@ class EDLTransform(ExportTransform):
 
         # Build payloads
         header = self._build_header()
-        payloads: Dict[str, str] = {}
+        payloads: dict[str, str] = {}
 
         if self._combine:
-            all_values: List[str] = []
+            all_values: list[str] = []
             for t in sorted(self._ioc_types):
                 all_values.extend(buckets[t])
             payloads[f"{self._prefix}-all.txt"] = header + "\n".join(all_values) + "\n"

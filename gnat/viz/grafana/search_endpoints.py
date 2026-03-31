@@ -35,7 +35,7 @@ import logging
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.search.index import SearchIndex
@@ -55,7 +55,7 @@ except ImportError:  # pragma: no cover
     _FASTAPI_AVAILABLE = False
 
 
-def _solr_get(base_url: str, path: str, params: Dict[str, Any]) -> Optional[dict]:
+def _solr_get(base_url: str, path: str, params: dict[str, Any]) -> dict | None:
     """
     Issue a GET request to Solr using stdlib only (no new dep).
 
@@ -73,7 +73,7 @@ def _solr_get(base_url: str, path: str, params: Dict[str, Any]) -> Optional[dict
         return None
 
 
-def build_search_router(search_index: "SearchIndex") -> Any:
+def build_search_router(search_index: SearchIndex) -> Any:
     """
     Build and return a FastAPI ``APIRouter`` that exposes Solr index data.
 
@@ -93,13 +93,13 @@ def build_search_router(search_index: "SearchIndex") -> Any:
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
-    def _base_url() -> Optional[str]:
+    def _base_url() -> str | None:
         """Extract the raw Solr base URL from the search index."""
         if hasattr(search_index, "base_url"):
             return search_index.base_url  # type: ignore[attr-defined]
         return None
 
-    def _facet_counts(field: str, limit: int = 50) -> List[tuple]:
+    def _facet_counts(field: str, limit: int = 50) -> list[tuple]:
         """Return ``[(value, count), ...]`` from a Solr facet query."""
         base = _base_url()
         if not base:
@@ -133,7 +133,7 @@ def build_search_router(search_index: "SearchIndex") -> Any:
         return int(data.get("response", {}).get("numFound", 0))
 
     def _date_facet(field: str = "date_indexed", gap: str = "+1DAY",
-                    start: str = "NOW-30DAYS/DAY", end: str = "NOW/DAY+1DAY") -> List[tuple]:
+                    start: str = "NOW-30DAYS/DAY", end: str = "NOW/DAY+1DAY") -> list[tuple]:
         """Return ``[(iso_date, count), ...]`` from a Solr date range facet."""
         base = _base_url()
         if not base:
@@ -161,7 +161,7 @@ def build_search_router(search_index: "SearchIndex") -> Any:
             pairs.append((str(counts[i]), int(counts[i + 1])))
         return pairs
 
-    def _search_stix(query: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def _search_stix(query: str, limit: int = 100) -> list[dict[str, Any]]:
         """Full-text search returning [{id, stix_type, source_platform}]."""
         base = _base_url()
         if not base:

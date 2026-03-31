@@ -68,18 +68,19 @@ calls per ``_iter_records`` invocation to prevent runaway cost.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterator, List, Optional
+from collections.abc import Iterator
+from typing import Any
 
-from gnat.ingest.base import RawRecord, SourceReader
 from gnat.agents.base import AgentConfig, ClaudeClient, ResearchResult
 from gnat.agents.prompts import (
+    RESEARCH_FEED_NEWER_HINT,
+    RESEARCH_FEED_SYSTEM,
+    RESEARCH_FEED_USER,
     RESEARCH_SYSTEM,
     RESEARCH_TOPIC_USER,
     RESEARCH_TOPIC_USER_NEWER,
-    RESEARCH_FEED_SYSTEM,
-    RESEARCH_FEED_USER,
-    RESEARCH_FEED_NEWER_HINT,
 )
+from gnat.ingest.base import RawRecord, SourceReader
 
 logger = logging.getLogger(__name__)
 
@@ -153,9 +154,9 @@ class ResearchAgent(SourceReader):
     def __init__(
         self,
         config: AgentConfig,
-        topics: Optional[List[str]] = None,
-        monitored_sources: Optional[List[Dict[str, str]]] = None,
-        newer_than: Optional[str] = None,
+        topics: list[str] | None = None,
+        monitored_sources: list[dict[str, str]] | None = None,
+        newer_than: str | None = None,
         max_calls_per_run: int = 20,
         label: str = "ResearchAgent",
     ):
@@ -207,7 +208,7 @@ class ResearchAgent(SourceReader):
             if result is not None:
                 yield result.to_raw_record()
 
-    def _research_topic(self, topic: str) -> Optional[ResearchResult]:
+    def _research_topic(self, topic: str) -> ResearchResult | None:
         """Call Claude with web search to synthesize a topic summary."""
         newer_hint = ""
         if self._newer_than:
@@ -261,7 +262,7 @@ class ResearchAgent(SourceReader):
         )
 
     @staticmethod
-    def _flatten_result(data: Dict[str, Any]) -> str:
+    def _flatten_result(data: dict[str, Any]) -> str:
         """
         Flatten the structured research result into readable text for the
         parsing agent to process downstream.
@@ -352,8 +353,8 @@ class ResearchAgent(SourceReader):
                 ).to_raw_record()
 
     def _check_sources_batch(
-        self, sources: List[Dict[str, str]]
-    ) -> List[Dict[str, Any]]:
+        self, sources: list[dict[str, str]]
+    ) -> list[dict[str, Any]]:
         """Send one batch of sources to Claude and parse the result list."""
         sources_block = "\n".join(
             f"- {s.get('label', s['url'])}: {s['url']}"

@@ -38,9 +38,11 @@ References
 """
 
 from __future__ import annotations
+
 import re
 import uuid
 from datetime import datetime, timezone
+
 from .exceptions import MISPSTIXError
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")

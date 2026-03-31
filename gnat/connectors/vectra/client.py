@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -62,7 +62,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         Vectra API token (Bearer).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "detections",
         "threat-actor":  "hosts",
     }
@@ -92,7 +92,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         self.get("/api/v2.5/detections", params={"page_size": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single detection or host by ID."""
         if stix_type == "observed-data":
             return self.get(f"/api/v2.5/detections/{object_id}") or {}
@@ -103,12 +103,12 @@ class VectraClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str = "observed-data",
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List detections or hosts with optional filtering."""
-        params: Dict[str, Any] = {"page": page, "page_size": page_size}
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
         if filters:
             params.update(filters)
 
@@ -120,7 +120,7 @@ class VectraClient(BaseClient, ConnectorMixin):
             raise GNATClientError(f"Vectra: unsupported STIX type '{stix_type}'")
         return resp.get("results", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Vectra is primarily read-only; upsert is not supported."""
         raise GNATClientError("Vectra NDR connector is read-only — upsert not supported.")
 
@@ -132,10 +132,10 @@ class VectraClient(BaseClient, ConnectorMixin):
 
     def list_detections(
         self,
-        detection_type: Optional[str] = None,
-        threat_score_gte: Optional[int] = None,
+        detection_type: str | None = None,
+        threat_score_gte: int | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List network detections, optionally filtered by type or threat score.
 
@@ -148,7 +148,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        params: Dict[str, Any] = {"page_size": limit}
+        params: dict[str, Any] = {"page_size": limit}
         if detection_type:
             params["detection_type"] = detection_type
         if threat_score_gte is not None:
@@ -158,10 +158,10 @@ class VectraClient(BaseClient, ConnectorMixin):
 
     def list_hosts(
         self,
-        certainty_gte: Optional[int] = None,
-        threat_gte: Optional[int] = None,
+        certainty_gte: int | None = None,
+        threat_gte: int | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List host entities with AI-assigned threat and certainty scores.
 
@@ -174,7 +174,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        params: Dict[str, Any] = {"page_size": limit}
+        params: dict[str, Any] = {"page_size": limit}
         if certainty_gte is not None:
             params["certainty_gte"] = certainty_gte
         if threat_gte is not None:
@@ -182,7 +182,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v2.5/hosts", params=params)
         return resp.get("results", []) if isinstance(resp, dict) else []
 
-    def search_detections(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def search_detections(self, query: str, limit: int = 100) -> list[dict[str, Any]]:
         """
         Run a Vectra advanced detection search.
 
@@ -199,13 +199,13 @@ class VectraClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Vectra detection or host to a STIX 2.1 object."""
         if "detection_type" in native:
             return self._detection_to_stix(native)
         return self._host_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a minimal Vectra search payload from a STIX object."""
         return {
             "note":     "Vectra is read-only; this payload is for reference.",
@@ -213,7 +213,7 @@ class VectraClient(BaseClient, ConnectorMixin):
             "stix_type": stix_dict.get("type", ""),
         }
 
-    def _detection_to_stix(self, detection: Dict[str, Any]) -> Dict[str, Any]:
+    def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         det_id = str(detection.get("id", ""))
         first_ts = detection.get("first_timestamp", now)
@@ -240,7 +240,7 @@ class VectraClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _host_to_stix(self, host: Dict[str, Any]) -> Dict[str, Any]:
+    def _host_to_stix(self, host: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         host_id = str(host.get("id", ""))
         return {
@@ -250,7 +250,7 @@ class VectraClient(BaseClient, ConnectorMixin):
             "created":      now,
             "modified":     now,
             "name":         host.get("name", f"Vectra Host {host_id}"),
-            "description":  f"Host entity scored by Vectra AI NDR",
+            "description":  "Host entity scored by Vectra AI NDR",
             "x_vectra": {
                 "host_id":   host_id,
                 "ip":        host.get("ip"),

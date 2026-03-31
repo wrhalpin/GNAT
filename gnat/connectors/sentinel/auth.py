@@ -38,6 +38,7 @@ Azure's token endpoint rather than Wazuh's /security/user/authenticate.
 
 import json
 import time
+
 import urllib3
 
 from .config import SentinelConfig

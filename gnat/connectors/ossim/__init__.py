@@ -35,15 +35,16 @@ Configuration (gnat.ini):
 """
 
 import configparser
+import contextlib
 import json
 import time
 import urllib.parse
-import urllib3
-from dataclasses import dataclass, field
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
@@ -407,11 +408,9 @@ class OSSIMSTIXMapper:
                     "protocols": [str(alarm.get("protocol", "tcp")).lower()],
                 }
                 if src_p:
-                    try: nt["src_port"] = int(src_p)
-                    except (ValueError, TypeError): pass
+                    with contextlib.suppress(ValueError, TypeError): nt["src_port"] = int(src_p)
                 if dst_p:
-                    try: nt["dst_port"] = int(dst_p)
-                    except (ValueError, TypeError): pass
+                    with contextlib.suppress(ValueError, TypeError): nt["dst_port"] = int(dst_p)
                 objects.append(nt); refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"

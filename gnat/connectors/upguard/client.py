@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -68,7 +68,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         UpGuard API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "breaches",
         "report":        "vendors",
     }
@@ -92,7 +92,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         self.get("/api/vendors", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "report":
             return self.get(f"/api/vendors/{object_id}")
         if stix_type == "vulnerability":
@@ -102,12 +102,12 @@ class UpGuardClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size}
+        params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
 
         if stix_type == "vulnerability":
@@ -117,7 +117,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/vendors", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("UpGuard connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -128,20 +128,20 @@ class UpGuardClient(BaseClient, ConnectorMixin):
     def fetch_vendors(
         self,
         limit: int = 50,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch vendor list with optional filters."""
-        params: Dict[str, Any] = {"limit": limit, **(filters or {})}
+        params: dict[str, Any] = {"limit": limit, **(filters or {})}
         resp = self.get("/api/vendors", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def fetch_breaches(
         self,
         limit: int = 50,
-        since: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        since: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch breach and identity breach history."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if since:
             params["since"] = since
         resp = self.get("/api/breaches", params=params)
@@ -150,7 +150,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
     def fetch_questionnaires(
         self,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch security questionnaires (Vendor Risk)."""
         resp = self.get("/api/questionnaires", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -158,7 +158,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
     def fetch_vip_management(
         self,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch VIP identities (new 2026 capability)."""
         resp = self.get("/api/vip", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -166,26 +166,26 @@ class UpGuardClient(BaseClient, ConnectorMixin):
     def fetch_content_library(
         self,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Read-only Content Library & Trust Center (new 2026)."""
         resp = self.get("/api/content-library", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch breach (vulnerability) vs. vendor/questionnaire (report)."""
         if "breach" in str(native).lower() or "identity" in str(native).lower():
             return self._breach_to_stix(native)
         return self._vendor_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "UpGuard is primarily read-only for vendor risk and breach data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _breach_to_stix(self, breach: Dict[str, Any]) -> Dict[str, Any]:
+    def _breach_to_stix(self, breach: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         bid = breach.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'upguard:{bid}')}"
@@ -206,7 +206,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _vendor_to_stix(self, vendor: Dict[str, Any]) -> Dict[str, Any]:
+    def _vendor_to_stix(self, vendor: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         vid = vendor.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'upguard:{vid}')}"

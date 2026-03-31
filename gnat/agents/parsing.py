@@ -59,23 +59,25 @@ Standalone usage
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import uuid
-from typing import Any, Dict, Iterator, Optional
+from collections.abc import Iterator
+from typing import Any
 
-from gnat.ingest.base import RawRecord, RecordMapper
-from gnat.orm.indicator import Indicator
-from gnat.orm.attack_pattern import AttackPattern
-from gnat.orm.threat_actor import ThreatActor
-from gnat.orm.vulnerability import Vulnerability
 from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel
 from gnat.agents.prompts import PARSING_SYSTEM, PARSING_USER
+from gnat.ingest.base import RawRecord, RecordMapper
+from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.indicator import Indicator
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.vulnerability import Vulnerability
 
 logger = logging.getLogger(__name__)
 
 # STIX pattern templates per IOC type
-_STIX_PATTERNS: Dict[str, str] = {
+_STIX_PATTERNS: dict[str, str] = {
     "ipv4":      "[ipv4-addr:value = '{v}']",
     "ipv6":      "[ipv6-addr:value = '{v}']",
     "domain":    "[domain-name:value = '{v}']",
@@ -185,7 +187,7 @@ class ParsingAgent(RecordMapper):
 
     # ── RecordMapper interface ─────────────────────────────────────────────
 
-    def map(self, record: RawRecord) -> Iterator["STIXBase"]:
+    def map(self, record: RawRecord) -> Iterator[STIXBase]:
         """
         Extract STIX objects from a raw text record.
 
@@ -233,7 +235,7 @@ class ParsingAgent(RecordMapper):
 
     def _extract(
         self, text: str, source_url: str, source_topic: str
-    ) -> Optional[ParsedIntel]:
+    ) -> ParsedIntel | None:
         """Call Claude to extract structured intel from text."""
         user_msg = PARSING_USER.format(
             text=text,
@@ -285,14 +287,14 @@ class ParsingAgent(RecordMapper):
 
     # ── STIX object construction ────────────────────────────────────────────
 
-    def _to_stix_objects(self, intel: ParsedIntel) -> Iterator["STIXBase"]:
+    def _to_stix_objects(self, intel: ParsedIntel) -> Iterator[STIXBase]:
         """Yield STIX objects for each extracted entity."""
         yield from self._indicators_from(intel)
         yield from self._ttps_from(intel)
         yield from self._actors_from(intel)
         yield from self._vulns_from(intel)
 
-    def _common_fields(self, intel: ParsedIntel) -> Dict[str, Any]:
+    def _common_fields(self, intel: ParsedIntel) -> dict[str, Any]:
         """Fields added to every AI-extracted STIX object."""
         return {
             "confidence":      min(intel.confidence, self._config.ai_confidence_ceiling),
@@ -414,10 +416,8 @@ class ParsingAgent(RecordMapper):
                 **self._common_fields(intel),
             )
             if cvss is not None:
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     obj.x_cvss_score = float(cvss)
-                except (TypeError, ValueError):
-                    pass
             if cve_id:
                 obj.x_cve_id = cve_id
             obj.x_actively_exploited = exploit

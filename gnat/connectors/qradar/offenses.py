@@ -56,11 +56,10 @@ References
 - https://www.ibm.com/docs/en/qradar-siem/7.5?topic=api-siem-offenses
 """
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import QRadarClient
 from .exceptions import QRadarNotFoundError
-
 
 # Offense type code → human-readable label
 OFFENSE_TYPE_LABELS = {

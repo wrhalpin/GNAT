@@ -14,9 +14,9 @@ import os
 import tempfile
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from gnat.export.base import ExportDelivery, DeliveryResult, TransformResult
+from gnat.export.base import DeliveryResult, ExportDelivery, TransformResult
 from gnat.utils.url_security import validate_url_scheme
 
 if TYPE_CHECKING:
@@ -138,13 +138,13 @@ class HTTPDelivery(ExportDelivery):
     def __init__(
         self,
         url: str,
-        headers: Optional[Dict[str, str]] = None,
-        auth: Optional[tuple] = None,
+        headers: dict[str, str] | None = None,
+        auth: tuple | None = None,
         content_type: str = "application/json",
         verify_ssl: bool = True,
         timeout: int = 30,
-        per_payload_url: Optional[Dict[str, str]] = None,
-        success_codes: Optional[List[int]] = None,
+        per_payload_url: dict[str, str] | None = None,
+        success_codes: list[int] | None = None,
     ):
         self._url           = url
         self._headers       = {"Content-Type": content_type, **(headers or {})}
@@ -154,9 +154,9 @@ class HTTPDelivery(ExportDelivery):
         self._success_codes = set(success_codes or [200, 201, 204])
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
-        import urllib.request
-        import urllib.error
         import base64
+        import urllib.error
+        import urllib.request
 
         dr = DeliveryResult()
         for name, content in result.payloads.items():
@@ -237,7 +237,7 @@ class EDLServer(ExportDelivery):
     def __init__(self, host: str = "0.0.0.0", port: int = 8080):  # nosec B104 — overridable via --host flag
         self._host   = host
         self._port   = port
-        self._files: Dict[str, str] = {}
+        self._files: dict[str, str] = {}
         self._lock   = threading.Lock()
         self._server = None
         self._thread = None
@@ -326,7 +326,7 @@ class PlatformDelivery(ExportDelivery):
         delivery = PlatformDelivery(xsoar_client)
     """
 
-    def __init__(self, client: "GNATClient"):
+    def __init__(self, client: GNATClient):
         self._client = client
 
     def deliver(self, result: TransformResult) -> DeliveryResult:

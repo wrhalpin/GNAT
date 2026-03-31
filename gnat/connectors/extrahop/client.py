@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -71,7 +71,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         OAuth2 client secret (for Reveal(x) 360 cloud only).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data":  "detections",
         "network-traffic": "records",
     }
@@ -120,7 +120,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         self.get("/api/v1/detections", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single detection or device by ID."""
         if stix_type == "observed-data":
             return self.get(f"/api/v1/detections/{object_id}") or {}
@@ -129,12 +129,12 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str = "observed-data",
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List detections or devices."""
-        params: Dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
+        params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         if filters:
             params.update(filters)
 
@@ -143,7 +143,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
             return resp if isinstance(resp, list) else []
         raise GNATClientError(f"ExtraHop: unsupported STIX type '{stix_type}'")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """ExtraHop Reveal(x) is read-only; upsert is not supported."""
         raise GNATClientError("ExtraHop Reveal(x) connector is read-only.")
 
@@ -155,10 +155,10 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
 
     def list_detections(
         self,
-        risk_score_min: Optional[int] = None,
-        status: Optional[str] = None,
+        risk_score_min: int | None = None,
+        status: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List security detections from Reveal(x).
 
@@ -171,7 +171,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if risk_score_min is not None:
             params["risk_score_min"] = risk_score_min
         if status:
@@ -181,9 +181,9 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
 
     def search_records(
         self,
-        query: Optional[Dict[str, Any]] = None,
+        query: dict[str, Any] | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search transaction records in ExtraHop.
 
@@ -194,18 +194,18 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        payload: Dict[str, Any] = {"limit": limit}
+        payload: dict[str, Any] = {"limit": limit}
         if query:
             payload["filter"] = query
         resp = self.post("/api/v1/records/search", json=payload)
         return resp.get("records", []) if isinstance(resp, dict) else []
 
-    def list_devices(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_devices(self, limit: int = 100) -> list[dict[str, Any]]:
         """List discovered network devices."""
         resp = self.get("/api/v1/devices", params={"limit": limit})
         return resp if isinstance(resp, list) else []
 
-    def threat_lookup(self, observable: str) -> Dict[str, Any]:
+    def threat_lookup(self, observable: str) -> dict[str, Any]:
         """
         Look up a threat observable (IP, domain, URL) via ExtraHop TI.
 
@@ -220,13 +220,13 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert an ExtraHop detection or record to a STIX 2.1 object."""
         if "risk_score" in native or "detection_type" in native:
             return self._detection_to_stix(native)
         return self._record_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a minimal ExtraHop reference payload from a STIX object."""
         return {
             "note":      "ExtraHop Reveal(x) is read-only.",
@@ -234,7 +234,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
             "stix_type": stix_dict.get("type", ""),
         }
 
-    def _detection_to_stix(self, detection: Dict[str, Any]) -> Dict[str, Any]:
+    def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         det_id = str(detection.get("id", ""))
         start_time = detection.get("start_time", now)
@@ -259,7 +259,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _record_to_stix(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def _record_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         rec_id = str(record.get("id", ""))
         return {

@@ -37,7 +37,7 @@ Key Endpoints
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -68,7 +68,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         :class:`~gnat.clients.base.BaseClient`.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "course-of-action": "pipelines",
         "observed-data": "searches",
         "indicator": "lookups",
@@ -94,7 +94,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Helpers
     # ------------------------------------------------------------------
 
-    def _group(self, group: Optional[str] = None) -> str:
+    def _group(self, group: str | None = None) -> str:
         """Return *group* if given, otherwise the configured worker group."""
         return group or self._worker_group
 
@@ -152,7 +152,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # ConnectorMixin — CRUD
     # ------------------------------------------------------------------
 
-    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> dict[str, Any]:
         """
         Fetch a single Cribl object by STIX type and native id.
 
@@ -184,12 +184,12 @@ class CriblClient(BaseClient, ConnectorMixin):
 
     def list_objects(
         self,
-        stix_type: Optional[str] = None,
-        filters: Optional[Dict[str, Any]] = None,
+        stix_type: str | None = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List Cribl objects of the given STIX type.
 
@@ -230,8 +230,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return items[start : start + page_size]
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any], **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any], **kwargs: Any
+    ) -> dict[str, Any]:
         """
         Create or update a Cribl object.
 
@@ -293,7 +293,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             f"Unsupported stix_type for CriblClient.delete_object: {stix_type!r}"
         )
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Cribl-native object to STIX 2.1.
 
@@ -309,7 +309,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self._mapper.node_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX 2.1 object to a Cribl-native payload.
 
@@ -329,15 +329,15 @@ class CriblClient(BaseClient, ConnectorMixin):
     # System methods
     # ------------------------------------------------------------------
 
-    def get_system_info(self) -> Dict[str, Any]:
+    def get_system_info(self) -> dict[str, Any]:
         """Fetch Cribl system information."""
         return self.get("/api/v1/system/info")
 
-    def get_system_health(self) -> Dict[str, Any]:
+    def get_system_health(self) -> dict[str, Any]:
         """Fetch Cribl system health status."""
         return self.get("/api/v1/system/health")
 
-    def list_worker_groups(self) -> List[Dict[str, Any]]:
+    def list_worker_groups(self) -> list[dict[str, Any]]:
         """
         List all Cribl worker groups.
 
@@ -348,7 +348,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v1/master/groups")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_worker_group(self, group: str) -> Dict[str, Any]:
+    def get_worker_group(self, group: str) -> dict[str, Any]:
         """
         Fetch a specific worker group by name.
 
@@ -359,7 +359,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/master/groups/{group}")
 
-    def list_workers(self) -> List[Dict[str, Any]]:
+    def list_workers(self) -> list[dict[str, Any]]:
         """
         List all Cribl worker instances.
 
@@ -374,7 +374,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Pipeline methods
     # ------------------------------------------------------------------
 
-    def list_pipelines(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_pipelines(self, group: str | None = None) -> list[dict[str, Any]]:
         """
         List pipelines in a worker group.
 
@@ -390,7 +390,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/m/{self._group(group)}/pipelines")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_pipeline(self, pipeline_id: str, group: Optional[str] = None) -> Dict[str, Any]:
+    def get_pipeline(self, pipeline_id: str, group: str | None = None) -> dict[str, Any]:
         """
         Fetch a pipeline by id.
 
@@ -404,8 +404,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.get(f"/api/v1/m/{self._group(group)}/pipelines/{pipeline_id}")
 
     def create_pipeline(
-        self, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Create a new pipeline.
 
@@ -419,8 +419,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.post(f"/api/v1/m/{self._group(group)}/pipelines", json=config)
 
     def update_pipeline(
-        self, pipeline_id: str, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, pipeline_id: str, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Update an existing pipeline.
 
@@ -437,7 +437,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             f"/api/v1/m/{self._group(group)}/pipelines/{pipeline_id}", json=config
         )
 
-    def delete_pipeline(self, pipeline_id: str, group: Optional[str] = None) -> None:
+    def delete_pipeline(self, pipeline_id: str, group: str | None = None) -> None:
         """
         Delete a pipeline.
 
@@ -454,7 +454,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Route methods
     # ------------------------------------------------------------------
 
-    def list_routes(self, group: Optional[str] = None) -> Any:
+    def list_routes(self, group: str | None = None) -> Any:
         """
         List routes in a worker group.
 
@@ -472,7 +472,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             return resp.get("items", resp)
         return resp
 
-    def get_route(self, route_id: str, group: Optional[str] = None) -> Dict[str, Any]:
+    def get_route(self, route_id: str, group: str | None = None) -> dict[str, Any]:
         """
         Fetch a route by id.
 
@@ -486,8 +486,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.get(f"/api/v1/m/{self._group(group)}/routes/{route_id}")
 
     def update_routes(
-        self, routes_config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, routes_config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Replace the entire routes configuration.
 
@@ -504,7 +504,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Input methods
     # ------------------------------------------------------------------
 
-    def list_inputs(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_inputs(self, group: str | None = None) -> list[dict[str, Any]]:
         """
         List inputs in a worker group.
 
@@ -520,7 +520,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/m/{self._group(group)}/inputs")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_input(self, input_id: str, group: Optional[str] = None) -> Dict[str, Any]:
+    def get_input(self, input_id: str, group: str | None = None) -> dict[str, Any]:
         """
         Fetch an input source by id.
 
@@ -534,8 +534,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.get(f"/api/v1/m/{self._group(group)}/inputs/{input_id}")
 
     def create_input(
-        self, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Create a new input source.
 
@@ -549,8 +549,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.post(f"/api/v1/m/{self._group(group)}/inputs", json=config)
 
     def update_input(
-        self, input_id: str, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, input_id: str, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Update an existing input source.
 
@@ -567,7 +567,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             f"/api/v1/m/{self._group(group)}/inputs/{input_id}", json=config
         )
 
-    def delete_input(self, input_id: str, group: Optional[str] = None) -> None:
+    def delete_input(self, input_id: str, group: str | None = None) -> None:
         """
         Delete an input source.
 
@@ -584,7 +584,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Output methods
     # ------------------------------------------------------------------
 
-    def list_outputs(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_outputs(self, group: str | None = None) -> list[dict[str, Any]]:
         """
         List outputs in a worker group.
 
@@ -600,7 +600,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/m/{self._group(group)}/outputs")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_output(self, output_id: str, group: Optional[str] = None) -> Dict[str, Any]:
+    def get_output(self, output_id: str, group: str | None = None) -> dict[str, Any]:
         """
         Fetch an output destination by id.
 
@@ -614,8 +614,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.get(f"/api/v1/m/{self._group(group)}/outputs/{output_id}")
 
     def create_output(
-        self, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Create a new output destination.
 
@@ -629,8 +629,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.post(f"/api/v1/m/{self._group(group)}/outputs", json=config)
 
     def update_output(
-        self, output_id: str, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, output_id: str, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Update an existing output destination.
 
@@ -647,7 +647,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             f"/api/v1/m/{self._group(group)}/outputs/{output_id}", json=config
         )
 
-    def delete_output(self, output_id: str, group: Optional[str] = None) -> None:
+    def delete_output(self, output_id: str, group: str | None = None) -> None:
         """
         Delete an output destination.
 
@@ -664,7 +664,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Pack methods
     # ------------------------------------------------------------------
 
-    def list_packs(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_packs(self, group: str | None = None) -> list[dict[str, Any]]:
         """
         List installed packs in a worker group.
 
@@ -680,7 +680,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/m/{self._group(group)}/packs")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_pack(self, pack_id: str, group: Optional[str] = None) -> Dict[str, Any]:
+    def get_pack(self, pack_id: str, group: str | None = None) -> dict[str, Any]:
         """
         Fetch a pack by id.
 
@@ -694,8 +694,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.get(f"/api/v1/m/{self._group(group)}/packs/{pack_id}")
 
     def install_pack(
-        self, pack_id: str, source: str, group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, pack_id: str, source: str, group: str | None = None
+    ) -> dict[str, Any]:
         """
         Install a pack from a source URL.
 
@@ -713,7 +713,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             json={"id": pack_id, "source": source},
         )
 
-    def uninstall_pack(self, pack_id: str, group: Optional[str] = None) -> None:
+    def uninstall_pack(self, pack_id: str, group: str | None = None) -> None:
         """
         Uninstall a pack.
 
@@ -727,8 +727,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         self.delete(f"/api/v1/m/{self._group(group)}/packs/{pack_id}")
 
     def upgrade_pack(
-        self, pack_id: str, source: str, group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, pack_id: str, source: str, group: str | None = None
+    ) -> dict[str, Any]:
         """
         Upgrade an installed pack from a new source.
 
@@ -749,7 +749,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Lookup methods
     # ------------------------------------------------------------------
 
-    def list_lookups(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_lookups(self, group: str | None = None) -> list[dict[str, Any]]:
         """
         List lookup tables in a worker group.
 
@@ -765,7 +765,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/m/{self._group(group)}/lookups")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_lookup(self, lookup_id: str, group: Optional[str] = None) -> Dict[str, Any]:
+    def get_lookup(self, lookup_id: str, group: str | None = None) -> dict[str, Any]:
         """
         Fetch a lookup table by id.
 
@@ -779,8 +779,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.get(f"/api/v1/m/{self._group(group)}/lookups/{lookup_id}")
 
     def create_lookup(
-        self, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Create a new lookup table.
 
@@ -794,8 +794,8 @@ class CriblClient(BaseClient, ConnectorMixin):
         return self.post(f"/api/v1/m/{self._group(group)}/lookups", json=config)
 
     def update_lookup(
-        self, lookup_id: str, config: Dict[str, Any], group: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, lookup_id: str, config: dict[str, Any], group: str | None = None
+    ) -> dict[str, Any]:
         """
         Update an existing lookup table.
 
@@ -812,7 +812,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             f"/api/v1/m/{self._group(group)}/lookups/{lookup_id}", json=config
         )
 
-    def delete_lookup(self, lookup_id: str, group: Optional[str] = None) -> None:
+    def delete_lookup(self, lookup_id: str, group: str | None = None) -> None:
         """
         Delete a lookup table.
 
@@ -832,10 +832,10 @@ class CriblClient(BaseClient, ConnectorMixin):
     def search(
         self,
         query: str,
-        earliest: Optional[str] = None,
-        latest: Optional[str] = None,
+        earliest: str | None = None,
+        latest: str | None = None,
         limit: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Submit a Cribl search job.
 
@@ -855,14 +855,14 @@ class CriblClient(BaseClient, ConnectorMixin):
         dict
             Search job descriptor (includes ``id`` and ``status``).
         """
-        payload: Dict[str, Any] = {"query": query, "limit": limit}
+        payload: dict[str, Any] = {"query": query, "limit": limit}
         if earliest is not None:
             payload["earliest"] = earliest
         if latest is not None:
             payload["latest"] = latest
         return self.post("/api/v1/searches", json=payload)
 
-    def get_search_job(self, job_id: str) -> Dict[str, Any]:
+    def get_search_job(self, job_id: str) -> dict[str, Any]:
         """
         Fetch the status and results of a search job.
 
@@ -873,7 +873,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/searches/{job_id}")
 
-    def list_search_jobs(self) -> List[Dict[str, Any]]:
+    def list_search_jobs(self) -> list[dict[str, Any]]:
         """
         List all search jobs.
 
@@ -901,7 +901,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Dataset methods
     # ------------------------------------------------------------------
 
-    def list_datasets(self) -> List[Dict[str, Any]]:
+    def list_datasets(self) -> list[dict[str, Any]]:
         """
         List all Cribl datasets.
 
@@ -912,7 +912,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v1/datasets")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_dataset(self, dataset_id: str) -> Dict[str, Any]:
+    def get_dataset(self, dataset_id: str) -> dict[str, Any]:
         """
         Fetch a dataset by id.
 
@@ -923,7 +923,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/datasets/{dataset_id}")
 
-    def create_dataset(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def create_dataset(self, config: dict[str, Any]) -> dict[str, Any]:
         """
         Create a new dataset.
 
@@ -949,7 +949,7 @@ class CriblClient(BaseClient, ConnectorMixin):
     # Notification methods
     # ------------------------------------------------------------------
 
-    def list_notifications(self) -> List[Dict[str, Any]]:
+    def list_notifications(self) -> list[dict[str, Any]]:
         """
         List notification objects.
 
@@ -960,7 +960,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v1/notifications/objects")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def get_notification(self, notification_id: str) -> Dict[str, Any]:
+    def get_notification(self, notification_id: str) -> dict[str, Any]:
         """
         Fetch a notification object by id.
 

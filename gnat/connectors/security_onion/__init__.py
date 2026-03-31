@@ -39,9 +39,9 @@ import configparser
 import json
 import time
 import urllib.parse
-import urllib3
 from dataclasses import dataclass, field
 
+import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 

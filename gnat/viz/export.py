@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace
@@ -63,7 +63,7 @@ class PowerBIExporter:
         exporter.to_model_json("model.json")
     """
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         self._ws = workspace
 
     def to_xlsx(self, path: str) -> None:
@@ -78,11 +78,11 @@ class PowerBIExporter:
 
         Requires ``openpyxl``.
         """
-        from gnat.viz.tabular import _COLUMNS, _get_field, _coerce
+        from gnat.viz.tabular import _COLUMNS, _coerce, _get_field
 
         try:
             import openpyxl
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Alignment, Font, PatternFill
             from openpyxl.utils import get_column_letter
         except ImportError:
             raise ImportError(
@@ -96,7 +96,7 @@ class PowerBIExporter:
         header_font = Font(bold=True, color="FFFFFF")
         alt_fill    = PatternFill("solid", fgColor="EEF4FF")
 
-        def _write_sheet(sheet_name: str, columns: List[str], rows: List[List[Any]]) -> None:
+        def _write_sheet(sheet_name: str, columns: list[str], rows: list[list[Any]]) -> None:
             ws = wb.create_sheet(sheet_name[:31])
             ws.append(columns)
             for cell in ws[1]:
@@ -117,7 +117,7 @@ class PowerBIExporter:
                 )
 
         # ── Object sheets ──────────────────────────────────────────────────
-        by_type: Dict[str, list] = {}
+        by_type: dict[str, list] = {}
         for obj in self._ws.objects.values():
             by_type.setdefault(obj.stix_type, []).append(obj)
 
@@ -187,7 +187,7 @@ class PowerBIExporter:
         wb.save(path)
         logger.info("PowerBIExporter: Excel written to %s", path)
 
-    def to_model_json(self, path: Optional[str] = None) -> dict:
+    def to_model_json(self, path: str | None = None) -> dict:
         """
         Generate a Power BI data model descriptor JSON.
 
@@ -201,7 +201,7 @@ class PowerBIExporter:
         """
         from gnat.viz.tabular import _COLUMNS
 
-        by_type: Dict[str, list] = {}
+        by_type: dict[str, list] = {}
         for obj in self._ws.objects.values():
             by_type.setdefault(obj.stix_type, []).append(obj)
 
@@ -267,7 +267,7 @@ class PowerBIExporter:
 def grafana_dashboard(
     workspace_name: str,
     datasource_name: str = "GNAT",
-    title: Optional[str] = None,
+    title: str | None = None,
 ) -> dict:
     """
     Generate a pre-built Grafana dashboard JSON for a GNAT workspace.
@@ -450,7 +450,7 @@ def save_grafana_dashboard(
     workspace_name: str,
     path: str,
     datasource_name: str = "GNAT",
-    title: Optional[str] = None,
+    title: str | None = None,
 ) -> None:
     """
     Write a pre-built Grafana dashboard JSON file to disk.

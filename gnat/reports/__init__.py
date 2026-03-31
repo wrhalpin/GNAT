@@ -57,17 +57,24 @@ Scheduled reports::
         scheduler.add(job)
 """
 
-from gnat.reports.base import (
-    AIMode, ReportConfig, ReportSection, ReportDocument,
-    ReportResult, SectorFilter,
-)
 from gnat.reports.aggregator import DataAggregator, ReportAggregates
-from gnat.reports.synthesizer import ReportSynthesizer
-from gnat.reports.renderers import (
-    MarkdownRenderer, HTMLRenderer, PDFRenderer, DOCXRenderer,
+from gnat.reports.base import (
+    AIMode,
+    ReportConfig,
+    ReportDocument,
+    ReportResult,
+    ReportSection,
+    SectorFilter,
 )
 from gnat.reports.delivery import EmailDelivery, SharePointDelivery
 from gnat.reports.generator import ReportGenerator, ReportJob
+from gnat.reports.renderers import (
+    DOCXRenderer,
+    HTMLRenderer,
+    MarkdownRenderer,
+    PDFRenderer,
+)
+from gnat.reports.synthesizer import ReportSynthesizer
 
 __all__ = [
     # Configuration

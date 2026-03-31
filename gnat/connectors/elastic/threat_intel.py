@@ -58,8 +58,8 @@ indicator.valid_until     -> threat.indicator.last_seen
 - https://www.elastic.co/guide/en/security/current/es-threat-intel-integrations.html
   """
 
+from collections.abc import Iterator
 from datetime import datetime, timezone
-from typing import Iterator
 
 from .client import ElasticClient
 

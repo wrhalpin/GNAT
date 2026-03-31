@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -67,7 +67,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         SentinelOne API token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "threats",
         "report":    "threats",  # enriched threat details
     }
@@ -91,7 +91,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         self.get("/web/api/v2.1/threats/", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type in ("indicator", "report"):
             return self.get(f"/web/api/v2.1/threats/{object_id}")
         raise GNATClientError(f"Unsupported STIX type for SentinelOne: {stix_type}")
@@ -99,12 +99,12 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size}
+        params: dict[str, Any] = {"limit": page_size}
         # Add common filters (e.g., created_after, threat_level)
         for k, v in filters.items():
             params[k] = v
@@ -114,7 +114,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
             return resp.get("data", []) if isinstance(resp, dict) else []
         raise GNATClientError(f"list_objects not supported for STIX type: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("SentinelOne connector is primarily read-only (limited write via blacklist).")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -122,7 +122,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def get_hash_reputation(self, sha1: str) -> Dict[str, Any]:
+    def get_hash_reputation(self, sha1: str) -> dict[str, Any]:
         """Get Mandiant-powered hash reputation."""
         params = {"hash": sha1}
         return self.get("/web/api/v2.1/hash-reputation", params=params)
@@ -130,33 +130,33 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
     def list_agents(
         self,
         limit: int = 50,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """List endpoints/agents for asset context."""
-        params: Dict[str, Any] = {"limit": limit, **(filters or {})}
+        params: dict[str, Any] = {"limit": limit, **(filters or {})}
         resp = self.get("/web/api/v2.1/agents/", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def add_to_blocklist(self, sha1: str, comment: str = "") -> Dict[str, Any]:
+    def add_to_blocklist(self, sha1: str, comment: str = "") -> dict[str, Any]:
         """Add hash to blocklist (write capability)."""
         payload = {"hashes": [sha1], "comment": comment}
         return self.post("/web/api/v2.1/blacklist", json=payload)
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert threat or agent data to STIX."""
         if "threatInfo" in native or "mitigationStatus" in native:
             return self._threat_to_stix(native)
         return self._agent_to_stix(native)  # fallback for asset context
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "SentinelOne is primarily read-only for threat intel. Use get_hash_reputation or add_to_blocklist for actions.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _threat_to_stix(self, threat: Dict[str, Any]) -> Dict[str, Any]:
+    def _threat_to_stix(self, threat: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         tid = threat.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f's1:{tid}')}"
@@ -181,7 +181,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _agent_to_stix(self, agent: Dict[str, Any]) -> Dict[str, Any]:
+    def _agent_to_stix(self, agent: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         aid = agent.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'agent:{aid}')}"

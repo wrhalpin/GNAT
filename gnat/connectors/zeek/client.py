@@ -27,11 +27,13 @@ Notes
 
 from __future__ import annotations
 
+import contextlib
 import json
 import uuid as _uuid
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -61,7 +63,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         ``"tsv"`` (default Zeek) or ``"json"`` (json-logs package).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "notices",
     }
 
@@ -92,7 +94,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
             )
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         raise GNATClientError(
             "Zeek is file-based — individual record lookup by id is not supported."
         )
@@ -100,10 +102,10 @@ class ZeekClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Read records from Zeek log files.
 
@@ -133,7 +135,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
             records.append(rec)
         return records
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Zeek is read-only — no write API available.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -141,7 +143,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific operations ────────────────────────────────────────
 
-    def parse_notices(self, path: Optional[str] = None) -> List[Dict[str, Any]]:
+    def parse_notices(self, path: str | None = None) -> list[dict[str, Any]]:
         """
         Parse all records from ``notice.log``.
 
@@ -152,7 +154,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         """
         return list(self._iter_records("notice", path=path))
 
-    def parse_connections(self, path: Optional[str] = None) -> List[Dict[str, Any]]:
+    def parse_connections(self, path: str | None = None) -> list[dict[str, Any]]:
         """
         Parse all records from ``conn.log``.
 
@@ -164,8 +166,8 @@ class ZeekClient(BaseClient, ConnectorMixin):
         return list(self._iter_records("conn", path=path))
 
     def iter_stix_notices(
-        self, path: Optional[str] = None
-    ) -> Iterator[Dict[str, Any]]:
+        self, path: str | None = None
+    ) -> Iterator[dict[str, Any]]:
         """
         Yield STIX observed-data objects from ``notice.log``.
 
@@ -178,8 +180,8 @@ class ZeekClient(BaseClient, ConnectorMixin):
             yield self.to_stix(notice)
 
     def iter_stix_connections(
-        self, path: Optional[str] = None
-    ) -> Iterator[Dict[str, Any]]:
+        self, path: str | None = None
+    ) -> Iterator[dict[str, Any]]:
         """
         Yield STIX observed-data objects from ``conn.log``.
 
@@ -191,7 +193,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         for conn in self._iter_records("conn", path=path):
             yield self._conn_to_stix(conn)
 
-    def list_available_logs(self) -> List[str]:
+    def list_available_logs(self) -> list[str]:
         """Return names of Zeek log files present in ``log_dir``."""
         ext = "log" if self.log_format == "tsv" else "json"
         try:
@@ -206,7 +208,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a normalised Zeek notice record to a STIX 2.1 observed-data SDO.
 
@@ -224,8 +226,8 @@ class ZeekClient(BaseClient, ConnectorMixin):
         now    = _now_ts()
         ts     = notice.get("timestamp") or now
 
-        objects: List[Dict[str, Any]] = []
-        refs: List[str] = []
+        objects: list[dict[str, Any]] = []
+        refs: list[str] = []
         seen: set = set()
 
         for ip in (notice.get("src_ip"), notice.get("dst_ip")):
@@ -250,7 +252,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
             if nid not in seen:
                 seen.add(nid)
-                nt: Dict[str, Any] = {
+                nt: dict[str, Any] = {
                     "type": "network-traffic",
                     "id":   nid,
                     "spec_version": "2.1",
@@ -259,20 +261,16 @@ class ZeekClient(BaseClient, ConnectorMixin):
                     "protocols": [str(notice.get("proto", "tcp")).lower()],
                 }
                 if src_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["src_port"] = int(src_p)
-                    except (TypeError, ValueError):
-                        pass
                 if dst_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["dst_port"] = int(dst_p)
-                    except (TypeError, ValueError):
-                        pass
                 objects.append(nt)
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        obs: Dict[str, Any] = {
+        obs: dict[str, Any] = {
             "type":           "observed-data",
             "id":             obs_id,
             "spec_version":   "2.1",
@@ -294,7 +292,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         objects.append(obs)
         return obs
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Zeek is read-only — from_stix returns an informational dict."""
         return {
             "note":     "Zeek is file-based and read-only.",
@@ -309,8 +307,8 @@ class ZeekClient(BaseClient, ConnectorMixin):
         return Path(self.log_dir) / f"{log_name}.{ext}"
 
     def _iter_records(
-        self, log_name: str, path: Optional[str] = None
-    ) -> Iterator[Dict[str, Any]]:
+        self, log_name: str, path: str | None = None
+    ) -> Iterator[dict[str, Any]]:
         """Yield raw record dicts from a Zeek log file."""
         log_path = Path(path) if path else self._log_path(log_name)
         if not log_path.exists():
@@ -321,7 +319,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
             yield from self._iter_tsv(log_path)
 
     @staticmethod
-    def _iter_json(path: Path) -> Iterator[Dict[str, Any]]:
+    def _iter_json(path: Path) -> Iterator[dict[str, Any]]:
         """Yield records from a Zeek JSON log."""
         with path.open("r", encoding="utf-8", errors="replace") as fh:
             for line in fh:
@@ -334,9 +332,9 @@ class ZeekClient(BaseClient, ConnectorMixin):
                     continue
 
     @staticmethod
-    def _iter_tsv(path: Path) -> Iterator[Dict[str, Any]]:
+    def _iter_tsv(path: Path) -> Iterator[dict[str, Any]]:
         """Yield records from a Zeek TSV log, using the #fields header."""
-        fields: List[str] = []
+        fields: list[str] = []
         with path.open("r", encoding="utf-8", errors="replace") as fh:
             for line in fh:
                 line = line.rstrip("\n")
@@ -350,13 +348,13 @@ class ZeekClient(BaseClient, ConnectorMixin):
                 parts = line.split("\t")
                 if len(parts) != len(fields):
                     continue
-                record: Dict[str, Any] = {}
+                record: dict[str, Any] = {}
                 for k, v in zip(fields, parts):
                     record[k] = None if v == "-" else v
                 yield record
 
     @staticmethod
-    def _normalise_notice(record: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalise_notice(record: dict[str, Any]) -> dict[str, Any]:
         """Normalise a Zeek notice.log record."""
         return {
             "timestamp": record.get("ts"),
@@ -373,7 +371,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
             "dropped":   record.get("dropped") == "T",
         }
 
-    def _conn_to_stix(self, conn: Dict[str, Any]) -> Dict[str, Any]:
+    def _conn_to_stix(self, conn: dict[str, Any]) -> dict[str, Any]:
         """Translate a Zeek conn.log record to a STIX observed-data SDO."""
         now = _now_ts()
         ts  = conn.get("ts") or now
@@ -382,8 +380,8 @@ class ZeekClient(BaseClient, ConnectorMixin):
         sp  = conn.get("id.orig_p")
         dp  = conn.get("id.resp_p")
 
-        objects: List[Dict[str, Any]] = []
-        refs: List[str] = []
+        objects: list[dict[str, Any]] = []
+        refs: list[str] = []
         seen: set = set()
 
         for ip in (src, dst):
@@ -404,7 +402,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
             if nid not in seen:
                 seen.add(nid)
-                nt: Dict[str, Any] = {
+                nt: dict[str, Any] = {
                     "type": "network-traffic",
                     "id":   nid,
                     "spec_version": "2.1",
@@ -413,30 +411,22 @@ class ZeekClient(BaseClient, ConnectorMixin):
                     "protocols": [str(conn.get("proto", "tcp")).lower()],
                 }
                 if sp:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["src_port"] = int(sp)
-                    except (TypeError, ValueError):
-                        pass
                 if dp:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["dst_port"] = int(dp)
-                    except (TypeError, ValueError):
-                        pass
                 if conn.get("orig_bytes"):
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["src_byte_count"] = int(conn["orig_bytes"])
-                    except (TypeError, ValueError):
-                        pass
                 if conn.get("resp_bytes"):
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["dst_byte_count"] = int(conn["resp_bytes"])
-                    except (TypeError, ValueError):
-                        pass
                 objects.append(nt)
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        obs: Dict[str, Any] = {
+        obs: dict[str, Any] = {
             "type":           "observed-data",
             "id":             obs_id,
             "spec_version":   "2.1",

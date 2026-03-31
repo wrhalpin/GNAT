@@ -35,7 +35,6 @@ from dataclasses import dataclass, field
 
 from .exceptions import QRadarConfigError
 
-
 _REQUIRED = {"host", "token"}
 
 _DEFAULTS: dict = {

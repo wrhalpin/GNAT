@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional
 
 
 @dataclass
@@ -41,11 +40,11 @@ class QuerySpec:
         The original query string, preserved for logging / debugging.
     """
 
-    entities:   List[str]       = field(default_factory=list)
-    ioc_types:  List[str]       = field(default_factory=list)
-    since:      Optional[datetime] = None
-    until:      Optional[datetime] = None
-    platforms:  List[str]       = field(default_factory=list)
+    entities:   list[str]       = field(default_factory=list)
+    ioc_types:  list[str]       = field(default_factory=list)
+    since:      datetime | None = None
+    until:      datetime | None = None
+    platforms:  list[str]       = field(default_factory=list)
     limit:      int             = 100
     raw_query:  str             = ""
 

@@ -42,14 +42,13 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # TTL defaults (hours)
 # ---------------------------------------------------------------------------
 
-DEFAULT_TTLS: Dict[str, int] = {
+DEFAULT_TTLS: dict[str, int] = {
     "indicator":    24,
     "vulnerability": 72,
     "campaign":     14 * 24,   # 14 days
@@ -58,7 +57,7 @@ DEFAULT_TTLS: Dict[str, int] = {
 }
 
 # Keywords in topic strings that map to each category
-_TOPIC_KEYWORDS: Dict[str, List[str]] = {
+_TOPIC_KEYWORDS: dict[str, list[str]] = {
     "indicator":     ["ioc", "ip", "domain", "hash", "url", "indicator", "blocklist"],
     "vulnerability": ["cve", "vuln", "exploit", "patch", "advisory", "rce", "lpe"],
     "threat_actor":  [
@@ -177,17 +176,17 @@ class ResearchEntry:
     """
 
     topic:            str
-    stix_objects:     List[Dict[str, Any]]
+    stix_objects:     list[dict[str, Any]]
     researcher:       str
     promoted_at:      datetime
     note:             str                  = ""
     source_workspace: str                  = ""
     category:         str                  = ""
-    expires_at:       Optional[datetime]   = None
+    expires_at:       datetime | None   = None
     curator_status:   str                  = "pending"
-    curated_at:       Optional[datetime]   = None
+    curated_at:       datetime | None   = None
     entry_id:         str                  = ""
-    metadata:         Dict[str, Any]       = field(default_factory=dict)
+    metadata:         dict[str, Any]       = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.category:
@@ -219,7 +218,7 @@ class ResearchEntry:
         return delta.total_seconds() / 3600
 
     @property
-    def hours_until_expiry(self) -> Optional[float]:
+    def hours_until_expiry(self) -> float | None:
         """Hours remaining until expiry, or ``None`` if no TTL set."""
         if self.expires_at is None:
             return None
@@ -249,7 +248,7 @@ class ResearchEntry:
 
     # ── Serialisation ──────────────────────────────────────────────────────
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict for storage."""
         return {
             "entry_id":        self.entry_id,
@@ -269,9 +268,9 @@ class ResearchEntry:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ResearchEntry":
+    def from_dict(cls, data: dict[str, Any]) -> ResearchEntry:
         """Reconstruct a ``ResearchEntry`` from a stored dict."""
-        def _parse_dt(s: Optional[str]) -> Optional[datetime]:
+        def _parse_dt(s: str | None) -> datetime | None:
             if not s:
                 return None
             return datetime.fromisoformat(s)
@@ -292,7 +291,7 @@ class ResearchEntry:
         )
         return entry
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Lightweight summary dict for listing without full STIX payloads."""
         return {
             "entry_id":          self.entry_id,

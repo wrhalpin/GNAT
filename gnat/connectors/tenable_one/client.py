@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -68,7 +68,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         Tenable secret key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilities",
         "report":        "exposure-view",  # cards + attack paths
     }
@@ -93,7 +93,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         self.get("/users", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch single object (e.g., vulnerability or exposure card)."""
         if stix_type == "vulnerability":
             return self.get(f"/vulnerabilities/{object_id}")
@@ -104,17 +104,17 @@ class TenableOneClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
         if stix_type == "vulnerability":
             return self.fetch_vulnerabilities(limit=page_size, **filters)
         # Default: exposure cards + attack paths as reports
         return self.fetch_exposure_cards(limit=page_size, **filters)
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Tenable One connector is read-focused.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -125,11 +125,11 @@ class TenableOneClient(BaseClient, ConnectorMixin):
     def fetch_vulnerabilities(
         self,
         limit: int = 50,
-        severity: Optional[str] = None,
-        plugin_id: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        severity: str | None = None,
+        plugin_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch vulnerabilities/findings."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if severity:
             params["severity"] = severity.lower()
         if plugin_id:
@@ -140,10 +140,10 @@ class TenableOneClient(BaseClient, ConnectorMixin):
     def fetch_exposure_cards(
         self,
         limit: int = 50,
-        card_type: Optional[str] = None,  # e.g., "cyber-exposure-score"
-    ) -> List[Dict[str, Any]]:
+        card_type: str | None = None,  # e.g., "cyber-exposure-score"
+    ) -> list[dict[str, Any]]:
         """Fetch Exposure View cards (Cyber Exposure Scores, risk metrics)."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if card_type:
             params["type"] = card_type
         resp = self.get("/api/v1/t1/exposure-view/cards", params=params)
@@ -153,7 +153,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         self,
         limit: int = 20,
         exclude_resolved: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch top Attack Paths (graph analytics + MITRE ATT&CK)."""
         payload = {
             "limit": limit,
@@ -165,8 +165,8 @@ class TenableOneClient(BaseClient, ConnectorMixin):
     def fetch_assets(
         self,
         limit: int = 50,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch asset inventory (supports advanced filtering)."""
         params = {"limit": limit, **(filters or {})}
         resp = self.get("/assets", params=params)
@@ -174,7 +174,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch based on structure (vulnerability, exposure card, attack path)."""
         if "plugin_id" in native or "severity" in native and "risk" in native:
             return self._vuln_to_stix(native)
@@ -182,7 +182,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
             return self._attack_path_to_stix(native)
         return self._exposure_card_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "Tenable One is primarily read-only. Use fetch_* helpers.",
             "stix_id": stix_dict.get("id", ""),
@@ -190,7 +190,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
 
     # ── Private STIX mappers ───────────────────────────────────────────────
 
-    def _vuln_to_stix(self, vuln: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         vid = vuln.get("id") or vuln.get("plugin_id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'tenable:{vid}')}"
@@ -211,7 +211,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _exposure_card_to_stix(self, card: Dict[str, Any]) -> Dict[str, Any]:
+    def _exposure_card_to_stix(self, card: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         cid = card.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'card:{cid}')}"
@@ -231,7 +231,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _attack_path_to_stix(self, path: Dict[str, Any]) -> Dict[str, Any]:
+    def _attack_path_to_stix(self, path: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         pid = path.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'attackpath:{pid}')}"

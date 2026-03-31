@@ -1,16 +1,24 @@
 """tests for OSSIM connector"""
-import configparser, json, unittest
+import configparser
+import json
+import unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.ossim import (
-    OSSIMConfig, OSSIMConfigError, OSSIMAuthError, OSSIMNotFoundError,
-    OSSIMClient, OSSIMAlarmCommands, OSSIMAssetCommands,
-    OSSIMSTIXMapper, load_ossim_config,
+    OSSIMAlarmCommands,
+    OSSIMAssetCommands,
+    OSSIMAuthError,
+    OSSIMClient,
+    OSSIMConfig,
+    OSSIMConfigError,
+    OSSIMNotFoundError,
+    OSSIMSTIXMapper,
+    load_ossim_config,
 )
 
 
 def _cfg(**kw):
-    d = dict(url="https://ossim.test", api_key="test-key")
+    d = {"url": "https://ossim.test", "api_key": "test-key"}
     d.update(kw)
     return OSSIMConfig(**d)
 
@@ -91,9 +99,8 @@ class TestOSSIMClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("gnat.connectors.ossim.urllib3.PoolManager"):
-            with OSSIMClient(cfg) as client:
-                self.assertIsInstance(client, OSSIMClient)
+        with patch("gnat.connectors.ossim.urllib3.PoolManager"), OSSIMClient(cfg) as client:
+            self.assertIsInstance(client, OSSIMClient)
 
 
 class TestOSSIMAlarmCommands(unittest.TestCase):

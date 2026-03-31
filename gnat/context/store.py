@@ -58,7 +58,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +68,16 @@ logger = logging.getLogger(__name__)
 
 try:
     from sqlalchemy import (
-        Boolean, Column, DateTime, ForeignKey,
-        Integer, String, Text, UniqueConstraint, create_engine, event,
+        Boolean,
+        Column,
+        DateTime,
+        ForeignKey,
+        Integer,
+        String,
+        Text,
+        UniqueConstraint,
+        create_engine,
+        event,
     )
     from sqlalchemy.orm import DeclarativeBase, Session, relationship, sessionmaker
     _HAS_SQLALCHEMY = True
@@ -294,14 +302,14 @@ class WorkspaceStore:
         """Drop all tables. Destructive — for tests only."""
         _Base.metadata.drop_all(self._engine)
 
-    def session(self) -> "Session":
+    def session(self) -> Session:
         """Return a new SQLAlchemy session. Caller must close/commit."""
         return self._Session()
 
     # ── Workspace CRUD ─────────────────────────────────────────────────────
 
     def create_workspace(self, name: str, description: str = "",
-                         metadata: Optional[dict] = None) -> "WorkspaceModel":
+                         metadata: dict | None = None) -> WorkspaceModel:
         """Create and persist a new named workspace."""
         with self.session() as sess:
             ws = WorkspaceModel(
@@ -314,19 +322,19 @@ class WorkspaceStore:
             logger.info("WorkspaceStore: created workspace %r", name)
             return ws
 
-    def get_workspace(self, name: str) -> Optional["WorkspaceModel"]:
+    def get_workspace(self, name: str) -> WorkspaceModel | None:
         """Return the workspace with *name*, or ``None``."""
         with self.session() as sess:
             return sess.query(WorkspaceModel).filter_by(name=name).first()
 
-    def get_or_create_workspace(self, name: str, **kwargs: Any) -> "WorkspaceModel":
+    def get_or_create_workspace(self, name: str, **kwargs: Any) -> WorkspaceModel:
         """Return an existing workspace or create it."""
         existing = self.get_workspace(name)
         if existing:
             return existing
         return self.create_workspace(name, **kwargs)
 
-    def list_workspaces(self) -> List["WorkspaceModel"]:
+    def list_workspaces(self) -> list[WorkspaceModel]:
         """Return all workspaces ordered by name."""
         with self.session() as sess:
             return sess.query(WorkspaceModel).order_by(WorkspaceModel.name).all()
@@ -345,7 +353,7 @@ class WorkspaceStore:
     # ── Object CRUD ────────────────────────────────────────────────────────
 
     def upsert_object(self, workspace_id: int, stix_dict: dict,
-                      source_platform: str = "", is_dirty: bool = False) -> "WorkspaceObjectModel":
+                      source_platform: str = "", is_dirty: bool = False) -> WorkspaceObjectModel:
         """
         Insert or update a STIX object in a workspace.
 
@@ -383,8 +391,8 @@ class WorkspaceStore:
             return obj
 
     def get_objects(self, workspace_id: int,
-                    stix_type: Optional[str] = None,
-                    include_deleted: bool = False) -> List[dict]:
+                    stix_type: str | None = None,
+                    include_deleted: bool = False) -> list[dict]:
         """Return STIX dicts for all objects in a workspace."""
         with self.session() as sess:
             q = sess.query(WorkspaceObjectModel).filter_by(workspace_id=workspace_id)
@@ -394,7 +402,7 @@ class WorkspaceStore:
                 q = q.filter_by(stix_type=stix_type)
             return [row.to_stix_dict() for row in q.all()]
 
-    def get_dirty_objects(self, workspace_id: int) -> List[dict]:
+    def get_dirty_objects(self, workspace_id: int) -> list[dict]:
         """Return STIX dicts for objects modified since last commit."""
         with self.session() as sess:
             rows = (
@@ -430,7 +438,7 @@ class WorkspaceStore:
 
     def log_enrichment(self, workspace_id: int, stix_id: str,
                        source_platform: str, enrichment_data: dict,
-                       strategy: str = "merge_extensions") -> "EnrichmentLogModel":
+                       strategy: str = "merge_extensions") -> EnrichmentLogModel:
         """Append an enrichment record to the log."""
         with self.session() as sess:
             entry = EnrichmentLogModel(
@@ -445,7 +453,7 @@ class WorkspaceStore:
             return entry
 
     def get_enrichment_history(self, workspace_id: int,
-                               stix_id: Optional[str] = None) -> List[dict]:
+                               stix_id: str | None = None) -> list[dict]:
         """Return the enrichment log for a workspace, optionally filtered by object."""
         with self.session() as sess:
             q = sess.query(EnrichmentLogModel).filter_by(workspace_id=workspace_id)
@@ -503,7 +511,7 @@ class FlatFileStore:
     >>> store.save_object("apt28", indicator.to_dict(), source="threatq")
     """
 
-    def __init__(self, base_dir: Optional[str] = None):
+    def __init__(self, base_dir: str | None = None):
         self._base = Path(base_dir or "~/.gnat/workspaces").expanduser()
         self._base.mkdir(parents=True, exist_ok=True)
 
@@ -524,7 +532,7 @@ class FlatFileStore:
     # ── Workspace lifecycle ────────────────────────────────────────────────
 
     def create_workspace(self, name: str, description: str = "",
-                         metadata: Optional[dict] = None) -> dict:
+                         metadata: dict | None = None) -> dict:
         """Create a workspace directory and write metadata."""
         ws_dir = self._ws_dir(name)
         ws_dir.mkdir(parents=True, exist_ok=True)
@@ -540,7 +548,7 @@ class FlatFileStore:
         logger.info("FlatFileStore: created workspace %r at %s", name, ws_dir)
         return meta
 
-    def get_workspace(self, name: str) -> Optional[dict]:
+    def get_workspace(self, name: str) -> dict | None:
         """Return workspace metadata or ``None`` if not found."""
         p = self._meta_path(name)
         if not p.exists():
@@ -550,7 +558,7 @@ class FlatFileStore:
     def get_or_create_workspace(self, name: str, **kwargs: Any) -> dict:
         return self.get_workspace(name) or self.create_workspace(name, **kwargs)
 
-    def list_workspaces(self) -> List[dict]:
+    def list_workspaces(self) -> list[dict]:
         """List all workspace metadata dicts."""
         result = []
         for ws_dir in sorted(self._base.iterdir()):
@@ -586,7 +594,7 @@ class FlatFileStore:
         path.write_text(json.dumps(envelope, indent=2))
 
     def get_objects(self, workspace_name: str,
-                    stix_type: Optional[str] = None) -> List[dict]:
+                    stix_type: str | None = None) -> list[dict]:
         """Load all STIX objects from a workspace directory."""
         objs_dir = self._objects_dir(workspace_name)
         result = []
@@ -601,7 +609,7 @@ class FlatFileStore:
                 logger.warning("FlatFileStore: bad JSON in %s", f)
         return result
 
-    def get_dirty_objects(self, workspace_name: str) -> List[dict]:
+    def get_dirty_objects(self, workspace_name: str) -> list[dict]:
         objs_dir = self._objects_dir(workspace_name)
         result = []
         for f in sorted(objs_dir.glob("*.json")):
@@ -641,7 +649,7 @@ class FlatFileStore:
             fh.write(json.dumps(entry) + "\n")
 
     def get_enrichment_history(self, workspace_name: str,
-                               stix_id: Optional[str] = None) -> List[dict]:
+                               stix_id: str | None = None) -> list[dict]:
         log_path = self._log_path(workspace_name)
         if not log_path.exists():
             return []

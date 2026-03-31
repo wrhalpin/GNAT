@@ -54,7 +54,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -82,7 +82,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         OAuth2 client secret (LogRhythm Axon / cloud deployments only).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":      "alarms",
         "malware":        "cases",
         "observed-data":  "events",
@@ -126,7 +126,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         self.get("/lr-alarm-api/alarms", params={"count": 1, "offset": 0})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single alarm or case by ID."""
         if stix_type == "indicator":
             resp = self.get(f"/lr-alarm-api/alarms/{object_id}")
@@ -149,16 +149,16 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List LogRhythm alarms, cases, or log events."""
         f = filters or {}
         offset = (page - 1) * page_size
 
         if stix_type == "indicator":
-            params: Dict[str, Any] = {"count": page_size, "offset": offset}
+            params: dict[str, Any] = {"count": page_size, "offset": offset}
             if "status" in f:
                 params["alarmStatus"] = f["status"]
             if "priority" in f:
@@ -169,7 +169,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
             return resp.get("alarmsSearchDetails", resp.get("data", []))
 
         if stix_type == "malware":
-            params_c: Dict[str, Any] = {"count": page_size, "offset": offset}
+            params_c: dict[str, Any] = {"count": page_size, "offset": offset}
             if "status" in f:
                 params_c["status"] = f["status"]
             resp = self.get("/lr-case-api/cases", params=params_c)
@@ -189,7 +189,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"Unsupported STIX type for LogRhythm: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update a LogRhythm case."""
         if stix_type == "malware":
             case_id = payload.get("id", "")
@@ -230,17 +230,17 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
-    def get_alarm_events(self, alarm_id: str) -> List[Dict[str, Any]]:
+    def get_alarm_events(self, alarm_id: str) -> list[dict[str, Any]]:
         """Retrieve the raw log events associated with a LogRhythm alarm."""
         resp = self.get(f"/lr-alarm-api/alarms/{alarm_id}/events")
         return resp.get("logList", []) if isinstance(resp, dict) else []
 
-    def get_case_evidence(self, case_id: str) -> List[Dict[str, Any]]:
+    def get_case_evidence(self, case_id: str) -> list[dict[str, Any]]:
         """List evidence items attached to a case."""
         resp = self.get(f"/lr-case-api/cases/{case_id}/evidence")
         return resp if isinstance(resp, list) else []
 
-    def add_case_note(self, case_id: str, note: str) -> Dict[str, Any]:
+    def add_case_note(self, case_id: str, note: str) -> dict[str, Any]:
         """Append a text note to a LogRhythm case."""
         resp = self.post(
             f"/lr-case-api/cases/{case_id}/evidence/note",
@@ -250,7 +250,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
 
     def create_case_from_alarm(
         self, alarm_id: str, name: str, priority: int = 3
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new investigation case from an existing alarm."""
         resp = self.post("/lr-case-api/cases", json={
             "name": name,
@@ -264,7 +264,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         self,
         query: str = "*",
         max_results: int = 500,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Submit an asynchronous log search and return the search handle."""
         resp = self.get("/lr-search-api/actions/search", params={
             "logCacheSize": max_results,
@@ -272,15 +272,15 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         })
         return resp if isinstance(resp, dict) else {}
 
-    def get_lists(self, list_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_lists(self, list_type: str | None = None) -> list[dict[str, Any]]:
         """Retrieve LogRhythm list objects (threat lists, networks, etc.)."""
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if list_type:
             params["listType"] = list_type
         resp = self.get("/lr-admin-api/lists", params=params)
         return resp if isinstance(resp, list) else []
 
-    def update_list(self, list_id: int, items: List[str]) -> Dict[str, Any]:
+    def update_list(self, list_id: int, items: list[str]) -> dict[str, Any]:
         """Append items to a LogRhythm list (e.g., blocklist IPs)."""
         resp = self.post(f"/lr-admin-api/lists/{list_id}/items", json={
             "items": [{"value": v, "isExpired": False} for v in items]
@@ -289,7 +289,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a LogRhythm alarm, case, or event to STIX."""
         if "alarmId" in native or "alarmRuleID" in native:
             return self._alarm_to_stix(native)
@@ -297,7 +297,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
             return self._case_to_stix(native)
         return self._event_to_stix(native)
 
-    def _alarm_to_stix(self, alarm: Dict[str, Any]) -> Dict[str, Any]:
+    def _alarm_to_stix(self, alarm: dict[str, Any]) -> dict[str, Any]:
         alarm_id = str(alarm.get("alarmId", alarm.get("id", "")))
         uid = str(_uuid.uuid5(_STIX_NS, f"logrhythm-alarm-{alarm_id}"))
         priority_map = {1: 90, 2: 75, 3: 50, 4: 25, 5: 10}
@@ -322,7 +322,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
             pattern = f"[file:name = 'lr-alarm-{alarm_id[:32]}']"
 
         sectors = alarm.get("x_target_sectors", [])
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{uid}",
             "name": alarm.get("alarmRuleName", f"LogRhythm Alarm {alarm_id}"),
@@ -349,7 +349,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = sectors
         return stix
 
-    def _case_to_stix(self, case: Dict[str, Any]) -> Dict[str, Any]:
+    def _case_to_stix(self, case: dict[str, Any]) -> dict[str, Any]:
         case_id = str(case.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"logrhythm-case-{case_id}"))
         ts = case.get("dateCreated", _now_ts())
@@ -376,7 +376,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _event_to_stix(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    def _event_to_stix(self, event: dict[str, Any]) -> dict[str, Any]:
         msg_id = str(event.get("logSourceMsgId", event.get("id", "")))
         uid = str(_uuid.uuid5(_STIX_NS, f"logrhythm-event-{msg_id}"))
         ts = event.get("logDate", _now_ts())
@@ -402,7 +402,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract LogRhythm-compatible fields from a STIX dict."""
         stix_type = stix_dict.get("type", "")
         if stix_type == "malware":

@@ -30,10 +30,10 @@ and returns the appropriate concrete implementation::
     idx = build_search_index(cfg)   # SolrSearchIndex or NullSearchIndex
 """
 
-from gnat.search.mixin import STIXSearchMixin
-from gnat.search.index import SearchIndex, SolrSearchIndex, NullSearchIndex
-
 from typing import TYPE_CHECKING
+
+from gnat.search.index import NullSearchIndex, SearchIndex, SolrSearchIndex
+from gnat.search.mixin import STIXSearchMixin
 
 if TYPE_CHECKING:
     from gnat.config import GNATConfig

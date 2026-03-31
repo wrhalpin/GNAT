@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -49,7 +49,7 @@ def _now_ts() -> str:
 
 def _stable_report_id(text: str, model: str) -> str:
     """Create a deterministic STIX-ish report id suffix from content."""
-    material = f"{model}:{text}".encode("utf-8")
+    material = f"{model}:{text}".encode()
     digest = hashlib.sha256(material).hexdigest()[:24]
     return f"report--chatgpt-{digest}"
 
@@ -66,7 +66,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
         OpenAI API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "report": "chat",
     }
 
@@ -89,7 +89,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
         self.get("/v1/models")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Not supported because chat completions are not treated as persistent objects.
         """
@@ -103,10 +103,10 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Return model inventory as lightweight discovery objects.
 
@@ -121,7 +121,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
             f"list_objects not meaningfully supported for STIX type: {stix_type}"
         )
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """ChatGPT is inference-only — no object creation/updates."""
         raise GNATClientError(
             "ChatGPT connector is read-only inference. Use chat_completion() helper instead."
@@ -135,12 +135,12 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
 
     def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "gpt-4.1",
         temperature: float = 0.2,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform a chat completion against the OpenAI API.
 
@@ -175,9 +175,9 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
         model: str = "gpt-4.1",
         system_prompt: str = "You are a threat intelligence analyst.",
         temperature: float = 0.2,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Convenience helper: send a prompt and return a STIX report directly.
         """
@@ -195,7 +195,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a chat completion response (or model list) to STIX 2.1 report.
         """
@@ -240,7 +240,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         ChatGPT is inference-only. Return a suggested prompt structure.
         """

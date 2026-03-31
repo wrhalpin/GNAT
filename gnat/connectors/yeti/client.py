@@ -20,7 +20,7 @@ https://yeti-platform.io/
 https://yeti-platform.github.io/docs/api/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
@@ -45,7 +45,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         Yeti API key (generated under Account → API Keys).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":    "observables",
         "threat-actor": "entities",
         "malware":      "entities",
@@ -78,7 +78,7 @@ class YetiClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve a Yeti observable or entity by ID."""
         resource = self.stix_type_map.get(stix_type, "observables")
         resp = self.get(f"{_API}/{resource}/{object_id}")
@@ -87,10 +87,10 @@ class YetiClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search Yeti observables or entities via ``POST /{resource}/search``.
 
@@ -102,7 +102,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         * ``query``: free-text search string for entities
         """
         resource = self.stix_type_map.get(stix_type, "observables")
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "count": min(page_size, 200),
             "page":  page - 1,
         }
@@ -115,8 +115,8 @@ class YetiClient(BaseClient, ConnectorMixin):
         return resp.get("observables", resp.get("entities", resp.get("results", [])))
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Create or update a Yeti observable or entity.
 
@@ -140,7 +140,7 @@ class YetiClient(BaseClient, ConnectorMixin):
     # Extra helpers
     # ------------------------------------------------------------------
 
-    def add_tag(self, object_id: str, stix_type: str, tag: str) -> Dict[str, Any]:
+    def add_tag(self, object_id: str, stix_type: str, tag: str) -> dict[str, Any]:
         """
         Tag a Yeti observable or entity.
 
@@ -164,7 +164,7 @@ class YetiClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Yeti observable or entity dict to a STIX dict."""
         yeti_type = native.get("type", "")
         if yeti_type in ("ThreatActor", "threat-actor"):
@@ -175,7 +175,7 @@ class YetiClient(BaseClient, ConnectorMixin):
             return self._entity_to_campaign(native)
         return self._observable_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a Yeti observable payload from a STIX Indicator dict."""
         import re
         pattern  = stix_dict.get("pattern", "")
@@ -192,7 +192,7 @@ class YetiClient(BaseClient, ConnectorMixin):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _observable_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _observable_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         yeti_type = native.get("type", "ip")
         value     = native.get("value", "")
         pattern   = self._make_pattern(yeti_type, value)
@@ -214,7 +214,7 @@ class YetiClient(BaseClient, ConnectorMixin):
             "x_yeti_tags":       tags,
         }
 
-    def _entity_to_threat_actor(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _entity_to_threat_actor(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "threat-actor",
             "id":                f"threat-actor--yeti-{native.get('id', '')}",
@@ -227,7 +227,7 @@ class YetiClient(BaseClient, ConnectorMixin):
             "x_yeti_id":         native.get("id", ""),
         }
 
-    def _entity_to_malware(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _entity_to_malware(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "malware",
             "id":                f"malware--yeti-{native.get('id', '')}",
@@ -240,7 +240,7 @@ class YetiClient(BaseClient, ConnectorMixin):
             "x_yeti_id":         native.get("id", ""),
         }
 
-    def _entity_to_campaign(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _entity_to_campaign(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "campaign",
             "id":                f"campaign--yeti-{native.get('id', '')}",

@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any
 
 from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
@@ -66,7 +66,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         DefectDojo API token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "findings",
         "report":        "engagements",
     }
@@ -90,7 +90,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         self.get("/api/v2/findings/", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "vulnerability":
             return self.get(f"/api/v2/findings/{object_id}/")
         if stix_type == "report":
@@ -101,12 +101,12 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Dict[str, Any] | None = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> list[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
+        params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         params.update(filters)
 
         if stix_type == "report":
@@ -115,7 +115,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v2/findings/", params=params)
         return resp.get("results", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         if stix_type == "vulnerability":
             obj_id = payload.get("id")
             if obj_id:
@@ -145,9 +145,9 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         limit: int = 50,
         severity: str | None = None,
         active: bool | None = None,
-    ) -> list[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch vulnerability findings with optional filters."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if severity:
             params["severity"] = severity
         if active is not None:
@@ -158,7 +158,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
     def fetch_engagements(
         self,
         limit: int = 50,
-    ) -> list[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch engagements (projects/tests)."""
         resp = self.get("/api/v2/engagements/", params={"limit": limit})
         return resp.get("results", []) if isinstance(resp, dict) else []
@@ -166,7 +166,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
     def fetch_products(
         self,
         limit: int = 50,
-    ) -> list[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch products (high-level application grouping)."""
         resp = self.get("/api/v2/products/", params={"limit": limit})
         return resp.get("results", []) if isinstance(resp, dict) else []
@@ -176,7 +176,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         scan_type: str,
         file_content: str,
         engagement_id: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Import a scan result into DefectDojo."""
         payload = {
             "scan_type": scan_type,
@@ -187,13 +187,13 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch finding (vulnerability) vs. engagement (report)."""
         if "severity" in native or "cve" in native or "cwe" in native:
             return self._finding_to_stix(native)
         return self._engagement_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         stix_type = stix_dict.get("type", "")
         if stix_type == "vulnerability":
             return {
@@ -209,7 +209,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
             "status": "In Progress",
         }
 
-    def _finding_to_stix(self, finding: Dict[str, Any]) -> Dict[str, Any]:
+    def _finding_to_stix(self, finding: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         fid = str(finding.get("id", ""))
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'defectdojo:{fid}')}"
@@ -235,7 +235,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         }
 
     @staticmethod
-    def _extract_product_name(finding: Dict[str, Any]) -> str | None:
+    def _extract_product_name(finding: dict[str, Any]) -> str | None:
         """Extract the product name from the nested finding.test.engagement.product path."""
         test = finding.get("test")
         if not isinstance(test, dict):
@@ -248,7 +248,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
             return None
         return product.get("name")
 
-    def _engagement_to_stix(self, engagement: Dict[str, Any]) -> Dict[str, Any]:
+    def _engagement_to_stix(self, engagement: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         eid = str(engagement.get("id", ""))
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'defectdojo:{eid}')}"

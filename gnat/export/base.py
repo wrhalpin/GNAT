@@ -62,9 +62,10 @@ from __future__ import annotations
 import logging
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, Iterator, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace
@@ -90,10 +91,10 @@ class ExportFilter(ABC):
     """
 
     @abstractmethod
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         """Yield objects that pass this filter."""
 
-    def __and__(self, other: "ExportFilter") -> "CompositeFilter":
+    def __and__(self, other: ExportFilter) -> CompositeFilter:
         return CompositeFilter([self, other])
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -103,23 +104,23 @@ class ExportFilter(ABC):
 class CompositeFilter(ExportFilter):
     """Chain of filters applied left-to-right (logical AND)."""
 
-    def __init__(self, filters: List["ExportFilter"]):
+    def __init__(self, filters: list[ExportFilter]):
         self._filters = filters
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
-        stream: Iterable["STIXBase"] = objects
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        stream: Iterable[STIXBase] = objects
         for f in self._filters:
             stream = f(stream)
         return iter(stream)
 
-    def __and__(self, other: "ExportFilter") -> "CompositeFilter":
+    def __and__(self, other: ExportFilter) -> CompositeFilter:
         return CompositeFilter(self._filters + [other])
 
 
 class PassthroughFilter(ExportFilter):
     """Identity filter — passes everything."""
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         return iter(objects)
 
 
@@ -147,7 +148,7 @@ class ExportTransform(ABC):
         self.label = label or self.__class__.__name__
 
     @abstractmethod
-    def transform(self, objects: List["STIXBase"]) -> "TransformResult":
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         """
         Convert objects to one or more named payloads.
 
@@ -182,11 +183,11 @@ class TransformResult:
         Arbitrary metadata about the transform (counts, warnings, etc.).
     """
 
-    payloads:     Dict[str, Any]   = field(default_factory=dict)
+    payloads:     dict[str, Any]   = field(default_factory=dict)
     object_count: int              = 0
-    metadata:     Dict[str, Any]   = field(default_factory=dict)
+    metadata:     dict[str, Any]   = field(default_factory=dict)
 
-    def payload_names(self) -> List[str]:
+    def payload_names(self) -> list[str]:
         return list(self.payloads.keys())
 
     def total_bytes(self) -> int:
@@ -212,7 +213,7 @@ class ExportDelivery(ABC):
     """
 
     @abstractmethod
-    def deliver(self, result: TransformResult) -> "DeliveryResult":
+    def deliver(self, result: TransformResult) -> DeliveryResult:
         """
         Push the transform output to the destination.
 
@@ -251,10 +252,10 @@ class DeliveryResult:
     """
 
     success:   bool           = True
-    delivered: List[str]      = field(default_factory=list)
-    failed:    List[str]      = field(default_factory=list)
-    errors:    List[str]      = field(default_factory=list)
-    metadata:  Dict[str, Any] = field(default_factory=dict)
+    delivered: list[str]      = field(default_factory=list)
+    failed:    list[str]      = field(default_factory=list)
+    errors:    list[str]      = field(default_factory=list)
+    metadata:  dict[str, Any] = field(default_factory=dict)
 
     def __str__(self) -> str:  # pragma: no cover
         if self.success:
@@ -298,12 +299,12 @@ class ExportResult:
 
     pipeline_id:      str
     started_at:       datetime
-    finished_at:      Optional[datetime]    = None
+    finished_at:      datetime | None    = None
     source_objects:   int                  = 0
     filtered_objects: int                  = 0
-    transform_result: Optional[TransformResult] = None
-    delivery_result:  Optional[DeliveryResult]  = None
-    errors:           List[str]            = field(default_factory=list)
+    transform_result: TransformResult | None = None
+    delivery_result:  DeliveryResult | None  = None
+    errors:           list[str]            = field(default_factory=list)
     duration_seconds: float                = 0.0
 
     @property
@@ -353,18 +354,18 @@ class ExportPipeline:
 
     def __init__(self, pipeline_id: str = "export"):
         self.pipeline_id  = pipeline_id
-        self._workspace:  Optional["Workspace"]      = None
-        self._objects:    Optional[List["STIXBase"]] = None
-        self._filters:    List[ExportFilter]          = []
-        self._transform:  Optional[ExportTransform]   = None
-        self._delivery:   Optional[ExportDelivery]    = None
+        self._workspace:  Workspace | None      = None
+        self._objects:    list[STIXBase] | None = None
+        self._filters:    list[ExportFilter]          = []
+        self._transform:  ExportTransform | None   = None
+        self._delivery:   ExportDelivery | None    = None
 
     # ── Builder API ────────────────────────────────────────────────────────
 
     def read_from(
         self,
         source: Any,
-    ) -> "ExportPipeline":
+    ) -> ExportPipeline:
         """
         Set the object source.
 
@@ -387,7 +388,7 @@ class ExportPipeline:
             self._objects = list(source)
         return self
 
-    def filter_with(self, *filters: ExportFilter) -> "ExportPipeline":
+    def filter_with(self, *filters: ExportFilter) -> ExportPipeline:
         """
         Add one or more filters.  Applied left-to-right (logical AND).
 
@@ -399,7 +400,7 @@ class ExportPipeline:
         self._filters.extend(filters)
         return self
 
-    def transform_with(self, transform: ExportTransform) -> "ExportPipeline":
+    def transform_with(self, transform: ExportTransform) -> ExportPipeline:
         """
         Set the transform.  Only one transform is allowed per pipeline;
         for multiple output formats, create multiple pipelines.
@@ -412,7 +413,7 @@ class ExportPipeline:
         self._transform = transform
         return self
 
-    def deliver_to(self, delivery: ExportDelivery) -> "ExportPipeline":
+    def deliver_to(self, delivery: ExportDelivery) -> ExportPipeline:
         """
         Set the delivery target.
 
@@ -533,7 +534,7 @@ class ExportPipeline:
         self._delivery = saved
         return result
 
-    def preview(self, n: int = 20) -> List["STIXBase"]:
+    def preview(self, n: int = 20) -> list[STIXBase]:
         """
         Return the first *n* objects that would pass filtering.
 
@@ -554,7 +555,7 @@ class ExportPipeline:
 
     # ── Internal ────────────────────────────────────────────────────────────
 
-    def _collect_source(self) -> List["STIXBase"]:
+    def _collect_source(self) -> list[STIXBase]:
         if self._workspace is not None:
             return list(self._workspace.objects.values())
         if self._objects is not None:
@@ -564,10 +565,10 @@ class ExportPipeline:
             "Call .read_from(workspace) before .run()."
         )
 
-    def _apply_filters(self, objects: List["STIXBase"]) -> List["STIXBase"]:
+    def _apply_filters(self, objects: list[STIXBase]) -> list[STIXBase]:
         if not self._filters:
             return objects
-        stream: Iterable["STIXBase"] = objects
+        stream: Iterable[STIXBase] = objects
         for f in self._filters:
             stream = f(stream)
         return list(stream)

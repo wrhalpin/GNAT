@@ -47,10 +47,12 @@ connectivity testing.
   """
 
 import json
+
 import urllib3
 
 from .config import ElasticConfig
 from .exceptions import ElasticAuthError
+
 
 class ElasticAuthManager:
     """

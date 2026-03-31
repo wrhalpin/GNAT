@@ -23,7 +23,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any
 
 from gnat.nlp.query_spec import QuerySpec
 
@@ -143,7 +143,7 @@ class ClaudeParser:
             text = "\n".join(text.splitlines()[:-1])
 
         try:
-            data: Dict[str, Any] = json.loads(text)
+            data: dict[str, Any] = json.loads(text)
         except json.JSONDecodeError as exc:
             logger.warning("ClaudeParser: JSON decode error (%s); using builtin", exc)
             from gnat.nlp.builtin import BuiltinParser
@@ -163,7 +163,7 @@ class ClaudeParser:
         )
 
     @staticmethod
-    def _parse_dt(value: Optional[str]) -> Optional[datetime]:
+    def _parse_dt(value: str | None) -> datetime | None:
         if not value:
             return None
         try:

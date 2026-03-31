@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -68,7 +68,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         Group-IB API token (used as password).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "collections",
         "report":    "collections",
     }
@@ -93,19 +93,19 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         self.get("/collections", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         # Example: fetch specific item from a collection
         return self.get(f"/collections/{object_id}")  # adjust path as needed per collection
 
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size}
+        params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
 
         # Default: pull from collections (specify collection_name in filters)
@@ -113,7 +113,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/collections/{collection}", params=params)
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Group-IB connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -125,10 +125,10 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         self,
         collection_name: str,  # e.g. "compromised_accounts", "malware", "vulnerabilities", "attacks"
         limit: int = 50,
-        since: Optional[str] = None,  # ISO date for incremental
-    ) -> List[Dict[str, Any]]:
+        since: str | None = None,  # ISO date for incremental
+    ) -> list[dict[str, Any]]:
         """Fetch data from a specific Group-IB collection."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if since:
             params["since"] = since
         resp = self.get(f"/collections/{collection_name}", params=params)
@@ -137,22 +137,22 @@ class GroupIBClient(BaseClient, ConnectorMixin):
     def fetch_compromised_accounts(
         self,
         limit: int = 50,
-        since: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        since: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Convenience helper for compromised accounts collection."""
         return self.fetch_collection("compromised_accounts", limit, since)
 
     def fetch_malware(
         self,
         limit: int = 50,
-        since: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        since: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Convenience helper for malware collection."""
         return self.fetch_collection("malware", limit, since)
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch based on collection type or structure."""
         # Simple heuristic — expand with more collection-specific logic if needed
         if "email" in native or "login" in native or "password" in native:
@@ -161,13 +161,13 @@ class GroupIBClient(BaseClient, ConnectorMixin):
             return self._ioc_to_stix(native)
         return self._event_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "Group-IB is read-only for threat intelligence and risk data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _compromised_to_stix(self, item: Dict[str, Any]) -> Dict[str, Any]:
+    def _compromised_to_stix(self, item: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         iid = item.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'groupib:{iid}')}"
@@ -189,7 +189,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _ioc_to_stix(self, ioc: Dict[str, Any]) -> Dict[str, Any]:
+    def _ioc_to_stix(self, ioc: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         iid = ioc.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'groupib:{iid}')}"
@@ -210,7 +210,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _event_to_stix(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    def _event_to_stix(self, event: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         eid = event.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'groupib:{eid}')}"

@@ -64,7 +64,7 @@ import hmac
 import json as _json
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 from gnat.clients.base import BaseClient, GNATClientError
@@ -118,7 +118,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         Override for GuardDuty base URL. Defaults to same region.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "guardduty/findings",
         "vulnerability": "securityhub/findings",
         "report":        "securityhub/insights",
@@ -155,7 +155,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
 
     def _aws_auth_headers(
         self, service: str, method: str, path: str, body: str = ""
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Compute AWS SigV4 Authorization header for a request."""
         now = _utc_now()
         amz_date = now.strftime("%Y%m%dT%H%M%SZ")
@@ -208,7 +208,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
             f"AWS4-HMAC-SHA256 Credential={self._access_key}/{credential_scope}, "
             f"SignedHeaders={signed_headers}, Signature={signature}"
         )
-        result: Dict[str, str] = {
+        result: dict[str, str] = {
             "Authorization": authorization,
             "X-Amz-Date": amz_date,
             "X-Amz-Content-Sha256": payload_hash,
@@ -225,7 +225,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         self.get("/standards/subscriptions", params={"MaxResults": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single AWS finding by type and ID."""
         if stix_type in ("indicator", "vulnerability"):
             body = _json.dumps({"FindingIds": [object_id]})
@@ -239,20 +239,20 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Security Hub or GuardDuty findings by STIX type."""
         f = filters or {}
-        params: Dict[str, Any] = {"MaxResults": page_size}
+        params: dict[str, Any] = {"MaxResults": page_size}
         if "next_token" in f:
             params["NextToken"] = f["next_token"]
 
         if stix_type == "vulnerability":
-            body: Dict[str, Any] = {"MaxResults": page_size}
+            body: dict[str, Any] = {"MaxResults": page_size}
             # Apply ASFF filters
-            asff_filters: Dict[str, Any] = {}
+            asff_filters: dict[str, Any] = {}
             if "severity" in f:
                 asff_filters["SeverityLabel"] = [
                     {"Value": f["severity"].upper(), "Comparison": "EQUALS"}
@@ -267,7 +267,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
             detector_id = self._get_detector_id()
             if not detector_id:
                 return []
-            body_gd: Dict[str, Any] = {
+            body_gd: dict[str, Any] = {
                 "MaxResults": page_size,
                 "FindingCriteria": f.get("finding_criteria", {}),
             }
@@ -290,7 +290,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"Unsupported STIX type for AWS Security: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Import custom findings in ASFF format."""
         if stix_type == "vulnerability":
             body = _json.dumps({"Findings": [payload]})
@@ -319,13 +319,13 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
 
     def get_security_hub_findings(
         self,
-        severity: Optional[str] = None,
-        workflow_status: Optional[str] = None,
+        severity: str | None = None,
+        workflow_status: str | None = None,
         max_results: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch Security Hub findings with optional severity/workflow filters."""
-        body: Dict[str, Any] = {"MaxResults": max_results}
-        asff: Dict[str, Any] = {}
+        body: dict[str, Any] = {"MaxResults": max_results}
+        asff: dict[str, Any] = {}
         if severity:
             asff["SeverityLabel"] = [{"Value": severity.upper(), "Comparison": "EQUALS"}]
         if workflow_status:
@@ -339,19 +339,19 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         self,
         severity_min: float = 0.0,
         max_results: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch GuardDuty findings with optional minimum severity."""
         detector_id = self._get_detector_id()
         if not detector_id:
             return []
-        criteria: Dict[str, Any] = {}
+        criteria: dict[str, Any] = {}
         if severity_min > 0:
             criteria = {
                 "severity": {
                     "Gte": severity_min,
                 }
             }
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "MaxResults": max_results,
             "FindingCriteria": {"Criterion": criteria} if criteria else {},
         }
@@ -368,14 +368,14 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         )
         return resp2.get("Findings", []) if isinstance(resp2, dict) else []
 
-    def enable_security_hub(self) -> Dict[str, Any]:
+    def enable_security_hub(self) -> dict[str, Any]:
         """Enable Security Hub for the current account."""
         resp = self.post("/accounts", body=_json.dumps({}))
         return resp if isinstance(resp, dict) else {}
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert an AWS ASFF finding to STIX."""
         # GuardDuty findings have a Service block
         if "Service" in native and "Action" in native.get("Service", {}):
@@ -383,7 +383,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         # Security Hub findings
         return self._securityhub_to_stix(native)
 
-    def _securityhub_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _securityhub_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         finding_id = native.get("Id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"aws-sh-{finding_id}"))
         sev = native.get("Severity", {})
@@ -417,7 +417,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _guardduty_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _guardduty_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         finding_id = native.get("Id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"aws-gd-{finding_id}"))
         severity = native.get("Severity", 0.0)
@@ -459,7 +459,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX dict to an ASFF finding payload."""
         return {
             "Title": stix_dict.get("name", ""),

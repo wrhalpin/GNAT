@@ -35,7 +35,7 @@ https://support.controlup.com/docs/create-an-api-key
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -58,14 +58,14 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         Determines the URL prefix used for all requests.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "infrastructure": "devices",
         "observed-data":  "sessions",
         "indicator":      "alerts",
         "vulnerability":  "vulnerabilities",
     }
 
-    _SEVERITY_CONFIDENCE: Dict[str, int] = {
+    _SEVERITY_CONFIDENCE: dict[str, int] = {
         "critical": 90,
         "high":     75,
         "medium":   55,
@@ -120,7 +120,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
 
     # ── CRUD ─────────────────────────────────────────────────────────────
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single ControlUp object by STIX type and native ID.
 
@@ -154,10 +154,10 @@ class ControlUpClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List ControlUp objects of a given STIX type.
 
@@ -191,7 +191,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 f"ControlUp connector does not support stix_type={stix_type!r}"
             )
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "page":     page - 1,   # API is 0-based
             "pageSize": min(page_size, 1000),
         }
@@ -203,8 +203,8 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         return []
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         ControlUp is primarily read-only from an external integration
         perspective. The only writable surface exposed by the API is device
@@ -252,7 +252,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
 
     # ── DEX-specific methods ──────────────────────────────────────────────
 
-    def get_device(self, device_id: str) -> Dict[str, Any]:
+    def get_device(self, device_id: str) -> dict[str, Any]:
         """
         Fetch a single device/endpoint by its ControlUp device ID.
 
@@ -276,7 +276,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         tag: Optional[str] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List managed endpoints/devices.
 
@@ -299,7 +299,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         list[dict]
             Device records.
         """
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
         if status:
             filters["status"] = status
         if os_family:
@@ -316,7 +316,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         state: Optional[str] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List active or recent user sessions.
 
@@ -338,7 +338,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         list[dict]
             Session records.
         """
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
         if username:
             filters["username"] = username
         if device_id:
@@ -355,7 +355,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         device_id: Optional[str] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List security alerts and trigger events.
 
@@ -377,7 +377,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         list[dict]
             Alert records.
         """
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
         if severity:
             filters["severity"] = severity
         if resolved is not None:
@@ -390,12 +390,12 @@ class ControlUpClient(BaseClient, ConnectorMixin):
     def query_data_index(
         self,
         index: str,
-        metrics: Optional[List[str]] = None,
-        filters: Optional[Dict[str, Any]] = None,
-        time_range: Optional[Dict[str, str]] = None,
+        metrics: Optional[list[str]] = None,
+        filters: Optional[dict[str, Any]] = None,
+        time_range: Optional[dict[str, str]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Query the ControlUp Data Access Layer (DAL) for a named data index.
 
@@ -437,7 +437,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         >>> result["data"]
         [{"processName": "chrome.exe", "cpuUsage": 12.4, ...}, ...]
         """
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "index":    index,
             "page":     page - 1,
             "pageSize": min(page_size, 1000),
@@ -453,7 +453,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
 
     def get_session_statistics(
         self, device_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve aggregated session statistics.
 
@@ -468,7 +468,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             Statistics payload including active/idle/disconnected counts
             and average logon duration.
         """
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if device_id:
             params["deviceId"] = device_id
         resp = self.get(self._url("sessions/statistics"), params=params)
@@ -476,7 +476,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a ControlUp native object to STIX 2.1 format.
 
@@ -504,7 +504,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         # Fallback: generic observed-data
         return self._generic_to_stix(native)
 
-    def _device_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _device_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp device/endpoint → STIX infrastructure SDO."""
         device_id  = native.get("deviceId", native.get("id", ""))
         hostname   = native.get("hostname", native.get("name", ""))
@@ -522,7 +522,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         if os_family in ("windows-server", "linux", "unix"):
             infra_type = "server"
 
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type":                "infrastructure",
             "id":                  f"infrastructure--cu-{device_id}",
             "name":                hostname,
@@ -541,7 +541,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         }
         return stix
 
-    def _session_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _session_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp session → STIX observed-data SDO."""
         session_id   = native.get("sessionId", native.get("id", ""))
         username     = native.get("username", "")
@@ -553,14 +553,14 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         logon_dur    = native.get("logonDuration")    # seconds
         protocol     = native.get("protocol", "")
 
-        user_ref: Dict[str, Any] = {
+        user_ref: dict[str, Any] = {
             "type":        "user-account",
             "user_id":     username,
             "display_name": native.get("displayName", username),
             "x_domain":    native.get("domain", ""),
         }
 
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type":              "observed-data",
             "id":                f"observed-data--cu-{session_id}",
             "first_observed":    logon_time,
@@ -579,7 +579,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         }
         return stix
 
-    def _alert_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp alert/trigger event → STIX indicator SDO."""
         alert_id   = native.get("alertId", native.get("id", ""))
         name       = native.get("name", native.get("alertType", "ControlUp Alert"))
@@ -596,7 +596,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         pattern = f"[process:name = '{alert_type}']" if alert_type else "[domain-name:value = 'controlup.alert']"
         confidence = self._SEVERITY_CONFIDENCE.get(severity, 50)
 
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type":             "indicator",
             "id":               f"indicator--cu-{alert_id}",
             "name":             name,
@@ -618,7 +618,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         }
         return stix
 
-    def _vuln_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp vulnerability finding → STIX vulnerability SDO."""
         vuln_id   = native.get("id", native.get("cveId", ""))
         cve_id    = native.get("cveId", "")
@@ -643,7 +643,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             "x_source_platform":  "controlup",
         }
 
-    def _generic_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _generic_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Fallback: wrap an unknown ControlUp object as observed-data."""
         obj_id  = str(native.get("id", native.get("deviceId", "unknown")))
         created = native.get("createdAt", native.get("timestamp", ""))
@@ -658,7 +658,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             "x_source_platform": "controlup",
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX object back to a ControlUp-compatible payload.
 

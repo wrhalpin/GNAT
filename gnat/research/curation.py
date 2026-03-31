@@ -44,14 +44,14 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
+from gnat.ingest.base import IngestResult, RawRecord, RecordMapper, SourceReader
 from gnat.schedule.job import FeedJob, RunRecord, _utcnow
-from gnat.ingest.base import IngestResult, SourceReader, RecordMapper, RawRecord
 
 if TYPE_CHECKING:
-    from gnat.research.library import ResearchLibrary
     from gnat.research.entry import ResearchEntry
+    from gnat.research.library import ResearchLibrary
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 class _CurationReader(SourceReader):
     """Internal reader that yields pending staging entries as raw records."""
 
-    def __init__(self, library: "ResearchLibrary"):
+    def __init__(self, library: ResearchLibrary):
         super().__init__(source_id="curation_reader")
         self._lib = library
 
@@ -77,11 +77,11 @@ class _CurationMapper(RecordMapper):
     Returns a synthetic IngestResult-compatible output.
     """
 
-    def __init__(self, library: "ResearchLibrary", stats: Dict[str, int]):
+    def __init__(self, library: ResearchLibrary, stats: dict[str, int]):
         super().__init__()
         self._lib   = library
         self._stats = stats
-        self._seen_topics: Dict[str, "ResearchEntry"] = {}
+        self._seen_topics: dict[str, ResearchEntry] = {}
 
     def map(self, record: RawRecord):
         """
@@ -187,9 +187,9 @@ class CurationJob(FeedJob):
 
     def __init__(
         self,
-        library: "ResearchLibrary",
-        interval_seconds: Optional[int] = 14_400,
-        cron: Optional[str] = None,
+        library: ResearchLibrary,
+        interval_seconds: int | None = 14_400,
+        cron: str | None = None,
         on_success=None,
         on_failure=None,
         job_id: str = "ctmsak-curation",
@@ -208,7 +208,7 @@ class CurationJob(FeedJob):
         )
 
     def execute(
-        self, scheduled_at: Optional[datetime] = None
+        self, scheduled_at: datetime | None = None
     ) -> RunRecord:
         """
         Run one curation cycle.
@@ -281,7 +281,7 @@ class CurationJob(FeedJob):
 
             # Dedup: group by topic key, keep most recent
             from gnat.research.entry import topic_key
-            by_topic: Dict[str, "ResearchEntry"] = {}
+            by_topic: dict[str, ResearchEntry] = {}
             for entry in pending:
                 tkey = topic_key(entry.topic)
                 existing = by_topic.get(tkey)

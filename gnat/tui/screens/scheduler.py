@@ -9,7 +9,7 @@ run counts, and status.  Supports manual job triggering.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -57,7 +57,7 @@ class SchedulerScreen(Screen):
     def __init__(
         self,
         scheduler=None,
-        config_path: Optional[str] = None,
+        config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)

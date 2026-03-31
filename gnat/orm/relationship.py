@@ -5,6 +5,7 @@ STIX 2.1 Relationship SRO.
 """
 from gnat.orm.base import STIXBase
 
+
 class Relationship(STIXBase):
     """
     STIX 2.1 Relationship object.

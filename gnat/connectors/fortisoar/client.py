@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
@@ -65,7 +65,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         Password for authentication.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "incident":      "incidents",
         "observed-data": "alerts",
         "indicator":     "indicators",
@@ -77,7 +77,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
-        self._token: Optional[str] = None
+        self._token: str | None = None
 
     # ── Authentication ─────────────────────────────────────────────────────
 
@@ -110,7 +110,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         self.get("/api/3/model_metadatas", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single FortiSOAR module record by UUID."""
         module = self.stix_type_map.get(stix_type, stix_type)
         resp = self.get(f"/api/3/{module}/{object_id}")
@@ -119,13 +119,13 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List FortiSOAR module records with optional field filters."""
         module = self.stix_type_map.get(stix_type, stix_type)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "$limit": page_size,
             "$offset": (page - 1) * page_size,
         }
@@ -137,7 +137,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         return resp.get("hydra:member", resp.get("data", []))
 
     def upsert_object(self, stix_type: str,
-                      payload: Dict[str, Any]) -> Dict[str, Any]:
+                      payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update a FortiSOAR module record."""
         module = self.stix_type_map.get(stix_type, stix_type)
         record_id = payload.get("@id", payload.get("id", ""))
@@ -156,12 +156,12 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
 
     def list_alerts(
         self,
-        status: Optional[str] = None,
-        severity: Optional[str] = None,
+        status: str | None = None,
+        severity: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return FortiSOAR alerts with optional status/severity filter."""
-        params: Dict[str, Any] = {"$limit": limit}
+        params: dict[str, Any] = {"$limit": limit}
         if status:
             params["status"] = status
         if severity:
@@ -170,7 +170,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         return (resp.get("hydra:member", []) if isinstance(resp, dict) else [])
 
     def escalate_to_incident(self, alert_id: str,
-                              name: str) -> Dict[str, Any]:
+                              name: str) -> dict[str, Any]:
         """Create an incident linked to an existing alert."""
         resp = self.post("/api/3/incidents", json={
             "name": name,
@@ -179,7 +179,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         return resp if isinstance(resp, dict) else {}
 
     def trigger_playbook(self, playbook_iri: str,
-                         record_iri: str) -> Dict[str, Any]:
+                         record_iri: str) -> dict[str, Any]:
         """Manually trigger a FortiSOAR playbook against a record."""
         resp = self.post("/api/3/triggers/1/notifyTrigger", json={
             "playbookIRI": playbook_iri,
@@ -189,11 +189,11 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
 
     def get_indicators(
         self,
-        ioc_type: Optional[str] = None,
+        ioc_type: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retrieve threat indicators from FortiSOAR."""
-        params: Dict[str, Any] = {"$limit": limit}
+        params: dict[str, Any] = {"$limit": limit}
         if ioc_type:
             params["typeofindicator"] = ioc_type
         resp = self.get("/api/3/indicators", params=params)
@@ -201,7 +201,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a FortiSOAR record to STIX."""
         # Dispatch on module-specific fields
         if "indicatorValue" in native or "typeofindicator" in native:
@@ -211,7 +211,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
             return self._incident_to_stix(native)
         return self._alert_to_stix(native)
 
-    def _alert_to_stix(self, alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(alert.get("id", alert.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -245,7 +245,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _incident_to_stix(self, incident: Dict[str, Any]) -> Dict[str, Any]:
+    def _incident_to_stix(self, incident: dict[str, Any]) -> dict[str, Any]:
         inc_id = str(incident.get("id", incident.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-incident-{inc_id}"))
         ts = incident.get("createDate", _now_ts())
@@ -270,7 +270,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _indicator_to_stix(self, indicator: Dict[str, Any]) -> Dict[str, Any]:
+    def _indicator_to_stix(self, indicator: dict[str, Any]) -> dict[str, Any]:
         ioc_id = str(indicator.get("id", indicator.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-ioc-{ioc_id}"))
         value = indicator.get("indicatorValue", "")
@@ -307,7 +307,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract FortiSOAR-compatible fields from a STIX dict."""
         return {
             "name": stix_dict.get("name", ""),

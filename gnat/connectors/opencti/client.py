@@ -48,7 +48,7 @@ Notes
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -66,7 +66,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
         OpenCTI API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":      "indicators",
         "threat-actor":   "threat-actors-group",
         "malware":        "malwares",
@@ -76,7 +76,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
     }
 
     # GraphQL type names for list queries
-    _GQL_TYPES: Dict[str, str] = {
+    _GQL_TYPES: dict[str, str] = {
         "indicator":      "Indicators",
         "threat-actor":   "ThreatActors",
         "malware":        "Malwares",
@@ -103,7 +103,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
         self.get("/health")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single OpenCTI object by STIX id via GraphQL.
 
@@ -138,10 +138,10 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List OpenCTI objects of a given STIX type via GraphQL.
 
@@ -187,7 +187,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
           }}
         }}
         """
-        variables: Dict[str, Any] = {
+        variables: dict[str, Any] = {
             "first": first,
             "orderBy": order_by,
             "orderMode": order_mode.upper(),
@@ -203,7 +203,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
             return [e.get("node", {}) for e in edges]
         return []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Create or update an OpenCTI object via GraphQL import.
 
@@ -239,7 +239,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate an OpenCTI GraphQL node to a STIX 2.1 object.
 
@@ -300,7 +300,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
         # Generic passthrough
         return dict(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX object to an OpenCTI GraphQL input dict.
 

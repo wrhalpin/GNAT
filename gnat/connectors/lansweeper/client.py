@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -74,7 +74,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         Personal access token (alternative to OAuth2).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "report":        "assets",
         "vulnerability": "software",
     }
@@ -124,7 +124,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         self.get("/api/v2/sites")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single asset by ID."""
         if not self._site_id:
             raise GNATClientError("Lansweeper: site_id is required for asset queries")
@@ -136,14 +136,14 @@ class LansweeperClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str = "report",
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List assets or software inventory."""
         if not self._site_id:
             raise GNATClientError("Lansweeper: site_id is required for asset queries")
-        params: Dict[str, Any] = {"limit": page_size, "page": page}
+        params: dict[str, Any] = {"limit": page_size, "page": page}
         if filters:
             params.update(filters)
 
@@ -155,7 +155,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
             return resp.get("items", []) if isinstance(resp, dict) else []
         raise GNATClientError(f"Lansweeper: unsupported STIX type '{stix_type}'")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Lansweeper is read-only; upsert is not supported."""
         raise GNATClientError("Lansweeper ITAM connector is read-only.")
 
@@ -165,16 +165,16 @@ class LansweeperClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def list_sites(self) -> List[Dict[str, Any]]:
+    def list_sites(self) -> list[dict[str, Any]]:
         """List all Lansweeper sites accessible to this account."""
         resp = self.get("/api/v2/sites")
         return resp.get("items", []) if isinstance(resp, dict) else []
 
     def list_assets(
         self,
-        asset_type: Optional[str] = None,
+        asset_type: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List assets from the configured site.
 
@@ -187,13 +187,13 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         """
         if not self._site_id:
             raise GNATClientError("Lansweeper: site_id is required")
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if asset_type:
             params["type"] = asset_type
         resp = self.get(f"/api/v2/sites/{self._site_id}/assets", params=params)
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def query_graphql(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def query_graphql(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Execute a Lansweeper GraphQL query against the asset inventory.
 
@@ -204,13 +204,13 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         variables : dict, optional
             GraphQL variables.
         """
-        payload: Dict[str, Any] = {"query": query}
+        payload: dict[str, Any] = {"query": query}
         if variables:
             payload["variables"] = variables
         resp = self.post("/api/v2/graphql", json=payload)
         return resp if isinstance(resp, dict) else {}
 
-    def list_software(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_software(self, limit: int = 100) -> list[dict[str, Any]]:
         """List installed software across all assets in the site."""
         if not self._site_id:
             raise GNATClientError("Lansweeper: site_id is required")
@@ -219,13 +219,13 @@ class LansweeperClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Lansweeper asset or software entry to a STIX 2.1 object."""
         if "softwareName" in native or "softwareVersion" in native:
             return self._software_to_stix(native)
         return self._asset_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a reference payload (Lansweeper is read-only)."""
         return {
             "note":      "Lansweeper is read-only.",
@@ -233,7 +233,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
             "stix_type": stix_dict.get("type", ""),
         }
 
-    def _asset_to_stix(self, asset: Dict[str, Any]) -> Dict[str, Any]:
+    def _asset_to_stix(self, asset: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         aid = str(asset.get("id", asset.get("assetId", "")))
         return {
@@ -257,7 +257,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _software_to_stix(self, sw: Dict[str, Any]) -> Dict[str, Any]:
+    def _software_to_stix(self, sw: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         sid = str(sw.get("id", ""))
         return {

@@ -43,8 +43,9 @@ Notes
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -67,7 +68,7 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
         GreyNoise API key (Community or Enterprise).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "ip",
         "indicator": "ip",
         "report": "riot",
@@ -92,19 +93,19 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
         self.get("/v3/community/8.8.8.8", params={"key": self._api_key})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch IP context by IP address (most common use case)."""
         if stix_type in ("observed-data", "indicator"):
             return self.ip_lookup(object_id)
-        raise GNATClientError(f"get_object primarily supports IP lookups in GreyNoise")
+        raise GNATClientError("get_object primarily supports IP lookups in GreyNoise")
 
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Perform IP lookups or basic GNQL queries (Enterprise).
 
@@ -122,9 +123,9 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
                 return self.multi_ip_lookup(ips)
             return []  # Fallback
 
-        raise GNATClientError(f"list_objects supports IP context or GNQL for GreyNoise")
+        raise GNATClientError("list_objects supports IP context or GNQL for GreyNoise")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("GreyNoise is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -132,43 +133,40 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def ip_lookup(self, ip: str) -> Dict[str, Any]:
+    def ip_lookup(self, ip: str) -> dict[str, Any]:
         """Get full context for a single IP (noise + RIOT)."""
         params = {"key": self._api_key}
         return self.get(f"/v3/ip/{ip}", params=params)
 
-    def community_ip_lookup(self, ip: str) -> Dict[str, Any]:
+    def community_ip_lookup(self, ip: str) -> dict[str, Any]:
         """Community tier lookup (limited free usage)."""
         params = {"key": self._api_key}
         return self.get(f"/v3/community/{ip}", params=params)
 
-    def multi_ip_lookup(self, ips: List[str]) -> List[Dict[str, Any]]:
+    def multi_ip_lookup(self, ips: list[str]) -> list[dict[str, Any]]:
         """Bulk lookup (Enterprise; adapt payload as needed for v3)."""
         # v3 may use query params or POST; adjust based on exact docs
-        params = {"key": self._api_key}
         # For simplicity, loop single lookups or use supported bulk if available
         results = []
         for ip in ips[:50]:  # Rate limit aware
-            try:
+            with contextlib.suppress(Exception):
                 results.append(self.ip_lookup(ip))
-            except Exception:
-                pass
         return results
 
-    def gnql_query(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def gnql_query(self, query: str, limit: int = 100) -> list[dict[str, Any]]:
         """GNQL search query (Enterprise tier)."""
         params = {"query": query, "limit": limit, "key": self._api_key}
         resp = self.get("/v3/gnql", params=params)  # Adjust exact path if needed
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def riot_lookup(self, ip: str) -> Dict[str, Any]:
+    def riot_lookup(self, ip: str) -> dict[str, Any]:
         """RIOT business service intelligence (benign services)."""
         params = {"key": self._api_key}
         return self.get(f"/v3/riot/{ip}", params=params)  # If separate; often included in /v3/ip
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate GreyNoise IP context to STIX 2.1 observed-data or indicator.
 
@@ -205,7 +203,7 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """GreyNoise is read-only. Returns enrichment guidance."""
         return {
             "note": "GreyNoise connector is read-only. Use ip_lookup or gnql_query helpers for enrichment.",

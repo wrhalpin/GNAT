@@ -19,7 +19,7 @@ References
 https://docs.cloudsek.com/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -41,7 +41,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         CloudSEK organisation ID for multi-tenant deployments.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":    "indicators",
         "observed-data": "alerts",
         "threat-actor": "threat_actors",
@@ -77,7 +77,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve a CloudSEK alert or indicator by ID."""
         resource = self.stix_type_map.get(stix_type, "alerts")
         resp = self.get(f"{_API}/{resource}/{object_id}")
@@ -86,10 +86,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List CloudSEK XVigil alerts or indicators.
 
@@ -102,7 +102,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         * ``keyword``: search keyword
         """
         resource = self.stix_type_map.get(stix_type, "alerts")
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  min(page_size, 500),
             "offset": (page - 1) * page_size,
         }
@@ -115,8 +115,8 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         return resp.get("data", resp.get("results", []))
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """CloudSEK XVigil API is read-only — raises :class:`GNATClientError`."""
         raise GNATClientError(
             "CloudSEK XVigil API is read-only. "
@@ -132,7 +132,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
 
     def update_alert_status(
         self, alert_id: str, status: str, comment: str = ""
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Update the status of a CloudSEK alert (triage workflow).
 
@@ -145,7 +145,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         comment : str, optional
             Analyst comment to attach to the status change.
         """
-        payload: Dict[str, Any] = {"status": status}
+        payload: dict[str, Any] = {"status": status}
         if comment:
             payload["comment"] = comment
         resp = self.patch(f"{_API}/alerts/{alert_id}/status", json=payload)
@@ -155,14 +155,14 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a CloudSEK alert or indicator dict to a STIX dict."""
         category = native.get("category", native.get("type", ""))
         if category in ("threat_actor",):
             return self._actor_to_stix(native)
         return self._alert_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a CloudSEK search query from a STIX dict."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -174,7 +174,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _alert_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         category = native.get("category", "")
         value    = (
             native.get("email")
@@ -205,7 +205,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
             "x_cs_status":       native.get("status", ""),
         }
 
-    def _actor_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "threat-actor",
             "id":                f"threat-actor--cs-{native.get('id', '')}",

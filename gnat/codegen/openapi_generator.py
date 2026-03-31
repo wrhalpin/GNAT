@@ -40,7 +40,7 @@ import json
 import sys
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 try:
     import yaml  # PyYAML is optional; json specs work without it
@@ -144,7 +144,7 @@ def generate_connector(
 # ---------------------------------------------------------------------------
 
 
-def _load_spec(path: str) -> Dict[str, Any]:
+def _load_spec(path: str) -> dict[str, Any]:
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"OpenAPI spec not found: {path}")
@@ -164,7 +164,7 @@ def _load_spec(path: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _extract_server(spec: Dict[str, Any]) -> str:
+def _extract_server(spec: dict[str, Any]) -> str:
     servers = spec.get("servers", [])
     if servers:
         return servers[0].get("url", "https://api.example.com")
@@ -175,7 +175,7 @@ def _extract_server(spec: Dict[str, Any]) -> str:
     return f"{scheme}://{host}{base}"
 
 
-def _extract_endpoints(spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _extract_endpoints(spec: dict[str, Any]) -> list[dict[str, Any]]:
     """Return a simplified list of endpoint descriptors."""
     endpoints = []
     for path, methods in spec.get("paths", {}).items():
@@ -198,14 +198,14 @@ def _extract_endpoints(spec: Dict[str, Any]) -> List[Dict[str, Any]]:
     return endpoints
 
 
-def _extract_schemas(spec: Dict[str, Any]) -> Dict[str, Any]:
+def _extract_schemas(spec: dict[str, Any]) -> dict[str, Any]:
     return (
         spec.get("components", {}).get("schemas", {})      # OAS 3
         or spec.get("definitions", {})                      # Swagger 2
     )
 
 
-def _build_type_map(schemas: Dict[str, Any]) -> Dict[str, str]:
+def _build_type_map(schemas: dict[str, Any]) -> dict[str, str]:
     """Heuristically map schema names to STIX types."""
     stix_keywords = {
         "indicator": "indicator",
@@ -217,7 +217,7 @@ def _build_type_map(schemas: Dict[str, Any]) -> Dict[str, str]:
         "attack":    "attack-pattern",
         "ttps":      "attack-pattern",
     }
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     for schema_name in schemas:
         lower = schema_name.lower()
         for kw, stix_type in stix_keywords.items():
@@ -237,9 +237,9 @@ def _render_client(
     class_name: str,
     host: str,
     auth_type: str,
-    endpoints: List[Dict[str, Any]],
-    schemas: Dict[str, Any],
-    type_map: Dict[str, str],
+    endpoints: list[dict[str, Any]],
+    schemas: dict[str, Any],
+    type_map: dict[str, str],
     spec_path: str,
 ) -> str:
     """Render the client.py module source code."""
@@ -385,7 +385,7 @@ def _auth_snippet(auth_type: str) -> str:
         '''), "    ")
 
 
-def _schema_field_comments(schemas: Dict[str, Any]) -> str:
+def _schema_field_comments(schemas: dict[str, Any]) -> str:
     lines = []
     for schema_name, schema in list(schemas.items())[:5]:
         props = schema.get("properties", {})

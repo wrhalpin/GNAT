@@ -40,16 +40,17 @@ from __future__ import annotations
 import logging
 import re
 import uuid
-from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 from gnat.ingest.base import RawRecord, RecordMapper
+from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.base import STIXBase
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
-from gnat.orm.vulnerability import Vulnerability
-from gnat.orm.threat_actor import ThreatActor
-from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.relationship import Relationship
-from gnat.orm.base import STIXBase
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.vulnerability import Vulnerability
 
 if TYPE_CHECKING:
     pass
@@ -71,7 +72,7 @@ def _utcnow() -> str:
 
 
 # MISP type → (STIX type, pattern template)
-_MISP_TYPE_MAP: Dict[str, tuple] = {
+_MISP_TYPE_MAP: dict[str, tuple] = {
     "ip-dst":          ("ipv4-addr",    "ipv4-addr:value = '{v}'"),
     "ip-src":          ("ipv4-addr",    "ipv4-addr:value = '{v}'"),
     "ip-dst|port":     ("ipv4-addr",    "ipv4-addr:value = '{v}'"),
@@ -93,7 +94,7 @@ _MISP_TYPE_MAP: Dict[str, tuple] = {
 }
 
 # IOC type string → STIX pattern template
-_IOC_TYPE_PATTERN: Dict[str, str] = {
+_IOC_TYPE_PATTERN: dict[str, str] = {
     "ip":     "[ipv4-addr:value = '{v}']",
     "ipv6":   "[ipv6-addr:value = '{v}']",
     "domain": "[domain-name:value = '{v}']",
@@ -106,7 +107,7 @@ _IOC_TYPE_PATTERN: Dict[str, str] = {
 }
 
 # IOC type → STIX indicator_types vocab entry
-_IOC_INDICATOR_TYPE: Dict[str, str] = {
+_IOC_INDICATOR_TYPE: dict[str, str] = {
     "ip":     "malicious-activity",
     "ipv6":   "malicious-activity",
     "domain": "malicious-activity",
@@ -157,9 +158,9 @@ class FlatIOCMapper(RecordMapper):
         self,
         value_field: str = "value",
         type_field: str = "type",
-        name_field: Optional[str] = None,
-        confidence_field: Optional[str] = None,
-        extra_stix_fields: Optional[Dict[str, Any]] = None,
+        name_field: str | None = None,
+        confidence_field: str | None = None,
+        extra_stix_fields: dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -239,7 +240,7 @@ class STIXPassthroughMapper(RecordMapper):
 
     def __init__(
         self,
-        type_filter: Optional[List[str]] = None,
+        type_filter: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -369,7 +370,7 @@ class CEFMapper(RecordMapper):
 
     _DEFAULT_IOC_FIELDS = ["src", "dst", "dhost", "requestUrl", "fileHash", "cs1", "cs2"]
 
-    _FIELD_TYPE_HINTS: Dict[str, str] = {
+    _FIELD_TYPE_HINTS: dict[str, str] = {
         "src":        "ip",
         "dst":        "ip",
         "dhost":      "domain",
@@ -379,7 +380,7 @@ class CEFMapper(RecordMapper):
 
     def __init__(
         self,
-        ioc_fields: Optional[List[str]] = None,
+        ioc_fields: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -461,11 +462,11 @@ class SQLRowMapper(RecordMapper):
     def __init__(
         self,
         value_col: str = "value",
-        type_col: Optional[str] = None,
-        name_col: Optional[str] = None,
-        description_col: Optional[str] = None,
-        stix_type: Optional[str] = None,
-        extra_col_map: Optional[Dict[str, str]] = None,
+        type_col: str | None = None,
+        name_col: str | None = None,
+        description_col: str | None = None,
+        stix_type: str | None = None,
+        extra_col_map: dict[str, str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -495,7 +496,7 @@ class SQLRowMapper(RecordMapper):
 
         cls = self._STIX_CLASS_MAP.get(resolved_stix_type, Indicator)
 
-        props: Dict[str, Any] = {
+        props: dict[str, Any] = {
             "client":     self._client,
             "x_tlp":      self.tlp_marking,
             "confidence": self.confidence,
@@ -663,7 +664,7 @@ class EmailIOCMapper(RecordMapper):
 
     def __init__(
         self,
-        ioc_types: Optional[List[str]] = None,
+        ioc_types: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -746,7 +747,7 @@ class OpenIOCMapper(RecordMapper):
     >>> mapper = OpenIOCMapper(client=cli, tlp_marking="red")
     """
 
-    _SEARCH_PATTERN: Dict[str, str] = {
+    _SEARCH_PATTERN: dict[str, str] = {
         "FileItem/Md5sum":               "file:hashes.MD5 = '{v}'",
         "FileItem/Sha1sum":              "file:hashes.SHA-1 = '{v}'",
         "FileItem/Sha256sum":            "file:hashes.SHA-256 = '{v}'",
@@ -892,7 +893,7 @@ class NVDCVEMapper(RecordMapper):
                 break
 
         # CVSS score
-        cvss_score: Optional[float] = None
+        cvss_score: float | None = None
         metrics = cve_data.get("metrics", cve_data.get("impact", {}))
         for version_key in ("cvssMetricV31", "cvssMetricV30", "cvssMetricV2",
                             "baseMetricV3", "baseMetricV2"):

@@ -22,7 +22,6 @@ Usage
 from __future__ import annotations
 
 import re
-from typing import List
 
 # ---------------------------------------------------------------------------
 # Attempt to import the Rust native extension
@@ -33,9 +32,17 @@ try:
     # The wheel places functions at _core.classify_ioc etc.
     from _core import (  # type: ignore[import]
         classify_ioc as _rust_classify,
+    )
+    from _core import (
         classify_ioc_batch as _rust_classify_batch,
+    )
+    from _core import (
         defang as _rust_defang,
+    )
+    from _core import (
         extract_pattern_value as _rust_extract_pattern_value,
+    )
+    from _core import (
         refang as _rust_refang,
     )
     RUST_AVAILABLE: bool = True
@@ -91,12 +98,12 @@ def _py_refang(value: str) -> str:
     return value.replace(".", "[.]")
 
 
-def _py_extract_pattern_value(pattern: str) -> "str | None":
+def _py_extract_pattern_value(pattern: str) -> str | None:
     m = _VALUE_RE.search(pattern)
     return m.group(1) if m else None
 
 
-def _py_classify_ioc_batch(values: List[str]) -> List[str]:
+def _py_classify_ioc_batch(values: list[str]) -> list[str]:
     return [_py_classify_ioc(v) for v in values]
 
 
@@ -140,7 +147,7 @@ def refang(value: str) -> str:
     return _py_refang(value)
 
 
-def extract_pattern_value(pattern: str) -> "str | None":
+def extract_pattern_value(pattern: str) -> str | None:
     """
     Extract the quoted value from a STIX pattern string.
 
@@ -151,7 +158,7 @@ def extract_pattern_value(pattern: str) -> "str | None":
     return _py_extract_pattern_value(pattern)
 
 
-def classify_ioc_batch(values: List[str]) -> List[str]:
+def classify_ioc_batch(values: list[str]) -> list[str]:
     """
     Classify a list of IOC strings in bulk.
 

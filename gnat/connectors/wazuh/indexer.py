@@ -26,10 +26,12 @@ provides convenience methods for common alert queries.
 
 import base64
 import json
+
 import urllib3
 
 from .config import WazuhConfig
 from .exceptions import WazuhIndexerError
+
 
 class WazuhIndexerCommands:
     """

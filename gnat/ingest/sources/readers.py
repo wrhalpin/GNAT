@@ -47,16 +47,19 @@ import csv
 import json
 import logging
 import re
+
 try:
     import defusedxml.ElementTree as ET  # type: ignore[import-untyped]
 except ImportError:
     import xml.etree.ElementTree as ET  # type: ignore[no-redef]  # nosec B314 — defusedxml preferred; install with pip install defusedxml
+from collections.abc import Iterator
 from itertools import islice
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any
 
+from gnat.ingest._ioc_classifier import classify_ioc as _fast_classify
+from gnat.ingest._ioc_classifier import defang as _fast_defang
 from gnat.ingest.base import RawRecord, SourceReader
-from gnat.ingest._ioc_classifier import classify_ioc as _fast_classify, defang as _fast_defang
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +102,7 @@ class PlainTextReader(SourceReader):
     >>> reader = PlainTextReader("1.2.3.4\\nevil.com", from_string=True)
     """
 
-    _PATTERNS: Dict[str, re.Pattern] = {
+    _PATTERNS: dict[str, re.Pattern] = {
         "sha256":  re.compile(r"^[0-9a-fA-F]{64}$"),
         "sha1":    re.compile(r"^[0-9a-fA-F]{40}$"),
         "md5":     re.compile(r"^[0-9a-fA-F]{32}$"),
@@ -118,11 +121,11 @@ class PlainTextReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         from_string: bool = False,
         encoding: str = "utf-8",
         skip_unknown: bool = True,
-        extra_patterns: Optional[Dict[str, re.Pattern]] = None,
+        extra_patterns: dict[str, re.Pattern] | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id=str(source)[:60], **kwargs)
@@ -203,12 +206,12 @@ class CSVReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         value_col: str = "value",
-        type_col: Optional[str] = None,
+        type_col: str | None = None,
         delimiter: str = ",",
         encoding: str = "utf-8-sig",
-        field_map: Optional[Dict[str, str]] = None,
+        field_map: dict[str, str] | None = None,
         skip_rows: int = 0,
         **kwargs: Any,
     ):
@@ -280,8 +283,8 @@ class JSONReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
-        records_key: Optional[str] = None,
+        source: str | Path,
+        records_key: str | None = None,
         from_string: bool = False,
         **kwargs: Any,
     ):
@@ -339,7 +342,7 @@ class JSONLReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         encoding: str = "utf-8",
         **kwargs: Any,
     ):
@@ -394,8 +397,8 @@ class STIXBundleReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
-        stix_types: Optional[List[str]] = None,
+        source: str | Path,
+        stix_types: list[str] | None = None,
         from_string: bool = False,
         **kwargs: Any,
     ):
@@ -457,9 +460,9 @@ class TAXIICollectionReader(SourceReader):
     def __init__(
         self,
         collection: Any,
-        added_after: Optional[str] = None,
-        stix_types: Optional[List[str]] = None,
-        limit: Optional[int] = None,
+        added_after: str | None = None,
+        stix_types: list[str] | None = None,
+        limit: int | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id=getattr(collection, "title", "taxii"), **kwargs)
@@ -470,7 +473,7 @@ class TAXIICollectionReader(SourceReader):
 
     def _iter_records(self) -> Iterator[RawRecord]:
         try:
-            kwargs: Dict[str, Any] = {}
+            kwargs: dict[str, Any] = {}
             if self._added_after:
                 kwargs["added_after"] = self._added_after
 
@@ -548,7 +551,7 @@ class SQLReader(SourceReader):
         connection: Any,
         query: str,
         params: Any = None,
-        column_map: Optional[Dict[str, str]] = None,
+        column_map: dict[str, str] | None = None,
         close_connection: bool = False,
         **kwargs: Any,
     ):
@@ -620,9 +623,9 @@ class MISPReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path, list],
+        source: str | Path | list,
         from_string: bool = False,
-        attribute_types: Optional[List[str]] = None,
+        attribute_types: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id="misp", **kwargs)
@@ -744,7 +747,7 @@ class SyslogReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         fmt: str = "auto",
         encoding: str = "utf-8",
         **kwargs: Any,
@@ -852,7 +855,7 @@ class RSSReader(SourceReader):
         self,
         url: str,
         http_client: Any = None,
-        max_entries: Optional[int] = None,
+        max_entries: int | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id=url[:80], **kwargs)
@@ -924,7 +927,7 @@ class EmailReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         recursive: bool = False,
         **kwargs: Any,
     ):
@@ -936,7 +939,7 @@ class EmailReader(SourceReader):
         import email as email_lib
         from email import policy as email_policy
 
-        paths: List[Path] = []
+        paths: list[Path] = []
         if self._source.is_dir():
             glob = "**/*.eml" if self._recursive else "*.eml"
             paths = list(self._source.glob(glob))
@@ -957,7 +960,7 @@ class EmailReader(SourceReader):
     def _extract_record(self, msg: Any, path: str) -> RawRecord:
         body_text = ""
         body_html = ""
-        attachments: List[Dict[str, Any]] = []
+        attachments: list[dict[str, Any]] = []
 
         for part in msg.walk():
             ct = part.get_content_type()
@@ -1032,7 +1035,7 @@ class OpenIOCReader(SourceReader):
         "ioc2": "http://openioc.org/schemas/OpenIOC_1.1",
     }
 
-    def __init__(self, source: Union[str, Path], **kwargs: Any):
+    def __init__(self, source: str | Path, **kwargs: Any):
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
 
@@ -1196,8 +1199,8 @@ class ElasticReader(SourceReader):
         self,
         base_client: Any,
         index: str,
-        query: Optional[Dict[str, Any]] = None,
-        source_fields: Optional[List[str]] = None,
+        query: dict[str, Any] | None = None,
+        source_fields: list[str] | None = None,
         scroll_ttl: str = "2m",
         page_size: int = 500,
         **kwargs: Any,
@@ -1210,7 +1213,7 @@ class ElasticReader(SourceReader):
         self._scroll_ttl = scroll_ttl
 
     def _iter_records(self) -> Iterator[RawRecord]:
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "query": self._query,
             "size": self.batch_size,
         }

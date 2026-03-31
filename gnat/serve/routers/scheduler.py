@@ -12,7 +12,7 @@ POST /api/scheduler/jobs/{job_id}/trigger — Trigger a job immediately (async)
 from __future__ import annotations
 
 import threading
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -26,7 +26,7 @@ def _get_scheduler(request: Request):
     return sched
 
 
-def _job_to_dict(job: Any) -> Dict[str, Any]:
+def _job_to_dict(job: Any) -> dict[str, Any]:
     """Normalize a FeedJob to a JSON-safe dict."""
     if isinstance(job, dict):
         d = job
@@ -43,7 +43,7 @@ def _job_to_dict(job: Any) -> Dict[str, Any]:
 
 
 @router.get("/jobs")
-def list_jobs(request: Request) -> Dict[str, Any]:
+def list_jobs(request: Request) -> dict[str, Any]:
     """Return the status of all registered feed jobs."""
     sched = _get_scheduler(request)
     try:
@@ -58,7 +58,7 @@ def list_jobs(request: Request) -> Dict[str, Any]:
 
 
 @router.post("/jobs/{job_id}/trigger")
-def trigger_job(job_id: str, request: Request) -> Dict[str, Any]:
+def trigger_job(job_id: str, request: Request) -> dict[str, Any]:
     """Trigger a specific feed job immediately in a background thread."""
     sched = _get_scheduler(request)
     try:
