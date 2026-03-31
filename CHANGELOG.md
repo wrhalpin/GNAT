@@ -9,6 +9,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- **5 new platform connectors** (75+ total) registered in `CLIENT_REGISTRY`:
+  - `BitSightClient` (`gnat/connectors/bitsight/`) — BitSight Security Ratings & Vendor Risk Management; API Token auth; read-only company ratings, findings, breach insights, and portfolio management.
+  - `FlashpointClient` (`gnat/connectors/flashpoint/`) — Flashpoint Underground / Dark Web CTI; Bearer token auth; read-only alerts, IOCs, threat-actor profiles, forum posts, and ransomware intelligence. Fixed timestamp format bug in `_now_ts`.
+  - `HudsonRockClient` (`gnat/connectors/hudsonrock/`) — Hudson Rock Breach Intelligence & Credential Exposure; API key auth; read-only breaches, compromised credentials, IOCs, and victim intelligence.
+  - `Intel471Client` (`gnat/connectors/intel471/`) — Intel 471 Cybercrime-Focused Threat Intelligence; Bearer token auth; read-only actor profiles, malware campaigns, ransomware intelligence, IOCs, and alerts.
+  - `UpGuardClient` (`gnat/connectors/upguard/`) — UpGuard Vendor Risk + CAASM + DRP; API key auth; read-only vendors, breaches, questionnaires, VIP management, and content library.
+- Added `__init__.py` package initializers to 5 connector directories that were missing them: `bitsight`, `flashpoint`, `hudsonrock`, `intel471`, `upguard`.
+- Completed truncated `gnat/connectors/flashpoint/client.py` and `gnat/connectors/intel471/client.py` with full `ConnectorMixin` implementations including domain-specific helpers and STIX translation.
+- `README.md` Supported Platforms tables updated to include all 5 new connectors; platform count updated to 75+.
+- `config/config.ini.example` updated with credential sections for all 5 new connectors.
+
 - **8 new platform connectors** (70+ total) registered in `CLIENT_REGISTRY`:
   - `TrellixClient` (`gnat/connectors/trellix/`) — Trellix XDR / ePolicy Orchestrator; OAuth2 client-credentials; IOC, detection, and vulnerability ingestion.
   - `SophosClient` (`gnat/connectors/sophos/`) — Sophos Central endpoint protection; OAuth2; blocked-item management and SIEM alert ingestion.
