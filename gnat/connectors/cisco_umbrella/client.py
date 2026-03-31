@@ -54,10 +54,13 @@ Notes
 from __future__ import annotations
 
 import contextlib
+import json as _json
 import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any
+
+import urllib3
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -140,9 +143,12 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         self._management_key = management_api_key
         self._tlp_marking = tlp_marking
 
-        # Enforcement and management APIs live on different hosts
+        # Enforcement and management APIs live on different hosts;
+        # share a single pool manager per host to reuse connections.
         self._enforcement_host = _ENFORCEMENT_HOST
         self._management_host = _MANAGEMENT_HOST
+        self._enf_http = urllib3.PoolManager()
+        self._mgmt_http = urllib3.PoolManager()
 
     # ── Authentication ─────────────────────────────────────────────────
 
@@ -455,11 +461,8 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 "CiscoUmbrellaClient.list_allow_list requires 'management_api_key'."
             )
-        import urllib3
-
-        http = urllib3.PoolManager()
         url = f"{self._management_host}/v1/destinationlists"
-        resp = http.request(
+        resp = self._mgmt_http.request(
             "GET",
             url,
             headers={
@@ -471,8 +474,6 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 f"Umbrella Management API error {resp.status}: {resp.data.decode()}"
             )
-        import json as _json
-
         body = _json.loads(resp.data.decode())
         return body.get("data", [])
 
@@ -496,16 +497,11 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 "CiscoUmbrellaClient.add_to_allow_list requires 'management_api_key'."
             )
-        import json as _json
-
-        import urllib3
-
-        http = urllib3.PoolManager()
         payload = [
             {"type": "domain", "destination": d, "comment": comment}
             for d in domains
         ]
-        resp = http.request(
+        resp = self._mgmt_http.request(
             "POST",
             f"{self._management_host}/v1/destinationlists/allow/destinations",
             body=_json.dumps(payload).encode(),
@@ -539,11 +535,6 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 "CiscoUmbrellaClient.push_block_list requires 'enforcement_api_key'."
             )
-        import json as _json
-
-        import urllib3
-
-        http = urllib3.PoolManager()
         now = _now_ts()
         events = [
             {
@@ -559,15 +550,15 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             for d in domains
         ]
         payload = {"format": "json", "data": events}
-        resp = http.request(
+        url = f"{self._enforcement_host}/1.0/events?customerKey={self._enforcement_key}"
+        resp = self._enf_http.request(
             "POST",
-            f"{self._enforcement_host}/1.0/events",
+            url,
             body=_json.dumps(payload).encode(),
             headers={
                 "Authorization": f"Bearer {self._enforcement_key}",
                 "Content-Type": "application/json",
             },
-            fields={"customerKey": self._enforcement_key},
         )
         body = {}
         if resp.data:
@@ -639,20 +630,15 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 "CiscoUmbrellaClient.delete_object requires 'enforcement_api_key'."
             )
-        import json as _json
-
-        import urllib3
-
-        http = urllib3.PoolManager()
-        resp = http.request(
+        url = f"{self._enforcement_host}/1.0/domains?customerKey={self._enforcement_key}"
+        resp = self._enf_http.request(
             "DELETE",
-            f"{self._enforcement_host}/1.0/domains",
+            url,
             body=_json.dumps([domain]).encode(),
             headers={
                 "Authorization": f"Bearer {self._enforcement_key}",
                 "Content-Type": "application/json",
             },
-            fields={"customerKey": self._enforcement_key},
         )
         if resp.status not in (200, 204):
             raise GNATClientError(
