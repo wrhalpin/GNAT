@@ -236,9 +236,11 @@ class AsyncSTIXBase:
     def __init__(self, client: AsyncGNATClient | None = None, **kwargs: Any):
         self._async_client = client
         # Instantiate the underlying sync ORM object (no client — async manages I/O)
-        if self._sync_cls:
-            self._obj = self._sync_cls(**kwargs)
-        self.__dict__.update(self._obj.__dict__ if self._sync_cls else {})
+        # Use a local variable so Pylint can narrow the type from `type | None` to `type`.
+        sync_cls = self._sync_cls
+        if sync_cls is not None:
+            self._obj = sync_cls(**kwargs)
+        self.__dict__.update(self._obj.__dict__ if sync_cls is not None else {})
 
     def __getattr__(self, name: str) -> Any:
         try:
