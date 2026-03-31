@@ -370,43 +370,6 @@ api_key = YOUR_CLOUDSEK_API_KEY
 auth_type = token
 
 # =============================================================================
-# Grok/xAI
-# =============================================================================
-[grok]
-host = https://api.x.ai
-api_key = xai-...
-
-# =============================================================================
-# Google Gemini AI
-# =============================================================================
-[gemini]
-host = https://generativelanguage.googleapis.com
-api_key = YOUR_GEMINI_API_KEY
-
-# =============================================================================
-# ChatGPT
-# =============================================================================
-[chatgpt]
-host = https://api.openai.com
-api_key = <openai-api-key>
-
-# =============================================================================
-# MS/ Internal Copilot
-# =============================================================================
-[copilot]
-# Base URL for Microsoft Copilot or an internal Copilot-like LLM
-host = https://your-copilot-endpoint
-
-# Authentication mode: "api_key", "azure", or "none"
-auth_type = api_key
-
-# API key for internal deployments (used when auth_type = "api_key")
-api_key = your-api-key-here
-
-# Azure AD token for Microsoft Copilot (used when auth_type = "azure")
-azure_token = your-azure-ad-token-here
-
-# =============================================================================
 # Cyble Vision
 # =============================================================================
 [cyble_vision]
@@ -610,3 +573,47 @@ host    = https://api.datadoghq.com
 api_key = your_datadog_api_key_here
 app_key = your_datadog_application_key_here
 # EU customers: host = https://api.datadoghq.eu
+# =============================================================================
+# LLM Agents config
+# =============================================================================
+[llm]
+default_backend = claude          # claude | openai | grok | gemini | hybrid
+ai_confidence_ceiling = 70
+
+# Claude (existing)
+[claude]
+api_key = ...
+model = claude-sonnet-4-6        # or latest
+
+# OpenAI
+[openai]
+api_key = ...
+model = gpt-4o-mini              # or gpt-4o, o1-mini, etc.
+base_url = https://api.openai.com/v1   # for Azure or local proxies
+
+# Grok / xAI
+[grok]
+api_key = ...
+model = grok-4                   # or grok-beta, etc.
+host = https://api.x.ai
+
+# Gemini
+[gemini]
+api_key = ...
+model = gemini-2.5-flash         # or gemini-2.5-pro
+
+# =============================================================================
+# MS/ Internal Copilot
+# =============================================================================
+[copilot]
+# Base URL for Microsoft Copilot or an internal Copilot-like LLM
+host = https://your-copilot-endpoint
+
+# Authentication mode: "api_key", "azure", or "none"
+auth_type = api_key
+
+# API key for internal deployments (used when auth_type = "api_key")
+api_key = your-api-key-here
+
+# Azure AD token for Microsoft Copilot (used when auth_type = "azure")
+azure_token = your-azure-ad-token-here
