@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 29 security/threat intelligence platforms
+- A unified client interface for 95 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude API)
@@ -30,7 +30,7 @@ gnat/                        # Main Python package
 ├── config.py                # INI-based configuration management
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 29 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 95 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
 ├── cli/                     # CLI entry point (gnat/cli/main.py — 27 KB)
@@ -209,35 +209,101 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 
 | Platform | Module | Auth |
 |----------|--------|------|
-| ThreatQ | `gnat/connectors/threatq/` | OAuth2 |
-| CrowdStrike Falcon | `gnat/connectors/crowdstrike/` | OAuth2 |
-| Netskope | `gnat/connectors/netskope/` | API key |
-| Proofpoint TAP | `gnat/connectors/proofpoint/` | Basic auth |
-| Palo Alto XSOAR | `gnat/connectors/xsoar/` | API key |
-| Recorded Future | `gnat/connectors/recordedfuture/` | API key |
-| Splunk | `gnat/connectors/splunk/` | Basic/token |
-| VirusTotal | `gnat/connectors/virustotal/` | API key |
-| Shadowserver | `gnat/connectors/shadowserver/` | API key |
-| Rapid7 InsightVM/IDR | `gnat/connectors/rapid7/` | API key |
-| Nucleus | `gnat/connectors/nucleus/` | API key |
-| GreyMatter | `gnat/connectors/greymatter/` | API key |
-| Whistic | `gnat/connectors/whistic/` | API key |
-| RiskRecon | `gnat/connectors/riskrecon/` | API key |
-| Feedly | `gnat/connectors/feedly/` | OAuth2/API key |
-| ControlUp DEX | `gnat/connectors/controlup/` | Bearer token |
 | AlienVault OTX | `gnat/connectors/alienvault/` | API key |
+| Armis Centrix (IT/OT/IoT) | `gnat/connectors/armis/` | API secret key |
+| AWS Security Hub / GuardDuty | `gnat/connectors/aws_security/` | AWS SigV4 (access key + secret) |
+| Axonius | `gnat/connectors/axonius/` | API key + secret |
+| BitSight Security Ratings | `gnat/connectors/bitsight/` | API token |
+| VMware Carbon Black Cloud | `gnat/connectors/carbon_black/` | API key + connector ID |
+| Censys Internet Intelligence / ASM | `gnat/connectors/censys/` | API ID + secret |
+| OpenAI ChatGPT | `gnat/connectors/chatgpt/` | API key |
+| CISA KEV Catalog | `gnat/connectors/cisa/` | None (public) |
+| Claroty Platform (OT/IoT) | `gnat/connectors/claroty/` | Username/password |
+| CloudSEK Digital Risk Protection | `gnat/connectors/cloudsek/` | Bearer |
+| Microsoft Copilot for Security | `gnat/connectors/copilot/` | DirectLine / Bearer |
+| Palo Alto Cortex XDR / XSIAM | `gnat/connectors/cortex_xdr/` | API key pair (HMAC-signed) |
+| Cortex Xpanse (External ASM) | `gnat/connectors/cortex_xpanse/` | API key |
+| Cribl Stream | `gnat/connectors/cribl/` | Bearer |
+| CrowdStrike Falcon | `gnat/connectors/crowdstrike/` | OAuth2 |
+| Cyble Vision | `gnat/connectors/cyble_vision/` | API key |
+| CyCognito ASM | `gnat/connectors/cycognito/` | Bearer |
+| Darktrace Enterprise Immune System | `gnat/connectors/darktrace/` | HMAC public/private key |
+| Datadog Cloud SIEM | `gnat/connectors/datadog/` | API key + App key |
+| DefectDojo Vulnerability Management | `gnat/connectors/defectdojo/` | API token |
+| Microsoft Defender Threat Intelligence | `gnat/connectors/defenderti/` | OAuth2 (Azure AD) |
+| Dragos Platform (OT/ICS) | `gnat/connectors/dragos/` | Basic (API key + secret) |
 | Elastic SIEM | `gnat/connectors/elastic/` | API key/Basic |
+| ExtraHop Reveal(x) NDR | `gnat/connectors/extrahop/` | API key / OAuth2 |
+| Feedly Threat Intelligence | `gnat/connectors/feedly/` | OAuth2/API key |
+| Flare (Darknet/Threat Exposure) | `gnat/connectors/flare/` | Bearer |
+| Flashpoint Underground / Dark Web CTI | `gnat/connectors/flashpoint/` | Bearer |
+| Fortinet FortiEDR | `gnat/connectors/fortiedr/` | Username/password |
+| Fortinet FortiSIEM | `gnat/connectors/fortisiem/` | Username/password |
+| Fortinet FortiSOAR | `gnat/connectors/fortisoar/` | JWT / Basic |
+| Google Gemini | `gnat/connectors/gemini/` | API key |
+| Google Chronicle (SecOps SIEM) | `gnat/connectors/google_chronicle/` | Service account / API key |
 | Graylog | `gnat/connectors/graylog/` | API key/Basic |
-| MISP | `gnat/connectors/misp/` | API key |
+| Greenbone / OpenVAS | `gnat/connectors/greenbone/` | GMP username/password |
+| GreyMatter | `gnat/connectors/greymatter/` | API key |
+| GreyNoise | `gnat/connectors/greynoise/` | API key |
+| Grok AI | `gnat/connectors/grok/` | API key |
+| Group-IB Threat Intelligence | `gnat/connectors/group_ib/` | API key |
+| Have I Been Pwned (HIBP) | `gnat/connectors/hibp/` | API key |
+| Hudson Rock Breach Intelligence | `gnat/connectors/hudsonrock/` | API key |
+| Intel 471 Cybercrime Intelligence | `gnat/connectors/intel471/` | Bearer |
+| Atlassian Jira | `gnat/connectors/jira/` | Basic / Bearer |
+| Lansweeper IT Asset Management | `gnat/connectors/lansweeper/` | OAuth2 / Bearer |
+| LogRhythm NextGen SIEM | `gnat/connectors/logrhythm/` | Bearer / OAuth2 |
+| Mandiant Advantage | `gnat/connectors/mandiant/` | OAuth2 |
+| MISP Threat Sharing Platform | `gnat/connectors/misp/` | API key |
+| Netskope SASE / SSE | `gnat/connectors/netskope/` | API token |
+| Nozomi Networks Guardian / Vantage (OT/IoT) | `gnat/connectors/nozomi/` | API token / Basic |
+| Nucleus Security | `gnat/connectors/nucleus/` | API key |
 | OpenCTI | `gnat/connectors/opencti/` | API key |
+| Orca Security (Agentless CNAPP) | `gnat/connectors/orca/` | Bearer |
 | OSSIM | `gnat/connectors/ossim/` | Basic auth |
+| Palo Alto Prisma Cloud (CSPM/CNAPP) | `gnat/connectors/prisma_cloud/` | Access key + secret (JWT) |
+| Proofpoint TAP | `gnat/connectors/proofpoint/` | Basic auth |
+| PulseDive | `gnat/connectors/pulsedive/` | API key |
 | IBM QRadar | `gnat/connectors/qradar/` | API token |
-| Security Onion | `gnat/connectors/security_onion/` | API key |
+| Qualys VMDR | `gnat/connectors/qualys/` | Basic |
+| Rapid7 InsightVM/IDR | `gnat/connectors/rapid7/` | API key |
+| Recorded Future | `gnat/connectors/recordedfuture/` | API key |
+| RiskRecon | `gnat/connectors/riskrecon/` | OAuth2 |
+| Security Onion | `gnat/connectors/security_onion/` | Bearer |
+| SecurityScorecard Security Ratings | `gnat/connectors/securityscorecard/` | API token |
 | Microsoft Sentinel | `gnat/connectors/sentinel/` | OAuth2 (Azure AD) |
-| Snort | `gnat/connectors/snort/` | File/Syslog |
-| Suricata | `gnat/connectors/suricata/` | File/Syslog |
-| Wazuh | `gnat/connectors/wazuh/` | API key/Basic |
-| Zeek | `gnat/connectors/zeek/` | File/Syslog |
+| SentinelOne Singularity XDR | `gnat/connectors/sentinelone/` | API token |
+| ServiceNow ITSM / SecOps | `gnat/connectors/servicenow/` | Basic / Bearer |
+| ServiceNow SecOps (SIR + VR + TIARA) | `gnat/connectors/servicenow_secops/` | Basic / Bearer |
+| Shadowserver Foundation | `gnat/connectors/shadowserver/` | API key |
+| Shodan | `gnat/connectors/shodan/` | API key |
+| Snort IDS | `gnat/connectors/snort/` | File/Syslog |
+| SOCRadar Extended Threat Intelligence | `gnat/connectors/socradar/` | API key |
+| Sophos Central | `gnat/connectors/sophos/` | OAuth2 |
+| Splunk | `gnat/connectors/splunk/` | Basic/token |
+| Stellar Cyber Open XDR | `gnat/connectors/stellarcyber/` | API key |
+| Suricata IDS/IPS | `gnat/connectors/suricata/` | File/Syslog |
+| Vertex Project Synapse | `gnat/connectors/synapse/` | API key / Bearer |
+| Tanium Endpoint Management | `gnat/connectors/tanium/` | API token / session |
+| Tenable One Exposure Management | `gnat/connectors/tenable_one/` | X-ApiKeys |
+| TheHive Security Incident Response | `gnat/connectors/thehive/` | API key |
+| ThreatConnect | `gnat/connectors/threatconnect/` | OAuth2 / API token |
+| ThreatQ | `gnat/connectors/threatq/` | OAuth2 |
+| Anomali ThreatStream (OPTIC) | `gnat/connectors/threatstream/` | API key + username |
+| Trellix XDR / ePolicy Orchestrator | `gnat/connectors/trellix/` | OAuth2 |
+| Trend Micro Vision One XDR | `gnat/connectors/trendmicro_visionone/` | Bearer token |
+| UpGuard Vendor Risk + CAASM + DRP | `gnat/connectors/upguard/` | API key |
+| Vectra AI NDR | `gnat/connectors/vectra/` | API token |
+| VirusTotal | `gnat/connectors/virustotal/` | API key |
+| Wazuh SIEM/XDR | `gnat/connectors/wazuh/` | API key/Basic |
+| Whistic (Vendor Risk) | `gnat/connectors/whistic/` | API key |
+| Wiz CNAPP | `gnat/connectors/wiz/` | OAuth2 |
+| Palo Alto XSOAR | `gnat/connectors/xsoar/` | API key |
+| YETI (Your Everyday Threat Intelligence) | `gnat/connectors/yeti/` | API key |
+| Zeek Network Monitor | `gnat/connectors/zeek/` | File/Syslog |
+| ZeroFox Digital Risk Protection | `gnat/connectors/zerofox/` | Bearer |
+| ControlUp DEX | `gnat/connectors/controlup/` | Bearer token |
 
 ---
 
