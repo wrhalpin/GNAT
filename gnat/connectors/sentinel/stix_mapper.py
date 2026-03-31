@@ -10,8 +10,11 @@ Direction D — STIX bundle → Sentinel TI indicator batch
 """
 
 from __future__ import annotations
+
+import contextlib
 import uuid
 from datetime import datetime, timezone
+
 from .exceptions import SentinelSTIXError
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -206,10 +209,8 @@ class SentinelSTIXMapper:
         results = []
         for obj in bundle.get("objects", []):
             if obj.get("type") == "indicator":
-                try:
+                with contextlib.suppress(SentinelSTIXError):
                     results.append(self.stix_indicator_to_ti_properties(obj))
-                except SentinelSTIXError:
-                    pass
         return results
 
 

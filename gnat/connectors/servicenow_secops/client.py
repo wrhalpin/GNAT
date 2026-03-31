@@ -47,7 +47,7 @@ from __future__ import annotations
 import base64
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -55,7 +55,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 _STIX_NS = _uuid.UUID("b8c9d0e1-f2a3-4567-1234-890123456789")
 
 # ServiceNow SecOps table mapping
-_TABLE_MAP: Dict[str, str] = {
+_TABLE_MAP: dict[str, str] = {
     "observed-data":    "sn_si_incident",
     "vulnerability":    "sn_vr_vulnerable_item",
     "indicator":        "sn_ti_observable",
@@ -92,7 +92,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         TLS certificate verification.  Default ``True``.
     """
 
-    stix_type_map: Dict[str, str] = _TABLE_MAP
+    stix_type_map: dict[str, str] = _TABLE_MAP
 
     def __init__(
         self,
@@ -136,7 +136,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         except Exception as exc:
             raise GNATClientError(f"ServiceNow SecOps health check failed: {exc}") from exc
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single SecOps record by ``sys_id``.
 
@@ -157,9 +157,9 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         query: str = "",
         limit: int = 100,
         offset: int = 0,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List SecOps records with optional encoded query string.
 
@@ -177,7 +177,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
             Additional sysparm parameters.
         """
         table = self._resolve_table(stix_type)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "sysparm_limit":  limit,
             "sysparm_offset": offset,
         }
@@ -191,10 +191,10 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
     def upsert_object(
         self,
         stix_type: str,
-        payload: Dict[str, Any],
-        sys_id: Optional[str] = None,
+        payload: dict[str, Any],
+        sys_id: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create or update a SecOps record.
 
@@ -229,7 +229,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         priority: str = "3",
         category: str = "threat-intelligence",
         work_notes: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new Security Incident Response (SIR) record.
 
@@ -246,7 +246,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         work_notes : str
             Initial work notes to attach.
         """
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "short_description": short_description[:160],
             "description":       description,
             "priority":          priority,
@@ -260,8 +260,8 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
     def annotate_incident(
         self,
         incident_sys_id: str,
-        stix_obj: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        stix_obj: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Attach a STIX-derived work note to an existing security incident.
 
@@ -291,10 +291,10 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
 
     def list_vulnerable_items(
         self,
-        cve_id: Optional[str] = None,
-        state: Optional[str] = None,
+        cve_id: str | None = None,
+        state: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List Vulnerability Response items, optionally filtered by CVE or state.
 
@@ -313,7 +313,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         if state:
             query_parts.append(f"state={state}")
         query = "^".join(query_parts)
-        params: Dict[str, Any] = {"sysparm_limit": limit}
+        params: dict[str, Any] = {"sysparm_limit": limit}
         if query:
             params["sysparm_query"] = query
         resp = self.get(f"{_TABLE_BASE}/sn_vr_vulnerable_item", params=params)
@@ -326,7 +326,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         value: str,
         observable_type: str,
         description: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a threat intelligence observable in ServiceNow TIARA.
 
@@ -339,7 +339,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         description : str
             Human-readable description.
         """
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "value":       value,
             "type":        observable_type,
             "description": description,
@@ -349,9 +349,9 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
 
     def list_observables(
         self,
-        observable_type: Optional[str] = None,
+        observable_type: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List threat intelligence observables from ServiceNow TIARA.
 
@@ -362,7 +362,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        params: Dict[str, Any] = {"sysparm_limit": limit}
+        params: dict[str, Any] = {"sysparm_limit": limit}
         if observable_type:
             params["sysparm_query"] = f"type={observable_type}"
         resp = self.get(f"{_TABLE_BASE}/sn_ti_observable", params=params)
@@ -370,7 +370,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a ServiceNow SecOps record to the appropriate STIX 2.1 object."""
         # Detect record type by table-specific fields
         if "vulnerability" in native or "sn_vr" in str(native.get("sys_class_name", "")):
@@ -379,11 +379,11 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
             return self._observable_to_stix(native)
         return self._incident_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX SDO to a ServiceNow SecOps field payload."""
         return self._to_sn_payload(stix_dict.get("type", "observed-data"), stix_dict)
 
-    def _incident_to_stix(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def _incident_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
         sys_id     = record.get("sys_id", "")
         opened_at  = record.get("opened_at", _now_ts())
         return {
@@ -408,7 +408,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _vuln_item_to_stix(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_item_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
         sys_id   = record.get("sys_id", "")
         cve      = record.get("vulnerability", {})
         cve_id   = cve.get("value", "") if isinstance(cve, dict) else str(cve)
@@ -434,7 +434,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _observable_to_stix(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def _observable_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
         sys_id = record.get("sys_id", "")
         value  = record.get("value", "")
         obs_type = record.get("type", "domain")
@@ -479,7 +479,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         return table
 
     @staticmethod
-    def _to_sn_payload(stix_type: str, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _to_sn_payload(stix_type: str, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a ServiceNow field payload from a STIX SDO."""
         name = stix_dict.get("name", stix_dict.get("id", ""))
         desc = stix_dict.get("description", "")

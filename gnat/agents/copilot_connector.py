@@ -7,7 +7,7 @@ via the connector's to_stix() translation.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.connectors.copilot.client import CopilotClient
 
@@ -36,11 +36,11 @@ class CopilotConnectorAgent:
         text: str,
         system_prompt: str = "You are a helpful threat intelligence analyst.",
         temperature: float = 0.3,
-        max_tokens: Optional[int] = 512,
+        max_tokens: int | None = 512,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a single-shot analysis and return a STIX report dict."""
-        messages: List[Dict[str, str]] = [
+        messages: list[dict[str, str]] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": text},
         ]

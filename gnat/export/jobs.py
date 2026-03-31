@@ -77,7 +77,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from gnat.schedule.job import FeedJob, JobRunContext, RunRecord, _utcnow
 
@@ -138,17 +138,17 @@ class ExportJob(FeedJob):
     def __init__(
         self,
         job_id: str,
-        pipeline_factory: Callable[["JobRunContext"], "ExportPipeline"],
-        interval_seconds: Optional[int] = None,
-        cron: Optional[str] = None,
-        on_success: Optional[Callable[["RunRecord"], None]] = None,
-        on_failure:  Optional[Callable[["RunRecord"], None]] = None,
+        pipeline_factory: Callable[[JobRunContext], ExportPipeline],
+        interval_seconds: int | None = None,
+        cron: str | None = None,
+        on_success: Callable[[RunRecord], None] | None = None,
+        on_failure:  Callable[[RunRecord], None] | None = None,
         max_history: int = 100,
         overlap_policy: str = "skip",
         enabled: bool = True,
     ):
         self._pipeline_factory = pipeline_factory
-        self.last_export_result: Optional["ExportResult"] = None
+        self.last_export_result: ExportResult | None = None
 
         # FeedJob uses reader_factory / mapper_factory; we stub those and
         # override execute() to call the pipeline instead.
@@ -166,7 +166,7 @@ class ExportJob(FeedJob):
             enabled=enabled,
         )
 
-    def execute(self, scheduled_at: Optional[datetime] = None) -> RunRecord:
+    def execute(self, scheduled_at: datetime | None = None) -> RunRecord:
         """
         Execute the export pipeline for one run.
 

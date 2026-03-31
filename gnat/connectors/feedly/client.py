@@ -51,7 +51,7 @@ Notes
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -69,7 +69,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         Feedly access token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":      "iocFeed",
         "threat-actor":   "ttpFeed",
         "malware":        "ttpFeed",
@@ -78,7 +78,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     }
 
     # Feedly entity type → STIX pattern
-    _IOC_PATTERN: Dict[str, str] = {
+    _IOC_PATTERN: dict[str, str] = {
         "ip-src":  "[ipv4-addr:value = '{v}']",
         "ip-dst":  "[ipv4-addr:value = '{v}']",
         "url":     "[url:value = '{v}']",
@@ -106,7 +106,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         self.get("/v3/profile")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a Feedly entity by id.
 
@@ -120,10 +120,10 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch from the appropriate Feedly enterprise feed.
 
@@ -156,7 +156,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
             )
         raise GNATClientError(f"Feedly: unsupported STIX type '{stix_type}'")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError(
             "Feedly is read-only — object creation is not supported."
         )
@@ -170,9 +170,9 @@ class FeedlyClient(BaseClient, ConnectorMixin):
 
     def get_ioc_feed(
         self,
-        newer_than: Optional[int] = None,
+        newer_than: int | None = None,
         count: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch deduplicated IOC entries from the Feedly Enterprise IOC feed.
 
@@ -199,9 +199,9 @@ class FeedlyClient(BaseClient, ConnectorMixin):
 
     def get_ttp_feed(
         self,
-        newer_than: Optional[int] = None,
+        newer_than: int | None = None,
         count: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch MITRE ATT&CK TTP entries from the Feedly Enterprise TTP feed.
 
@@ -221,9 +221,9 @@ class FeedlyClient(BaseClient, ConnectorMixin):
 
     def get_cve_feed(
         self,
-        newer_than: Optional[int] = None,
+        newer_than: int | None = None,
         count: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch CVE entries from the Feedly Enterprise CVE feed.
 
@@ -244,9 +244,9 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def get_articles(
         self,
         stream_id: str,
-        newer_than: Optional[int] = None,
+        newer_than: int | None = None,
         count: int = 20,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch articles from a Feedly stream or board.
 
@@ -266,7 +266,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
             Article entries with ``title``, ``summary``, ``published``,
             ``alternate`` (URL), ``entities`` (AI-extracted entities).
         """
-        params: Dict[str, Any] = {"count": count}
+        params: dict[str, Any] = {"count": count}
         if newer_than:
             params["newerThan"] = newer_than
         import urllib.parse
@@ -274,7 +274,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         resp    = self.get(f"/v3/streams/{encoded}/contents", params=params)
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def search_feeds(self, query: str, count: int = 20) -> List[Dict[str, Any]]:
+    def search_feeds(self, query: str, count: int = 20) -> list[dict[str, Any]]:
         """
         Search for Feedly feeds matching a topic.
 
@@ -298,7 +298,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a Feedly IOC, TTP, or CVE entry to STIX 2.1.
 
@@ -325,7 +325,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
             "attack-pattern", "threat-actor", "malware"
         ):
             stix_type = data.get("type", "attack-pattern")
-            ttp: Dict[str, Any] = {
+            ttp: dict[str, Any] = {
                 "type":         stix_type,
                 "id":           f"{stix_type}--{data.get('id', '')}",
                 "name":         data.get("name", ""),
@@ -368,7 +368,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
             ],
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Feedly is read-only — from_stix returns an informational dict."""
         return {
             "note": "Feedly is read-only. No write API available.",
@@ -378,7 +378,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     # ── Helpers ────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _ms_to_iso(ms: Optional[int]) -> str:
+    def _ms_to_iso(ms: int | None) -> str:
         """Convert Unix milliseconds to ISO 8601 string."""
         if not ms:
             return ""

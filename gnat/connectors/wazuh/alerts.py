@@ -30,10 +30,14 @@ from .client import WazuhClient
 # ── Severity mapping ──────────────────────────────────────────────────────────
 
 def _level_to_severity(level: int) -> int:
-    if level >= 15: return 4
-    if level >= 12: return 3
-    if level >= 8: return 2
-    if level >= 4: return 1
+    if level >= 15:
+        return 4
+    if level >= 12:
+        return 3
+    if level >= 8:
+        return 2
+    if level >= 4:
+        return 1
     return 0
 
 _SEVERITY_LABELS = {0: "informational", 1: "low", 2: "medium", 3: "high", 4: "critical"}

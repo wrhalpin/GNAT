@@ -40,10 +40,9 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import time
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -56,7 +55,7 @@ def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def _darktrace_signature(path: str, private_key: str, public_key: str) -> Dict[str, str]:
+def _darktrace_signature(path: str, private_key: str, public_key: str) -> dict[str, str]:
     """
     Build Darktrace HMAC authentication headers.
 
@@ -75,7 +74,7 @@ def _darktrace_signature(path: str, private_key: str, public_key: str) -> Dict[s
         Headers dict with ``DTAPI-Token``, ``DTAPI-Date``, and ``DTAPI-Signature``.
     """
     date_str = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
-    message  = f"{path}\n{public_key}\n{date_str}".encode("utf-8")
+    message  = f"{path}\n{public_key}\n{date_str}".encode()
     sig      = hmac.new(private_key.encode("utf-8"), message, hashlib.sha1).hexdigest()
     return {
         "DTAPI-Token":     public_key,
@@ -98,7 +97,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         Darktrace API private key (used for HMAC signing).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "modelbreaches",
         "threat-actor":  "devices",
     }
@@ -128,7 +127,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         # Mark as authenticated; actual signing happens per-request in _signed_get/post
         self._auth_headers["Accept"] = "application/json"
 
-    def _signed_headers(self, path: str) -> Dict[str, str]:
+    def _signed_headers(self, path: str) -> dict[str, str]:
         """Return per-request HMAC-signed headers merged with base auth headers."""
         signed = _darktrace_signature(path, self._private_key, self._public_key)
         return {**self._auth_headers, **signed}
@@ -140,13 +139,13 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         self.get("/status")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single model breach or device by ID."""
         if stix_type == "observed-data":
             resp = self.get(f"/modelbreaches/{object_id}")
             return resp if isinstance(resp, dict) else {}
         if stix_type == "threat-actor":
-            resp = self.get(f"/devices", params={"did": object_id})
+            resp = self.get("/devices", params={"did": object_id})
             devs = resp.get("devices", []) if isinstance(resp, dict) else []
             return devs[0] if devs else {}
         raise GNATClientError(f"Darktrace: unsupported STIX type '{stix_type}'")
@@ -154,12 +153,12 @@ class DarktraceClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str = "observed-data",
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List model breaches or devices."""
-        params: Dict[str, Any] = {"count": page_size, "offset": (page - 1) * page_size}
+        params: dict[str, Any] = {"count": page_size, "offset": (page - 1) * page_size}
         if filters:
             params.update(filters)
 
@@ -171,7 +170,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
             return resp.get("devices", []) if isinstance(resp, dict) else []
         raise GNATClientError(f"Darktrace: unsupported STIX type '{stix_type}'")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Darktrace is primarily read-only; upsert only supported for threat intel feed."""
         if stix_type != "indicator":
             raise GNATClientError("Darktrace: upsert only supported for custom intel feed entries")
@@ -188,9 +187,9 @@ class DarktraceClient(BaseClient, ConnectorMixin):
 
     def list_alerts(
         self,
-        min_score: Optional[float] = None,
+        min_score: float | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch model breach alerts.
 
@@ -201,18 +200,18 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        params: Dict[str, Any] = {"count": limit}
+        params: dict[str, Any] = {"count": limit}
         if min_score is not None:
             params["minscore"] = min_score
         resp = self.get("/alerts", params=params)
         return resp if isinstance(resp, list) else []
 
-    def list_model_breaches(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_model_breaches(self, limit: int = 100) -> list[dict[str, Any]]:
         """Fetch detailed model breach records."""
         resp = self.get("/modelbreaches", params={"count": limit})
         return resp if isinstance(resp, list) else []
 
-    def list_devices(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_devices(self, limit: int = 100) -> list[dict[str, Any]]:
         """Fetch AI-scored network device entities."""
         resp = self.get("/devices", params={"count": limit})
         return resp.get("devices", []) if isinstance(resp, dict) else []
@@ -222,7 +221,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         value: str,
         entry_type: str = "ip",
         description: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Add an entry to the Darktrace custom threat intelligence feed.
 
@@ -244,13 +243,13 @@ class DarktraceClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Darktrace model breach or device to a STIX 2.1 object."""
         if "pbid" in native or "triggeredComponents" in native:
             return self._breach_to_stix(native)
         return self._device_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX indicator to a Darktrace intel feed entry."""
         return {
             "value":       stix_dict.get("name", ""),
@@ -258,7 +257,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
             "description": stix_dict.get("description", "Imported via GNAT"),
         }
 
-    def _breach_to_stix(self, breach: Dict[str, Any]) -> Dict[str, Any]:
+    def _breach_to_stix(self, breach: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         bid = str(breach.get("pbid", ""))
         ts  = breach.get("time", now)
@@ -281,7 +280,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _device_to_stix(self, device: Dict[str, Any]) -> Dict[str, Any]:
+    def _device_to_stix(self, device: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         did = str(device.get("did", ""))
         return {
@@ -291,7 +290,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
             "created":      now,
             "modified":     now,
             "name":         device.get("hostname", device.get("ip", f"Device {did}")),
-            "description":  f"Darktrace AI-monitored network entity",
+            "description":  "Darktrace AI-monitored network entity",
             "x_darktrace": {
                 "device_id": did,
                 "ip":        device.get("ip"),

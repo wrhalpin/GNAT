@@ -26,11 +26,11 @@ INI config (HMAC mode)::
     auth_type  = hmac
 """
 
+import base64
 import hashlib
 import hmac as _hmac
-import base64
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
@@ -56,7 +56,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         ``"token"`` (default) or ``"hmac"``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":    "indicators",
         "threat-actor": "groups",
         "malware":      "groups",
@@ -103,7 +103,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve one TC object by numeric ID."""
         resource = self.stix_type_map.get(stix_type, "indicators")
         resp = self._request_signed("GET", f"{_API}/{resource}/{object_id}")
@@ -112,10 +112,10 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List TC objects.
 
@@ -126,7 +126,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         * ``fields`` (str): comma-separated extra fields to include
         """
         resource = self.stix_type_map.get(stix_type, "indicators")
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "resultStart": (page - 1) * page_size,
             "resultLimit": page_size,
         }
@@ -143,8 +143,8 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         return data if isinstance(data, list) else []
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create or update a TC indicator/group."""
         resource = self.stix_type_map.get(stix_type, "indicators")
         obj_id = payload.pop("id", None)
@@ -163,7 +163,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a TC indicator dict to a STIX Indicator SDO."""
         tc_type = native.get("type", "")
         value   = native.get("summary", native.get("name", ""))
@@ -184,7 +184,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
             "x_tc_owner":       native.get("ownerName", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX Indicator to a TC indicator payload."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -205,8 +205,8 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         self,
         method: str,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        json: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
+        json: Optional[dict[str, Any]] = None,
     ) -> Any:
         """Dispatch an HTTP request with HMAC headers if needed."""
         if self._auth_type == "hmac":
@@ -229,7 +229,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
 
     def _compute_hmac(self, path: str, method: str, timestamp: str) -> str:
         """Compute HMAC-SHA256 signature: HMAC(secret_key, path:method:timestamp)."""
-        message = f"{path}:{method.upper()}:{timestamp}".encode("utf-8")
+        message = f"{path}:{method.upper()}:{timestamp}".encode()
         secret  = self._secret_key.encode("utf-8")
         digest  = _hmac.new(secret, message, hashlib.sha256).digest()
         return base64.b64encode(digest).decode("utf-8")

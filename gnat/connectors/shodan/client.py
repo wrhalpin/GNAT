@@ -47,7 +47,7 @@ Notes
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -70,7 +70,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
         Shodan API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "host",
         "indicator": "host",
         "vulnerability": "exploit",
@@ -85,7 +85,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """Inject Shodan API key as query parameter (preferred) and JSON headers."""
-        # Many Shodan endpoints expect ?key=... 
+        # Many Shodan endpoints expect ?key=...
         # BaseClient can append it via params; we also set header for flexibility
         self._auth_headers["X-API-Key"] = self._api_key
         self._auth_headers["Accept"] = "application/json"
@@ -98,7 +98,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
         self.get("/api-info")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single host by IP (most common use case)."""
         if stix_type in ("observed-data", "indicator"):
             return self.host_lookup(object_id)
@@ -107,10 +107,10 @@ class ShodanClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search hosts or exploits.
 
@@ -137,7 +137,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"list_objects not implemented for STIX type {stix_type} in Shodan")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Shodan is read-only — no object creation or updates supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -145,7 +145,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def host_lookup(self, ip: str) -> Dict[str, Any]:
+    def host_lookup(self, ip: str) -> dict[str, Any]:
         """Get detailed information about a single IP/host."""
         return self.get(f"/shodan/host/{ip}", params={"key": self._api_key})
 
@@ -155,7 +155,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
         page: int = 1,
         limit: int = 100,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search Shodan for hosts matching a query (Shodan search syntax)."""
         params = {
             "query": query,
@@ -172,7 +172,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
         query: str = "",
         page: int = 1,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search the Shodan Exploits database (uses exploits.shodan.io)."""
         # Note: exploits API has its own base URL in some cases
         params = {"query": query, "page": page, "key": self._api_key}
@@ -180,14 +180,14 @@ class ShodanClient(BaseClient, ConnectorMixin):
         resp = self.get("https://exploits.shodan.io/api/search", params=params)
         return resp.get("matches", []) if isinstance(resp, dict) else []
 
-    def count_hosts(self, query: str = "") -> Dict[str, Any]:
+    def count_hosts(self, query: str = "") -> dict[str, Any]:
         """Get count of matching hosts without returning full results."""
         params = {"query": query, "key": self._api_key}
         return self.get("/shodan/host/count", params=params)
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate Shodan host, match, or exploit to STIX 2.1.
 
@@ -210,7 +210,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
             "x_shodan": native,
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Shodan is read-only. Returns informational dict."""
         return {
             "note": "Shodan connector is read-only. Use host_lookup or search_hosts helpers.",
@@ -219,7 +219,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    def _host_to_stix(self, host: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _host_to_stix(self, host: dict[str, Any], now: str) -> dict[str, Any]:
         """Map Shodan host record to STIX observed-data with services."""
         ip = host.get("ip_str", "")
         host_id = f"observed-data--shodan-{ip.replace('.', '-')}"
@@ -243,7 +243,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _exploit_to_stix(self, exploit: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _exploit_to_stix(self, exploit: dict[str, Any], now: str) -> dict[str, Any]:
         """Map Shodan exploit data to STIX vulnerability."""
         cve = exploit.get("cve", exploit.get("id", ""))
         return {

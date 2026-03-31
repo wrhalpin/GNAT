@@ -27,8 +27,9 @@ https://learn.microsoft.com/en-us/graph/api/resources/tiindicator
 
 import json as _json
 import urllib.parse
+from typing import Any, Optional
+
 import urllib3
-from typing import Any, Dict, List, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -55,7 +56,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         Service principal client secret.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":    "tiIndicators",
         "threat-actor": "tiIndicators",
         "malware":      "tiIndicators",
@@ -117,7 +118,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve a TI indicator by its Graph object ID."""
         resp = self.get(f"{_TI}/{object_id}")
         return resp if isinstance(resp, dict) else {}
@@ -125,10 +126,10 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List TI indicators.
 
@@ -138,7 +139,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
           e.g. ``"threatType eq 'Malware'"``
         * ``$search`` (str): OData search expression
         """
-        params: Dict[str, Any] = {"$top": min(page_size, 1000)}
+        params: dict[str, Any] = {"$top": min(page_size, 1000)}
         if page > 1:
             params["$skip"] = (page - 1) * page_size
         if filters:
@@ -150,8 +151,8 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         return resp.get("value", [])
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Create or update a TI indicator in MS Graph.
 
@@ -173,7 +174,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Graph ``tiIndicator`` object to a STIX Indicator SDO."""
         value   = (
             native.get("networkIPv4")
@@ -205,7 +206,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
                                   else [],
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a Graph ``tiIndicator`` POST payload from a STIX Indicator."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -226,7 +227,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _make_pattern(native: Dict[str, Any], value: str) -> str:
+    def _make_pattern(native: dict[str, Any], value: str) -> str:
         if native.get("networkIPv4"):
             return f"[ipv4-addr:value = '{native['networkIPv4']}']"
         if native.get("networkIPv6"):
@@ -243,7 +244,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         return f"[domain-name:value = '{value}']"
 
     @staticmethod
-    def _stix_pattern_to_ti_payload(pattern: str, value: str) -> Dict[str, Any]:
+    def _stix_pattern_to_ti_payload(pattern: str, value: str) -> dict[str, Any]:
         if "ipv4-addr" in pattern:
             return {"networkIPv4": value}
         if "ipv6-addr" in pattern:

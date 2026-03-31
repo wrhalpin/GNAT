@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
-def _get_reports_dir(request: Request) -> Optional[str]:
+def _get_reports_dir(request: Request) -> str | None:
     return getattr(request.app.state, "reports_dir", None)
 
 
@@ -31,8 +31,8 @@ def _fmt_size(n: int) -> str:
     return f"{max(1, n // 1024)} KB"
 
 
-def _scan_dir(rdir: str) -> List[Dict[str, Any]]:
-    entries: List[Dict[str, Any]] = []
+def _scan_dir(rdir: str) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
     try:
         for p in Path(rdir).iterdir():
             if not p.is_file():
@@ -54,7 +54,7 @@ def _scan_dir(rdir: str) -> List[Dict[str, Any]]:
 
 
 @router.get("")
-def list_reports(request: Request) -> Dict[str, Any]:
+def list_reports(request: Request) -> dict[str, Any]:
     """List all report files in the configured reports directory."""
     rdir = _get_reports_dir(request)
     if not rdir or not os.path.isdir(rdir):

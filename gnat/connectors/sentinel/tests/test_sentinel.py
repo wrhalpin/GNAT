@@ -27,34 +27,33 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch
 
+from gnat.connectors.sentinel.analytic_rules import SentinelAnalyticRuleCommands
+from gnat.connectors.sentinel.auth import SentinelAuthManager
+from gnat.connectors.sentinel.client import SentinelClient
 from gnat.connectors.sentinel.config import SentinelConfig, load_sentinel_config
 from gnat.connectors.sentinel.exceptions import (
-    SentinelAuthError,
     SentinelAPIError,
+    SentinelAuthError,
     SentinelConfigError,
     SentinelNotFoundError,
     SentinelRateLimitError,
     SentinelSTIXError,
 )
-from gnat.connectors.sentinel.auth import SentinelAuthManager
-from gnat.connectors.sentinel.client import SentinelClient
 from gnat.connectors.sentinel.incidents import SentinelIncidentCommands
-from gnat.connectors.sentinel.analytic_rules import SentinelAnalyticRuleCommands
-from gnat.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
 from gnat.connectors.sentinel.stix_mapper import SentinelSTIXMapper
-
+from gnat.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def _make_config(**overrides) -> SentinelConfig:
-    defaults = dict(
-        tenant_id="test-tenant",
-        client_id="test-client",
-        client_secret="test-secret",
-        subscription_id="test-sub",
-        resource_group="test-rg",
-        workspace_name="test-ws",
-    )
+    defaults = {
+        "tenant_id": "test-tenant",
+        "client_id": "test-client",
+        "client_secret": "test-secret",
+        "subscription_id": "test-sub",
+        "resource_group": "test-rg",
+        "workspace_name": "test-ws",
+    }
     defaults.update(overrides)
     return SentinelConfig(**defaults)
 
@@ -302,9 +301,8 @@ class TestSentinelClient(unittest.TestCase):
     def test_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"):
-            with self.assertRaises(SentinelRateLimitError):
-                client.get("incidents")
+        with patch("time.sleep"), self.assertRaises(SentinelRateLimitError):
+            client.get("incidents")
 
     def test_204_returns_empty_dict(self):
         client, mock_http = _make_client()

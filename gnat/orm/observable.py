@@ -5,6 +5,7 @@ STIX 2.1 Cyber Observable Object (SCO) base.
 """
 from gnat.orm.base import STIXBase
 
+
 class Observable(STIXBase):
     """
     Generic STIX 2.1 Cyber Observable.

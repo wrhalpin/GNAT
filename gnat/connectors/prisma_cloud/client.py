@@ -52,7 +52,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -78,7 +78,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         Prisma Cloud secret key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "alert",
         "vulnerability": "vulnerability",
         "report":        "compliance",
@@ -116,7 +116,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         self.get("/alert/v2/alert", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single alert, vulnerability, or compliance report by ID."""
         if stix_type == "indicator":
             resp = self.get(f"/alert/v2/alert/{object_id}")
@@ -135,16 +135,16 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Prisma Cloud alerts, vulnerabilities, or compliance findings."""
         f = filters or {}
         offset = (page - 1) * page_size
 
         if stix_type == "indicator":
-            params: Dict[str, Any] = {"limit": page_size, "offset": offset}
+            params: dict[str, Any] = {"limit": page_size, "offset": offset}
             if "status" in f:
                 params["status"] = f["status"]
             if "policy.severity" in f:
@@ -155,7 +155,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
             return resp.get("items", [])
 
         if stix_type == "vulnerability":
-            params_v: Dict[str, Any] = {"limit": page_size, "offset": offset}
+            params_v: dict[str, Any] = {"limit": page_size, "offset": offset}
             if "severity" in f:
                 params_v["severity"] = f["severity"]
             resp = self.get("/v2/vulnerability/assets", params=params_v)
@@ -167,7 +167,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"Unsupported STIX type for Prisma Cloud: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Dismiss or snooze a Prisma Cloud alert."""
         if stix_type == "indicator":
             alert_id = payload.get("alertId", payload.get("id", ""))
@@ -195,28 +195,28 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
-    def get_policies(self, policy_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_policies(self, policy_type: str | None = None) -> list[dict[str, Any]]:
         """Retrieve Prisma Cloud security policies."""
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if policy_type:
             params["policy.type"] = policy_type
         resp = self.get("/policy/v2/policy", params=params)
         return resp if isinstance(resp, list) else []
 
-    def get_assets(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_assets(self, limit: int = 100) -> list[dict[str, Any]]:
         """Retrieve cloud assets from resource scan results."""
         resp = self.get("/resource/scan_info", params={"limit": limit})
         return resp.get("resources", []) if isinstance(resp, dict) else []
 
     def get_compliance_posture(
-        self, compliance_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, compliance_id: str | None = None
+    ) -> dict[str, Any]:
         """Return overall compliance posture or a specific standard's status."""
         path = f"/compliance/{compliance_id}/posture" if compliance_id else "/compliance/posture"
         resp = self.get(path)
         return resp if isinstance(resp, dict) else {}
 
-    def search_config(self, rql_query: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def search_config(self, rql_query: str, limit: int = 100) -> list[dict[str, Any]]:
         """Run a Prisma Cloud RQL config query."""
         resp = self.post("/search/config", json={
             "query": rql_query,
@@ -225,14 +225,14 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         })
         return resp.get("data", {}).get("items", []) if isinstance(resp, dict) else []
 
-    def search_event(self, rql_query: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def search_event(self, rql_query: str, limit: int = 100) -> list[dict[str, Any]]:
         """Run a Prisma Cloud RQL event query."""
         resp = self.post("/search/event", json={"query": rql_query, "limit": limit})
         return resp.get("data", {}).get("items", []) if isinstance(resp, dict) else []
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Prisma Cloud object to STIX."""
         # Dispatch by object shape
         if "id" in native and "policy" in native:
@@ -244,7 +244,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         # Default: treat as alert
         return self._alert_to_stix(native)
 
-    def _alert_to_stix(self, alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"prisma-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25,
@@ -269,7 +269,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
             else f"[file:name = 'prisma-alert-{alert_id[:32]}']"
         )
         sectors = alert.get("x_target_sectors", [])
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{uid}",
             "name": policy.get("name", f"Prisma Alert {alert_id}"),
@@ -297,7 +297,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = sectors
         return stix
 
-    def _vuln_to_stix(self, vuln: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
         cve_id = vuln.get("cveId", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"prisma-cve-{cve_id}"))
         cvss = vuln.get("cvssScore", 0.0)
@@ -324,7 +324,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _compliance_to_stix(self, report: Dict[str, Any]) -> Dict[str, Any]:
+    def _compliance_to_stix(self, report: dict[str, Any]) -> dict[str, Any]:
         standard = report.get("name", "Prisma Compliance Report")
         uid = str(_uuid.uuid5(_STIX_NS, f"prisma-compliance-{standard}"))
         ts = report.get("scanTime", _now_ts())
@@ -351,7 +351,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract Prisma Cloud-compatible fields from a STIX dict."""
         return {
             "alertId": stix_dict.get("id", "").replace("indicator--", ""),

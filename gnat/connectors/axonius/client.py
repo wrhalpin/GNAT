@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -69,7 +69,7 @@ class AxoniusClient(BaseClient, ConnectorMixin):
         Axonius API secret.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "report":        "assets",
         "vulnerability": "vulnerabilities",
     }
@@ -94,7 +94,7 @@ class AxoniusClient(BaseClient, ConnectorMixin):
         self.get("/api/v2/assets", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "report":
             return self.get(f"/api/v2/assets/{object_id}")
         if stix_type == "vulnerability":
@@ -104,12 +104,12 @@ class AxoniusClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size, "page": page}
+        params: dict[str, Any] = {"limit": page_size, "page": page}
         params.update(filters)
 
         if stix_type == "vulnerability":
@@ -119,7 +119,7 @@ class AxoniusClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v2/assets", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Axonius connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -130,45 +130,45 @@ class AxoniusClient(BaseClient, ConnectorMixin):
     def fetch_assets(
         self,
         limit: int = 100,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch unified asset inventory with optional filters."""
-        params: Dict[str, Any] = {"limit": limit, **(filters or {})}
+        params: dict[str, Any] = {"limit": limit, **(filters or {})}
         resp = self.get("/api/v2/assets", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def fetch_vulnerabilities(
         self,
         limit: int = 100,
-        severity: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        severity: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch correlated vulnerabilities."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if severity:
             params["severity"] = severity.lower()
         resp = self.get("/api/v2/vulnerabilities", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def run_query(self, query_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def run_query(self, query_id: str, limit: int = 50) -> list[dict[str, Any]]:
         """Execute a saved Axonius query."""
         resp = self.get(f"/api/v2/queries/{query_id}/run", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch asset vs. vulnerability."""
         if "vulnerabilities" in native or "severity" in native and "cve" in str(native).lower():
             return self._vuln_to_stix(native)
         return self._asset_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "Axonius is read-only for asset and vulnerability data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _asset_to_stix(self, asset: Dict[str, Any]) -> Dict[str, Any]:
+    def _asset_to_stix(self, asset: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         aid = asset.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'axonius:{aid}')}"
@@ -190,7 +190,7 @@ class AxoniusClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _vuln_to_stix(self, vuln: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         vid = vuln.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'axonius:{vid}')}"

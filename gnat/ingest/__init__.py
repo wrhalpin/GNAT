@@ -26,11 +26,11 @@ Quick start::
 """
 
 from gnat.ingest.base import (
-    SourceReader,
-    RecordMapper,
-    IngestResult,
     DeduplicationCache,
+    IngestResult,
     RawRecord,
+    RecordMapper,
+    SourceReader,
 )
 from gnat.ingest.pipeline.pipeline import IngestPipeline
 

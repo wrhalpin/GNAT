@@ -1,18 +1,27 @@
 """tests for Graylog connector"""
-import base64, configparser, json, unittest
+import base64
+import configparser
+import json
+import unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.graylog import (
-    GraylogConfig, GraylogConfigError, GraylogAuthError,
-    GraylogAPIError, GraylogNotFoundError,
-    GraylogClient, GraylogSearchCommands, GraylogStreamCommands,
-    GraylogSystemCommands, GraylogSTIXMapper,
+    GraylogAPIError,
+    GraylogAuthError,
+    GraylogClient,
+    GraylogConfig,
+    GraylogConfigError,
+    GraylogNotFoundError,
+    GraylogSearchCommands,
+    GraylogSTIXMapper,
+    GraylogStreamCommands,
+    GraylogSystemCommands,
     load_graylog_config,
 )
 
 
 def _cfg(**kw):
-    d = dict(url="https://graylog.test:9000", username="admin", password="pass")
+    d = {"url": "https://graylog.test:9000", "username": "admin", "password": "pass"}
     d.update(kw)
     return GraylogConfig(**d)
 
@@ -104,7 +113,9 @@ class TestGraylogClient(unittest.TestCase):
 
     def test_204_returns_empty_dict(self):
         c, mock_http = _make_client()
-        r = MagicMock(); r.status = 204; r.data = b""
+        r = MagicMock()
+        r.status = 204
+        r.data = b""
         mock_http.request.return_value = r
         result = c.delete("streams/s1")
         self.assertEqual(result, {})

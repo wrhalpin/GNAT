@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -67,7 +67,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         Hudson Rock API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "credentials",
         "report":    "breaches",
     }
@@ -91,7 +91,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         self.get("/v1/breaches", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "report":
             return self.get(f"/v1/breaches/{object_id}")
         if stix_type == "indicator":
@@ -101,12 +101,12 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size}
+        params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
 
         if stix_type == "indicator":
@@ -116,7 +116,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         resp = self.get("/v1/breaches", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Hudson Rock connector is read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -127,11 +127,11 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
     def fetch_breaches(
         self,
         limit: int = 50,
-        since: Optional[str] = None,
-        victim_type: Optional[str] = None,   # company, individual, etc.
-    ) -> List[Dict[str, Any]]:
+        since: str | None = None,
+        victim_type: str | None = None,   # company, individual, etc.
+    ) -> list[dict[str, Any]]:
         """Fetch recent breach events."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if since:
             params["since"] = since
         if victim_type:
@@ -142,11 +142,11 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
     def fetch_credentials(
         self,
         limit: int = 50,
-        domain: Optional[str] = None,
-        email: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        domain: str | None = None,
+        email: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Search compromised credentials."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if domain:
             params["domain"] = domain
         if email:
@@ -157,7 +157,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
     def fetch_iocs(
         self,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch extracted IOCs from recent compromises."""
         resp = self.get("/v1/iocs", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -165,10 +165,10 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
     def fetch_victims(
         self,
         limit: int = 50,
-        victim_name: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        victim_name: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch victim details (companies or individuals)."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if victim_name:
             params["name"] = victim_name
         resp = self.get("/v1/victims", params=params)
@@ -176,19 +176,19 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch credential/IOC (indicator) vs. breach/victim (report)."""
         if "email" in native or "password" in native or "hash" in native:
             return self._credential_to_stix(native)
         return self._breach_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "Hudson Rock is read-only for breach and credential intelligence.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _credential_to_stix(self, cred: Dict[str, Any]) -> Dict[str, Any]:
+    def _credential_to_stix(self, cred: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         cid = cred.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'hudsonrock:{cid}')}"
@@ -211,7 +211,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _breach_to_stix(self, breach: Dict[str, Any]) -> Dict[str, Any]:
+    def _breach_to_stix(self, breach: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         bid = breach.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'hudsonrock:{bid}')}"

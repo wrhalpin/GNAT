@@ -24,7 +24,7 @@ Config::
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.nlp.query_spec import QuerySpec
 
@@ -60,7 +60,7 @@ class NLPQueryEngine:
     def __init__(
         self,
         backend: str = "builtin",
-        claude_config: Optional[Any] = None,
+        claude_config: Any | None = None,
         default_limit: int = 100,
     ) -> None:
         self._backend_name  = backend
@@ -72,7 +72,7 @@ class NLPQueryEngine:
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_config(cls, config: Any) -> "NLPQueryEngine":
+    def from_config(cls, config: Any) -> NLPQueryEngine:
         """
         Instantiate from a :class:`~gnat.config.GNATConfig` object.
 
@@ -131,8 +131,8 @@ class NLPQueryEngine:
     def query(
         self,
         query: str,
-        connectors: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        connectors: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Parse *query* and dispatch to all matching connectors.
 
@@ -154,7 +154,7 @@ class NLPQueryEngine:
             it.
         """
         spec      = self.parse(query)
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
 
         if not connectors:
             # Return the spec serialised so callers can inspect it
@@ -190,7 +190,7 @@ class NLPQueryEngine:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _build_parser(backend: str, claude_config: Optional[Any]) -> Any:
+    def _build_parser(backend: str, claude_config: Any | None) -> Any:
         if backend == "claude":
             if claude_config is None:
                 raise ValueError(

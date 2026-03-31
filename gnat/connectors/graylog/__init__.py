@@ -39,12 +39,12 @@ import configparser
 import json
 import time
 import urllib.parse
-import urllib3
-from dataclasses import dataclass, field
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
@@ -222,7 +222,9 @@ class GraylogClient:
                 resp = self._http.request(method, url, body=encoded, headers=hdrs)
             except urllib3.exceptions.HTTPError as e:
                 if attempt < 3:
-                    time.sleep(delay); delay *= 2; continue
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
                 raise GraylogAPIError(str(e), endpoint=url) from e
             if resp.status in (401, 403):
                 raise GraylogAuthError(
@@ -231,7 +233,9 @@ class GraylogClient:
             if resp.status == 404:
                 raise GraylogNotFoundError(f"Not found: {url}", 404, url)
             if resp.status in self._RETRYABLE and attempt < 3:
-                time.sleep(delay); delay *= 2; continue
+                time.sleep(delay)
+                delay *= 2
+                continue
             if resp.status not in (200, 201, 204):
                 raise GraylogAPIError(f"HTTP {resp.status}", resp.status, url)
             if resp.status == 204 or not resp.data:
@@ -506,7 +510,8 @@ class GraylogSTIXMapper:
                        "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
                        "spec_version": "2.1", "value": ip}
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         if user := msg.get("username"):
@@ -540,7 +545,8 @@ class GraylogSTIXMapper:
         for m in messages:
             for obj in self.message_to_stix_bundle(m).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
         return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
                 "spec_version": "2.1", "objects": all_objects}
 

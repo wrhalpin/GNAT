@@ -45,7 +45,7 @@ Severity mapping (RiskRecon → STIX ``x_severity``):
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -65,14 +65,14 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         OAuth2 client secret.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "threat-actor":  "companies",
         "vulnerability": "findings",
         "observable":    "assets",
     }
 
     # RiskRecon severity → numeric confidence
-    _SEVERITY_CONFIDENCE: Dict[str, int] = {
+    _SEVERITY_CONFIDENCE: dict[str, int] = {
         "critical": 95,
         "high":     80,
         "medium":   60,
@@ -122,7 +122,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         self.get("/companies", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a RiskRecon object.
 
@@ -142,17 +142,17 @@ class RiskReconClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List RiskRecon companies, findings, or assets.
 
         For findings and assets, pass ``{"company_id": "..."}`` in *filters*
         to scope results to a specific company.
         """
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  page_size,
             "offset": (page - 1) * page_size,
         }
@@ -180,7 +180,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
             "filters={'company_id': '...'}"
         )
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         RiskRecon is primarily a read / monitoring platform.
 
@@ -208,7 +208,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific operations ────────────────────────────────────────
 
-    def get_company(self, company_id: str) -> Dict[str, Any]:
+    def get_company(self, company_id: str) -> dict[str, Any]:
         """
         Fetch a full company profile including current risk score.
 
@@ -220,7 +220,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/companies/{company_id}")
 
-    def get_score(self, company_id: str) -> Optional[Dict[str, Any]]:
+    def get_score(self, company_id: str) -> dict[str, Any] | None:
         """
         Return the current risk score object for a company.
 
@@ -236,10 +236,10 @@ class RiskReconClient(BaseClient, ConnectorMixin):
     def list_findings(
         self,
         company_id: str,
-        severity: Optional[str] = None,
+        severity: str | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List security findings for a company.
 
@@ -251,7 +251,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
             Filter by severity: ``"critical"``, ``"high"``,
             ``"medium"``, ``"low"``, ``"info"``.
         """
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  page_size,
             "offset": (page - 1) * page_size,
         }
@@ -263,10 +263,10 @@ class RiskReconClient(BaseClient, ConnectorMixin):
     def list_assets(
         self,
         company_id: str,
-        asset_type: Optional[str] = None,
+        asset_type: str | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List discovered assets for a company.
 
@@ -277,7 +277,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         asset_type : str, optional
             Filter by asset type: ``"ip"``, ``"domain"``, ``"hostname"``.
         """
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  page_size,
             "offset": (page - 1) * page_size,
         }
@@ -288,7 +288,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a RiskRecon object to STIX 2.1.
 
@@ -300,7 +300,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         # Company → threat-actor
         if "score" in data and "domain" in data:
             industries = data.get("industries", [])
-            stix: Dict[str, Any] = {
+            stix: dict[str, Any] = {
                 "type":               "threat-actor",
                 "id":                 f"threat-actor--{data.get('id', '')}",
                 "name":               data.get("name", data.get("domain", "")),
@@ -355,7 +355,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
             "x_rr_company_id": data.get("company_id", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Translate a STIX object to a RiskRecon company add payload."""
         return {
             "domain": stix_dict.get("x_rr_domain",

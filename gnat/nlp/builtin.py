@@ -43,7 +43,6 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
 
 from gnat.nlp.query_spec import QuerySpec
 
@@ -179,7 +178,7 @@ class BuiltinParser:
     # Extraction helpers
     # ------------------------------------------------------------------
 
-    def _extract_since(self, query: str, now: datetime) -> Optional[datetime]:
+    def _extract_since(self, query: str, now: datetime) -> datetime | None:
         # "last N days/weeks/months"
         m = _RE_LAST_N.search(query)
         if m:
@@ -220,7 +219,7 @@ class BuiltinParser:
 
         return None
 
-    def _extract_until(self, query: str, now: datetime) -> Optional[datetime]:
+    def _extract_until(self, query: str, now: datetime) -> datetime | None:
         m = re.search(
             r"\b(?:until|before|up to)\s+(\d{4}-\d{2}-\d{2})\b", query, re.I
         )
@@ -231,14 +230,14 @@ class BuiltinParser:
                 pass
         return None
 
-    def _extract_ioc_types(self, query: str) -> List[str]:
+    def _extract_ioc_types(self, query: str) -> list[str]:
         found = []
         for ioc_type, pattern in _IOC_KEYWORDS.items():
             if pattern.search(query):
                 found.append(ioc_type)
         return found
 
-    def _extract_entities(self, query: str) -> List[str]:
+    def _extract_entities(self, query: str) -> list[str]:
         entities = []
 
         # Named threat actors
@@ -271,7 +270,7 @@ class BuiltinParser:
 
         return entities
 
-    def _extract_platforms(self, query: str) -> List[str]:
+    def _extract_platforms(self, query: str) -> list[str]:
         from gnat.clients import CLIENT_REGISTRY
         found = []
         for m in _RE_PLATFORM_PREP.finditer(query):

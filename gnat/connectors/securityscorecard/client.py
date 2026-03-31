@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -74,7 +74,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         SecurityScorecard API token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "report":        "companies",
         "vulnerability": "issues",
         "identity":      "portfolios",
@@ -104,7 +104,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         self.get("/portfolios")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single SSC object by type and identifier.
 
         For ``report`` and ``vulnerability``, *object_id* is a domain name.
@@ -122,10 +122,10 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List SSC objects by STIX type."""
         f = filters or {}
         if stix_type == "identity":
@@ -141,7 +141,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
                     "SSC list_objects for 'report' requires "
                     "filters={'portfolio_id': '<id>'}"
                 )
-            params: Dict[str, Any] = {"page": page, "size": page_size}
+            params: dict[str, Any] = {"page": page, "size": page_size}
             resp = self.get(f"/portfolios/{portfolio_id}/companies", params=params)
             return resp.get("entries", []) if isinstance(resp, dict) else []
 
@@ -153,7 +153,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
                     "filters={'domain': '<domain>'}"
                 )
             factor = f.get("factor", "")
-            params_v: Dict[str, Any] = {"page": page, "page_size": page_size}
+            params_v: dict[str, Any] = {"page": page, "page_size": page_size}
             if factor:
                 params_v["factor"] = factor
             resp = self.get(f"/companies/{domain}/issues", params=params_v)
@@ -161,7 +161,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"Unsupported STIX type for SecurityScorecard: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError(
             "SecurityScorecard API is read-only — upsert not supported."
         )
@@ -173,20 +173,20 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
-    def get_company_score(self, domain: str) -> Dict[str, Any]:
+    def get_company_score(self, domain: str) -> dict[str, Any]:
         """Fetch the current scorecard for a domain."""
         return self.get(f"/companies/{domain}/score")
 
-    def get_company_factors(self, domain: str) -> List[Dict[str, Any]]:
+    def get_company_factors(self, domain: str) -> list[dict[str, Any]]:
         """Fetch factor breakdown for a domain."""
         resp = self.get(f"/companies/{domain}/factors")
         return resp.get("entries", []) if isinstance(resp, dict) else []
 
     def get_company_issues(
-        self, domain: str, factor: Optional[str] = None, severity: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, domain: str, factor: str | None = None, severity: str | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch issues/findings for a domain."""
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if factor:
             params["factor"] = factor
         if severity:
@@ -194,23 +194,23 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/companies/{domain}/issues", params=params)
         return resp.get("entries", []) if isinstance(resp, dict) else []
 
-    def get_industry_average(self, industry: str) -> Dict[str, Any]:
+    def get_industry_average(self, industry: str) -> dict[str, Any]:
         """Fetch the average score for an industry vertical."""
         return self.get(f"/industries/{industry}/score")
 
     def get_portfolio_companies(
         self, portfolio_id: str, page: int = 1, page_size: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch all companies in a portfolio."""
-        params: Dict[str, Any] = {"page": page, "size": page_size}
+        params: dict[str, Any] = {"page": page, "size": page_size}
         resp = self.get(f"/portfolios/{portfolio_id}/companies", params=params)
         return resp.get("entries", []) if isinstance(resp, dict) else []
 
     def get_historical_scores(
-        self, domain: str, date_from: Optional[str] = None, date_to: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, domain: str, date_from: str | None = None, date_to: str | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch historical score data for a domain."""
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if date_from:
             params["from"] = date_from
         if date_to:
@@ -220,7 +220,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a SSC object to STIX."""
         if "domain" in native and "score" in native:
             return self._score_to_stix(native)
@@ -231,7 +231,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         # Default to score report
         return self._score_to_stix(native)
 
-    def _score_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _score_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         domain = native.get("domain", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"ssc-score-{domain}"))
         score = native.get("score", 0)
@@ -257,7 +257,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
             "x_target_sectors": [native.get("industry", "")] if native.get("industry") else [],
         }
 
-    def _issue_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _issue_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         issue_id = native.get("id", "")
         issue_type = native.get("type", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"ssc-issue-{issue_id or issue_type}"))
@@ -280,7 +280,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _portfolio_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _portfolio_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         portfolio_id = native.get("id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"ssc-portfolio-{portfolio_id}"))
         return {
@@ -297,7 +297,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract SSC query parameters from a STIX dict."""
         return {
             "stix_id": stix_dict.get("id", ""),

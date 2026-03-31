@@ -38,7 +38,7 @@ field update, keeping full audit history.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -117,7 +117,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         except Exception as exc:
             raise GNATClientError(f"ServiceNow health check failed: {exc}") from exc
 
-    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> dict[str, Any]:
         """
         Fetch a single security incident by ``sys_id``.
 
@@ -139,7 +139,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         limit: int = 100,
         offset: int = 0,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List security incidents matching an optional sysparm_query string.
 
@@ -155,7 +155,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
             Pagination offset.  Default 0.
         """
         table  = self._resolve(stix_type)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "sysparm_limit":  limit,
             "sysparm_offset": offset,
         }
@@ -167,10 +167,10 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
     def upsert_object(
         self,
         stix_type: str,
-        payload: Dict[str, Any],
-        sys_id: Optional[str] = None,
+        payload: dict[str, Any],
+        sys_id: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create or update a security incident.
 
@@ -196,7 +196,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         table = self._resolve(stix_type)
         self.delete(f"{self._TABLE_BASE}/{table}/{object_id}")
 
-    def to_stix(self, native_object: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native_object: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a ServiceNow security incident record to STIX ``observed-data``.
 
@@ -227,7 +227,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
             "x_sn_assigned_to":  native_object.get("assigned_to", {}).get("value", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX object to a ServiceNow security incident payload.
 
@@ -243,8 +243,8 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
     def annotate_incident(
         self,
         incident_sys_id: str,
-        stix_obj: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        stix_obj: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Attach a STIX-derived work note to an existing security incident.
 
@@ -301,7 +301,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         return table
 
     @staticmethod
-    def _stix_to_sn(stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _stix_to_sn(stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Derive a ServiceNow field payload from a STIX SDO."""
         name = stix_dict.get("name", stix_dict.get("id", ""))
         desc = stix_dict.get("description", "")

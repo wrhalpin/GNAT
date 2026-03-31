@@ -47,9 +47,10 @@ Examples:
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import WorkspaceManager
@@ -83,8 +84,8 @@ def _require_fastapi() -> None:
 
 
 def build_app(
-    manager: "WorkspaceManager",
-    search_index: "Optional[Any]" = None,
+    manager: WorkspaceManager,
+    search_index: Any | None = None,
 ) -> Any:
     """
     Build and return the FastAPI application.
@@ -124,7 +125,7 @@ def build_app(
         field     = parts[2] if len(parts) > 2 else None
         return ws_name, stix_type, field
 
-    def _ts(obj: Any) -> Optional[int]:
+    def _ts(obj: Any) -> int | None:
         """Convert a STIX created/modified timestamp to milliseconds."""
         ts_str = obj._properties.get("created", "")
         if not ts_str:
@@ -135,7 +136,7 @@ def build_app(
         except ValueError:
             return None
 
-    def _obj_to_row(obj: Any, cols: List[str]) -> List[Any]:
+    def _obj_to_row(obj: Any, cols: list[str]) -> list[Any]:
         row = []
         for col in cols:
             if col == "type":
@@ -169,7 +170,7 @@ def build_app(
             targets.append(f"{name}/summary")
             try:
                 ws = manager.open(name)
-                types_seen = set(obj.stix_type for obj in ws)
+                types_seen = {obj.stix_type for obj in ws}
                 for stype in types_seen:
                     targets.append(f"{name}/{stype}")
                     targets.append(f"{name}/{stype}/confidence")
@@ -207,7 +208,7 @@ def build_app(
 
             # ── Summary: object count by type ─────────────────────────────
             if stix_type == "summary":
-                type_counts: Dict[str, int] = {}
+                type_counts: dict[str, int] = {}
                 for obj in ws:
                     type_counts[obj.stix_type] = type_counts.get(obj.stix_type, 0) + 1
                 results.append({
@@ -242,10 +243,8 @@ def build_app(
                 val = obj._properties.get(field)
                 if val is None and hasattr(obj, field):
                     val = getattr(obj, field)
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     datapoints.append([float(val), ts])
-                except (TypeError, ValueError):
-                    pass
             datapoints.sort(key=lambda p: p[1])
             results.append({
                 "target":     target,
@@ -350,10 +349,10 @@ class GrafanaServer:
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
+        manager: WorkspaceManager,
         host: str = "0.0.0.0",  # nosec B104 — overridable via --host flag
         port: int = 3001,
-        search_index: "Optional[Any]" = None,
+        search_index: Any | None = None,
     ):
         self._manager      = manager
         self._host         = host

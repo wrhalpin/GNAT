@@ -20,9 +20,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from docx.shared import Pt, RGBColor
+
     from gnat.reports.base import ReportDocument, ReportSection
 
 logger = logging.getLogger(__name__)
@@ -47,16 +49,16 @@ _COLOURS = {
 class MarkdownRenderer:
     """Renders a ReportDocument to Markdown."""
 
-    def render(self, doc: "ReportDocument", path: str) -> str:
+    def render(self, doc: ReportDocument, path: str) -> str:
         md = self._build(doc)
         Path(path).write_text(md, encoding="utf-8")
         logger.info("MarkdownRenderer: wrote %s", path)
         return path
 
-    def render_string(self, doc: "ReportDocument") -> str:
+    def render_string(self, doc: ReportDocument) -> str:
         return self._build(doc)
 
-    def _build(self, doc: "ReportDocument") -> str:
+    def _build(self, doc: ReportDocument) -> str:
         lines = []
         lines.append(f"# {doc.title}")
         lines.append("")
@@ -96,13 +98,13 @@ class MarkdownRenderer:
 class HTMLRenderer:
     """Renders a ReportDocument to a self-contained HTML file."""
 
-    def render(self, doc: "ReportDocument", path: str) -> str:
+    def render(self, doc: ReportDocument, path: str) -> str:
         html = self._build(doc)
         Path(path).write_text(html, encoding="utf-8")
         logger.info("HTMLRenderer: wrote %s", path)
         return path
 
-    def _build(self, doc: "ReportDocument") -> str:
+    def _build(self, doc: ReportDocument) -> str:
         sections_html = "\n".join(self._section_html(s) for s in doc.sections)
         sector_badge = ""
         if doc.config and doc.config.sectors:
@@ -186,7 +188,7 @@ class HTMLRenderer:
 </body>
 </html>"""
 
-    def _section_html(self, section: "ReportSection") -> str:
+    def _section_html(self, section: ReportSection) -> str:
         narrative_html = ""
         if section.has_narrative:
             paragraphs = [
@@ -214,15 +216,19 @@ class HTMLRenderer:
 class PDFRenderer:
     """Renders a ReportDocument to PDF using reportlab."""
 
-    def render(self, doc: "ReportDocument", path: str) -> str:
+    def render(self, doc: ReportDocument, path: str) -> str:
         try:
-            from reportlab.lib.pagesizes import letter
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import inch
             from reportlab.lib import colors
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+            from reportlab.lib.units import inch
             from reportlab.platypus import (
-                SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
                 HRFlowable,
+                Paragraph,
+                SimpleDocTemplate,
+                Spacer,
+                Table,
+                TableStyle,
             )
         except ImportError:
             raise ImportError(
@@ -366,11 +372,11 @@ class DOCXRenderer:
     _WHITE   = "FFFFFF"
     _ALT_ROW = "F5F7FA"
 
-    def render(self, doc: "ReportDocument", path: str) -> str:
+    def render(self, doc: ReportDocument, path: str) -> str:
         try:
             from docx import Document
-            from docx.shared import Pt
             from docx.enum.text import WD_ALIGN_PARAGRAPH
+            from docx.shared import Pt
         except ImportError:
             raise ImportError(
                 "python-docx required for DOCX output: "
@@ -445,7 +451,7 @@ class DOCXRenderer:
         val_run.font.size = Pt(9)
         val_run.font.color.rgb = self._rgb(self._MUTED)
 
-    def _add_data_tables(self, d, section: "ReportSection") -> None:
+    def _add_data_tables(self, d, section: ReportSection) -> None:
         data = section.data
         if "top_actors" in data and data["top_actors"]:
             rows = [
@@ -477,7 +483,7 @@ class DOCXRenderer:
                     for k, v in list(data["source_breakdown"].items())[:8]]
             self._table(d, ["Source", "Objects"], rows)
 
-    def _table(self, d, headers: List[str], rows: List[List[str]]) -> None:
+    def _table(self, d, headers: list[str], rows: list[list[str]]) -> None:
         from docx.shared import Pt
 
         tbl = d.add_table(rows=1 + len(rows), cols=len(headers))
@@ -505,21 +511,21 @@ class DOCXRenderer:
         d.add_paragraph()  # spacer after table
 
     @staticmethod
-    def _rgb(hex6: str) -> "RGBColor":
+    def _rgb(hex6: str) -> RGBColor:
         from docx.shared import RGBColor
         r, g, b = int(hex6[0:2], 16), int(hex6[2:4], 16), int(hex6[4:6], 16)
         return RGBColor(r, g, b)
 
     @staticmethod
-    def _pt(points: float) -> "Pt":
+    def _pt(points: float) -> Pt:
         from docx.shared import Pt
         return Pt(points)
 
 
 def _set_cell_bg(cell, hex6: str) -> None:
     """Set table cell background colour via direct OOXML (python-docx omits this)."""
-    from docx.oxml.ns import qn
     from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
     tc = cell._tc
     tcp = tc.get_or_add_tcPr()
     shd = OxmlElement("w:shd")
@@ -533,7 +539,7 @@ def _set_cell_bg(cell, hex6: str) -> None:
 # Shared data rendering helpers
 # ---------------------------------------------------------------------------
 
-def _render_data_md(section: "ReportSection") -> List[str]:
+def _render_data_md(section: ReportSection) -> list[str]:
     """Render section data as Markdown table(s)."""
     lines = []
     data = section.data
@@ -582,7 +588,7 @@ def _render_data_md(section: "ReportSection") -> List[str]:
     return lines
 
 
-def _render_data_html(section: "ReportSection") -> str:
+def _render_data_html(section: ReportSection) -> str:
     """Render section data as HTML tables and stat cards."""
     parts = []
     data = section.data
@@ -645,7 +651,7 @@ def _render_data_html(section: "ReportSection") -> str:
     return "\n".join(parts)
 
 
-def _extract_table_items(section: "ReportSection"):
+def _extract_table_items(section: ReportSection):
     """Extract (table_data, col_widths) tuples for PDF rendering."""
     from reportlab.lib.units import inch
     items = []

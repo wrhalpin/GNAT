@@ -44,12 +44,12 @@ References
 
 from __future__ import annotations
 
+import contextlib
 import re
 import uuid
 from datetime import datetime, timezone
 
 from .exceptions import QRadarSTIXError
-
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 _SEVERITY_LABELS = {0: "informational", 1: "low", 2: "medium", 3: "high", 4: "critical"}
@@ -100,15 +100,7 @@ class QRadarSTIXMapper:
         source = offense.get("offense_source", "")
 
         # ── Source observable based on offense_type ────────────────────
-        if offense_type in (0, 11):  # Source IP / Post NAT Source IP
-            if source and _looks_like_ip(source):
-                obj = _ipv4(source)
-                if obj["id"] not in seen:
-                    seen.add(obj["id"])
-                    objects.append(obj)
-                refs.append(obj["id"])
-
-        elif offense_type in (1, 12):  # Destination IP
+        if offense_type in (0, 11) or offense_type in (1, 12):  # Source IP / Post NAT Source IP
             if source and _looks_like_ip(source):
                 obj = _ipv4(source)
                 if obj["id"] not in seen:
@@ -253,15 +245,11 @@ class QRadarSTIXMapper:
                     "protocols": [str(event.get("protocol", "tcp")).lower()],
                 }
                 if src_port:
-                    try:
+                    with contextlib.suppress(ValueError, TypeError):
                         net_obj["src_port"] = int(src_port)
-                    except (ValueError, TypeError):
-                        pass
                 if dst_port:
-                    try:
+                    with contextlib.suppress(ValueError, TypeError):
                         net_obj["dst_port"] = int(dst_port)
-                    except (ValueError, TypeError):
-                        pass
                 seen.add(net_id)
                 objects.append(net_obj)
                 refs.append(net_id)

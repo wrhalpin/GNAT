@@ -37,7 +37,7 @@ Notes
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -60,7 +60,7 @@ class GrokClient(BaseClient, ConnectorMixin):
         xAI API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "report": "chat",  # chat completions mapped to STIX reports
     }
 
@@ -83,7 +83,7 @@ class GrokClient(BaseClient, ConnectorMixin):
         self.get("/v1/models")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Not directly supported (no persistent objects). Returns a placeholder.
 
@@ -100,10 +100,10 @@ class GrokClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List available models (for "report" or discovery) or raise for other types.
 
@@ -116,7 +116,7 @@ class GrokClient(BaseClient, ConnectorMixin):
             return [{"id": m.get("id"), "type": "model"} for m in models]
         raise GNATClientError(f"list_objects not meaningfully supported for STIX type: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Grok is inference-only — no object creation/updates."""
         raise GNATClientError("Grok (xAI) is read-only inference. Use chat_completion helper instead.")
 
@@ -128,12 +128,12 @@ class GrokClient(BaseClient, ConnectorMixin):
 
     def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "grok-4-0709",  # or latest flagship from docs
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform a chat completion against the Grok API.
 
@@ -164,7 +164,7 @@ class GrokClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Grok chat completion response (or model list) to STIX 2.1 report.
 
@@ -215,7 +215,7 @@ class GrokClient(BaseClient, ConnectorMixin):
             "x_grok": {"models": native.get("data", [])},
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Grok is read-only inference. Returns a prompt template for chat."""
         return {
             "note": "Grok connector is inference-only. Use chat_completion with messages derived from this STIX object.",

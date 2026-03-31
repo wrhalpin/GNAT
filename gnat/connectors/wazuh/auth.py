@@ -32,10 +32,12 @@ This connector uses standard authentication; run-as is not implemented.
 import base64
 import json
 import time
+
 import urllib3
 
 from .config import WazuhConfig
 from .exceptions import WazuhAuthError
+
 
 class WazuhAuthManager:
     """

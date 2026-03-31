@@ -52,11 +52,10 @@ specific deployment.  Matched values are written to ``x_target_sectors``
 on the returned STIX dict.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
-
 
 # Attribute name variants recognised as sector/industry — case-insensitive.
 _SECTOR_ATTR_NAMES: frozenset = frozenset({
@@ -92,7 +91,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         Forwarded to :class:`~gnat.clients.base.BaseClient`.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "indicator",
         "threat-actor": "adversary",
         "malware": "malware",
@@ -146,7 +145,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         self.get("/api/ping")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a ThreatQ object by its numeric id.
 
@@ -172,13 +171,13 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return a paginated list of ThreatQ objects (includes attributes)."""
         resource = self._resolve_resource(stix_type)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit": page_size,
             "offset": (page - 1) * page_size,
             "with": "attributes",
@@ -188,7 +187,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/{resource}", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update a ThreatQ object."""
         resource = self._resolve_resource(stix_type)
         tq_id = payload.pop("id", None)
@@ -202,7 +201,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         tq_id = self._extract_numeric_id(object_id)
         self.delete(f"/api/{resource}/{tq_id}")
 
-    def get_attribute_types(self) -> List[str]:
+    def get_attribute_types(self) -> list[str]:
         """
         Return all attribute type names configured in this ThreatQ deployment.
 
@@ -227,7 +226,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     # ConnectorMixin — STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a ThreatQ indicator dict to STIX 2.1 format.
 
@@ -247,7 +246,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             Partial STIX Indicator dict.
         """
         data = native.get("data", native)
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{data.get('id', '')}",
             "name": data.get("value", ""),
@@ -262,7 +261,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = sectors
         return stix
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX Indicator dict to a ThreatQ API payload.
 
@@ -293,7 +292,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         return resource + "s"  # ThreatQ uses plural endpoints
 
     @staticmethod
-    def _extract_sectors(attributes: List[Dict[str, Any]]) -> List[str]:
+    def _extract_sectors(attributes: list[dict[str, Any]]) -> list[str]:
         """
         Extract sector/industry values from a ThreatQ attributes array.
 

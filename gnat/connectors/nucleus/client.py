@@ -29,7 +29,8 @@ References
 https://docs.nucleussec.com/api/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
@@ -48,7 +49,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         Default project id.  Can be overridden per request via ``filters``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilities",
         "indicator":     "threat-intel",
         "asset":         "assets",
@@ -68,7 +69,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         return isinstance(resp, (dict, list))
 
     def get_object(self, stix_type: str,
-                   object_id: str) -> Dict[str, Any]:
+                   object_id: str) -> dict[str, Any]:
         project = self._project
         if stix_type == "vulnerability":
             resp = self.get(
@@ -81,9 +82,9 @@ class NucleusClient(BaseClient, ConnectorMixin):
         return {}
 
     def list_objects(self, stix_type: str,
-                     filters: Optional[Dict[str, Any]] = None,
+                     filters: Optional[dict[str, Any]] = None,
                      page: int = 1,
-                     page_size: int = 100) -> List[Dict[str, Any]]:
+                     page_size: int = 100) -> list[dict[str, Any]]:
         """
         List vulnerabilities or assets from Nucleus.
 
@@ -98,7 +99,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         - ``industry`` (str): filter by asset industry classification
         """
         project  = (filters or {}).get("project", self._project)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "page":      page - 1,
             "page_size": page_size,
         }
@@ -131,7 +132,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         return []
 
     def upsert_object(self, stix_type: str,
-                      payload: Dict[str, Any]) -> Dict[str, Any]:
+                      payload: dict[str, Any]) -> dict[str, Any]:
         """
         Push external threat intel into Nucleus (indicators only).
 
@@ -161,7 +162,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Nucleus vulnerability record to a STIX Vulnerability.
 
@@ -220,7 +221,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
             "x_target_sectors":  sectors,  # canonical sector field
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX Indicator to a Nucleus threat intel payload."""
         import re
         pattern   = stix_dict.get("pattern", "")

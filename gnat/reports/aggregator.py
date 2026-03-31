@@ -25,7 +25,7 @@ import logging
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import WorkspaceManager
@@ -64,58 +64,58 @@ class ReportAggregates:
     updated_objects:   int  = 0   # modified within window, created before
 
     # By STIX type
-    by_type:           Dict[str, int]       = field(default_factory=dict)
-    new_by_type:       Dict[str, int]       = field(default_factory=dict)
+    by_type:           dict[str, int]       = field(default_factory=dict)
+    new_by_type:       dict[str, int]       = field(default_factory=dict)
 
     # Indicators
     indicator_count:   int                  = 0
-    ioc_by_type:       Dict[str, int]       = field(default_factory=dict)
-    top_indicators:    List[Dict[str, Any]] = field(default_factory=list)
-    high_conf_indicators: List[Dict[str, Any]] = field(default_factory=list)
+    ioc_by_type:       dict[str, int]       = field(default_factory=dict)
+    top_indicators:    list[dict[str, Any]] = field(default_factory=list)
+    high_conf_indicators: list[dict[str, Any]] = field(default_factory=list)
 
     # Threat actors
     actor_count:       int                  = 0
-    top_actors:        List[Dict[str, Any]] = field(default_factory=list)
-    actor_motivations: Dict[str, int]       = field(default_factory=dict)
+    top_actors:        list[dict[str, Any]] = field(default_factory=list)
+    actor_motivations: dict[str, int]       = field(default_factory=dict)
 
     # Vulnerabilities
     vuln_count:        int                  = 0
-    critical_vulns:    List[Dict[str, Any]] = field(default_factory=list)
-    exploited_vulns:   List[Dict[str, Any]] = field(default_factory=list)
-    cvss_distribution: Dict[str, int]       = field(default_factory=dict)
+    critical_vulns:    list[dict[str, Any]] = field(default_factory=list)
+    exploited_vulns:   list[dict[str, Any]] = field(default_factory=list)
+    cvss_distribution: dict[str, int]       = field(default_factory=dict)
 
     # Attack patterns / TTPs
     ttp_count:         int                  = 0
-    top_ttps:          List[Dict[str, Any]] = field(default_factory=list)
-    tactic_distribution: Dict[str, int]     = field(default_factory=dict)
+    top_ttps:          list[dict[str, Any]] = field(default_factory=list)
+    tactic_distribution: dict[str, int]     = field(default_factory=dict)
 
     # Sectors
-    sector_distribution: Dict[str, int]     = field(default_factory=dict)
+    sector_distribution: dict[str, int]     = field(default_factory=dict)
     opportunistic_count: int                = 0
 
     # Source platforms
-    source_breakdown:  Dict[str, int]       = field(default_factory=dict)
+    source_breakdown:  dict[str, int]       = field(default_factory=dict)
     ai_extracted_count: int                 = 0
 
     # Confidence
     avg_confidence:    float                = 0.0
-    confidence_distribution: Dict[str, int] = field(default_factory=dict)
+    confidence_distribution: dict[str, int] = field(default_factory=dict)
 
     # Time series (for trends/yearly)
-    daily_counts:      List[Dict[str, Any]] = field(default_factory=list)
-    weekly_counts:     List[Dict[str, Any]] = field(default_factory=list)
-    monthly_counts:    List[Dict[str, Any]] = field(default_factory=list)
+    daily_counts:      list[dict[str, Any]] = field(default_factory=list)
+    weekly_counts:     list[dict[str, Any]] = field(default_factory=list)
+    monthly_counts:    list[dict[str, Any]] = field(default_factory=list)
 
     # Trend comparisons (for trends report)
-    period_over_period: Dict[str, Any]      = field(default_factory=dict)
+    period_over_period: dict[str, Any]      = field(default_factory=dict)
 
     # Research library context (populated by aggregator if available)
     library_entries_count: int              = 0
-    library_topics:    List[str]            = field(default_factory=list)
+    library_topics:    list[str]            = field(default_factory=list)
 
     # Relationships
     relationship_count: int                 = 0
-    relationship_types: Dict[str, int]      = field(default_factory=dict)
+    relationship_types: dict[str, int]      = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -149,9 +149,9 @@ class DataAggregator:
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
-        config: "ReportConfig",
-        sector_filter: Optional["SectorFilter"] = None,
+        manager: WorkspaceManager,
+        config: ReportConfig,
+        sector_filter: SectorFilter | None = None,
         research_library=None,
     ):
         self._manager = manager
@@ -223,9 +223,9 @@ class DataAggregator:
 
     # ── Object collection ──────────────────────────────────────────────────
 
-    def _collect_objects(self) -> List["STIXBase"]:
+    def _collect_objects(self) -> list[STIXBase]:
         """Load all objects from configured workspaces, deduplicated by id."""
-        seen: Dict[str, "STIXBase"] = {}
+        seen: dict[str, STIXBase] = {}
         for ws_name in self._config.workspaces:
             try:
                 ws = self._manager.open(ws_name)
@@ -244,7 +244,7 @@ class DataAggregator:
     def _compute_volume(
         self,
         agg: ReportAggregates,
-        objects: List["STIXBase"],
+        objects: list[STIXBase],
         p_start: datetime,
         p_end: datetime,
     ) -> None:
@@ -260,7 +260,7 @@ class DataAggregator:
     def _compute_by_type(
         self,
         agg: ReportAggregates,
-        objects: List["STIXBase"],
+        objects: list[STIXBase],
         p_start: datetime,
     ) -> None:
         total_counter: Counter = Counter()
@@ -277,7 +277,7 @@ class DataAggregator:
     # ── Indicators ─────────────────────────────────────────────────────────
 
     def _compute_indicators(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         indicators = [o for o in objects if o.stix_type == "indicator"]
         agg.indicator_count = len(indicators)
@@ -308,7 +308,7 @@ class DataAggregator:
     # ── Threat actors ──────────────────────────────────────────────────────
 
     def _compute_actors(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         actors = [o for o in objects if o.stix_type == "threat-actor"]
         agg.actor_count = len(actors)
@@ -332,7 +332,7 @@ class DataAggregator:
     # ── Vulnerabilities ────────────────────────────────────────────────────
 
     def _compute_vulnerabilities(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         vulns = [o for o in objects if o.stix_type == "vulnerability"]
         agg.vuln_count = len(vulns)
@@ -340,8 +340,8 @@ class DataAggregator:
             return
 
         cvss_buckets: Counter = Counter()
-        critical: List[Dict] = []
-        exploited: List[Dict] = []
+        critical: list[dict] = []
+        exploited: list[dict] = []
 
         for v in vulns:
             cvss = v._properties.get("x_cvss_score")
@@ -364,7 +364,7 @@ class DataAggregator:
     # ── TTPs ───────────────────────────────────────────────────────────────
 
     def _compute_ttps(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         ttps = [o for o in objects if o.stix_type == "attack-pattern"]
         agg.ttp_count = len(ttps)
@@ -383,7 +383,7 @@ class DataAggregator:
     # ── Sectors ────────────────────────────────────────────────────────────
 
     def _compute_sectors(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         sector_counter: Counter = Counter()
         for obj in objects:
@@ -400,7 +400,7 @@ class DataAggregator:
     # ── Sources ────────────────────────────────────────────────────────────
 
     def _compute_sources(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         source_counter: Counter = Counter()
         ai_count = 0
@@ -419,7 +419,7 @@ class DataAggregator:
     # ── Confidence ─────────────────────────────────────────────────────────
 
     def _compute_confidence(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         scores = []
         dist: Counter = Counter()
@@ -438,7 +438,7 @@ class DataAggregator:
     # ── Relationships ──────────────────────────────────────────────────────
 
     def _compute_relationships(
-        self, agg: ReportAggregates, objects: List["STIXBase"]
+        self, agg: ReportAggregates, objects: list[STIXBase]
     ) -> None:
         rels = [o for o in objects if o.stix_type == "relationship"]
         agg.relationship_count = len(rels)
@@ -453,7 +453,7 @@ class DataAggregator:
     def _compute_time_series(
         self,
         agg: ReportAggregates,
-        objects: List["STIXBase"],
+        objects: list[STIXBase],
         p_start: datetime,
         p_end: datetime,
     ) -> None:
@@ -485,7 +485,7 @@ class DataAggregator:
     def _compute_period_over_period(
         self,
         agg: ReportAggregates,
-        objects: List["STIXBase"],
+        objects: list[STIXBase],
         p_start: datetime,
         window: int,
     ) -> None:
@@ -493,7 +493,7 @@ class DataAggregator:
         prior_end   = p_start
         prior_start = p_start - timedelta(days=window)
 
-        def _count_in_window(start: datetime, end: datetime) -> Dict[str, int]:
+        def _count_in_window(start: datetime, end: datetime) -> dict[str, int]:
             counts: Counter = Counter()
             for obj in objects:
                 ts = _parse_dt(obj._properties.get("created"))
@@ -536,7 +536,7 @@ class DataAggregator:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _parse_dt(value: Any) -> Optional[datetime]:
+def _parse_dt(value: Any) -> datetime | None:
     if not value:
         return None
     try:
@@ -547,33 +547,48 @@ def _parse_dt(value: Any) -> Optional[datetime]:
 
 def _ioc_type_from_pattern(pattern: str) -> str:
     p = pattern.lower()
-    if "ipv4-addr" in p: return "ipv4"
-    if "ipv6-addr" in p: return "ipv6"
-    if "domain-name" in p: return "domain"
-    if "url:" in p: return "url"
-    if "sha-256" in p or "sha256" in p: return "sha256"
-    if "sha-1" in p or "sha1" in p: return "sha1"
-    if "md5" in p: return "md5"
-    if "email-addr" in p: return "email"
-    if "file:name" in p: return "filename"
-    if "windows-registry" in p: return "registry"
+    if "ipv4-addr" in p:
+        return "ipv4"
+    if "ipv6-addr" in p:
+        return "ipv6"
+    if "domain-name" in p:
+        return "domain"
+    if "url:" in p:
+        return "url"
+    if "sha-256" in p or "sha256" in p:
+        return "sha256"
+    if "sha-1" in p or "sha1" in p:
+        return "sha1"
+    if "md5" in p:
+        return "md5"
+    if "email-addr" in p:
+        return "email"
+    if "file:name" in p:
+        return "filename"
+    if "windows-registry" in p:
+        return "registry"
     return "other"
 
 
 def _cvss_bucket(score: float) -> str:
-    if score >= 9.0: return "Critical (9.0-10.0)"
-    if score >= 7.0: return "High (7.0-8.9)"
-    if score >= 4.0: return "Medium (4.0-6.9)"
+    if score >= 9.0:
+        return "Critical (9.0-10.0)"
+    if score >= 7.0:
+        return "High (7.0-8.9)"
+    if score >= 4.0:
+        return "Medium (4.0-6.9)"
     return "Low (0.0-3.9)"
 
 
 def _conf_bucket(score: float) -> str:
-    if score >= 80: return "High (80-100)"
-    if score >= 50: return "Medium (50-79)"
+    if score >= 80:
+        return "High (80-100)"
+    if score >= 50:
+        return "Medium (50-79)"
     return "Low (0-49)"
 
 
-def _indicator_summary(obj: "STIXBase") -> Dict[str, Any]:
+def _indicator_summary(obj: STIXBase) -> dict[str, Any]:
     return {
         "name":       obj._properties.get("name", ""),
         "pattern":    obj._properties.get("pattern", "")[:120],
@@ -583,7 +598,7 @@ def _indicator_summary(obj: "STIXBase") -> Dict[str, Any]:
     }
 
 
-def _actor_summary(obj: "STIXBase") -> Dict[str, Any]:
+def _actor_summary(obj: STIXBase) -> dict[str, Any]:
     return {
         "name":        obj._properties.get("name", ""),
         "aliases":     obj._properties.get("aliases", [])[:5],
@@ -592,7 +607,7 @@ def _actor_summary(obj: "STIXBase") -> Dict[str, Any]:
     }
 
 
-def _vuln_summary(obj: "STIXBase") -> Dict[str, Any]:
+def _vuln_summary(obj: STIXBase) -> dict[str, Any]:
     return {
         "name":       obj._properties.get("name", ""),
         "cve_id":     obj._properties.get("x_cve_id", ""),
@@ -602,7 +617,7 @@ def _vuln_summary(obj: "STIXBase") -> Dict[str, Any]:
     }
 
 
-def _ttp_summary(obj: "STIXBase") -> Dict[str, Any]:
+def _ttp_summary(obj: STIXBase) -> dict[str, Any]:
     return {
         "name":     obj._properties.get("name", ""),
         "mitre_id": obj._properties.get("x_mitre_id", ""),

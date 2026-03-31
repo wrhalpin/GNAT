@@ -40,6 +40,7 @@ kibana.alert.rule.*  -- Kibana detection rule alert fields
 
 from .client import ElasticClient
 
+
 class ElasticSearchCommands:
     """
     Elasticsearch index management and document search operations.

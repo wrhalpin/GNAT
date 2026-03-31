@@ -48,7 +48,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import urllib3
 
@@ -100,11 +100,11 @@ class DriftReport:
 
     connector:            str
     detected_at:          str
-    added_fields:         List[str]
-    removed_fields:       List[str]
-    type_changes:         Dict[str, Tuple[str, str]]
+    added_fields:         list[str]
+    removed_fields:       list[str]
+    type_changes:         dict[str, tuple[str, str]]
     drift_ratio:          float
-    baseline_captured_at: Optional[str] = None
+    baseline_captured_at: str | None = None
 
     @property
     def is_significant(self) -> bool:
@@ -142,7 +142,7 @@ class SchemaSnapshot:
 
     connector:    str
     captured_at:  str
-    fields:       Dict[str, str]
+    fields:       dict[str, str]
     sample_count: int = 1
 
     def to_dict(self) -> dict:
@@ -154,7 +154,7 @@ class SchemaSnapshot:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "SchemaSnapshot":
+    def from_dict(cls, d: dict) -> SchemaSnapshot:
         return cls(
             connector=d["connector"],
             captured_at=d["captured_at"],
@@ -185,8 +185,8 @@ class HealthCheckResult:
     connector:     str
     reachable:     bool
     response_ms:   float
-    error:         Optional[str]       = None
-    drift:         Optional[DriftReport] = None
+    error:         str | None       = None
+    drift:         DriftReport | None = None
     schema_sampled: bool               = False
 
     @property
@@ -214,7 +214,7 @@ class HealthRun:
     """
 
     run_at:       str
-    checks:       List[HealthCheckResult] = field(default_factory=list)
+    checks:       list[HealthCheckResult] = field(default_factory=list)
     alerts_sent:  int                     = 0
 
     @property
@@ -250,13 +250,13 @@ class HealthMonitorConfig:
 
     enabled:          bool            = True
     interval_minutes: int             = 60
-    alert_webhook:    Optional[str]   = None
+    alert_webhook:    str | None   = None
     drift_threshold:  float           = 0.2
-    snapshot_dir:     Optional[str]   = None
-    platforms:        Optional[List[str]] = None  # None = all configured
+    snapshot_dir:     str | None   = None
+    platforms:        list[str] | None = None  # None = all configured
 
     @classmethod
-    def from_ini(cls, config_path: str) -> "HealthMonitorConfig":
+    def from_ini(cls, config_path: str) -> HealthMonitorConfig:
         """Read ``[health_monitor]`` from an INI file."""
         import configparser
         cp = configparser.ConfigParser()
@@ -265,7 +265,7 @@ class HealthMonitorConfig:
             return cls()
         sec = cp["health_monitor"]
         platforms_raw = (sec.get("platforms", fallback="") or "").strip()
-        platforms: Optional[List[str]] = None
+        platforms: list[str] | None = None
         if platforms_raw and platforms_raw != "*":
             platforms = [p.strip() for p in platforms_raw.split(",") if p.strip()]
         return cls(
@@ -286,7 +286,7 @@ def _fingerprint_dict(
     obj: Any,
     prefix: str = "",
     max_depth: int = 4,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Flatten a nested dict to ``{dotted.path: python_type_name}``.
 
@@ -306,7 +306,7 @@ def _fingerprint_dict(
     """
     if not isinstance(obj, dict) or max_depth == 0:
         return {prefix: type(obj).__name__} if prefix else {}
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     for k, v in obj.items():
         key = f"{prefix}.{k}" if prefix else str(k)
         if isinstance(v, dict):
@@ -323,7 +323,7 @@ def _fingerprint_dict(
 def _compute_drift(
     connector: str,
     baseline: SchemaSnapshot,
-    current_fields: Dict[str, str],
+    current_fields: dict[str, str],
 ) -> DriftReport:
     """
     Compare *current_fields* against the stored *baseline* snapshot.
@@ -343,7 +343,7 @@ def _compute_drift(
     new = set(current_fields.keys())
     added   = sorted(new - old)
     removed = sorted(old - new)
-    type_changes: Dict[str, Tuple[str, str]] = {
+    type_changes: dict[str, tuple[str, str]] = {
         k: (baseline.fields[k], current_fields[k])
         for k in (old & new)
         if baseline.fields[k] != current_fields[k]
@@ -361,7 +361,7 @@ def _compute_drift(
     )
 
 
-def _try_sample_schema(connector: Any) -> Optional[Dict[str, str]]:
+def _try_sample_schema(connector: Any) -> dict[str, str] | None:
     """
     Attempt to obtain a schema fingerprint by calling ``list_objects()``
     with ``limit=1`` on common STIX types.
@@ -399,8 +399,8 @@ def _default_snapshot_dir() -> Path:
 
 def load_snapshot(
     connector: str,
-    snapshot_dir: Optional[str] = None,
-) -> Optional[SchemaSnapshot]:
+    snapshot_dir: str | None = None,
+) -> SchemaSnapshot | None:
     """
     Load a stored schema snapshot for *connector*.
 
@@ -421,8 +421,8 @@ def load_snapshot(
 
 def save_snapshot(
     connector: str,
-    fields: Dict[str, str],
-    snapshot_dir: Optional[str] = None,
+    fields: dict[str, str],
+    snapshot_dir: str | None = None,
 ) -> None:
     """
     Persist a schema snapshot for *connector*.
@@ -535,12 +535,12 @@ class ConnectorHealthJob(FeedJob):
 
     def __init__(
         self,
-        connectors: Dict[str, Any],
+        connectors: dict[str, Any],
         interval_minutes: int = 60,
-        cron: Optional[str] = None,
-        alert_webhook: Optional[str] = None,
+        cron: str | None = None,
+        alert_webhook: str | None = None,
         drift_threshold: float = 0.2,
-        snapshot_dir: Optional[str] = None,
+        snapshot_dir: str | None = None,
         sample_schema: bool = True,
         job_id: str = "connector-health",
         enabled: bool = True,
@@ -573,7 +573,7 @@ class ConnectorHealthJob(FeedJob):
 
     # ── execute() override ─────────────────────────────────────────────────
 
-    def execute(self, scheduled_at: Optional[datetime] = None) -> RunRecord:
+    def execute(self, scheduled_at: datetime | None = None) -> RunRecord:
         """
         Execute one health-check run synchronously.
 
@@ -670,7 +670,7 @@ class ConnectorHealthJob(FeedJob):
         for name, connector in self._connectors.items():
             t0        = time.monotonic()
             reachable = False
-            err: Optional[str] = None
+            err: str | None = None
 
             try:
                 reachable = bool(connector.health_check())
@@ -681,7 +681,7 @@ class ConnectorHealthJob(FeedJob):
                 )
             elapsed_ms = (time.monotonic() - t0) * 1000.0
 
-            drift: Optional[DriftReport] = None
+            drift: DriftReport | None = None
             schema_sampled = False
 
             if reachable and self._sample_schema:
@@ -728,9 +728,9 @@ class ConnectorHealthJob(FeedJob):
     def from_config(
         cls,
         config_path: str,
-        platforms: Optional[List[str]] = None,
+        platforms: list[str] | None = None,
         **kwargs: Any,
-    ) -> "ConnectorHealthJob":
+    ) -> ConnectorHealthJob:
         """
         Build a :class:`ConnectorHealthJob` from a GNAT config file.
 
@@ -751,8 +751,8 @@ class ConnectorHealthJob(FeedJob):
         -------
         ConnectorHealthJob
         """
-        from gnat.clients import CLIENT_REGISTRY
         from gnat.client import GNATClient
+        from gnat.clients import CLIENT_REGISTRY
         from gnat.config import GNATConfig
 
         cfg_obj  = GNATConfig(config_path)
@@ -760,7 +760,7 @@ class ConnectorHealthJob(FeedJob):
 
         platform_filter = set(platforms or hm_cfg.platforms or [])
 
-        connectors: Dict[str, Any] = {}
+        connectors: dict[str, Any] = {}
         for section in cfg_obj.sections:
             name = section.lower()
             if name not in CLIENT_REGISTRY:
@@ -775,12 +775,12 @@ class ConnectorHealthJob(FeedJob):
                     "ConnectorHealthJob.from_config: skipping %r — %s", name, exc
                 )
 
-        merged: Dict[str, Any] = dict(
-            interval_minutes = hm_cfg.interval_minutes,
-            alert_webhook    = hm_cfg.alert_webhook,
-            drift_threshold  = hm_cfg.drift_threshold,
-            snapshot_dir     = hm_cfg.snapshot_dir,
-        )
+        merged: dict[str, Any] = {
+            "interval_minutes": hm_cfg.interval_minutes,
+            "alert_webhook": hm_cfg.alert_webhook,
+            "drift_threshold": hm_cfg.drift_threshold,
+            "snapshot_dir": hm_cfg.snapshot_dir,
+        }
         merged.update(kwargs)
 
         return cls(connectors=connectors, **merged)

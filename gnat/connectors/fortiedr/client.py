@@ -45,7 +45,7 @@ Notes
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -70,7 +70,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
         Password for Basic Auth.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "event",
         "incident": "incident",
         "report": "collector",
@@ -103,7 +103,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
             self.get("/rest/incidents", params={"limit": 1})
             return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch single object by ID (incident, collector, etc.)."""
         if stix_type in ("incident", "observed-data"):
             # Adjust endpoint based on actual FortiEDR paths
@@ -114,10 +114,10 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List events/incidents or collectors.
 
@@ -142,7 +142,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"list_objects not implemented for STIX type {stix_type} in FortiEDR")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Limited write support (e.g., update incident status or trigger playbook action)."""
         if stix_type == "incident":
             # Example: update incident or trigger action
@@ -154,13 +154,13 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def list_collectors(self, limit: int = 100, **filters: Any) -> List[Dict[str, Any]]:
+    def list_collectors(self, limit: int = 100, **filters: Any) -> list[dict[str, Any]]:
         """Fetch endpoint collectors (inventory)."""
         params = {"limit": limit, **filters}
         resp = self.get("/rest/collectors", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def get_incident_details(self, incident_id: str) -> Dict[str, Any]:
+    def get_incident_details(self, incident_id: str) -> dict[str, Any]:
         """Fetch detailed incident/event information."""
         return self.get(f"/rest/incidents/{incident_id}")
 
@@ -168,7 +168,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate FortiEDR incident/event or collector to STIX 2.1.
 
@@ -181,7 +181,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
         # Fallback for collectors/endpoints
         return self._collector_to_stix(native, now)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Prepare payload for updates/actions (e.g., isolate device)."""
         return {
             "note": "FortiEDR from_stix prepares action/update payload.",
@@ -190,7 +190,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    def _incident_to_stix(self, event: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _incident_to_stix(self, event: dict[str, Any], now: str) -> dict[str, Any]:
         """Map FortiEDR security event/incident to STIX observed-data."""
         event_id = event.get("incidentId") or event.get("eventId") or str(hash(str(event)))
         return {
@@ -213,7 +213,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _collector_to_stix(self, collector: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _collector_to_stix(self, collector: dict[str, Any], now: str) -> dict[str, Any]:
         """Map collector/endpoint to STIX report."""
         coll_id = collector.get("collectorId") or collector.get("id") or "unknown"
         return {

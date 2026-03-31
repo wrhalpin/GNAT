@@ -678,6 +678,13 @@ username = your_claroty_username_here
 password = your_claroty_password_here
 
 # =============================================================================
+# CISA Known Exploited Vulnerabilities (KEV) Catalog
+# =============================================================================
+[cisa]
+host = https://www.cisa.gov
+# No credentials required — public data source
+
+# =============================================================================
 # Fortinet FortiEDR
 # =============================================================================
 [fortiedr]

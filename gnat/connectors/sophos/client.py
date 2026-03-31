@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -70,7 +70,7 @@ class SophosClient(BaseClient, ConnectorMixin):
         Sophos tenant ID (``X-Tenant-ID`` header).  Auto-discovered if omitted.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "blocked-items",
         "malware":   "detections",
     }
@@ -121,7 +121,7 @@ class SophosClient(BaseClient, ConnectorMixin):
         self.get("/endpoint/v1/endpoints", params={"pageSize": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single blocked item or detection by ID."""
         if stix_type == "indicator":
             resp = self.get(f"/endpoint/v1/settings/blocked-items/{object_id}")
@@ -134,12 +134,12 @@ class SophosClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str = "malware",
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List detections, blocked items, or alerts."""
-        params: Dict[str, Any] = {"pageSize": page_size, "pageFrom": (page - 1) * page_size}
+        params: dict[str, Any] = {"pageSize": page_size, "pageFrom": (page - 1) * page_size}
         if filters:
             params.update(filters)
 
@@ -151,22 +151,22 @@ class SophosClient(BaseClient, ConnectorMixin):
             return resp.get("detections", []) if isinstance(resp, dict) else []
         raise GNATClientError(f"Sophos: unsupported STIX type '{stix_type}'")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Add a blocked item to Sophos Central."""
         if stix_type != "indicator":
-            raise GNATClientError(f"Sophos: upsert only supported for 'indicator'")
+            raise GNATClientError("Sophos: upsert only supported for 'indicator'")
         resp = self.post("/endpoint/v1/settings/blocked-items", json=payload)
         return resp if isinstance(resp, dict) else {}
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Remove a blocked item from Sophos Central."""
         if stix_type != "indicator":
-            raise GNATClientError(f"Sophos: delete only supported for 'indicator'")
+            raise GNATClientError("Sophos: delete only supported for 'indicator'")
         self.delete(f"/endpoint/v1/settings/blocked-items/{object_id}")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def list_endpoints(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_endpoints(self, limit: int = 100) -> list[dict[str, Any]]:
         """
         List managed endpoints from Sophos Central.
 
@@ -181,8 +181,8 @@ class SophosClient(BaseClient, ConnectorMixin):
     def list_alerts(
         self,
         limit: int = 100,
-        from_date: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        from_date: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Fetch security alerts via the Sophos SIEM API.
 
@@ -193,26 +193,26 @@ class SophosClient(BaseClient, ConnectorMixin):
         from_date : str, optional
             ISO 8601 timestamp to filter alerts after this date.
         """
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if from_date:
             params["from_date"] = from_date
         resp = self.get("/siem/v1/alerts", params=params)
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def list_detections(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_detections(self, limit: int = 100) -> list[dict[str, Any]]:
         """Fetch endpoint malware detections."""
         resp = self.get("/endpoint/v1/detections", params={"pageSize": limit})
         return resp.get("detections", []) if isinstance(resp, dict) else []
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Sophos detection or blocked item to a STIX 2.1 object."""
         if "sha256" in native or "properties" in native:
             return self._blocked_item_to_stix(native)
         return self._detection_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX indicator to a Sophos blocked-item payload."""
         pattern = stix_dict.get("pattern", "")
         value = stix_dict.get("name", "")
@@ -231,7 +231,7 @@ class SophosClient(BaseClient, ConnectorMixin):
             "comment":  stix_dict.get("description", "Imported via GNAT"),
         }
 
-    def _blocked_item_to_stix(self, item: Dict[str, Any]) -> Dict[str, Any]:
+    def _blocked_item_to_stix(self, item: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         item_id = item.get("id", "")
         value = item.get("sha256", item.get("value", ""))
@@ -253,7 +253,7 @@ class SophosClient(BaseClient, ConnectorMixin):
             "x_sophos_type":   item_type,
         }
 
-    def _detection_to_stix(self, detection: Dict[str, Any]) -> Dict[str, Any]:
+    def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         det_id = detection.get("id", "")
         return {

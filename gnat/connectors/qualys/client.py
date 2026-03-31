@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -68,7 +68,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         Qualys password (for Basic Auth).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "knowledge_base/vuln",
         "report":        "asset/host/vm/detection",
     }
@@ -93,7 +93,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         self.get("/api/2.0/fo/user/", params={"action": "list"})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "vulnerability":
             return self.get("/api/2.0/fo/knowledge_base/vuln/", params={"action": "list", "ids": object_id})
         raise GNATClientError(f"get_object for {stix_type} not fully implemented yet in Qualys connector.")
@@ -101,10 +101,10 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
         if stix_type == "vulnerability":
             return self.fetch_vulnerabilities(
@@ -118,7 +118,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
             limit=page_size,
         )
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Qualys VMDR connector is read-focused; write operations not supported here.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -128,12 +128,12 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
 
     def fetch_vulnerabilities(
         self,
-        severity: Optional[str] = None,
-        qid: Optional[str] = None,
+        severity: str | None = None,
+        qid: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch from KnowledgeBase (QIDs, severity, etc.)."""
-        params: Dict[str, Any] = {"action": "list", "limit": limit}
+        params: dict[str, Any] = {"action": "list", "limit": limit}
         if severity:
             params["severity"] = severity
         if qid:
@@ -144,11 +144,11 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
 
     def fetch_detections(
         self,
-        detection_severity: Optional[str] = None,
+        detection_severity: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch host vulnerability detections."""
-        params: Dict[str, Any] = {"action": "list", "limit": limit}
+        params: dict[str, Any] = {"action": "list", "limit": limit}
         if detection_severity:
             params["severity"] = detection_severity
         resp = self.get("/api/2.0/fo/asset/host/vm/detection/", params=params)
@@ -156,19 +156,19 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native_object: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native_object: dict[str, Any]) -> dict[str, Any]:
         """Dispatch vulnerability vs. detection/report."""
         if "QID" in native_object or "title" in native_object and "severity" in native_object:
             return self._vuln_to_stix(native_object)
         return self._detection_to_stix(native_object)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "Qualys VMDR is primarily read-only for this connector.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _vuln_to_stix(self, vuln: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         qid = vuln.get("QID", "")
         vuln_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'qid:{qid}')}"
@@ -189,7 +189,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _detection_to_stix(self, detection: Dict[str, Any]) -> Dict[str, Any]:
+    def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         det_id = detection.get("ID", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'detection:{det_id}')}"

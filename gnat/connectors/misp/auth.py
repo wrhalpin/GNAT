@@ -12,7 +12,9 @@ distinct from both QRadar's ``SEC: <token>`` and Elastic's
 """
 
 import json
+
 import urllib3
+
 from .config import MISPConfig
 from .exceptions import MISPAuthError
 

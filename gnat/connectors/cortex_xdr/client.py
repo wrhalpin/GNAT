@@ -60,7 +60,7 @@ import secrets
 import time
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -99,7 +99,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         API key string.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "alerts",
         "malware":       "incidents",
         "threat-actor":  "incidents",
@@ -136,7 +136,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         })
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single alert or incident by ID."""
         if stix_type in ("indicator", "vulnerability"):
             resp = self.post("/public_api/v1/alerts/get_alerts_multi_events", json={
@@ -169,15 +169,15 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List alerts or incidents."""
         f = filters or {}
         search_from = (page - 1) * page_size
         search_to = search_from + page_size
-        api_filters: List[Dict[str, Any]] = []
+        api_filters: list[dict[str, Any]] = []
         if "severity" in f:
             api_filters.append({"field": "severity", "operator": "in",
                                  "value": [f["severity"]]})
@@ -209,11 +209,11 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"Unsupported STIX type for Cortex XDR: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Update an incident status or severity."""
         if stix_type in ("malware", "threat-actor"):
             incident_id = payload.get("incident_id", payload.get("id", ""))
-            body: Dict[str, Any] = {"request_data": {"incident_id": incident_id}}
+            body: dict[str, Any] = {"request_data": {"incident_id": incident_id}}
             if "status" in payload:
                 body["request_data"]["status"] = payload["status"]
             if "resolve_comment" in payload:
@@ -242,9 +242,9 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
 
     def get_endpoints(
         self,
-        filters: Optional[List[Dict[str, Any]]] = None,
+        filters: list[dict[str, Any]] | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return a list of managed endpoints."""
         resp = self.post("/public_api/v1/endpoints/get_endpoints", json={
             "request_data": {
@@ -256,14 +256,14 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         return (resp.get("reply", {}).get("endpoints", [])
                 if isinstance(resp, dict) else [])
 
-    def get_incident_extra_data(self, incident_id: str) -> Dict[str, Any]:
+    def get_incident_extra_data(self, incident_id: str) -> dict[str, Any]:
         """Retrieve detailed alert and artifact data for an incident."""
         resp = self.post("/public_api/v1/incidents/get_incident_extra_data", json={
             "request_data": {"incident_id": incident_id, "alerts_limit": 100}
         })
         return resp.get("reply", {}) if isinstance(resp, dict) else {}
 
-    def update_alert(self, alert_id: str, status: str) -> Dict[str, Any]:
+    def update_alert(self, alert_id: str, status: str) -> dict[str, Any]:
         """Update the status of a single alert."""
         resp = self.post("/public_api/v1/alerts/update_alerts", json={
             "request_data": {
@@ -273,7 +273,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         })
         return resp if isinstance(resp, dict) else {}
 
-    def isolate_endpoint(self, endpoint_id: str) -> Dict[str, Any]:
+    def isolate_endpoint(self, endpoint_id: str) -> dict[str, Any]:
         """Isolate a managed endpoint from the network."""
         resp = self.post("/public_api/v1/endpoints/isolate", json={
             "request_data": {"endpoint_id": endpoint_id}
@@ -282,11 +282,11 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
 
     def get_indicators(
         self,
-        ioc_type: Optional[str] = None,
+        ioc_type: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retrieve threat indicators (IOCs) from the XDR/XSIAM feed."""
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "request_data": {"page_size": limit, "page_number": 0}
         }
         if ioc_type:
@@ -297,13 +297,13 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Cortex XDR alert or incident to STIX."""
         if "alert_id" in native or "detection_timestamp" in native:
             return self._alert_to_stix(native)
         return self._incident_to_stix(native)
 
-    def _alert_to_stix(self, alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(alert.get("alert_id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"xdr-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -327,7 +327,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         ts = ts or _now_ts()
 
         sectors = alert.get("x_target_sectors", [])
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{uid}",
             "name": alert.get("name", f"XDR Alert {alert_id}"),
@@ -353,7 +353,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = sectors
         return stix
 
-    def _incident_to_stix(self, incident: Dict[str, Any]) -> Dict[str, Any]:
+    def _incident_to_stix(self, incident: dict[str, Any]) -> dict[str, Any]:
         inc_id = str(incident.get("incident_id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"xdr-incident-{inc_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -385,7 +385,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract Cortex XDR-compatible fields from a STIX dict."""
         return {
             "name": stix_dict.get("name", ""),

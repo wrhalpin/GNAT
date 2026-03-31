@@ -38,8 +38,10 @@ from the ``[global]`` and ``[global.<name>]`` INI sections::
 
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.client import GNATClient
@@ -80,7 +82,7 @@ class GlobalContext:
     def __init__(
         self,
         name: str,
-        client: "GNATClient",
+        client: GNATClient,
         read_only: bool = False,
         priority: int = 10,
         description: str = "",
@@ -92,7 +94,7 @@ class GlobalContext:
         self.description = description
 
     @property
-    def target(self) -> Optional[str]:
+    def target(self) -> str | None:
         """Platform target name (e.g. ``"threatq"``)."""
         return self.client.target
 
@@ -110,10 +112,10 @@ class GlobalContext:
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """List STIX object dicts from this platform."""
         raw_list = self.client.client.list_objects(
             stix_type, filters=filters, page=page, page_size=page_size
@@ -183,17 +185,17 @@ class GlobalContextRegistry:
     >>> registry.get("crowdstrike_falcon").list_objects("indicator", page_size=5)
     """
 
-    def __init__(self, default_name: Optional[str] = None):
-        self._contexts: Dict[str, GlobalContext] = {}
-        self._default_name: Optional[str] = default_name
+    def __init__(self, default_name: str | None = None):
+        self._contexts: dict[str, GlobalContext] = {}
+        self._default_name: str | None = default_name
 
     # ── Factory ────────────────────────────────────────────────────────────
 
     @classmethod
     def from_config(
         cls,
-        config_path: Optional[str] = None,
-    ) -> "GlobalContextRegistry":
+        config_path: str | None = None,
+    ) -> GlobalContextRegistry:
         """
         Build a registry from INI configuration.
 
@@ -211,18 +213,16 @@ class GlobalContextRegistry:
         GlobalContextRegistry
             Populated registry, with all clients connected.
         """
-        from gnat.config import GNATConfig
         from gnat.client import GNATClient
+        from gnat.config import GNATConfig
 
         cfg = GNATConfig(config_path)
         registry = cls()
 
         # Read [global] section for defaults
         global_meta: dict = {}
-        try:
+        with contextlib.suppress(KeyError):
             global_meta = cfg.get("global")
-        except KeyError:
-            pass
 
         default_name = global_meta.get("default", "")
 
@@ -267,10 +267,10 @@ class GlobalContextRegistry:
     @classmethod
     def from_clients(
         cls,
-        clients: Dict[str, "GNATClient"],
-        default: Optional[str] = None,
-        read_only: Optional[List[str]] = None,
-    ) -> "GlobalContextRegistry":
+        clients: dict[str, GNATClient],
+        default: str | None = None,
+        read_only: list[str] | None = None,
+    ) -> GlobalContextRegistry:
         """
         Build a registry directly from a dict of connected GNATClients.
 
@@ -365,15 +365,15 @@ class GlobalContextRegistry:
             )
         return candidates[0]
 
-    def all(self) -> List[GlobalContext]:
+    def all(self) -> list[GlobalContext]:
         """All registered contexts sorted by priority."""
         return sorted(self._contexts.values(), key=lambda g: g.priority)
 
-    def writable(self) -> List[GlobalContext]:
+    def writable(self) -> list[GlobalContext]:
         """All read-write contexts sorted by priority."""
         return [g for g in self.all() if not g.read_only]
 
-    def read_only_contexts(self) -> List[GlobalContext]:
+    def read_only_contexts(self) -> list[GlobalContext]:
         """All read-only contexts (enrichment sources)."""
         return [g for g in self.all() if g.read_only]
 

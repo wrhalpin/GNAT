@@ -13,8 +13,9 @@ INI config::
     auth_type     = basic
 """
 
-from typing import Any, Dict, List, Optional
 import base64
+from typing import Any, Optional
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
@@ -22,7 +23,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 class ProofpointClient(BaseClient, ConnectorMixin):
     """HTTP client for the Proofpoint TAP v2 REST API."""
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":  "threat",
         "malware":    "malware",
     }
@@ -43,25 +44,25 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         self.get("/v2/siem/all", params={"format": "json", "sinceSeconds": 60})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resp = self.get("/v2/forensics", params={"threatId": object_id})
         return resp if isinstance(resp, dict) else {}
 
-    def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {"format": "json", "sinceSeconds": 3600}
+    def list_objects(self, stix_type: str, filters: Optional[dict[str, Any]] = None,
+                     page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"format": "json", "sinceSeconds": 3600}
         if filters:
             params.update(filters)
         resp = self.get("/v2/siem/all", params=params)
         return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Proofpoint TAP API does not support object creation.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Proofpoint TAP API does not support object deletion.")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', native.get('threatId', ''))}",
@@ -71,5 +72,5 @@ class ProofpointClient(BaseClient, ConnectorMixin):
             "modified": native.get("messageTime", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"threatId": stix_dict.get("id", "").split("--")[-1]}

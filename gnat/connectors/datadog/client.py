@@ -51,7 +51,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -81,7 +81,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
         Datadog application key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "security_monitoring/signals",
         "vulnerability": "posture_management/findings",
         "report":        "incidents",
@@ -110,11 +110,11 @@ class DatadogClient(BaseClient, ConnectorMixin):
 
     def health_check(self) -> bool:
         """Ping the security signals endpoint."""
-        params: Dict[str, Any] = {"page[limit]": 1}
+        params: dict[str, Any] = {"page[limit]": 1}
         self.get("/api/v2/security_monitoring/signals", params=params)
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single Datadog object by STIX type and ID."""
         if stix_type == "indicator":
             resp = self.get(f"/api/v2/security_monitoring/signals/{object_id}")
@@ -130,14 +130,14 @@ class DatadogClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Datadog security objects by STIX type."""
         f = filters or {}
         if stix_type == "indicator":
-            params: Dict[str, Any] = {"page[limit]": page_size}
+            params: dict[str, Any] = {"page[limit]": page_size}
             if "cursor" in f:
                 params["page[cursor]"] = f["cursor"]
             resp = self.get("/api/v2/security_monitoring/signals", params=params)
@@ -146,7 +146,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
             return resp.get("data", [])
 
         if stix_type == "vulnerability":
-            params_v: Dict[str, Any] = {"page[limit]": page_size}
+            params_v: dict[str, Any] = {"page[limit]": page_size}
             if "cursor" in f:
                 params_v["page[cursor]"] = f["cursor"]
             if "rule_id" in f:
@@ -155,7 +155,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
             return resp.get("data", []) if isinstance(resp, dict) else []
 
         if stix_type == "report":
-            params_r: Dict[str, Any] = {
+            params_r: dict[str, Any] = {
                 "page[size]": page_size,
                 "page[offset]": (page - 1) * page_size,
             }
@@ -164,7 +164,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"Unsupported STIX type for Datadog: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create a Datadog incident."""
         if stix_type == "report":
             body = {"data": {"type": "incidents", "attributes": payload}}
@@ -192,10 +192,10 @@ class DatadogClient(BaseClient, ConnectorMixin):
     def search_signals(
         self,
         query: str = "",
-        from_time: Optional[int] = None,
-        to_time: Optional[int] = None,
+        from_time: int | None = None,
+        to_time: int | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search security signals using Datadog query syntax."""
         now = _epoch_ms()
         body = {
@@ -212,12 +212,12 @@ class DatadogClient(BaseClient, ConnectorMixin):
 
     def get_csm_findings(
         self,
-        rule_id: Optional[str] = None,
-        severity: Optional[str] = None,
+        rule_id: str | None = None,
+        severity: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch Cloud Security Management (CSM) findings."""
-        params: Dict[str, Any] = {"page[limit]": limit}
+        params: dict[str, Any] = {"page[limit]": limit}
         if rule_id:
             params["filter[rule_id]"] = rule_id
         if severity:
@@ -227,28 +227,28 @@ class DatadogClient(BaseClient, ConnectorMixin):
 
     def get_incidents(
         self,
-        state: Optional[str] = None,
+        state: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch Datadog incidents."""
-        params: Dict[str, Any] = {"page[size]": limit}
+        params: dict[str, Any] = {"page[size]": limit}
         if state:
             params["filter[state]"] = state
         resp = self.get("/api/v2/incidents", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def get_security_rules(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_security_rules(self, limit: int = 100) -> list[dict[str, Any]]:
         """Fetch security monitoring detection rules."""
-        params: Dict[str, Any] = {"page[size]": limit}
+        params: dict[str, Any] = {"page[size]": limit}
         resp = self.get("/api/v2/security_monitoring/rules", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def create_security_rule(self, rule: Dict[str, Any]) -> Dict[str, Any]:
+    def create_security_rule(self, rule: dict[str, Any]) -> dict[str, Any]:
         """Create a new security monitoring detection rule."""
         resp = self.post("/api/v2/security_monitoring/rules", json=rule)
         return resp if isinstance(resp, dict) else {}
 
-    def mute_signal(self, signal_id: str, reason: str = "maintenance") -> Dict[str, Any]:
+    def mute_signal(self, signal_id: str, reason: str = "maintenance") -> dict[str, Any]:
         """Mute a security signal."""
         body = {"data": {"attributes": {"action": "mute", "reason": reason}}}
         resp = self.patch(
@@ -259,10 +259,10 @@ class DatadogClient(BaseClient, ConnectorMixin):
     def get_logs(
         self,
         query: str = "*",
-        from_time: Optional[int] = None,
-        to_time: Optional[int] = None,
+        from_time: int | None = None,
+        to_time: int | None = None,
         limit: int = 300,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search Datadog logs."""
         now = _epoch_ms()
         body = {
@@ -278,7 +278,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Datadog security object to STIX."""
         native_type = native.get("type", "")
         attrs = native.get("attributes", native)
@@ -292,7 +292,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
         # Default: signal
         return self._signal_to_stix(native)
 
-    def _signal_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _signal_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         signal_id = native.get("id", "")
         attrs = native.get("attributes", native)
         uid = str(_uuid.uuid5(_STIX_NS, f"datadog-signal-{signal_id}"))
@@ -331,7 +331,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _finding_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _finding_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         finding_id = native.get("id", "")
         attrs = native.get("attributes", native)
         uid = str(_uuid.uuid5(_STIX_NS, f"datadog-finding-{finding_id}"))
@@ -356,7 +356,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _incident_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _incident_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         incident_id = native.get("id", "")
         attrs = native.get("attributes", native)
         uid = str(_uuid.uuid5(_STIX_NS, f"datadog-incident-{incident_id}"))
@@ -380,7 +380,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX dict to a Datadog incident payload."""
         return {
             "title": stix_dict.get("name", ""),

@@ -46,7 +46,7 @@ Notes
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -73,7 +73,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         Fallback password for legacy auth.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "report": "assets",
         "observed-data": "alerts",
         "vulnerability": "vulnerabilities",
@@ -122,10 +122,10 @@ class ClarotyClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List assets, alerts, or vulnerabilities.
 
@@ -151,7 +151,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"list_objects not fully implemented for {stix_type} in Claroty")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Limited write support (e.g., acknowledge alert)."""
         if stix_type == "observed-data" and "alert_id" in payload:
             # Example: acknowledge or update alert status
@@ -164,21 +164,21 @@ class ClarotyClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
-    def list_assets(self, **filters: Any) -> List[Dict[str, Any]]:
+    def list_assets(self, **filters: Any) -> list[dict[str, Any]]:
         """Convenience: List OT/IoT/ICS assets with filters (category, site, risk, etc.)."""
         return self.list_objects("report", filters=filters)
 
-    def list_alerts(self, **filters: Any) -> List[Dict[str, Any]]:
+    def list_alerts(self, **filters: Any) -> list[dict[str, Any]]:
         """Convenience: List security alerts/anomalies."""
         return self.list_objects("observed-data", filters=filters)
 
-    def get_asset_details(self, asset_id: str) -> Dict[str, Any]:
+    def get_asset_details(self, asset_id: str) -> dict[str, Any]:
         """Fetch detailed information for a single asset."""
         return self.get(f"/v1/assets/{asset_id}")
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate Claroty asset, alert, or vulnerability to STIX 2.1.
 
@@ -204,7 +204,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
             "x_claroty": native,
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Prepare payload for limited writes (e.g., alert updates)."""
         return {
             "note": "Claroty from_stix prepares update/ack payload.",
@@ -213,7 +213,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    def _asset_to_stix(self, asset: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _asset_to_stix(self, asset: dict[str, Any], now: str) -> dict[str, Any]:
         """Map Claroty asset to STIX report (rich OT/ICS inventory)."""
         asset_id = asset.get("asset_uid") or asset.get("id") or "unknown"
         return {
@@ -237,7 +237,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _alert_to_stix(self, alert: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any], now: str) -> dict[str, Any]:
         """Map Claroty alert to STIX observed-data."""
         alert_id = alert.get("alert_id") or alert.get("id")
         return {
@@ -257,7 +257,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _vulnerability_to_stix(self, vuln: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _vulnerability_to_stix(self, vuln: dict[str, Any], now: str) -> dict[str, Any]:
         """Map Claroty vulnerability to STIX vulnerability."""
         cve = vuln.get("cve") or vuln.get("vulnerability_id", "")
         return {

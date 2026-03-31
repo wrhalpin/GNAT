@@ -51,8 +51,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, Optional
-from urllib.parse import urljoin, urlencode
+from typing import Any
+from urllib.parse import urlencode, urljoin
 
 from gnat.clients.base import GNATClientError
 
@@ -92,14 +92,14 @@ class AsyncBaseClient:
         verify_ssl: bool = True,
         timeout: float = 30.0,
         max_retries: int = 3,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ):
         self.host = host.rstrip("/")
         self.verify_ssl = verify_ssl
         self.timeout = timeout
         self.max_retries = max_retries
         self.config = config or {}
-        self._auth_headers: Dict[str, str] = {}
+        self._auth_headers: dict[str, str] = {}
         self._authenticated = False
         self._http: Any = None  # httpx.AsyncClient, lazy-init in __aenter__
 
@@ -107,7 +107,7 @@ class AsyncBaseClient:
     # Async context manager
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "AsyncBaseClient":
+    async def __aenter__(self) -> AsyncBaseClient:
         await self._init_http()
         return self
 
@@ -158,8 +158,8 @@ class AsyncBaseClient:
     async def get(
         self,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """Async GET request."""
         return await self._request("GET", path, params=params, extra_headers=headers)
@@ -167,9 +167,9 @@ class AsyncBaseClient:
     async def post(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        json: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """Async POST request."""
         return await self._request(
@@ -179,8 +179,8 @@ class AsyncBaseClient:
     async def put(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        json: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """Async PUT request."""
         return await self._request("PUT", path, body=json, extra_headers=headers)
@@ -188,8 +188,8 @@ class AsyncBaseClient:
     async def patch(
         self,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        json: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """Async PATCH request."""
         return await self._request("PATCH", path, body=json, extra_headers=headers)
@@ -197,7 +197,7 @@ class AsyncBaseClient:
     async def delete(
         self,
         path: str,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """Async DELETE request."""
         return await self._request("DELETE", path, extra_headers=headers)
@@ -210,10 +210,10 @@ class AsyncBaseClient:
         self,
         method: str,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        body: Optional[Dict[str, Any]] = None,
-        form_data: Optional[Dict[str, Any]] = None,
-        extra_headers: Optional[Dict[str, str]] = None,
+        params: dict[str, Any] | None = None,
+        body: dict[str, Any] | None = None,
+        form_data: dict[str, Any] | None = None,
+        extra_headers: dict[str, str] | None = None,
     ) -> Any:
         if self._http is None:
             await self._init_http()
@@ -226,12 +226,12 @@ class AsyncBaseClient:
         if params:
             url = f"{url}?{urlencode(params, doseq=True)}"
 
-        req_headers: Dict[str, str] = {"Accept": "application/json"}
+        req_headers: dict[str, str] = {"Accept": "application/json"}
         req_headers.update(self._auth_headers)
         if extra_headers:
             req_headers.update(extra_headers)
 
-        content: Optional[bytes] = None
+        content: bytes | None = None
         if body is not None:
             content = json.dumps(body).encode()
             req_headers["Content-Type"] = "application/json"

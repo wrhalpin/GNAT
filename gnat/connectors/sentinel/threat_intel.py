@@ -26,7 +26,8 @@ References
 - https://learn.microsoft.com/en-us/rest/api/securityinsights/threat-intelligence-indicator
 """
 
-from typing import Iterator
+from collections.abc import Iterator
+
 from .client import SentinelClient
 
 

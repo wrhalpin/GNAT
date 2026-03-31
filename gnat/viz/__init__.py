@@ -44,9 +44,9 @@ Quick start::
     save_grafana_dashboard("apt28", "dashboard.json")
 """
 
+from gnat.viz.export import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
+from gnat.viz.graph import GraphView
 from gnat.viz.tabular import TabularView
-from gnat.viz.graph   import GraphView
-from gnat.viz.export  import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
 
 try:
     from gnat.viz.grafana.server import GrafanaServer

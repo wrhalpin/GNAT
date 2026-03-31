@@ -44,7 +44,7 @@ Notes
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -69,7 +69,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         Password for Basic Auth.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "incident": "incident",
         "observed-data": "event",
         "report": "cmdb",
@@ -102,7 +102,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
             self.get("/phoenix/rest/pub/incident", params={"size": 1, "timeFrom": 0})
             return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch single incident or device by ID (where supported)."""
         if stix_type == "incident":
             # incidentId filter
@@ -117,10 +117,10 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List incidents or events.
 
@@ -148,7 +148,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         # CMDB fallback example
         return self.get("/phoenix/rest/deviceInfo/monitoredDevices", params={"size": page_size})
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Update incident status/ticket (where supported). Extend for full CRUD."""
         if stix_type == "incident":
             # Example: update ticket status via JSON incident update endpoint
@@ -165,9 +165,9 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         self,
         time_from: int,
         time_to: int,
-        status: Optional[List[int]] = None,
+        status: list[int] | None = None,
         size: int = 500,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Convenience: Fetch incidents in time window (JSON API)."""
         params = {"timeFrom": time_from, "timeTo": time_to, "size": size}
         if status:
@@ -177,7 +177,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate FortiSIEM incident or CMDB object to STIX 2.1.
 
@@ -199,7 +199,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
             "x_fortisiem": native,
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return native payload template for updates (e.g., incident status)."""
         return {
             "note": "FortiSIEM from_stix prepares update payload (extend as needed).",
@@ -209,7 +209,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    def _incident_to_stix(self, inc: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _incident_to_stix(self, inc: dict[str, Any], now: str) -> dict[str, Any]:
         """Map FortiSIEM incident to STIX observed-data (common pattern)."""
         inc_id = inc.get("incidentId", "")
         return {

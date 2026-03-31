@@ -30,36 +30,36 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from gnat.connectors.elastic.config import ElasticConfig, load_elastic_config
-from gnat.connectors.elastic.exceptions import (
-ElasticAuthError,
-ElasticAPIError,
-ElasticConfigError,
-ElasticConflictError,
-ElasticKibanaError,
-ElasticKibanaNotFoundError,
-ElasticKibanaValidationError,
-ElasticNotFoundError,
-ElasticRateLimitError,
-ElasticSTIXError,
-)
 from gnat.connectors.elastic.auth import ElasticAuthManager
 from gnat.connectors.elastic.client import ElasticClient
+from gnat.connectors.elastic.config import ElasticConfig, load_elastic_config
 from gnat.connectors.elastic.es_search import ElasticSearchCommands
-from gnat.connectors.elastic.kibana_rules import KibanaRulesCommands
+from gnat.connectors.elastic.exceptions import (
+    ElasticAPIError,
+    ElasticAuthError,
+    ElasticConfigError,
+    ElasticConflictError,
+    ElasticKibanaError,
+    ElasticKibanaNotFoundError,
+    ElasticKibanaValidationError,
+    ElasticNotFoundError,
+    ElasticRateLimitError,
+    ElasticSTIXError,
+)
 from gnat.connectors.elastic.kibana_alerts import KibanaAlertsCommands
 from gnat.connectors.elastic.kibana_cases import KibanaCasesCommands
-from gnat.connectors.elastic.threat_intel import ElasticThreatIntelCommands
+from gnat.connectors.elastic.kibana_rules import KibanaRulesCommands
 from gnat.connectors.elastic.stix_mapper import ElasticSTIXMapper
+from gnat.connectors.elastic.threat_intel import ElasticThreatIntelCommands
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def _make_config(**overrides) -> ElasticConfig:
-    defaults = dict(
-    es_host="elastic.test.local",
-    api_key_id="test_key_id",
-    api_key_secret="test_key_secret",
-    )
+    defaults = {
+    "es_host": "elastic.test.local",
+    "api_key_id": "test_key_id",
+    "api_key_secret": "test_key_secret",
+    }
     defaults.update(overrides)
     return ElasticConfig(**defaults)
 
@@ -309,9 +309,8 @@ class TestElasticClient(unittest.TestCase):
     def test_es_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"):
-            with self.assertRaises(ElasticRateLimitError):
-                client.es_get("_search")
+        with patch("time.sleep"), self.assertRaises(ElasticRateLimitError):
+            client.es_get("_search")
 
     def test_kibana_404_raises_kibana_not_found(self):
         client, mock_http = _make_client()

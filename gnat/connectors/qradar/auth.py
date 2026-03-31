@@ -33,6 +33,7 @@ References
 """
 
 import json
+
 import urllib3
 
 from .config import QRadarConfig

@@ -65,13 +65,14 @@ Usage
 
 from __future__ import annotations
 
+import builtins
 import json
 import logging
 import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace, WorkspaceManager
@@ -113,7 +114,7 @@ class Tenant:
     tenant_id: str
     display_name: str = ""
     description: str = ""
-    config_path: Optional[str] = None
+    config_path: str | None = None
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
     )
@@ -163,9 +164,9 @@ class TenantRegistry:
 
     DEFAULT_PATH = "~/.gnat/tenants.json"
 
-    def __init__(self, registry_path: Optional[str] = None) -> None:
+    def __init__(self, registry_path: str | None = None) -> None:
         self._path = Path(registry_path or self.DEFAULT_PATH).expanduser()
-        self._tenants: Dict[str, Tenant] = {}
+        self._tenants: dict[str, Tenant] = {}
         self._load()
 
     # ------------------------------------------------------------------
@@ -207,7 +208,7 @@ class TenantRegistry:
         tenant_id: str,
         display_name: str = "",
         description: str = "",
-        config_path: Optional[str] = None,
+        config_path: str | None = None,
     ) -> Tenant:
         """
         Register a new tenant.
@@ -248,20 +249,20 @@ class TenantRegistry:
         logger.info("Registered tenant %r", tenant_id)
         return tenant
 
-    def get(self, tenant_id: str) -> Optional[Tenant]:
+    def get(self, tenant_id: str) -> Tenant | None:
         """Return the :class:`Tenant` for *tenant_id*, or ``None``."""
         return self._tenants.get(tenant_id)
 
-    def list(self) -> List[Tenant]:
+    def list(self) -> builtins.list[Tenant]:
         """Return all registered tenants sorted by tenant_id."""
         return sorted(self._tenants.values(), key=lambda t: t.tenant_id)
 
     def update(
         self,
         tenant_id: str,
-        display_name: Optional[str] = None,
-        description: Optional[str] = None,
-        config_path: Optional[str] = None,
+        display_name: str | None = None,
+        description: str | None = None,
+        config_path: str | None = None,
     ) -> Tenant:
         """
         Update mutable fields of an existing tenant.
@@ -307,7 +308,7 @@ class TenantRegistry:
     # ------------------------------------------------------------------
 
     @classmethod
-    def default(cls) -> "TenantRegistry":
+    def default(cls) -> TenantRegistry:
         """Return a TenantRegistry using the default path ``~/.gnat/tenants.json``."""
         return cls()
 
@@ -358,7 +359,7 @@ class TenantWorkspaceManager:
 
     SEPARATOR: str = TENANT_SEPARATOR
 
-    def __init__(self, tenant_id: str, manager: "WorkspaceManager") -> None:
+    def __init__(self, tenant_id: str, manager: WorkspaceManager) -> None:
         # Validate tenant_id
         if not _TENANT_ID_RE.match(tenant_id):
             raise ValueError(
@@ -367,7 +368,7 @@ class TenantWorkspaceManager:
                 "1–63 characters."
             )
         self.tenant_id: str = tenant_id
-        self._manager: "WorkspaceManager" = manager
+        self._manager: WorkspaceManager = manager
         self._prefix: str = f"{tenant_id}{self.SEPARATOR}"
 
     # ------------------------------------------------------------------
@@ -393,7 +394,7 @@ class TenantWorkspaceManager:
     # WorkspaceManager interface (mirrored API)
     # ------------------------------------------------------------------
 
-    def create(self, name: str, description: str = "") -> "Workspace":
+    def create(self, name: str, description: str = "") -> Workspace:
         """
         Create a new workspace for this tenant.
 
@@ -415,7 +416,7 @@ class TenantWorkspaceManager:
         """
         return self._manager.create(self._scoped(name), description=description)
 
-    def open(self, name: str) -> "Workspace":
+    def open(self, name: str) -> Workspace:
         """
         Open an existing workspace for this tenant.
 
@@ -426,18 +427,18 @@ class TenantWorkspaceManager:
         """
         return self._manager.open(self._scoped(name))
 
-    def get_or_create(self, name: str, **kwargs: Any) -> "Workspace":
+    def get_or_create(self, name: str, **kwargs: Any) -> Workspace:
         """Open an existing workspace or create it if it doesn't exist."""
         return self._manager.get_or_create(self._scoped(name), **kwargs)
 
-    def list(self) -> List[dict]:
+    def list(self) -> builtins.list[dict]:
         """
         Return metadata dicts for all workspaces belonging to this tenant.
 
         Names in the returned dicts are unscoped (tenant prefix stripped).
         An extra ``"tenant_id"`` key is added to each dict.
         """
-        result: List[dict] = []
+        result: list[dict] = []
         for ws in self._manager.list():
             if ws.get("name", "").startswith(self._prefix):
                 result.append(self._strip_meta(ws))
@@ -469,7 +470,7 @@ class TenantWorkspaceManager:
         logger.info("Purged %d workspace(s) for tenant %r", len(names), self.tenant_id)
         return len(names)
 
-    def workspace_names(self) -> List[str]:
+    def workspace_names(self) -> builtins.list[str]:
         """Return the unscoped names of all workspaces for this tenant."""
         return [ws["name"] for ws in self.list()]
 
@@ -481,9 +482,9 @@ class TenantWorkspaceManager:
     def default(
         cls,
         tenant_id: str,
-        config_path: Optional[str] = None,
-        db_url: Optional[str] = None,
-    ) -> "TenantWorkspaceManager":
+        config_path: str | None = None,
+        db_url: str | None = None,
+    ) -> TenantWorkspaceManager:
         """
         Create a :class:`TenantWorkspaceManager` using the default store.
 

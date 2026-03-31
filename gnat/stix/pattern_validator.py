@@ -55,8 +55,8 @@ Usage
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Optional, Sequence
 
 # ---------------------------------------------------------------------------
 # Known STIX 2.1 SCO and SDO object types that may appear in patterns
@@ -214,8 +214,8 @@ class ValidationResult:
     """
 
     valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     strict: bool = False
 
     def __bool__(self) -> bool:
@@ -241,7 +241,7 @@ class PatternValidationError(ValueError):
 
     def __init__(self, pattern: str, errors: Sequence[str]) -> None:
         self.pattern = pattern
-        self.errors: List[str] = list(errors)
+        self.errors: list[str] = list(errors)
         summary = "; ".join(self.errors[:3])
         super().__init__(f"Invalid STIX pattern: {summary!r}")
 
@@ -291,22 +291,22 @@ class _Parser:
     # Helpers
     # ------------------------------------------------------------------
 
-    def _peek(self) -> Optional[_Token]:
+    def _peek(self) -> _Token | None:
         if self._pos < len(self._tokens):
             return self._tokens[self._pos]
         return None
 
-    def _peek_ahead(self, offset: int = 1) -> Optional[_Token]:
+    def _peek_ahead(self, offset: int = 1) -> _Token | None:
         idx = self._pos + offset
         return self._tokens[idx] if idx < len(self._tokens) else None
 
-    def _advance(self) -> Optional[_Token]:
+    def _advance(self) -> _Token | None:
         tok = self._peek()
         if tok is not None:
             self._pos += 1
         return tok
 
-    def _expect(self, *kinds: str) -> Optional[_Token]:
+    def _expect(self, *kinds: str) -> _Token | None:
         tok = self._peek()
         if tok is None or tok.kind not in kinds:
             expected = "/".join(kinds)
@@ -435,9 +435,7 @@ class _Parser:
             if self._at("DOT"):
                 self._advance()
                 # Allow quoted property component (e.g., hashes.'SHA-256')
-                if self._at("STRING_SQ", "STRING_DQ"):
-                    self._advance()
-                elif self._at("IDENT"):
+                if self._at("STRING_SQ", "STRING_DQ") or self._at("IDENT"):
                     self._advance()
                 else:
                     self.errors.append("Expected property name after '.'")

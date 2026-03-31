@@ -196,6 +196,7 @@ GNAT provides a single, consistent abstraction layer over 95+ security platforms
 | `fortisiem` | Fortinet FortiSIEM | Username / password |
 | `shodan` | Shodan | API key |
 | `greynoise` | GreyNoise | API key |
+| `cisa` | CISA KEV Catalog (public feed) | None (public) |
 
 ### AI Assistants
 

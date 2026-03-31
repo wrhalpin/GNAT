@@ -37,7 +37,7 @@ from __future__ import annotations
 import base64
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -65,7 +65,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         Censys API secret.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "hosts",
         "vulnerability": "hosts",
     }
@@ -101,7 +101,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         self.post("/api/v2/hosts/search", json={"q": "services.port=443", "per_page": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch details for a single IP host.
 
@@ -118,10 +118,10 @@ class CensysClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str = "observed-data",
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search hosts using Censys Search Language (CSL).
 
@@ -136,13 +136,13 @@ class CensysClient(BaseClient, ConnectorMixin):
         """
         query = (filters or {}).get("q", "services.port=443")
         cursor = (filters or {}).get("cursor")
-        payload: Dict[str, Any] = {"q": query, "per_page": page_size}
+        payload: dict[str, Any] = {"q": query, "per_page": page_size}
         if cursor:
             payload["cursor"] = cursor
         resp = self.post("/api/v2/hosts/search", json=payload)
         return resp.get("result", {}).get("hits", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Censys Search is read-only; upsert not supported."""
         raise GNATClientError("Censys Search connector is read-only — no write API available.")
 
@@ -156,8 +156,8 @@ class CensysClient(BaseClient, ConnectorMixin):
         self,
         query: str,
         per_page: int = 100,
-        cursor: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        cursor: str | None = None,
+    ) -> dict[str, Any]:
         """
         Execute a Censys Search Language host search.
 
@@ -175,13 +175,13 @@ class CensysClient(BaseClient, ConnectorMixin):
         dict
             Full Censys response including ``result.hits`` and ``result.links``.
         """
-        payload: Dict[str, Any] = {"q": query, "per_page": per_page}
+        payload: dict[str, Any] = {"q": query, "per_page": per_page}
         if cursor:
             payload["cursor"] = cursor
         resp = self.post("/api/v2/hosts/search", json=payload)
         return resp if isinstance(resp, dict) else {}
 
-    def get_host(self, ip_address: str) -> Dict[str, Any]:
+    def get_host(self, ip_address: str) -> dict[str, Any]:
         """
         Fetch the full current scan data for an IP address.
 
@@ -193,7 +193,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v2/hosts/{ip_address}")
         return resp.get("result", {}) if isinstance(resp, dict) else {}
 
-    def get_host_history(self, ip_address: str, per_page: int = 50) -> List[Dict[str, Any]]:
+    def get_host_history(self, ip_address: str, per_page: int = 50) -> list[dict[str, Any]]:
         """
         Retrieve historical scan records for an IP address.
 
@@ -208,7 +208,7 @@ class CensysClient(BaseClient, ConnectorMixin):
                         params={"per_page": per_page})
         return resp.get("result", {}).get("hits", []) if isinstance(resp, dict) else []
 
-    def search_certificates(self, query: str, per_page: int = 100) -> List[Dict[str, Any]]:
+    def search_certificates(self, query: str, per_page: int = 100) -> list[dict[str, Any]]:
         """
         Search TLS/SSL certificates in Censys.
 
@@ -224,7 +224,7 @@ class CensysClient(BaseClient, ConnectorMixin):
                          json={"q": query, "per_page": per_page})
         return resp.get("result", {}).get("hits", []) if isinstance(resp, dict) else []
 
-    def get_bulk_hosts(self, ip_addresses: List[str]) -> Dict[str, Any]:
+    def get_bulk_hosts(self, ip_addresses: list[str]) -> dict[str, Any]:
         """
         Fetch current host data for multiple IP addresses in one call.
 
@@ -238,19 +238,19 @@ class CensysClient(BaseClient, ConnectorMixin):
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Censys host record to a STIX 2.1 ``observed-data`` object."""
         ip = native.get("ip", "")
         now = _now_ts()
         last_updated = native.get("last_updated_at", now)
         services = native.get("services", [])
-        vuln_cves: List[str] = []
+        vuln_cves: list[str] = []
         for svc in services:
             for vuln in svc.get("vulnerabilities", []):
                 cve_id = vuln.get("cve_id", "")
                 if cve_id:
                     vuln_cves.append(cve_id)
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type":            "observed-data",
             "id":              f"observed-data--{_uuid.uuid5(_STIX_NS, f'censys:{ip}')}",
             "spec_version":    "2.1",
@@ -277,7 +277,7 @@ class CensysClient(BaseClient, ConnectorMixin):
             stix["x_censys"]["exposed_cves"] = list(set(vuln_cves))
         return stix
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a Censys host lookup reference from a STIX object."""
         return {
             "note":      "Censys Search is read-only.",

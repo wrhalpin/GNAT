@@ -31,7 +31,8 @@ Usage::
 from __future__ import annotations
 
 import logging
-from typing import Callable, Iterator, List, Optional, TYPE_CHECKING
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Callable
 
 from gnat.ingest.base import (
     DeduplicationCache,
@@ -41,8 +42,8 @@ from gnat.ingest.base import (
 )
 
 if TYPE_CHECKING:
-    from gnat.orm.base import STIXBase
     from gnat.client import GNATClient
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -85,18 +86,18 @@ class IngestPipeline:
 
     def __init__(self, name: str = ""):
         self._name = name
-        self._reader: Optional[SourceReader] = None
-        self._mapper: Optional[RecordMapper] = None
-        self._client: Optional["GNATClient"] = None
-        self._dedup: Optional[DeduplicationCache] = None
-        self._filters: List[Callable[["STIXBase"], bool]] = []
-        self._transforms: List[Callable[["STIXBase"], "STIXBase"]] = []
+        self._reader: SourceReader | None = None
+        self._mapper: RecordMapper | None = None
+        self._client: GNATClient | None = None
+        self._dedup: DeduplicationCache | None = None
+        self._filters: list[Callable[[STIXBase], bool]] = []
+        self._transforms: list[Callable[[STIXBase], STIXBase]] = []
 
     # ------------------------------------------------------------------
     # Fluent builder
     # ------------------------------------------------------------------
 
-    def read_from(self, reader: SourceReader) -> "IngestPipeline":
+    def read_from(self, reader: SourceReader) -> IngestPipeline:
         """
         Set the source reader.
 
@@ -113,7 +114,7 @@ class IngestPipeline:
         self._reader = reader
         return self
 
-    def map_with(self, mapper: RecordMapper) -> "IngestPipeline":
+    def map_with(self, mapper: RecordMapper) -> IngestPipeline:
         """
         Set the record mapper.
 
@@ -130,7 +131,7 @@ class IngestPipeline:
         self._mapper = mapper
         return self
 
-    def write_to(self, client: "GNATClient") -> "IngestPipeline":
+    def write_to(self, client: GNATClient) -> IngestPipeline:
         """
         Set the platform client to write results to.
 
@@ -148,8 +149,8 @@ class IngestPipeline:
         return self
 
     def deduplicate(
-        self, key_fields: Optional[List[str]] = None
-    ) -> "IngestPipeline":
+        self, key_fields: list[str] | None = None
+    ) -> IngestPipeline:
         """
         Enable in-pipeline deduplication.
 
@@ -168,8 +169,8 @@ class IngestPipeline:
         return self
 
     def filter(
-        self, predicate: Callable[["STIXBase"], bool]
-    ) -> "IngestPipeline":
+        self, predicate: Callable[[STIXBase], bool]
+    ) -> IngestPipeline:
         """
         Add a filter predicate; objects for which ``predicate`` returns
         ``False`` are dropped.
@@ -193,8 +194,8 @@ class IngestPipeline:
         return self
 
     def transform(
-        self, fn: Callable[["STIXBase"], "STIXBase"]
-    ) -> "IngestPipeline":
+        self, fn: Callable[[STIXBase], STIXBase]
+    ) -> IngestPipeline:
         """
         Add a transform function applied to every passing object.
 
@@ -221,7 +222,7 @@ class IngestPipeline:
     # Execution
     # ------------------------------------------------------------------
 
-    def iter_objects(self) -> Iterator["STIXBase"]:
+    def iter_objects(self) -> Iterator[STIXBase]:
         """
         Iterate over mapped (and filtered/deduped) STIX objects without
         writing them anywhere.
@@ -320,10 +321,10 @@ class IngestPipeline:
                 "IngestPipeline: no mapper configured. Call .map_with() first."
             )
 
-    def _passes_filters(self, obj: "STIXBase") -> bool:
+    def _passes_filters(self, obj: STIXBase) -> bool:
         return all(f(obj) for f in self._filters)
 
-    def _apply_transforms(self, obj: "STIXBase") -> "STIXBase":
+    def _apply_transforms(self, obj: STIXBase) -> STIXBase:
         for fn in self._transforms:
             obj = fn(obj)
         return obj

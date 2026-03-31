@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -69,7 +69,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
         Flashpoint API token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "iocs",
         "report":    "alerts",
     }
@@ -93,7 +93,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
         self.get("/v1/alerts", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "indicator":
             return self.get(f"/v1/iocs/{object_id}")
         if stix_type == "report":
@@ -103,12 +103,12 @@ class FlashpointClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size}
+        params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
 
         if stix_type == "indicator":
@@ -118,7 +118,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
         resp = self.get("/v1/alerts", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Flashpoint connector is read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -129,10 +129,10 @@ class FlashpointClient(BaseClient, ConnectorMixin):
     def fetch_alerts(
         self,
         limit: int = 50,
-        since: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        since: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch real-time alerts from underground sources."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if since:
             params["since"] = since
         resp = self.get("/v1/alerts", params=params)
@@ -141,10 +141,10 @@ class FlashpointClient(BaseClient, ConnectorMixin):
     def fetch_iocs(
         self,
         limit: int = 50,
-        ioc_type: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        ioc_type: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch IOCs extracted from dark web and forums."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if ioc_type:
             params["type"] = ioc_type
         resp = self.get("/v1/iocs", params=params)
@@ -153,7 +153,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
     def fetch_threat_actors(
         self,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch threat actor profiles and activity."""
         resp = self.get("/v1/threat-actors", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -161,10 +161,10 @@ class FlashpointClient(BaseClient, ConnectorMixin):
     def fetch_forums(
         self,
         limit: int = 50,
-        keyword: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        keyword: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch forum posts and marketplace listings."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if keyword:
             params["keyword"] = keyword
         resp = self.get("/v1/forums", params=params)
@@ -173,7 +173,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
     def fetch_ransomware(
         self,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch ransomware group intelligence and leak site activity."""
         resp = self.get("/v1/ransomware", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -182,27 +182,27 @@ class FlashpointClient(BaseClient, ConnectorMixin):
         self,
         query: str,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Unified search across all Flashpoint collections."""
-        params: Dict[str, Any] = {"query": query, "limit": limit}
+        params: dict[str, Any] = {"query": query, "limit": limit}
         resp = self.get("/v1/search", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch IOC (indicator) vs. alert/actor (report)."""
         if "value" in native or "ioc_type" in native or "hash" in native:
             return self._ioc_to_stix(native)
         return self._alert_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "Flashpoint is read-only for underground threat intelligence.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _ioc_to_stix(self, ioc: Dict[str, Any]) -> Dict[str, Any]:
+    def _ioc_to_stix(self, ioc: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         iid = ioc.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'flashpoint:{iid}')}"
@@ -237,7 +237,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _alert_to_stix(self, alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         aid = alert.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'flashpoint:{aid}')}"

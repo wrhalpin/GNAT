@@ -6,7 +6,6 @@ Reusable DataTable widget for displaying FeedScheduler job status.
 Columns: job_id, enabled, last_run, next_run, run_count, status.
 """
 
-from typing import List
 
 from textual.widgets import DataTable
 
@@ -25,7 +24,7 @@ class JobTable(DataTable):
         self.cursor_type = "row"
         self.zebra_stripes = True
 
-    def load_jobs(self, jobs: List[dict]) -> None:
+    def load_jobs(self, jobs: list[dict]) -> None:
         """
         Clear and populate the table from a list of job status dicts.
 

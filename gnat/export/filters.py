@@ -30,8 +30,9 @@ Available filters:
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone, timedelta
-from typing import Any, Callable, Iterable, Iterator, List, Optional, Set, TYPE_CHECKING
+from collections.abc import Iterable, Iterator
+from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, Any, Callable
 
 from gnat.export.base import ExportFilter
 
@@ -43,7 +44,7 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _get(obj: "STIXBase", field: str) -> Any:
+def _get(obj: STIXBase, field: str) -> Any:
     """Safely get a field from a STIXBase object.
 
     For STIXBase objects, checks ``_properties`` exclusively so that
@@ -83,9 +84,9 @@ class TypeFilter(ExportFilter):
     def __init__(self, *stix_types: str):
         if not stix_types:
             raise ValueError("TypeFilter: at least one stix_type is required")
-        self._types: Set[str] = set(stix_types)
+        self._types: set[str] = set(stix_types)
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         for obj in objects:
             if obj.stix_type in self._types:
                 yield obj
@@ -129,13 +130,13 @@ class ConfidenceFilter(ExportFilter):
         self,
         min_confidence: int,
         default_confidence: int = 50,
-        score_fields: Optional[List[str]] = None,
+        score_fields: list[str] | None = None,
     ):
         self.min_confidence    = min_confidence
         self.default_confidence = default_confidence
         self._fields = score_fields or self._DEFAULT_FIELDS
 
-    def _score(self, obj: "STIXBase") -> float:
+    def _score(self, obj: STIXBase) -> float:
         for field in self._fields:
             val = _get(obj, field)
             if val is not None:
@@ -145,7 +146,7 @@ class ConfidenceFilter(ExportFilter):
                     pass
         return float(self.default_confidence)
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         for obj in objects:
             if self._score(obj) >= self.min_confidence:
                 yield obj
@@ -180,11 +181,11 @@ class TLPFilter(ExportFilter):
         TLPFilter(["white"], default_tlp="amber")  # strict: unlabelled = amber
     """
 
-    def __init__(self, allowed: List[str], default_tlp: str = "white"):
+    def __init__(self, allowed: list[str], default_tlp: str = "white"):
         self._allowed    = {t.lower() for t in allowed}
         self._default    = default_tlp.lower()
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         for obj in objects:
             tlp = (_get(obj, "x_tlp") or self._default).lower()
             if tlp in self._allowed:
@@ -230,16 +231,16 @@ class TagFilter(ExportFilter):
 
     def __init__(
         self,
-        required: Optional[List[str]] = None,
-        excluded: Optional[List[str]] = None,
+        required: list[str] | None = None,
+        excluded: list[str] | None = None,
         match_any: bool = False,
     ):
         self._required  = [t.lower() for t in (required or [])]
         self._excluded  = {t.lower() for t in (excluded or [])}
         self._match_any = match_any
 
-    def _tags(self, obj: "STIXBase") -> Set[str]:
-        tags: Set[str] = set()
+    def _tags(self, obj: STIXBase) -> set[str]:
+        tags: set[str] = set()
         for field in self._TAG_FIELDS:
             val = _get(obj, field)
             if isinstance(val, list):
@@ -248,7 +249,7 @@ class TagFilter(ExportFilter):
                 tags.add(val.lower())
         return tags
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         for obj in objects:
             obj_tags = self._tags(obj)
             # Exclusion check (always AND)
@@ -309,7 +310,7 @@ class AgeFilter(ExportFilter):
         self.time_field   = time_field
         self.drop_missing = drop_missing
 
-    def _timestamp(self, obj: "STIXBase") -> Optional[datetime]:
+    def _timestamp(self, obj: STIXBase) -> datetime | None:
         for field in (self.time_field, "modified", "created"):
             raw = _get(obj, field)
             if raw:
@@ -324,7 +325,7 @@ class AgeFilter(ExportFilter):
                     pass
         return None
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         cutoff = _utcnow() - timedelta(days=self.max_age_days)
         for obj in objects:
             ts = self._timestamp(obj)
@@ -372,7 +373,7 @@ class PatternFilter(ExportFilter):
         self,
         pattern: str,
         regex: bool = False,
-        pattern_types: Optional[List[str]] = None,
+        pattern_types: list[str] | None = None,
     ):
         self._pattern = pattern
         self._regex   = regex
@@ -384,7 +385,7 @@ class PatternFilter(ExportFilter):
             return bool(self._re.search(stix_pattern))
         return self._pattern in stix_pattern
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         for obj in objects:
             if obj.stix_type != "indicator":
                 yield obj
@@ -422,7 +423,7 @@ class IOCTypeFilter(ExportFilter):
         IOCTypeFilter(["sha256", "md5"])           # endpoint/EDR types
     """
 
-    _KEYWORDS: Dict[str, str] = {
+    _KEYWORDS: dict[str, str] = {
         "ipv4":   "ipv4-addr",
         "ipv6":   "ipv6-addr",
         "domain": "domain-name",
@@ -434,7 +435,7 @@ class IOCTypeFilter(ExportFilter):
         "asn":    "autonomous-system",
     }
 
-    def __init__(self, ioc_types: List[str]):
+    def __init__(self, ioc_types: list[str]):
         unknown = set(ioc_types) - set(self._KEYWORDS)
         if unknown:
             raise ValueError(
@@ -444,7 +445,7 @@ class IOCTypeFilter(ExportFilter):
         self._keywords = {self._KEYWORDS[t] for t in ioc_types}
         self._types    = ioc_types
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         for obj in objects:
             if obj.stix_type != "indicator":
                 continue
@@ -479,7 +480,7 @@ class LimitFilter(ExportFilter):
     def __init__(self, n: int):
         self.n = n
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         count = 0
         for obj in objects:
             if count >= self.n:
@@ -517,8 +518,8 @@ class DeduplicateFilter(ExportFilter):
     def __init__(self, key_field: str = "name"):
         self.key_field = key_field
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
-        seen: Set[Any] = set()
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        seen: set[Any] = set()
         for obj in objects:
             key = _get(obj, self.key_field)
             if key is None or key not in seen:
@@ -556,10 +557,10 @@ class FunctionFilter(ExportFilter):
         FunctionFilter(lambda obj: obj.modified_dt >= cutoff)
     """
 
-    def __init__(self, predicate: Callable[["STIXBase"], bool]):
+    def __init__(self, predicate: Callable[[STIXBase], bool]):
         self._predicate = predicate
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         return filter(self._predicate, objects)
 
     def __repr__(self) -> str:
@@ -614,10 +615,10 @@ class SectorFilter(ExportFilter):
 
     def __init__(
         self,
-        sectors: List[str],
+        sectors: list[str],
         match: str = "any",
         strict: bool = False,
-        aliases: Optional[Dict[str, List[str]]] = None,
+        aliases: dict[str, list[str]] | None = None,
     ):
         self._sectors = [s.lower().strip() for s in sectors]
         self._match   = match.lower()
@@ -625,15 +626,15 @@ class SectorFilter(ExportFilter):
         self._aliases = self._build_alias_set(aliases or {})
 
     def _build_alias_set(
-        self, aliases: Dict[str, List[str]]
-    ) -> Dict[str, List[str]]:
+        self, aliases: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
         return {
             k.lower().strip(): [a.lower().strip() for a in v]
             for k, v in aliases.items()
         }
 
-    def _sector_values(self, obj: "STIXBase") -> List[str]:
-        values: List[str] = []
+    def _sector_values(self, obj: STIXBase) -> list[str]:
+        values: list[str] = []
         for field_name in self._SECTOR_FIELDS:
             raw = obj._properties.get(field_name)
             if raw is None:
@@ -654,7 +655,7 @@ class SectorFilter(ExportFilter):
                 return True
         return False
 
-    def _object_matches(self, obj: "STIXBase") -> bool:
+    def _object_matches(self, obj: STIXBase) -> bool:
         obj_sectors = self._sector_values(obj)
         if not obj_sectors:
             return not self._strict
@@ -668,7 +669,7 @@ class SectorFilter(ExportFilter):
             for t in self._sectors
         )
 
-    def __call__(self, objects: Iterable["STIXBase"]) -> Iterator["STIXBase"]:
+    def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
         if not self._sectors:
             yield from objects
             return
@@ -683,10 +684,10 @@ class SectorFilter(ExportFilter):
         )
 
     @classmethod
-    def from_ini(cls, ini_config_path: Optional[str] = None,
-                 sectors: Optional[List[str]] = None,
+    def from_ini(cls, ini_config_path: str | None = None,
+                 sectors: list[str] | None = None,
                  match: str = "any",
-                 strict: bool = False) -> "SectorFilter":
+                 strict: bool = False) -> SectorFilter:
         """
         Construct with aliases loaded from the ``[sector_aliases]`` INI section.
 
@@ -701,7 +702,7 @@ class SectorFilter(ExportFilter):
         strict : bool
             Drop untagged objects when ``True``.
         """
-        aliases: Dict[str, List[str]] = {}
+        aliases: dict[str, list[str]] = {}
         try:
             from gnat.config import GNATConfig
             cfg = GNATConfig(ini_config_path)
@@ -717,4 +718,3 @@ class SectorFilter(ExportFilter):
 
 
 # Re-export for convenience
-from typing import Dict   # noqa: E402 (needed for _KEYWORDS type hint above)

@@ -50,10 +50,10 @@ References
 
 import re
 import time
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import QRadarClient
-from .exceptions import QRadarArielError, QRadarAPIError
+from .exceptions import QRadarAPIError, QRadarArielError
 
 # Allowlist pattern for AQL field identifiers.  Permits bare identifiers,
 # AQL built-in functions (DATEFORMAT, QIDNAME, CATEGORYNAME, etc.), and

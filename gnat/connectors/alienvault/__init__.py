@@ -38,13 +38,12 @@ import configparser
 import json
 import time
 import urllib.parse
-import urllib3
-from dataclasses import dataclass
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
-
+import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
@@ -192,7 +191,9 @@ class OTXClient:
                 resp = self._http.request(method, url, body=encoded, headers=headers)
             except urllib3.exceptions.HTTPError as e:
                 if attempt < 3:
-                    time.sleep(delay); delay *= 2; continue
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
                 raise OTXAPIError(str(e), endpoint=url) from e
             if resp.status == 401:
                 raise OTXAuthError("OTX API key rejected (HTTP 401). Check api_key.")
@@ -202,10 +203,14 @@ class OTXClient:
                 raise OTXNotFoundError(f"Not found: {url}", 404, url)
             if resp.status == 429:
                 if attempt < 3:
-                    time.sleep(delay); delay *= 2; continue
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
                 raise OTXRateLimitError("OTX rate limit exceeded.", 429, url)
             if resp.status in self._RETRYABLE and attempt < 3:
-                time.sleep(delay); delay *= 2; continue
+                time.sleep(delay)
+                delay *= 2
+                continue
             if resp.status not in (200, 201):
                 raise OTXAPIError(f"HTTP {resp.status}", resp.status, url)
             try:
@@ -505,10 +510,9 @@ class OTXSTIXMapper:
         for ind in raw_inds:
             for obj in self.indicator_to_stix_objects(ind):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 object_refs.append(obj["id"])
-
-        # Report SDO
         report_id = f"report--{_det_uuid('report', pulse.get('id', now))}"
         report: dict = {
             "type": "report", "id": report_id, "spec_version": "2.1",
@@ -573,7 +577,8 @@ class OTXSTIXMapper:
         for ind in indicators:
             for obj in self.indicator_to_stix_objects(ind):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
         return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
                 "spec_version": "2.1", "objects": objects}
 

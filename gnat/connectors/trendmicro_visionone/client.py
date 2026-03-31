@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -74,7 +74,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         Vision One API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "iocFilters",
         "malware":       "analysisResults",
         "vulnerability": "alerts",
@@ -104,7 +104,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         self.get("/v3.0/workbench/alerts", params={"top": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single Vision One object by STIX type and ID."""
         if stix_type == "report":
             return self.get(f"/v3.0/workbench/alerts/{object_id}")
@@ -121,13 +121,13 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Vision One objects by STIX type."""
         f = filters or {}
-        params: Dict[str, Any] = {"top": page_size, "skip": (page - 1) * page_size}
+        params: dict[str, Any] = {"top": page_size, "skip": (page - 1) * page_size}
         params.update(f)
         if stix_type == "report":
             resp = self.get("/v3.0/workbench/alerts", params=params)
@@ -141,7 +141,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("items", resp.get("data", []))
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update an IOC filter or custom object."""
         if stix_type == "indicator":
             resp = self.post("/v3.0/threatintel/iocFilters", json=payload)
@@ -163,12 +163,12 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
 
     def get_alerts(
         self,
-        start_date_time: Optional[str] = None,
-        severity: Optional[str] = None,
+        start_date_time: str | None = None,
+        severity: str | None = None,
         top: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch Workbench XDR alerts."""
-        params: Dict[str, Any] = {"top": top}
+        params: dict[str, Any] = {"top": top}
         if start_date_time:
             params["startDateTime"] = start_date_time
         if severity:
@@ -178,12 +178,12 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
 
     def search_iocs(
         self,
-        ioc_type: Optional[str] = None,
-        value: Optional[str] = None,
+        ioc_type: str | None = None,
+        value: str | None = None,
         top: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search IOC filters."""
-        params: Dict[str, Any] = {"top": top}
+        params: dict[str, Any] = {"top": top}
         if ioc_type:
             params["type"] = ioc_type
         if value:
@@ -191,17 +191,17 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         resp = self.get("/v3.0/threatintel/iocFilters", params=params)
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def submit_sandbox(self, file_url: str, file_type: str = "auto") -> Dict[str, Any]:
+    def submit_sandbox(self, file_url: str, file_type: str = "auto") -> dict[str, Any]:
         """Submit a file URL for sandbox analysis."""
         payload = {"url": file_url, "fileType": file_type}
         resp = self.post("/v3.0/sandbox/files/analyze", json=payload)
         return resp if isinstance(resp, dict) else {}
 
-    def get_sandbox_result(self, task_id: str) -> Dict[str, Any]:
+    def get_sandbox_result(self, task_id: str) -> dict[str, Any]:
         """Retrieve sandbox analysis result."""
         return self.get(f"/v3.0/sandbox/analysisResults/{task_id}")
 
-    def isolate_endpoint(self, agent_guid: str) -> Dict[str, Any]:
+    def isolate_endpoint(self, agent_guid: str) -> dict[str, Any]:
         """Isolate an endpoint by agent GUID."""
         resp = self.post(
             "/v3.0/response/endpoints/isolate",
@@ -209,7 +209,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
-    def restore_endpoint(self, agent_guid: str) -> Dict[str, Any]:
+    def restore_endpoint(self, agent_guid: str) -> dict[str, Any]:
         """Restore an isolated endpoint."""
         resp = self.post(
             "/v3.0/response/endpoints/restore",
@@ -219,7 +219,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Vision One alert or IOC object to STIX."""
         obj_type = native.get("type", "")
 
@@ -234,7 +234,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         # Default: workbench alert → report
         return self._alert_to_stix(native)
 
-    def _alert_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         alert_id = native.get("id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"visionone-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -259,7 +259,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _ioc_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         ioc_id = native.get("id", "")
         value = native.get("value", ioc_id)
         ioc_type = native.get("type", "domain").lower()
@@ -291,7 +291,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _sandbox_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _sandbox_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         task_id = native.get("id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"visionone-sandbox-{task_id}"))
         return {
@@ -310,7 +310,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX dict to a Vision One IOC filter payload."""
         import re
         pattern = stix_dict.get("pattern", "")

@@ -26,29 +26,29 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
+from gnat.connectors.misp.attributes import MISPAttributeCommands
+from gnat.connectors.misp.auth import MISPAuthManager
+from gnat.connectors.misp.client import MISPClient
 from gnat.connectors.misp.config import MISPConfig, load_misp_config
+from gnat.connectors.misp.events import MISPEventCommands
 from gnat.connectors.misp.exceptions import (
-    MISPAuthError,
     MISPAPIError,
+    MISPAuthError,
     MISPConfigError,
     MISPNotFoundError,
+    MISPRateLimitError,
     MISPSTIXError,
     MISPValidationError,
 )
-from gnat.connectors.misp.auth import MISPAuthManager
-from gnat.connectors.misp.client import MISPClient
-from gnat.connectors.misp.events import MISPEventCommands
-from gnat.connectors.misp.attributes import MISPAttributeCommands
-from gnat.connectors.misp.tags import MISPTagCommands
 from gnat.connectors.misp.feeds import MISPFeedCommands
 from gnat.connectors.misp.sightings import MISPSightingCommands
 from gnat.connectors.misp.stix_mapper import MISPSTIXMapper
-
+from gnat.connectors.misp.tags import MISPTagCommands
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def _make_config(**overrides) -> MISPConfig:
-    defaults = dict(url="https://misp.test.local", api_key="test-api-key")
+    defaults = {"url": "https://misp.test.local", "api_key": "test-api-key"}
     defaults.update(overrides)
     return MISPConfig(**defaults)
 
@@ -240,15 +240,13 @@ class TestMISPClient(unittest.TestCase):
     def test_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"):
-            with self.assertRaises(Exception):
-                client.get_json("events/index")
+        with patch("time.sleep"), self.assertRaises(MISPRateLimitError):
+            client.get_json("events/index")
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.misp.client.urllib3.PoolManager"):
-            with MISPClient(cfg) as c:
-                self.assertIsInstance(c, MISPClient)
+        with patch("gnat.connectors.misp.client.urllib3.PoolManager"), MISPClient(cfg) as c:
+            self.assertIsInstance(c, MISPClient)
 
     def test_paginate_stops_when_empty(self):
         client, mock_http = _make_client()

@@ -39,7 +39,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class EmailDelivery:
         smtp_user: str,
         smtp_password: str,
         from_address: str,
-        to_addresses: List[str],
+        to_addresses: list[str],
         subject: str,
         body_html: str = "",
         use_tls: bool = True,
@@ -102,11 +102,11 @@ class EmailDelivery:
     @classmethod
     def from_ini(
         cls,
-        to_addresses: List[str],
+        to_addresses: list[str],
         subject: str,
         body_html: str = "",
-        config_path: Optional[str] = None,
-    ) -> "EmailDelivery":
+        config_path: str | None = None,
+    ) -> EmailDelivery:
         """Load SMTP settings from the ``[email]`` INI section."""
         from gnat.config import GNATConfig
         cfg = GNATConfig(config_path)
@@ -134,7 +134,7 @@ class EmailDelivery:
             use_tls      = s.get("smtp_tls", "true").lower() == "true",
         )
 
-    def send(self, file_paths: List[str]) -> Dict[str, Any]:
+    def send(self, file_paths: list[str]) -> dict[str, Any]:
         """
         Send report files as attachments.
 
@@ -276,8 +276,8 @@ class SharePointDelivery:
         site_url: str,
         library_path: str,
         folder: str = "",
-        config_path: Optional[str] = None,
-    ) -> "SharePointDelivery":
+        config_path: str | None = None,
+    ) -> SharePointDelivery:
         """Load Graph API credentials from the ``[sharepoint]`` INI section."""
         from gnat.config import GNATConfig
         cfg = GNATConfig(config_path)
@@ -300,7 +300,7 @@ class SharePointDelivery:
             folder        = folder,
         )
 
-    def upload(self, file_paths: List[str]) -> Dict[str, Any]:
+    def upload(self, file_paths: list[str]) -> dict[str, Any]:
         """
         Upload files to SharePoint.
 
@@ -360,10 +360,10 @@ class SharePointDelivery:
 
     # ── Graph API helpers ──────────────────────────────────────────────────
 
-    def _get_access_token(self) -> Optional[str]:
+    def _get_access_token(self) -> str | None:
         """Obtain an OAuth2 client-credentials token from Azure AD."""
-        import urllib.request
         import urllib.parse
+        import urllib.request
 
         if not all([self._tenant_id, self._client_id, self._client_secret]):
             logger.error(
@@ -392,9 +392,9 @@ class SharePointDelivery:
             logger.error("SharePointDelivery: token error — %s", exc)
             return None
 
-    def _graph_get(self, token: str, path: str) -> Optional[Dict]:
-        import urllib.request
+    def _graph_get(self, token: str, path: str) -> dict | None:
         import json as _json
+        import urllib.request
 
         url = f"https://graph.microsoft.com/v1.0{path}"
         req = urllib.request.Request(
@@ -408,7 +408,7 @@ class SharePointDelivery:
             logger.debug("SharePointDelivery: GET %s → %s", path, exc)
             return None
 
-    def _get_site_id(self, token: str) -> Optional[str]:
+    def _get_site_id(self, token: str) -> str | None:
         """Resolve SharePoint site URL to a Graph site id."""
         from urllib.parse import urlparse
         parsed   = urlparse(self._site_url)
@@ -419,7 +419,7 @@ class SharePointDelivery:
         )
         return result.get("id") if result else None
 
-    def _get_drive_id(self, token: str, site_id: str) -> Optional[str]:
+    def _get_drive_id(self, token: str, site_id: str) -> str | None:
         """Get the document library drive id."""
         result = self._graph_get(token, f"/sites/{site_id}/drives")
         if not result:
@@ -436,7 +436,7 @@ class SharePointDelivery:
 
     def _upload_file(
         self, token: str, drive_id: str, file_path: Path
-    ) -> Optional[str]:
+    ) -> str | None:
         """Upload one file via Graph DriveItem PUT."""
         import urllib.request
 

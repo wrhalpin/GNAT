@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -67,7 +67,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         IAM token endpoint base URL.  Defaults to ``"https://iam.mcafee-cloud.com"``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "iocs",
         "malware":       "detections",
         "vulnerability": "vulnerabilities",
@@ -112,7 +112,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         self.get("/mvision/detection-service/api/v1/threats", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single threat, IOC, or vulnerability by ID."""
         if stix_type == "indicator":
             resp = self.get(f"/mvision/epo/api/v2/iocs/{object_id}")
@@ -128,12 +128,12 @@ class TrellixClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str = "indicator",
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List threats, IOCs, or vulnerabilities with optional filters."""
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  page_size,
             "offset": (page - 1) * page_size,
         }
@@ -150,7 +150,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
             raise GNATClientError(f"Trellix: unsupported STIX type '{stix_type}'")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update an IOC in Trellix TIE."""
         if stix_type != "indicator":
             raise GNATClientError(f"Trellix: upsert only supported for 'indicator', got '{stix_type}'")
@@ -160,16 +160,16 @@ class TrellixClient(BaseClient, ConnectorMixin):
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Delete an IOC by ID."""
         if stix_type != "indicator":
-            raise GNATClientError(f"Trellix: delete only supported for 'indicator'")
+            raise GNATClientError("Trellix: delete only supported for 'indicator'")
         self.delete(f"/mvision/epo/api/v2/iocs/{object_id}")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
     def list_threats(
         self,
-        severity: Optional[str] = None,
+        severity: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List active detections from Trellix XDR.
 
@@ -180,7 +180,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if severity:
             params["severity"] = severity
         resp = self.get("/mvision/detection-service/api/v1/threats", params=params)
@@ -188,9 +188,9 @@ class TrellixClient(BaseClient, ConnectorMixin):
 
     def list_iocs(
         self,
-        ioc_type: Optional[str] = None,
+        ioc_type: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List Threat Intelligence IOCs from Trellix TIE.
 
@@ -201,20 +201,20 @@ class TrellixClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if ioc_type:
             params["type"] = ioc_type
         resp = self.get("/mvision/epo/api/v2/iocs", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def list_vulnerabilities(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_vulnerabilities(self, limit: int = 100) -> list[dict[str, Any]]:
         """List vulnerability findings from Trellix ePO."""
         resp = self.get("/mvision/epo/api/v2/vulnerabilities", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Trellix threat/IOC/vulnerability to a STIX 2.1 object."""
         native_type = native.get("type", "")
         if native_type in ("sha256", "md5", "sha1", "ip", "domain", "url"):
@@ -223,7 +223,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
             return self._vuln_to_stix(native)
         return self._threat_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX indicator to a Trellix IOC payload."""
         name = stix_dict.get("name", "")
         pattern = stix_dict.get("pattern", "")
@@ -235,7 +235,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
             "action":      "block",
         }
 
-    def _ioc_to_stix(self, ioc: Dict[str, Any]) -> Dict[str, Any]:
+    def _ioc_to_stix(self, ioc: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         ioc_id = str(ioc.get("id", ""))
         value  = ioc.get("value", "")
@@ -259,7 +259,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
             "x_trellix_ioc_type": ioc_type,
         }
 
-    def _threat_to_stix(self, threat: Dict[str, Any]) -> Dict[str, Any]:
+    def _threat_to_stix(self, threat: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         tid = str(threat.get("id", ""))
         return {
@@ -280,7 +280,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _vuln_to_stix(self, vuln: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         vid = str(vuln.get("id", ""))
         return {

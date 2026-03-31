@@ -19,7 +19,7 @@ References
 https://stellarcyber.ai/docs/api/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -43,7 +43,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         Starlight API key (generated under Settings → API Keys).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "threat_intel",
         "observed-data": "alerts",
         "malware":       "threat_intel",
@@ -87,7 +87,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve a Stellar Cyber alert or threat-intel record by ID."""
         resource = self.stix_type_map.get(stix_type, "alerts")
         resp = self.get(f"{_API}/{resource}/{object_id}")
@@ -96,10 +96,10 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List Stellar Cyber alerts or threat-intel indicators.
 
@@ -111,7 +111,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         * ``status``: ``"new"``, ``"investigating"``, ``"closed"``
         """
         resource = self.stix_type_map.get(stix_type, "alerts")
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "from": (page - 1) * page_size,
             "size": min(page_size, 1000),
         }
@@ -124,8 +124,8 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         return resp.get("data", resp.get("hits", []))
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Submit threat-intel indicators to Stellar Cyber.
 
@@ -148,14 +148,14 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Stellar Cyber alert or TI record to a STIX dict."""
         # Distinguish alert from TI record by presence of typical alert fields
         if "srcip" in native or "dstip" in native or "alert_name" in native:
             return self._alert_to_stix(native)
         return self._ti_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a Stellar Cyber TI indicator payload from a STIX dict."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -172,7 +172,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _alert_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         src_ip = native.get("srcip", "")
         dst_ip = native.get("dstip", "")
         pattern = (f"[ipv4-addr:value = '{src_ip}']"
@@ -199,7 +199,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
             "x_sc_severity":     severity,
         }
 
-    def _ti_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _ti_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         ioc_type = native.get("indicator_type", native.get("type", ""))
         value    = native.get("indicator_value", native.get("value", ""))
         pattern  = self._make_pattern(ioc_type, value)

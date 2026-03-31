@@ -40,9 +40,10 @@ Notes
 
 from __future__ import annotations
 
+import contextlib
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -70,7 +71,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         OSSIM API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "alarms",
     }
 
@@ -92,7 +93,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         self.get("/api/1.0/system/info")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single OSSIM alarm by UUID.
 
@@ -106,10 +107,10 @@ class OSSIMClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List OSSIM alarms.
 
@@ -122,7 +123,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
             * ``priority`` — 1–5
         """
         filters = dict(filters or {})
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "page_items": page_size,
             "page": page,
         }
@@ -136,7 +137,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
             return resp.get("data", [])
         return []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Update an OSSIM alarm status.
 
@@ -158,10 +159,10 @@ class OSSIMClient(BaseClient, ConnectorMixin):
 
     def list_alarms(
         self,
-        status: Optional[str] = None,
-        priority: Optional[int] = None,
+        status: str | None = None,
+        priority: int | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List OSSIM alarms with optional filters.
 
@@ -178,7 +179,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         -------
         list of dict
         """
-        params: Dict[str, Any] = {"page_items": limit}
+        params: dict[str, Any] = {"page_items": limit}
         if status:
             params["status"] = status
         if priority is not None:
@@ -186,27 +187,27 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/1.0/alarms", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def get_alarm(self, alarm_id: str) -> Dict[str, Any]:
+    def get_alarm(self, alarm_id: str) -> dict[str, Any]:
         """Retrieve a single OSSIM alarm by UUID."""
         return self.get(f"/api/1.0/alarms/{alarm_id}")
 
-    def get_alarm_events(self, alarm_id: str) -> List[Dict[str, Any]]:
+    def get_alarm_events(self, alarm_id: str) -> list[dict[str, Any]]:
         """Get raw events associated with an alarm."""
         resp = self.get(f"/api/1.0/alarms/{alarm_id}/events")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def close_alarm(self, alarm_id: str) -> Dict[str, Any]:
+    def close_alarm(self, alarm_id: str) -> dict[str, Any]:
         """Close an OSSIM alarm."""
         return self.put(f"/api/1.0/alarms/{alarm_id}", json={"status": "closed"})
 
-    def list_assets(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def list_assets(self, limit: int = 50) -> list[dict[str, Any]]:
         """Return the OSSIM asset inventory."""
         resp = self.get("/api/1.0/assets", params={"page_items": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a normalised OSSIM alarm to a STIX 2.1 observed-data SDO.
 
@@ -224,8 +225,8 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         now   = _now_ts()
         ts    = alarm.get("timestamp") or now
 
-        objects: List[Dict[str, Any]] = []
-        refs: List[str] = []
+        objects: list[dict[str, Any]] = []
+        refs: list[str] = []
         seen: set = set()
 
         for ip in (alarm.get("src_ip"), alarm.get("dst_ip")):
@@ -250,7 +251,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
             if nid not in seen:
                 seen.add(nid)
-                nt: Dict[str, Any] = {
+                nt: dict[str, Any] = {
                     "type": "network-traffic",
                     "id":   nid,
                     "spec_version": "2.1",
@@ -259,20 +260,16 @@ class OSSIMClient(BaseClient, ConnectorMixin):
                     "protocols": [str(alarm.get("protocol", "tcp")).lower()],
                 }
                 if src_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["src_port"] = int(src_p)
-                    except (TypeError, ValueError):
-                        pass
                 if dst_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["dst_port"] = int(dst_p)
-                    except (TypeError, ValueError):
-                        pass
                 objects.append(nt)
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        obs: Dict[str, Any] = {
+        obs: dict[str, Any] = {
             "type":           "observed-data",
             "id":             obs_id,
             "spec_version":   "2.1",
@@ -294,7 +291,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         objects.append(obs)
         return obs
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX observed-data to an OSSIM alarm update dict.
 
@@ -310,7 +307,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
     # ── Private helpers ────────────────────────────────────────────────────
 
     @staticmethod
-    def _normalise(alarm: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalise(alarm: dict[str, Any]) -> dict[str, Any]:
         """Normalise a raw OSSIM alarm dict."""
         prio = int(alarm.get("priority", 1))
         sev_map = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}

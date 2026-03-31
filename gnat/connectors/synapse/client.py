@@ -66,8 +66,9 @@ Key Endpoints
 
 from __future__ import annotations
 
+import contextlib
 import json as _json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -96,7 +97,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         :class:`~gnat.clients.base.BaseClient`.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         # SCOs — Vertex Synapse inet/file forms
         "ipv4-addr":     "inet:ipv4",
         "ipv6-addr":     "inet:ipv6",
@@ -170,7 +171,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
                 response_body=exc.body,
             ) from exc
 
-        token: Optional[str] = None
+        token: str | None = None
         if isinstance(resp, dict):
             result = resp.get("result", {})
             if isinstance(result, dict):
@@ -195,7 +196,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # ConnectorMixin — CRUD
     # ------------------------------------------------------------------
 
-    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> dict[str, Any]:
         """
         Fetch a single Synapse node by its iden.
 
@@ -215,12 +216,12 @@ class SynapseClient(BaseClient, ConnectorMixin):
 
     def list_objects(
         self,
-        stix_type: Optional[str] = None,
-        filters: Optional[Dict[str, Any]] = None,
+        stix_type: str | None = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List Synapse nodes of the given STIX type.
 
@@ -248,7 +249,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         if not forms:
             forms = [stix_type or ""]
 
-        nodes: List[Dict[str, Any]] = []
+        nodes: list[dict[str, Any]] = []
         for form in forms:
             try:
                 batch = self.get_nodes_by_form(form, limit=page_size)
@@ -260,8 +261,8 @@ class SynapseClient(BaseClient, ConnectorMixin):
         return nodes[start : start + page_size]
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any], **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any], **kwargs: Any
+    ) -> dict[str, Any]:
         """
         Create or update a Synapse node.
 
@@ -310,7 +311,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         """
         self.delete_node(object_id)
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Synapse node dict to STIX 2.1.
 
@@ -326,7 +327,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         """
         return self._mapper.node_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX 2.1 indicator to a Synapse node descriptor.
 
@@ -348,8 +349,8 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def storm(
-        self, query: str, opts: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+        self, query: str, opts: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         """
         Execute a Storm query and return the resulting nodes.
 
@@ -386,7 +387,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         SynapseStormError
             If the Storm stream contains an ``"err"`` message.
         """
-        payload: Dict[str, Any] = {"query": query}
+        payload: dict[str, Any] = {"query": query}
         if opts:
             payload["opts"] = opts
         elif self._view:
@@ -402,15 +403,13 @@ class SynapseClient(BaseClient, ConnectorMixin):
         # --- normalise the response into a flat list of message dicts ----
         if isinstance(resp, str):
             # Real Synapse: NDJSON stream — parse each non-empty line
-            messages: List[Any] = []
+            messages: list[Any] = []
             for line in resp.splitlines():
                 line = line.strip()
                 if not line:
                     continue
-                try:
+                with contextlib.suppress(_json.JSONDecodeError):
                     messages.append(_json.loads(line))
-                except _json.JSONDecodeError:
-                    pass
         elif isinstance(resp, list):
             # Unit-test shim: list of already-parsed message dicts
             messages = resp
@@ -420,7 +419,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         else:
             messages = []
 
-        nodes: List[Dict[str, Any]] = []
+        nodes: list[dict[str, Any]] = []
         for msg in messages:
             if not isinstance(msg, dict):
                 continue
@@ -474,7 +473,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         return len(self.storm(query))
 
     def callstorm(
-        self, query: str, opts: Optional[Dict[str, Any]] = None
+        self, query: str, opts: dict[str, Any] | None = None
     ) -> Any:
         """
         Execute a Storm query via ``/api/v1/storm/call`` and return the result.
@@ -491,7 +490,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         Any
             The ``result`` value from the API response.
         """
-        payload: Dict[str, Any] = {"query": query}
+        payload: dict[str, Any] = {"query": query}
         if opts:
             payload["opts"] = opts
         elif self._view:
@@ -505,7 +504,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # Node operations
     # ------------------------------------------------------------------
 
-    def get_node_by_iden(self, iden: str) -> Dict[str, Any]:
+    def get_node_by_iden(self, iden: str) -> dict[str, Any]:
         """
         Fetch a single node by its hexadecimal iden.
 
@@ -529,7 +528,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             raise GNATClientError(f"Synapse node not found: {iden!r}")
         return nodes[0]
 
-    def get_nodes_by_form(self, form: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_nodes_by_form(self, form: str, limit: int = 100) -> list[dict[str, Any]]:
         """
         Fetch all nodes of a given Synapse form.
 
@@ -550,9 +549,9 @@ class SynapseClient(BaseClient, ConnectorMixin):
         self,
         form: str,
         value: str,
-        props: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        props: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Add a node to the Synapse graph.
 
@@ -584,7 +583,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         nodes = self.storm(query)
         return nodes[0] if nodes else {}
 
-    def edit_node(self, iden: str, props: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def edit_node(self, iden: str, props: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Edit properties on an existing node.
 
@@ -641,7 +640,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         """
         self.storm(f"iden('{iden}') [-#{tag}]")
 
-    def get_node_tags(self, iden: str) -> Dict[str, Any]:
+    def get_node_tags(self, iden: str) -> dict[str, Any]:
         """
         Return the tags dict for a node.
 
@@ -662,7 +661,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # Tag operations
     # ------------------------------------------------------------------
 
-    def list_tags(self, prefix: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_tags(self, prefix: str | None = None) -> list[dict[str, Any]]:
         """
         List tag definition nodes in the Cortex.
 
@@ -680,7 +679,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             return self.storm(f"syn:tag^={prefix}")
         return self.storm("syn:tag")
 
-    def get_tag(self, tagname: str) -> Optional[Dict[str, Any]]:
+    def get_tag(self, tagname: str) -> dict[str, Any] | None:
         """
         Fetch a single tag definition node.
 
@@ -697,8 +696,8 @@ class SynapseClient(BaseClient, ConnectorMixin):
         return nodes[0] if nodes else None
 
     def add_tag_definition(
-        self, tagname: str, props: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+        self, tagname: str, props: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         """
         Create or update a tag definition node.
 
@@ -734,7 +733,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # View / Layer management
     # ------------------------------------------------------------------
 
-    def list_views(self) -> List[Dict[str, Any]]:
+    def list_views(self) -> list[dict[str, Any]]:
         """
         List all Cortex views.
 
@@ -747,7 +746,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             return resp.get("result", [])
         return resp if isinstance(resp, list) else []
 
-    def get_view(self, view_iden: str) -> Dict[str, Any]:
+    def get_view(self, view_iden: str) -> dict[str, Any]:
         """
         Fetch a view by iden.
 
@@ -760,8 +759,8 @@ class SynapseClient(BaseClient, ConnectorMixin):
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
     def create_view(
-        self, name: str, layers: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, name: str, layers: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Create a new Cortex view.
 
@@ -778,8 +777,8 @@ class SynapseClient(BaseClient, ConnectorMixin):
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
     def fork_view(
-        self, view_iden: str, name: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, view_iden: str, name: str | None = None
+    ) -> dict[str, Any]:
         """
         Fork an existing view.
 
@@ -790,13 +789,13 @@ class SynapseClient(BaseClient, ConnectorMixin):
         name : str, optional
             Name for the forked view.
         """
-        payload: Dict[str, Any] = {}
+        payload: dict[str, Any] = {}
         if name:
             payload["name"] = name
         resp = self.post(f"/api/v1/core/views/{view_iden}/fork", json=payload)
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def list_layers(self) -> List[Dict[str, Any]]:
+    def list_layers(self) -> list[dict[str, Any]]:
         """
         List all Cortex layers.
 
@@ -809,7 +808,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             return resp.get("result", [])
         return resp if isinstance(resp, list) else []
 
-    def get_layer(self, layer_iden: str) -> Dict[str, Any]:
+    def get_layer(self, layer_iden: str) -> dict[str, Any]:
         """
         Fetch a layer by iden.
 
@@ -821,7 +820,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/core/layers/{layer_iden}")
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def add_layer(self, name: str) -> Dict[str, Any]:
+    def add_layer(self, name: str) -> dict[str, Any]:
         """
         Create a new Cortex layer.
 
@@ -854,7 +853,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/model/form/{form_name}")
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def list_forms(self) -> List[Any]:
+    def list_forms(self) -> list[Any]:
         """Return the list of all forms in the data model."""
         resp = self.get("/api/v1/model/forms")
         if isinstance(resp, dict):
@@ -865,7 +864,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # Auth / Users
     # ------------------------------------------------------------------
 
-    def list_users(self) -> List[Dict[str, Any]]:
+    def list_users(self) -> list[dict[str, Any]]:
         """
         List all Synapse users.
 
@@ -878,7 +877,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             return resp.get("result", [])
         return resp if isinstance(resp, list) else []
 
-    def get_user(self, user_iden: str) -> Dict[str, Any]:
+    def get_user(self, user_iden: str) -> dict[str, Any]:
         """
         Fetch a user by iden.
 
@@ -894,8 +893,8 @@ class SynapseClient(BaseClient, ConnectorMixin):
         self,
         name: str,
         passwd: str,
-        email: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        email: str | None = None,
+    ) -> dict[str, Any]:
         """
         Create a new Synapse user.
 
@@ -908,13 +907,13 @@ class SynapseClient(BaseClient, ConnectorMixin):
         email : str, optional
             Email address.
         """
-        payload: Dict[str, Any] = {"name": name, "passwd": passwd}
+        payload: dict[str, Any] = {"name": name, "passwd": passwd}
         if email:
             payload["email"] = email
         resp = self.post("/api/v1/auth/adduser", json=payload)
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def set_user_passwd(self, user_iden: str, passwd: str) -> Dict[str, Any]:
+    def set_user_passwd(self, user_iden: str, passwd: str) -> dict[str, Any]:
         """
         Change a user's password.
 
@@ -930,7 +929,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         )
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def list_roles(self) -> List[Dict[str, Any]]:
+    def list_roles(self) -> list[dict[str, Any]]:
         """
         List all Synapse roles.
 
@@ -943,7 +942,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             return resp.get("result", [])
         return resp if isinstance(resp, list) else []
 
-    def add_role(self, name: str) -> Dict[str, Any]:
+    def add_role(self, name: str) -> dict[str, Any]:
         """
         Create a new role.
 
@@ -955,7 +954,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         resp = self.post("/api/v1/auth/addrole", json={"name": name})
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def grant_role(self, user_iden: str, role_iden: str) -> Dict[str, Any]:
+    def grant_role(self, user_iden: str, role_iden: str) -> dict[str, Any]:
         """
         Grant a role to a user.
 
@@ -975,7 +974,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # Cortex info
     # ------------------------------------------------------------------
 
-    def get_cortex_info(self) -> Dict[str, Any]:
+    def get_cortex_info(self) -> dict[str, Any]:
         """Return general Cortex information."""
         resp = self.get("/api/v1/cortex/info")
         return resp.get("result", resp) if isinstance(resp, dict) else resp

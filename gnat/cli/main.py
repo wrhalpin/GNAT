@@ -57,7 +57,7 @@ import logging
 import sys
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger("gnat.cli")
 
@@ -86,7 +86,7 @@ def _print_json(data: Any) -> None:
     print(json.dumps(data, indent=2, default=str))
 
 
-def _print_table(rows: List[Dict[str, Any]], fields: Optional[List[str]] = None) -> None:
+def _print_table(rows: list[dict[str, Any]], fields: list[str] | None = None) -> None:
     """Print a list of dicts as a plain ASCII table."""
     if not rows:
         print(_dim("(no results)"))
@@ -601,7 +601,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
     try:
         cli = GNATClient(config_path=args.config)
         cli.connect(target=args.target)
-        filters: Dict[str, str] = {}
+        filters: dict[str, str] = {}
         for kv in (args.filters or []):
             if "=" in kv:
                 k, _, v = kv.partition("=")
@@ -628,18 +628,25 @@ def _cmd_list(args: argparse.Namespace) -> int:
 def _cmd_ingest(args: argparse.Namespace) -> int:
     from gnat.client import GNATClient
     from gnat.ingest import IngestPipeline
-    from gnat.ingest.sources import (
-        PlainTextReader, CSVReader, JSONReader, JSONLReader,
-        STIXBundleReader, MISPReader,
-    )
     from gnat.ingest.mappers import (
-        FlatIOCMapper, CSVIndicatorMapper, STIXPassthroughMapper,
-        MISPAttributeMapper, NVDCVEMapper,
+        CSVIndicatorMapper,
+        FlatIOCMapper,
+        MISPAttributeMapper,
+        NVDCVEMapper,
+        STIXPassthroughMapper,
+    )
+    from gnat.ingest.sources import (
+        CSVReader,
+        JSONLReader,
+        JSONReader,
+        MISPReader,
+        PlainTextReader,
+        STIXBundleReader,
     )
 
     fmt = args.format
     src = args.source
-    mapper_kwargs = dict(tlp_marking=args.tlp, confidence=args.confidence)
+    mapper_kwargs = {"tlp_marking": args.tlp, "confidence": args.confidence}
 
     _info(args, f"Ingesting {_bold(fmt)} from {_dim(src)} → {_bold(args.target)} …")
 
@@ -851,7 +858,7 @@ def _output(args: argparse.Namespace, data: Any) -> None:
 
 def _cmd_viz(args: argparse.Namespace) -> int:
     from gnat.context import WorkspaceManager
-    from gnat.viz import TabularView, GraphView, PowerBIExporter, save_grafana_dashboard
+    from gnat.viz import GraphView, PowerBIExporter, TabularView, save_grafana_dashboard
 
     viz_cmd = getattr(args, "viz_command", None)
 
@@ -860,7 +867,8 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         try:
             ws = manager.open(args.workspace)
         except KeyError as e:
-            print(_red(str(e))); return 1
+            print(_red(str(e)))
+            return 1
         view = TabularView(ws)
         if args.file:
             ext = Path(args.file).suffix.lower()
@@ -882,7 +890,8 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         try:
             ws = manager.open(args.workspace)
         except KeyError as e:
-            print(_red(str(e))); return 1
+            print(_red(str(e)))
+            return 1
         from gnat.viz import GraphView
         gv = GraphView(ws)
         if args.file:
@@ -932,7 +941,8 @@ def _cmd_viz(args: argparse.Namespace) -> int:
         try:
             ws = manager.open(args.workspace)
         except KeyError as e:
-            print(_red(str(e))); return 1
+            print(_red(str(e)))
+            return 1
         PowerBIExporter(ws).to_xlsx(args.file)
         print(_green(f"✓  Power BI workbook saved to {args.file}"))
         return 0
@@ -966,8 +976,8 @@ def _cmd_report(args) -> int:
         profile = args.report_config
         try:
             from gnat.config import GNATConfig
-            from gnat.reports import ReportConfig, ReportGenerator, AIMode
             from gnat.context.workspace import WorkspaceManager
+            from gnat.reports import AIMode, ReportConfig, ReportGenerator
 
             cfg_path = getattr(args, "config_path", None)
             manager  = WorkspaceManager.default(config_path=cfg_path)
@@ -1097,7 +1107,7 @@ def _cmd_client(args) -> int:
 
     if args.client_command == "call":
         # Parse KEY=VALUE args into a kwargs dict
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         for kv in (getattr(args, "args", None) or []):
             if "=" in kv:
                 k, v = kv.split("=", 1)
@@ -1136,8 +1146,8 @@ def _cmd_nlq(args) -> int:
     backend = getattr(args, "backend", None) or "builtin"
     if backend == "claude":
         try:
-            from gnat.config import GNATConfig
             from gnat.agents.base import AgentConfig
+            from gnat.config import GNATConfig
             cfg = GNATConfig(args.config)
             agent_cfg = AgentConfig.from_config(cfg._parser)
             engine = NLPQueryEngine(backend="claude", claude_config=agent_cfg)
@@ -1703,7 +1713,7 @@ def _cmd_serve(args) -> int:
     return 0
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """
     Main CLI entry point.
 

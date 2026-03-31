@@ -44,14 +44,14 @@ Configuration (gnat.ini):
 """
 
 import configparser
+import contextlib
 import json
 import os
 import re
-from dataclasses import dataclass
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime, timezone
-
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ class SnortJSONReader:
         """
         log_path = path or self.config.alert_log_path
         try:
-            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(log_path, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -154,7 +154,7 @@ class SnortJSONReader:
         log_path = path or self.config.alert_log_path
         new_offset = offset
         try:
-            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(log_path, encoding="utf-8", errors="replace") as f:
                 f.seek(offset)
                 for line in f:
                     new_offset += len(line.encode("utf-8"))
@@ -230,7 +230,7 @@ class SnortFastReader:
         """Yield parsed alerts from fast alert text log."""
         log_path = path or self.config.alert_log_path
         try:
-            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(log_path, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     alert = self._parse_fast_line(line.strip())
                     if alert:
@@ -320,7 +320,8 @@ class SnortSTIXMapper:
                        "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
                        "spec_version": "2.1", "value": ip}
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         src_p = alert.get("src_port")
@@ -337,12 +338,13 @@ class SnortSTIXMapper:
                     "protocols": [str(alert.get("proto", "tcp")).lower()],
                 }
                 if src_p:
-                    try: nt["src_port"] = int(src_p)
-                    except (TypeError, ValueError): pass
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["src_port"] = int(src_p)
                 if dst_p:
-                    try: nt["dst_port"] = int(dst_p)
-                    except (TypeError, ValueError): pass
-                objects.append(nt); refs.append(nid)
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["dst_port"] = int(dst_p)
+                objects.append(nt)
+                refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         objects.append({
@@ -370,7 +372,8 @@ class SnortSTIXMapper:
         for a in alerts:
             for obj in self.alert_to_stix_bundle(a).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
         return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
                 "spec_version": "2.1", "objects": all_objects}
 

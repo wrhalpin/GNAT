@@ -87,10 +87,10 @@ M365 + Copilot::
     )
 """
 
-from gnat.agents.base import AgentConfig, ResearchResult, ParsedIntel, ClaudeClient
-from gnat.agents.research import ResearchAgent
-from gnat.agents.parsing import ParsingAgent
+from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel, ResearchResult
 from gnat.agents.copilot import CopilotReader
+from gnat.agents.parsing import ParsingAgent
+from gnat.agents.research import ResearchAgent
 from gnat.agents.llm import LLMClient
 from gnat.agents.claude import ClaudeProvider
 from gnat.agents.openai_compatible import OpenAICompatibleProvider

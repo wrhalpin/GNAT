@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     from gvm.connections import TLSConnection
@@ -62,7 +62,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         GVM password.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "results",
         "report":        "reports",
     }
@@ -72,7 +72,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         self._port = port
         self._username = username
         self._password = password
-        self._gmp: Optional[Any] = None
+        self._gmp: Any | None = None
 
     # ── Authentication ─────────────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         version = self._gmp.get_version()
         return bool(version)
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if not self._gmp:
             self.authenticate()
         if stix_type == "vulnerability":
@@ -110,10 +110,10 @@ class GreenboneClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if not self._gmp:
             self.authenticate()
         filters = dict(filters or {})
@@ -127,7 +127,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         resp = self._gmp.get_reports(filter_string=filters.get("filter", ""))
         return self._parse_reports(resp) if hasattr(resp, "findall") else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Greenbone connector is read-focused for results/reports.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -135,32 +135,32 @@ class GreenboneClient(BaseClient, ConnectorMixin):
 
     # ── Helpers for parsing (simplified) ───────────────────────────────────
 
-    def _parse_results(self, xml_response: Any) -> List[Dict[str, Any]]:
+    def _parse_results(self, xml_response: Any) -> list[dict[str, Any]]:
         """Basic parsing of GMP results XML to dict list (expand with lxml/etree as needed)."""
         results = []
         # Placeholder — in practice use xml.etree or lxml to extract
         # Example structure: results with name, severity, host, etc.
         return results  # Replace with actual parsing
 
-    def _parse_reports(self, xml_response: Any) -> List[Dict[str, Any]]:
+    def _parse_reports(self, xml_response: Any) -> list[dict[str, Any]]:
         """Basic parsing of reports."""
         return []  # Replace with actual parsing
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert GVM result or report to STIX."""
         if "severity" in native and "name" in native:
             return self._result_to_stix(native)
         return self._report_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "Greenbone is read-only for vulnerability scan data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _result_to_stix(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    def _result_to_stix(self, result: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         rid = result.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'gvm:{rid}')}"
@@ -181,7 +181,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _report_to_stix(self, report: Dict[str, Any]) -> Dict[str, Any]:
+    def _report_to_stix(self, report: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         rid = report.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'gvm:{rid}')}"

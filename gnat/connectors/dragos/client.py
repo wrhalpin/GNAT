@@ -53,7 +53,7 @@ from __future__ import annotations
 import base64
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -79,7 +79,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         Dragos API secret.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "threat-actor": "activity-groups",
         "indicator":    "indicators",
         "malware":      "threats",
@@ -116,7 +116,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         self.get("/api/v1/indicators", params={"page_size": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single Dragos object by STIX type and ID."""
         if stix_type == "indicator":
             return self.get(f"/api/v1/indicators/{object_id}")
@@ -133,13 +133,13 @@ class DragosClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Dragos objects by STIX type."""
         f = filters or {}
-        params: Dict[str, Any] = {"page": page, "page_size": page_size}
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
         params.update(f)
         endpoint_map = {
             "indicator":    "/api/v1/indicators",
@@ -158,7 +158,7 @@ class DragosClient(BaseClient, ConnectorMixin):
                resp.get("threats", resp.get("vulnerabilities",
                resp.get("products", resp.get("data", []))))))
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError(
             "Dragos API is read-only — upsert not supported."
         )
@@ -172,13 +172,13 @@ class DragosClient(BaseClient, ConnectorMixin):
 
     def get_indicators(
         self,
-        indicator_type: Optional[str] = None,
-        value: Optional[str] = None,
-        updated_after: Optional[str] = None,
+        indicator_type: str | None = None,
+        value: str | None = None,
+        updated_after: str | None = None,
         page_size: int = 500,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch IOCs with optional type/value/date filters."""
-        params: Dict[str, Any] = {"page_size": page_size}
+        params: dict[str, Any] = {"page_size": page_size}
         if indicator_type:
             params["type"] = indicator_type
         if value:
@@ -188,18 +188,18 @@ class DragosClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v1/indicators", params=params)
         return resp.get("indicators", []) if isinstance(resp, dict) else []
 
-    def get_activity_groups(self, page_size: int = 50) -> List[Dict[str, Any]]:
+    def get_activity_groups(self, page_size: int = 50) -> list[dict[str, Any]]:
         """Fetch Dragos activity groups (ICS threat actors)."""
         resp = self.get("/api/v1/activity-groups", params={"page_size": page_size})
         return resp.get("activity_groups", []) if isinstance(resp, dict) else []
 
     def get_products(
         self,
-        product_type: Optional[str] = None,
+        product_type: str | None = None,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch intelligence products (reports)."""
-        params: Dict[str, Any] = {"page_size": page_size}
+        params: dict[str, Any] = {"page_size": page_size}
         if product_type:
             params["type"] = product_type
         resp = self.get("/api/v1/products", params=params)
@@ -207,12 +207,12 @@ class DragosClient(BaseClient, ConnectorMixin):
 
     def get_vulnerabilities(
         self,
-        cve_id: Optional[str] = None,
-        severity: Optional[str] = None,
+        cve_id: str | None = None,
+        severity: str | None = None,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch ICS/SCADA vulnerability data."""
-        params: Dict[str, Any] = {"page_size": page_size}
+        params: dict[str, Any] = {"page_size": page_size}
         if cve_id:
             params["cve_id"] = cve_id
         if severity:
@@ -220,14 +220,14 @@ class DragosClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v1/vulnerabilities", params=params)
         return resp.get("vulnerabilities", []) if isinstance(resp, dict) else []
 
-    def get_threats(self, page_size: int = 50) -> List[Dict[str, Any]]:
+    def get_threats(self, page_size: int = 50) -> list[dict[str, Any]]:
         """Fetch Dragos threat summaries."""
         resp = self.get("/api/v1/threats", params={"page_size": page_size})
         return resp.get("threats", []) if isinstance(resp, dict) else []
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Dragos object to STIX."""
         # IOC
         if "value" in native and "indicator_type" in native:
@@ -247,7 +247,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         # Default: IOC
         return self._ioc_to_stix(native)
 
-    def _ioc_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         ioc_id = str(native.get("id", ""))
         value = native.get("value", ioc_id)
         ioc_type = native.get("indicator_type", native.get("type", "domain")).lower()
@@ -280,7 +280,7 @@ class DragosClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _actor_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         name = native.get("group_name", native.get("name", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-actor-{name}"))
         return {
@@ -301,7 +301,7 @@ class DragosClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _vuln_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         cve_id = native.get("cve_id", native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-vuln-{cve_id}"))
         cvss = native.get("cvss_score", 0.0)
@@ -322,7 +322,7 @@ class DragosClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _product_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _product_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         serial = native.get("serial", native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-product-{serial}"))
         return {
@@ -343,7 +343,7 @@ class DragosClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _threat_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _threat_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         name = native.get("threat_name", native.get("name", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-malware-{name}"))
         return {
@@ -361,7 +361,7 @@ class DragosClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract Dragos query parameters from a STIX dict."""
         return {
             "stix_id": stix_dict.get("id", ""),

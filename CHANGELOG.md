@@ -12,7 +12,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [v1.2.0] — 2026-03-30
 
 ### Added
-- **12 new platform connectors** (95 total) registered in `CLIENT_REGISTRY`:
+- `CISAClient` (`gnat/connectors/CISA/`) registered in `CLIENT_REGISTRY` under key `"cisa"` — CISA Known Exploited Vulnerabilities (KEV) Catalog connector; no authentication required (public feed); read-only vulnerability ingestion with `x_cisa_kev` STIX extension.
+- `config/config.ini.example` updated with `[cisa]` section.
+- `README.md` updated to include `cisa` in the Supported Platforms table.
+- **89 new unit tests** covering all 6 previously untested connectors: `CISAClient` (18), `FortiEDRClient` (12), `FortiSIEMClient` (13), `GoogleChronicleClient` (12), `GreyNoiseClient` (17), `ShodanClient` (17).
+
+### Fixed
+- Auto-fixed 4,647 ruff linting issues (unsorted imports, f-strings without placeholders, trailing whitespace, missing newlines, unnecessary dict/set constructions, C420 dict comprehensions).
+- Fixed 141 remaining ruff errors manually:
+  - **E702/E701**: Split ~127 multi-statement semicolon/colon lines across `gnat/async_client/connectors.py`, `gnat/cli/main.py`, `gnat/connectors/alienvault/`, `gnat/connectors/elastic/stix_mapper.py`, `gnat/connectors/graylog/`, `gnat/connectors/greymatter/client.py`, `gnat/connectors/misp/`, `gnat/connectors/ossim/`, `gnat/connectors/security_onion/`, `gnat/connectors/sentinel/`, `gnat/connectors/shadowserver/client.py`, `gnat/connectors/snort/`, `gnat/connectors/suricata/`, `gnat/connectors/wazuh/alerts.py`, `gnat/connectors/zeek/`, `gnat/export/delivery/targets.py`, `gnat/reports/aggregator.py`, `gnat/viz/graph.py`.
+  - **F821**: Added missing imports for `STIXBase` (`gnat/agents/parsing.py`), `ReportAggregates` (`gnat/reports/`), `RunRecord` (`gnat/schedule/`), `RGBColor` and `Pt` (`gnat/reports/renderers.py`).
+  - **E741**: Renamed ambiguous variable `l` → `lbl` in `gnat/connectors/sentinel/incidents.py`.
+  - **B007**: Renamed unused loop variable `nid` → `_nid` in `gnat/viz/graph.py`.
+  - **B017**: Changed bare `assert Exception` to specific exception class in MISP tests.
+  - **E402**: Moved module-level imports to top of file in `gnat/connectors/security_onion/__init__.py`.
+
+
   - `CortexXDRClient` (`gnat/connectors/cortex_xdr/`) — Palo Alto Cortex XDR / XSIAM; HMAC-signed API key pair auth; alert & incident search, endpoint isolation, IOC management.
   - `PrismaCloudClient` (`gnat/connectors/prisma_cloud/`) — Palo Alto Prisma Cloud CSPM/CWP/CNAPP; JWT (access key + secret); alert, vulnerability, and compliance posture ingestion with RQL query support.
   - `NozomiClient` (`gnat/connectors/nozomi/`) — Nozomi Networks Guardian / Vantage OT/IoT; API token or Basic auth; OT alert, CVE, and asset inventory for industrial control systems.

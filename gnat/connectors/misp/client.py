@@ -39,6 +39,7 @@ Usage
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import MISPAuthManager
@@ -201,7 +202,9 @@ class MISPClient:
                 )
             except urllib3.exceptions.HTTPError as exc:
                 if attempt < _MAX_RETRIES:
-                    time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                    time.sleep(delay)
+                    delay *= _RETRY_BACKOFF
+                    continue
                 raise MISPAPIError(f"Connection error: {exc}", endpoint=url) from exc
 
             if response.status == 401:
@@ -228,10 +231,14 @@ class MISPClient:
                 )
             if response.status == 429:
                 if attempt < _MAX_RETRIES:
-                    time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                    time.sleep(delay)
+                    delay *= _RETRY_BACKOFF
+                    continue
                 raise MISPRateLimitError("MISP rate limit.", status_code=429)
             if response.status in _RETRYABLE_STATUS and attempt < _MAX_RETRIES:
-                time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                time.sleep(delay)
+                delay *= _RETRY_BACKOFF
+                continue
             if response.status not in (200, 201):
                 parsed = self._safe_parse(response.data)
                 raise MISPAPIError(

@@ -34,21 +34,21 @@ Configuration section (gnat.ini)::
     max_results     = 10000
 """
 
-from .client import SplunkClient
-from .auth import SplunkAuthManager
-from .search import SplunkSearchCommands
 from .alerts import SplunkAlertCommands
-from .threat_intel import SplunkThreatIntelCommands
-from .kvstore import SplunkKVStoreCommands
-from .stix_mapper import SplunkSTIXMapper
+from .auth import SplunkAuthManager
+from .client import SplunkClient
 from .config import SplunkConfig
 from .exceptions import (
-    SplunkAuthError,
     SplunkAPIError,
+    SplunkAuthError,
+    SplunkConfigError,
     SplunkSearchError,
     SplunkThreatIntelError,
-    SplunkConfigError,
 )
+from .kvstore import SplunkKVStoreCommands
+from .search import SplunkSearchCommands
+from .stix_mapper import SplunkSTIXMapper
+from .threat_intel import SplunkThreatIntelCommands
 
 __all__ = [
     "SplunkClient",

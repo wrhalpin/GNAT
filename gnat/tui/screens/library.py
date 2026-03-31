@@ -9,7 +9,7 @@ STIX object details, and promote or reject staging entries.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -65,7 +65,7 @@ class LibraryScreen(Screen):
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
+        config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -238,7 +238,7 @@ class LibraryScreen(Screen):
         except Exception as exc:
             status.update(f"[red]{exc}[/red]")
 
-    def _selected_topic(self) -> Optional[str]:
+    def _selected_topic(self) -> str | None:
         table: DataTable = self.query_one("#library-table", DataTable)
         try:
             row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)

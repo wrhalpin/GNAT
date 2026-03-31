@@ -145,7 +145,7 @@ class WazuhVulnerabilityCommands:
         params = {"limit": 500, "select": "severity"}
         response = self._client.get(f"vulnerability/{agent_id}", params=params)
         items = self._client.extract_items(response)
-        summary: dict[str, int] = {s: 0 for s in _CVSS_SEVERITY_MAP}
+        summary: dict[str, int] = dict.fromkeys(_CVSS_SEVERITY_MAP, 0)
         for item in items:
             sev = (item.get("severity") or "unknown").lower()
             summary[sev] = summary.get(sev, 0) + 1

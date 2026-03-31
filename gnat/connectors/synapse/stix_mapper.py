@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 
 def _now_iso() -> str:
@@ -31,7 +31,7 @@ class SynapseSTIXMapper:
 
     _NAMESPACE = uuid.UUID("9c4b7e2d-1a3f-4d8e-b5c6-7f8a9b0c1d2e")
 
-    _FORM_TO_STIX: Dict[str, str] = {
+    _FORM_TO_STIX: dict[str, str] = {
         # Network SCOs
         "inet:ipv4":   "ipv4-addr",
         "inet:ipv6":   "ipv6-addr",
@@ -84,7 +84,7 @@ class SynapseSTIXMapper:
         """
         return f"{stix_type}--{uuid.uuid5(self._NAMESPACE, str(value))}"
 
-    def _tags_to_stix_labels(self, tags: Dict[str, Any]) -> List[str]:
+    def _tags_to_stix_labels(self, tags: dict[str, Any]) -> list[str]:
         """
         Convert Synapse tag names to a list of STIX label strings.
 
@@ -99,7 +99,7 @@ class SynapseSTIXMapper:
         -------
         list of str
         """
-        labels: List[str] = []
+        labels: list[str] = []
         for tag_name in tags:
             part = tag_name.split(".")[-1]
             if part and part not in labels:
@@ -110,7 +110,7 @@ class SynapseSTIXMapper:
     # Top-level dispatch
     # ------------------------------------------------------------------
 
-    def node_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def node_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Synapse node dict to a STIX 2.1 object.
 
@@ -175,12 +175,12 @@ class SynapseSTIXMapper:
     # ------------------------------------------------------------------
 
     def _base_fields(
-        self, stix_type: str, value: str, node: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, value: str, node: dict[str, Any]
+    ) -> dict[str, Any]:
         ts = _now_iso()
         tags = node.get("tags", {})
         labels = self._tags_to_stix_labels(tags)
-        obj: Dict[str, Any] = {
+        obj: dict[str, Any] = {
             "type": stix_type,
             "id": self._make_id(stix_type, value),
             "created": ts,
@@ -192,48 +192,48 @@ class SynapseSTIXMapper:
             obj["labels"] = labels
         return obj
 
-    def _ipv4_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _ipv4_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``inet:ipv4`` node to a STIX ``ipv4-addr`` SCO."""
         value = node["ndef"][1]
         obj = self._base_fields("ipv4-addr", str(value), node)
         obj["value"] = str(value)
         return obj
 
-    def _ipv6_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _ipv6_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``inet:ipv6`` node to a STIX ``ipv6-addr`` SCO."""
         value = node["ndef"][1]
         obj = self._base_fields("ipv6-addr", str(value), node)
         obj["value"] = str(value)
         return obj
 
-    def _fqdn_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _fqdn_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``inet:fqdn`` node to a STIX ``domain-name`` SCO."""
         value = node["ndef"][1]
         obj = self._base_fields("domain-name", str(value), node)
         obj["value"] = str(value)
         return obj
 
-    def _url_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _url_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``inet:url`` node to a STIX ``url`` SCO."""
         value = node["ndef"][1]
         obj = self._base_fields("url", str(value), node)
         obj["value"] = str(value)
         return obj
 
-    def _email_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _email_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``inet:email`` node to a STIX ``email-addr`` SCO."""
         value = node["ndef"][1]
         obj = self._base_fields("email-addr", str(value), node)
         obj["value"] = str(value)
         return obj
 
-    def _file_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _file_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert a file/hash node to a STIX ``file`` SCO."""
         form = node["ndef"][0]
         value = node["ndef"][1]
         props = node.get("props", {})
 
-        hashes: Dict[str, str] = {}
+        hashes: dict[str, str] = {}
         if form == "file:bytes":
             if props.get("sha256"):
                 hashes["SHA-256"] = str(props["sha256"])
@@ -257,7 +257,7 @@ class SynapseSTIXMapper:
             obj["name"] = str(name)
         return obj
 
-    def _vuln_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert a ``risk:vuln`` node to a STIX ``vulnerability`` SDO."""
         value = node["ndef"][1]
         props = node.get("props", {})
@@ -274,7 +274,7 @@ class SynapseSTIXMapper:
             ]
         return obj
 
-    def _attack_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _attack_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert a ``risk:attack`` / ``it:mitre:attack:technique`` node to ``attack-pattern``."""
         form = node["ndef"][0]
         value = node["ndef"][1]
@@ -296,7 +296,7 @@ class SynapseSTIXMapper:
             ]
         return obj
 
-    def _malware_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _malware_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``it:mitre:attack:software`` node to a STIX ``malware`` SDO."""
         value = node["ndef"][1]
         props = node.get("props", {})
@@ -314,7 +314,7 @@ class SynapseSTIXMapper:
             ]
         return obj
 
-    def _threat_actor_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _threat_actor_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert a ``risk:threat`` / ``it:mitre:attack:group`` node to ``threat-actor``."""
         form = node["ndef"][0]
         value = node["ndef"][1]
@@ -333,7 +333,7 @@ class SynapseSTIXMapper:
                 ]
         return obj
 
-    def _mitigation_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _mitigation_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert a ``risk:mitigation`` node to a STIX ``course-of-action`` SDO."""
         value = node["ndef"][1]
         props = node.get("props", {})
@@ -344,7 +344,7 @@ class SynapseSTIXMapper:
             obj["description"] = str(desc)
         return obj
 
-    def _asn_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _asn_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``inet:asn`` node to a STIX ``autonomous-system`` SCO."""
         value = node["ndef"][1]
         props = node.get("props", {})
@@ -358,7 +358,7 @@ class SynapseSTIXMapper:
             obj["name"] = str(name)
         return obj
 
-    def _flow_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _flow_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``inet:flow`` node to a STIX ``network-traffic`` SCO."""
         value = node["ndef"][1]
         props = node.get("props", {})
@@ -376,7 +376,7 @@ class SynapseSTIXMapper:
             obj["protocols"] = [str(proto).lower()]
         return obj
 
-    def _identity_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _identity_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert an ``ou:org`` or ``ps:person`` node to a STIX ``identity`` SDO."""
         form = node["ndef"][0]
         value = node["ndef"][1]
@@ -386,7 +386,7 @@ class SynapseSTIXMapper:
         obj["identity_class"] = "organization" if form == "ou:org" else "individual"
         return obj
 
-    def _report_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _report_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert a ``media:news`` node to a STIX ``report`` SDO."""
         value = node["ndef"][1]
         props = node.get("props", {})
@@ -400,7 +400,7 @@ class SynapseSTIXMapper:
             obj["external_references"] = [{"source_name": "media:news", "url": str(url)}]
         return obj
 
-    def _observed_data_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _observed_data_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         """Convert a ``meta:event`` node to a STIX ``observed-data`` SDO."""
         value = node["ndef"][1]
         props = node.get("props", {})
@@ -416,7 +416,7 @@ class SynapseSTIXMapper:
     # Bundle
     # ------------------------------------------------------------------
 
-    def nodes_to_stix_bundle(self, nodes: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def nodes_to_stix_bundle(self, nodes: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Convert a list of Synapse nodes to a STIX 2.1 bundle.
 
@@ -441,7 +441,7 @@ class SynapseSTIXMapper:
     # STIX → Synapse
     # ------------------------------------------------------------------
 
-    def stix_indicator_to_node(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def stix_indicator_to_node(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX ``indicator`` SDO to a Synapse node descriptor.
 
@@ -471,7 +471,7 @@ class SynapseSTIXMapper:
             "tags": tags,
         }
 
-    def stix_to_storm_add(self, stix_dict: Dict[str, Any]) -> str:
+    def stix_to_storm_add(self, stix_dict: dict[str, Any]) -> str:
         """
         Convert a STIX indicator to a Storm ``[ form=value ]`` add query.
 
@@ -506,7 +506,7 @@ class SynapseSTIXMapper:
 # Module-level pattern parser
 # ------------------------------------------------------------------
 
-_PATTERN_MAP: List[tuple] = [
+_PATTERN_MAP: list[tuple] = [
     (r"ipv4-addr:value\s*=\s*['\"]([^'\"]+)['\"]",           "inet:ipv4"),
     (r"ipv6-addr:value\s*=\s*['\"]([^'\"]+)['\"]",           "inet:ipv6"),
     (r"domain-name:value\s*=\s*['\"]([^'\"]+)['\"]",         "inet:fqdn"),

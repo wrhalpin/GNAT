@@ -42,9 +42,10 @@ Notes
 
 from __future__ import annotations
 
+import contextlib
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -74,7 +75,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         Security Onion password.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "alerts",
         "case":          "cases",
     }
@@ -117,7 +118,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         self.get("/api/grid/status")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single Security Onion alert or case by id.
 
@@ -133,10 +134,10 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search Security Onion alerts or list cases.
 
@@ -154,7 +155,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         """
         filters = dict(filters or {})
         if stix_type == "case":
-            params: Dict[str, Any] = {}
+            params: dict[str, Any] = {}
             if "status" in filters:
                 params["status"] = filters.pop("status")
             if page_size:
@@ -167,7 +168,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         time_range = filters.pop("time_range", None)
         from_      = (page - 1) * page_size
 
-        must: List[Any] = []
+        must: list[Any] = []
         if time_range and len(time_range) == 2:
             must.append({
                 "range": {"@timestamp": {"gte": time_range[0], "lte": time_range[1]}}
@@ -175,7 +176,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         if query:
             must.append(query)
 
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "query": {"bool": {"must": must}} if must else {"match_all": {}},
             "size": page_size,
             "from": from_,
@@ -187,7 +188,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
             return [h.get("_source", {}) for h in hits.get("hits", [])]
         return []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Create a Security Onion case, or acknowledge an alert.
 
@@ -217,11 +218,11 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
 
     def search_alerts(
         self,
-        query: Optional[Dict[str, Any]] = None,
+        query: dict[str, Any] | None = None,
         size: int = 100,
         from_: int = 0,
-        time_range: Optional[Tuple[str, str]] = None,
-    ) -> List[Dict[str, Any]]:
+        time_range: tuple[str, str] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search alerts using ES Query DSL.
 
@@ -241,14 +242,14 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         list of dict
             Alert ``_source`` dicts.
         """
-        must: List[Any] = []
+        must: list[Any] = []
         if time_range:
             must.append({
                 "range": {"@timestamp": {"gte": time_range[0], "lte": time_range[1]}}
             })
         if query:
             must.append(query)
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "query": {"bool": {"must": must}} if must else {"match_all": {}},
             "size": size,
             "from": from_,
@@ -260,15 +261,15 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
             return [h.get("_source", {}) for h in hits.get("hits", [])]
         return []
 
-    def get_alert(self, alert_id: str) -> Dict[str, Any]:
+    def get_alert(self, alert_id: str) -> dict[str, Any]:
         """Retrieve a single alert by id."""
         return self.get(f"/api/alerts/{alert_id}")
 
-    def acknowledge_alert(self, alert_id: str) -> Dict[str, Any]:
+    def acknowledge_alert(self, alert_id: str) -> dict[str, Any]:
         """Mark an alert as acknowledged."""
         return self.post(f"/api/alerts/{alert_id}/acknowledge")
 
-    def escalate_alert(self, alert_id: str) -> Dict[str, Any]:
+    def escalate_alert(self, alert_id: str) -> dict[str, Any]:
         """Escalate an alert to a case."""
         return self.post(f"/api/alerts/{alert_id}/escalate")
 
@@ -277,10 +278,10 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         title: str,
         description: str = "",
         severity: int = 2,
-        assignee: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        assignee: str | None = None,
+    ) -> dict[str, Any]:
         """Create a new Security Onion case."""
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "title": title,
             "description": description,
             "severity": severity,
@@ -289,14 +290,14 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
             body["assignee"] = assignee
         return self.post("/api/cases", json=body)
 
-    def list_grid_nodes(self) -> List[Dict[str, Any]]:
+    def list_grid_nodes(self) -> list[dict[str, Any]]:
         """List sensor nodes in the Security Onion grid."""
         resp = self.get("/api/grid")
         return resp if isinstance(resp, list) else resp.get("nodes", [])
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a Security Onion alert to a STIX 2.1 observed-data SDO.
 
@@ -314,8 +315,8 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         now   = _now_ts()
         ts    = alert.get("timestamp") or now
 
-        objects: List[Dict[str, Any]] = []
-        refs: List[str] = []
+        objects: list[dict[str, Any]] = []
+        refs: list[str] = []
         seen: set = set()
 
         for ip in (alert.get("src_ip"), alert.get("dst_ip")):
@@ -340,7 +341,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
             if nid not in seen:
                 seen.add(nid)
-                nt: Dict[str, Any] = {
+                nt: dict[str, Any] = {
                     "type": "network-traffic",
                     "id":   nid,
                     "spec_version": "2.1",
@@ -349,20 +350,16 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
                     "protocols": [str(alert.get("proto", "tcp")).lower()],
                 }
                 if src_port:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["src_port"] = int(src_port)
-                    except (TypeError, ValueError):
-                        pass
                 if dst_port:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["dst_port"] = int(dst_port)
-                    except (TypeError, ValueError):
-                        pass
                 objects.append(nt)
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        obs: Dict[str, Any] = {
+        obs: dict[str, Any] = {
             "type":           "observed-data",
             "id":             obs_id,
             "spec_version":   "2.1",
@@ -384,7 +381,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         objects.append(obs)
         return obs
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX observed-data to a Security Onion alert action dict.
 
@@ -400,10 +397,10 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
     # ── Private helpers ────────────────────────────────────────────────────
 
     @staticmethod
-    def _normalise(alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalise(alert: dict[str, Any]) -> dict[str, Any]:
         """Normalise a raw Security Onion alert dict."""
         rule = alert.get("rule", {})
-        sev_map: Dict[Any, int] = {"1": 4, "2": 3, "3": 2, "4": 1, 1: 4, 2: 3, 3: 2, 4: 1}
+        sev_map: dict[Any, int] = {"1": 4, "2": 3, "3": 2, "4": 1, 1: 4, 2: 3, 3: 2, 4: 1}
         sev_raw = alert.get("event", {}).get("severity", 3)
         return {
             "id":        alert.get("uid") or alert.get("_id"),

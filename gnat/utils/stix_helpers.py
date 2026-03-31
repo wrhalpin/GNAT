@@ -5,7 +5,7 @@ Utility functions for working with STIX 2.1 objects and bundles.
 """
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 
 def utcnow() -> str:
@@ -13,7 +13,7 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def make_bundle(objects: List[Dict[str, Any]]) -> Dict[str, Any]:
+def make_bundle(objects: list[dict[str, Any]]) -> dict[str, Any]:
     """Wrap a list of STIX objects in a STIX 2.1 bundle."""
     return {
         "type": "bundle",
@@ -23,14 +23,14 @@ def make_bundle(objects: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def extract_objects(bundle: Dict[str, Any]) -> List[Dict[str, Any]]:
+def extract_objects(bundle: dict[str, Any]) -> list[dict[str, Any]]:
     """Extract the objects list from a STIX bundle."""
     return bundle.get("objects", [])
 
 
 def filter_by_type(
-    objects: List[Dict[str, Any]], stix_type: str
-) -> List[Dict[str, Any]]:
+    objects: list[dict[str, Any]], stix_type: str
+) -> list[dict[str, Any]]:
     """Filter a list of STIX objects by type."""
     return [o for o in objects if o.get("type") == stix_type]
 

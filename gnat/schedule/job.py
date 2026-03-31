@@ -51,11 +51,11 @@ import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from gnat.ingest.base import SourceReader, RecordMapper
     from gnat.client import GNATClient
+    from gnat.ingest.base import RecordMapper, SourceReader
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +94,10 @@ class JobRunContext:
     job_id:           str
     run_number:       int
     scheduled_at:     datetime
-    last_success_at:  Optional[datetime]   = None
-    last_success_iso: Optional[str]        = None
-    last_result:      Optional[Any]        = None   # IngestResult
-    custom:           Dict[str, Any]       = field(default_factory=dict)
+    last_success_at:  datetime | None   = None
+    last_success_iso: str | None        = None
+    last_result:      Any | None        = None   # IngestResult
+    custom:           dict[str, Any]       = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -132,10 +132,10 @@ class RunRecord:
     run_number:       int
     scheduled_at:     datetime
     started_at:       datetime
-    finished_at:      Optional[datetime]  = None
+    finished_at:      datetime | None  = None
     status:           str                 = "running"
-    result:           Optional[Any]       = None
-    error:            Optional[str]       = None
+    result:           Any | None       = None
+    error:            str | None       = None
     duration_seconds: float               = 0.0
     run_count:        int                 = 0
 
@@ -257,17 +257,17 @@ class FeedJob:
     def __init__(
         self,
         job_id: str,
-        reader_factory: Callable[["JobRunContext"], "SourceReader"],
-        mapper_factory: Callable[["JobRunContext"], "RecordMapper"],
-        interval_seconds: Optional[int] = None,
-        cron: Optional[str] = None,
-        client: Optional["GNATClient"] = None,
+        reader_factory: Callable[[JobRunContext], SourceReader],
+        mapper_factory: Callable[[JobRunContext], RecordMapper],
+        interval_seconds: int | None = None,
+        cron: str | None = None,
+        client: GNATClient | None = None,
         deduplicate: bool = True,
-        dedup_key_fields: Optional[List[str]] = None,
+        dedup_key_fields: list[str] | None = None,
         confidence: int = 50,
         tlp_marking: str = "white",
-        on_success: Optional[Callable[["RunRecord"], None]] = None,
-        on_failure: Optional[Callable[["RunRecord"], None]] = None,
+        on_success: Callable[[RunRecord], None] | None = None,
+        on_failure: Callable[[RunRecord], None] | None = None,
         max_history: int = 100,
         overlap_policy: str = "skip",
         enabled: bool = True,
@@ -301,15 +301,15 @@ class FeedJob:
         self.overlap_policy  = overlap_policy
         self.enabled         = enabled
 
-        self.history:         List[RunRecord]      = []
+        self.history:         list[RunRecord]      = []
         self.run_count:       int                  = 0
-        self.last_success_at: Optional[datetime]   = None
+        self.last_success_at: datetime | None   = None
         self._running_lock    = threading.Lock()
-        self._custom_state:   Dict[str, Any]       = {}
+        self._custom_state:   dict[str, Any]       = {}
 
     # ── Run execution ──────────────────────────────────────────────────────
 
-    def execute(self, scheduled_at: Optional[datetime] = None) -> RunRecord:
+    def execute(self, scheduled_at: datetime | None = None) -> RunRecord:
         """
         Execute one run of this job synchronously.
 
@@ -457,7 +457,7 @@ class FeedJob:
         return last.status in ("success", "partial", "skipped", "running")
 
     @property
-    def last_run(self) -> Optional[RunRecord]:
+    def last_run(self) -> RunRecord | None:
         """The most recent :class:`RunRecord`, or ``None`` if never run."""
         return self.history[-1] if self.history else None
 
@@ -484,7 +484,7 @@ class FeedJob:
                 break
         return count
 
-    def next_run_at(self) -> Optional[datetime]:
+    def next_run_at(self) -> datetime | None:
         """
         Estimated next run time based on interval or cron expression.
 

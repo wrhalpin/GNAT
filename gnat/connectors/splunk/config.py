@@ -183,7 +183,7 @@ def load_splunk_config(
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))
 
-    missing = _REQUIRED - set(k for k, v in raw.items() if v.strip())
+    missing = _REQUIRED - {k for k, v in raw.items() if v.strip()}
     if missing:
         raise SplunkConfigError(
             f"Missing required [splunk] config keys: {', '.join(sorted(missing))}"

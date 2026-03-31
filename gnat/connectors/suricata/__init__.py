@@ -51,15 +51,14 @@ Configuration (gnat.ini):
 """
 
 import configparser
+import contextlib
 import json
 import os
 import socket as _socket
-
-from dataclasses import dataclass
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime, timezone
-
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
@@ -162,7 +161,7 @@ class SuricataEVEReader:
         """
         log_path = path or self.config.eve_log_path
         try:
-            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(log_path, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -216,7 +215,7 @@ class SuricataEVEReader:
 
         def _gen():
             try:
-                with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                with open(log_path, encoding="utf-8", errors="replace") as f:
                     f.seek(offset)
                     for line in f:
                         line = line.strip()
@@ -427,7 +426,8 @@ class SuricataSTIXMapper:
                     "spec_version": "2.1", "value": ip,
                 }
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         src_p = alert.get("src_port")
@@ -444,12 +444,13 @@ class SuricataSTIXMapper:
                     "protocols": [str(alert.get("proto", "tcp")).lower()],
                 }
                 if src_p:
-                    try: nt["src_port"] = int(src_p)
-                    except (ValueError, TypeError): pass
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["src_port"] = int(src_p)
                 if dst_p:
-                    try: nt["dst_port"] = int(dst_p)
-                    except (ValueError, TypeError): pass
-                objects.append(nt); refs.append(nid)
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["dst_port"] = int(dst_p)
+                objects.append(nt)
+                refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         objects.append({
@@ -479,7 +480,8 @@ class SuricataSTIXMapper:
         for a in alerts:
             for obj in self.alert_to_stix_bundle(a).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
         return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
                 "spec_version": "2.1", "objects": all_objects}
 

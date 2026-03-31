@@ -26,12 +26,14 @@ Notes
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import uuid as _uuid
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -74,7 +76,7 @@ class SnortClient(BaseClient, ConnectorMixin):
         ``"json"`` (Snort 3) or ``"fast"`` (Snort 2 fast alerts).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "alerts",
     }
 
@@ -105,7 +107,7 @@ class SnortClient(BaseClient, ConnectorMixin):
             )
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         raise GNATClientError(
             "Snort is file-based — individual alert lookup by id is not supported."
         )
@@ -113,10 +115,10 @@ class SnortClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Read alerts from the configured log file.
 
@@ -141,7 +143,7 @@ class SnortClient(BaseClient, ConnectorMixin):
             alerts.append(alert)
         return alerts
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Snort is read-only — no write API available.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -149,7 +151,7 @@ class SnortClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific operations ────────────────────────────────────────
 
-    def parse_log_file(self, path: Optional[str] = None) -> List[Dict[str, Any]]:
+    def parse_log_file(self, path: str | None = None) -> list[dict[str, Any]]:
         """
         Parse all alerts from the log file.
 
@@ -166,8 +168,8 @@ class SnortClient(BaseClient, ConnectorMixin):
         return list(self._iter_alerts(path or self.alert_log_path))
 
     def iter_stix_alerts(
-        self, path: Optional[str] = None
-    ) -> Iterator[Dict[str, Any]]:
+        self, path: str | None = None
+    ) -> Iterator[dict[str, Any]]:
         """
         Yield STIX observed-data objects from the log file.
 
@@ -181,7 +183,7 @@ class SnortClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a normalised Snort alert to a STIX 2.1 observed-data SDO.
 
@@ -199,8 +201,8 @@ class SnortClient(BaseClient, ConnectorMixin):
         now   = _now_ts()
         ts    = alert.get("timestamp") or now
 
-        objects: List[Dict[str, Any]] = []
-        refs: List[str] = []
+        objects: list[dict[str, Any]] = []
+        refs: list[str] = []
         seen: set = set()
 
         for ip in (alert.get("src_ip"), alert.get("dst_ip")):
@@ -225,7 +227,7 @@ class SnortClient(BaseClient, ConnectorMixin):
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
             if nid not in seen:
                 seen.add(nid)
-                nt: Dict[str, Any] = {
+                nt: dict[str, Any] = {
                     "type": "network-traffic",
                     "id":   nid,
                     "spec_version": "2.1",
@@ -234,20 +236,16 @@ class SnortClient(BaseClient, ConnectorMixin):
                     "protocols": [str(alert.get("proto", "tcp")).lower()],
                 }
                 if src_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["src_port"] = int(src_p)
-                    except (TypeError, ValueError):
-                        pass
                 if dst_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["dst_port"] = int(dst_p)
-                    except (TypeError, ValueError):
-                        pass
                 objects.append(nt)
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        obs: Dict[str, Any] = {
+        obs: dict[str, Any] = {
             "type":           "observed-data",
             "id":             obs_id,
             "spec_version":   "2.1",
@@ -271,7 +269,7 @@ class SnortClient(BaseClient, ConnectorMixin):
         objects.append(obs)
         return obs
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Snort is read-only — from_stix returns an informational dict."""
         return {
             "note":     "Snort is file-based and read-only.",
@@ -280,7 +278,7 @@ class SnortClient(BaseClient, ConnectorMixin):
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    def _iter_alerts(self, path: str) -> Iterator[Dict[str, Any]]:
+    def _iter_alerts(self, path: str) -> Iterator[dict[str, Any]]:
         """Yield normalised alerts from the log file."""
         log_path = Path(path)
         if not log_path.exists():
@@ -291,7 +289,7 @@ class SnortClient(BaseClient, ConnectorMixin):
             yield from self._iter_fast_alerts(log_path)
 
     @staticmethod
-    def _iter_json_alerts(path: Path) -> Iterator[Dict[str, Any]]:
+    def _iter_json_alerts(path: Path) -> Iterator[dict[str, Any]]:
         """Yield normalised alerts from a Snort 3 JSON alert file."""
         sev_map = {1: 4, 2: 3, 3: 2, 4: 1}
         with path.open("r", encoding="utf-8", errors="replace") as fh:
@@ -323,7 +321,7 @@ class SnortClient(BaseClient, ConnectorMixin):
                 }
 
     @staticmethod
-    def _iter_fast_alerts(path: Path) -> Iterator[Dict[str, Any]]:
+    def _iter_fast_alerts(path: Path) -> Iterator[dict[str, Any]]:
         """Yield normalised alerts from a Snort 2 fast-alert text file."""
         sev_map = {1: 4, 2: 3, 3: 2, 4: 1}
         with path.open("r", encoding="utf-8", errors="replace") as fh:
@@ -350,6 +348,6 @@ class SnortClient(BaseClient, ConnectorMixin):
                 }
 
     @staticmethod
-    def _normalise(alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalise(alert: dict[str, Any]) -> dict[str, Any]:
         """Pass-through for already-normalised alert dicts."""
         return alert

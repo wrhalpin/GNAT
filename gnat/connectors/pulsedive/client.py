@@ -19,7 +19,7 @@ References
 https://pulsedive.com/api/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -42,7 +42,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         PulseDive API key (anonymous requests are rate-limited).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "indicator",
         "threat-actor": "threat",
         "malware":   "threat",
@@ -72,7 +72,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve a PulseDive indicator or threat by ID.
 
@@ -94,10 +94,10 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search PulseDive indicators or threats.
 
@@ -108,7 +108,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         * ``risk``: ``"low"``, ``"medium"``, ``"high"``, ``"critical"``
         """
         get_type = "threat" if stix_type in ("threat-actor", "malware") else "indicator"
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             **self._pd_params,
             "get":   get_type,
             "limit": min(page_size, 1000),
@@ -122,7 +122,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("results", [])
 
-    def enrich(self, indicator_value: str) -> Dict[str, Any]:
+    def enrich(self, indicator_value: str) -> dict[str, Any]:
         """
         Enrich a single IOC value via the ``/api/info.php`` endpoint.
 
@@ -136,8 +136,8 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         return resp if isinstance(resp, dict) else {}
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Submit an indicator for community enrichment.
 
@@ -158,14 +158,14 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a PulseDive indicator/threat to a STIX dict."""
         pd_type = native.get("type", "")
         if pd_type == "threat":
             return self._threat_to_stix(native)
         return self._indicator_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a PulseDive lookup payload from a STIX dict."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -178,12 +178,12 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     @property
-    def _pd_params(self) -> Dict[str, str]:
+    def _pd_params(self) -> dict[str, str]:
         if self._api_key:
             return {"key": self._api_key}
         return {}
 
-    def _indicator_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         pd_type  = native.get("type", "domain")
         value    = native.get("indicator", "")
         pattern  = self._make_pattern(pd_type, value)
@@ -207,7 +207,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
             "x_pd_threats":      threats,
         }
 
-    def _threat_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _threat_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "threat-actor",
             "id":                f"threat-actor--pd-{native.get('tid', '')}",

@@ -36,6 +36,10 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
+from gnat.connectors.qradar.ariel import QRadarArielCommands
+from gnat.connectors.qradar.assets import QRadarAssetCommands
+from gnat.connectors.qradar.auth import QRadarAuthManager
+from gnat.connectors.qradar.client import QRadarClient
 from gnat.connectors.qradar.config import QRadarConfig, load_qradar_config
 from gnat.connectors.qradar.exceptions import (
     QRadarAPIError,
@@ -47,25 +51,20 @@ from gnat.connectors.qradar.exceptions import (
     QRadarRateLimitError,
     QRadarSTIXError,
 )
-from gnat.connectors.qradar.auth import QRadarAuthManager
-from gnat.connectors.qradar.client import QRadarClient
+from gnat.connectors.qradar.log_sources import QRadarLogSourceCommands
 from gnat.connectors.qradar.offenses import (
     QRadarOffenseCommands,
-    _magnitude_to_severity,
     _epoch_ms_to_iso,
+    _magnitude_to_severity,
 )
-from gnat.connectors.qradar.ariel import QRadarArielCommands
 from gnat.connectors.qradar.reference_data import QRadarReferenceDataCommands
 from gnat.connectors.qradar.rules import QRadarRulesCommands
-from gnat.connectors.qradar.assets import QRadarAssetCommands
-from gnat.connectors.qradar.log_sources import QRadarLogSourceCommands
 from gnat.connectors.qradar.stix_mapper import QRadarSTIXMapper
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 def _make_config(**overrides) -> QRadarConfig:
-    defaults = dict(host="qradar.test.local", token="test-uuid-token")
+    defaults = {"host": "qradar.test.local", "token": "test-uuid-token"}
     defaults.update(overrides)
     return QRadarConfig(**defaults)
 
@@ -345,9 +344,8 @@ class TestQRadarClient(unittest.TestCase):
     def test_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"):
-            with self.assertRaises(QRadarRateLimitError):
-                client.get("siem/offenses")
+        with patch("time.sleep"), self.assertRaises(QRadarRateLimitError):
+            client.get("siem/offenses")
 
     def test_context_manager(self):
         cfg = _make_config()

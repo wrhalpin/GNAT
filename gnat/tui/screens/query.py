@@ -10,7 +10,7 @@ the screen degrades gracefully to the ``builtin`` regex parser.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -68,9 +68,9 @@ class QueryScreen(Screen):
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
-        platform: Optional[str] = None,
-        backend: Optional[str] = None,
+        config_path: str | None = None,
+        platform: str | None = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)

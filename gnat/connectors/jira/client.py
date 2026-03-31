@@ -46,7 +46,7 @@ Document Format (ADF) body derived from *stix_obj*.
 from __future__ import annotations
 
 import base64
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -75,7 +75,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         Request timeout in seconds.  Default ``30``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "note":             "issue",
         "course-of-action": "issue",
         "indicator":        "issue",
@@ -133,7 +133,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         except Exception as exc:
             raise GNATClientError(f"Jira health check failed: {exc}") from exc
 
-    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str, **kwargs: Any) -> dict[str, Any]:
         """
         Fetch a single Jira issue by key or numeric ID.
 
@@ -154,7 +154,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         limit: int = 50,
         start_at: int = 0,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search Jira issues via JQL.
 
@@ -183,10 +183,10 @@ class JiraClient(BaseClient, ConnectorMixin):
     def upsert_object(
         self,
         stix_type: str,
-        payload: Dict[str, Any],
-        issue_key: Optional[str] = None,
+        payload: dict[str, Any],
+        issue_key: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create or update a Jira issue from a STIX object or raw payload.
 
@@ -212,7 +212,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         """Delete a Jira issue by key or ID."""
         self.delete(f"{_API_V3}/issue/{object_id}")
 
-    def to_stix(self, native_object: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native_object: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Jira issue dict to STIX 2.1 ``note`` or ``course-of-action``.
 
@@ -245,7 +245,7 @@ class JiraClient(BaseClient, ConnectorMixin):
             "x_jira_assignee": (fields.get("assignee") or {}).get("displayName", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> str:
+    def from_stix(self, stix_dict: dict[str, Any]) -> str:
         """
         Convert a STIX SDO to a Jira JQL query string.
 
@@ -276,8 +276,8 @@ class JiraClient(BaseClient, ConnectorMixin):
     def annotate_ticket(
         self,
         issue_key: str,
-        stix_obj: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        stix_obj: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Attach a STIX-derived comment to an existing Jira issue.
 
@@ -310,7 +310,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         resp = self.post(f"{_API_V3}/issue/{issue_key}/comment", json={"body": body})
         return resp if isinstance(resp, dict) else {}
 
-    def search_by_label(self, label: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def search_by_label(self, label: str, limit: int = 50) -> list[dict[str, Any]]:
         """
         Return issues tagged with a specific Jira label.
 
@@ -326,7 +326,7 @@ class JiraClient(BaseClient, ConnectorMixin):
 
     # ── Private helpers ───────────────────────────────────────────────────
 
-    def _stix_to_jira(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _stix_to_jira(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Build a Jira create/update fields payload from a STIX SDO."""
         name    = payload.get("name", payload.get("id", ""))
         desc    = payload.get("description", payload.get("content", ""))
@@ -349,7 +349,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         }
 
     @staticmethod
-    def _build_adf_paragraph(text: str) -> Dict[str, Any]:
+    def _build_adf_paragraph(text: str) -> dict[str, Any]:
         """Wrap plain text in minimal Atlassian Document Format (ADF)."""
         return {
             "type":    "doc",
@@ -365,7 +365,7 @@ class JiraClient(BaseClient, ConnectorMixin):
     @staticmethod
     def _build_adf_comment(
         stix_type: str, stix_id: str, name: str, desc: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build a structured ADF comment block for a STIX annotation."""
         lines = [
             "[GNAT] Linked STIX object",
@@ -389,7 +389,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         }
 
     @staticmethod
-    def _adf_to_text(adf: Dict[str, Any]) -> str:
+    def _adf_to_text(adf: dict[str, Any]) -> str:
         """Extract plain text from an ADF document (best-effort)."""
         if not isinstance(adf, dict):
             return str(adf) if adf else ""

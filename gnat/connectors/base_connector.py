@@ -20,11 +20,10 @@ Connector clients should inherit from BOTH
 """
 
 import inspect
-from typing import Any, Callable, Dict, List, Optional
-
+from typing import Any, Callable, Optional
 
 # Standard interface methods and their read/write classification
-_STANDARD_METHODS: Dict[str, str] = {
+_STANDARD_METHODS: dict[str, str] = {
     "authenticate":   "auth",
     "health_check":   "read",
     "get_object":     "read",
@@ -61,13 +60,13 @@ class ConnectorMixin:
         codes.  Connectors should populate this at class level.
     """
 
-    stix_type_map: Dict[str, str] = {}
+    stix_type_map: dict[str, str] = {}
 
     # ------------------------------------------------------------------
     # Translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native_object: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native_object: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a platform-native object dict to STIX 2.1 format.
 
@@ -83,7 +82,7 @@ class ConnectorMixin:
         """
         raise NotImplementedError(f"{type(self).__name__}.to_stix() not implemented")
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX 2.1 dict to the platform-native request payload.
 
@@ -103,21 +102,21 @@ class ConnectorMixin:
     # CRUD
     # ------------------------------------------------------------------
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single object from the platform by type and id."""
         raise NotImplementedError(f"{type(self).__name__}.get_object() not implemented")
 
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return a list of platform objects of the given STIX type."""
         raise NotImplementedError(f"{type(self).__name__}.list_objects() not implemented")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update an object on the platform."""
         raise NotImplementedError(f"{type(self).__name__}.upsert_object() not implemented")
 
@@ -133,7 +132,7 @@ class ConnectorMixin:
     # Capability reflection
     # ------------------------------------------------------------------
 
-    def capabilities(self) -> Dict[str, Dict[str, Any]]:
+    def capabilities(self) -> dict[str, dict[str, Any]]:
         """
         Return a structured inventory of all available connector operations.
 
@@ -162,7 +161,7 @@ class ConnectorMixin:
         >>> caps["link_incident"]["platform_specific"]
         True
         """
-        result: Dict[str, Dict[str, Any]] = {}
+        result: dict[str, dict[str, Any]] = {}
         seen: set = set()
 
         # Walk the MRO so subclass methods shadow base-class stubs

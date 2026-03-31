@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import webbrowser
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -51,14 +51,14 @@ class ReportsScreen(Screen):
 
     def __init__(
         self,
-        reports_dir: Optional[str] = None,
-        config_path: Optional[str] = None,
+        reports_dir: str | None = None,
+        config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self._reports_dir = reports_dir
         self._config_path = config_path
-        self._entries: List[dict] = []
+        self._entries: list[dict] = []
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -157,7 +157,7 @@ class ReportsScreen(Screen):
         except Exception as exc:
             status.update(f"[red]{exc}[/red]")
 
-    def _resolve_reports_dir(self) -> Optional[str]:
+    def _resolve_reports_dir(self) -> str | None:
         if self._reports_dir:
             return self._reports_dir
         if self._config_path:
@@ -175,7 +175,7 @@ class ReportsScreen(Screen):
         return None
 
     @staticmethod
-    def _scan_reports_dir(reports_dir: str) -> List[dict]:
+    def _scan_reports_dir(reports_dir: str) -> list[dict]:
         """Scan a directory for PDF/HTML/DOCX files and return metadata dicts."""
         entries = []
         base = Path(reports_dir)

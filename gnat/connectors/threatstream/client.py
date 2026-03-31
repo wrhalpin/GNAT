@@ -19,7 +19,7 @@ References
 https://api.threatstream.com/optic/v2/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
@@ -41,7 +41,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         ThreatStream API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":    "intelligence",
         "threat-actor": "actor",
         "malware":      "malware",
@@ -88,7 +88,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve a single ThreatStream object by numeric ID."""
         resource = self.stix_type_map.get(stix_type, "intelligence")
         resp = self.get(
@@ -100,10 +100,10 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List ThreatStream intelligence objects.
 
@@ -115,7 +115,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         * ``modified_ts__gte``: ISO-8601 modified-after filter
         """
         resource = self.stix_type_map.get(stix_type, "intelligence")
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             **self._ts_auth,
             "limit":  min(page_size, 1000),
             "offset": (page - 1) * page_size,
@@ -130,8 +130,8 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         return resp.get("objects", [])
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Import an indicator into ThreatStream.
 
@@ -166,7 +166,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a ThreatStream intelligence object to a STIX Indicator SDO."""
         ts_type = native.get("type", "")
         value   = native.get("value", native.get("ip", native.get("domain", "")))
@@ -189,7 +189,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
             "x_ts_feed_id":      native.get("feed_id", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a ThreatStream intelligence import payload from a STIX dict."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -208,11 +208,11 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     @property
-    def _ts_auth(self) -> Dict[str, str]:
+    def _ts_auth(self) -> dict[str, str]:
         return {"username": self._username, "api_key": self._api_key}
 
     @_ts_auth.setter
-    def _ts_auth(self, value: Dict[str, str]) -> None:
+    def _ts_auth(self, value: dict[str, str]) -> None:
         # Setter exists so authenticate() can assign; values already stored
         pass
 

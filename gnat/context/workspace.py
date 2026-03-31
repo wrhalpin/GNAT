@@ -46,8 +46,10 @@ behaviour:
 from __future__ import annotations
 
 import asyncio
+import builtins
 import logging
-from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 from gnat.orm.base import STIXBase, _utcnow
 from gnat.orm.relationship import Relationship
@@ -120,7 +122,7 @@ class Workspace:
     def __init__(
         self,
         name: str,
-        registry: "GlobalContextRegistry",
+        registry: GlobalContextRegistry,
         store: Any,  # WorkspaceStore | FlatFileStore
         description: str = "",
     ):
@@ -130,13 +132,13 @@ class Workspace:
         self._store      = store
 
         # In-memory cache: stix_id → STIXBase
-        self.objects: Dict[str, STIXBase] = {}
+        self.objects: dict[str, STIXBase] = {}
         # Tracks which stix_ids have been changed since load/last-commit
         self.dirty: set = set()
         # Snapshot of objects at load time — used for diff()
-        self._snapshot: Dict[str, dict] = {}
+        self._snapshot: dict[str, dict] = {}
         # Workspace DB id (WorkspaceStore only)
-        self._ws_id: Optional[int] = None
+        self._ws_id: int | None = None
 
         self._init_store()
 
@@ -173,11 +175,11 @@ class Workspace:
     def load(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
-        source: Optional[str] = None,
+        filters: dict[str, Any] | None = None,
+        source: str | None = None,
         page_size: int = 100,
         max_pages: int = 10,
-    ) -> "Workspace":
+    ) -> Workspace:
         """
         Pull objects from a global context into this workspace.
 
@@ -224,7 +226,7 @@ class Workspace:
                     self.name, loaded, stix_type, gc.name)
         return self
 
-    def add(self, obj: STIXBase, mark_dirty: bool = True) -> "Workspace":
+    def add(self, obj: STIXBase, mark_dirty: bool = True) -> Workspace:
         """
         Add or update a STIX object in the workspace directly.
 
@@ -248,11 +250,11 @@ class Workspace:
 
     def enrich(
         self,
-        sources: Optional[List[str]] = None,
-        stix_ids: Optional[List[str]] = None,
+        sources: list[str] | None = None,
+        stix_ids: list[str] | None = None,
         strategy: str = _DEFAULT_STRATEGY,
         confidence_floor: int = 0,
-    ) -> "Workspace":
+    ) -> Workspace:
         """
         Enrich workspace objects from secondary global contexts.
 
@@ -311,11 +313,11 @@ class Workspace:
 
     async def aenrich(
         self,
-        sources: Optional[List[str]] = None,
-        stix_ids: Optional[List[str]] = None,
+        sources: list[str] | None = None,
+        stix_ids: list[str] | None = None,
         strategy: str = _DEFAULT_STRATEGY,
         confidence_floor: int = 0,
-    ) -> "Workspace":
+    ) -> Workspace:
         """
         Async version of :meth:`enrich`.  Use this inside ``async def`` functions.
 
@@ -336,8 +338,8 @@ class Workspace:
 
     async def _enrich_async(
         self,
-        source_names: List[str],
-        stix_ids: List[str],
+        source_names: list[str],
+        stix_ids: list[str],
         strategy: str,
         confidence_floor: int,
     ) -> None:
@@ -363,7 +365,7 @@ class Workspace:
 
     async def _enrich_one_async(
         self,
-        gc: "GlobalContext",
+        gc: GlobalContext,
         obj: STIXBase,
         strategy: str,
         confidence_floor: int,
@@ -395,8 +397,8 @@ class Workspace:
 
     def _enrich_sequential(
         self,
-        source_names: List[str],
-        stix_ids: List[str],
+        source_names: list[str],
+        stix_ids: list[str],
         strategy: str,
         confidence_floor: int,
     ) -> None:
@@ -487,7 +489,7 @@ class Workspace:
 
     # ── Diff ────────────────────────────────────────────────────────────────
 
-    def diff(self) -> Dict[str, Dict[str, Any]]:
+    def diff(self) -> dict[str, dict[str, Any]]:
         """
         Return a summary of changes since load or last commit.
 
@@ -502,7 +504,7 @@ class Workspace:
         >>> for stix_id, info in ws.diff().items():
         ...     print(stix_id, info["action"], info["changed_fields"])
         """
-        result: Dict[str, Dict[str, Any]] = {}
+        result: dict[str, dict[str, Any]] = {}
 
         # Added or modified
         for stix_id, obj in self.objects.items():
@@ -527,10 +529,10 @@ class Workspace:
 
     def commit(
         self,
-        target: Optional[str] = None,
+        target: str | None = None,
         dry_run: bool = False,
-        stix_ids: Optional[List[str]] = None,
-    ) -> "CommitResult":
+        stix_ids: list[str] | None = None,
+    ) -> CommitResult:
         """
         Write all dirty objects back to a global context.
 
@@ -648,7 +650,7 @@ class Workspace:
             self._store.delete_object(self.name, stix_id)
         return True
 
-    def get_enrichment_history(self, stix_id: Optional[str] = None) -> List[dict]:
+    def get_enrichment_history(self, stix_id: str | None = None) -> list[dict]:
         """Return the enrichment log for this workspace."""
         from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
@@ -697,12 +699,12 @@ class Workspace:
         if isinstance(self._store, WorkspaceStore):
             self._store.mark_clean(self._ws_id)
 
-    def _resolve_source(self, name: Optional[str]) -> "GlobalContext":
+    def _resolve_source(self, name: str | None) -> GlobalContext:
         if name:
             return self._registry.get(name)
         return self._registry.default
 
-    def _resolve_target(self, name: Optional[str]) -> "GlobalContext":
+    def _resolve_target(self, name: str | None) -> GlobalContext:
         gc = self._registry.get(name) if name else self._registry.default
         if gc.read_only:
             raise PermissionError(
@@ -714,13 +716,13 @@ class Workspace:
     @staticmethod
     def _from_dict(stix_dict: dict) -> STIXBase:
         """Reconstruct the most specific ORM class from a STIX dict."""
+        from gnat.orm.attack_pattern import AttackPattern
         from gnat.orm.base import STIXBase as stix_cls
         from gnat.orm.indicator import Indicator
         from gnat.orm.malware import Malware
-        from gnat.orm.vulnerability import Vulnerability
-        from gnat.orm.threat_actor import ThreatActor
-        from gnat.orm.attack_pattern import AttackPattern
         from gnat.orm.relationship import Relationship as rel_cls
+        from gnat.orm.threat_actor import ThreatActor
+        from gnat.orm.vulnerability import Vulnerability
         _MAP = {
             "indicator":     Indicator,
             "malware":       Malware,
@@ -761,10 +763,10 @@ class CommitResult:
         self.workspace_name  = workspace_name
         self.target_platform = target_platform
         self.dry_run         = dry_run
-        self.written:     List[str] = []
-        self.deleted:     List[str] = []
-        self.errors:      List[dict] = []
-        self.would_write: List[dict] = []
+        self.written:     list[str] = []
+        self.deleted:     list[str] = []
+        self.errors:      list[dict] = []
+        self.would_write: list[dict] = []
 
     @property
     def success(self) -> bool:
@@ -821,7 +823,7 @@ class WorkspaceManager:
 
     def __init__(
         self,
-        registry: "GlobalContextRegistry",
+        registry: GlobalContextRegistry,
         store: Any = None,
     ):
         self._registry = registry
@@ -830,9 +832,9 @@ class WorkspaceManager:
     @classmethod
     def default(
         cls,
-        config_path: Optional[str] = None,
-        db_url: Optional[str] = None,
-    ) -> "WorkspaceManager":
+        config_path: str | None = None,
+        db_url: str | None = None,
+    ) -> WorkspaceManager:
         """
         Create a WorkspaceManager with auto-configured registry and SQLite store.
 
@@ -852,10 +854,10 @@ class WorkspaceManager:
     def from_clients(
         cls,
         clients: dict,
-        default: Optional[str] = None,
-        read_only: Optional[List[str]] = None,
-        db_url: Optional[str] = None,
-    ) -> "WorkspaceManager":
+        default: str | None = None,
+        read_only: builtins.list[str] | None = None,
+        db_url: str | None = None,
+    ) -> WorkspaceManager:
         """
         Create a WorkspaceManager from a dict of connected GNATClients.
 
@@ -937,7 +939,7 @@ class WorkspaceManager:
         except KeyError:
             return self.create(name, **kwargs)
 
-    def list(self) -> List[dict]:
+    def list(self) -> builtins.list[dict]:
         """Return metadata dicts for all workspaces."""
         from gnat.context.store import WorkspaceStore
         if isinstance(self._store, WorkspaceStore):
@@ -960,7 +962,7 @@ class WorkspaceManager:
             return self._store.delete_workspace(name)
         return self._store.delete_workspace(name)
 
-    def for_tenant(self, tenant_id: str) -> "Any":
+    def for_tenant(self, tenant_id: str) -> Any:
         """
         Return a :class:`~gnat.context.tenant.TenantWorkspaceManager` scoped
         to *tenant_id*.
@@ -992,8 +994,8 @@ class WorkspaceManager:
     # ── Internal ────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _default_store(db_url: Optional[str] = None) -> Any:
-        from gnat.context.store import WorkspaceStore, FlatFileStore
+    def _default_store(db_url: str | None = None) -> Any:
+        from gnat.context.store import FlatFileStore, WorkspaceStore
         if _HAS_SQLALCHEMY := WorkspaceStore.__module__ != "builtins":
             try:
                 url   = db_url or "sqlite:///~/.gnat/workspaces.db"

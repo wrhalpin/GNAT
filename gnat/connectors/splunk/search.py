@@ -29,7 +29,7 @@ behaviour.
   """
 
 import time
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import SplunkClient
 from .exceptions import SplunkSearchError

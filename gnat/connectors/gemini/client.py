@@ -1,16 +1,18 @@
 from __future__ import annotations
-from datetime import datetime, timezone
-from typing import Any, Dict
+
 import json
+from datetime import datetime, timezone
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+
 
 class GeminiClient(BaseClient, ConnectorMixin):
     """
     GNAT Connector for Google Gemini with search-to-STIX capabilities.
     """
-    
+
     stix_type_map = {
         "report": "generate_content",
     }
@@ -29,9 +31,9 @@ class GeminiClient(BaseClient, ConnectorMixin):
         self.get("/v1beta/models")
         return True
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
-        Parses Gemini's response. Ideally, we prompt Gemini to return 
+        Parses Gemini's response. Ideally, we prompt Gemini to return
         valid STIX 2.1 JSON directly in the 'text' field.
         """
         content = native.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
@@ -51,9 +53,9 @@ class GeminiClient(BaseClient, ConnectorMixin):
                 "description": content[:500]
             }
 
-    def research_to_stix(self, concept: str) -> Dict[str, Any]:
+    def research_to_stix(self, concept: str) -> dict[str, Any]:
         """
-        Custom method: Sends a research concept to Gemini with instructions 
+        Custom method: Sends a research concept to Gemini with instructions
         to use search and return a STIX 2.1 Report.
         """
         payload = {
@@ -68,7 +70,7 @@ class GeminiClient(BaseClient, ConnectorMixin):
             }],
             "tools": [{"google_search": {}}] # Enables search grounding
         }
-        
+
         # Call Gemini's generation endpoint
         resp = self.post("/v1beta/models/gemini-2.0-flash:generateContent", json=payload)
         return self.to_stix(resp)

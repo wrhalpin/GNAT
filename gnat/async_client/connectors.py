@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import base64
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.async_client.base import AsyncBaseClient
 from gnat.clients.base import GNATClientError
@@ -57,22 +57,22 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         await self.get("/api/ping")
         return True
 
-    async def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resource = self._resolve(stix_type)
         tq_id = object_id.split("--")[-1] if "--" in object_id else object_id
         return await self.get(f"/api/{resource}/{tq_id}", params={"with": "tags,score"})
 
     async def list_objects(self, stix_type: str,
-                           filters: Optional[Dict[str, Any]] = None,
-                           page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+                           filters: dict[str, Any] | None = None,
+                           page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
         resource = self._resolve(stix_type)
-        params: Dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
+        params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         if filters:
             params.update(filters)
         resp = await self.get(f"/api/{resource}", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         resource = self._resolve(stix_type)
         tq_id = payload.pop("id", None)
         if tq_id:
@@ -84,7 +84,7 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         tq_id = object_id.split("--")[-1] if "--" in object_id else object_id
         await self.delete(f"/api/{resource}/{tq_id}")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         d = native.get("data", native)
         return {
             "type": "indicator",
@@ -97,7 +97,7 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
             "indicator_types": [d.get("class", "unknown")],
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"value": stix_dict.get("name", ""), "status": {"name": "Active"}}
 
     def _resolve(self, stix_type: str) -> str:
@@ -135,19 +135,19 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
         await self.get("/sensors/queries/installers/v1", params={"limit": 1})
         return True
 
-    async def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resp = await self.get("/indicators/entities/iocs/v1", params={"ids": object_id})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
         return resources[0] if resources else {}
 
     async def list_objects(self, stix_type: str,
-                           filters: Optional[Dict[str, Any]] = None,
-                           page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
+                           filters: dict[str, Any] | None = None,
+                           page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         resp = await self.get("/indicators/queries/iocs/v1", params=params)
         return resp.get("resources", []) if isinstance(resp, dict) else []
 
-    async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         resp = await self.post("/indicators/entities/iocs/v1",
                                json={"indicators": [payload]})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
@@ -156,7 +156,7 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
     async def delete_object(self, stix_type: str, object_id: str) -> None:
         await self.delete(f"/indicators/entities/iocs/v1?ids={object_id}")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -167,7 +167,7 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
             "modified": native.get("modified_timestamp", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"type": "ipv4", "value": stix_dict.get("name", ""),
                 "action": "detect", "severity": "medium"}
 
@@ -195,26 +195,26 @@ class AsyncProofpointClient(AsyncBaseClient, ConnectorMixin):
         await self.get("/v2/siem/all", params={"format": "json", "sinceSeconds": 60})
         return True
 
-    async def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resp = await self.get("/v2/forensics", params={"threatId": object_id})
         return resp if isinstance(resp, dict) else {}
 
     async def list_objects(self, stix_type: str,
-                           filters: Optional[Dict[str, Any]] = None,
-                           page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {"format": "json", "sinceSeconds": 3600}
+                           filters: dict[str, Any] | None = None,
+                           page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"format": "json", "sinceSeconds": 3600}
         if filters:
             params.update(filters)
         resp = await self.get("/v2/siem/all", params=params)
         return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
 
-    async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Proofpoint TAP API does not support object creation.")
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Proofpoint TAP API does not support object deletion.")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', native.get('threatId', ''))}",
@@ -224,7 +224,7 @@ class AsyncProofpointClient(AsyncBaseClient, ConnectorMixin):
             "modified": native.get("messageTime", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"threatId": stix_dict.get("id", "").split("--")[-1]}
 
 
@@ -248,19 +248,19 @@ class AsyncNetskopeClient(AsyncBaseClient, ConnectorMixin):
         await self.get("/api/v2/policy/urllist", params={"limit": 1})
         return True
 
-    async def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         return await self.get(f"/api/v2/policy/urllist/{object_id}")
 
     async def list_objects(self, stix_type: str,
-                           filters: Optional[Dict[str, Any]] = None,
-                           page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {"limit": page_size, "skip": (page - 1) * page_size}
+                           filters: dict[str, Any] | None = None,
+                           page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"limit": page_size, "skip": (page - 1) * page_size}
         if filters:
             params.update(filters)
         resp = await self.get("/api/v2/policy/urllist", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         list_id = payload.pop("id", None)
         if list_id:
             return await self.patch(f"/api/v2/policy/urllist/{list_id}", json=payload)
@@ -269,7 +269,7 @@ class AsyncNetskopeClient(AsyncBaseClient, ConnectorMixin):
     async def delete_object(self, stix_type: str, object_id: str) -> None:
         await self.delete(f"/api/v2/policy/urllist/{object_id}")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -278,7 +278,7 @@ class AsyncNetskopeClient(AsyncBaseClient, ConnectorMixin):
             "modified": native.get("modify_by", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"name": stix_dict.get("name", ""), "type": "exact", "data": {"urls": []}}
 
 
@@ -307,28 +307,28 @@ class AsyncXSOARClient(AsyncBaseClient, ConnectorMixin):
         await self.get("/health")
         return True
 
-    async def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resp = await self.post("/indicators/search",
                                json={"query": f"id:{object_id}", "size": 1})
         items = resp.get("iocObjects", []) if isinstance(resp, dict) else []
         return items[0] if items else {}
 
     async def list_objects(self, stix_type: str,
-                           filters: Optional[Dict[str, Any]] = None,
-                           page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+                           filters: dict[str, Any] | None = None,
+                           page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
         query = filters.get("query", "") if filters else ""
         resp = await self.post("/indicators/search",
                                json={"query": query, "size": page_size, "page": page - 1})
         return resp.get("iocObjects", []) if isinstance(resp, dict) else []
 
-    async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         return await self.post("/indicators/edit", json=payload)
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
         await self.post("/indicators/delete",
                         json={"id": object_id, "doNotWhitelist": False})
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -339,7 +339,7 @@ class AsyncXSOARClient(AsyncBaseClient, ConnectorMixin):
             "modified": native.get("modified", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"value": stix_dict.get("name", ""), "indicator_type": "IP", "score": 2}
 
 
@@ -364,29 +364,29 @@ class AsyncRecordedFutureClient(AsyncBaseClient, ConnectorMixin):
         await self.get("/v2/ip/search", params={"limit": 1})
         return True
 
-    async def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resource = self.stix_type_map.get(stix_type, stix_type)
         resp = await self.get(f"/v2/{resource}/{object_id}",
                               params={"fields": "entity,risk,timestamps"})
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
     async def list_objects(self, stix_type: str,
-                           filters: Optional[Dict[str, Any]] = None,
-                           page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+                           filters: dict[str, Any] | None = None,
+                           page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
         resource = self.stix_type_map.get(stix_type, stix_type)
-        params: Dict[str, Any] = {"limit": page_size, "from": (page - 1) * page_size}
+        params: dict[str, Any] = {"limit": page_size, "from": (page - 1) * page_size}
         if filters:
             params.update(filters)
         resp = await self.get(f"/v2/{resource}/search", params=params)
         return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
-    async def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Recorded Future API is read-only.")
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Recorded Future API is read-only.")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         entity = native.get("entity", {})
         risk = native.get("risk", {})
         return {
@@ -401,7 +401,7 @@ class AsyncRecordedFutureClient(AsyncBaseClient, ConnectorMixin):
             "x_rf_criticality": risk.get("criticalityLabel", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"entity": stix_dict.get("name", "")}
 
 
@@ -415,15 +415,19 @@ class AsyncGreyMatterClient(AsyncBaseClient, ConnectorMixin):
                      "malware": "malware", "vulnerability": "vulnerabilities"}
     def __init__(self, host, client_id="", client_secret="", **kw):
         super().__init__(host=host, **kw)
-        self._client_id = client_id; self._client_secret = client_secret
+        self._client_id = client_id
+        self._client_secret = client_secret
     async def authenticate(self):
         resp = await self.post("/v1/auth/token", data={
             "grant_type": "client_credentials",
             "client_id": self._client_id, "client_secret": self._client_secret})
         token = resp.get("access_token") if isinstance(resp, dict) else None
-        if not token: raise GNATClientError("AsyncGreyMatter: no token")
+        if not token:
+            raise GNATClientError("AsyncGreyMatter: no token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
-    async def health_check(self): await self.get("/v1/health"); return True
+    async def health_check(self):
+        await self.get("/v1/health")
+        return True
     async def get_object(self, t, oid): return await self.get(f"/v1/{t}/{oid.split('--')[-1]}")
     async def list_objects(self, t, f=None, page=1, ps=100):
         r = await self.get(f"/v1/{t}", params={"limit": ps, "offset": (page-1)*ps})
@@ -451,7 +455,9 @@ class AsyncWhisticClient(AsyncBaseClient, ConnectorMixin):
         super().__init__(host=host, **kw)
         self._api_key = api_key
     async def authenticate(self): self._auth_headers["X-Whistic-Token"] = self._api_key
-    async def health_check(self): await self.get("/v1/vendors", params={"limit": 1}); return True
+    async def health_check(self):
+        await self.get("/v1/vendors", params={"limit": 1})
+        return True
     async def get_object(self, t, oid):
         ep = "/v1/vendors" if t == "threat-actor" else "/v1/assessments"
         return await self.get(f"{ep}/{oid}")
@@ -478,15 +484,19 @@ class AsyncRiskReconClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"threat-actor": "companies", "vulnerability": "findings"}
     def __init__(self, host, client_id="", client_secret="", **kw):
         super().__init__(host=host, **kw)
-        self._client_id = client_id; self._client_secret = client_secret
+        self._client_id = client_id
+        self._client_secret = client_secret
     async def authenticate(self):
         resp = await self.post("/oauth2/token", data={
             "grant_type": "client_credentials",
             "client_id": self._client_id, "client_secret": self._client_secret})
         token = resp.get("access_token") if isinstance(resp, dict) else None
-        if not token: raise GNATClientError("AsyncRiskRecon: no token")
+        if not token:
+            raise GNATClientError("AsyncRiskRecon: no token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
-    async def health_check(self): await self.get("/companies", params={"limit": 1}); return True
+    async def health_check(self):
+        await self.get("/companies", params={"limit": 1})
+        return True
     async def get_object(self, t, oid): return await self.get(f"/{t}/{oid.split('--')[-1]}")
     async def list_objects(self, t, f=None, page=1, ps=100):
         r = await self.get("/companies", params={"limit": ps, "offset": (page-1)*ps})
@@ -512,10 +522,13 @@ class AsyncFeedlyClient(AsyncBaseClient, ConnectorMixin):
         super().__init__(host=host, **kw)
         self._api_token = api_token
     async def authenticate(self): self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
-    async def health_check(self): await self.get("/v3/profile"); return True
+    async def health_check(self):
+        await self.get("/v3/profile")
+        return True
     async def get_object(self, t, oid): return await self.get(f"/v3/entities/{oid}")
     async def list_objects(self, t, f=None, page=1, ps=100):
-        import time; nt = int((time.time() - 86400) * 1000)
+        import time
+        nt = int((time.time() - 86400) * 1000)
         endpoint = "/v3/enterprise/iocFeed" if t == "indicator" else "/v3/enterprise/cvesFeed"
         r = await self.get(endpoint, params={"newerThan": nt, "count": ps})
         return r.get("indicators", r.get("cves", [])) if isinstance(r, dict) else []
@@ -536,18 +549,23 @@ class AsyncSplunkClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "threat_activity", "vulnerability": "notable"}
     def __init__(self, host, api_token="", username="", password="", **kw):
         super().__init__(host=host, **kw)
-        self._api_token = api_token; self._username = username; self._password = password
+        self._api_token = api_token
+        self._username = username
+        self._password = password
     async def authenticate(self):
         if self._api_token:
-            self._auth_headers["Authorization"] = f"Bearer {self._api_token}"; return
+            self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
+            return
         resp = await self.post("/services/auth/login",
                                data={"username": self._username, "password": self._password,
                                      "output_mode": "json"})
         key = resp.get("sessionKey") if isinstance(resp, dict) else None
-        if not key: raise GNATClientError("AsyncSplunk: auth failed")
+        if not key:
+            raise GNATClientError("AsyncSplunk: auth failed")
         self._auth_headers["Authorization"] = f"Splunk {key}"
     async def health_check(self):
-        await self.get("/services/server/info", params={"output_mode": "json"}); return True
+        await self.get("/services/server/info", params={"output_mode": "json"})
+        return True
     async def get_object(self, t, oid): return {}
     async def list_objects(self, t, f=None, page=1, ps=100): return []
     async def upsert_object(self, t, p): return {}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 
 def _now_iso() -> str:
@@ -48,7 +48,7 @@ class CriblSTIXMapper:
     # Event → STIX observed-data
     # ------------------------------------------------------------------
 
-    def event_to_observed_data(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    def event_to_observed_data(self, event: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Cribl search event dict to a STIX ``observed-data`` SDO.
 
@@ -78,7 +78,7 @@ class CriblSTIXMapper:
         scos = self._extract_scos_from_event(event)
         object_refs = [s["id"] for s in scos if "id" in s]
 
-        obj: Dict[str, Any] = {
+        obj: dict[str, Any] = {
             "type": "observed-data",
             "id": self._make_id("observed-data", raw or ts),
             "created": ts,
@@ -92,7 +92,7 @@ class CriblSTIXMapper:
         }
         return obj
 
-    def _extract_scos_from_event(self, event: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_scos_from_event(self, event: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Extract STIX SCOs from common fields in a Cribl search event.
 
@@ -108,7 +108,7 @@ class CriblSTIXMapper:
         list of dict
             List of STIX SCO dicts (ipv4-addr, domain-name, url, file).
         """
-        scos: List[Dict[str, Any]] = []
+        scos: list[dict[str, Any]] = []
 
         for field in ("ip", "src_ip", "dest_ip"):
             val = event.get(field)
@@ -142,7 +142,7 @@ class CriblSTIXMapper:
                 }
             )
 
-        hashes: Dict[str, str] = {}
+        hashes: dict[str, str] = {}
         if event.get("md5"):
             hashes["MD5"] = str(event["md5"])
         if event.get("sha256"):
@@ -167,7 +167,7 @@ class CriblSTIXMapper:
     # Pipeline → STIX course-of-action
     # ------------------------------------------------------------------
 
-    def pipeline_to_course_of_action(self, pipeline: Dict[str, Any]) -> Dict[str, Any]:
+    def pipeline_to_course_of_action(self, pipeline: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Cribl pipeline config dict to a STIX ``course-of-action`` SDO.
 
@@ -205,7 +205,7 @@ class CriblSTIXMapper:
     # STIX indicator → Cribl lookup config
     # ------------------------------------------------------------------
 
-    def stix_indicator_to_lookup(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def stix_indicator_to_lookup(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX ``indicator`` SDO to a Cribl lookup configuration dict.
 
@@ -239,7 +239,7 @@ class CriblSTIXMapper:
     # Dispatch helpers
     # ------------------------------------------------------------------
 
-    def node_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def node_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Dispatch a Cribl native object to the appropriate STIX conversion.
 
@@ -264,7 +264,7 @@ class CriblSTIXMapper:
             "data": native,
         }
 
-    def stix_to_native(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def stix_to_native(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX object to a Cribl-native representation.
 
@@ -288,7 +288,7 @@ class CriblSTIXMapper:
 # Module-level helpers
 # ------------------------------------------------------------------
 
-def _extract_fields_from_pattern(pattern: str) -> List[str]:
+def _extract_fields_from_pattern(pattern: str) -> list[str]:
     """
     Extract observable field names from a STIX pattern string.
 
@@ -302,7 +302,7 @@ def _extract_fields_from_pattern(pattern: str) -> List[str]:
     list of str
         List of field names found in the pattern.
     """
-    fields: List[str] = []
+    fields: list[str] = []
     matches = re.findall(r"(\w[\w.:-]*)\s*=", pattern)
     for m in matches:
         if m not in fields:

@@ -49,7 +49,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -74,7 +74,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         Google Cloud project ID (auto-detected from key if possible).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "udm_events",
         "indicator": "detections",
         "incident": "incidents",
@@ -84,7 +84,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
     def __init__(
         self,
         host: str = "https://backstory.googleapis.com",
-        service_account: str | Dict[str, Any] = "",
+        service_account: str | dict[str, Any] = "",
         project_id: str = "",
         **kwargs: Any,
     ):
@@ -95,8 +95,8 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         else:
             self._sa_key = service_account or {}
         self._project_id = project_id or self._sa_key.get("project_id", "")
-        self._token: Optional[str] = None
-        self._token_expiry: Optional[datetime] = None
+        self._token: str | None = None
+        self._token_expiry: datetime | None = None
 
     # ── Authentication ─────────────────────────────────────────────────────
 
@@ -123,10 +123,10 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search UDM events, list detections, or rules.
 
@@ -144,7 +144,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"list_objects support for {stix_type} in Google Chronicle is partial — extend as needed.")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Limited write (e.g., update detection rule or incident comment)."""
         raise GNATClientError("Write operations in Google Chronicle are limited; extend for specific use cases (e.g., rule updates).")
 
@@ -156,10 +156,10 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
     def search_udm(
         self,
         query: str = "",
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Powerful UDM event search (core SIEM capability)."""
         params = {
             "query": query,
@@ -169,14 +169,14 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         resp = self.get("/v2/events:search", params=params)  # Adjust exact path per docs
         return resp.get("events", []) if isinstance(resp, dict) else []
 
-    def list_detections(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def list_detections(self, limit: int = 100) -> list[dict[str, Any]]:
         """List detection rules or alerts."""
         resp = self.get("/v1/detections", params={"pageSize": limit})
         return resp.get("detections", []) if isinstance(resp, dict) else []
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate Chronicle UDM event or detection to STIX 2.1.
 
@@ -198,14 +198,14 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
             "x_chronicle": native,
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Prepare payload for limited writes."""
         return {
             "note": "Google Chronicle from_stix prepares rule/incident update payload.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _udm_event_to_stix(self, event: Dict[str, Any], now: str) -> Dict[str, Any]:
+    def _udm_event_to_stix(self, event: dict[str, Any], now: str) -> dict[str, Any]:
         """Map UDM event to STIX observed-data."""
         event_id = event.get("id") or event.get("metadata", {}).get("eventId", "")
         return {

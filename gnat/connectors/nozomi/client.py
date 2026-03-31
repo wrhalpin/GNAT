@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -78,7 +78,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         Optional password for Basic auth.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":      "alerts",
         "vulnerability":  "vulnerabilities",
         "infrastructure": "nodes",
@@ -118,7 +118,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         self.get("/api/open/query/do", params={"query": "alerts", "limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single Nozomi object by STIX type and ID."""
         if stix_type == "indicator":
             resp = self.get(f"/api/open/alerts/{object_id}")
@@ -145,10 +145,10 @@ class NozomiClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Nozomi alerts, vulnerabilities, or nodes."""
         f = filters or {}
         resource = self.stix_type_map.get(stix_type, "alerts")
@@ -160,7 +160,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         if "type_name" in f:
             query += f" | where type_name=={f['type_name']}"
 
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "query": query,
             "limit": page_size,
             "page": page - 1,
@@ -170,11 +170,11 @@ class NozomiClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("result", [])
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Acknowledge or update a Nozomi alert."""
         if stix_type == "indicator":
             alert_id = payload.get("id", "")
-            body: Dict[str, Any] = {}
+            body: dict[str, Any] = {}
             if "status" in payload:
                 body["status"] = payload["status"]
             if "ack" in payload:
@@ -198,9 +198,9 @@ class NozomiClient(BaseClient, ConnectorMixin):
 
     def get_nodes(
         self,
-        node_type: Optional[str] = None,
+        node_type: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return OT/IoT asset nodes from the Nozomi inventory."""
         query = "nodes"
         if node_type:
@@ -208,7 +208,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/open/query/do", params={"query": query, "limit": limit})
         return resp.get("result", []) if isinstance(resp, dict) else []
 
-    def get_sessions(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_sessions(self, limit: int = 100) -> list[dict[str, Any]]:
         """Retrieve recent network sessions observed by Nozomi."""
         resp = self.get("/api/open/query/do",
                         params={"query": "sessions", "limit": limit})
@@ -216,10 +216,10 @@ class NozomiClient(BaseClient, ConnectorMixin):
 
     def get_vulnerabilities(
         self,
-        cve_id: Optional[str] = None,
-        severity: Optional[str] = None,
+        cve_id: str | None = None,
+        severity: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retrieve CVE vulnerability data from Nozomi."""
         query = "vulnerabilities"
         if cve_id:
@@ -229,12 +229,12 @@ class NozomiClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/open/query/do", params={"query": query, "limit": limit})
         return resp.get("result", []) if isinstance(resp, dict) else []
 
-    def acknowledge_alert(self, alert_id: str) -> Dict[str, Any]:
+    def acknowledge_alert(self, alert_id: str) -> dict[str, Any]:
         """Acknowledge a specific Nozomi alert."""
         resp = self.patch(f"/api/open/alerts/{alert_id}", json={"ack": True})
         return resp if isinstance(resp, dict) else {}
 
-    def get_network_protocols(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_network_protocols(self, limit: int = 100) -> list[dict[str, Any]]:
         """Return observed OT/IT network protocols."""
         resp = self.get("/api/open/query/do",
                         params={"query": "protocols", "limit": limit})
@@ -242,7 +242,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Nozomi object to STIX."""
         if "cve_id" in native or "cvss_score" in native:
             return self._vuln_to_stix(native)
@@ -250,7 +250,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
             return self._node_to_stix(native)
         return self._alert_to_stix(native)
 
-    def _alert_to_stix(self, alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"nozomi-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -272,7 +272,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
             pattern = f"[file:name = 'nozomi-alert-{alert_id[:32]}']"
 
         sectors = alert.get("x_target_sectors", [])
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{uid}",
             "name": alert.get("name", alert.get("type_name", f"Nozomi Alert {alert_id}")),
@@ -299,7 +299,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = sectors
         return stix
 
-    def _vuln_to_stix(self, vuln: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
         cve_id = vuln.get("cve_id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"nozomi-cve-{cve_id}"))
         ts = vuln.get("published_date", _now_ts())
@@ -326,7 +326,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _node_to_stix(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _node_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
         node_id = str(node.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"nozomi-node-{node_id}"))
         ts = _now_ts()
@@ -352,7 +352,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract Nozomi-compatible fields from a STIX dict."""
         return {
             "name": stix_dict.get("name", ""),

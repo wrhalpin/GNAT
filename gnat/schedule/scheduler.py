@@ -90,8 +90,9 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from collections.abc import Iterator
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterator, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 from gnat.schedule.job import FeedJob, RunRecord, _utcnow
 
@@ -145,11 +146,11 @@ class FeedScheduler:
         self,
         max_workers: int = 16,
         default_jitter_seconds: float = 0.0,
-        on_job_error: Optional[Callable[[str, Exception], None]] = None,
+        on_job_error: Callable[[str, Exception], None] | None = None,
     ):
-        self._jobs:    Dict[str, FeedJob]    = {}
-        self._threads: Dict[str, threading.Thread] = {}
-        self._stop_events: Dict[str, threading.Event] = {}
+        self._jobs:    dict[str, FeedJob]    = {}
+        self._threads: dict[str, threading.Thread] = {}
+        self._stop_events: dict[str, threading.Event] = {}
         self._max_workers = max_workers
         self._jitter      = default_jitter_seconds
         self._on_job_error = on_job_error
@@ -158,7 +159,7 @@ class FeedScheduler:
 
     # ── Job management ─────────────────────────────────────────────────────
 
-    def add(self, job: FeedJob) -> "FeedScheduler":
+    def add(self, job: FeedJob) -> FeedScheduler:
         """
         Register a job.  If the scheduler is already running, the job
         thread starts immediately.
@@ -207,7 +208,7 @@ class FeedScheduler:
         logger.info("FeedScheduler: removed %r", job_id)
         return True
 
-    def replace(self, job: FeedJob) -> "FeedScheduler":
+    def replace(self, job: FeedJob) -> FeedScheduler:
         """
         Replace an existing job with a new definition (stops old thread,
         starts new one).  If the job_id is not registered, behaves like
@@ -242,7 +243,7 @@ class FeedScheduler:
 
     # ── Lifecycle ──────────────────────────────────────────────────────────
 
-    def start(self, run_immediately: bool = False) -> "FeedScheduler":
+    def start(self, run_immediately: bool = False) -> FeedScheduler:
         """
         Start the scheduler — launches background threads for all registered jobs.
 
@@ -290,7 +291,7 @@ class FeedScheduler:
             self._signal_stop(job_id, join_timeout=timeout)
         logger.info("FeedScheduler: stopped")
 
-    def __enter__(self) -> "FeedScheduler":
+    def __enter__(self) -> FeedScheduler:
         self.start()
         return self
 
@@ -321,7 +322,7 @@ class FeedScheduler:
         logger.info("FeedScheduler: manual trigger of %r", job_id)
         return job.execute(scheduled_at=_utcnow())
 
-    def run_all_now(self, parallel: bool = False) -> Dict[str, RunRecord]:
+    def run_all_now(self, parallel: bool = False) -> dict[str, RunRecord]:
         """
         Execute all registered enabled jobs immediately.
 
@@ -339,7 +340,7 @@ class FeedScheduler:
         """
         enabled_jobs  = [j for j in self._jobs.values() if j.enabled]
         disabled_jobs = [j for j in self._jobs.values() if not j.enabled]
-        results: Dict[str, RunRecord] = {
+        results: dict[str, RunRecord] = {
             j.job_id: j._skipped_record() for j in disabled_jobs
         }
         jobs = enabled_jobs
@@ -350,7 +351,7 @@ class FeedScheduler:
             return results
 
         threads = []
-        run_results: Dict[str, RunRecord] = {}
+        run_results: dict[str, RunRecord] = {}
         lock = threading.Lock()
 
         def _run(j: FeedJob) -> None:
@@ -368,7 +369,7 @@ class FeedScheduler:
 
     # ── Introspection ──────────────────────────────────────────────────────
 
-    def statuses(self) -> List[dict]:
+    def statuses(self) -> list[dict]:
         """
         Return a list of status dicts for all registered jobs.
 
@@ -376,11 +377,11 @@ class FeedScheduler:
         """
         return [job.status_dict() for job in self._jobs.values()]
 
-    def healthy_jobs(self) -> List[FeedJob]:
+    def healthy_jobs(self) -> list[FeedJob]:
         """Return all jobs whose last run was successful or have never run."""
         return [j for j in self._jobs.values() if j.is_healthy]
 
-    def failing_jobs(self) -> List[FeedJob]:
+    def failing_jobs(self) -> list[FeedJob]:
         """Return all jobs with at least one consecutive failure."""
         return [j for j in self._jobs.values() if not j.is_healthy]
 
@@ -422,8 +423,8 @@ class FeedScheduler:
         """
         try:
             from apscheduler.schedulers.blocking import BlockingScheduler
-            from apscheduler.triggers.interval import IntervalTrigger
             from apscheduler.triggers.cron import CronTrigger
+            from apscheduler.triggers.interval import IntervalTrigger
         except ImportError:
             raise ImportError(
                 "apscheduler is required: pip install apscheduler"
@@ -448,7 +449,7 @@ class FeedScheduler:
         )
         return aps
 
-    def to_celery_tasks(self, celery_app: Any) -> Dict[str, Any]:
+    def to_celery_tasks(self, celery_app: Any) -> dict[str, Any]:
         """
         Register all jobs as Celery periodic tasks.
 
@@ -472,8 +473,8 @@ class FeedScheduler:
             app = Celery("gnat", broker="redis://localhost/0")
             tasks = scheduler.to_celery_tasks(app)
         """
-        task_map: Dict[str, Any] = {}
-        beat_schedule: Dict[str, dict] = {}
+        task_map: dict[str, Any] = {}
+        beat_schedule: dict[str, dict] = {}
 
         for job in self._jobs.values():
             task_name = f"gnat.feed.{job.job_id}"
@@ -649,7 +650,7 @@ class FeedScheduler:
                     except Exception:  # noqa: BLE001
                         pass
 
-    def _next_trigger(self, job: FeedJob) -> Optional[datetime]:
+    def _next_trigger(self, job: FeedJob) -> datetime | None:
         """
         Compute the *next* wall-clock trigger time for a job.
 

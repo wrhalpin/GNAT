@@ -17,7 +17,7 @@ INI config::
 """
 
 import base64
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -26,7 +26,7 @@ _TOKEN_PATH = "/token"
 _V4 = "/v4"
 
 # Map STIX types → Mandiant collection names
-_STIX_TO_ENDPOINT: Dict[str, str] = {
+_STIX_TO_ENDPOINT: dict[str, str] = {
     "indicator":    "indicator",
     "threat-actor": "actor",
     "malware":      "malware",
@@ -49,7 +49,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         Mandiant API secret (used as OAuth2 ``client_secret``).
     """
 
-    stix_type_map: Dict[str, str] = _STIX_TO_ENDPOINT
+    stix_type_map: dict[str, str] = _STIX_TO_ENDPOINT
 
     def __init__(
         self,
@@ -103,7 +103,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
 
     def get_object(
         self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retrieve a single Mandiant object by type and ID/value."""
         collection = _STIX_TO_ENDPOINT.get(stix_type, "indicator")
         resp = self.get(f"{_V4}/{collection}/{object_id}")
@@ -112,10 +112,10 @@ class MandiantClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List Mandiant objects.
 
@@ -126,7 +126,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         * ``type``: indicator type filter (``"ipv4"``, ``"domain"``, etc.)
         """
         collection = _STIX_TO_ENDPOINT.get(stix_type, "indicator")
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  min(page_size, 1000),
             "offset": (page - 1) * page_size,
         }
@@ -141,8 +141,8 @@ class MandiantClient(BaseClient, ConnectorMixin):
         return items if isinstance(items, list) else []
 
     def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stix_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Mandiant Advantage API is read-only for most tiers.
 
@@ -163,7 +163,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Mandiant API object to a STIX dict.
 
@@ -178,7 +178,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
             return self._vuln_to_stix(native)
         return self._indicator_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a Mandiant-compatible query dict derived from a STIX object."""
         import re
         pattern = stix_dict.get("pattern", "")
@@ -190,7 +190,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _indicator_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         value   = native.get("value", native.get("name", ""))
         mi_type = native.get("type", "")
         pattern = self._make_pattern(mi_type, value)
@@ -211,7 +211,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
             "x_mandiant_mscore": mscore,
         }
 
-    def _actor_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "threat-actor",
             "id":                f"threat-actor--mti-{native.get('id', '')}",
@@ -224,7 +224,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
             "x_mandiant_id":     native.get("id", ""),
         }
 
-    def _malware_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _malware_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "malware",
             "id":                f"malware--mti-{native.get('id', '')}",
@@ -238,7 +238,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
             "x_mandiant_id":     native.get("id", ""),
         }
 
-    def _vuln_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
             "type":              "vulnerability",
             "id":                f"vulnerability--mti-{native.get('id', '')}",

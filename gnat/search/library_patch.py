@@ -25,7 +25,7 @@ Add these into the existing ResearchLibrary class body.
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gnat.research.entry import ResearchEntry
@@ -46,7 +46,7 @@ class _ResearchLibrarySearchPatch:
 
     # --- Change 1: accept search_index in __init__ ---
 
-    def _init_search(self, search_index: Optional["SearchIndex"] = None) -> None:
+    def _init_search(self, search_index: SearchIndex | None = None) -> None:
         """
         Call at the end of ResearchLibrary.__init__::
 
@@ -58,7 +58,7 @@ class _ResearchLibrarySearchPatch:
             self._search_index = search_index
         else:
             from gnat.search.index import NullSearchIndex
-            self._search_index: "SearchIndex" = NullSearchIndex()
+            self._search_index: SearchIndex = NullSearchIndex()
 
     # --- Change 2: updated search() dispatcher ---
 
@@ -68,7 +68,7 @@ class _ResearchLibrarySearchPatch:
         include_stale: bool = False,
         include_staging: bool = False,
         limit: int = 50,
-    ) -> List["ResearchEntry"]:
+    ) -> list[ResearchEntry]:
         """
         Search the library for entries matching a query string.
 
@@ -113,7 +113,7 @@ class _ResearchLibrarySearchPatch:
         include_stale: bool = False,
         include_staging: bool = False,
         limit: int = 50,
-    ) -> List["ResearchEntry"]:
+    ) -> list[ResearchEntry]:
         """
         Solr-backed search path.
 
@@ -127,7 +127,7 @@ class _ResearchLibrarySearchPatch:
         stix_ids = self._search_index.search(query, limit=limit * 2)
         # limit * 2 over-fetches to account for stale filtering
 
-        entries: List["ResearchEntry"] = []
+        entries: list[ResearchEntry] = []
         for stix_id in stix_ids:
             entry = self._entry_by_stix_id(stix_id, include_staging)
             if entry is None:
@@ -143,7 +143,7 @@ class _ResearchLibrarySearchPatch:
         self,
         stix_id: str,
         include_staging: bool,
-    ) -> Optional["ResearchEntry"]:
+    ) -> ResearchEntry | None:
         """
         Look up a ResearchEntry by STIX object ID.
 
@@ -173,7 +173,7 @@ class _ResearchLibrarySearchPatch:
 
     # --- Change 3: index on promote ---
 
-    def _index_entry_objects(self, entry: "ResearchEntry") -> None:
+    def _index_entry_objects(self, entry: ResearchEntry) -> None:
         """
         Index all STIX objects from a ResearchEntry into the search sidecar.
 
@@ -204,7 +204,7 @@ class _ResearchLibrarySearchPatch:
     # --- Factory update ---
 
     @classmethod
-    def _build_search_index_from_config(cls) -> "SearchIndex":
+    def _build_search_index_from_config(cls) -> SearchIndex:
         """
         Called from ResearchLibrary.default() to get the configured index.
 

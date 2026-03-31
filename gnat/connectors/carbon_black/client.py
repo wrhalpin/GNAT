@@ -56,7 +56,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -84,7 +84,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         Connector/API ID that accompanies the ``api_key``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":     "alerts",
         "malware":       "processes",
         "vulnerability": "devices",
@@ -123,7 +123,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
                  params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single alert or device by ID."""
         if stix_type == "indicator":
             resp = self.get(
@@ -158,23 +158,23 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List CBC alerts, devices, or processes."""
         f = filters or {}
         start = (page - 1) * page_size
 
         if stix_type == "indicator":
-            criteria: Dict[str, Any] = {}
+            criteria: dict[str, Any] = {}
             if "minimum_severity" in f:
                 criteria["minimum_severity"] = f["minimum_severity"]
             if "device_os" in f:
                 criteria["device_os"] = [f["device_os"]]
             if "type" in f:
                 criteria["type"] = [f["type"]]
-            body: Dict[str, Any] = {
+            body: dict[str, Any] = {
                 "criteria": criteria,
                 "rows": page_size,
                 "start": start,
@@ -186,7 +186,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
             return resp.get("results", []) if isinstance(resp, dict) else []
 
         if stix_type == "vulnerability":
-            params: Dict[str, Any] = {"rows": page_size, "start": start}
+            params: dict[str, Any] = {"rows": page_size, "start": start}
             if "os" in f:
                 params["os"] = f["os"]
             if "status" in f:
@@ -213,7 +213,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
 
         raise GNATClientError(f"Unsupported STIX type for Carbon Black: {stix_type}")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Dismiss an alert or create a watchlist entry."""
         if stix_type == "indicator":
             alert_id = payload.get("id", payload.get("alert_id", ""))
@@ -241,7 +241,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
-    def get_watchlists(self) -> List[Dict[str, Any]]:
+    def get_watchlists(self) -> list[dict[str, Any]]:
         """Return all watchlists for the organization."""
         resp = self.get(
             f"/threathunter/watchlistmgr/v3/orgs/{self._org_key}/watchlists"
@@ -249,7 +249,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         return resp.get("results", []) if isinstance(resp, dict) else []
 
     def create_watchlist(self, name: str, description: str = "",
-                         tags_enabled: bool = True) -> Dict[str, Any]:
+                         tags_enabled: bool = True) -> dict[str, Any]:
         """Create a new CBC watchlist."""
         resp = self.post(
             f"/threathunter/watchlistmgr/v3/orgs/{self._org_key}/watchlists",
@@ -264,12 +264,12 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
 
     def get_devices(
         self,
-        os: Optional[str] = None,
-        status: Optional[str] = None,
+        os: str | None = None,
+        status: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retrieve managed endpoints from CBC."""
-        params: Dict[str, Any] = {"rows": limit}
+        params: dict[str, Any] = {"rows": limit}
         if os:
             params["os"] = os
         if status:
@@ -279,7 +279,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         )
         return resp.get("results", []) if isinstance(resp, dict) else []
 
-    def quarantine_device(self, device_id: str) -> Dict[str, Any]:
+    def quarantine_device(self, device_id: str) -> dict[str, Any]:
         """Toggle quarantine on a CBC-managed device."""
         resp = self.post(
             f"/appservices/v6/orgs/{self._org_key}/device_actions",
@@ -296,7 +296,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         query: str = "*",
         rows: int = 100,
         start: int = 0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Submit a process-level threat hunt query."""
         resp = self.post(
             f"/api/investigate/v2/orgs/{self._org_key}/processes/search_jobs",
@@ -315,7 +315,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         self,
         alert_id: str,
         rows: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retrieve observations associated with a specific CBC alert."""
         resp = self.post(
             f"/api/investigate/v2/orgs/{self._org_key}/observations/search_jobs",
@@ -332,7 +332,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a CBC alert, device, or process to STIX."""
         if "type" in native and native.get("type") in (
             "CB_ANALYTICS", "WATCHLIST", "DEVICE_CONTROL", "INTRUSION_DETECTION_SYSTEM"
@@ -345,7 +345,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         # Default: treat as alert
         return self._alert_to_stix(native)
 
-    def _alert_to_stix(self, alert: Dict[str, Any]) -> Dict[str, Any]:
+    def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"cbc-alert-{alert_id}"))
         severity_map = {10: 90, 9: 85, 8: 75, 7: 65, 6: 55, 5: 50,
@@ -366,7 +366,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
             pattern = f"[file:name = 'cbc-alert-{alert_id[:32]}']"
 
         sectors = alert.get("x_target_sectors", [])
-        stix: Dict[str, Any] = {
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{uid}",
             "name": alert.get("reason", f"CBC Alert {alert_id}"),
@@ -396,7 +396,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = sectors
         return stix
 
-    def _device_to_stix(self, device: Dict[str, Any]) -> Dict[str, Any]:
+    def _device_to_stix(self, device: dict[str, Any]) -> dict[str, Any]:
         device_id = str(device.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"cbc-device-{device_id}"))
         ts = device.get("last_contact_time", _now_ts())
@@ -424,7 +424,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _process_to_stix(self, process: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_to_stix(self, process: dict[str, Any]) -> dict[str, Any]:
         proc_guid = process.get("process_guid", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"cbc-process-{proc_guid}"))
         sha256 = process.get("process_sha256", "")
@@ -448,7 +448,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Extract Carbon Black-compatible fields from a STIX dict."""
         return {
             "threat_id": stix_dict.get("id", "").replace("indicator--", ""),

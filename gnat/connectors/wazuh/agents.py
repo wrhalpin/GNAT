@@ -28,7 +28,7 @@ lastKeepAlive, registerIP, dateAdd, group, manager, node_name
 - https://documentation.wazuh.com/current/user-manual/api/reference.html#tag/Agents
   """
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import WazuhClient
 from .exceptions import WazuhNotFoundError

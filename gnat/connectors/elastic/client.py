@@ -45,19 +45,20 @@ with ElasticClient(cfg) as client:
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import ElasticAuthManager
 from .config import ElasticConfig
 from .exceptions import (
-ElasticAPIError,
-ElasticAuthError,
-ElasticConflictError,
-ElasticKibanaError,
-ElasticKibanaNotFoundError,
-ElasticKibanaValidationError,
-ElasticNotFoundError,
-ElasticRateLimitError,
+    ElasticAPIError,
+    ElasticAuthError,
+    ElasticConflictError,
+    ElasticKibanaError,
+    ElasticKibanaNotFoundError,
+    ElasticKibanaValidationError,
+    ElasticNotFoundError,
+    ElasticRateLimitError,
 )
 
 _RETRYABLE_STATUS = {500, 502, 503, 504}

@@ -1,19 +1,25 @@
 """tests for Security Onion connector"""
-import json, time, unittest
+import configparser
+import json
+import time
+import unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.security_onion import (
-    SecurityOnionConfig, SecurityOnionConfigError, SecurityOnionAuthError,
+    SecurityOnionAlertCommands,
+    SecurityOnionAuthError,
+    SecurityOnionCaseCommands,
+    SecurityOnionClient,
+    SecurityOnionConfig,
+    SecurityOnionConfigError,
     SecurityOnionNotFoundError,
-    SecurityOnionClient, SecurityOnionAlertCommands, SecurityOnionCaseCommands,
     SecurityOnionSTIXMapper,
     load_security_onion_config,
 )
-import configparser
 
 
 def _cfg(**kw):
-    d = dict(url="https://so.test", username="admin", password="pass")
+    d = {"url": "https://so.test", "username": "admin", "password": "pass"}
     d.update(kw)
     return SecurityOnionConfig(**d)
 

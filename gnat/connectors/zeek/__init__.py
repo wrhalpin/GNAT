@@ -45,14 +45,13 @@ Configuration (gnat.ini):
 """
 
 import configparser
+import contextlib
 import json
 import os
-
-from dataclasses import dataclass
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime, timezone
-
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
@@ -145,7 +144,7 @@ class ZeekTSVReader:
         """
         log_path = path or self.config.log_path(log_name)
         try:
-            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(log_path, encoding="utf-8", errors="replace") as f:
                 fields: list[str] = []
                 separator = "\t"
                 unset = "-"
@@ -195,7 +194,7 @@ class ZeekJSONReader:
     ) -> Iterator[dict]:
         log_path = path or self.config.log_path(log_name)
         try:
-            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(log_path, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -337,7 +336,8 @@ class ZeekSTIXMapper:
                        "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
                        "spec_version": "2.1", "value": ip}
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         src_p = notice.get("src_port")
@@ -354,12 +354,13 @@ class ZeekSTIXMapper:
                     "protocols": [str(notice.get("proto", "tcp")).lower()],
                 }
                 if src_p:
-                    try: nt["src_port"] = int(src_p)
-                    except (TypeError, ValueError): pass
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["src_port"] = int(src_p)
                 if dst_p:
-                    try: nt["dst_port"] = int(dst_p)
-                    except (TypeError, ValueError): pass
-                objects.append(nt); refs.append(nid)
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["dst_port"] = int(dst_p)
+                objects.append(nt)
+                refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         objects.append({
@@ -395,11 +396,13 @@ class ZeekSTIXMapper:
                        "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
                        "spec_version": "2.1", "value": ip}
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         if src and dst:
-            sp = conn.get("src_port"); dp = conn.get("dst_port")
+            sp = conn.get("src_port")
+            dp = conn.get("dst_port")
             key = f"{src}:{sp}-{dst}:{dp}"
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
             if nid not in seen:
@@ -411,18 +414,19 @@ class ZeekSTIXMapper:
                     "protocols": [str(conn.get("proto", "tcp")).lower()],
                 }
                 if sp:
-                    try: nt["src_port"] = int(sp)
-                    except (TypeError, ValueError): pass
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["src_port"] = int(sp)
                 if dp:
-                    try: nt["dst_port"] = int(dp)
-                    except (TypeError, ValueError): pass
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["dst_port"] = int(dp)
                 if conn.get("orig_bytes"):
-                    try: nt["src_byte_count"] = int(conn["orig_bytes"])
-                    except (TypeError, ValueError): pass
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["src_byte_count"] = int(conn["orig_bytes"])
                 if conn.get("resp_bytes"):
-                    try: nt["dst_byte_count"] = int(conn["resp_bytes"])
-                    except (TypeError, ValueError): pass
-                objects.append(nt); refs.append(nid)
+                    with contextlib.suppress(TypeError, ValueError):
+                        nt["dst_byte_count"] = int(conn["resp_bytes"])
+                objects.append(nt)
+                refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         objects.append({
@@ -447,7 +451,8 @@ class ZeekSTIXMapper:
         for n in notices:
             for obj in self.notice_to_stix_bundle(n).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
         return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
                 "spec_version": "2.1", "objects": all_objects}
 

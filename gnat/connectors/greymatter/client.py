@@ -44,7 +44,7 @@ GreyMatter exposes a REST API under ``/v1``.  Key resources:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -66,7 +66,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         Verify TLS.  Default ``True``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":      "observables",
         "threat-actor":   "threat-actors",
         "malware":        "malware",
@@ -75,7 +75,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     }
 
     # GreyMatter observable type → STIX pattern template
-    _OBS_PATTERN: Dict[str, str] = {
+    _OBS_PATTERN: dict[str, str] = {
         "ipv4":   "[ipv4-addr:value = '{v}']",
         "ipv6":   "[ipv6-addr:value = '{v}']",
         "domain": "[domain-name:value = '{v}']",
@@ -128,7 +128,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         self.get("/v1/health")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single GreyMatter object by id.
 
@@ -146,10 +146,10 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List GreyMatter objects of a given STIX type.
 
@@ -159,7 +159,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             GreyMatter query filters (e.g. ``{"type": "ipv4", "tag": "apt28"}``).
         """
         resource = self._resolve(stix_type)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  page_size,
             "offset": (page - 1) * page_size,
         }
@@ -168,9 +168,9 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/v1/{resource}", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any],
-                      linked_cases: Optional[List[str]] = None,
-                      **kwargs: Any) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any],
+                      linked_cases: list[str] | None = None,
+                      **kwargs: Any) -> dict[str, Any]:
         """
         Create or update a GreyMatter object.
 
@@ -199,7 +199,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a GreyMatter observable/entity dict to STIX 2.1.
 
@@ -229,7 +229,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             "x_tlp":           data.get("tlp", "white"),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX Indicator dict to a GreyMatter observable payload.
         """
@@ -250,8 +250,8 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     def link_investigation(
         self,
         case_id: str,
-        stix_obj: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        stix_obj: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Link a STIX object to an existing GreyMatter investigation (case).
 
@@ -308,14 +308,22 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     @staticmethod
     def _infer_gm_type(pattern: str) -> str:
         pattern = pattern.lower()
-        if "ipv4-addr"   in pattern: return "ipv4"
-        if "ipv6-addr"   in pattern: return "ipv6"
-        if "domain-name" in pattern: return "domain"
-        if "url:"        in pattern: return "url"
-        if "sha-256"     in pattern: return "sha256"
-        if "sha-1"       in pattern: return "sha1"
-        if "md5"         in pattern: return "md5"
-        if "email-addr"  in pattern: return "email"
+        if "ipv4-addr"   in pattern:
+            return "ipv4"
+        if "ipv6-addr"   in pattern:
+            return "ipv6"
+        if "domain-name" in pattern:
+            return "domain"
+        if "url:"        in pattern:
+            return "url"
+        if "sha-256"     in pattern:
+            return "sha256"
+        if "sha-1"       in pattern:
+            return "sha1"
+        if "md5"         in pattern:
+            return "md5"
+        if "email-addr"  in pattern:
+            return "email"
         return "unknown"
 
     @staticmethod

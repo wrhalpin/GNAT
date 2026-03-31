@@ -30,9 +30,9 @@ References
 - https://learn.microsoft.com/en-us/rest/api/securityinsights/incidents
 """
 
-from typing import Iterator
-from .client import SentinelClient
+from collections.abc import Iterator
 
+from .client import SentinelClient
 
 _SEVERITY_MAP = {"High": 4, "Medium": 3, "Low": 2, "Informational": 1}
 
@@ -151,7 +151,7 @@ class SentinelIncidentCommands:
             "description": description,
         }
         if labels:
-            props["labels"] = [{"labelName": l} for l in labels]
+            props["labels"] = [{"labelName": lbl} for lbl in labels]
         if owner_upn:
             props["owner"] = {"assignedTo": owner_upn}
         return self._client.put(
@@ -255,7 +255,7 @@ class SentinelIncidentCommands:
             "modified": props.get("lastModifiedTimeUtc"),
             "first_activity": props.get("firstActivityTimeUtc"),
             "last_activity": props.get("lastActivityTimeUtc"),
-            "labels": [l.get("labelName", "") for l in props.get("labels", [])],
+            "labels": [lbl.get("labelName", "") for lbl in props.get("labels", [])],
             "alert_count": props.get("additionalData", {}).get("alertsCount", 0),
             "_raw": incident,
         }

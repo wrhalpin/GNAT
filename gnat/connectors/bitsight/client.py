@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -68,7 +68,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         BitSight API token.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "vulnerability": "findings",
         "report":        "companies",
     }
@@ -92,7 +92,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         self.get("/v1/companies", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         if stix_type == "report":
             return self.get(f"/v1/companies/{object_id}")
         if stix_type == "vulnerability":
@@ -102,12 +102,12 @@ class BitSightClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
-        params: Dict[str, Any] = {"limit": page_size}
+        params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
 
         if stix_type == "vulnerability":
@@ -122,7 +122,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         resp = self.get("/v1/companies", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("BitSight connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -133,10 +133,10 @@ class BitSightClient(BaseClient, ConnectorMixin):
     def fetch_companies(
         self,
         limit: int = 50,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch company ratings and details."""
-        params: Dict[str, Any] = {"limit": limit, **(filters or {})}
+        params: dict[str, Any] = {"limit": limit, **(filters or {})}
         resp = self.get("/v1/companies", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
@@ -144,10 +144,10 @@ class BitSightClient(BaseClient, ConnectorMixin):
         self,
         company_id: str,
         limit: int = 50,
-        severity: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        severity: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch detailed security findings for a specific company."""
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if severity:
             params["severity"] = severity.lower()
         resp = self.get(f"/v1/companies/{company_id}/findings", params=params)
@@ -157,7 +157,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         self,
         company_id: str,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch historical security ratings for a company."""
         resp = self.get(f"/v1/companies/{company_id}/ratings", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -166,7 +166,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         self,
         company_id: str,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch breach insights for a company."""
         resp = self.get(f"/v1/companies/{company_id}/breaches", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -174,26 +174,26 @@ class BitSightClient(BaseClient, ConnectorMixin):
     def fetch_alerts(
         self,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch security alerts and notifications."""
         resp = self.get("/v1/alerts", params={"limit": limit})
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ── STIX Translation ──────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch findings (vulnerability) vs. company/ratings (report)."""
         if "severity" in native and ("finding" in str(native).lower() or "breach" in str(native).lower()):
             return self._finding_to_stix(native)
         return self._company_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "note": "BitSight is primarily read-only for security ratings and vendor risk data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
-    def _finding_to_stix(self, finding: Dict[str, Any]) -> Dict[str, Any]:
+    def _finding_to_stix(self, finding: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         fid = finding.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'bitsight:{fid}')}"
@@ -214,7 +214,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _company_to_stix(self, company: Dict[str, Any]) -> Dict[str, Any]:
+    def _company_to_stix(self, company: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         cid = company.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'bitsight:{cid}')}"

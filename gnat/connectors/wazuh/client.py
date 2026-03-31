@@ -47,16 +47,17 @@ with WazuhClient(cfg) as client:
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import WazuhAuthManager
 from .config import WazuhConfig
 from .exceptions import (
-WazuhAPIError,
-WazuhAuthError,
-WazuhNotFoundError,
-WazuhPermissionError,
-WazuhRateLimitError,
+    WazuhAPIError,
+    WazuhAuthError,
+    WazuhNotFoundError,
+    WazuhPermissionError,
+    WazuhRateLimitError,
 )
 
 _RETRYABLE_STATUS = {500, 502, 503, 504}

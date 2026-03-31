@@ -74,7 +74,7 @@ These fields belong in your Postgres layer, queried as predicates.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     pass  # avoid circular imports
@@ -125,8 +125,8 @@ class STIXSearchMixin:
         ``display_name``.  First non-empty value wins.
     """
 
-    _search_text_fields: List[str] = []
-    _search_display_priority: List[str] = [
+    _search_text_fields: list[str] = []
+    _search_display_priority: list[str] = [
         "name", "value", "pattern", "subject",
         "display_name", "title", "description",
     ]
@@ -138,8 +138,8 @@ class STIXSearchMixin:
     def to_search_doc(
         self,
         source_platform: str = "",
-        extra_fields: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        extra_fields: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Produce a flat Solr document dict for this STIX object.
 
@@ -159,7 +159,7 @@ class STIXSearchMixin:
         dict
             Flat document ready to POST to ``/solr/<collection>/update``.
         """
-        doc: Dict[str, Any] = {
+        doc: dict[str, Any] = {
             "id":              self.id,          # type: ignore[attr-defined]
             "stix_type":       self.stix_type,   # type: ignore[attr-defined]
             "created":         self.created,     # type: ignore[attr-defined]
@@ -207,7 +207,7 @@ class STIXSearchMixin:
                 if k not in _STRUCTURED_FIELDS
             ]
 
-        parts: List[str] = []
+        parts: list[str] = []
         seen: set = set()
 
         def _add(token: str) -> None:
