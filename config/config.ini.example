@@ -442,3 +442,78 @@ password = your_password_here
 # api_key = your_api_key_here
 # Default view iden (optional):
 # view = <view_iden>
+
+# =============================================================================
+# Trellix XDR / ePolicy Orchestrator (ePO)
+# =============================================================================
+[trellix]
+host          = https://api.manage.trellix.com
+client_id     = your_client_id_here
+client_secret = your_client_secret_here
+# Optional: override IAM URL (defaults to https://iam.mcafee-cloud.com)
+# iam_url = https://iam.mcafee-cloud.com
+
+# =============================================================================
+# Sophos Central
+# =============================================================================
+[sophos]
+host          = https://api.central.sophos.com
+client_id     = your_client_id_here
+client_secret = your_client_secret_here
+# Optional: set tenant ID explicitly (auto-discovered if omitted)
+# tenant_id = your_tenant_id_here
+
+# =============================================================================
+# Vectra AI NDR
+# =============================================================================
+[vectra]
+host    = https://yourorg.vectra.ai
+api_key = your_api_token_here
+
+# =============================================================================
+# ExtraHop Reveal(x)
+# =============================================================================
+[extrahop]
+host    = https://your-extrahop-appliance.example.com
+api_key = your_api_key_here
+# For Reveal(x) 360 cloud, use OAuth2 instead:
+# host          = https://company.api.cloud.extrahop.com
+# client_id     = your_client_id_here
+# client_secret = your_client_secret_here
+
+# =============================================================================
+# Darktrace Enterprise Immune System
+# =============================================================================
+[darktrace]
+host        = https://your-darktrace-instance.example.com
+public_key  = your_public_key_here
+private_key = your_private_key_here
+
+# =============================================================================
+# Lansweeper IT Asset Management
+# =============================================================================
+[lansweeper]
+host          = https://api.lansweeper.com
+client_id     = your_application_client_id_here
+client_secret = your_application_client_secret_here
+site_id       = your_lansweeper_site_id_here
+# Alternative: use personal access token
+# api_key = your_personal_access_token_here
+
+# =============================================================================
+# Censys Internet Intelligence / ASM
+# =============================================================================
+[censys]
+host       = https://search.censys.io
+api_id     = your_api_id_here
+api_secret = your_api_secret_here
+
+# =============================================================================
+# ServiceNow SecOps (SIR + Vulnerability Response + TIARA)
+# =============================================================================
+[servicenow_secops]
+host     = https://instance.service-now.com
+username = admin
+password = your_password_here
+# OR use Bearer token:
+# api_key = your_bearer_token_here

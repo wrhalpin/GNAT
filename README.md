@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 60+ security platforms.
+**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 70+ security platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -11,10 +11,10 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 60+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 70+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
-[ 60+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
+[ 70+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
 ```
 
 ---
@@ -52,7 +52,7 @@ GNAT provides a single, consistent abstraction layer over 60+ security platforms
 
 | Layer | What it does |
 |-------|-------------|
-| **60+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
+| **70+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
 | **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
 | **Ingest Pipelines** | 14 source readers × 12 mappers; pull from any platform, file, feed, or database |
 | **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
@@ -127,6 +127,7 @@ GNAT provides a single, consistent abstraction layer over 60+ security platforms
 | `thehive` | TheHive Security Incident Response | API key |
 | `greymatter` | GreyMatter | OAuth2 |
 | `servicenow` | ServiceNow ITSM / SecOps | Basic / Bearer |
+| `servicenow_secops` | ServiceNow SecOps (SIR + VR + TIARA) | Basic / Bearer |
 | `jira` | Atlassian Jira | Basic / Bearer |
 
 ### Network Detection & Response
@@ -136,6 +137,9 @@ GNAT provides a single, consistent abstraction layer over 60+ security platforms
 | `snort` | Snort IDS | File / Syslog |
 | `suricata` | Suricata IDS/IPS | File / Syslog |
 | `zeek` | Zeek Network Monitor | File / Syslog |
+| `vectra` | Vectra AI NDR (Network Detection & Response) | API token |
+| `extrahop` | ExtraHop Reveal(x) NDR | API key / OAuth2 |
+| `darktrace` | Darktrace Enterprise Immune System | HMAC public/private key |
 
 ### Vulnerability Management
 
@@ -158,6 +162,7 @@ GNAT provides a single, consistent abstraction layer over 60+ security platforms
 | `cycognito` | CyCognito ASM | Bearer |
 | `riskrecon` | RiskRecon | OAuth2 |
 | `zerofox` | ZeroFox Digital Risk Protection | Bearer |
+| `censys` | Censys Internet Intelligence / ASM | API ID + secret |
 
 ### Asset & Endpoint Management
 
@@ -171,6 +176,9 @@ GNAT provides a single, consistent abstraction layer over 60+ security platforms
 | `stellarcyber` | Stellar Cyber Open XDR | API key |
 | `whistic` | Whistic (Vendor Risk) | API key |
 | `proofpoint` | Proofpoint TAP | Basic |
+| `trellix` | Trellix XDR / ePolicy Orchestrator (ePO) | OAuth2 |
+| `sophos` | Sophos Central (Endpoint + Threat Intelligence) | OAuth2 |
+| `lansweeper` | Lansweeper IT Asset Management | OAuth2 / Bearer |
 
 ### AI Assistants
 
@@ -920,10 +928,10 @@ gnat/
 ├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based config (GNAT_CONFIG → ~/.gnat/config.ini → ./gnat.ini)
 ├── clients/
-│   ├── __init__.py          # CLIENT_REGISTRY (60+ connectors)
+│   ├── __init__.py          # CLIENT_REGISTRY (70+ connectors)
 │   └── base.py              # urllib3 BaseClient + GNATClientError
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types + observables)
-├── connectors/              # 60+ platform connectors — each: BaseClient + ConnectorMixin
+├── connectors/              # 70+ platform connectors — each: BaseClient + ConnectorMixin
 │   └── base_connector.py    # ConnectorMixin (8-method contract + capabilities() + call())
 ├── ingest/                  # SourceReaders (14), RecordMappers (12), IngestPipeline
 │   └── _ioc_classifier.py   # RUST_AVAILABLE shim for optional Rust hot-path
@@ -1026,7 +1034,7 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
-                        │     CONNECTOR LAYER (60+ platforms)     │
+                        │     CONNECTOR LAYER (70+ platforms)     │
                         │  BaseClient + ConnectorMixin            │
                         │  authenticate · health_check            │
                         │  get/list/upsert/delete · to/from_stix  │

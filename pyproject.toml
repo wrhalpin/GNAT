@@ -9,7 +9,7 @@ description = "Cybersecurity Threat Management Swiss Army Knife — universal ST
 readme      = "README.md"
 license     = { file = "LICENSE" }
 authors     = [{ name = "GNAT Contributors" }]
-keywords    = ["cybersecurity","threat-intelligence","stix","taxii","ioc","siem","soar"]
+keywords    = ["cybersecurity","threat-intelligence","stix","taxii","ioc","siem","soar","trellix","sophos","vectra","extrahop","darktrace","lansweeper","censys","servicenow"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Information Technology",

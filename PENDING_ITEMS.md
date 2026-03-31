@@ -825,3 +825,38 @@ gnat viz serve --with-solr --port 3001
 # Export the Solr dashboard JSON (import into any Grafana instance)
 gnat viz solr-dashboard --file solr_dashboard.json
 ```
+---
+
+### 31. New Connectors: Trellix, Sophos, Vectra, ExtraHop, Darktrace, Lansweeper, Censys, ServiceNow SecOps — ✅ COMPLETE
+
+**Priority:** HIGH — expand coverage to 70+ platforms
+
+**Implemented:**
+
+| Key | File | Auth | Notes |
+|-----|------|------|-------|
+| `trellix` | `gnat/connectors/trellix/client.py` | OAuth2 | XDR + ePO; IOCs, detections, vulns |
+| `sophos` | `gnat/connectors/sophos/client.py` | OAuth2 | Central endpoint protection + SIEM alerts |
+| `vectra` | `gnat/connectors/vectra/client.py` | API token | NDR; read-only detections + host scoring |
+| `extrahop` | `gnat/connectors/extrahop/client.py` | API key / OAuth2 | Reveal(x); read-only NDR detections + records |
+| `darktrace` | `gnat/connectors/darktrace/client.py` | HMAC key pair | Enterprise Immune System; model breaches + intel feed |
+| `lansweeper` | `gnat/connectors/lansweeper/client.py` | OAuth2 / Bearer | ITAM; read-only asset + software inventory |
+| `censys` | `gnat/connectors/censys/client.py` | Basic (API ID+secret) | Internet scanning + ASM; read-only host/cert search |
+| `servicenow_secops` | `gnat/connectors/servicenow_secops/client.py` | Basic / Bearer | Full SecOps: SIR + VR + TIARA observables |
+
+**Changes:**
+- 8 new connector packages under `gnat/connectors/`.
+- All registered in `gnat/clients/CLIENT_REGISTRY`.
+- 94 unit tests added to `tests/unit/connectors/test_connectors.py`.
+- `README.md` updated: new platforms added to Supported Platforms tables, count updated to 70+.
+- `pyproject.toml` keywords updated.
+
+**STIX coverage:**
+- `trellix`: `indicator` (IOC), `malware` (detection), `vulnerability`
+- `sophos`: `indicator` (blocked item), `malware` (detection)
+- `vectra`: `observed-data` (detection), `threat-actor` (host entity)
+- `extrahop`: `observed-data` (detection / record)
+- `darktrace`: `observed-data` (model breach), `threat-actor` (device entity)
+- `lansweeper`: `report` (asset), `vulnerability` (software inventory)
+- `censys`: `observed-data` (host scan result) with exposed CVE annotation
+- `servicenow_secops`: `observed-data` (SIR incident), `vulnerability` (VR item), `indicator` (TIARA observable), `course-of-action` (SI task)
