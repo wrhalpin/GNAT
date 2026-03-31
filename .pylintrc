@@ -101,6 +101,12 @@ disable=
     # KeyError for missing config sections). Adding "from exc" everywhere would
     # expose internal tracebacks that add no value in these contexts.
     W0707,
+    # Unsupported binary operation — PEP 604 `X | Y` union type syntax is
+    # intentionally used throughout this codebase (Python 3.10+ style). Pylint
+    # flags it as E1131 when analysing under Python 3.9 where the `|` operator
+    # is not available on type objects at runtime, but the syntax is valid in
+    # all supported environments and is the preferred modern form.
+    E1131,
 
 [FORMAT]
 max-line-length=120
