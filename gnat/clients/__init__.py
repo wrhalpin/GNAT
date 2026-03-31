@@ -80,6 +80,11 @@ from gnat.connectors.sophos.client import SophosClient
 from gnat.connectors.trellix.client import TrellixClient
 from gnat.connectors.vectra.client import VectraClient
 from gnat.connectors.zerofox.client import ZeroFoxClient
+from gnat.connectors.bitsight.client import BitSightClient
+from gnat.connectors.flashpoint.client import FlashpointClient
+from gnat.connectors.hudsonrock.client import HudsonRockClient
+from gnat.connectors.intel471.client import Intel471Client
+from gnat.connectors.upguard.client import UpGuardClient
 
 CLIENT_REGISTRY: dict = {
     "threatq":        ThreatQClient,
@@ -153,6 +158,11 @@ CLIENT_REGISTRY: dict = {
     "lansweeper":     LansweeperClient,
     "censys":         CensysClient,
     "servicenow_secops": ServiceNowSecOpsClient,
+    "bitsight":       BitSightClient,
+    "flashpoint":     FlashpointClient,
+    "hudsonrock":     HudsonRockClient,
+    "intel471":       Intel471Client,
+    "upguard":        UpGuardClient,
 }
 
 __all__ = [
@@ -182,4 +192,9 @@ __all__ = [
     "LansweeperClient",
     "CensysClient",
     "ServiceNowSecOpsClient",
+    "BitSightClient",
+    "FlashpointClient",
+    "HudsonRockClient",
+    "Intel471Client",
+    "UpGuardClient",
 ]

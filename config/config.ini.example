@@ -517,3 +517,38 @@ username = admin
 password = your_password_here
 # OR use Bearer token:
 # api_key = your_bearer_token_here
+
+# =============================================================================
+# BitSight Security Ratings & Vendor Risk Management
+# =============================================================================
+[bitsight]
+host  = https://api.bitsighttech.com
+token = your_bitsight_api_token_here
+
+# =============================================================================
+# Flashpoint Underground / Dark Web CTI
+# =============================================================================
+[flashpoint]
+host  = https://api.flashpoint.io
+token = your_flashpoint_api_token_here
+
+# =============================================================================
+# Hudson Rock Breach Intelligence & Credential Exposure
+# =============================================================================
+[hudsonrock]
+host    = https://api.hudsonrock.com
+api_key = your_hudsonrock_api_key_here
+
+# =============================================================================
+# Intel 471 Cybercrime-Focused Threat Intelligence
+# =============================================================================
+[intel471]
+host  = https://api.intel471.com
+token = your_intel471_api_token_here
+
+# =============================================================================
+# UpGuard Vendor Risk + CAASM + Digital Risk Protection
+# =============================================================================
+[upguard]
+host    = https://cyber-risk.upguard.com
+api_key = your_upguard_api_key_here

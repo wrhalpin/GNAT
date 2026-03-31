@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 70+ security platforms.
+**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 75+ security platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -11,10 +11,10 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 70+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 75+ security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
-[ 70+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
+[ 75+ Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
 ```
 
 ---
@@ -52,7 +52,7 @@ GNAT provides a single, consistent abstraction layer over 70+ security platforms
 
 | Layer | What it does |
 |-------|-------------|
-| **70+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
+| **75+ Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
 | **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
 | **Ingest Pipelines** | 14 source readers × 12 mappers; pull from any platform, file, feed, or database |
 | **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
@@ -103,6 +103,9 @@ GNAT provides a single, consistent abstraction layer over 70+ security platforms
 | `zerofox` | ZeroFox Digital Risk Protection | Bearer |
 | `group_ib` | Group-IB Threat Intelligence | API key |
 | `cyble_vision` | Cyble Vision | API key |
+| `flashpoint` | Flashpoint Underground / Dark Web CTI | Bearer |
+| `hudsonrock` | Hudson Rock Breach Intelligence | API key |
+| `intel471` | Intel 471 Cybercrime Intelligence | Bearer |
 | `misp` | MISP Threat Sharing Platform | API key |
 | `opencti` | OpenCTI | API key |
 
@@ -163,6 +166,8 @@ GNAT provides a single, consistent abstraction layer over 70+ security platforms
 | `riskrecon` | RiskRecon | OAuth2 |
 | `zerofox` | ZeroFox Digital Risk Protection | Bearer |
 | `censys` | Censys Internet Intelligence / ASM | API ID + secret |
+| `bitsight` | BitSight Security Ratings & Vendor Risk | API token |
+| `upguard` | UpGuard Vendor Risk + CAASM + DRP | API key |
 
 ### Asset & Endpoint Management
 
@@ -928,10 +933,10 @@ gnat/
 ├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based config (GNAT_CONFIG → ~/.gnat/config.ini → ./gnat.ini)
 ├── clients/
-│   ├── __init__.py          # CLIENT_REGISTRY (70+ connectors)
+│   ├── __init__.py          # CLIENT_REGISTRY (75+ connectors)
 │   └── base.py              # urllib3 BaseClient + GNATClientError
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types + observables)
-├── connectors/              # 70+ platform connectors — each: BaseClient + ConnectorMixin
+├── connectors/              # 75+ platform connectors — each: BaseClient + ConnectorMixin
 │   └── base_connector.py    # ConnectorMixin (8-method contract + capabilities() + call())
 ├── ingest/                  # SourceReaders (14), RecordMappers (12), IngestPipeline
 │   └── _ioc_classifier.py   # RUST_AVAILABLE shim for optional Rust hot-path
@@ -1034,7 +1039,7 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
-                        │     CONNECTOR LAYER (70+ platforms)     │
+                        │     CONNECTOR LAYER (75+ platforms)     │
                         │  BaseClient + ConnectorMixin            │
                         │  authenticate · health_check            │
                         │  get/list/upsert/delete · to/from_stix  │
