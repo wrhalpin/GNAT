@@ -35,7 +35,9 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Node (scripts/)
+# Node
+node_modules/
+package-lock.json
 scripts/node_modules/
 scripts/package-lock.json
 *.pyc
