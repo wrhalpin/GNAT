@@ -5,19 +5,20 @@ const OUT = process.argv[2] || "/mnt/user-data/outputs/GNAT-Presentation.pptx";
 
 // ── Palette ──────────────────────────────────────────────────────────────
 const C = {
-  navy:      "0F2044",   // slide backgrounds
-  navy2:     "162952",   // panel / card backgrounds
-  steel:     "1E4D8C",   // mid-blue accent
-  teal:      "0891B2",   // primary accent
-  teal2:     "06B6D4",   // lighter teal
-  mint:      "A5F3FC",   // highlight text on dark
-  white:     "FFFFFF",
-  offwhite:  "E8EFF8",
-  muted:     "94A3B8",
-  charcoal:  "1E293B",   // code block backgrounds
-  green:     "10B981",
-  amber:     "F59E0B",
-  red:       "EF4444",
+  navy:        "0F2044",   // slide backgrounds
+  navy2:       "162952",   // panel / card backgrounds
+  steel:       "1E4D8C",   // mid-blue accent
+  steelLight:  "5B93D9",   // lighter blue for contrast on dark backgrounds
+  teal:        "0891B2",   // primary accent
+  teal2:       "06B6D4",   // lighter teal
+  mint:        "A5F3FC",   // highlight text on dark
+  white:       "FFFFFF",
+  offwhite:    "E8EFF8",
+  muted:       "94A3B8",
+  charcoal:    "1E293B",   // code block backgrounds
+  green:       "10B981",
+  amber:       "F59E0B",
+  red:         "EF4444",
 };
 
 const makeShadow = () => ({
@@ -315,7 +316,7 @@ pres.author = "wrhalpin@gmail.com";
     },
     {
       label: "SIEM & LOG ANALYTICS",
-      col: C.steel,
+      col: C.steelLight,
       items: "Splunk \u00b7 Elastic SIEM \u00b7 IBM QRadar \u00b7 Microsoft Sentinel \u00b7 Graylog \u00b7 OSSIM \u00b7 Security Onion \u00b7 Wazuh",
     },
     {
@@ -325,7 +326,7 @@ pres.author = "wrhalpin@gmail.com";
     },
     {
       label: "VULNERABILITY MANAGEMENT",
-      col: C.steel,
+      col: C.steelLight,
       items: "Rapid7 InsightVM/IDR \u00b7 Nucleus Security \u00b7 Tenable One \u00b7 Qualys VMDR \u00b7 Greenbone/OpenVAS \u00b7 DefectDojo",
     },
     {
@@ -335,7 +336,7 @@ pres.author = "wrhalpin@gmail.com";
     },
     {
       label: "NETWORK DETECTION & ENDPOINT",
-      col: C.steel,
+      col: C.steelLight,
       items: "Snort IDS \u00b7 Suricata \u00b7 Zeek \u00b7 SentinelOne \u00b7 Stellar Cyber \u00b7 Netskope \u00b7 ControlUp DEX \u00b7 Whistic \u00b7 Proofpoint",
     },
     {
@@ -399,7 +400,7 @@ pres.author = "wrhalpin@gmail.com";
     ["Vulnerability", "CVEs, CVSS scores,\nexploited flag, products", C.amber],
     ["AttackPattern", "MITRE ATT&CK TTPs\nwith tactic mapping", C.green],
     ["Malware", "Malware families,\ncapabilities, kill-chain", C.red],
-    ["Relationship", "Links: indicates \u00b7 uses \u00b7 targets\nBidirectional STIX graph", C.navy2],
+    ["Relationship", "Links: indicates \u00b7 uses \u00b7 targets\nBidirectional STIX graph", C.teal2],
   ];
 
   types.forEach(([name, detail, color], i) => {
@@ -696,7 +697,7 @@ pres.author = "wrhalpin@gmail.com";
     { label: "LIBRARY  (_gnat_library)", sub: "Curated \u00b7 Read-only to analysts \u00b7 CurationJob every 4h \u00b7 deduplication \u00b7 TTL enforcement", col: C.teal, arrow: false },
   ];
 
-  tiers.forEach(({ label, sub, col, arrow }, i) => {
+  tiers.forEach(({ label, sub, col }, i) => {
     sl.addShape("rect", {
       x: 0.35, y: 0.95 + i * 1.05, w: 5.5, h: 0.85,
       fill: { color: col }, line: { width: 0 }
@@ -709,6 +710,11 @@ pres.author = "wrhalpin@gmail.com";
       x: 0.55, y: 1.32 + i * 1.05, w: 5.1, h: 0.38,
       fontSize: 9, fontFace: "Calibri", color: C.mint, margin: 0
     });
+  });
+
+  // Arrows between tiers (Personal → Staging → Library)
+  [0, 1].forEach(i => {
+    arrow(sl, 3.1, 0.95 + i * 1.05 + 0.85 + 0.01, true);
   });
 
   sl.addText("TTL by Category", {
@@ -803,6 +809,14 @@ pres.author = "wrhalpin@gmail.com";
     sl.addText(step, {
       x: x + 0.08, y: 4.2, w: 1.89, h: 0.7,
       fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.white, align: "center", margin: 0
+    });
+  });
+
+  // Arrows between pipeline steps
+  [0, 1, 2].forEach(i => {
+    sl.addShape("line", {
+      x: 0.35 + i * 2.35 + 2.07, y: 4.55, w: 0.26, h: 0,
+      line: { color: C.teal, width: 1.5, endArrowType: "triangle" }
     });
   });
 }
