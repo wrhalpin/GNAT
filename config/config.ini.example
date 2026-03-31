@@ -552,3 +552,61 @@ token = your_intel471_api_token_here
 [upguard]
 host    = https://cyber-risk.upguard.com
 api_key = your_upguard_api_key_here
+
+# =============================================================================
+# Trend Micro Vision One (XDR)
+# =============================================================================
+[trendmicro_visionone]
+host  = https://api.xdr.trendmicro.com
+token = your_vision_one_api_key_here
+
+# =============================================================================
+# Have I Been Pwned (HIBP)
+# =============================================================================
+[hibp]
+host    = https://haveibeenpwned.com
+api_key = your_hibp_api_key_here
+
+# =============================================================================
+# Tanium Endpoint Management & Security
+# =============================================================================
+[tanium]
+host    = https://tanium.corp.example.com
+api_key = your_tanium_api_token_here
+# OR use username/password:
+# username = admin
+# password  = your_password_here
+
+# =============================================================================
+# AWS Security Hub + GuardDuty
+# =============================================================================
+[aws_security]
+host              = https://securityhub.us-east-1.amazonaws.com
+aws_access_key    = AKIAIOSFODNN7EXAMPLE
+aws_secret_key    = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+aws_region        = us-east-1
+aws_session_token =
+
+# =============================================================================
+# SecurityScorecard
+# =============================================================================
+[securityscorecard]
+host    = https://api.securityscorecard.io
+api_key = your_securityscorecard_api_key_here
+
+# =============================================================================
+# Dragos ICS/OT Platform
+# =============================================================================
+[dragos]
+host       = https://portal.dragos.com
+api_key    = your_dragos_api_key_here
+api_secret = your_dragos_api_secret_here
+
+# =============================================================================
+# Datadog Security / Cloud SIEM
+# =============================================================================
+[datadog]
+host    = https://api.datadoghq.com
+api_key = your_datadog_api_key_here
+app_key = your_datadog_application_key_here
+# EU customers: host = https://api.datadoghq.eu
