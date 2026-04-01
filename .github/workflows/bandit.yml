@@ -8,12 +8,19 @@ jobs:
   bandit:
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
       contents: read
-      actions: read
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Bandit
+        run: pip install bandit
+
       - name: Run Bandit
-        uses: PyCQA/bandit-action@v1.0.1
+        run: bandit -r gnat/ -ll -x tests/
         

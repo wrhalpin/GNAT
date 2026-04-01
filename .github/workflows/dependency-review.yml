@@ -7,10 +7,13 @@ permissions:
   contents: read
 
 jobs:
-  dependency-review:
+  pip-audit:
     runs-on: ubuntu-latest
     steps:
-      - name: Dependency review
-        uses: actions/dependency-review-action@v4
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run pip-audit
+        uses: pypa/gh-action-pip-audit@v1.1.0
         with:
-          fail-on-severity: high
+          inputs: "."
