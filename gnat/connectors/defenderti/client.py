@@ -37,7 +37,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 _GRAPH = "https://graph.microsoft.com"
 _LOGIN = "https://login.microsoftonline.com"
 _SCOPE = "https://graph.microsoft.com/.default"
-_TI    = "/v1.0/security/tiIndicators"
+_TI = "/v1.0/security/tiIndicators"
 
 
 class DefenderTIClient(BaseClient, ConnectorMixin):
@@ -57,9 +57,9 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":    "tiIndicators",
+        "indicator": "tiIndicators",
         "threat-actor": "tiIndicators",
-        "malware":      "tiIndicators",
+        "malware": "tiIndicators",
     }
 
     def __init__(
@@ -71,8 +71,8 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._tenant_id    = tenant_id
-        self._client_id    = client_id
+        self._tenant_id = tenant_id
+        self._client_id = client_id
         self._client_secret = client_secret
 
     # ------------------------------------------------------------------
@@ -86,17 +86,20 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         Posts directly to ``login.microsoftonline.com`` via urllib3 so the
         Graph base URL is unaffected.
         """
-        url  = f"{_LOGIN}/{self._tenant_id}/oauth2/v2.0/token"
-        body = urllib.parse.urlencode({
-            "grant_type":    "client_credentials",
-            "client_id":     self._client_id,
-            "client_secret": self._client_secret,
-            "scope":         _SCOPE,
-        }).encode("utf-8")
+        url = f"{_LOGIN}/{self._tenant_id}/oauth2/v2.0/token"
+        body = urllib.parse.urlencode(
+            {
+                "grant_type": "client_credentials",
+                "client_id": self._client_id,
+                "client_secret": self._client_secret,
+                "scope": _SCOPE,
+            }
+        ).encode("utf-8")
 
         http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=10.0, read=30.0))
         response = http.request(
-            "POST", url,
+            "POST",
+            url,
             body=body,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -109,16 +112,14 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         if not token:
             raise GNATClientError("DefenderTI: failed to obtain Azure AD access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
-        self._auth_headers["Content-Type"]  = "application/json"
+        self._auth_headers["Content-Type"] = "application/json"
 
     def health_check(self) -> bool:
         """Verify Graph connectivity with a minimal tiIndicators query."""
         resp = self.get(_TI, params={"$top": 1})
         return isinstance(resp, dict) and "value" in resp
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve a TI indicator by its Graph object ID."""
         resp = self.get(f"{_TI}/{object_id}")
         return resp if isinstance(resp, dict) else {}
@@ -150,9 +151,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("value", [])
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Create or update a TI indicator in MS Graph.
 
@@ -176,7 +175,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Graph ``tiIndicator`` object to a STIX Indicator SDO."""
-        value   = (
+        value = (
             native.get("networkIPv4")
             or native.get("domainName")
             or native.get("url")
@@ -185,41 +184,44 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
             or ""
         )
         pattern = self._make_pattern(native, value)
-        conf    = native.get("confidence", 0)
+        conf = native.get("confidence", 0)
         return {
-            "type":              "indicator",
-            "id":                f"indicator--msti-{native.get('id', '')}",
-            "name":              value or native.get("description", "")[:80],
-            "description":       native.get("description", "")[:500],
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("createdDateTime", ""),
-            "modified":          native.get("lastReportedDateTime", ""),
-            "confidence":        conf,
-            "indicator_types":   [native.get("threatType", "unknown").lower()],
+            "type": "indicator",
+            "id": f"indicator--msti-{native.get('id', '')}",
+            "name": value or native.get("description", "")[:80],
+            "description": native.get("description", "")[:500],
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("createdDateTime", ""),
+            "modified": native.get("lastReportedDateTime", ""),
+            "confidence": conf,
+            "indicator_types": [native.get("threatType", "unknown").lower()],
             "x_source_platform": "defenderti",
-            "x_msti_id":         native.get("id", ""),
-            "x_msti_action":     native.get("action", ""),
-            "x_msti_tlp":        native.get("tlpLevel", ""),
-            "x_target_sectors":  native.get("targetProduct", [])
-                                  if isinstance(native.get("targetProduct"), list)
-                                  else [],
+            "x_msti_id": native.get("id", ""),
+            "x_msti_action": native.get("action", ""),
+            "x_msti_tlp": native.get("tlpLevel", ""),
+            "x_target_sectors": native.get("targetProduct", [])
+            if isinstance(native.get("targetProduct"), list)
+            else [],
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a Graph ``tiIndicator`` POST payload from a STIX Indicator."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_dict.get("name", "")
         payload = self._stix_pattern_to_ti_payload(pattern, value)
-        payload.update({
-            "action":         "alert",
-            "confidence":     stix_dict.get("confidence", 0),
-            "description":    stix_dict.get("description", stix_dict.get("name", ""))[:500],
-            "tlpLevel":       "white",
-            "targetProduct":  "Microsoft Defender ATP",
-        })
+        payload.update(
+            {
+                "action": "alert",
+                "confidence": stix_dict.get("confidence", 0),
+                "description": stix_dict.get("description", stix_dict.get("name", ""))[:500],
+                "tlpLevel": "white",
+                "targetProduct": "Microsoft Defender ATP",
+            }
+        )
         return payload
 
     # ------------------------------------------------------------------

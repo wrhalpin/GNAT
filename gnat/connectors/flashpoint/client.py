@@ -71,7 +71,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "iocs",
-        "report":    "alerts",
+        "report": "alerts",
     }
 
     def __init__(self, host: str = "https://api.flashpoint.io", token: str = "", **kwargs: Any):

@@ -27,16 +27,16 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gnat.context.store import FlatFileStore
 from gnat.context.global_context import GlobalContext, GlobalContextRegistry
-from gnat.context.workspace import Workspace, WorkspaceManager, CommitResult
+from gnat.context.store import FlatFileStore
+from gnat.context.workspace import CommitResult, Workspace, WorkspaceManager
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
-
 
 # ===========================================================================
 # Fixtures
 # ===========================================================================
+
 
 @pytest.fixture
 def tmp_flat_store(tmp_path):
@@ -49,6 +49,7 @@ def sqlite_store():
     """WorkspaceStore backed by in-memory SQLite."""
     try:
         from gnat.context.store import WorkspaceStore
+
         store = WorkspaceStore("sqlite:///:memory:")
         store.create_all()
         return store
@@ -65,8 +66,9 @@ def _make_indicator(name: str = "evil.com", value: str = "evil.com") -> Indicato
     )
 
 
-def _make_stix_dict(stix_id: str = None, name: str = "evil.com",
-                    stix_type: str = "indicator") -> dict:
+def _make_stix_dict(
+    stix_id: str = None, name: str = "evil.com", stix_type: str = "indicator"
+) -> dict:
     ind = _make_indicator(name)
     d = ind.to_dict()
     if stix_id:
@@ -74,8 +76,9 @@ def _make_stix_dict(stix_id: str = None, name: str = "evil.com",
     return d
 
 
-def _mock_global_context(name: str = "threatq", read_only: bool = False,
-                         objects: list = None) -> GlobalContext:
+def _mock_global_context(
+    name: str = "threatq", read_only: bool = False, objects: list = None
+) -> GlobalContext:
     """Create a GlobalContext with a mocked GNATClient."""
     mock_cli = MagicMock()
     mock_cli.target = name
@@ -85,16 +88,16 @@ def _mock_global_context(name: str = "threatq", read_only: bool = False,
         objects = [_make_stix_dict(name=f"obj-{i}") for i in range(3)]
 
     mock_cli.client.list_objects.return_value = [
-        {"id": o["id"], "value": o.get("name", ""), "type": "indicator"}
-        for o in objects
+        {"id": o["id"], "value": o.get("name", ""), "type": "indicator"} for o in objects
     ]
     mock_cli.client.to_stix.side_effect = lambda raw: {
         "type": "indicator",
-        "id": raw.get("id", f"indicator--mock"),
+        "id": raw.get("id", "indicator--mock"),
         "name": raw.get("value", ""),
         "pattern": f"[domain-name:value = '{raw.get('value', '')}']",
         "pattern_type": "stix",
-        "created": "", "modified": "",
+        "created": "",
+        "modified": "",
         "indicator_types": ["malicious-activity"],
     }
     mock_cli.client.from_stix.return_value = {"value": "mocked"}
@@ -105,8 +108,11 @@ def _mock_global_context(name: str = "threatq", read_only: bool = False,
     return gc
 
 
-def _make_registry(names=("threatq", "recorded_future", "crowdstrike"),
-                   default="threatq", read_only=("recorded_future",)):
+def _make_registry(
+    names=("threatq", "recorded_future", "crowdstrike"),
+    default="threatq",
+    read_only=("recorded_future",),
+):
     registry = GlobalContextRegistry(default_name=default)
     for name in names:
         gc = _mock_global_context(name=name, read_only=(name in read_only))
@@ -118,9 +124,7 @@ def _make_workspace(name="test-ws", registry=None, store=None, tmp_path=None):
     if registry is None:
         registry = _make_registry()
     if store is None:
-        store = FlatFileStore(base_dir=str(
-            (tmp_path or Path(tempfile.mkdtemp())) / "workspaces"
-        ))
+        store = FlatFileStore(base_dir=str((tmp_path or Path(tempfile.mkdtemp())) / "workspaces"))
     return Workspace(name, registry, store)
 
 
@@ -128,8 +132,8 @@ def _make_workspace(name="test-ws", registry=None, store=None, tmp_path=None):
 # FlatFileStore
 # ===========================================================================
 
-class TestFlatFileStore:
 
+class TestFlatFileStore:
     def test_create_workspace(self, tmp_flat_store):
         meta = tmp_flat_store.create_workspace("inv1", description="Test investigation")
         assert meta["name"] == "inv1"
@@ -205,8 +209,9 @@ class TestFlatFileStore:
     def test_enrichment_log(self, tmp_flat_store):
         tmp_flat_store.create_workspace("enrich-ws")
         stix = _make_stix_dict()
-        tmp_flat_store.log_enrichment("enrich-ws", stix["id"], "rf",
-                                      {"score": 85}, "create_relationships")
+        tmp_flat_store.log_enrichment(
+            "enrich-ws", stix["id"], "rf", {"score": 85}, "create_relationships"
+        )
         log = tmp_flat_store.get_enrichment_history("enrich-ws")
         assert len(log) == 1
         assert log[0]["source_platform"] == "rf"
@@ -235,8 +240,8 @@ class TestFlatFileStore:
 # WorkspaceStore (SQLAlchemy / SQLite in-memory)
 # ===========================================================================
 
-class TestWorkspaceStore:
 
+class TestWorkspaceStore:
     def test_create_and_get_workspace(self, sqlite_store):
         ws = sqlite_store.create_workspace("sql-ws", description="SQL test")
         assert ws.name == "sql-ws"
@@ -311,8 +316,8 @@ class TestWorkspaceStore:
 # GlobalContext
 # ===========================================================================
 
-class TestGlobalContext:
 
+class TestGlobalContext:
     def test_target_property(self):
         gc = _mock_global_context("threatq")
         assert gc.target == "threatq"
@@ -349,8 +354,8 @@ class TestGlobalContext:
 # GlobalContextRegistry
 # ===========================================================================
 
-class TestGlobalContextRegistry:
 
+class TestGlobalContextRegistry:
     def test_register_and_get(self):
         registry = GlobalContextRegistry()
         gc = _mock_global_context("tq")
@@ -406,9 +411,7 @@ class TestGlobalContextRegistry:
         for c in clients.values():
             c.ping.return_value = True
             c.client = MagicMock()
-        registry = GlobalContextRegistry.from_clients(
-            clients, default="tq", read_only=["rf"]
-        )
+        registry = GlobalContextRegistry.from_clients(clients, default="tq", read_only=["rf"])
         assert registry.default.name == "tq"
         assert registry.get("rf").read_only is True
 
@@ -433,8 +436,8 @@ class TestGlobalContextRegistry:
 # Workspace
 # ===========================================================================
 
-class TestWorkspace:
 
+class TestWorkspace:
     def test_empty_workspace(self, tmp_path):
         ws = _make_workspace(tmp_path=tmp_path)
         assert len(ws) == 0
@@ -520,7 +523,7 @@ class TestWorkspace:
         ws = _make_workspace(tmp_path=tmp_path)
         ind = _make_indicator()
         ws.add(ind, mark_dirty=False)
-        ws._snapshot[ind.id] = ind.to_dict()   # snapshot matches
+        ws._snapshot[ind.id] = ind.to_dict()  # snapshot matches
         assert ws.diff() == {}
 
     def test_export_bundle(self, tmp_path):
@@ -536,8 +539,8 @@ class TestWorkspace:
 # Workspace enrichment strategies
 # ===========================================================================
 
-class TestWorkspaceEnrichment:
 
+class TestWorkspaceEnrichment:
     def _ws_with_one_object(self, tmp_path):
         ws = _make_workspace(tmp_path=tmp_path)
         ind = _make_indicator("target.com")
@@ -547,16 +550,16 @@ class TestWorkspaceEnrichment:
 
     def _enrichment_dict(self, name="rf-result.com", score=90):
         return {
-            "type":          "indicator",
-            "id":            f"indicator--rf-{name}",
-            "name":          name,
-            "pattern":       f"[domain-name:value = '{name}']",
-            "pattern_type":  "stix",
-            "created":       "",
-            "modified":      "",
+            "type": "indicator",
+            "id": f"indicator--rf-{name}",
+            "name": name,
+            "pattern": f"[domain-name:value = '{name}']",
+            "pattern_type": "stix",
+            "created": "",
+            "modified": "",
             "indicator_types": ["malicious-activity"],
             "x_rf_risk_score": score,
-            "confidence":    score,
+            "confidence": score,
         }
 
     def test_strategy_create_relationships(self, tmp_path):
@@ -612,9 +615,13 @@ class TestWorkspaceEnrichment:
         # Clear side_effect so return_value is used (side_effect takes priority in MagicMock)
         gc.client.client.to_stix.side_effect = None
         gc.client.client.to_stix.return_value = {
-            "type": "indicator", "id": "indicator--low",
-            "name": "low.com", "pattern": "[domain-name:value = 'low.com']",
-            "pattern_type": "stix", "created": "", "modified": "",
+            "type": "indicator",
+            "id": "indicator--low",
+            "name": "low.com",
+            "pattern": "[domain-name:value = 'low.com']",
+            "pattern_type": "stix",
+            "created": "",
+            "modified": "",
             "confidence": 10,  # below floor
         }
         ws._registry.register(gc)
@@ -627,8 +634,8 @@ class TestWorkspaceEnrichment:
 # Workspace commit
 # ===========================================================================
 
-class TestWorkspaceCommit:
 
+class TestWorkspaceCommit:
     def test_commit_writes_dirty_objects(self, tmp_path):
         ws = _make_workspace(tmp_path=tmp_path)
         ind = _make_indicator()
@@ -636,7 +643,9 @@ class TestWorkspaceCommit:
 
         # Mock the write
         ws._registry.default.client.client.upsert_object.return_value = {
-            "id": ind.id, "value": ind.name, "type": "indicator"
+            "id": ind.id,
+            "value": ind.name,
+            "type": "indicator",
         }
         ws._registry.default.client.client.to_stix.return_value = ind.to_dict()
         ws._registry.default.client.client.from_stix.return_value = {"value": ind.name}
@@ -700,8 +709,8 @@ class TestWorkspaceCommit:
 # WorkspaceManager
 # ===========================================================================
 
-class TestWorkspaceManager:
 
+class TestWorkspaceManager:
     def test_create_workspace(self, tmp_path):
         store = FlatFileStore(base_dir=str(tmp_path / "workspaces"))
         manager = WorkspaceManager(_make_registry(), store=store)
@@ -712,6 +721,7 @@ class TestWorkspaceManager:
     def test_create_duplicate_raises(self, tmp_path):
         try:
             from gnat.context.store import WorkspaceStore
+
             store = WorkspaceStore("sqlite:///:memory:")
             store.create_all()
             manager = WorkspaceManager(_make_registry(), store=store)
@@ -763,14 +773,15 @@ class TestWorkspaceManager:
 
     def test_from_clients_factory(self):
         clients = {
-            "tq": MagicMock(target="threatq", ping=MagicMock(return_value=True),
-                            client=MagicMock()),
-            "rf": MagicMock(target="recordedfuture", ping=MagicMock(return_value=True),
-                            client=MagicMock()),
+            "tq": MagicMock(
+                target="threatq", ping=MagicMock(return_value=True), client=MagicMock()
+            ),
+            "rf": MagicMock(
+                target="recordedfuture", ping=MagicMock(return_value=True), client=MagicMock()
+            ),
         }
         manager = WorkspaceManager.from_clients(
-            clients, default="tq", read_only=["rf"],
-            db_url="sqlite:///:memory:"
+            clients, default="tq", read_only=["rf"], db_url="sqlite:///:memory:"
         )
         assert manager._registry.default.name == "tq"
         assert manager._registry.get("rf").read_only is True

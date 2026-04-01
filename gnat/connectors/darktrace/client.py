@@ -74,11 +74,11 @@ def _darktrace_signature(path: str, private_key: str, public_key: str) -> dict[s
         Headers dict with ``DTAPI-Token``, ``DTAPI-Date``, and ``DTAPI-Signature``.
     """
     date_str = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
-    message  = f"{path}\n{public_key}\n{date_str}".encode()
-    sig      = hmac.new(private_key.encode("utf-8"), message, hashlib.sha1).hexdigest()
+    message = f"{path}\n{public_key}\n{date_str}".encode()
+    sig = hmac.new(private_key.encode("utf-8"), message, hashlib.sha1).hexdigest()
     return {
-        "DTAPI-Token":     public_key,
-        "DTAPI-Date":      date_str,
+        "DTAPI-Token": public_key,
+        "DTAPI-Date": date_str,
         "DTAPI-Signature": sig,
     }
 
@@ -99,7 +99,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "observed-data": "modelbreaches",
-        "threat-actor":  "devices",
+        "threat-actor": "devices",
     }
 
     def __init__(
@@ -110,7 +110,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._public_key  = public_key
+        self._public_key = public_key
         self._private_key = private_key
 
     # ── Authentication ─────────────────────────────────────────────────────
@@ -234,11 +234,14 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         description : str
             Human-readable description.
         """
-        resp = self.post("/intelfeed", json={
-            "value":       value,
-            "type":        entry_type,
-            "description": description,
-        })
+        resp = self.post(
+            "/intelfeed",
+            json={
+                "value": value,
+                "type": entry_type,
+                "description": description,
+            },
+        )
         return resp if isinstance(resp, dict) else {}
 
     # ── STIX Translation ──────────────────────────────────────────────────
@@ -252,31 +255,31 @@ class DarktraceClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX indicator to a Darktrace intel feed entry."""
         return {
-            "value":       stix_dict.get("name", ""),
-            "type":        "hostname",
+            "value": stix_dict.get("name", ""),
+            "type": "hostname",
             "description": stix_dict.get("description", "Imported via GNAT"),
         }
 
     def _breach_to_stix(self, breach: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         bid = str(breach.get("pbid", ""))
-        ts  = breach.get("time", now)
+        ts = breach.get("time", now)
         return {
-            "type":            "observed-data",
-            "id":              f"observed-data--{_uuid.uuid5(_STIX_NS, f'darktrace:{bid}')}",
-            "spec_version":    "2.1",
-            "created":         ts,
-            "modified":        ts,
-            "first_observed":  ts,
-            "last_observed":   ts,
+            "type": "observed-data",
+            "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'darktrace:{bid}')}",
+            "spec_version": "2.1",
+            "created": ts,
+            "modified": ts,
+            "first_observed": ts,
+            "last_observed": ts,
             "number_observed": 1,
-            "object_refs":     [],
+            "object_refs": [],
             "x_darktrace": {
-                "breach_id":   bid,
-                "score":       breach.get("score"),
-                "model":       breach.get("model", {}).get("name"),
-                "device":      breach.get("device", {}).get("hostname"),
-                "device_ip":   breach.get("device", {}).get("ip"),
+                "breach_id": bid,
+                "score": breach.get("score"),
+                "model": breach.get("model", {}).get("name"),
+                "device": breach.get("device", {}).get("hostname"),
+                "device_ip": breach.get("device", {}).get("ip"),
             },
         }
 
@@ -284,18 +287,18 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         did = str(device.get("did", ""))
         return {
-            "type":         "threat-actor",
-            "id":           f"threat-actor--{_uuid.uuid5(_STIX_NS, f'darktrace:{did}')}",
+            "type": "threat-actor",
+            "id": f"threat-actor--{_uuid.uuid5(_STIX_NS, f'darktrace:{did}')}",
             "spec_version": "2.1",
-            "created":      now,
-            "modified":     now,
-            "name":         device.get("hostname", device.get("ip", f"Device {did}")),
-            "description":  "Darktrace AI-monitored network entity",
+            "created": now,
+            "modified": now,
+            "name": device.get("hostname", device.get("ip", f"Device {did}")),
+            "description": "Darktrace AI-monitored network entity",
             "x_darktrace": {
                 "device_id": did,
-                "ip":        device.get("ip"),
-                "mac":       device.get("macaddress"),
-                "os":        device.get("os"),
-                "tags":      [t.get("name") for t in device.get("tags", [])],
+                "ip": device.get("ip"),
+                "mac": device.get("macaddress"),
+                "os": device.get("os"),
+                "tags": [t.get("name") for t in device.get("tags", [])],
             },
         }

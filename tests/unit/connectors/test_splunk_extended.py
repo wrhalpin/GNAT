@@ -128,9 +128,7 @@ class TestSplunkClientInit:
 
     def test_base_url_parsed_from_host(self):
         with patch("urllib3.PoolManager"):
-            client = SplunkClient(
-                host="https://splunk.corp.com:9000", api_token="tok"
-            )
+            client = SplunkClient(host="https://splunk.corp.com:9000", api_token="tok")
         assert client.config.port == 9000
         assert client.config.host == "splunk.corp.com"
         assert client.config.scheme == "https"
@@ -158,6 +156,7 @@ class TestSplunkClientAuthenticate:
         client = _make_client(token="")
         client._authenticated = False
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="no credentials"):
             client.authenticate()
 
@@ -213,8 +212,12 @@ class TestSplunkClientHTTPMethods:
         client._splunk_http = MagicMock()
         client._splunk_http.request.return_value = mock_resp
         body = json.dumps({"ip": "1.2.3.4"}).encode()
-        result = client.post("storage/collections/data/ip_intel", raw_body=body,
-                             content_type="application/json", namespaced=False)
+        result = client.post(
+            "storage/collections/data/ip_intel",
+            raw_body=body,
+            content_type="application/json",
+            namespaced=False,
+        )
         assert result["_key"] == "abc"
 
     def test_delete_appends_output_mode(self, client):
@@ -233,8 +236,9 @@ class TestSplunkClientHTTPMethods:
         client._splunk_auth.get_auth_headers.return_value = {"Authorization": "Splunk tok"}
         client._splunk_http = MagicMock()
         client._splunk_http.request.return_value = mock_resp
-        result = client.put("storage/collections/data/ip_intel/k1",
-                            data={"ip": "5.5.5.5"}, namespaced=False)
+        result = client.put(
+            "storage/collections/data/ip_intel/k1", data={"ip": "5.5.5.5"}, namespaced=False
+        )
         assert result["_key"] == "k1"
 
 
@@ -363,26 +367,26 @@ class TestSplunkClientStixIntegration:
     def test_get_object_indicator_not_found_raises(self, client):
         client.get = MagicMock(return_value={"entry": []})
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="not found"):
             client.get_object("indicator", "missing-key")
 
     def test_get_object_observed_data_found(self, client):
-        client.post = MagicMock(return_value={
-            "results": [{"rule_name": "Rule1", "_time": "2024-01-01T00:00:00Z"}]
-        })
+        client.post = MagicMock(
+            return_value={"results": [{"rule_name": "Rule1", "_time": "2024-01-01T00:00:00Z"}]}
+        )
         result = client.get_object("observed-data", "EVT-001")
         assert result["type"] == "indicator"
 
     def test_get_object_observed_data_not_found_raises(self, client):
         client.post = MagicMock(return_value={"results": []})
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="not found"):
             client.get_object("observed-data", "EVT-MISSING")
 
     def test_list_objects_indicator(self, client):
-        entries = [
-            {"content": {"ip": f"10.0.0.{i}", "_time": ""}} for i in range(3)
-        ]
+        entries = [{"content": {"ip": f"10.0.0.{i}", "_time": ""}} for i in range(3)]
         client.get = MagicMock(return_value={"entry": entries})
         results = client.list_objects("indicator")
         assert len(results) == 3
@@ -390,19 +394,21 @@ class TestSplunkClientStixIntegration:
             assert r["type"] == "indicator"
 
     def test_list_objects_default_runs_search(self, client):
-        client.post = MagicMock(return_value={
-            "results": [{"rule_name": "Rule1", "_time": "2024-01-01"}]
-        })
+        client.post = MagicMock(
+            return_value={"results": [{"rule_name": "Rule1", "_time": "2024-01-01"}]}
+        )
         results = client.list_objects("observed-data")
         assert len(results) == 1
 
     def test_upsert_object_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("indicator", {})
 
     def test_delete_object_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("indicator", "id-123")
 
@@ -417,24 +423,30 @@ class TestSplunkClientStixIntegration:
         assert "network-traffic" in result["pattern"]
 
     def test_from_stix_url_pattern(self, client):
-        result = client.from_stix({
-            "name": "http://bad.com/path",
-            "pattern": "[url:value = 'http://bad.com/path']",
-        })
+        result = client.from_stix(
+            {
+                "name": "http://bad.com/path",
+                "pattern": "[url:value = 'http://bad.com/path']",
+            }
+        )
         assert result["ioc_type"] == "url"
 
     def test_from_stix_hash_pattern(self, client):
-        result = client.from_stix({
-            "name": "aabbccdd",
-            "pattern": "[file:hashes.MD5 = 'aabbccdd']",
-        })
+        result = client.from_stix(
+            {
+                "name": "aabbccdd",
+                "pattern": "[file:hashes.MD5 = 'aabbccdd']",
+            }
+        )
         assert result["ioc_type"] == "hash"
 
     def test_from_stix_unknown_pattern(self, client):
-        result = client.from_stix({
-            "name": "unknown",
-            "pattern": "[something:weird = 'val']",
-        })
+        result = client.from_stix(
+            {
+                "name": "unknown",
+                "pattern": "[something:weird = 'val']",
+            }
+        )
         assert result["ioc_type"] == "unknown"
 
     def test_post_raw_method(self, client):
@@ -838,9 +850,7 @@ class TestSplunkSTIXMapperSplunkToSTIX:
 class TestSplunkSTIXMapperExtractPatternValue:
     def test_extract_ip_value(self):
         record = {}
-        SplunkSTIXMapper._extract_pattern_value(
-            "[ipv4-addr:value = '5.5.5.5']", "ip", record
-        )
+        SplunkSTIXMapper._extract_pattern_value("[ipv4-addr:value = '5.5.5.5']", "ip", record)
         assert record["ip"] == "5.5.5.5"
 
     def test_extract_domain_value(self):
@@ -857,9 +867,7 @@ class TestSplunkSTIXMapperExtractPatternValue:
 
     def test_does_not_overwrite_existing_value(self):
         record = {"ip": "1.1.1.1"}
-        SplunkSTIXMapper._extract_pattern_value(
-            "[ipv4-addr:value = '2.2.2.2']", "ip", record
-        )
+        SplunkSTIXMapper._extract_pattern_value("[ipv4-addr:value = '2.2.2.2']", "ip", record)
         assert record["ip"] == "1.1.1.1"
 
 
@@ -997,19 +1005,23 @@ class TestSplunkThreatIntelCommands:
 
     def test_list_intel_sources_returns_normalised(self):
         ti, client = _make_threat_intel_client()
-        client.get = MagicMock(return_value={
-            "entry": [{
-                "name": "my_feed",
-                "content": {
-                    "type": "stix2",
-                    "collection": "ip_intel",
-                    "weight": "50",
-                    "disabled": "false",
-                    "status": "active",
-                    "last_successful_execution": "2024-01-01T00:00:00Z",
-                },
-            }]
-        })
+        client.get = MagicMock(
+            return_value={
+                "entry": [
+                    {
+                        "name": "my_feed",
+                        "content": {
+                            "type": "stix2",
+                            "collection": "ip_intel",
+                            "weight": "50",
+                            "disabled": "false",
+                            "status": "active",
+                            "last_successful_execution": "2024-01-01T00:00:00Z",
+                        },
+                    }
+                ]
+            }
+        )
         result = ti.list_intel_sources()
         assert len(result) == 1
         assert result[0]["name"] == "my_feed"
@@ -1067,27 +1079,25 @@ class TestSplunkSearchCommands:
         assert "status_buckets" in call_kwargs["data"]
 
     def test_poll_job_returns_done(self, searcher, client):
-        done_response = {
-            "entry": [{"content": {"dispatchState": "DONE"}}]
-        }
+        done_response = {"entry": [{"content": {"dispatchState": "DONE"}}]}
         client.get = MagicMock(return_value=done_response)
         state = searcher.poll_job("test-sid")
         assert state == "DONE"
 
     def test_poll_job_raises_on_failed_state(self, searcher, client):
-        failed_response = {
-            "entry": [{"content": {"dispatchState": "FAILED", "messages": {}}}]
-        }
+        failed_response = {"entry": [{"content": {"dispatchState": "FAILED", "messages": {}}}]}
         client.get = MagicMock(return_value=failed_response)
         with pytest.raises(SplunkSearchError, match="failed"):
             searcher.poll_job("test-sid")
 
     def test_poll_job_raises_on_timeout(self, searcher, client):
-        running_response = {
-            "entry": [{"content": {"dispatchState": "RUNNING"}}]
-        }
+        running_response = {"entry": [{"content": {"dispatchState": "RUNNING"}}]}
         client.get = MagicMock(return_value=running_response)
-        with patch("time.sleep"), patch("time.time", side_effect=[0, 0, 999]), pytest.raises(SplunkSearchError, match="timed out"):
+        with (
+            patch("time.sleep"),
+            patch("time.time", side_effect=[0, 0, 999]),
+            pytest.raises(SplunkSearchError, match="timed out"),
+        ):
             searcher.poll_job("test-sid", timeout=5)
 
     def test_fetch_results_returns_rows(self, searcher, client):
@@ -1105,10 +1115,12 @@ class TestSplunkSearchCommands:
     def test_iter_results_pages_through_all(self, searcher, client):
         page1 = [{"i": i} for i in range(5)]
         page2 = [{"i": i} for i in range(5, 8)]
-        client.get = MagicMock(side_effect=[
-            {"results": page1},
-            {"results": page2},
-        ])
+        client.get = MagicMock(
+            side_effect=[
+                {"results": page1},
+                {"results": page2},
+            ]
+        )
         results = list(searcher.iter_results("sid", page_size=5))
         assert len(results) == 8
 
@@ -1170,9 +1182,9 @@ class TestSplunkSearchCommands:
         assert result[0]["search"] == "index=main | stats count"
 
     def test_get_saved_search_returns_content(self, searcher, client):
-        client.get = MagicMock(return_value={
-            "entry": [{"content": {"search": "index=main | head 10"}}]
-        })
+        client.get = MagicMock(
+            return_value={"entry": [{"content": {"search": "index=main | head 10"}}]}
+        )
         content = searcher.get_saved_search("My Alert")
         assert content["search"] == "index=main | head 10"
 
@@ -1210,9 +1222,7 @@ class TestSplunkSearchCommands:
         assert result[0]["total_event_count"] == "12345"
 
     def test_get_index_stats_returns_content(self, searcher, client):
-        client.get = MagicMock(return_value={
-            "entry": [{"content": {"totalEventCount": "100"}}]
-        })
+        client.get = MagicMock(return_value={"entry": [{"content": {"totalEventCount": "100"}}]})
         stats = searcher.get_index_stats("main")
         assert stats["totalEventCount"] == "100"
 
@@ -1238,16 +1248,14 @@ class TestSplunkKVStoreCommands:
         return SplunkKVStoreCommands(client)
 
     def test_list_collections_returns_names(self, kv, client):
-        client.get = MagicMock(return_value={
-            "entry": [{"name": "my_collection"}, {"name": "another_coll"}]
-        })
+        client.get = MagicMock(
+            return_value={"entry": [{"name": "my_collection"}, {"name": "another_coll"}]}
+        )
         result = kv.list_collections()
         assert result == ["my_collection", "another_coll"]
 
     def test_collection_exists_true(self, kv, client):
-        client.get = MagicMock(return_value={
-            "entry": [{"name": "my_collection"}]
-        })
+        client.get = MagicMock(return_value={"entry": [{"name": "my_collection"}]})
         assert kv.collection_exists("my_collection") is True
 
     def test_collection_exists_false(self, kv, client):
@@ -1405,9 +1413,7 @@ class TestSplunkAlertCommands:
         assert result[0]["severity"] == "high"
 
     def test_list_fired_alerts_caps_at_count(self, alerts, client):
-        entries = [
-            {"name": f"a{i}", "content": {}} for i in range(10)
-        ]
+        entries = [{"name": f"a{i}", "content": {}} for i in range(10)]
         client.paginate = MagicMock(return_value=iter(entries))
         result = alerts.list_fired_alerts(count=3)
         assert len(result) == 3
@@ -1564,8 +1570,7 @@ class TestSplunkAlertCommands:
         alerts._client.config.es_enabled = True
         client.post = MagicMock(return_value={})
         alerts.update_notable_status(
-            ["EVT-001"], status="resolved",
-            owner="analyst2", urgency="critical"
+            ["EVT-001"], status="resolved", owner="analyst2", urgency="critical"
         )
         data = client.post.call_args[1]["data"]
         assert data["newOwner"] == "analyst2"
@@ -1598,9 +1603,7 @@ class TestSplunkAlertCommands:
     def test_get_notable_by_id_not_found_returns_none(self, alerts, client):
         alerts._client.config.es_enabled = True
         searcher_mock = MagicMock()
-        searcher_mock.run_search.return_value = [
-            {"event_id": "OTHER-001", "urgency": "low"}
-        ]
+        searcher_mock.run_search.return_value = [{"event_id": "OTHER-001", "urgency": "low"}]
         with patch(
             "gnat.connectors.splunk.search.SplunkSearchCommands",
             return_value=searcher_mock,

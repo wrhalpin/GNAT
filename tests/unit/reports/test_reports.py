@@ -56,6 +56,7 @@ from gnat.reports.renderers import DOCXRenderer
 # Fixtures
 # ===========================================================================
 
+
 @pytest.fixture
 def tmp_store(tmp_path):
     return FlatFileStore(base_dir=str(tmp_path / "workspaces"))
@@ -82,41 +83,53 @@ def library_ws(manager):
 
 def _populate(ws, n_inds=5, n_actors=2, n_vulns=2, n_ttps=2):
     for i in range(n_inds):
-        ws.add(Indicator(
-            name=f"evil{i}.com",
-            pattern=f"[domain-name:value = 'evil{i}.com']",
-            pattern_type="stix",
-            confidence=40 + i * 10,
-            x_target_sectors=["Healthcare"] if i % 2 == 0 else ["Finance"],
-            x_source_platform="threatq",
-            created=f"2024-03-{i+1:02d}T00:00:00Z",
-            modified=f"2024-03-{i+1:02d}T00:00:00Z",
-        ), mark_dirty=False)
+        ws.add(
+            Indicator(
+                name=f"evil{i}.com",
+                pattern=f"[domain-name:value = 'evil{i}.com']",
+                pattern_type="stix",
+                confidence=40 + i * 10,
+                x_target_sectors=["Healthcare"] if i % 2 == 0 else ["Finance"],
+                x_source_platform="threatq",
+                created=f"2024-03-{i + 1:02d}T00:00:00Z",
+                modified=f"2024-03-{i + 1:02d}T00:00:00Z",
+            ),
+            mark_dirty=False,
+        )
     for i in range(n_actors):
-        ws.add(ThreatActor(
-            name=f"Actor{i}",
-            threat_actor_types=["espionage"],
-            x_target_sectors=["Healthcare"],
-            created=f"2024-03-{i+1:02d}T00:00:00Z",
-            modified=f"2024-03-{i+1:02d}T00:00:00Z",
-        ), mark_dirty=False)
+        ws.add(
+            ThreatActor(
+                name=f"Actor{i}",
+                threat_actor_types=["espionage"],
+                x_target_sectors=["Healthcare"],
+                created=f"2024-03-{i + 1:02d}T00:00:00Z",
+                modified=f"2024-03-{i + 1:02d}T00:00:00Z",
+            ),
+            mark_dirty=False,
+        )
     for i in range(n_vulns):
-        ws.add(Vulnerability(
-            name=f"CVE-2024-{i+1000}",
-            x_cvss_score=9.0 + i * 0.4,
-            x_cve_id=f"CVE-2024-{i+1000}",
-            x_actively_exploited=(i == 0),
-            created=f"2024-03-{i+1:02d}T00:00:00Z",
-            modified=f"2024-03-{i+1:02d}T00:00:00Z",
-        ), mark_dirty=False)
+        ws.add(
+            Vulnerability(
+                name=f"CVE-2024-{i + 1000}",
+                x_cvss_score=9.0 + i * 0.4,
+                x_cve_id=f"CVE-2024-{i + 1000}",
+                x_actively_exploited=(i == 0),
+                created=f"2024-03-{i + 1:02d}T00:00:00Z",
+                modified=f"2024-03-{i + 1:02d}T00:00:00Z",
+            ),
+            mark_dirty=False,
+        )
     for i in range(n_ttps):
-        ws.add(AttackPattern(
-            name=f"T{1500+i} Technique",
-            x_mitre_id=f"T{1500+i}",
-            x_tactic="Initial Access",
-            created=f"2024-03-{i+1:02d}T00:00:00Z",
-            modified=f"2024-03-{i+1:02d}T00:00:00Z",
-        ), mark_dirty=False)
+        ws.add(
+            AttackPattern(
+                name=f"T{1500 + i} Technique",
+                x_mitre_id=f"T{1500 + i}",
+                x_tactic="Initial Access",
+                created=f"2024-03-{i + 1:02d}T00:00:00Z",
+                modified=f"2024-03-{i + 1:02d}T00:00:00Z",
+            ),
+            mark_dirty=False,
+        )
 
 
 def _daily_config(tmp_path, **kwargs):
@@ -143,28 +156,40 @@ def _make_doc(config=None):
         period_end=now,
         config=config,
     )
-    doc.add_section(ReportSection(
-        title="Executive Summary",
-        data={"total_new": 5},
-        narrative="APT29 targeted healthcare. Three critical CVEs identified.",
-        section_type="summary",
-        order=1,
-    ))
-    doc.add_section(ReportSection(
-        title="Vulnerabilities",
-        data={"critical_vulns": [
-            {"cve_id": "CVE-2024-1234", "cvss": 9.8, "exploited": True,
-             "name": "CVE-2024-1234", "description": "RCE"}
-        ]},
-        section_type="table",
-        order=2,
-    ))
+    doc.add_section(
+        ReportSection(
+            title="Executive Summary",
+            data={"total_new": 5},
+            narrative="APT29 targeted healthcare. Three critical CVEs identified.",
+            section_type="summary",
+            order=1,
+        )
+    )
+    doc.add_section(
+        ReportSection(
+            title="Vulnerabilities",
+            data={
+                "critical_vulns": [
+                    {
+                        "cve_id": "CVE-2024-1234",
+                        "cvss": 9.8,
+                        "exploited": True,
+                        "name": "CVE-2024-1234",
+                        "description": "RCE",
+                    }
+                ]
+            },
+            section_type="table",
+            order=2,
+        )
+    )
     return doc
 
 
 # ===========================================================================
 # AIMode
 # ===========================================================================
+
 
 class TestAIMode:
     def test_values(self):
@@ -177,8 +202,8 @@ class TestAIMode:
 # ReportConfig
 # ===========================================================================
 
-class TestReportConfig:
 
+class TestReportConfig:
     def test_defaults(self):
         cfg = ReportConfig(report_type="daily")
         assert cfg.workspaces == ["_ctmsak_library"]
@@ -234,18 +259,23 @@ class TestReportConfig:
 # SectorFilter
 # ===========================================================================
 
-class TestSectorFilter:
 
+class TestSectorFilter:
     def _objects(self):
         """Create three test objects with different sector tags."""
-        ind1 = Indicator(name="a.com",
-            pattern="[domain-name:value = 'a.com']", pattern_type="stix",
-            x_target_sectors=["Healthcare", "Opportunistic"])
-        ind2 = Indicator(name="b.com",
-            pattern="[domain-name:value = 'b.com']", pattern_type="stix",
-            x_target_sectors=["Finance"])
-        ind3 = Indicator(name="c.com",
-            pattern="[domain-name:value = 'c.com']", pattern_type="stix")
+        ind1 = Indicator(
+            name="a.com",
+            pattern="[domain-name:value = 'a.com']",
+            pattern_type="stix",
+            x_target_sectors=["Healthcare", "Opportunistic"],
+        )
+        ind2 = Indicator(
+            name="b.com",
+            pattern="[domain-name:value = 'b.com']",
+            pattern_type="stix",
+            x_target_sectors=["Finance"],
+        )
+        ind3 = Indicator(name="c.com", pattern="[domain-name:value = 'c.com']", pattern_type="stix")
         # ind3 has no sector tag
         return [ind1, ind2, ind3]
 
@@ -306,8 +336,8 @@ class TestSectorFilter:
 # DataAggregator
 # ===========================================================================
 
-class TestDataAggregator:
 
+class TestDataAggregator:
     def test_volume_metrics(self, manager, library_ws, tmp_path):
         cfg = _daily_config(tmp_path)
         agg = DataAggregator(manager, cfg).run()
@@ -383,9 +413,13 @@ class TestDataAggregator:
 
     def test_period_over_period_for_trends(self, manager, library_ws, tmp_path):
         cfg = ReportConfig(
-            report_type="trends", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"], delivery=["file"],
-            output_dir=str(tmp_path / "r"), window_days=30,
+            report_type="trends",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "r"),
+            window_days=30,
         )
         agg = DataAggregator(manager, cfg).run()
         assert "current_total" in agg.period_over_period
@@ -395,8 +429,8 @@ class TestDataAggregator:
 # ReportDocument
 # ===========================================================================
 
-class TestReportDocument:
 
+class TestReportDocument:
     def test_add_section_sorts_by_order(self):
         doc = _make_doc()
         doc.add_section(ReportSection(title="Last", data={}, order=99))
@@ -420,8 +454,11 @@ class TestReportDocument:
     def test_has_any_narrative_false(self):
         now = datetime.now(timezone.utc)
         doc = ReportDocument(
-            title="x", report_type="daily", generated_at=now,
-            period_start=now, period_end=now,
+            title="x",
+            report_type="daily",
+            generated_at=now,
+            period_start=now,
+            period_end=now,
         )
         doc.add_section(ReportSection(title="Data", data={"k": 1}, order=1))
         assert not doc.has_any_narrative
@@ -431,8 +468,8 @@ class TestReportDocument:
 # MarkdownRenderer
 # ===========================================================================
 
-class TestMarkdownRenderer:
 
+class TestMarkdownRenderer:
     def test_title_in_output(self, tmp_path):
         doc = _make_doc()
         path = str(tmp_path / "r.md")
@@ -475,8 +512,8 @@ class TestMarkdownRenderer:
 # HTMLRenderer
 # ===========================================================================
 
-class TestHTMLRenderer:
 
+class TestHTMLRenderer:
     def test_valid_html(self, tmp_path):
         doc = _make_doc()
         path = str(tmp_path / "r.html")
@@ -530,7 +567,6 @@ except ImportError:
 
 
 class TestPDFRenderer:
-
     def test_creates_file(self, tmp_path):
         if not _reportlab_available:
             pytest.skip("reportlab not installed")
@@ -560,8 +596,8 @@ class TestPDFRenderer:
 # DOCXRenderer
 # ===========================================================================
 
-class TestDOCXRenderer:
 
+class TestDOCXRenderer:
     def test_creates_file(self, tmp_path):
         doc = _make_doc()
         path = str(tmp_path / "r.docx")
@@ -583,6 +619,7 @@ class TestDOCXRenderer:
     def test_is_valid_zip(self, tmp_path):
         """DOCX files are ZIP archives — verify basic structure."""
         import zipfile
+
         doc = _make_doc()
         path = str(tmp_path / "r.docx")
         DOCXRenderer().render(doc, path)
@@ -594,6 +631,7 @@ class TestDOCXRenderer:
     def test_title_in_content(self, tmp_path):
         """Title text should appear in the document XML."""
         import zipfile
+
         doc = _make_doc()
         path = str(tmp_path / "r.docx")
         DOCXRenderer().render(doc, path)
@@ -604,7 +642,11 @@ class TestDOCXRenderer:
     def test_missing_python_docx_raises(self, tmp_path):
         import sys
         from unittest.mock import patch
-        with patch.dict(sys.modules, {"docx": None}), pytest.raises(ImportError, match="python-docx"):
+
+        with (
+            patch.dict(sys.modules, {"docx": None}),
+            pytest.raises(ImportError, match="python-docx"),
+        ):
             DOCXRenderer().render(_make_doc(), str(tmp_path / "r.docx"))
 
 
@@ -612,8 +654,8 @@ class TestDOCXRenderer:
 # ReportGenerator
 # ===========================================================================
 
-class TestReportGenerator:
 
+class TestReportGenerator:
     def test_no_ai_all_formats(self, manager, library_ws, tmp_path):
         cfg = _daily_config(tmp_path, formats=["markdown", "html", "docx"])
         result = ReportGenerator(manager, cfg).run()
@@ -641,13 +683,11 @@ class TestReportGenerator:
 
     def test_ai_assisted_calls_synthesizer(self, manager, library_ws, tmp_path):
         from gnat.agents.base import AgentConfig, ClaudeClient
-        mock_resp = {"content": [{"type": "text",
-                                   "text": "Narrative for this section."}]}
+
+        mock_resp = {"content": [{"type": "text", "text": "Narrative for this section."}]}
         with patch.object(ClaudeClient, "complete", return_value=mock_resp):
             cfg = _daily_config(tmp_path, ai_mode=AIMode.ASSISTED)
-            result = ReportGenerator(
-                manager, cfg, agent_config=AgentConfig(api_key="x")
-            ).run()
+            result = ReportGenerator(manager, cfg, agent_config=AgentConfig(api_key="x")).run()
         assert result.ai_calls_made > 0
         assert "markdown" in result.formats_rendered
 
@@ -666,16 +706,19 @@ class TestReportGenerator:
 
     def test_sector_filter_applied(self, manager, library_ws, tmp_path):
         cfg_all = _daily_config(tmp_path)
-        cfg_hc  = _daily_config(tmp_path, sectors=["Healthcare"], sector_strict=True)
+        cfg_hc = _daily_config(tmp_path, sectors=["Healthcare"], sector_strict=True)
         result_all = ReportGenerator(manager, cfg_all).run()
-        result_hc  = ReportGenerator(manager, cfg_hc).run()
+        result_hc = ReportGenerator(manager, cfg_hc).run()
         assert result_hc.objects_analysed <= result_all.objects_analysed
 
     def test_trends_report(self, manager, library_ws, tmp_path):
         cfg = ReportConfig(
-            report_type="trends", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown", "html"],
-            delivery=["file"], output_dir=str(tmp_path / "trends"),
+            report_type="trends",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown", "html"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "trends"),
             window_days=30,
         )
         result = ReportGenerator(manager, cfg).run()
@@ -684,9 +727,12 @@ class TestReportGenerator:
 
     def test_yearly_report(self, manager, library_ws, tmp_path):
         cfg = ReportConfig(
-            report_type="yearly", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"],
-            delivery=["file"], output_dir=str(tmp_path / "yearly"),
+            report_type="yearly",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "yearly"),
             window_days=365,
         )
         result = ReportGenerator(manager, cfg).run()
@@ -697,11 +743,12 @@ class TestReportGenerator:
 # ReportResult
 # ===========================================================================
 
-class TestReportResult:
 
+class TestReportResult:
     def test_success_true_when_formats_rendered(self):
         r = ReportResult(
-            report_type="daily", title="T",
+            report_type="daily",
+            title="T",
             generated_at=datetime.now(timezone.utc),
             formats_rendered=["pdf"],
         )
@@ -709,7 +756,8 @@ class TestReportResult:
 
     def test_success_false_when_errors(self):
         r = ReportResult(
-            report_type="daily", title="T",
+            report_type="daily",
+            title="T",
             generated_at=datetime.now(timezone.utc),
             formats_rendered=["pdf"],
             errors=["Something failed"],
@@ -718,14 +766,16 @@ class TestReportResult:
 
     def test_success_false_when_no_formats(self):
         r = ReportResult(
-            report_type="daily", title="T",
+            report_type="daily",
+            title="T",
             generated_at=datetime.now(timezone.utc),
         )
         assert not r.success
 
     def test_str_representation(self):
         r = ReportResult(
-            report_type="daily", title="T",
+            report_type="daily",
+            title="T",
             generated_at=datetime.now(timezone.utc),
             formats_rendered=["pdf", "html"],
             objects_analysed=50,
@@ -739,8 +789,8 @@ class TestReportResult:
 # ReportJob
 # ===========================================================================
 
-class TestReportJob:
 
+class TestReportJob:
     def test_execute_success(self, manager, library_ws, tmp_path):
         cfg = _daily_config(tmp_path)
         job = ReportJob(manager=manager, config=cfg)
@@ -760,7 +810,8 @@ class TestReportJob:
         fired = []
         cfg = _daily_config(tmp_path)
         job = ReportJob(
-            manager=manager, config=cfg,
+            manager=manager,
+            config=cfg,
             on_success=lambda rec: fired.append(rec.status),
         )
         job.execute()
@@ -780,12 +831,18 @@ class TestReportJob:
 
         fired = []
         cfg = ReportConfig(
-            report_type="daily", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"], delivery=["file"],
-            output_dir=str(tmp_path / "sched"), window_days=365,
+            report_type="daily",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "sched"),
+            window_days=365,
         )
         job = ReportJob(
-            manager=manager, config=cfg, job_id="sched-test",
+            manager=manager,
+            config=cfg,
+            job_id="sched-test",
             on_success=lambda rec: fired.append(rec.run_number),
         )
         sched = FeedScheduler()
@@ -798,9 +855,12 @@ class TestReportJob:
     def test_yearly_default_cron(self, manager, library_ws, tmp_path):
         """ReportJob for yearly should use cron, not a 365-day interval."""
         cfg = ReportConfig(
-            report_type="yearly", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"],
-            delivery=["file"], output_dir=str(tmp_path / "yearly"),
+            report_type="yearly",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "yearly"),
         )
         job = ReportJob(manager=manager, config=cfg)
         # cron should be set; interval_seconds should be None
@@ -810,9 +870,12 @@ class TestReportJob:
     def test_daily_default_interval(self, manager, library_ws, tmp_path):
         """ReportJob for daily should use 86400-second interval by default."""
         cfg = ReportConfig(
-            report_type="daily", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"],
-            delivery=["file"], output_dir=str(tmp_path / "daily"),
+            report_type="daily",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "daily"),
         )
         job = ReportJob(manager=manager, config=cfg)
         assert job.interval_seconds == 86400
@@ -821,9 +884,12 @@ class TestReportJob:
     def test_custom_schedule_overrides_default(self, manager, library_ws, tmp_path):
         """Explicit schedule in ReportConfig takes precedence over defaults."""
         cfg = ReportConfig(
-            report_type="yearly", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"],
-            delivery=["file"], output_dir=str(tmp_path / "yearly"),
+            report_type="yearly",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "yearly"),
             schedule="0 8 1 1 *",
         )
         job = ReportJob(manager=manager, config=cfg)
@@ -834,26 +900,33 @@ class TestReportJob:
 # EmailDelivery body_html population (item #7)
 # ===========================================================================
 
-class TestEmailBodyHTML:
 
+class TestEmailBodyHTML:
     def test_html_file_used_as_body(self, manager, library_ws, tmp_path):
         """When an HTML file is rendered, _extract_email_body_html returns its content."""
         from gnat.reports.generator import ReportGenerator
 
         cfg = ReportConfig(
-            report_type="daily", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["html"],
-            delivery=["file"], output_dir=str(tmp_path / "out"),
+            report_type="daily",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["html"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "out"),
         )
         gen = ReportGenerator(manager, cfg)
         result = gen.run()
         assert "html" in result.formats_rendered
 
         from gnat.reports.base import ReportDocument
+
         _now = result.generated_at
         doc = ReportDocument(
-            title="T", report_type="daily",
-            generated_at=_now, period_start=_now, period_end=_now,
+            title="T",
+            report_type="daily",
+            generated_at=_now,
+            period_start=_now,
+            period_end=_now,
         )
         body = gen._extract_email_body_html(result, doc)
         assert body.startswith("<!DOCTYPE html") or "<html" in body
@@ -864,9 +937,12 @@ class TestEmailBodyHTML:
         from gnat.reports.generator import ReportGenerator
 
         cfg = ReportConfig(
-            report_type="daily", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"],
-            delivery=["file"], output_dir=str(tmp_path / "out"),
+            report_type="daily",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "out"),
         )
         gen = ReportGenerator(manager, cfg)
         result = gen.run()
@@ -876,14 +952,19 @@ class TestEmailBodyHTML:
 
         _now = result.generated_at
         doc = ReportDocument(
-            title="Daily Report", report_type="daily",
-            generated_at=_now, period_start=_now, period_end=_now,
+            title="Daily Report",
+            report_type="daily",
+            generated_at=_now,
+            period_start=_now,
+            period_end=_now,
         )
-        doc.add_section(ReportSection(
-            title="Executive Summary",
-            narrative="Key findings: 3 new threat actors observed.",
-            section_type="narrative",
-        ))
+        doc.add_section(
+            ReportSection(
+                title="Executive Summary",
+                narrative="Key findings: 3 new threat actors observed.",
+                section_type="narrative",
+            )
+        )
 
         body = gen._extract_email_body_html(result, doc)
         assert "Key findings" in body
@@ -894,9 +975,12 @@ class TestEmailBodyHTML:
         from gnat.reports.generator import ReportGenerator
 
         cfg = ReportConfig(
-            report_type="daily", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"],
-            delivery=["file"], output_dir=str(tmp_path / "out"),
+            report_type="daily",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "out"),
         )
         gen = ReportGenerator(manager, cfg)
         result = gen.run()
@@ -908,9 +992,12 @@ class TestEmailBodyHTML:
         from gnat.reports.generator import ReportGenerator
 
         cfg = ReportConfig(
-            report_type="daily", workspaces=["_ctmsak_library"],
-            ai_mode=AIMode.NONE, formats=["markdown"],
-            delivery=["file"], output_dir=str(tmp_path / "out"),
+            report_type="daily",
+            workspaces=["_ctmsak_library"],
+            ai_mode=AIMode.NONE,
+            formats=["markdown"],
+            delivery=["file"],
+            output_dir=str(tmp_path / "out"),
         )
         gen = ReportGenerator(manager, cfg)
         result = gen.run()
@@ -918,14 +1005,19 @@ class TestEmailBodyHTML:
         long_narrative = "x" * 5000
         _now = result.generated_at
         doc = ReportDocument(
-            title="Daily Report", report_type="daily",
-            generated_at=_now, period_start=_now, period_end=_now,
+            title="Daily Report",
+            report_type="daily",
+            generated_at=_now,
+            period_start=_now,
+            period_end=_now,
         )
-        doc.add_section(ReportSection(
-            title="Executive Summary",
-            narrative=long_narrative,
-            section_type="narrative",
-        ))
+        doc.add_section(
+            ReportSection(
+                title="Executive Summary",
+                narrative=long_narrative,
+                section_type="narrative",
+            )
+        )
         body = gen._extract_email_body_html(result, doc)
         # The snippet is capped at 2000 chars before HTML wrapping
         assert long_narrative[:2000] in body

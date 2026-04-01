@@ -107,13 +107,9 @@ class ElasticConnector(BaseClient, ConnectorMixin):
             alert = self._alerts.get_alert_by_id(object_id)
             if alert is None:
                 raise GNATClientError(f"Alert {object_id!r} not found", status=404)
-            return self._mapper.alert_to_stix_bundle(
-                self._alerts.normalise_alert(alert)
-            )
+            return self._mapper.alert_to_stix_bundle(self._alerts.normalise_alert(alert))
         # Default: threat-intel indicator
-        raw = self._elastic.es_get(
-            f"{self._elastic.config.es_index_ti}/_doc/{object_id}"
-        )
+        raw = self._elastic.es_get(f"{self._elastic.config.es_index_ti}/_doc/{object_id}")
         return self._mapper.ecs_indicator_to_stix(self._ti.normalise_indicator(raw))
 
     def list_objects(
@@ -135,9 +131,7 @@ class ElasticConnector(BaseClient, ConnectorMixin):
         if stix_type == "observed-data":
             raw_alerts = self._alerts.search_alerts(size=limit)
             return [
-                self._mapper.alert_to_stix_bundle(
-                    self._alerts.normalise_alert(a)
-                )
+                self._mapper.alert_to_stix_bundle(self._alerts.normalise_alert(a))
                 for a in raw_alerts
             ]
         # Default: threat-intel indicators
@@ -169,9 +163,7 @@ class ElasticConnector(BaseClient, ConnectorMixin):
                 "Elastic alerts are read-only; delete is not supported for "
                 "stix_type='observed-data'."
             )
-        self._elastic.es_delete(
-            f"{self._elastic.config.es_index_ti}/_doc/{object_id}"
-        )
+        self._elastic.es_delete(f"{self._elastic.config.es_index_ti}/_doc/{object_id}")
 
     def to_stix(self, native_object: dict) -> dict:
         """
@@ -181,17 +173,12 @@ class ElasticConnector(BaseClient, ConnectorMixin):
         - ``"signal"`` / ``"alert"`` → ``observed-data`` via alert mapper
         - anything else → ECS threat indicator → STIX indicator
         """
-        event_kind = (
-            native_object.get("event", {}).get("kind")
-            or native_object.get("event.kind", "")
+        event_kind = native_object.get("event", {}).get("kind") or native_object.get(
+            "event.kind", ""
         )
         if event_kind in ("signal", "alert"):
-            return self._mapper.alert_to_stix_bundle(
-                self._alerts.normalise_alert(native_object)
-            )
-        return self._mapper.ecs_indicator_to_stix(
-            self._ti.normalise_indicator(native_object)
-        )
+            return self._mapper.alert_to_stix_bundle(self._alerts.normalise_alert(native_object))
+        return self._mapper.ecs_indicator_to_stix(self._ti.normalise_indicator(native_object))
 
     def from_stix(self, stix_dict: dict) -> dict:
         """Convert a STIX indicator SDO to an ECS threat-indicator document."""

@@ -85,7 +85,8 @@ class SentinelIncidentCommands:
 
         items = []
         for item in self._client.paginate(
-            "incidents", params=params,
+            "incidents",
+            params=params,
             page_size=min(limit or self._client.config.max_results, 100),
         ):
             items.append(item)
@@ -143,6 +144,7 @@ class SentinelIncidentCommands:
             Created incident resource.
         """
         import uuid
+
         incident_id = str(uuid.uuid4())
         props: dict = {
             "title": title,
@@ -212,6 +214,7 @@ class SentinelIncidentCommands:
     def add_comment(self, incident_id: str, message: str) -> dict:
         """Add a comment to an incident."""
         import uuid
+
         comment_id = str(uuid.uuid4())
         return self._client.put(
             f"incidents/{incident_id}/comments/{comment_id}",

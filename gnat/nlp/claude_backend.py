@@ -77,6 +77,7 @@ class ClaudeParser:
 
     def __init__(self, config: Any) -> None:
         from gnat.agents.base import ClaudeClient
+
         self._client = ClaudeClient(config)
         self._config = config
 
@@ -101,7 +102,7 @@ class ClaudeParser:
         """
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         system = _SYSTEM_PROMPT.format(today=today)
-        user   = _USER_PROMPT.format(query=query)
+        user = _USER_PROMPT.format(query=query)
 
         try:
             raw = self._client.complete(
@@ -110,19 +111,16 @@ class ClaudeParser:
             )
             return self._parse_response(raw, query, default_limit)
         except Exception as exc:
-            logger.warning(
-                "ClaudeParser API call failed (%s); falling back to BuiltinParser", exc
-            )
+            logger.warning("ClaudeParser API call failed (%s); falling back to BuiltinParser", exc)
             from gnat.nlp.builtin import BuiltinParser
+
             return BuiltinParser().parse(query, default_limit=default_limit)
 
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _parse_response(
-        self, raw: Any, query: str, default_limit: int
-    ) -> QuerySpec:
+    def _parse_response(self, raw: Any, query: str, default_limit: int) -> QuerySpec:
         """Deserialise Claude's JSON response into a QuerySpec."""
         # ClaudeClient.messages() returns the full response dict
         if isinstance(raw, dict):
@@ -147,19 +145,20 @@ class ClaudeParser:
         except json.JSONDecodeError as exc:
             logger.warning("ClaudeParser: JSON decode error (%s); using builtin", exc)
             from gnat.nlp.builtin import BuiltinParser
+
             return BuiltinParser().parse(query, default_limit=default_limit)
 
         since = self._parse_dt(data.get("since"))
         until = self._parse_dt(data.get("until"))
 
         return QuerySpec(
-            entities   = [str(e) for e in data.get("entities", [])],
-            ioc_types  = [str(t) for t in data.get("ioc_types", [])],
-            since      = since,
-            until      = until,
-            platforms  = [str(p) for p in data.get("platforms", [])],
-            limit      = int(data.get("limit", default_limit)),
-            raw_query  = query,
+            entities=[str(e) for e in data.get("entities", [])],
+            ioc_types=[str(t) for t in data.get("ioc_types", [])],
+            since=since,
+            until=until,
+            platforms=[str(p) for p in data.get("platforms", [])],
+            limit=int(data.get("limit", default_limit)),
+            raw_query=query,
         )
 
     @staticmethod

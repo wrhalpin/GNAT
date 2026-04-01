@@ -46,6 +46,7 @@ from gnat.research import (
 # Fixtures
 # ===========================================================================
 
+
 @pytest.fixture
 def tmp_store(tmp_path):
     return FlatFileStore(base_dir=str(tmp_path / "workspaces"))
@@ -92,8 +93,8 @@ def _populated_workspace(manager, ws_name: str, topics=None, ai=True):
 # categorise_topic
 # ===========================================================================
 
-class TestCategoriseTopic:
 
+class TestCategoriseTopic:
     def test_threat_actor(self):
         assert categorise_topic("APT29 analysis") == "threat_actor"
         assert categorise_topic("Volt Typhoon campaign") == "threat_actor"
@@ -124,8 +125,8 @@ class TestCategoriseTopic:
 # topic_key
 # ===========================================================================
 
-class TestTopicKey:
 
+class TestTopicKey:
     def test_lowercase(self):
         assert topic_key("APT29") == "apt29"
 
@@ -144,19 +145,21 @@ class TestTopicKey:
 # ResearchEntry
 # ===========================================================================
 
-class TestResearchEntry:
 
-    def _entry(self, topic="APT29", researcher="analyst1",
-               hours_ago=0, category=None) -> ResearchEntry:
+class TestResearchEntry:
+    def _entry(
+        self, topic="APT29", researcher="analyst1", hours_ago=0, category=None
+    ) -> ResearchEntry:
         promoted = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
         return ResearchEntry(
-            topic       = topic,
-            stix_objects= [{"type": "indicator", "id": f"indicator--{topic}",
-                             "name": f"{topic}.com"}],
-            researcher  = researcher,
-            promoted_at = promoted,
-            note        = f"Research on {topic}",
-            category    = category or categorise_topic(topic),
+            topic=topic,
+            stix_objects=[
+                {"type": "indicator", "id": f"indicator--{topic}", "name": f"{topic}.com"}
+            ],
+            researcher=researcher,
+            promoted_at=promoted,
+            note=f"Research on {topic}",
+            category=category or categorise_topic(topic),
         )
 
     def test_auto_category(self):
@@ -228,9 +231,18 @@ class TestResearchEntry:
     def test_summary_dict_keys(self):
         e = self._entry()
         s = e.summary()
-        for key in ("entry_id", "topic", "category", "researcher", "note",
-                    "promoted_at", "age_hours", "is_fresh", "curator_status",
-                    "stix_object_count"):
+        for key in (
+            "entry_id",
+            "topic",
+            "category",
+            "researcher",
+            "note",
+            "promoted_at",
+            "age_hours",
+            "is_fresh",
+            "curator_status",
+            "stix_object_count",
+        ):
             assert key in s, f"Missing key: {key}"
 
     def test_summary_truncates_note(self):
@@ -244,8 +256,8 @@ class TestResearchEntry:
 # ResearchLibrary — initialisation
 # ===========================================================================
 
-class TestResearchLibraryInit:
 
+class TestResearchLibraryInit:
     def test_creates_staging_workspace(self, lib, manager):
         names = [w["name"] for w in manager.list()]
         assert "_ctmsak_staging" in names
@@ -255,9 +267,7 @@ class TestResearchLibraryInit:
         assert "_ctmsak_library" in names
 
     def test_custom_workspace_names(self, manager):
-        lib = ResearchLibrary(manager,
-                              staging_name="_my_staging",
-                              library_name="_my_library")
+        lib = ResearchLibrary(manager, staging_name="_my_staging", library_name="_my_library")
         names = [w["name"] for w in manager.list()]
         assert "_my_staging" in names
         assert "_my_library" in names
@@ -273,12 +283,11 @@ class TestResearchLibraryInit:
 # ResearchLibrary — promote()
 # ===========================================================================
 
-class TestResearchLibraryPromote:
 
+class TestResearchLibraryPromote:
     def test_promote_ai_objects(self, lib, manager):
         ws = _populated_workspace(manager, "ws1", ai=True)
-        entry = lib.promote(ws, topic="APT29", researcher="analyst1",
-                            note="Found C2 infra")
+        entry = lib.promote(ws, topic="APT29", researcher="analyst1", note="Found C2 infra")
         assert entry.topic == "APT29"
         assert entry.researcher == "analyst1"
         assert entry.note == "Found C2 infra"
@@ -297,8 +306,7 @@ class TestResearchLibraryPromote:
         ind_b = _ind("b.com")
         ws.add(ind_a, mark_dirty=False)
         ws.add(ind_b, mark_dirty=False)
-        entry = lib.promote(ws, topic="selective", researcher="analyst1",
-                            stix_ids=[ind_a.id])
+        entry = lib.promote(ws, topic="selective", researcher="analyst1", stix_ids=[ind_a.id])
         assert len(entry.stix_objects) == 1
         assert entry.stix_objects[0]["name"] == "a.com"
 
@@ -314,8 +322,7 @@ class TestResearchLibraryPromote:
 
     def test_promote_auto_ttl(self, lib, manager):
         ws = _populated_workspace(manager, "ws-ttl")
-        entry = lib.promote(ws, topic="CVE-2024-1234 exploit",
-                            researcher="analyst1")
+        entry = lib.promote(ws, topic="CVE-2024-1234 exploit", researcher="analyst1")
         assert entry.category == "vulnerability"
         expected = DEFAULT_TTLS["vulnerability"]
         actual = (entry.expires_at - entry.promoted_at).total_seconds() / 3600
@@ -337,8 +344,8 @@ class TestResearchLibraryPromote:
 # ResearchLibrary — freshness and retrieval
 # ===========================================================================
 
-class TestResearchLibraryRetrieval:
 
+class TestResearchLibraryRetrieval:
     def _promote_and_curate(self, lib, manager, topic, researcher="analyst1"):
         ws = _populated_workspace(manager, f"ws-{topic[:6]}")
         lib.promote(ws, topic=topic, researcher=researcher)
@@ -387,15 +394,17 @@ class TestResearchLibraryRetrieval:
 # ResearchLibrary — search and list
 # ===========================================================================
 
-class TestResearchLibrarySearch:
 
+class TestResearchLibrarySearch:
     def _setup_library(self, lib, manager):
-        topics = [("APT29", "analyst1"), ("Volt Typhoon", "analyst2"),
-                  ("CVE-2024-3400", "analyst1")]
+        topics = [
+            ("APT29", "analyst1"),
+            ("Volt Typhoon", "analyst2"),
+            ("CVE-2024-3400", "analyst1"),
+        ]
         for topic, researcher in topics:
             ws = _populated_workspace(manager, f"ws-{topic[:6]}")
-            lib.promote(ws, topic=topic, researcher=researcher,
-                        note=f"Research on {topic}")
+            lib.promote(ws, topic=topic, researcher=researcher, note=f"Research on {topic}")
         CurationJob(lib, interval_seconds=3600).execute()
 
     def test_search_by_topic_substring(self, lib, manager):
@@ -439,8 +448,8 @@ class TestResearchLibrarySearch:
 # ResearchLibrary — load_into_workspace
 # ===========================================================================
 
-class TestResearchLibraryLoad:
 
+class TestResearchLibraryLoad:
     def test_loads_stix_objects(self, lib, manager):
         ws = _populated_workspace(manager, "ws-src")
         lib.promote(ws, topic="APT29", researcher="analyst1")
@@ -470,8 +479,8 @@ class TestResearchLibraryLoad:
 # ResearchLibrary — stats and retire
 # ===========================================================================
 
-class TestResearchLibraryManagement:
 
+class TestResearchLibraryManagement:
     def test_stats_empty(self, lib):
         s = lib.stats()
         assert s["library_total"] == 0
@@ -509,8 +518,8 @@ class TestResearchLibraryManagement:
 # CurationJob
 # ===========================================================================
 
-class TestCurationJob:
 
+class TestCurationJob:
     def _promote(self, lib, manager, topic, researcher, ws_name):
         ws = _populated_workspace(manager, ws_name)
         lib.promote(ws, topic=topic, researcher=researcher, note=f"Note for {topic}")
@@ -570,8 +579,9 @@ class TestCurationJob:
 
     def test_on_success_callback(self, lib, manager):
         fired = []
-        job = CurationJob(lib, interval_seconds=3600,
-                          on_success=lambda rec: fired.append(rec.status))
+        job = CurationJob(
+            lib, interval_seconds=3600, on_success=lambda rec: fired.append(rec.status)
+        )
         job.execute()
         assert fired == ["success"]
 
@@ -601,16 +611,20 @@ class TestCurationJob:
 # Integration: promote → curate → load full cycle
 # ===========================================================================
 
-class TestResearchLibraryIntegration:
 
+class TestResearchLibraryIntegration:
     def test_full_cycle(self, lib, manager):
         """Analyst promotes → curation runs → second analyst loads."""
         # Analyst 1: research and promote
         ws1 = manager.create("analyst1-ws")
         ind = _ind("c2.apt29.ru")
         ws1.add(ind, mark_dirty=False)
-        lib.promote(ws1, topic="APT29 C2 Infrastructure", researcher="analyst1",
-                    note="Three C2 IPs confirmed by Unit42.")
+        lib.promote(
+            ws1,
+            topic="APT29 C2 Infrastructure",
+            researcher="analyst1",
+            note="Three C2 IPs confirmed by Unit42.",
+        )
 
         # Before curation: analyst2 checks and finds nothing
         assert not lib.is_fresh("APT29 C2 Infrastructure")
@@ -636,8 +650,9 @@ class TestResearchLibraryIntegration:
         """Three analysts research same topic; most recent curated."""
         for _i, researcher in enumerate(["analyst_a", "analyst_b", "analyst_c"]):
             ws = _populated_workspace(manager, f"ws-{researcher}")
-            lib.promote(ws, topic="LockBit 3.0", researcher=researcher,
-                        note=f"Research by {researcher}")
+            lib.promote(
+                ws, topic="LockBit 3.0", researcher=researcher, note=f"Research by {researcher}"
+            )
             time.sleep(0.02)  # ensure ordering
 
         stats_before = lib.stats()
@@ -655,8 +670,12 @@ class TestResearchLibraryIntegration:
 
     def test_search_finds_by_note_content(self, lib, manager):
         ws = _populated_workspace(manager, "ws-note")
-        lib.promote(ws, topic="APT29", researcher="analyst1",
-                    note="Spearphishing campaign targeting energy sector")
+        lib.promote(
+            ws,
+            topic="APT29",
+            researcher="analyst1",
+            note="Spearphishing campaign targeting energy sector",
+        )
         CurationJob(lib, interval_seconds=3600).execute()
 
         results = lib.search("energy sector")

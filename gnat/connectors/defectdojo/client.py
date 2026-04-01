@@ -49,6 +49,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2f")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -68,7 +69,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "findings",
-        "report":        "engagements",
+        "report": "engagements",
     }
 
     def __init__(self, host: str, token: str = "", **kwargs: Any):
@@ -96,6 +97,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         if stix_type == "report":
             return self.get(f"/api/v2/engagements/{object_id}/")
         from gnat.clients.base import GNATClientError
+
         raise GNATClientError(f"Unsupported STIX type for DefectDojo: {stix_type}")
 
     def list_objects(
@@ -127,6 +129,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
                 return self.put(f"/api/v2/engagements/{obj_id}/", json=payload)
             return self.post("/api/v2/engagements/", json=payload)
         from gnat.clients.base import GNATClientError
+
         raise GNATClientError(f"Unsupported STIX type for DefectDojo: {stix_type}")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -136,6 +139,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
             self.delete(f"/api/v2/engagements/{object_id}/")
         else:
             from gnat.clients.base import GNATClientError
+
             raise GNATClientError(f"Unsupported STIX type for DefectDojo: {stix_type}")
 
     # ── Expanded Domain-specific helpers ──────────────────────────────────

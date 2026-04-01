@@ -64,6 +64,7 @@ logger = logging.getLogger(__name__)
 # JobRunContext — passed to reader/mapper factories each run
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class JobRunContext:
     """
@@ -91,18 +92,19 @@ class JobRunContext:
         factories want to carry between runs (e.g. pagination cursors).
     """
 
-    job_id:           str
-    run_number:       int
-    scheduled_at:     datetime
-    last_success_at:  datetime | None   = None
-    last_success_iso: str | None        = None
-    last_result:      Any | None        = None   # IngestResult
-    custom:           dict[str, Any]       = field(default_factory=dict)
+    job_id: str
+    run_number: int
+    scheduled_at: datetime
+    last_success_at: datetime | None = None
+    last_success_iso: str | None = None
+    last_result: Any | None = None  # IngestResult
+    custom: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
 # RunRecord — lightweight record of one run's outcome
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class RunRecord:
@@ -129,35 +131,36 @@ class RunRecord:
         Wall-clock time in seconds for the run.
     """
 
-    run_number:       int
-    scheduled_at:     datetime
-    started_at:       datetime
-    finished_at:      datetime | None  = None
-    status:           str                 = "running"
-    result:           Any | None       = None
-    error:            str | None       = None
-    duration_seconds: float               = 0.0
-    run_count:        int                 = 0
+    run_number: int
+    scheduled_at: datetime
+    started_at: datetime
+    finished_at: datetime | None = None
+    status: str = "running"
+    result: Any | None = None
+    error: str | None = None
+    duration_seconds: float = 0.0
+    run_count: int = 0
 
     def as_dict(self) -> dict:
         """Serialise to a plain dict for logging or persistence."""
         return {
-            "run_number":       self.run_number,
-            "scheduled_at":     self.scheduled_at.isoformat(),
-            "started_at":       self.started_at.isoformat(),
-            "finished_at":      self.finished_at.isoformat() if self.finished_at else None,
-            "status":           self.status,
+            "run_number": self.run_number,
+            "scheduled_at": self.scheduled_at.isoformat(),
+            "started_at": self.started_at.isoformat(),
+            "finished_at": self.finished_at.isoformat() if self.finished_at else None,
+            "status": self.status,
             "duration_seconds": self.duration_seconds,
-            "error":            self.error,
-            "total_records":    self.result.total_records if self.result else 0,
-            "written_objects":  self.result.written_objects if self.result else 0,
-            "errors":           len(self.result.errors) if self.result else 0,
+            "error": self.error,
+            "total_records": self.result.total_records if self.result else 0,
+            "written_objects": self.result.written_objects if self.result else 0,
+            "errors": len(self.result.errors) if self.result else 0,
         }
 
 
 # ---------------------------------------------------------------------------
 # FeedJob
 # ---------------------------------------------------------------------------
+
 
 class FeedJob:
     """
@@ -273,39 +276,35 @@ class FeedJob:
         enabled: bool = True,
     ):
         if interval_seconds is None and cron is None:
-            raise ValueError(
-                f"FeedJob {job_id!r}: must specify either interval_seconds or cron."
-            )
+            raise ValueError(f"FeedJob {job_id!r}: must specify either interval_seconds or cron.")
         if interval_seconds is not None and cron is not None:
             raise ValueError(
                 f"FeedJob {job_id!r}: interval_seconds and cron are mutually exclusive."
             )
         if overlap_policy not in ("skip", "queue"):
-            raise ValueError(
-                f"FeedJob {job_id!r}: overlap_policy must be 'skip' or 'queue'."
-            )
+            raise ValueError(f"FeedJob {job_id!r}: overlap_policy must be 'skip' or 'queue'.")
 
-        self.job_id          = job_id
-        self.reader_factory  = reader_factory
-        self.mapper_factory  = mapper_factory
+        self.job_id = job_id
+        self.reader_factory = reader_factory
+        self.mapper_factory = mapper_factory
         self.interval_seconds = interval_seconds
-        self.cron            = cron
-        self.client          = client
-        self.deduplicate     = deduplicate
+        self.cron = cron
+        self.client = client
+        self.deduplicate = deduplicate
         self.dedup_key_fields = dedup_key_fields or ["name"]
-        self.confidence      = confidence
-        self.tlp_marking     = tlp_marking
-        self.on_success      = on_success
-        self.on_failure      = on_failure
-        self.max_history     = max_history
-        self.overlap_policy  = overlap_policy
-        self.enabled         = enabled
+        self.confidence = confidence
+        self.tlp_marking = tlp_marking
+        self.on_success = on_success
+        self.on_failure = on_failure
+        self.max_history = max_history
+        self.overlap_policy = overlap_policy
+        self.enabled = enabled
 
-        self.history:         list[RunRecord]      = []
-        self.run_count:       int                  = 0
-        self.last_success_at: datetime | None   = None
-        self._running_lock    = threading.Lock()
-        self._custom_state:   dict[str, Any]       = {}
+        self.history: list[RunRecord] = []
+        self.run_count: int = 0
+        self.last_success_at: datetime | None = None
+        self._running_lock = threading.Lock()
+        self._custom_state: dict[str, Any] = {}
 
     # ── Run execution ──────────────────────────────────────────────────────
 
@@ -361,25 +360,22 @@ class FeedJob:
 
         self.run_count += 1
         started_at = _utcnow()
-        sched_at   = scheduled_at or started_at
+        sched_at = scheduled_at or started_at
 
         ctx = JobRunContext(
-            job_id           = self.job_id,
-            run_number       = self.run_count,
-            scheduled_at     = sched_at,
-            last_success_at  = self.last_success_at,
-            last_success_iso = (
-                self.last_success_at.isoformat()
-                if self.last_success_at else None
-            ),
-            last_result      = self.history[-1].result if self.history else None,
-            custom           = self._custom_state,
+            job_id=self.job_id,
+            run_number=self.run_count,
+            scheduled_at=sched_at,
+            last_success_at=self.last_success_at,
+            last_success_iso=(self.last_success_at.isoformat() if self.last_success_at else None),
+            last_result=self.history[-1].result if self.history else None,
+            custom=self._custom_state,
         )
 
         record = RunRecord(
-            run_number   = self.run_count,
-            scheduled_at = sched_at,
-            started_at   = started_at,
+            run_number=self.run_count,
+            scheduled_at=sched_at,
+            started_at=started_at,
         )
 
         try:
@@ -394,26 +390,29 @@ class FeedJob:
 
             result = pipeline.run()
 
-            record.result           = result
-            record.finished_at      = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - record.started_at
-            ).total_seconds()
+            record.result = result
+            record.finished_at = _utcnow()
+            record.duration_seconds = (record.finished_at - record.started_at).total_seconds()
 
             if result.errors:
                 record.status = "partial"
                 logger.warning(
                     "FeedJob %r run #%d: partial (%d records, %d written, %d errors)",
-                    self.job_id, self.run_count,
-                    result.total_records, result.written_objects, len(result.errors),
+                    self.job_id,
+                    self.run_count,
+                    result.total_records,
+                    result.written_objects,
+                    len(result.errors),
                 )
             else:
                 record.status = "success"
                 self.last_success_at = record.finished_at
                 logger.info(
                     "FeedJob %r run #%d: success (%d records, %d written) in %.1fs",
-                    self.job_id, self.run_count,
-                    result.total_records, result.written_objects,
+                    self.job_id,
+                    self.run_count,
+                    result.total_records,
+                    result.written_objects,
                     record.duration_seconds,
                 )
 
@@ -423,15 +422,15 @@ class FeedJob:
                 self._safe_callback(self.on_failure, record)
 
         except Exception as exc:  # noqa: BLE001
-            record.finished_at      = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - record.started_at
-            ).total_seconds()
+            record.finished_at = _utcnow()
+            record.duration_seconds = (record.finished_at - record.started_at).total_seconds()
             record.status = "failed"
-            record.error  = str(exc)
+            record.error = str(exc)
             logger.error(
                 "FeedJob %r run #%d: FAILED — %s",
-                self.job_id, self.run_count, exc,
+                self.job_id,
+                self.run_count,
+                exc,
             )
             if self.on_failure:
                 self._safe_callback(self.on_failure, record)
@@ -465,12 +464,12 @@ class FeedJob:
         """Return a RunRecord representing a skipped (disabled) job."""
         now = _utcnow()
         return RunRecord(
-            run_number       = self.run_count,
-            scheduled_at     = now,
-            started_at       = now,
-            finished_at      = now,
-            status           = "skipped",
-            duration_seconds = 0.0,
+            run_number=self.run_count,
+            scheduled_at=now,
+            started_at=now,
+            finished_at=now,
+            status="skipped",
+            duration_seconds=0.0,
         )
 
     @property
@@ -496,14 +495,13 @@ class FeedJob:
             if not self.history:
                 return _utcnow()
             from datetime import timedelta
+
             return self.history[-1].started_at + timedelta(seconds=self.interval_seconds)
         if self.cron:
             try:
                 from croniter import croniter  # type: ignore
-                base = (
-                    self.history[-1].started_at
-                    if self.history else _utcnow()
-                )
+
+                base = self.history[-1].started_at if self.history else _utcnow()
                 return croniter(self.cron, base).get_next(datetime)
             except ImportError:
                 return None
@@ -513,25 +511,18 @@ class FeedJob:
         """Return a plain-dict status summary for logging or dashboards."""
         last = self.last_run
         return {
-            "job_id":               self.job_id,
-            "enabled":              self.enabled,
-            "schedule":             (
-                f"every {self.interval_seconds}s"
-                if self.interval_seconds else f"cron:{self.cron}"
+            "job_id": self.job_id,
+            "enabled": self.enabled,
+            "schedule": (
+                f"every {self.interval_seconds}s" if self.interval_seconds else f"cron:{self.cron}"
             ),
-            "run_count":            self.run_count,
-            "is_healthy":           self.is_healthy,
+            "run_count": self.run_count,
+            "is_healthy": self.is_healthy,
             "consecutive_failures": self.consecutive_failures,
-            "last_run_status":      last.status if last else None,
-            "last_run_at":          last.started_at.isoformat() if last else None,
-            "last_success_at":      (
-                self.last_success_at.isoformat()
-                if self.last_success_at else None
-            ),
-            "next_run_at":          (
-                self.next_run_at().isoformat()
-                if self.next_run_at() else None
-            ),
+            "last_run_status": last.status if last else None,
+            "last_run_at": last.started_at.isoformat() if last else None,
+            "last_success_at": (self.last_success_at.isoformat() if self.last_success_at else None),
+            "next_run_at": (self.next_run_at().isoformat() if self.next_run_at() else None),
         }
 
     # ── Internal helpers ───────────────────────────────────────────────────
@@ -539,7 +530,7 @@ class FeedJob:
     def _append_history(self, record: RunRecord) -> None:
         self.history.append(record)
         if len(self.history) > self.max_history:
-            self.history = self.history[-self.max_history:]
+            self.history = self.history[-self.max_history :]
 
     @staticmethod
     def _safe_callback(fn: Callable, record: RunRecord) -> None:
@@ -550,8 +541,7 @@ class FeedJob:
 
     def __repr__(self) -> str:  # pragma: no cover
         sched = (
-            f"every {self.interval_seconds}s"
-            if self.interval_seconds else f"cron={self.cron!r}"
+            f"every {self.interval_seconds}s" if self.interval_seconds else f"cron={self.cron!r}"
         )
         return (
             f"FeedJob(id={self.job_id!r}, {sched}, "

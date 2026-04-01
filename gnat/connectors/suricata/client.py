@@ -83,9 +83,7 @@ class SuricataClient(BaseClient, ConnectorMixin):
         """Verify the EVE log file exists and is readable."""
         path = Path(self.eve_log_path)
         if not path.exists():
-            raise GNATClientError(
-                f"Suricata EVE log not found: {self.eve_log_path}"
-            )
+            raise GNATClientError(f"Suricata EVE log not found: {self.eve_log_path}")
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
@@ -115,7 +113,7 @@ class SuricataClient(BaseClient, ConnectorMixin):
             Normalised alert dicts.
         """
         filters = dict(filters or {})
-        path  = filters.pop("path", self.eve_log_path)
+        path = filters.pop("path", self.eve_log_path)
         limit = filters.pop("limit", page_size)
         alerts = []
         for i, alert in enumerate(self._iter_alerts(path)):
@@ -155,9 +153,7 @@ class SuricataClient(BaseClient, ConnectorMixin):
         """
         return list(self._iter_alerts(path or self.eve_log_path, event_type=event_type))
 
-    def iter_stix_alerts(
-        self, path: str | None = None
-    ) -> Iterator[dict[str, Any]]:
+    def iter_stix_alerts(self, path: str | None = None) -> Iterator[dict[str, Any]]:
         """
         Yield STIX observed-data objects from the EVE log.
 
@@ -186,8 +182,8 @@ class SuricataClient(BaseClient, ConnectorMixin):
             STIX ``observed-data`` object.
         """
         alert = self._normalise(native)
-        now   = _now_ts()
-        ts    = alert.get("timestamp") or now
+        now = _now_ts()
+        ts = alert.get("timestamp") or now
 
         objects: list[dict[str, Any]] = []
         refs: list[str] = []
@@ -198,18 +194,20 @@ class SuricataClient(BaseClient, ConnectorMixin):
                 ip_id = f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}"
                 if ip_id not in seen:
                     seen.add(ip_id)
-                    objects.append({
-                        "type": "ipv4-addr",
-                        "id":   ip_id,
-                        "spec_version": "2.1",
-                        "value": ip,
-                    })
+                    objects.append(
+                        {
+                            "type": "ipv4-addr",
+                            "id": ip_id,
+                            "spec_version": "2.1",
+                            "value": ip,
+                        }
+                    )
                 refs.append(ip_id)
 
         src_ip = alert.get("src_ip")
         dst_ip = alert.get("dst_ip")
-        src_p  = alert.get("src_port")
-        dst_p  = alert.get("dst_port")
+        src_p = alert.get("src_port")
+        dst_p = alert.get("dst_port")
         if src_ip and dst_ip and (src_p or dst_p):
             key = f"{src_ip}:{src_p}-{dst_ip}:{dst_p}"
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
@@ -217,7 +215,7 @@ class SuricataClient(BaseClient, ConnectorMixin):
                 seen.add(nid)
                 nt: dict[str, Any] = {
                     "type": "network-traffic",
-                    "id":   nid,
+                    "id": nid,
                     "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src_ip)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst_ip)}",
@@ -234,26 +232,26 @@ class SuricataClient(BaseClient, ConnectorMixin):
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         obs: dict[str, Any] = {
-            "type":           "observed-data",
-            "id":             obs_id,
-            "spec_version":   "2.1",
-            "created":        now,
-            "modified":       now,
+            "type": "observed-data",
+            "id": obs_id,
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
             "first_observed": ts,
-            "last_observed":  ts,
+            "last_observed": ts,
             "number_observed": 1,
-            "object_refs":    refs,
+            "object_refs": refs,
             "x_suricata_alert": {
-                "signature":    alert.get("signature"),
+                "signature": alert.get("signature"),
                 "signature_id": alert.get("signature_id"),
-                "category":     alert.get("category"),
-                "severity":     alert.get("severity"),
+                "category": alert.get("category"),
+                "severity": alert.get("severity"),
                 "severity_raw": alert.get("severity_raw"),
-                "action":       alert.get("action"),
-                "rev":          alert.get("rev"),
-                "gid":          alert.get("gid"),
-                "flow_id":      alert.get("flow_id"),
-                "in_iface":     alert.get("in_iface"),
+                "action": alert.get("action"),
+                "rev": alert.get("rev"),
+                "gid": alert.get("gid"),
+                "flow_id": alert.get("flow_id"),
+                "in_iface": alert.get("in_iface"),
             },
         }
         objects.append(obs)
@@ -262,7 +260,7 @@ class SuricataClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Suricata is read-only — from_stix returns an informational dict."""
         return {
-            "note":     "Suricata is file-based and read-only.",
+            "note": "Suricata is file-based and read-only.",
             "stix_id": stix_dict.get("id", ""),
         }
 
@@ -300,23 +298,23 @@ class SuricataClient(BaseClient, ConnectorMixin):
         alert_block = event.get("alert", {})
         sev_raw = int(alert_block.get("severity", 3))
         return {
-            "timestamp":    event.get("timestamp"),
-            "flow_id":      event.get("flow_id"),
-            "in_iface":     event.get("in_iface"),
-            "src_ip":       event.get("src_ip"),
-            "src_port":     event.get("src_port"),
-            "dst_ip":       event.get("dest_ip"),
-            "dst_port":     event.get("dest_port"),
-            "proto":        event.get("proto"),
-            "signature":    alert_block.get("signature"),
+            "timestamp": event.get("timestamp"),
+            "flow_id": event.get("flow_id"),
+            "in_iface": event.get("in_iface"),
+            "src_ip": event.get("src_ip"),
+            "src_port": event.get("src_port"),
+            "dst_ip": event.get("dest_ip"),
+            "dst_port": event.get("dest_port"),
+            "proto": event.get("proto"),
+            "signature": alert_block.get("signature"),
             "signature_id": alert_block.get("signature_id"),
-            "category":     alert_block.get("category"),
-            "severity":     sev_map.get(sev_raw, 2),
+            "category": alert_block.get("category"),
+            "severity": sev_map.get(sev_raw, 2),
             "severity_raw": sev_raw,
-            "action":       alert_block.get("action"),
-            "rev":          alert_block.get("rev"),
-            "gid":          alert_block.get("gid"),
-            "_raw":         event,
+            "action": alert_block.get("action"),
+            "rev": alert_block.get("rev"),
+            "gid": alert_block.get("gid"),
+            "_raw": event,
         }
 
     @staticmethod

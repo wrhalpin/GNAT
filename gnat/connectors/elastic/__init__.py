@@ -95,26 +95,26 @@ from .stix_mapper import ElasticSTIXMapper
 from .threat_intel import ElasticThreatIntelCommands
 
 __all__ = [
-"ElasticClient",
-"ElasticAuthManager",
-"ElasticSearchCommands",
-"KibanaRulesCommands",
-"KibanaAlertsCommands",
-"KibanaCasesCommands",
-"ElasticThreatIntelCommands",
-"ElasticSTIXMapper",
-"ElasticConfig",
-"load_elastic_config",
-"ElasticAuthError",
-"ElasticAPIError",
-"ElasticNotFoundError",
-"ElasticConfigError",
-"ElasticRateLimitError",
-"ElasticSTIXError",
-"ElasticKibanaError",
+    "ElasticClient",
+    "ElasticAuthManager",
+    "ElasticSearchCommands",
+    "KibanaRulesCommands",
+    "KibanaAlertsCommands",
+    "KibanaCasesCommands",
+    "ElasticThreatIntelCommands",
+    "ElasticSTIXMapper",
+    "ElasticConfig",
+    "load_elastic_config",
+    "ElasticAuthError",
+    "ElasticAPIError",
+    "ElasticNotFoundError",
+    "ElasticConfigError",
+    "ElasticRateLimitError",
+    "ElasticSTIXError",
+    "ElasticKibanaError",
 ]
 
 __version__ = "0.1.0"
 __platform__ = "Elastic Security (Elasticsearch + Kibana)"
 __api_versions__ = ["8.x", "8.10+"]
-__stix_support__ = "native"   # STIX 2.1 + TAXII 2.1 via Custom TI integration
+__stix_support__ = "native"  # STIX 2.1 + TAXII 2.1 via Custom TI integration

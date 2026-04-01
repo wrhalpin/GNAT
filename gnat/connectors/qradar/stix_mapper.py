@@ -137,31 +137,33 @@ class QRadarSTIXMapper:
         magnitude = offense.get("magnitude", 0)
         severity = offense.get("severity", 0)
         obs_id = f"observed-data--{uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data",
-            "id": obs_id,
-            "spec_version": "2.1",
-            "created": now,
-            "modified": now,
-            "first_observed": ts,
-            "last_observed": offense.get("last_updated_time") or ts,
-            "number_observed": max(1, offense.get("event_count", 1)),
-            "object_refs": refs,
-            "x_qradar_offense": {
-                "offense_id": offense.get("id"),
-                "description": offense.get("description"),
-                "status": offense.get("status"),
-                "magnitude": magnitude,
-                "severity": severity,
-                "severity_label": offense.get("severity_label"),
-                "offense_type": offense.get("offense_type"),
-                "offense_type_label": offense.get("offense_type_label"),
-                "offense_source": source,
-                "event_count": offense.get("event_count"),
-                "categories": offense.get("categories", []),
-                "assigned_to": offense.get("assigned_to"),
-            },
-        })
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": offense.get("last_updated_time") or ts,
+                "number_observed": max(1, offense.get("event_count", 1)),
+                "object_refs": refs,
+                "x_qradar_offense": {
+                    "offense_id": offense.get("id"),
+                    "description": offense.get("description"),
+                    "status": offense.get("status"),
+                    "magnitude": magnitude,
+                    "severity": severity,
+                    "severity_label": offense.get("severity_label"),
+                    "offense_type": offense.get("offense_type"),
+                    "offense_type_label": offense.get("offense_type_label"),
+                    "offense_source": source,
+                    "event_count": offense.get("event_count"),
+                    "categories": offense.get("categories", []),
+                    "assigned_to": offense.get("assigned_to"),
+                },
+            }
+        )
 
         return _make_bundle(objects)
 
@@ -230,7 +232,7 @@ class QRadarSTIXMapper:
         src_port = event.get("src_port")
         dst_port = event.get("dst_port")
         if event.get("src_ip") and event.get("dst_ip") and (src_port or dst_port):
-            _net_key = f'{event.get("src_ip")}:{src_port}-{event.get("dst_ip")}:{dst_port}'
+            _net_key = f"{event.get('src_ip')}:{src_port}-{event.get('dst_ip')}:{dst_port}"
             net_id = f"network-traffic--{_det_uuid('network-traffic', _net_key)}"
             if net_id not in seen:
                 src_ref = f"ipv4-addr--{_det_uuid('ipv4-addr', event['src_ip'])}"
@@ -263,25 +265,27 @@ class QRadarSTIXMapper:
 
         # Observed-data SDO
         obs_id = f"observed-data--{uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data",
-            "id": obs_id,
-            "spec_version": "2.1",
-            "created": now,
-            "modified": now,
-            "first_observed": ts,
-            "last_observed": ts,
-            "number_observed": max(1, int(event.get("event_count") or 1)),
-            "object_refs": refs,
-            "x_qradar_event": {
-                "log_source_id": event.get("log_source_id"),
-                "log_source": event.get("log_source"),
-                "category": event.get("category"),
-                "category_name": event.get("category_name"),
-                "severity": event.get("severity"),
-                "event_name": event.get("event_name"),
-            },
-        })
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": max(1, int(event.get("event_count") or 1)),
+                "object_refs": refs,
+                "x_qradar_event": {
+                    "log_source_id": event.get("log_source_id"),
+                    "log_source": event.get("log_source"),
+                    "category": event.get("category"),
+                    "category_name": event.get("category_name"),
+                    "severity": event.get("severity"),
+                    "event_name": event.get("event_name"),
+                },
+            }
+        )
 
         return _make_bundle(objects)
 
@@ -339,13 +343,9 @@ class QRadarSTIXMapper:
             If the bundle is malformed.
         """
         if bundle.get("type") != "bundle":
-            raise QRadarSTIXError(
-                f"Expected STIX bundle, got type='{bundle.get('type')}'."
-            )
+            raise QRadarSTIXError(f"Expected STIX bundle, got type='{bundle.get('type')}'.")
 
-        groups: dict[str, list[str]] = {
-            "ip": [], "domain": [], "url": [], "hash": [], "email": []
-        }
+        groups: dict[str, list[str]] = {"ip": [], "domain": [], "url": [], "hash": [], "email": []}
 
         for obj in bundle.get("objects", []):
             obj_type = obj.get("type", "")
@@ -417,6 +417,7 @@ class QRadarSTIXMapper:
 
 
 # ── STIX object factory helpers ───────────────────────────────────────────────
+
 
 def _ipv4(value: str) -> dict:
     return {

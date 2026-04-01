@@ -50,25 +50,16 @@ from gnat.nlp.query_spec import QuerySpec
 # Compiled patterns
 # ---------------------------------------------------------------------------
 
-_RE_LAST_N = re.compile(
-    r"\blast\s+(\d+)\s+(day|days|week|weeks|month|months)\b", re.I
-)
-_RE_SINCE_DATE = re.compile(
-    r"\bsince\s+(\d{4}-\d{2}-\d{2})\b", re.I
-)
+_RE_LAST_N = re.compile(r"\blast\s+(\d+)\s+(day|days|week|weeks|month|months)\b", re.I)
+_RE_SINCE_DATE = re.compile(r"\bsince\s+(\d{4}-\d{2}-\d{2})\b", re.I)
 _RE_SINCE_MONTH = re.compile(
     r"\bsince\s+(january|february|march|april|may|june|july|august|"
-    r"september|october|november|december)\b", re.I
+    r"september|october|november|december)\b",
+    re.I,
 )
-_RE_TOP_N = re.compile(
-    r"\b(?:top|first|limit|show me|get)\s+(\d+)\b", re.I
-)
-_RE_LAST_N_RESULTS = re.compile(
-    r"\blast\s+(\d+)\s+results?\b", re.I
-)
-_RE_PLATFORM_PREP = re.compile(
-    r"\b(?:from|in|on|using|via)\s+(\w+)\b", re.I
-)
+_RE_TOP_N = re.compile(r"\b(?:top|first|limit|show me|get)\s+(\d+)\b", re.I)
+_RE_LAST_N_RESULTS = re.compile(r"\blast\s+(\d+)\s+results?\b", re.I)
+_RE_PLATFORM_PREP = re.compile(r"\b(?:from|in|on|using|via)\s+(\w+)\b", re.I)
 _RE_THREAT_ACTOR = re.compile(
     r"\b(APT[-\s]?\d+|TA\d+|FIN\d+|UNC\d+|G\d{4}|TEMP\.\w+|"
     r"Lazarus(?:\s+Group)?|Sandworm|Cozy\s+Bear|Fancy\s+Bear|"
@@ -85,36 +76,87 @@ _RE_MALWARE = re.compile(
 )
 
 _MONTH_MAP = {
-    "january": 1, "february": 2, "march": 3, "april": 4,
-    "may": 5, "june": 6, "july": 7, "august": 8,
-    "september": 9, "october": 10, "november": 11, "december": 12,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
 }
 
 _IOC_KEYWORDS: dict = {
-    "ip":     re.compile(
-        r"\b(?:ip(?:v4|v6)?(?:\s+address(?:es)?)?|ips|ipv4s|ipv6s)\b", re.I
-    ),
+    "ip": re.compile(r"\b(?:ip(?:v4|v6)?(?:\s+address(?:es)?)?|ips|ipv4s|ipv6s)\b", re.I),
     "domain": re.compile(r"\b(?:domain(?:s)?|hostname(?:s)?|fqdn(?:s)?)\b", re.I),
-    "hash":   re.compile(
+    "hash": re.compile(
         r"\b(?:hash(?:es)?|md5(?:s)?|sha[-\s]?(?:1|256|512)(?:s)?|"
-        r"file\s+hash(?:es)?|ioc\s+hash(?:es)?)\b", re.I
+        r"file\s+hash(?:es)?|ioc\s+hash(?:es)?)\b",
+        re.I,
     ),
-    "url":    re.compile(r"\b(?:url(?:s)?|link(?:s)?|uri(?:s)?)\b", re.I),
-    "email":  re.compile(r"\b(?:email(?:s)?|e-mail(?:s)?|address(?:es)?)\b", re.I),
+    "url": re.compile(r"\b(?:url(?:s)?|link(?:s)?|uri(?:s)?)\b", re.I),
+    "email": re.compile(r"\b(?:email(?:s)?|e-mail(?:s)?|address(?:es)?)\b", re.I),
 }
 
 # Words that look capitalised but are not entity names
-_STOP_WORDS = frozenset({
-    "get", "give", "show", "find", "fetch", "list", "search",
-    "all", "any", "the", "from", "last", "since", "until",
-    "related", "linked", "associated", "about", "for",
-    "everything", "anything", "results", "objects", "indicators",
-    "data", "days", "weeks", "months", "today", "yesterday",
-    "first", "top", "limit", "using", "via", "in", "on",
-    "stix", "gnat", "intel", "threat", "intelligence",
-    # IOC type words that appear capitalised
-    "IP", "IPs", "URL", "URLs", "IOC", "IOCs", "CVE",
-})
+_STOP_WORDS = frozenset(
+    {
+        "get",
+        "give",
+        "show",
+        "find",
+        "fetch",
+        "list",
+        "search",
+        "all",
+        "any",
+        "the",
+        "from",
+        "last",
+        "since",
+        "until",
+        "related",
+        "linked",
+        "associated",
+        "about",
+        "for",
+        "everything",
+        "anything",
+        "results",
+        "objects",
+        "indicators",
+        "data",
+        "days",
+        "weeks",
+        "months",
+        "today",
+        "yesterday",
+        "first",
+        "top",
+        "limit",
+        "using",
+        "via",
+        "in",
+        "on",
+        "stix",
+        "gnat",
+        "intel",
+        "threat",
+        "intelligence",
+        # IOC type words that appear capitalised
+        "IP",
+        "IPs",
+        "URL",
+        "URLs",
+        "IOC",
+        "IOCs",
+        "CVE",
+    }
+)
 
 
 def _utcnow() -> datetime:
@@ -157,21 +199,21 @@ class BuiltinParser:
         """
         now = _utcnow()
 
-        since  = self._extract_since(query, now)
-        until  = self._extract_until(query, now)
-        ioc_types  = self._extract_ioc_types(query)
-        entities   = self._extract_entities(query)
-        platforms  = self._extract_platforms(query)
-        limit      = self._extract_limit(query, default_limit)
+        since = self._extract_since(query, now)
+        until = self._extract_until(query, now)
+        ioc_types = self._extract_ioc_types(query)
+        entities = self._extract_entities(query)
+        platforms = self._extract_platforms(query)
+        limit = self._extract_limit(query, default_limit)
 
         return QuerySpec(
-            entities   = entities,
-            ioc_types  = ioc_types,
-            since      = since,
-            until      = until,
-            platforms  = platforms,
-            limit      = limit,
-            raw_query  = query,
+            entities=entities,
+            ioc_types=ioc_types,
+            since=since,
+            until=until,
+            platforms=platforms,
+            limit=limit,
+            raw_query=query,
         )
 
     # ------------------------------------------------------------------
@@ -220,9 +262,7 @@ class BuiltinParser:
         return None
 
     def _extract_until(self, query: str, now: datetime) -> datetime | None:
-        m = re.search(
-            r"\b(?:until|before|up to)\s+(\d{4}-\d{2}-\d{2})\b", query, re.I
-        )
+        m = re.search(r"\b(?:until|before|up to)\s+(\d{4}-\d{2}-\d{2})\b", query, re.I)
         if m:
             try:
                 return datetime.fromisoformat(m.group(1)).replace(tzinfo=timezone.utc)
@@ -272,6 +312,7 @@ class BuiltinParser:
 
     def _extract_platforms(self, query: str) -> list[str]:
         from gnat.clients import CLIENT_REGISTRY
+
         found = []
         for m in _RE_PLATFORM_PREP.finditer(query):
             candidate = m.group(1).lower()

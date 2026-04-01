@@ -46,7 +46,9 @@ def main(argv: list[str] | None = None) -> int:
         "connector": plan.connector,
         "impact": plan.impact.value,
         "confidence": plan.confidence,
-        "repair_actions": [action.__dict__ for action in (plan.repair.actions if plan.repair else [])],
+        "repair_actions": [
+            action.__dict__ for action in (plan.repair.actions if plan.repair else [])
+        ],
         "verification_passed": verification.passed,
     }
 

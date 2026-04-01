@@ -1,4 +1,5 @@
 """tests for Graylog connector"""
+
 import base64
 import configparser
 import json
@@ -25,11 +26,13 @@ def _cfg(**kw):
     d.update(kw)
     return GraylogConfig(**d)
 
+
 def _resp(status=200, body=None):
     r = MagicMock()
     r.status = status
     r.data = json.dumps(body if body is not None else {}).encode()
     return r
+
 
 def _make_client():
     cfg = _cfg()
@@ -60,7 +63,7 @@ class TestGraylogConfig(unittest.TestCase):
         cfg = _cfg()
         self.assertEqual(
             cfg.endpoint("search/universal/relative"),
-            "https://graylog.test:9000/api/search/universal/relative"
+            "https://graylog.test:9000/api/search/universal/relative",
         )
 
     def test_missing_url_raises(self):
@@ -138,10 +141,14 @@ class TestGraylogClient(unittest.TestCase):
 class TestGraylogSearchCommands(unittest.TestCase):
     _MSG = {
         "message": {
-            "_id": "msg-1", "timestamp": "2024-03-10T12:00:00.000Z",
-            "source": "server01", "message": "Failed login",
-            "level": 4, "facility": "auth",
-            "src_ip": "1.2.3.4", "username": "jdoe",
+            "_id": "msg-1",
+            "timestamp": "2024-03-10T12:00:00.000Z",
+            "source": "server01",
+            "message": "Failed login",
+            "level": 4,
+            "facility": "auth",
+            "src_ip": "1.2.3.4",
+            "username": "jdoe",
         },
         "stream_ids": ["s1"],
     }
@@ -152,17 +159,13 @@ class TestGraylogSearchCommands(unittest.TestCase):
 
     def test_search(self):
         cmd, mock_http = self._make_search()
-        mock_http.request.return_value = _resp(200, {
-            "total_results": 1, "messages": [self._MSG]
-        })
+        mock_http.request.return_value = _resp(200, {"total_results": 1, "messages": [self._MSG]})
         result = cmd.search(query="source:server01")
         self.assertEqual(result["total_results"], 1)
 
     def test_get_messages(self):
         cmd, mock_http = self._make_search()
-        mock_http.request.return_value = _resp(200, {
-            "total_results": 1, "messages": [self._MSG]
-        })
+        mock_http.request.return_value = _resp(200, {"total_results": 1, "messages": [self._MSG]})
         msgs = cmd.get_messages()
         self.assertEqual(len(msgs), 1)
 
@@ -190,9 +193,9 @@ class TestGraylogStreamCommands(unittest.TestCase):
 
     def test_list_streams(self):
         cmd, mock_http = self._make_streams()
-        mock_http.request.return_value = _resp(200, {
-            "streams": [{"id": "s1", "title": "All Messages"}]
-        })
+        mock_http.request.return_value = _resp(
+            200, {"streams": [{"id": "s1", "title": "All Messages"}]}
+        )
         results = cmd.list_streams()
         self.assertEqual(len(results), 1)
 
@@ -226,10 +229,14 @@ class TestGraylogSTIXMapper(unittest.TestCase):
     def setUp(self):
         self.mapper = GraylogSTIXMapper()
         self._msg = {
-            "id": "msg-1", "timestamp": "2024-03-10T12:00:00Z",
-            "source": "server01", "message": "Failed login",
-            "level": 4, "facility": "auth",
-            "src_ip": "1.2.3.4", "username": "jdoe",
+            "id": "msg-1",
+            "timestamp": "2024-03-10T12:00:00Z",
+            "source": "server01",
+            "message": "Failed login",
+            "level": 4,
+            "facility": "auth",
+            "src_ip": "1.2.3.4",
+            "username": "jdoe",
         }
 
     def test_bundle_structure(self):
@@ -261,8 +268,8 @@ class TestGraylogSTIXMapper(unittest.TestCase):
 class TestGraylogExceptions(unittest.TestCase):
     def test_hierarchy(self):
         from gnat.connectors.graylog import GraylogError
-        for cls in [GraylogConfigError, GraylogAuthError,
-                    GraylogAPIError, GraylogNotFoundError]:
+
+        for cls in [GraylogConfigError, GraylogAuthError, GraylogAPIError, GraylogNotFoundError]:
             self.assertTrue(issubclass(cls, GraylogError))
 
 

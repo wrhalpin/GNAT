@@ -63,7 +63,7 @@ class NLPQueryEngine:
         claude_config: Any | None = None,
         default_limit: int = 100,
     ) -> None:
-        self._backend_name  = backend
+        self._backend_name = backend
         self._default_limit = default_limit
         self._parser = self._build_parser(backend, claude_config)
 
@@ -99,11 +99,13 @@ class NLPQueryEngine:
         if backend == "claude":
             try:
                 from gnat.agents.base import AgentConfig
+
                 claude_config = AgentConfig.from_config(config._parser)
             except Exception as exc:
                 logger.warning(
                     "NLPQueryEngine: could not load Claude config (%s); "
-                    "falling back to builtin backend", exc
+                    "falling back to builtin backend",
+                    exc,
                 )
                 backend = "builtin"
 
@@ -153,7 +155,7 @@ class NLPQueryEngine:
             dict has a ``"_source"`` key indicating which connector produced
             it.
         """
-        spec      = self.parse(query)
+        spec = self.parse(query)
         results: list[dict[str, Any]] = []
 
         if not connectors:
@@ -193,11 +195,11 @@ class NLPQueryEngine:
     def _build_parser(backend: str, claude_config: Any | None) -> Any:
         if backend == "claude":
             if claude_config is None:
-                raise ValueError(
-                    "NLPQueryEngine: backend='claude' requires claude_config"
-                )
+                raise ValueError("NLPQueryEngine: backend='claude' requires claude_config")
             from gnat.nlp.claude_backend import ClaudeParser
+
             return ClaudeParser(claude_config)
 
         from gnat.nlp.builtin import BuiltinParser
+
         return BuiltinParser()

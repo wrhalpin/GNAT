@@ -46,7 +46,8 @@ class MISPAuthManager:
         url = self._config.endpoint("servers/getPyMISPVersion.json")
         try:
             response = self._http.request(
-                "GET", url,
+                "GET",
+                url,
                 headers=self._config.base_headers,
                 timeout=self._config.timeout,
             )
@@ -54,13 +55,9 @@ class MISPAuthManager:
             raise MISPAuthError(f"Cannot connect to MISP at {url}: {exc}") from exc
 
         if response.status == 401:
-            raise MISPAuthError(
-                "MISP API key rejected (HTTP 401). Check api_key in [misp] config."
-            )
+            raise MISPAuthError("MISP API key rejected (HTTP 401). Check api_key in [misp] config.")
         if response.status == 403:
-            raise MISPAuthError(
-                "MISP API key lacks required permissions (HTTP 403)."
-            )
+            raise MISPAuthError("MISP API key lacks required permissions (HTTP 403).")
         if response.status != 200:
             raise MISPAuthError(f"Unexpected response from MISP: HTTP {response.status}")
 

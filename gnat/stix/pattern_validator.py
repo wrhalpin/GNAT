@@ -62,59 +62,80 @@ from dataclasses import dataclass, field
 # Known STIX 2.1 SCO and SDO object types that may appear in patterns
 # ---------------------------------------------------------------------------
 
-_STIX_OBJECT_TYPES: frozenset[str] = frozenset({
-    # STIX 2.1 Cyber Observable Objects (SCOs)
-    "artifact",
-    "autonomous-system",
-    "directory",
-    "domain-name",
-    "email-addr",
-    "email-message",
-    "file",
-    "ipv4-addr",
-    "ipv6-addr",
-    "mac-addr",
-    "mutex",
-    "network-traffic",
-    "process",
-    "software",
-    "url",
-    "user-account",
-    "windows-registry-key",
-    "x509-certificate",
-    # STIX 2.1 Domain Objects (SDOs) — occasionally used in patterns
-    "attack-pattern",
-    "campaign",
-    "course-of-action",
-    "identity",
-    "indicator",
-    "infrastructure",
-    "intrusion-set",
-    "location",
-    "malware",
-    "malware-analysis",
-    "note",
-    "observed-data",
-    "opinion",
-    "report",
-    "threat-actor",
-    "tool",
-    "vulnerability",
-    # STIX 2.1 Relationship Objects (SROs) — rare but allowed
-    "relationship",
-    "sighting",
-})
+_STIX_OBJECT_TYPES: frozenset[str] = frozenset(
+    {
+        # STIX 2.1 Cyber Observable Objects (SCOs)
+        "artifact",
+        "autonomous-system",
+        "directory",
+        "domain-name",
+        "email-addr",
+        "email-message",
+        "file",
+        "ipv4-addr",
+        "ipv6-addr",
+        "mac-addr",
+        "mutex",
+        "network-traffic",
+        "process",
+        "software",
+        "url",
+        "user-account",
+        "windows-registry-key",
+        "x509-certificate",
+        # STIX 2.1 Domain Objects (SDOs) — occasionally used in patterns
+        "attack-pattern",
+        "campaign",
+        "course-of-action",
+        "identity",
+        "indicator",
+        "infrastructure",
+        "intrusion-set",
+        "location",
+        "malware",
+        "malware-analysis",
+        "note",
+        "observed-data",
+        "opinion",
+        "report",
+        "threat-actor",
+        "tool",
+        "vulnerability",
+        # STIX 2.1 Relationship Objects (SROs) — rare but allowed
+        "relationship",
+        "sighting",
+    }
+)
 
 # Valid comparison operators per STIX 2.1 §5.6.2
-_COMPARISON_OPS: frozenset[str] = frozenset({
-    "=", "!=", "<", ">", "<=", ">=",
-    "LIKE", "MATCHES", "IN", "ISSUBSET", "ISSUPERSET",
-})
+_COMPARISON_OPS: frozenset[str] = frozenset(
+    {
+        "=",
+        "!=",
+        "<",
+        ">",
+        "<=",
+        ">=",
+        "LIKE",
+        "MATCHES",
+        "IN",
+        "ISSUBSET",
+        "ISSUPERSET",
+    }
+)
 
 # Time unit keywords for WITHIN / REPEATEDWITHIN qualifiers
-_TIME_UNITS: frozenset[str] = frozenset({
-    "SECONDS", "MINUTES", "HOURS", "DAYS", "WEEKS", "MONTHS", "YEARS",
-})
+_TIME_UNITS: frozenset[str] = frozenset(
+    {
+        "SECONDS",
+        "MINUTES",
+        "HOURS",
+        "DAYS",
+        "WEEKS",
+        "MONTHS",
+        "YEARS",
+    }
+)
 
 # ---------------------------------------------------------------------------
 # Token types and tokenizer
@@ -122,50 +143,50 @@ _TIME_UNITS: frozenset[str] = frozenset({
 
 _TOKEN_PATTERNS: list[tuple[str, str]] = [
     # Literals (order matters — float before int)
-    ("FLOAT",       r"-?\d+\.\d+"),
-    ("INT",         r"-?\d+"),
-    ("STRING_SQ",   r"'(?:[^'\\]|\\.)*'"),
-    ("STRING_DQ",   r'"(?:[^"\\]|\\.)*"'),
+    ("FLOAT", r"-?\d+\.\d+"),
+    ("INT", r"-?\d+"),
+    ("STRING_SQ", r"'(?:[^'\\]|\\.)*'"),
+    ("STRING_DQ", r'"(?:[^"\\]|\\.)*"'),
     # Keywords (longest match first)
-    ("ISSUPERSET",  r"\bISSUPERSET\b"),
-    ("ISSUBSET",    r"\bISSUBSET\b"),
+    ("ISSUPERSET", r"\bISSUPERSET\b"),
+    ("ISSUBSET", r"\bISSUBSET\b"),
     ("REPEATEDWITHIN", r"\bREPEATEDWITHIN\b"),
-    ("FOLLOWEDBY",  r"\bFOLLOWEDBY\b"),
-    ("MATCHES",     r"\bMATCHES\b"),
-    ("WITHIN",      r"\bWITHIN\b"),
-    ("SECONDS",     r"\bSECONDS\b"),
-    ("MINUTES",     r"\bMINUTES\b"),
-    ("HOURS",       r"\bHOURS\b"),
-    ("DAYS",        r"\bDAYS\b"),
-    ("WEEKS",       r"\bWEEKS\b"),
-    ("MONTHS",      r"\bMONTHS\b"),
-    ("YEARS",       r"\bYEARS\b"),
-    ("START",       r"\bSTART\b"),
-    ("STOP",        r"\bSTOP\b"),
-    ("LIKE",        r"\bLIKE\b"),
-    ("IN",          r"\bIN\b"),
-    ("AND",         r"\bAND\b"),
-    ("OR",          r"\bOR\b"),
-    ("NOT",         r"\bNOT\b"),
-    ("TRUE",        r"\btrue\b"),
-    ("FALSE",       r"\bfalse\b"),
-    ("NULL",        r"\bnull\b"),
+    ("FOLLOWEDBY", r"\bFOLLOWEDBY\b"),
+    ("MATCHES", r"\bMATCHES\b"),
+    ("WITHIN", r"\bWITHIN\b"),
+    ("SECONDS", r"\bSECONDS\b"),
+    ("MINUTES", r"\bMINUTES\b"),
+    ("HOURS", r"\bHOURS\b"),
+    ("DAYS", r"\bDAYS\b"),
+    ("WEEKS", r"\bWEEKS\b"),
+    ("MONTHS", r"\bMONTHS\b"),
+    ("YEARS", r"\bYEARS\b"),
+    ("START", r"\bSTART\b"),
+    ("STOP", r"\bSTOP\b"),
+    ("LIKE", r"\bLIKE\b"),
+    ("IN", r"\bIN\b"),
+    ("AND", r"\bAND\b"),
+    ("OR", r"\bOR\b"),
+    ("NOT", r"\bNOT\b"),
+    ("TRUE", r"\btrue\b"),
+    ("FALSE", r"\bfalse\b"),
+    ("NULL", r"\bnull\b"),
     # Operators
-    ("OP",          r"<=|>=|!=|=|<|>"),
+    ("OP", r"<=|>=|!=|=|<|>"),
     # Identifiers (object types and property names; allow hyphens)
-    ("IDENT",       r"[\w][\w-]*"),
+    ("IDENT", r"[\w][\w-]*"),
     # Punctuation
-    ("COLON",       r":"),
-    ("DOT",         r"\."),
-    ("COMMA",       r","),
-    ("LPAREN",      r"\("),
-    ("RPAREN",      r"\)"),
-    ("LBRACK",      r"\["),
-    ("RBRACK",      r"\]"),
+    ("COLON", r":"),
+    ("DOT", r"\."),
+    ("COMMA", r","),
+    ("LPAREN", r"\("),
+    ("RPAREN", r"\)"),
+    ("LBRACK", r"\["),
+    ("RBRACK", r"\]"),
     # Whitespace (discarded)
-    ("WS",          r"\s+"),
+    ("WS", r"\s+"),
     # Anything else (error token)
-    ("UNKNOWN",     r"."),
+    ("UNKNOWN", r"."),
 ]
 
 _TOKEN_RE = re.compile(
@@ -195,6 +216,7 @@ def _tokenize(text: str) -> list[_Token]:
 # ---------------------------------------------------------------------------
 # ValidationResult and PatternValidationError
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ValidationResult:
@@ -249,6 +271,7 @@ class PatternValidationError(ValueError):
 # ---------------------------------------------------------------------------
 # Pure-Python recursive descent parser
 # ---------------------------------------------------------------------------
+
 
 class _Parser:
     """
@@ -332,7 +355,7 @@ class _Parser:
         self._parse_qualified_obs_expr()
 
         if self._peek() is not None:
-            remaining = "".join(t.value for t in self._tokens[self._pos:])
+            remaining = "".join(t.value for t in self._tokens[self._pos :])
             self.errors.append(f"Unexpected content after pattern: {remaining!r}")
 
     def _parse_qualified_obs_expr(self) -> None:
@@ -481,8 +504,7 @@ class _Parser:
             self.errors.append("Expected a value (string, integer, boolean, or list)")
             return
 
-        if tok.kind in ("STRING_SQ", "STRING_DQ", "INT", "FLOAT",
-                        "TRUE", "FALSE", "NULL"):
+        if tok.kind in ("STRING_SQ", "STRING_DQ", "INT", "FLOAT", "TRUE", "FALSE", "NULL"):
             self._advance()
         elif tok.kind == "LPAREN":
             # IN (...) list
@@ -538,6 +560,7 @@ class _Parser:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 class PatternValidator:
     """
@@ -649,6 +672,7 @@ def validate_pattern(
 # Tier-1: pure Python implementation
 # ---------------------------------------------------------------------------
 
+
 def _validate_pure_python(
     pattern: str,
     *,
@@ -679,6 +703,7 @@ def _validate_pure_python(
 # ---------------------------------------------------------------------------
 # Tier-2: stix2-patterns ANTLR grammar (optional)
 # ---------------------------------------------------------------------------
+
 
 def _validate_strict(pattern: str, *, tier1_result: ValidationResult) -> ValidationResult:
     """

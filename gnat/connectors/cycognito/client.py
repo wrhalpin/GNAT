@@ -49,6 +49,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -68,10 +69,12 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "issues",
-        "report":        "assets",
+        "report": "assets",
     }
 
-    def __init__(self, host: str = "https://api.platform.cycognito.com", api_key: str = "", **kwargs: Any):
+    def __init__(
+        self, host: str = "https://api.platform.cycognito.com", api_key: str = "", **kwargs: Any
+    ):
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -113,7 +116,9 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
             resp = self.get("/v1/issues", params=params)
             return resp.get("issues", []) if isinstance(resp, dict) else []
         # Default: assets (unified or by type via filters, e.g. asset_type=ip)
-        resp = self.get("/v1/assets", params=params)  # unified asset query supported in recent versions
+        resp = self.get(
+            "/v1/assets", params=params
+        )  # unified asset query supported in recent versions
         return resp.get("assets", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:

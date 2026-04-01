@@ -23,7 +23,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "urllist",
-        "malware":   "malware",
+        "malware": "malware",
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
@@ -41,8 +41,13 @@ class NetskopeClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         return self.get(f"/api/v2/policy/urllist/{object_id}")
 
-    def list_objects(self, stix_type: str, filters: Optional[dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         params: dict[str, Any] = {"limit": page_size, "skip": (page - 1) * page_size}
         if filters:
             params.update(filters)

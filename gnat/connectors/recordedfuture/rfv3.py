@@ -33,7 +33,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
     """Recorded Future Connect API v3 client."""
 
     API_VERSION = "v3"
-    API_PREFIX  = "/v3"
+    API_PREFIX = "/v3"
 
     # ------------------------------------------------------------------
     # Alert API v3  (cursor-paginated; overrides v2 offset behaviour)
@@ -161,10 +161,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
     def list_playbook_alert_categories(self) -> list[dict[str, Any]]:
         """Return available Playbook Alert category definitions."""
         resp = self.get(f"{self._PLAYBOOK_BASE}/categories")
-        return (
-            resp.get("data", {}).get("results", [])
-            if isinstance(resp, dict) else []
-        )
+        return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     # ------------------------------------------------------------------
     # Fusion Files  (v3 only)
@@ -189,10 +186,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
         if path:
             params["path"] = path
         resp = self.get(self._FUSION_BASE, params=params)
-        return (
-            resp.get("data", {}).get("results", [])
-            if isinstance(resp, dict) else []
-        )
+        return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     def get_fusion_file(self, file_path: str) -> bytes:
         """

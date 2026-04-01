@@ -2,23 +2,27 @@
 conftest.py — shared pytest fixtures for GNAT test suite.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
-from gnat.client import GNATClient
 
+import pytest
+
+from gnat.client import GNATClient
 
 # ---------------------------------------------------------------------------
 # Mock HTTP layer
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def mock_http_response():
     """Factory fixture: returns a callable that builds fake urllib3 responses."""
+
     def _make(status=200, body=b'{"data": []}'):
         resp = MagicMock()
         resp.status = status
         resp.data = body
         return resp
+
     return _make
 
 
@@ -34,6 +38,7 @@ def mock_pool_manager(mock_http_response):
 # ---------------------------------------------------------------------------
 # Client fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def minimal_config(tmp_path):

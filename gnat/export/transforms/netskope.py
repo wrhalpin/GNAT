@@ -53,14 +53,14 @@ if TYPE_CHECKING:
 
 
 _PATTERN_TO_NETSKOPE: dict[str, str] = {
-    "ipv4-addr":         "ip",
-    "ipv6-addr":         "ipv6",
-    "domain-name":       "domain",
-    "url:":              "url",
-    "email-addr":        "email",
-    "hashes.MD5":        "md5",
-    "hashes.SHA-1":      "sha1",
-    "hashes.SHA-256":    "sha256",
+    "ipv4-addr": "ip",
+    "ipv6-addr": "ipv6",
+    "domain-name": "domain",
+    "url:": "url",
+    "email-addr": "email",
+    "hashes.MD5": "md5",
+    "hashes.SHA-1": "sha1",
+    "hashes.SHA-256": "sha256",
 }
 
 _VALUE_RE = re.compile(r"=\s*'([^']+)'")
@@ -120,10 +120,10 @@ class NetskopeCETransform(ExportTransform):
         ioc_types: list[str] | None = None,
     ):
         super().__init__(label="NetskopeCETransform")
-        self._source    = source_label
+        self._source = source_label
         self._default_r = default_reputation
         self._active_only = active_only
-        self._category  = category
+        self._category = category
         self._ioc_types = set(ioc_types) if ioc_types else None
 
     def _reputation(self, obj: STIXBase) -> int:
@@ -167,24 +167,20 @@ class NetskopeCETransform(ExportTransform):
                 continue
 
             reputation = self._reputation(obj)
-            category   = (
-                obj._properties.get("x_netskope_category")
-                or self._category
-            )
-            name  = getattr(obj, "name", value)
-            comment = (
-                f"Confidence: {reputation} | Source: {self._source} | "
-                f"Name: {name}"
-            )
+            category = obj._properties.get("x_netskope_category") or self._category
+            name = getattr(obj, "name", value)
+            comment = f"Confidence: {reputation} | Source: {self._source} | Name: {name}"
 
-            indicator_list.append({
-                "value":      value,
-                "type":       ns_type or "domain",
-                "reputation": reputation,
-                "comment":    comment,
-                "active":     True,
-                "category":   category,
-            })
+            indicator_list.append(
+                {
+                    "value": value,
+                    "type": ns_type or "domain",
+                    "reputation": reputation,
+                    "comment": comment,
+                    "active": True,
+                    "category": category,
+                }
+            )
 
         payload_body = json.dumps({"indicator_list": indicator_list}, indent=2)
 
@@ -193,8 +189,8 @@ class NetskopeCETransform(ExportTransform):
             object_count=len(indicator_list),
             metadata={
                 "indicator_count": len(indicator_list),
-                "skipped":         skipped,
-                "source_label":    self._source,
+                "skipped": skipped,
+                "source_label": self._source,
             },
         )
 
@@ -245,10 +241,10 @@ class STIXBundleTransform(ExportTransform):
             pass  # already included if caller passes them
 
         bundle = {
-            "type":         "bundle",
-            "id":           f"bundle--{_uuid.uuid4()}",
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
             "spec_version": "2.1",
-            "objects":      stix_objects,
+            "objects": stix_objects,
         }
 
         body = json.dumps(bundle, indent=2 if self._pretty else None)
@@ -289,8 +285,16 @@ class CSVTransform(ExportTransform):
     """
 
     DEFAULT_FIELDS = [
-        "id", "type", "name", "confidence", "x_rf_risk_score",
-        "x_tlp", "indicator_types", "pattern", "created", "modified",
+        "id",
+        "type",
+        "name",
+        "confidence",
+        "x_rf_risk_score",
+        "x_tlp",
+        "indicator_types",
+        "pattern",
+        "created",
+        "modified",
     ]
 
     def __init__(
@@ -300,9 +304,9 @@ class CSVTransform(ExportTransform):
         include_header: bool = True,
     ):
         super().__init__(label="CSVTransform")
-        self._fields   = fields or self.DEFAULT_FIELDS
+        self._fields = fields or self.DEFAULT_FIELDS
         self._filename = filename
-        self._header   = include_header
+        self._header = include_header
 
     def _get(self, obj: STIXBase, field: str) -> str:
         if field == "type":
@@ -318,6 +322,7 @@ class CSVTransform(ExportTransform):
 
     def transform(self, objects: list[STIXBase]) -> TransformResult:
         import io
+
         buf = io.StringIO()
         if self._header:
             buf.write(",".join(f'"{c}"' for c in self._fields) + "\n")

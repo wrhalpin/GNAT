@@ -50,6 +50,7 @@ class MISPAPIError(MISPError):
     misp_message : str
     endpoint : str | None
     """
+
     def __init__(
         self,
         message: str,

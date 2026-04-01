@@ -79,8 +79,8 @@ class NozomiClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":      "alerts",
-        "vulnerability":  "vulnerabilities",
+        "indicator": "alerts",
+        "vulnerability": "vulnerabilities",
         "infrastructure": "nodes",
     }
 
@@ -105,9 +105,8 @@ class NozomiClient(BaseClient, ConnectorMixin):
             self._auth_headers["Authorization"] = f"Token {self._api_token}"
         elif self._username and self._password:
             import base64
-            creds = base64.b64encode(
-                f"{self._username}:{self._password}".encode()
-            ).decode()
+
+            creds = base64.b64encode(f"{self._username}:{self._password}".encode()).decode()
             self._auth_headers["Authorization"] = f"Basic {creds}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -125,18 +124,24 @@ class NozomiClient(BaseClient, ConnectorMixin):
             return resp if isinstance(resp, dict) else {}
 
         if stix_type == "vulnerability":
-            resp = self.get("/api/open/query/do", params={
-                "query": f"vulnerabilities | where id=={object_id}",
-                "limit": 1,
-            })
+            resp = self.get(
+                "/api/open/query/do",
+                params={
+                    "query": f"vulnerabilities | where id=={object_id}",
+                    "limit": 1,
+                },
+            )
             items = resp.get("result", []) if isinstance(resp, dict) else []
             return items[0] if items else {}
 
         if stix_type == "infrastructure":
-            resp = self.get("/api/open/query/do", params={
-                "query": f"nodes | where id=={object_id}",
-                "limit": 1,
-            })
+            resp = self.get(
+                "/api/open/query/do",
+                params={
+                    "query": f"nodes | where id=={object_id}",
+                    "limit": 1,
+                },
+            )
             items = resp.get("result", []) if isinstance(resp, dict) else []
             return items[0] if items else {}
 
@@ -181,18 +186,14 @@ class NozomiClient(BaseClient, ConnectorMixin):
                 body["ack"] = payload["ack"]
             resp = self.patch(f"/api/open/alerts/{alert_id}", json=body)
             return resp if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"Nozomi: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Nozomi: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Acknowledge a Nozomi alert (no hard delete via API)."""
         if stix_type == "indicator":
             self.patch(f"/api/open/alerts/{object_id}", json={"ack": True})
             return
-        raise GNATClientError(
-            f"Nozomi: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Nozomi: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -210,8 +211,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
 
     def get_sessions(self, limit: int = 100) -> list[dict[str, Any]]:
         """Retrieve recent network sessions observed by Nozomi."""
-        resp = self.get("/api/open/query/do",
-                        params={"query": "sessions", "limit": limit})
+        resp = self.get("/api/open/query/do", params={"query": "sessions", "limit": limit})
         return resp.get("result", []) if isinstance(resp, dict) else []
 
     def get_vulnerabilities(
@@ -236,8 +236,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
 
     def get_network_protocols(self, limit: int = 100) -> list[dict[str, Any]]:
         """Return observed OT/IT network protocols."""
-        resp = self.get("/api/open/query/do",
-                        params={"query": "protocols", "limit": limit})
+        resp = self.get("/api/open/query/do", params={"query": "protocols", "limit": limit})
         return resp.get("result", []) if isinstance(resp, dict) else []
 
     # ── STIX translation ───────────────────────────────────────────────────

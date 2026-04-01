@@ -1,4 +1,5 @@
 """gnat.ingest.mappers — RecordMapper implementations."""
+
 from gnat.ingest.mappers.mappers import (
     CEFMapper,
     CSVIndicatorMapper,
@@ -15,8 +16,16 @@ from gnat.ingest.mappers.mappers import (
 )
 
 __all__ = [
-    "FlatIOCMapper", "STIXPassthroughMapper", "MISPAttributeMapper",
-    "CEFMapper", "SQLRowMapper", "CSVIndicatorMapper", "RSSEntryMapper",
-    "EmailIOCMapper", "OpenIOCMapper", "SplunkResultMapper",
-    "ElasticResultMapper", "NVDCVEMapper",
+    "FlatIOCMapper",
+    "STIXPassthroughMapper",
+    "MISPAttributeMapper",
+    "CEFMapper",
+    "SQLRowMapper",
+    "CSVIndicatorMapper",
+    "RSSEntryMapper",
+    "EmailIOCMapper",
+    "OpenIOCMapper",
+    "SplunkResultMapper",
+    "ElasticResultMapper",
+    "NVDCVEMapper",
 ]

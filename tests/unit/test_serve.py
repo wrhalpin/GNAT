@@ -61,8 +61,8 @@ def _authed(client: TestClient, method: str, path: str, **kwargs):
 # WebUIConfig
 # ---------------------------------------------------------------------------
 
-class TestWebUIConfig:
 
+class TestWebUIConfig:
     def test_defaults(self):
         cfg = WebUIConfig()
         assert cfg.bind == "127.0.0.1"
@@ -110,8 +110,8 @@ class TestWebUIConfig:
 # APIKeyAuth
 # ---------------------------------------------------------------------------
 
-class TestAPIKeyAuth:
 
+class TestAPIKeyAuth:
     def test_correct_key_accepted(self):
         client = _client()
         r = _authed(client, "get", "/api/library")
@@ -146,8 +146,8 @@ class TestAPIKeyAuth:
 # RateLimiter
 # ---------------------------------------------------------------------------
 
-class TestRateLimiter:
 
+class TestRateLimiter:
     def test_allows_requests_within_limit(self):
         rl = RateLimiter(max_requests=5, window_seconds=60)
         for _ in range(5):
@@ -174,12 +174,14 @@ class TestRateLimiter:
 
     def test_429_via_http(self):
         from gnat.serve.rate_limit import RateLimiter as RL
+
         # Patch check() to always fail for this test
         rl = RL(max_requests=1, window_seconds=60)
         rl.check = lambda key: False  # type: ignore[method-assign]
         app = create_app(api_key=_KEY)
         # Replace the rate limiter dependency
         from gnat.serve import app as serve_app
+
         orig_rl = serve_app.RateLimiter
         serve_app.RateLimiter = lambda **kw: rl  # type: ignore[attr-defined]
         try:
@@ -197,8 +199,8 @@ class TestRateLimiter:
 # Health endpoint
 # ---------------------------------------------------------------------------
 
-class TestHealthEndpoint:
 
+class TestHealthEndpoint:
     def test_health_no_auth(self):
         client = _client()
         r = client.get("/health")
@@ -215,8 +217,8 @@ class TestHealthEndpoint:
 # Dashboard HTML endpoint
 # ---------------------------------------------------------------------------
 
-class TestDashboardEndpoint:
 
+class TestDashboardEndpoint:
     def test_root_returns_html(self):
         client = _client()
         r = client.get("/")
@@ -238,8 +240,8 @@ class TestDashboardEndpoint:
 # Library router
 # ---------------------------------------------------------------------------
 
-class TestLibraryRouter:
 
+class TestLibraryRouter:
     def test_search_503_when_no_library(self):
         client = _client()
         r = _authed(client, "get", "/api/library")
@@ -248,7 +250,11 @@ class TestLibraryRouter:
     def test_search_returns_results(self):
         mock_lib = MagicMock()
         mock_entry = MagicMock()
-        mock_entry.to_dict.return_value = {"id": "indicator--abc", "type": "indicator", "name": "evil.com"}
+        mock_entry.to_dict.return_value = {
+            "id": "indicator--abc",
+            "type": "indicator",
+            "name": "evil.com",
+        }
         mock_lib.search.return_value = [mock_entry]
         client = _client(library=mock_lib)
         r = _authed(client, "get", "/api/library?q=evil")
@@ -324,8 +330,8 @@ class TestLibraryRouter:
 # Reports router
 # ---------------------------------------------------------------------------
 
-class TestReportsRouter:
 
+class TestReportsRouter:
     def test_list_503_when_no_reports_dir(self):
         client = _client()
         r = _authed(client, "get", "/api/reports")
@@ -395,8 +401,8 @@ class TestReportsRouter:
 # Scheduler router
 # ---------------------------------------------------------------------------
 
-class TestSchedulerRouter:
 
+class TestSchedulerRouter:
     def _make_job(self, job_id="feed1", enabled=True, run_count=5, status="ok"):
         """Return a simple object that looks like a FeedJob without using MagicMock.__dict__."""
         execute_mock = MagicMock()
@@ -405,13 +411,13 @@ class TestSchedulerRouter:
             pass
 
         job = FakeJob()
-        job.job_id   = job_id
-        job.enabled  = enabled
+        job.job_id = job_id
+        job.enabled = enabled
         job.last_run = "2026-01-01T06:00:00"
         job.next_run = "2026-01-02T06:00:00"
         job.run_count = run_count
-        job.status   = status
-        job.execute  = execute_mock
+        job.status = status
+        job.execute = execute_mock
         return job
 
     def test_list_jobs_503_no_scheduler(self):
@@ -466,6 +472,7 @@ class TestSchedulerRouter:
         _authed(client, "post", "/api/scheduler/jobs/feed1/trigger")
         # Give the daemon thread a moment to start
         import time
+
         time.sleep(0.05)
         job.execute.assert_called()
 
@@ -489,22 +496,25 @@ class TestSchedulerRouter:
 # CLI subcommand
 # ---------------------------------------------------------------------------
 
-class TestCLIServeSubcommand:
 
+class TestCLIServeSubcommand:
     def test_serve_help_exits_zero(self):
         from gnat.cli.main import main
+
         with pytest.raises(SystemExit) as exc:
             main(["serve", "--help"])
         assert exc.value.code == 0
 
     def test_serve_registered_in_parser(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["serve"])
         assert args.command == "serve"
 
     def test_serve_default_host_and_port(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["serve"])
         assert args.host == "127.0.0.1"
@@ -512,6 +522,7 @@ class TestCLIServeSubcommand:
 
     def test_serve_custom_host_port(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["serve", "--host", "0.0.0.0", "--port", "9000"])
         assert args.host == "0.0.0.0"
@@ -519,6 +530,7 @@ class TestCLIServeSubcommand:
 
     def test_serve_api_key_argument(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["serve", "--api-key", "mysecret"])
         assert args.api_key == "mysecret"
@@ -526,6 +538,7 @@ class TestCLIServeSubcommand:
     def test_serve_missing_fastapi_returns_1(self, monkeypatch):
         monkeypatch.setitem(sys.modules, "gnat.serve.app", None)
         from gnat.cli.main import _cmd_serve
+
         args = MagicMock()
         args.host = "127.0.0.1"
         args.port = 8088
@@ -543,6 +556,7 @@ class TestCLIServeSubcommand:
         monkeypatch.setattr("gnat.serve.app.run", mock_run, raising=False)
 
         import gnat.serve.app as serve_app
+
         monkeypatch.setattr(serve_app, "run", mock_run)
 
         args = MagicMock()
@@ -552,8 +566,12 @@ class TestCLIServeSubcommand:
         args.reports_dir = None
         args.config = None
 
-        with patch("gnat.serve.app.run", mock_run), patch("gnat.serve.app.uvicorn", MagicMock(), create=True):
+        with (
+            patch("gnat.serve.app.run", mock_run),
+            patch("gnat.serve.app.uvicorn", MagicMock(), create=True),
+        ):
             # Just test the key generation logic without starting server
             import secrets
+
             key = secrets.token_hex(16)
             assert len(key) == 32  # 16 bytes = 32 hex chars

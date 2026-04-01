@@ -75,10 +75,10 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "iocFilters",
-        "malware":       "analysisResults",
+        "indicator": "iocFilters",
+        "malware": "analysisResults",
         "vulnerability": "alerts",
-        "report":        "workbench/alerts",
+        "report": "workbench/alerts",
     }
 
     def __init__(
@@ -146,18 +146,14 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         if stix_type == "indicator":
             resp = self.post("/v3.0/threatintel/iocFilters", json=payload)
             return resp if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"Vision One: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Vision One: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Delete an IOC filter."""
         if stix_type == "indicator":
             self.delete(f"/v3.0/threatintel/iocFilters/{object_id}")
             return
-        raise GNATClientError(
-            f"Vision One: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Vision One: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -266,12 +262,12 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         uid = str(_uuid.uuid5(_STIX_NS, f"visionone-ioc-{value}"))
 
         pattern_map = {
-            "ip":          f"[ipv4-addr:value = '{value}']",
-            "domain":      f"[domain-name:value = '{value}']",
-            "url":         f"[url:value = '{value}']",
-            "fileSha256":  f"[file:hashes.'SHA-256' = '{value}']",
-            "fileSha1":    f"[file:hashes.SHA1 = '{value}']",
-            "fileMd5":     f"[file:hashes.MD5 = '{value}']",
+            "ip": f"[ipv4-addr:value = '{value}']",
+            "domain": f"[domain-name:value = '{value}']",
+            "url": f"[url:value = '{value}']",
+            "fileSha256": f"[file:hashes.'SHA-256' = '{value}']",
+            "fileSha1": f"[file:hashes.SHA1 = '{value}']",
+            "fileMd5": f"[file:hashes.MD5 = '{value}']",
         }
         pattern = pattern_map.get(ioc_type, f"[domain-name:value = '{value}']")
         return {
@@ -313,6 +309,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX dict to a Vision One IOC filter payload."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         value_match = re.search(r"= '([^']+)'", pattern)
         value = value_match.group(1) if value_match else stix_dict.get("name", "")

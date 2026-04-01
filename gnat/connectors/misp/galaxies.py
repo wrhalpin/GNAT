@@ -85,9 +85,7 @@ class MISPGalaxyCommands:
         """
         return self.search_clusters("T")
 
-    def attach_cluster_to_event(
-        self, event_uuid: str, cluster_tag: str
-    ) -> dict:
+    def attach_cluster_to_event(self, event_uuid: str, cluster_tag: str) -> dict:
         """
         Attach a galaxy cluster to an event via its tag.
 

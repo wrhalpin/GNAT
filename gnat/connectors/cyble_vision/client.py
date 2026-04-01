@@ -48,6 +48,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("f5e5c8b0-5e5e-4e5e-9e5e-5e5e5e5e5e5e")  # namespace for deterministic IDs
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -68,10 +69,12 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "iocs",
-        "report":    "alerts",
+        "report": "alerts",
     }
 
-    def __init__(self, host: str = "https://api.cyble.ai/engine/api/v4", api_token: str = "", **kwargs: Any):
+    def __init__(
+        self, host: str = "https://api.cyble.ai/engine/api/v4", api_token: str = "", **kwargs: Any
+    ):
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 

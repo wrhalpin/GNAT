@@ -41,7 +41,6 @@ def validate_url_scheme(url: str, *, allow_http: bool = True) -> str:
     allowed = _ALLOWED_SCHEMES if allow_http else frozenset({"https"})
     if scheme not in allowed:
         raise ValueError(
-            f"Blocked URL scheme {scheme!r} in {url!r}. "
-            f"Only {sorted(allowed)} URLs are permitted."
+            f"Blocked URL scheme {scheme!r} in {url!r}. Only {sorted(allowed)} URLs are permitted."
         )
     return url

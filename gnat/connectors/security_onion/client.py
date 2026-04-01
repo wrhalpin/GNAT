@@ -77,7 +77,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "observed-data": "alerts",
-        "case":          "cases",
+        "case": "cases",
     }
 
     def __init__(
@@ -105,9 +105,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         )
         token = resp.get("token") if isinstance(resp, dict) else None
         if not token:
-            raise GNATClientError(
-                "Security Onion login failed — no token in response."
-            )
+            raise GNATClientError("Security Onion login failed — no token in response.")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -164,15 +162,13 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
             return resp if isinstance(resp, list) else resp.get("data", [])
 
         # Alerts via ES DSL search
-        query      = filters.pop("query", None)
+        query = filters.pop("query", None)
         time_range = filters.pop("time_range", None)
-        from_      = (page - 1) * page_size
+        from_ = (page - 1) * page_size
 
         must: list[Any] = []
         if time_range and len(time_range) == 2:
-            must.append({
-                "range": {"@timestamp": {"gte": time_range[0], "lte": time_range[1]}}
-            })
+            must.append({"range": {"@timestamp": {"gte": time_range[0], "lte": time_range[1]}}})
         if query:
             must.append(query)
 
@@ -210,9 +206,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         return self.post(f"/api/alerts/{alert_id}/{action}")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise GNATClientError(
-            "Security Onion does not support alert/case deletion via the API."
-        )
+        raise GNATClientError("Security Onion does not support alert/case deletion via the API.")
 
     # ── Domain-specific operations ────────────────────────────────────────
 
@@ -244,9 +238,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         """
         must: list[Any] = []
         if time_range:
-            must.append({
-                "range": {"@timestamp": {"gte": time_range[0], "lte": time_range[1]}}
-            })
+            must.append({"range": {"@timestamp": {"gte": time_range[0], "lte": time_range[1]}}})
         if query:
             must.append(query)
         body: dict[str, Any] = {
@@ -312,8 +304,8 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
             STIX ``observed-data`` object.
         """
         alert = self._normalise(native)
-        now   = _now_ts()
-        ts    = alert.get("timestamp") or now
+        now = _now_ts()
+        ts = alert.get("timestamp") or now
 
         objects: list[dict[str, Any]] = []
         refs: list[str] = []
@@ -324,16 +316,18 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
                 ip_id = f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}"
                 if ip_id not in seen:
                     seen.add(ip_id)
-                    objects.append({
-                        "type": "ipv4-addr",
-                        "id":   ip_id,
-                        "spec_version": "2.1",
-                        "value": ip,
-                    })
+                    objects.append(
+                        {
+                            "type": "ipv4-addr",
+                            "id": ip_id,
+                            "spec_version": "2.1",
+                            "value": ip,
+                        }
+                    )
                 refs.append(ip_id)
 
-        src_ip   = alert.get("src_ip")
-        dst_ip   = alert.get("dst_ip")
+        src_ip = alert.get("src_ip")
+        dst_ip = alert.get("dst_ip")
         src_port = alert.get("src_port")
         dst_port = alert.get("dst_port")
         if src_ip and dst_ip and (src_port or dst_port):
@@ -343,7 +337,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
                 seen.add(nid)
                 nt: dict[str, Any] = {
                     "type": "network-traffic",
-                    "id":   nid,
+                    "id": nid,
                     "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src_ip)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst_ip)}",
@@ -360,22 +354,22 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         obs: dict[str, Any] = {
-            "type":           "observed-data",
-            "id":             obs_id,
-            "spec_version":   "2.1",
-            "created":        now,
-            "modified":       now,
+            "type": "observed-data",
+            "id": obs_id,
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
             "first_observed": ts,
-            "last_observed":  ts,
+            "last_observed": ts,
             "number_observed": 1,
-            "object_refs":    refs,
+            "object_refs": refs,
             "x_security_onion_alert": {
-                "alert_id":  alert.get("id"),
+                "alert_id": alert.get("id"),
                 "rule_name": alert.get("rule_name"),
-                "rule_id":   alert.get("rule_id"),
-                "category":  alert.get("category"),
-                "severity":  alert.get("severity"),
-                "sensor":    alert.get("sensor"),
+                "rule_id": alert.get("rule_id"),
+                "category": alert.get("category"),
+                "severity": alert.get("severity"),
+                "sensor": alert.get("sensor"),
             },
         }
         objects.append(obs)
@@ -389,8 +383,8 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         """
         so = stix_dict.get("x_security_onion_alert", {})
         return {
-            "id":      so.get("alert_id", ""),
-            "action":  "acknowledge",
+            "id": so.get("alert_id", ""),
+            "action": "acknowledge",
             "stix_id": stix_dict.get("id", ""),
         }
 
@@ -403,16 +397,16 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         sev_map: dict[Any, int] = {"1": 4, "2": 3, "3": 2, "4": 1, 1: 4, 2: 3, 3: 2, 4: 1}
         sev_raw = alert.get("event", {}).get("severity", 3)
         return {
-            "id":        alert.get("uid") or alert.get("_id"),
+            "id": alert.get("uid") or alert.get("_id"),
             "timestamp": alert.get("@timestamp"),
             "rule_name": rule.get("name"),
-            "rule_id":   rule.get("uuid"),
-            "category":  alert.get("event", {}).get("category"),
-            "severity":  sev_map.get(sev_raw, 2),
-            "src_ip":    alert.get("source", {}).get("ip"),
-            "dst_ip":    alert.get("destination", {}).get("ip"),
-            "src_port":  alert.get("source", {}).get("port"),
-            "dst_port":  alert.get("destination", {}).get("port"),
-            "proto":     alert.get("network", {}).get("transport"),
-            "sensor":    alert.get("observer", {}).get("name"),
+            "rule_id": rule.get("uuid"),
+            "category": alert.get("event", {}).get("category"),
+            "severity": sev_map.get(sev_raw, 2),
+            "src_ip": alert.get("source", {}).get("ip"),
+            "dst_ip": alert.get("destination", {}).get("ip"),
+            "src_port": alert.get("source", {}).get("port"),
+            "dst_port": alert.get("destination", {}).get("port"),
+            "proto": alert.get("network", {}).get("transport"),
+            "sensor": alert.get("observer", {}).get("name"),
         }

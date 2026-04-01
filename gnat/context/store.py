@@ -80,6 +80,7 @@ try:
         event,
     )
     from sqlalchemy.orm import DeclarativeBase, Session, relationship, sessionmaker
+
     _HAS_SQLALCHEMY = True
 except ImportError:
     _HAS_SQLALCHEMY = False
@@ -88,8 +89,7 @@ except ImportError:
 def _require_sqlalchemy() -> None:
     if not _HAS_SQLALCHEMY:
         raise ImportError(
-            "SQLAlchemy is required for workspace persistence: "
-            "pip install 'gnat[persist]'"
+            "SQLAlchemy is required for workspace persistence: pip install 'gnat[persist]'"
         )
 
 
@@ -102,6 +102,7 @@ def _utcnow() -> datetime:
 # ---------------------------------------------------------------------------
 
 if _HAS_SQLALCHEMY:
+
     class _Base(DeclarativeBase):
         pass
 
@@ -114,25 +115,31 @@ if _HAS_SQLALCHEMY:
         Each workspace is an isolated collection of STIX objects loaded
         from one or more global platform contexts.
         """
+
         __tablename__ = "workspaces"
 
-        id          = Column(Integer, primary_key=True, autoincrement=True)
-        name        = Column(String(255), nullable=False, unique=True, index=True)
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        name = Column(String(255), nullable=False, unique=True, index=True)
         description = Column(Text, nullable=True)
-        created_at  = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
-        updated_at  = Column(DateTime(timezone=True), default=_utcnow,
-                             onupdate=_utcnow, nullable=False)
+        created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+        updated_at = Column(
+            DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False
+        )
         # Arbitrary JSON metadata (analyst notes, tags, config overrides, etc.)
         metadata_json = Column(Text, nullable=True, default="{}")
 
-        objects      = relationship("WorkspaceObjectModel",
-                                    back_populates="workspace",
-                                    cascade="all, delete-orphan",
-                                    lazy="dynamic")
-        enrichments  = relationship("EnrichmentLogModel",
-                                    back_populates="workspace",
-                                    cascade="all, delete-orphan",
-                                    lazy="dynamic")
+        objects = relationship(
+            "WorkspaceObjectModel",
+            back_populates="workspace",
+            cascade="all, delete-orphan",
+            lazy="dynamic",
+        )
+        enrichments = relationship(
+            "EnrichmentLogModel",
+            back_populates="workspace",
+            cascade="all, delete-orphan",
+            lazy="dynamic",
+        )
 
         def meta(self) -> dict:
             return json.loads(self.metadata_json or "{}")
@@ -153,29 +160,27 @@ if _HAS_SQLALCHEMY:
         mirrored as indexed columns for efficient querying without full JSON
         deserialisation.
         """
-        __tablename__ = "workspace_objects"
-        __table_args__ = (
-            UniqueConstraint("workspace_id", "stix_id",
-                             name="uq_workspace_stix_id"),
-        )
 
-        id              = Column(Integer, primary_key=True, autoincrement=True)
-        workspace_id    = Column(Integer, ForeignKey("workspaces.id",
-                                 ondelete="CASCADE"), nullable=False, index=True)
-        stix_id         = Column(String(255), nullable=False, index=True)
-        stix_type       = Column(String(64),  nullable=False, index=True)
-        stix_name       = Column(String(512), nullable=True,  index=True)
+        __tablename__ = "workspace_objects"
+        __table_args__ = (UniqueConstraint("workspace_id", "stix_id", name="uq_workspace_stix_id"),)
+
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        workspace_id = Column(
+            Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+        )
+        stix_id = Column(String(255), nullable=False, index=True)
+        stix_type = Column(String(64), nullable=False, index=True)
+        stix_name = Column(String(512), nullable=True, index=True)
         # The full STIX object as JSON
-        stix_json       = Column(Text, nullable=False)
+        stix_json = Column(Text, nullable=False)
         # Which platform this object was loaded from
         source_platform = Column(String(64), nullable=True)
-        created_at      = Column(DateTime(timezone=True), default=_utcnow)
-        updated_at      = Column(DateTime(timezone=True), default=_utcnow,
-                                 onupdate=_utcnow)
+        created_at = Column(DateTime(timezone=True), default=_utcnow)
+        updated_at = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
         # True if this object has been modified since loading from the platform
-        is_dirty        = Column(Boolean, default=False, nullable=False)
+        is_dirty = Column(Boolean, default=False, nullable=False)
         # Soft-delete — marks objects removed from workspace without DB purge
-        is_deleted      = Column(Boolean, default=False, nullable=False)
+        is_deleted = Column(Boolean, default=False, nullable=False)
 
         workspace = relationship("WorkspaceModel", back_populates="objects")
 
@@ -183,8 +188,10 @@ if _HAS_SQLALCHEMY:
             return json.loads(self.stix_json)
 
         def __repr__(self) -> str:
-            return (f"<WorkspaceObject stix_id={self.stix_id!r} "
-                    f"type={self.stix_type!r} dirty={self.is_dirty}>")
+            return (
+                f"<WorkspaceObject stix_id={self.stix_id!r} "
+                f"type={self.stix_type!r} dirty={self.is_dirty}>"
+            )
 
     # ── EnrichmentLog ──────────────────────────────────────────────────────
 
@@ -195,20 +202,22 @@ if _HAS_SQLALCHEMY:
         Stores the full enrichment payload so that enrichment can be
         replayed, audited, or reversed.
         """
+
         __tablename__ = "enrichment_log"
 
-        id              = Column(Integer, primary_key=True, autoincrement=True)
-        workspace_id    = Column(Integer, ForeignKey("workspaces.id",
-                                 ondelete="CASCADE"), nullable=False, index=True)
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        workspace_id = Column(
+            Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+        )
         # The STIX id of the object that was enriched
-        stix_id         = Column(String(255), nullable=False, index=True)
+        stix_id = Column(String(255), nullable=False, index=True)
         # Platform that provided the enrichment
         source_platform = Column(String(64), nullable=False)
         # Full enrichment result as JSON (STIX dict or extension fields)
         enrichment_json = Column(Text, nullable=False)
         # Merge strategy used ("merge_extensions", "create_relationships", "tag_only")
-        strategy        = Column(String(64), nullable=False, default="merge_extensions")
-        created_at      = Column(DateTime(timezone=True), default=_utcnow)
+        strategy = Column(String(64), nullable=False, default="merge_extensions")
+        created_at = Column(DateTime(timezone=True), default=_utcnow)
 
         workspace = relationship("WorkspaceModel", back_populates="enrichments")
 
@@ -216,8 +225,7 @@ if _HAS_SQLALCHEMY:
             return json.loads(self.enrichment_json)
 
         def __repr__(self) -> str:
-            return (f"<EnrichmentLog stix_id={self.stix_id!r} "
-                    f"source={self.source_platform!r}>")
+            return f"<EnrichmentLog stix_id={self.stix_id!r} source={self.source_platform!r}>"
 
     # ── GlobalContextModel ─────────────────────────────────────────────────
 
@@ -227,27 +235,31 @@ if _HAS_SQLALCHEMY:
 
         Multiple global contexts can be registered; one is marked as default.
         """
+
         __tablename__ = "context_globals"
 
-        id              = Column(Integer, primary_key=True, autoincrement=True)
-        name            = Column(String(128), nullable=False, unique=True)
-        target_platform = Column(String(64),  nullable=False)
-        is_default      = Column(Boolean, default=False, nullable=False)
-        config_json     = Column(Text, nullable=True, default="{}")
-        created_at      = Column(DateTime(timezone=True), default=_utcnow)
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        name = Column(String(128), nullable=False, unique=True)
+        target_platform = Column(String(64), nullable=False)
+        is_default = Column(Boolean, default=False, nullable=False)
+        config_json = Column(Text, nullable=True, default="{}")
+        created_at = Column(DateTime(timezone=True), default=_utcnow)
 
         def config(self) -> dict:
             return json.loads(self.config_json or "{}")
 
         def __repr__(self) -> str:
-            return (f"<GlobalContext name={self.name!r} "
-                    f"platform={self.target_platform!r} "
-                    f"default={self.is_default}>")
+            return (
+                f"<GlobalContext name={self.name!r} "
+                f"platform={self.target_platform!r} "
+                f"default={self.is_default}>"
+            )
 
 
 # ---------------------------------------------------------------------------
 # WorkspaceStore — session factory and high-level DB operations
 # ---------------------------------------------------------------------------
+
 
 class WorkspaceStore:
     """
@@ -278,7 +290,7 @@ class WorkspaceStore:
         _require_sqlalchemy()
         # Expand ~ in SQLite paths
         if url.startswith("sqlite:///") and "~" in url:
-            path = url[len("sqlite:///"):]
+            path = url[len("sqlite:///") :]
             url = "sqlite:///" + str(Path(path).expanduser())
 
         self._url = url
@@ -286,6 +298,7 @@ class WorkspaceStore:
 
         # Enable WAL mode for SQLite — better concurrent read performance
         if url.startswith("sqlite"):
+
             @event.listens_for(self._engine, "connect")
             def _set_wal(dbapi_conn, _rec):
                 dbapi_conn.execute("PRAGMA journal_mode=WAL")
@@ -308,8 +321,9 @@ class WorkspaceStore:
 
     # ── Workspace CRUD ─────────────────────────────────────────────────────
 
-    def create_workspace(self, name: str, description: str = "",
-                         metadata: dict | None = None) -> WorkspaceModel:
+    def create_workspace(
+        self, name: str, description: str = "", metadata: dict | None = None
+    ) -> WorkspaceModel:
         """Create and persist a new named workspace."""
         with self.session() as sess:
             ws = WorkspaceModel(
@@ -352,8 +366,9 @@ class WorkspaceStore:
 
     # ── Object CRUD ────────────────────────────────────────────────────────
 
-    def upsert_object(self, workspace_id: int, stix_dict: dict,
-                      source_platform: str = "", is_dirty: bool = False) -> WorkspaceObjectModel:
+    def upsert_object(
+        self, workspace_id: int, stix_dict: dict, source_platform: str = "", is_dirty: bool = False
+    ) -> WorkspaceObjectModel:
         """
         Insert or update a STIX object in a workspace.
 
@@ -367,32 +382,32 @@ class WorkspaceStore:
                 .first()
             )
             if existing:
-                existing.stix_json       = json.dumps(stix_dict)
-                existing.stix_name       = stix_dict.get("name", "")
-                existing.updated_at      = _utcnow()
-                existing.is_dirty        = is_dirty
-                existing.is_deleted      = False
+                existing.stix_json = json.dumps(stix_dict)
+                existing.stix_name = stix_dict.get("name", "")
+                existing.updated_at = _utcnow()
+                existing.is_dirty = is_dirty
+                existing.is_deleted = False
                 if source_platform:
                     existing.source_platform = source_platform
                 sess.commit()
                 return existing
 
             obj = WorkspaceObjectModel(
-                workspace_id    = workspace_id,
-                stix_id         = stix_dict["id"],
-                stix_type       = stix_dict.get("type", ""),
-                stix_name       = stix_dict.get("name", ""),
-                stix_json       = json.dumps(stix_dict),
-                source_platform = source_platform,
-                is_dirty        = is_dirty,
+                workspace_id=workspace_id,
+                stix_id=stix_dict["id"],
+                stix_type=stix_dict.get("type", ""),
+                stix_name=stix_dict.get("name", ""),
+                stix_json=json.dumps(stix_dict),
+                source_platform=source_platform,
+                is_dirty=is_dirty,
             )
             sess.add(obj)
             sess.commit()
             return obj
 
-    def get_objects(self, workspace_id: int,
-                    stix_type: str | None = None,
-                    include_deleted: bool = False) -> list[dict]:
+    def get_objects(
+        self, workspace_id: int, stix_type: str | None = None, include_deleted: bool = False
+    ) -> list[dict]:
         """Return STIX dicts for all objects in a workspace."""
         with self.session() as sess:
             q = sess.query(WorkspaceObjectModel).filter_by(workspace_id=workspace_id)
@@ -415,45 +430,53 @@ class WorkspaceStore:
     def mark_clean(self, workspace_id: int) -> None:
         """Mark all dirty objects as clean after a successful commit."""
         with self.session() as sess:
-            (sess.query(WorkspaceObjectModel)
-             .filter_by(workspace_id=workspace_id, is_dirty=True)
-             .update({"is_dirty": False, "updated_at": _utcnow()}))
+            (
+                sess.query(WorkspaceObjectModel)
+                .filter_by(workspace_id=workspace_id, is_dirty=True)
+                .update({"is_dirty": False, "updated_at": _utcnow()})
+            )
             sess.commit()
 
     def soft_delete_object(self, workspace_id: int, stix_id: str) -> bool:
         """Mark an object deleted without removing it from the DB."""
         with self.session() as sess:
-            obj = (sess.query(WorkspaceObjectModel)
-                   .filter_by(workspace_id=workspace_id, stix_id=stix_id)
-                   .first())
+            obj = (
+                sess.query(WorkspaceObjectModel)
+                .filter_by(workspace_id=workspace_id, stix_id=stix_id)
+                .first()
+            )
             if obj is None:
                 return False
             obj.is_deleted = True
-            obj.is_dirty   = True
+            obj.is_dirty = True
             obj.updated_at = _utcnow()
             sess.commit()
             return True
 
     # ── Enrichment log ─────────────────────────────────────────────────────
 
-    def log_enrichment(self, workspace_id: int, stix_id: str,
-                       source_platform: str, enrichment_data: dict,
-                       strategy: str = "merge_extensions") -> EnrichmentLogModel:
+    def log_enrichment(
+        self,
+        workspace_id: int,
+        stix_id: str,
+        source_platform: str,
+        enrichment_data: dict,
+        strategy: str = "merge_extensions",
+    ) -> EnrichmentLogModel:
         """Append an enrichment record to the log."""
         with self.session() as sess:
             entry = EnrichmentLogModel(
-                workspace_id    = workspace_id,
-                stix_id         = stix_id,
-                source_platform = source_platform,
-                enrichment_json = json.dumps(enrichment_data),
-                strategy        = strategy,
+                workspace_id=workspace_id,
+                stix_id=stix_id,
+                source_platform=source_platform,
+                enrichment_json=json.dumps(enrichment_data),
+                strategy=strategy,
             )
             sess.add(entry)
             sess.commit()
             return entry
 
-    def get_enrichment_history(self, workspace_id: int,
-                               stix_id: str | None = None) -> list[dict]:
+    def get_enrichment_history(self, workspace_id: int, stix_id: str | None = None) -> list[dict]:
         """Return the enrichment log for a workspace, optionally filtered by object."""
         with self.session() as sess:
             q = sess.query(EnrichmentLogModel).filter_by(workspace_id=workspace_id)
@@ -461,11 +484,11 @@ class WorkspaceStore:
                 q = q.filter_by(stix_id=stix_id)
             return [
                 {
-                    "stix_id":         e.stix_id,
+                    "stix_id": e.stix_id,
                     "source_platform": e.source_platform,
-                    "strategy":        e.strategy,
-                    "created_at":      e.created_at.isoformat() if e.created_at else "",
-                    "data":            e.enrichment_data(),
+                    "strategy": e.strategy,
+                    "created_at": e.created_at.isoformat() if e.created_at else "",
+                    "data": e.enrichment_data(),
                 }
                 for e in q.order_by(EnrichmentLogModel.created_at).all()
             ]
@@ -473,9 +496,11 @@ class WorkspaceStore:
     def object_count(self, workspace_id: int) -> int:
         """Return count of non-deleted objects in the workspace."""
         with self.session() as sess:
-            return (sess.query(WorkspaceObjectModel)
-                    .filter_by(workspace_id=workspace_id, is_deleted=False)
-                    .count())
+            return (
+                sess.query(WorkspaceObjectModel)
+                .filter_by(workspace_id=workspace_id, is_deleted=False)
+                .count()
+            )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"WorkspaceStore(url={self._url!r})"
@@ -484,6 +509,7 @@ class WorkspaceStore:
 # ---------------------------------------------------------------------------
 # FlatFileStore — JSON fallback, no SQLAlchemy required
 # ---------------------------------------------------------------------------
+
 
 class FlatFileStore:
     """
@@ -531,18 +557,19 @@ class FlatFileStore:
 
     # ── Workspace lifecycle ────────────────────────────────────────────────
 
-    def create_workspace(self, name: str, description: str = "",
-                         metadata: dict | None = None) -> dict:
+    def create_workspace(
+        self, name: str, description: str = "", metadata: dict | None = None
+    ) -> dict:
         """Create a workspace directory and write metadata."""
         ws_dir = self._ws_dir(name)
         ws_dir.mkdir(parents=True, exist_ok=True)
         (ws_dir / "objects").mkdir(exist_ok=True)
         meta = {
-            "name":        name,
+            "name": name,
             "description": description,
-            "created_at":  _utcnow().isoformat(),
-            "updated_at":  _utcnow().isoformat(),
-            "metadata":    metadata or {},
+            "created_at": _utcnow().isoformat(),
+            "updated_at": _utcnow().isoformat(),
+            "metadata": metadata or {},
         }
         self._meta_path(name).write_text(json.dumps(meta, indent=2))
         logger.info("FlatFileStore: created workspace %r at %s", name, ws_dir)
@@ -570,6 +597,7 @@ class FlatFileStore:
     def delete_workspace(self, name: str) -> bool:
         """Delete the workspace directory entirely."""
         import shutil
+
         ws_dir = self._ws_dir(name)
         if not ws_dir.exists():
             return False
@@ -579,22 +607,26 @@ class FlatFileStore:
 
     # ── Object CRUD ────────────────────────────────────────────────────────
 
-    def save_object(self, workspace_name: str, stix_dict: dict,
-                    source_platform: str = "", is_dirty: bool = False) -> None:
+    def save_object(
+        self,
+        workspace_name: str,
+        stix_dict: dict,
+        source_platform: str = "",
+        is_dirty: bool = False,
+    ) -> None:
         """Write a STIX object to disk as an individual JSON file."""
         stix_id = stix_dict["id"]
         safe_id = stix_id.replace("--", "_").replace("/", "_")
         envelope = {
-            "stix":            stix_dict,
+            "stix": stix_dict,
             "source_platform": source_platform,
-            "is_dirty":        is_dirty,
-            "saved_at":        _utcnow().isoformat(),
+            "is_dirty": is_dirty,
+            "saved_at": _utcnow().isoformat(),
         }
         path = self._objects_dir(workspace_name) / f"{safe_id}.json"
         path.write_text(json.dumps(envelope, indent=2))
 
-    def get_objects(self, workspace_name: str,
-                    stix_type: str | None = None) -> list[dict]:
+    def get_objects(self, workspace_name: str, stix_type: str | None = None) -> list[dict]:
         """Load all STIX objects from a workspace directory."""
         objs_dir = self._objects_dir(workspace_name)
         result = []
@@ -634,22 +666,26 @@ class FlatFileStore:
 
     # ── Enrichment log ─────────────────────────────────────────────────────
 
-    def log_enrichment(self, workspace_name: str, stix_id: str,
-                       source_platform: str, enrichment_data: dict,
-                       strategy: str = "create_relationships") -> None:
+    def log_enrichment(
+        self,
+        workspace_name: str,
+        stix_id: str,
+        source_platform: str,
+        enrichment_data: dict,
+        strategy: str = "create_relationships",
+    ) -> None:
         """Append an enrichment entry to the JSONL log."""
         entry = {
-            "stix_id":         stix_id,
+            "stix_id": stix_id,
             "source_platform": source_platform,
-            "strategy":        strategy,
-            "created_at":      _utcnow().isoformat(),
-            "data":            enrichment_data,
+            "strategy": strategy,
+            "created_at": _utcnow().isoformat(),
+            "data": enrichment_data,
         }
         with self._log_path(workspace_name).open("a") as fh:
             fh.write(json.dumps(entry) + "\n")
 
-    def get_enrichment_history(self, workspace_name: str,
-                               stix_id: str | None = None) -> list[dict]:
+    def get_enrichment_history(self, workspace_name: str, stix_id: str | None = None) -> list[dict]:
         log_path = self._log_path(workspace_name)
         if not log_path.exists():
             return []
@@ -666,12 +702,13 @@ class FlatFileStore:
     def export_bundle(self, workspace_name: str) -> dict:
         """Export the entire workspace as a STIX 2.1 bundle."""
         import uuid as _uuid
+
         objects = self.get_objects(workspace_name)
         return {
-            "type":         "bundle",
-            "id":           f"bundle--{_uuid.uuid4()}",
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
             "spec_version": "2.1",
-            "objects":      objects,
+            "objects": objects,
         }
 
     def __repr__(self) -> str:  # pragma: no cover

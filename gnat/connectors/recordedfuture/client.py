@@ -22,10 +22,10 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
     """HTTP client for the Recorded Future Connect API v2."""
 
     stix_type_map: dict[str, str] = {
-        "indicator":    "ip",
-        "malware":      "malware",
+        "indicator": "ip",
+        "malware": "malware",
         "threat-actor": "threat-actor",
-        "vulnerability":"vulnerability",
+        "vulnerability": "vulnerability",
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
@@ -48,8 +48,13 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         )
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
-    def list_objects(self, stix_type: str, filters: Optional[dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         resource = self.stix_type_map.get(stix_type, stix_type)
         params: dict[str, Any] = {"limit": page_size, "from": (page - 1) * page_size}
         if filters:
@@ -65,7 +70,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         entity = native.get("entity", {})
-        risk   = native.get("risk", {})
+        risk = native.get("risk", {})
         stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{entity.get('id', '')}",

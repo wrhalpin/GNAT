@@ -27,9 +27,6 @@ Tests cover:
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -37,17 +34,15 @@ from gnat.stix.pattern_validator import (
     PatternValidationError,
     PatternValidator,
     ValidationResult,
-    _tokenize,
     validate_pattern,
 )
-
 
 # ---------------------------------------------------------------------------
 # 1. ValidationResult
 # ---------------------------------------------------------------------------
 
-class TestValidationResult:
 
+class TestValidationResult:
     def test_bool_true_when_valid(self):
         r = ValidationResult(valid=True)
         assert bool(r) is True
@@ -75,8 +70,8 @@ class TestValidationResult:
 # 2. PatternValidationError
 # ---------------------------------------------------------------------------
 
-class TestPatternValidationError:
 
+class TestPatternValidationError:
     def test_attributes(self):
         err = PatternValidationError("[bad", ["Missing ']'"])
         assert err.pattern == "[bad"
@@ -114,8 +109,8 @@ VALID_PATTERNS = [
     "[mac-addr:value = 'AA:BB:CC:DD:EE:FF']",
 ]
 
-class TestValidPatterns:
 
+class TestValidPatterns:
     @pytest.mark.parametrize("pattern", VALID_PATTERNS)
     def test_valid(self, pattern):
         result = validate_pattern(pattern)
@@ -154,8 +149,8 @@ class TestValidPatterns:
 # 4. Invalid patterns — structural errors
 # ---------------------------------------------------------------------------
 
-class TestStructuralErrors:
 
+class TestStructuralErrors:
     def test_empty_string(self):
         result = validate_pattern("")
         assert not result.valid
@@ -186,8 +181,8 @@ class TestStructuralErrors:
 # 5. Invalid patterns — bad object type
 # ---------------------------------------------------------------------------
 
-class TestBadObjectType:
 
+class TestBadObjectType:
     def test_missing_hyphen_in_type(self):
         # "ipv4addr" instead of "ipv4-addr"
         result = validate_pattern("[ipv4addr:value = '1.2.3.4']")
@@ -207,8 +202,8 @@ class TestBadObjectType:
 # 6. Invalid patterns — bad comparison operator
 # ---------------------------------------------------------------------------
 
-class TestBadOperator:
 
+class TestBadOperator:
     def test_invalid_operator(self):
         result = validate_pattern("[ipv4-addr:value == '1.2.3.4']")
         # == is not valid (single = is)
@@ -231,8 +226,8 @@ class TestBadOperator:
 # 7. Invalid patterns — unquoted string value
 # ---------------------------------------------------------------------------
 
-class TestUnquotedValue:
 
+class TestUnquotedValue:
     def test_unquoted_ip(self):
         result = validate_pattern("[ipv4-addr:value = 1.2.3.4]")
         # 1.2.3.4 — tokenizer sees 1 (INT), .2 is invalid after it, etc.
@@ -249,8 +244,8 @@ class TestUnquotedValue:
 # 8. Incomplete expressions
 # ---------------------------------------------------------------------------
 
-class TestIncompleteExpressions:
 
+class TestIncompleteExpressions:
     def test_missing_value(self):
         result = validate_pattern("[ipv4-addr:value =]")
         assert not result.valid
@@ -272,8 +267,8 @@ class TestIncompleteExpressions:
 # 9. Compound expressions — AND / OR
 # ---------------------------------------------------------------------------
 
-class TestCompoundExpressions:
 
+class TestCompoundExpressions:
     def test_and_same_object(self):
         result = validate_pattern(
             "[network-traffic:dst_ref.type = 'ipv4-addr' "
@@ -298,8 +293,8 @@ class TestCompoundExpressions:
 # 10. Property path variants
 # ---------------------------------------------------------------------------
 
-class TestPropertyPath:
 
+class TestPropertyPath:
     def test_dotted_path(self):
         result = validate_pattern("[file:hashes.MD5 = 'abc']")
         assert result.valid
@@ -325,12 +320,10 @@ class TestPropertyPath:
 # 11. IN list values
 # ---------------------------------------------------------------------------
 
-class TestINValues:
 
+class TestINValues:
     def test_in_string_list(self):
-        result = validate_pattern(
-            "[domain-name:value IN ('evil.com', 'bad.com', 'nasty.net')]"
-        )
+        result = validate_pattern("[domain-name:value IN ('evil.com', 'bad.com', 'nasty.net')]")
         assert result.valid
 
     def test_in_integer_list(self):
@@ -342,18 +335,14 @@ class TestINValues:
 # 12. WITHIN / REPEATEDWITHIN qualifiers
 # ---------------------------------------------------------------------------
 
-class TestQualifiers:
 
+class TestQualifiers:
     def test_within_seconds(self):
-        result = validate_pattern(
-            "[network-traffic:dst_port = 443] WITHIN 300 SECONDS"
-        )
+        result = validate_pattern("[network-traffic:dst_port = 443] WITHIN 300 SECONDS")
         assert result.valid
 
     def test_repeatedwithin_minutes(self):
-        result = validate_pattern(
-            "[ipv4-addr:value = '1.2.3.4'] REPEATEDWITHIN 60 MINUTES"
-        )
+        result = validate_pattern("[ipv4-addr:value = '1.2.3.4'] REPEATEDWITHIN 60 MINUTES")
         assert result.valid
 
     def test_within_hours(self):
@@ -365,8 +354,8 @@ class TestQualifiers:
 # 13. Parenthesised sub-expressions
 # ---------------------------------------------------------------------------
 
-class TestParenthesised:
 
+class TestParenthesised:
     def test_simple_parens(self):
         result = validate_pattern("([ipv4-addr:value = '1.2.3.4'])")
         assert result.valid
@@ -382,8 +371,8 @@ class TestParenthesised:
 # 14. x-* extension type warnings
 # ---------------------------------------------------------------------------
 
-class TestExtensionTypes:
 
+class TestExtensionTypes:
     def test_x_extension_produces_warning_not_error(self):
         result = validate_pattern("[x-custom-type:value = 'abc']")
         assert result.valid
@@ -391,6 +380,7 @@ class TestExtensionTypes:
 
     def test_x_extension_suppressed_with_allow_custom(self):
         from gnat.stix.pattern_validator import _validate_pure_python
+
         result = _validate_pure_python(
             "[x-custom-type:value = 'abc']",
             allow_custom_types=True,
@@ -403,8 +393,8 @@ class TestExtensionTypes:
 # 15. PatternValidator class
 # ---------------------------------------------------------------------------
 
-class TestPatternValidator:
 
+class TestPatternValidator:
     def test_valid_returns_result(self):
         v = PatternValidator()
         r = v.validate("[ipv4-addr:value = '1.2.3.4']")
@@ -438,8 +428,8 @@ class TestPatternValidator:
 # 16. validate_pattern() convenience function
 # ---------------------------------------------------------------------------
 
-class TestValidatePatternFunction:
 
+class TestValidatePatternFunction:
     def test_valid_returns_true(self):
         assert validate_pattern("[domain-name:value = 'evil.com']").valid
 
@@ -459,11 +449,13 @@ class TestValidatePatternFunction:
 # 17. Indicator.__init__ validate= kwarg
 # ---------------------------------------------------------------------------
 
-class TestIndicatorValidation:
 
+class TestIndicatorValidation:
     def test_valid_pattern_no_log(self, caplog):
-        from gnat.orm.indicator import Indicator
         import logging
+
+        from gnat.orm.indicator import Indicator
+
         with caplog.at_level(logging.WARNING, logger="gnat.orm.indicator"):
             ind = Indicator(
                 pattern="[ipv4-addr:value = '1.2.3.4']",
@@ -473,8 +465,10 @@ class TestIndicatorValidation:
         assert "failed validation" not in caplog.text
 
     def test_invalid_pattern_logs_warning(self, caplog):
-        from gnat.orm.indicator import Indicator
         import logging
+
+        from gnat.orm.indicator import Indicator
+
         with caplog.at_level(logging.WARNING, logger="gnat.orm.indicator"):
             ind = Indicator(
                 pattern="[ipv4addr:value = '1.2.3.4']",  # missing hyphen
@@ -483,15 +477,19 @@ class TestIndicatorValidation:
         assert "failed validation" in caplog.text
 
     def test_no_validate_no_log(self, caplog):
-        from gnat.orm.indicator import Indicator
         import logging
+
+        from gnat.orm.indicator import Indicator
+
         with caplog.at_level(logging.WARNING, logger="gnat.orm.indicator"):
             ind = Indicator(pattern="[bad pattern")
         assert "failed validation" not in caplog.text
 
     def test_non_stix_pattern_type_skipped(self, caplog):
-        from gnat.orm.indicator import Indicator
         import logging
+
+        from gnat.orm.indicator import Indicator
+
         with caplog.at_level(logging.WARNING, logger="gnat.orm.indicator"):
             # sigma pattern type — validator skips it
             ind = Indicator(
@@ -506,15 +504,17 @@ class TestIndicatorValidation:
 # 18. CLI — gnat validate
 # ---------------------------------------------------------------------------
 
-class TestCLIValidate:
 
+class TestCLIValidate:
     def test_validate_pattern_valid(self, capsys):
         from gnat.cli.main import main
+
         ret = main(["validate", "pattern", "[ipv4-addr:value = '1.2.3.4']"])
         assert ret == 0
 
     def test_validate_pattern_invalid(self, capsys):
         from gnat.cli.main import main
+
         ret = main(["validate", "pattern", "[bad"])
         assert ret == 1
 
@@ -540,6 +540,7 @@ class TestCLIValidate:
         f = tmp_path / "bundle.json"
         f.write_text(json.dumps(bundle))
         from gnat.cli.main import main
+
         ret = main(["validate", "bundle", str(f)])
         assert ret == 0
 
@@ -565,11 +566,13 @@ class TestCLIValidate:
         f = tmp_path / "bundle.json"
         f.write_text(json.dumps(bundle))
         from gnat.cli.main import main
+
         ret = main(["validate", "bundle", str(f)])
         assert ret == 1
 
     def test_validate_bundle_missing_file(self, capsys):
         from gnat.cli.main import main
+
         ret = main(["validate", "bundle", "/does/not/exist.json"])
         assert ret == 1
 
@@ -583,10 +586,12 @@ class TestCLIValidate:
         f = tmp_path / "bundle.json"
         f.write_text(json.dumps(bundle))
         from gnat.cli.main import main
+
         ret = main(["validate", "bundle", str(f)])
         assert ret == 0
 
     def test_validate_no_subcommand(self, capsys):
         from gnat.cli.main import main
+
         ret = main(["validate"])
         assert ret == 0  # prints help, exits 0

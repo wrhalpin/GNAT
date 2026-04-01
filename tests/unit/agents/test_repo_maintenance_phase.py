@@ -42,13 +42,17 @@ def test_repair_planner_builds_translation_actions(tmp_path: Path) -> None:
     sample_file.write_text("print('v2')\n", encoding="utf-8")
 
     fixture_file = tmp_path / "fixture.json"
-    fixture_file.write_text(json.dumps({"expected": {"a": 1}, "actual": {"a": 1}}), encoding="utf-8")
+    fixture_file.write_text(
+        json.dumps({"expected": {"a": 1}, "actual": {"a": 1}}), encoding="utf-8"
+    )
 
     registry = ConnectorRegistry.load(_write_registry(tmp_path, sample_file, fixture_file))
     baseline_dir = tmp_path / "baselines"
     baseline_dir.mkdir()
     (baseline_dir / "example.json").write_text(
-        json.dumps({"connector": "example", "probes": [{"target": str(sample_file), "fingerprint": "old"}]}),
+        json.dumps(
+            {"connector": "example", "probes": [{"target": str(sample_file), "fingerprint": "old"}]}
+        ),
         encoding="utf-8",
     )
 
@@ -62,7 +66,9 @@ def test_repair_planner_builds_translation_actions(tmp_path: Path) -> None:
 
 def test_verification_engine_checks_golden_fixture(tmp_path: Path) -> None:
     fixture_file = tmp_path / "fixture.json"
-    fixture_file.write_text(json.dumps({"expected": {"a": 1}, "actual": {"a": 1}}), encoding="utf-8")
+    fixture_file.write_text(
+        json.dumps({"expected": {"a": 1}, "actual": {"a": 1}}), encoding="utf-8"
+    )
 
     registry_path = tmp_path / "registry.yaml"
     registry_path.write_text(
@@ -98,7 +104,9 @@ example:
         encoding="utf-8",
     )
     registry = ConnectorRegistry.load(registry_path)
-    plan = DiscoveryEngine(registry=registry, baseline_dir=tmp_path / "baselines", repo_root=tmp_path).discover("example")
+    plan = DiscoveryEngine(
+        registry=registry, baseline_dir=tmp_path / "baselines", repo_root=tmp_path
+    ).discover("example")
 
     executor = MaintenanceExecutor(repo_root=repo)
 

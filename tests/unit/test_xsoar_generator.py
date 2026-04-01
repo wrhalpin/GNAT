@@ -26,6 +26,7 @@ from gnat.codegen.xsoar_generator import (
 # Helper utilities
 # ---------------------------------------------------------------------------
 
+
 class TestToPascal:
     def test_snake_case(self):
         assert _to_pascal("threat_q") == "ThreatQ"
@@ -52,11 +53,15 @@ class TestToKebab:
 # Command definition builder
 # ---------------------------------------------------------------------------
 
-class TestMethodToXSOARCommand:
 
+class TestMethodToXSOARCommand:
     def test_returns_dict_with_required_keys(self):
-        meta = {"type": "read", "signature": "(stix_type, page_size)",
-                "doc": "List objects.", "platform_specific": False}
+        meta = {
+            "type": "read",
+            "signature": "(stix_type, page_size)",
+            "doc": "List objects.",
+            "platform_specific": False,
+        }
         cmd = _method_to_xsoar_command("list_objects", meta, "threatq")
         assert isinstance(cmd, dict)
         assert "name" in cmd
@@ -69,8 +74,12 @@ class TestMethodToXSOARCommand:
         assert cmd["name"] == "crowdstrike-get-object"
 
     def test_write_command_has_dangerous_flag(self):
-        meta = {"type": "write", "signature": "(stix_type, payload)",
-                "doc": "Upsert.", "platform_specific": False}
+        meta = {
+            "type": "write",
+            "signature": "(stix_type, payload)",
+            "doc": "Upsert.",
+            "platform_specific": False,
+        }
         cmd = _method_to_xsoar_command("upsert_object", meta, "xsoar")
         assert cmd.get("dangerous") is True
 
@@ -80,8 +89,12 @@ class TestMethodToXSOARCommand:
         assert "dangerous" not in cmd
 
     def test_args_extracted_from_signature(self):
-        meta = {"type": "read", "signature": "(stix_type, page_size)",
-                "doc": "", "platform_specific": False}
+        meta = {
+            "type": "read",
+            "signature": "(stix_type, page_size)",
+            "doc": "",
+            "platform_specific": False,
+        }
         cmd = _method_to_xsoar_command("list_objects", meta, "splunk")
         arg_names = [a["name"] for a in cmd["arguments"]]
         assert "stix_type" in arg_names
@@ -104,8 +117,8 @@ class TestMethodToXSOARCommand:
 # Renderer smoke tests
 # ---------------------------------------------------------------------------
 
-class TestRenderers:
 
+class TestRenderers:
     def test_pack_metadata_is_valid_json(self):
         content = _render_pack_metadata("ThreatQ", "threatq")
         data = json.loads(content)
@@ -136,11 +149,20 @@ class TestRenderers:
 
     def test_integration_yml_includes_commands(self):
         cmds = [
-            {"name": "threatq-list-objects", "description": "List objects",
-             "arguments": [{"name": "stix_type", "required": True,
-                            "description": "Type", "type": "String"}],
-             "outputs": [{"contextPath": "GNAT.Threatq.list_objects",
-                          "description": "Result", "type": "Unknown"}]},
+            {
+                "name": "threatq-list-objects",
+                "description": "List objects",
+                "arguments": [
+                    {"name": "stix_type", "required": True, "description": "Type", "type": "String"}
+                ],
+                "outputs": [
+                    {
+                        "contextPath": "GNAT.Threatq.list_objects",
+                        "description": "Result",
+                        "type": "Unknown",
+                    }
+                ],
+            },
         ]
         yml = _render_integration_yml("threatq", "ThreatQ", cmds, "api_key")
         assert "threatq-list-objects" in yml
@@ -158,8 +180,13 @@ class TestRenderers:
 
     def test_integration_py_write_command_uses_allow_write(self):
         cmds = [
-            {"name": "xsoar-upsert-object", "description": "Upsert",
-             "arguments": [], "outputs": [], "dangerous": True},
+            {
+                "name": "xsoar-upsert-object",
+                "description": "Upsert",
+                "arguments": [],
+                "outputs": [],
+                "dangerous": True,
+            },
         ]
         py = _render_integration_py("XSOAR", "xsoar", cmds, "api_key")
         assert "allow_write=True" in py
@@ -169,8 +196,8 @@ class TestRenderers:
 # generate_xsoar_pack() — end-to-end
 # ---------------------------------------------------------------------------
 
-class TestGenerateXSOARPack:
 
+class TestGenerateXSOARPack:
     def test_returns_zip_path(self, tmp_path):
         zip_path = generate_xsoar_pack("threatq", output_dir=str(tmp_path))
         assert zip_path.endswith(".zip")
@@ -209,8 +236,7 @@ class TestGenerateXSOARPack:
         assert "crowdstrike" in data.get("tags", [])
 
     def test_version_in_zip_name(self, tmp_path):
-        zip_path = generate_xsoar_pack("splunk", output_dir=str(tmp_path),
-                                        version="2.0.0")
+        zip_path = generate_xsoar_pack("splunk", output_dir=str(tmp_path), version="2.0.0")
         assert "2.0.0" in os.path.basename(zip_path)
 
     def test_unknown_connector_raises_key_error(self, tmp_path):
@@ -226,14 +252,14 @@ class TestGenerateXSOARPack:
         zip1 = generate_xsoar_pack("threatq", output_dir=str(tmp_path))
         mtime1 = os.path.getmtime(zip1)
         import time
+
         time.sleep(0.05)
         zip2 = generate_xsoar_pack("threatq", output_dir=str(tmp_path), overwrite=True)
         assert zip1 == zip2
         assert os.path.getmtime(zip2) >= mtime1
 
     def test_auth_type_override(self, tmp_path):
-        zip_path = generate_xsoar_pack("threatq", output_dir=str(tmp_path),
-                                        auth_type="basic")
+        zip_path = generate_xsoar_pack("threatq", output_dir=str(tmp_path), auth_type="basic")
         with zipfile.ZipFile(zip_path) as zf:
             yml_name = next(n for n in zf.namelist() if n.endswith(".yml"))
             yml = zf.read(yml_name).decode()

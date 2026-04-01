@@ -47,14 +47,18 @@ import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
+
 class OTXError(Exception):
     pass
+
 
 class OTXConfigError(OTXError):
     pass
 
+
 class OTXAuthError(OTXError):
     pass
+
 
 class OTXAPIError(OTXError):
     def __init__(self, message, status_code=None, endpoint=None):
@@ -62,11 +66,14 @@ class OTXAPIError(OTXError):
         self.status_code = status_code
         self.endpoint = endpoint
 
+
 class OTXNotFoundError(OTXAPIError):
     pass
 
+
 class OTXRateLimitError(OTXAPIError):
     pass
+
 
 class OTXSTIXError(OTXError):
     pass
@@ -75,6 +82,7 @@ class OTXSTIXError(OTXError):
 # ── Config ────────────────────────────────────────────────────────────────────
 
 _OTX_BASE = "https://otx.alienvault.com/api/v1"
+
 
 @dataclass
 class OTXConfig:
@@ -106,8 +114,13 @@ def load_otx_config(
 ) -> OTXConfig:
     if not config.has_section(section):
         raise OTXConfigError(f"Section '[{section}]' not found.")
-    raw = {"api_key": "", "base_url": _OTX_BASE,
-           "verify_ssl": "true", "timeout": "30", "max_results": "50"}
+    raw = {
+        "api_key": "",
+        "base_url": _OTX_BASE,
+        "verify_ssl": "true",
+        "timeout": "30",
+        "max_results": "50",
+    }
     raw.update(dict(config.items(section)))
     if not raw["api_key"].strip():
         raise OTXConfigError("'api_key' is required in [alienvault_otx].")
@@ -122,6 +135,7 @@ def load_otx_config(
 
 # ── Client ────────────────────────────────────────────────────────────────────
 
+
 class OTXClient:
     """HTTP client for the AlienVault OTX API."""
 
@@ -131,9 +145,14 @@ class OTXClient:
         self.config = config
         self._http = self._build_pool()
 
-    def __enter__(self): return self
-    def __exit__(self, *_): self.close()
-    def close(self): self._http.clear()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def close(self):
+        self._http.clear()
 
     def get(self, path: str, params: dict | None = None) -> dict | list:
         url = self.config.endpoint(path)
@@ -172,9 +191,12 @@ class OTXClient:
             url = next_url
 
     def _build_pool(self) -> urllib3.PoolManager:
-        kw = {"num_pools": 4, "maxsize": 10,
-              "timeout": urllib3.Timeout(connect=10.0, read=float(self.config.timeout)),
-              "retries": urllib3.Retry(total=0, raise_on_status=False)}
+        kw = {
+            "num_pools": 4,
+            "maxsize": 10,
+            "timeout": urllib3.Timeout(connect=10.0, read=float(self.config.timeout)),
+            "retries": urllib3.Retry(total=0, raise_on_status=False),
+        }
         if not self.config.verify_ssl:
             kw["cert_reqs"] = "CERT_NONE"
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -222,6 +244,7 @@ class OTXClient:
 
 # ── Pulse Commands ────────────────────────────────────────────────────────────
 
+
 class OTXPulseCommands:
     """
     OTX Pulse management operations.
@@ -254,9 +277,7 @@ class OTXPulseCommands:
         result = self._client.get("pulses/subscribed", params=params)
         return result.get("results", []) if isinstance(result, dict) else result
 
-    def iter_subscribed_pulses(
-        self, modified_since: str | None = None
-    ) -> Iterator[dict]:
+    def iter_subscribed_pulses(self, modified_since: str | None = None) -> Iterator[dict]:
         """Generator yielding all subscribed pulses."""
         params: dict = {}
         if modified_since:
@@ -267,9 +288,7 @@ class OTXPulseCommands:
         """Retrieve a single pulse by ID."""
         return self._client.get(f"pulses/{pulse_id}")
 
-    def get_pulse_indicators(
-        self, pulse_id: str, limit: int | None = None
-    ) -> list[dict]:
+    def get_pulse_indicators(self, pulse_id: str, limit: int | None = None) -> list[dict]:
         """Get all IOC indicators within a pulse."""
         params = {"limit": limit or self._client.config.max_results}
         result = self._client.get(f"pulses/{pulse_id}/indicators", params=params)
@@ -345,11 +364,16 @@ class OTXPulseCommands:
 
 # OTX indicator type → STIX SCO type
 _OTX_TO_STIX: dict[str, str] = {
-    "IPv4": "ipv4-addr", "IPv6": "ipv6-addr",
-    "domain": "domain-name", "hostname": "domain-name",
-    "URL": "url", "URI": "url",
-    "FileHash-MD5": "file", "FileHash-SHA1": "file",
-    "FileHash-SHA256": "file", "FileHash-SHA512": "file",
+    "IPv4": "ipv4-addr",
+    "IPv6": "ipv6-addr",
+    "domain": "domain-name",
+    "hostname": "domain-name",
+    "URL": "url",
+    "URI": "url",
+    "FileHash-MD5": "file",
+    "FileHash-SHA1": "file",
+    "FileHash-SHA256": "file",
+    "FileHash-SHA512": "file",
     "email": "email-addr",
     "CVE": "vulnerability",
 }
@@ -428,6 +452,7 @@ class OTXIndicatorCommands:
 
 # ── Feed Commands ─────────────────────────────────────────────────────────────
 
+
 class OTXFeedCommands:
     """OTX feed / subscription operations."""
 
@@ -454,14 +479,10 @@ class OTXFeedCommands:
         params: dict = {"limit": limit or self._client.config.max_results}
         if modified_since:
             params["modified_since"] = modified_since
-        result = self._client.get(
-            f"indicators/export?type={indicator_type}", params=params
-        )
+        result = self._client.get(f"indicators/export?type={indicator_type}", params=params)
         return result.get("results", []) if isinstance(result, dict) else result
 
-    def iter_subscribed_indicators(
-        self, modified_since: str | None = None
-    ) -> Iterator[dict]:
+    def iter_subscribed_indicators(self, modified_since: str | None = None) -> Iterator[dict]:
         """
         Generator yielding all indicators from all subscribed pulses.
         More efficient than fetching pulse-by-pulse.
@@ -482,9 +503,7 @@ _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 class OTXSTIXMapper:
     """Maps OTX pulses and indicators to STIX 2.1 objects."""
 
-    def pulse_to_stix_bundle(
-        self, pulse: dict, indicators: list[dict] | None = None
-    ) -> dict:
+    def pulse_to_stix_bundle(self, pulse: dict, indicators: list[dict] | None = None) -> dict:
         """
         Convert a normalised OTX pulse to a STIX 2.1 bundle.
 
@@ -515,7 +534,9 @@ class OTXSTIXMapper:
                 object_refs.append(obj["id"])
         report_id = f"report--{_det_uuid('report', pulse.get('id', now))}"
         report: dict = {
-            "type": "report", "id": report_id, "spec_version": "2.1",
+            "type": "report",
+            "id": report_id,
+            "spec_version": "2.1",
             "created": pulse.get("created") or now,
             "modified": pulse.get("modified") or now,
             "name": pulse.get("name", "OTX Pulse"),
@@ -535,8 +556,12 @@ class OTXSTIXMapper:
             },
         }
         objects.append(report)
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     def indicator_to_stix_objects(self, ind: dict) -> list[dict]:
         """Convert a normalised OTX indicator to STIX object(s)."""
@@ -559,15 +584,21 @@ class OTXSTIXMapper:
         if pattern:
             now = _now_ts()
             ind_id = f"indicator--{_det_uuid('indicator', pattern)}"
-            objects.append({
-                "type": "indicator", "id": ind_id, "spec_version": "2.1",
-                "created": ind.get("created") or now, "modified": now,
-                "name": value,
-                "description": ind.get("description", ind.get("title", "")),
-                "pattern": pattern, "pattern_type": "stix",
-                "valid_from": ind.get("created") or now,
-                "indicator_types": ["malicious-activity"],
-            })
+            objects.append(
+                {
+                    "type": "indicator",
+                    "id": ind_id,
+                    "spec_version": "2.1",
+                    "created": ind.get("created") or now,
+                    "modified": now,
+                    "name": value,
+                    "description": ind.get("description", ind.get("title", "")),
+                    "pattern": pattern,
+                    "pattern_type": "stix",
+                    "valid_from": ind.get("created") or now,
+                    "indicator_types": ["malicious-activity"],
+                }
+            )
         return objects
 
     def indicators_to_stix_bundle(self, indicators: list[dict]) -> dict:
@@ -579,42 +610,67 @@ class OTXSTIXMapper:
                 if obj["id"] not in seen:
                     seen.add(obj["id"])
                     objects.append(obj)
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     @staticmethod
     def _build_sco(stix_type: str, otx_type: str, value: str) -> dict | None:
         if stix_type in ("ipv4-addr", "ipv6-addr"):
-            return {"type": stix_type,
-                    "id": f"{stix_type}--{_det_uuid(stix_type, value)}",
-                    "spec_version": "2.1", "value": value}
+            return {
+                "type": stix_type,
+                "id": f"{stix_type}--{_det_uuid(stix_type, value)}",
+                "spec_version": "2.1",
+                "value": value,
+            }
         if stix_type == "domain-name":
-            return {"type": "domain-name",
-                    "id": f"domain-name--{_det_uuid('domain-name', value)}",
-                    "spec_version": "2.1", "value": value}
+            return {
+                "type": "domain-name",
+                "id": f"domain-name--{_det_uuid('domain-name', value)}",
+                "spec_version": "2.1",
+                "value": value,
+            }
         if stix_type == "url":
-            return {"type": "url",
-                    "id": f"url--{_det_uuid('url', value)}",
-                    "spec_version": "2.1", "value": value}
+            return {
+                "type": "url",
+                "id": f"url--{_det_uuid('url', value)}",
+                "spec_version": "2.1",
+                "value": value,
+            }
         if stix_type == "email-addr":
-            return {"type": "email-addr",
-                    "id": f"email-addr--{_det_uuid('email-addr', value)}",
-                    "spec_version": "2.1", "value": value}
+            return {
+                "type": "email-addr",
+                "id": f"email-addr--{_det_uuid('email-addr', value)}",
+                "spec_version": "2.1",
+                "value": value,
+            }
         if stix_type == "file":
             hash_map = {
-                "FileHash-MD5": "MD5", "FileHash-SHA1": "SHA-1",
-                "FileHash-SHA256": "SHA-256", "FileHash-SHA512": "SHA-512",
+                "FileHash-MD5": "MD5",
+                "FileHash-SHA1": "SHA-1",
+                "FileHash-SHA256": "SHA-256",
+                "FileHash-SHA512": "SHA-512",
             }
             algo = hash_map.get(otx_type, "SHA-256")
-            return {"type": "file",
-                    "id": f"file--{_det_uuid('file', value)}",
-                    "spec_version": "2.1", "hashes": {algo: value}}
+            return {
+                "type": "file",
+                "id": f"file--{_det_uuid('file', value)}",
+                "spec_version": "2.1",
+                "hashes": {algo: value},
+            }
         if stix_type == "vulnerability":
-            return {"type": "vulnerability",
-                    "id": f"vulnerability--{_det_uuid('vulnerability', value)}",
-                    "spec_version": "2.1",
-                    "created": _now_ts(), "modified": _now_ts(), "name": value,
-                    "external_references": [{"source_name": "cve", "external_id": value}]}
+            return {
+                "type": "vulnerability",
+                "id": f"vulnerability--{_det_uuid('vulnerability', value)}",
+                "spec_version": "2.1",
+                "created": _now_ts(),
+                "modified": _now_ts(),
+                "name": value,
+                "external_references": [{"source_name": "cve", "external_id": value}],
+            }
         return None
 
     @staticmethod
@@ -628,8 +684,11 @@ class OTXSTIXMapper:
         if stix_type == "email-addr":
             return f"[email-addr:value = '{value}']"
         if stix_type == "file":
-            hash_map = {"FileHash-MD5": "MD5", "FileHash-SHA1": "SHA-1",
-                        "FileHash-SHA256": "SHA-256"}
+            hash_map = {
+                "FileHash-MD5": "MD5",
+                "FileHash-SHA1": "SHA-1",
+                "FileHash-SHA256": "SHA-256",
+            }
             algo = hash_map.get(otx_type, "SHA-256")
             return f"[file:hashes.'{algo}' = '{value}']"
         return None
@@ -637,6 +696,7 @@ class OTXSTIXMapper:
 
 def _det_uuid(t: str, v: str) -> str:
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
+
 
 def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

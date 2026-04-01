@@ -79,9 +79,9 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "alert",
+        "indicator": "alert",
         "vulnerability": "vulnerability",
-        "report":        "compliance",
+        "report": "compliance",
     }
 
     def __init__(
@@ -99,10 +99,13 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """POST /login to obtain a JWT and set the Bearer token header."""
-        resp = self.post("/login", json={
-            "username": self._access_key_id,
-            "password": self._secret_key,
-        })
+        resp = self.post(
+            "/login",
+            json={
+                "username": self._access_key_id,
+                "password": self._secret_key,
+            },
+        )
         token = resp.get("token") if isinstance(resp, dict) else None
         if not token:
             raise GNATClientError("Prisma Cloud: failed to obtain auth token")
@@ -172,26 +175,28 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         if stix_type == "indicator":
             alert_id = payload.get("alertId", payload.get("id", ""))
             dismissal_note = payload.get("dismissalNote", "Acknowledged via GNAT")
-            resp = self.post("/alert/dismiss", json={
-                "ids": [alert_id],
-                "dismissalNote": dismissal_note,
-            })
+            resp = self.post(
+                "/alert/dismiss",
+                json={
+                    "ids": [alert_id],
+                    "dismissalNote": dismissal_note,
+                },
+            )
             return resp if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"Prisma Cloud: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Prisma Cloud: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Dismiss a Prisma Cloud alert (no hard delete available)."""
         if stix_type == "indicator":
-            self.post("/alert/dismiss", json={
-                "ids": [object_id],
-                "dismissalNote": "Dismissed via GNAT",
-            })
+            self.post(
+                "/alert/dismiss",
+                json={
+                    "ids": [object_id],
+                    "dismissalNote": "Dismissed via GNAT",
+                },
+            )
             return
-        raise GNATClientError(
-            f"Prisma Cloud: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Prisma Cloud: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -208,9 +213,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         resp = self.get("/resource/scan_info", params={"limit": limit})
         return resp.get("resources", []) if isinstance(resp, dict) else []
 
-    def get_compliance_posture(
-        self, compliance_id: str | None = None
-    ) -> dict[str, Any]:
+    def get_compliance_posture(self, compliance_id: str | None = None) -> dict[str, Any]:
         """Return overall compliance posture or a specific standard's status."""
         path = f"/compliance/{compliance_id}/posture" if compliance_id else "/compliance/posture"
         resp = self.get(path)
@@ -218,11 +221,14 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
 
     def search_config(self, rql_query: str, limit: int = 100) -> list[dict[str, Any]]:
         """Run a Prisma Cloud RQL config query."""
-        resp = self.post("/search/config", json={
-            "query": rql_query,
-            "limit": limit,
-            "withResourceJson": False,
-        })
+        resp = self.post(
+            "/search/config",
+            json={
+                "query": rql_query,
+                "limit": limit,
+                "withResourceJson": False,
+            },
+        )
         return resp.get("data", {}).get("items", []) if isinstance(resp, dict) else []
 
     def search_event(self, rql_query: str, limit: int = 100) -> list[dict[str, Any]]:
@@ -247,8 +253,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"prisma-alert-{alert_id}"))
-        severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25,
-                        "informational": 10}
+        severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25, "informational": 10}
         policy = alert.get("policy", {}) if isinstance(alert.get("policy"), dict) else {}
         sev = str(policy.get("severity", alert.get("severity", "low"))).lower()
         ts = alert.get("alertTime", "")

@@ -24,11 +24,12 @@ comments    -- attached alert/comment list (separate endpoint)
 ## References
 
 - https://www.elastic.co/guide/en/kibana/current/cases-api.html
-  """
+"""
 
 from .client import ElasticClient
 
 _CASES_BASE = "api/cases"
+
 
 class KibanaCasesCommands:
     """
@@ -149,7 +150,8 @@ class KibanaCasesCommands:
             "severity": severity,
             "tags": tags or [],
             "assignees": assignees or [],
-            "connector": connector or {
+            "connector": connector
+            or {
                 "id": "none",
                 "name": "none",
                 "type": ".none",
@@ -222,9 +224,7 @@ class KibanaCasesCommands:
         list[dict]
             Comment records.
         """
-        response = self._client.kibana_get(
-            f"{_CASES_BASE}/{case_id}/comments"
-        )
+        response = self._client.kibana_get(f"{_CASES_BASE}/{case_id}/comments")
         return response.get("comments", [])
 
     def add_comment(self, case_id: str, comment: str) -> dict:
@@ -244,9 +244,7 @@ class KibanaCasesCommands:
             Created comment.
         """
         body = {"comment": comment, "type": "user"}
-        return self._client.kibana_post(
-            f"{_CASES_BASE}/{case_id}/comments", body=body
-        )
+        return self._client.kibana_post(f"{_CASES_BASE}/{case_id}/comments", body=body)
 
     def attach_alert_to_case(
         self,
@@ -283,9 +281,7 @@ class KibanaCasesCommands:
             "rule": {"id": rule_id, "name": rule_name},
             "type": "alert",
         }
-        return self._client.kibana_post(
-            f"{_CASES_BASE}/{case_id}/comments", body=body
-        )
+        return self._client.kibana_post(f"{_CASES_BASE}/{case_id}/comments", body=body)
 
     # ── Statistics ─────────────────────────────────────────────────────────
 

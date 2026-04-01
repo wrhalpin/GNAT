@@ -10,7 +10,7 @@ Provides automatic fallback, structured output, and config-driven backend select
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.agents.base import LLMProvider
 from gnat.clients.base import GNATClientError
@@ -31,27 +31,26 @@ class LLMClient:
         self.backend = backend.lower()
         self.provider = self._create_provider(backend, config)
 
-    def _create_provider(self, backend: str, config: Dict[str, Any]) -> LLMProvider:
+    def _create_provider(self, backend: str, config: dict[str, Any]) -> LLMProvider:
         if backend == "claude":
             from .claude import ClaudeProvider
+
             return ClaudeProvider(**config)
         if backend in ("openai", "grok"):
             from .openai_compatible import OpenAICompatibleProvider
+
             return OpenAICompatibleProvider(provider=backend, **config)
         if backend == "gemini":
             raise NotImplementedError("Gemini provider coming soon (add [gemini] section)")
-        raise ValueError(
-            f"Unsupported LLM backend '{backend}'. "
-            f"Supported: claude, openai, grok"
-        )
+        raise ValueError(f"Unsupported LLM backend '{backend}'. Supported: claude, openai, grok")
 
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Unified chat completion with fallback support."""
         try:
             return self.provider.chat(messages, temperature, max_tokens, **kwargs)
@@ -61,9 +60,9 @@ class LLMClient:
     def structured(
         self,
         prompt: str,
-        output_schema: Dict[str, Any],
+        output_schema: dict[str, Any],
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Unified structured (JSON) output."""
         return self.provider.structured(prompt, output_schema, **kwargs)
 

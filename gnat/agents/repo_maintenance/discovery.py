@@ -170,7 +170,9 @@ class DiscoveryEngine:
             "Update or add fixture coverage for changed upstream behavior.",
         ]
         if impact in {ChangeImpact.ADAPTER_UPDATE, ChangeImpact.BACKWARD_COMPATIBLE}:
-            actions.append("Patch client request/response handling while preserving existing method signatures.")
+            actions.append(
+                "Patch client request/response handling while preserving existing method signatures."
+            )
         if impact == ChangeImpact.TRANSLATION_UPDATE:
             actions.append("Update STIX translation logic and add golden bundle comparison tests.")
         if impact in {ChangeImpact.BREAKING_CHANGE, ChangeImpact.SECURITY_REVIEW}:
@@ -179,7 +181,9 @@ class DiscoveryEngine:
             actions.append(f"Document {len(signals)} discovery signal(s) in the PR body.")
         return actions
 
-    def _build_pr_plan(self, spec: ConnectorSpec, discovery: ConnectorDiscoveryResult) -> PullRequestPlan:
+    def _build_pr_plan(
+        self, spec: ConnectorSpec, discovery: ConnectorDiscoveryResult
+    ) -> PullRequestPlan:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         branch = f"bot/connector/{spec.name}/compat-{today}"
         labels = ["connector-maintenance", f"impact:{discovery.impact.value}"]

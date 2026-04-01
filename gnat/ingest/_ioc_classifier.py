@@ -45,6 +45,7 @@ try:
     from _core import (
         refang as _rust_refang,
     )
+
     RUST_AVAILABLE: bool = True
 except ImportError:
     RUST_AVAILABLE = False
@@ -56,15 +57,15 @@ except ImportError:
 
 _PATTERNS = {
     "sha256": re.compile(r"^[0-9a-fA-F]{64}$"),
-    "sha1":   re.compile(r"^[0-9a-fA-F]{40}$"),
-    "md5":    re.compile(r"^[0-9a-fA-F]{32}$"),
-    "ip":     re.compile(
+    "sha1": re.compile(r"^[0-9a-fA-F]{40}$"),
+    "md5": re.compile(r"^[0-9a-fA-F]{32}$"),
+    "ip": re.compile(
         r"^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
         r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:/\d{1,2})?$"
     ),
-    "ipv6":   re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
-    "url":    re.compile(r"^https?://", re.IGNORECASE),
-    "email":  re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
+    "ipv6": re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
+    "url": re.compile(r"^https?://", re.IGNORECASE),
+    "email": re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
     "domain": re.compile(
         r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+"
         r"[a-zA-Z]{2,}$"
@@ -72,9 +73,9 @@ _PATTERNS = {
 }
 
 _DEFANG_RE = [
-    (re.compile(r'\[\.?\]'), '.'),
-    (re.compile(r'(?i)hxxps://'), 'https://'),
-    (re.compile(r'(?i)hxxp://'), 'http://'),
+    (re.compile(r"\[\.?\]"), "."),
+    (re.compile(r"(?i)hxxps://"), "https://"),
+    (re.compile(r"(?i)hxxp://"), "http://"),
 ]
 
 _VALUE_RE = re.compile(r"=\s*'([^']+)'")
@@ -110,6 +111,7 @@ def _py_classify_ioc_batch(values: list[str]) -> list[str]:
 # ---------------------------------------------------------------------------
 # Public interface — dispatches to Rust or pure Python
 # ---------------------------------------------------------------------------
+
 
 def classify_ioc(value: str) -> str:
     """

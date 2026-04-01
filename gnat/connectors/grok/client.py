@@ -118,7 +118,9 @@ class GrokClient(BaseClient, ConnectorMixin):
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Grok is inference-only — no object creation/updates."""
-        raise GNATClientError("Grok (xAI) is read-only inference. Use chat_completion helper instead.")
+        raise GNATClientError(
+            "Grok (xAI) is read-only inference. Use chat_completion helper instead."
+        )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Grok has no persistent object deletion."""
@@ -221,7 +223,10 @@ class GrokClient(BaseClient, ConnectorMixin):
             "note": "Grok connector is inference-only. Use chat_completion with messages derived from this STIX object.",
             "suggested_messages": [
                 {"role": "system", "content": "You are a helpful threat intelligence analyst."},
-                {"role": "user", "content": stix_dict.get("description", "Analyze this threat intel.")},
+                {
+                    "role": "user",
+                    "content": stix_dict.get("description", "Analyze this threat intel."),
+                },
             ],
             "stix_id": stix_dict.get("id", ""),
         }

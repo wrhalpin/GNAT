@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      actions: read
 
     steps:
       - name: Check out code
@@ -35,6 +36,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run pip-audit
-        uses: pypa/gh-action-pip-audit@v1
+        uses: pypa/gh-action-pip-audit@v1.1.0
         with:
-          inputs: requirements.txt
+          inputs: "."

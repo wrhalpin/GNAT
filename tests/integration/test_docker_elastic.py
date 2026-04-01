@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import json
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 import pytest
 
@@ -171,13 +171,17 @@ class TestBulkIndexing:
         lines = []
         for i in range(count):
             lines.append(json.dumps({"index": {"_index": self._INDEX, "_id": f"bulk-{i}"}}))
-            lines.append(json.dumps({
-                "stix_id": f"indicator--bbbbbbbb-{i:04x}-0000-0000-000000000000",
-                "type": "indicator",
-                "name": f"Bulk IOC {i}",
-                "pattern": f"[ipv4-addr:value = '10.10.{i // 256}.{i % 256}']",
-                "created": "2024-06-01T00:00:00Z",
-            }))
+            lines.append(
+                json.dumps(
+                    {
+                        "stix_id": f"indicator--bbbbbbbb-{i:04x}-0000-0000-000000000000",
+                        "type": "indicator",
+                        "name": f"Bulk IOC {i}",
+                        "pattern": f"[ipv4-addr:value = '10.10.{i // 256}.{i % 256}']",
+                        "created": "2024-06-01T00:00:00Z",
+                    }
+                )
+            )
         return ("\n".join(lines) + "\n").encode()
 
     def test_bulk_index_100_docs(self, es):
@@ -222,10 +226,12 @@ auth_type = none
 index = gnat-connector-test
 """)
         import os
+
         os.environ["GNAT_CONFIG"] = str(ini)
 
         try:
             from gnat.connectors.elastic import ElasticConnector
+
             self.connector = ElasticConnector(
                 host=elasticsearch_url,
                 auth_type="none",

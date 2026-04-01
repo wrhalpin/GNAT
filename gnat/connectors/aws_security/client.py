@@ -84,9 +84,7 @@ def _sign(key: bytes, msg: str) -> bytes:
     return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
 
-def _get_signature_key(
-    secret_key: str, date_stamp: str, region: str, service: str
-) -> bytes:
+def _get_signature_key(secret_key: str, date_stamp: str, region: str, service: str) -> bytes:
     k_date = _sign(("AWS4" + secret_key).encode("utf-8"), date_stamp)
     k_region = _sign(k_date, region)
     k_service = _sign(k_region, service)
@@ -118,9 +116,9 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "guardduty/findings",
+        "indicator": "guardduty/findings",
         "vulnerability": "securityhub/findings",
-        "report":        "securityhub/insights",
+        "report": "securityhub/insights",
     }
 
     def __init__(
@@ -138,10 +136,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         self._secret_key = aws_secret_key
         self._region = aws_region
         self._session_token = aws_session_token
-        self._guardduty_host = (
-            guardduty_host
-            or f"https://guardduty.{aws_region}.amazonaws.com"
-        )
+        self._guardduty_host = guardduty_host or f"https://guardduty.{aws_region}.amazonaws.com"
 
     # ── Authentication ─────────────────────────────────────────────────────
 
@@ -174,31 +169,31 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         if self._session_token:
             headers_to_sign["x-amz-security-token"] = self._session_token
 
-        canonical_headers = "".join(
-            f"{k}:{v}\n" for k, v in sorted(headers_to_sign.items())
-        )
+        canonical_headers = "".join(f"{k}:{v}\n" for k, v in sorted(headers_to_sign.items()))
         signed_headers = ";".join(sorted(headers_to_sign.keys()))
 
-        canonical_request = "\n".join([
-            method,
-            path,
-            "",   # query string (empty for POST bodies)
-            canonical_headers,
-            signed_headers,
-            payload_hash,
-        ])
+        canonical_request = "\n".join(
+            [
+                method,
+                path,
+                "",  # query string (empty for POST bodies)
+                canonical_headers,
+                signed_headers,
+                payload_hash,
+            ]
+        )
 
         credential_scope = f"{date_stamp}/{self._region}/{service}/aws4_request"
-        string_to_sign = "\n".join([
-            "AWS4-HMAC-SHA256",
-            amz_date,
-            credential_scope,
-            hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
-        ])
-
-        signing_key = _get_signature_key(
-            self._secret_key, date_stamp, self._region, service
+        string_to_sign = "\n".join(
+            [
+                "AWS4-HMAC-SHA256",
+                amz_date,
+                credential_scope,
+                hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
+            ]
         )
+
+        signing_key = _get_signature_key(self._secret_key, date_stamp, self._region, service)
         signature = hmac.new(
             signing_key, string_to_sign.encode("utf-8"), hashlib.sha256
         ).hexdigest()
@@ -293,17 +288,18 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         if stix_type == "vulnerability":
             resp = self.post("/findings/import", json={"Findings": [payload]})
             return resp if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"AWS Security: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"AWS Security: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Archive a Security Hub finding (soft-delete via ARCHIVED status)."""
-        self.patch("/findings", json={
-            "FindingIdentifiers": [{"Id": object_id, "ProductArn": ""}],
-            "Note": {"Text": "Archived by GNAT", "UpdatedBy": "gnat"},
-            "RecordState": "ARCHIVED",
-        })
+        self.patch(
+            "/findings",
+            json={
+                "FindingIdentifiers": [{"Id": object_id, "ProductArn": ""}],
+                "Note": {"Text": "Archived by GNAT", "UpdatedBy": "gnat"},
+                "RecordState": "ARCHIVED",
+            },
+        )
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -384,9 +380,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         uid = str(_uuid.uuid5(_STIX_NS, f"aws-sh-{finding_id}"))
         sev = native.get("Severity", {})
         sev_label = (
-            sev.get("Label", "INFORMATIONAL").upper()
-            if isinstance(sev, dict)
-            else "INFORMATIONAL"
+            sev.get("Label", "INFORMATIONAL").upper() if isinstance(sev, dict) else "INFORMATIONAL"
         )
         sev_map = {"CRITICAL": 90, "HIGH": 75, "MEDIUM": 50, "LOW": 25, "INFORMATIONAL": 10}
         confidence = sev_map.get(sev_label, 10)
@@ -425,7 +419,8 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         network = action.get("NetworkConnectionAction", action.get("PortProbeAction", {}))
         remote_ip = (
             network.get("RemoteIpDetails", {}).get("IpAddressV4", "")
-            if isinstance(network, dict) else ""
+            if isinstance(network, dict)
+            else ""
         )
         if remote_ip:
             pattern = f"[ipv4-addr:value = '{remote_ip}']"

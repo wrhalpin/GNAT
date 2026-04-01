@@ -66,6 +66,7 @@ class SentinelHuntingCommands:
         dict
         """
         import uuid
+
         query_id = str(uuid.uuid4())
         props: dict = {
             "displayName": display_name,

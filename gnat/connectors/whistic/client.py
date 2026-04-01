@@ -110,12 +110,10 @@ class WhisticClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List Whistic vendors or assessments."""
         if stix_type == "threat-actor":
-            return self.list_vendors(page=page, page_size=page_size,
-                                     filters=filters)
+            return self.list_vendors(page=page, page_size=page_size, filters=filters)
         if stix_type == "x-assessment":
             vendor_id = (filters or {}).get("vendor_id")
-            return self.list_assessments(vendor_id=vendor_id,
-                                         page=page, page_size=page_size)
+            return self.list_assessments(vendor_id=vendor_id, page=page, page_size=page_size)
         raise GNATClientError(f"Whistic: unsupported STIX type '{stix_type}'")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -126,7 +124,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         For assessments: sends a new questionnaire request.
         """
         if stix_type == "x-assessment":
-            vendor_id  = payload.get("vendor_id", "")
+            vendor_id = payload.get("vendor_id", "")
             profile_id = payload.get("profile_id", "")
             return self.request_assessment(vendor_id, profile_id)
         raise GNATClientError(
@@ -164,7 +162,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
             Raw Whistic vendor objects.
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -204,7 +202,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
             If provided, only return assessments for this vendor.
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if vendor_id:
@@ -252,11 +250,14 @@ class WhisticClient(BaseClient, ConnectorMixin):
         dict
             The newly-created assessment object.
         """
-        return self.post("/v1/assessments", json={
-            "vendor_id":  vendor_id,
-            "profile_id": profile_id,
-            "message":    message,
-        })
+        return self.post(
+            "/v1/assessments",
+            json={
+                "vendor_id": vendor_id,
+                "profile_id": profile_id,
+                "message": message,
+            },
+        )
 
     def get_trust_score(self, vendor_id: str) -> float | None:
         """
@@ -288,17 +289,17 @@ class WhisticClient(BaseClient, ConnectorMixin):
         data = native.get("data", native)
         categories = data.get("categories", [])
         stix: dict[str, Any] = {
-            "type":               "threat-actor",
-            "id":                 f"threat-actor--{data.get('id', '')}",
-            "name":               data.get("name", ""),
-            "description":        data.get("description", ""),
-            "created":            data.get("created_at", ""),
-            "modified":           data.get("updated_at", ""),
+            "type": "threat-actor",
+            "id": f"threat-actor--{data.get('id', '')}",
+            "name": data.get("name", ""),
+            "description": data.get("description", ""),
+            "created": data.get("created_at", ""),
+            "modified": data.get("updated_at", ""),
             "threat_actor_types": ["vendor"],
-            "x_whistic_trust_score":      data.get("trust_score"),
-            "x_whistic_status":           data.get("assessment_status", ""),
-            "x_whistic_categories":       categories,
-            "x_whistic_vendor_id":        data.get("id", ""),
+            "x_whistic_trust_score": data.get("trust_score"),
+            "x_whistic_status": data.get("assessment_status", ""),
+            "x_whistic_categories": categories,
+            "x_whistic_vendor_id": data.get("id", ""),
             "x_whistic_profile_complete": data.get("profile_complete", False),
         }
         if categories:
@@ -310,7 +311,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         Translate a STIX threat-actor dict to a Whistic vendor update payload.
         """
         return {
-            "name":        stix_dict.get("name", ""),
+            "name": stix_dict.get("name", ""),
             "description": stix_dict.get("description", ""),
         }
 
@@ -325,18 +326,17 @@ class WhisticClient(BaseClient, ConnectorMixin):
         """
         data = assessment.get("data", assessment)
         return {
-            "type":                    "x-whistic-assessment",
-            "id":                      f"x-whistic-assessment--{data.get('id', '')}",
-            "name":                    data.get("profile_name", ""),
-            "created":                 data.get("created_at", ""),
-            "modified":                data.get("completed_at", ""),
+            "type": "x-whistic-assessment",
+            "id": f"x-whistic-assessment--{data.get('id', '')}",
+            "name": data.get("profile_name", ""),
+            "created": data.get("created_at", ""),
+            "modified": data.get("completed_at", ""),
             "x_whistic_assessment_id": data.get("id", ""),
             "x_whistic_overall_score": data.get("overall_score"),
-            "x_whistic_completed_at":  data.get("completed_at", ""),
-            "x_whistic_vendor_id":     data.get("vendor_id", ""),
-            "x_whistic_profile_id":    data.get("profile_id", ""),
+            "x_whistic_completed_at": data.get("completed_at", ""),
+            "x_whistic_vendor_id": data.get("vendor_id", ""),
+            "x_whistic_profile_id": data.get("profile_id", ""),
             "x_whistic_section_scores": {
-                s.get("name", ""): s.get("score")
-                for s in data.get("sections", [])
+                s.get("name", ""): s.get("score") for s in data.get("sections", [])
             },
         }

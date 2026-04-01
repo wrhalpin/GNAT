@@ -96,9 +96,7 @@ class QRadarConfig:
         if not self.token:
             raise QRadarConfigError("'token' is required in [qradar] config.")
         if self.scheme not in ("http", "https"):
-            raise QRadarConfigError(
-                f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'."
-            )
+            raise QRadarConfigError(f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'.")
         if self.timeout <= 0:
             raise QRadarConfigError("'timeout' must be a positive integer.")
         if self.max_results <= 0:
@@ -156,9 +154,7 @@ def load_qradar_config(
     QRadarConfigError
     """
     if not config.has_section(section):
-        raise QRadarConfigError(
-            f"Configuration section '[{section}]' not found in gnat.ini."
-        )
+        raise QRadarConfigError(f"Configuration section '[{section}]' not found in gnat.ini.")
 
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))

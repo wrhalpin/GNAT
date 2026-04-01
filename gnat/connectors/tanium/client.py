@@ -84,9 +84,9 @@ class TaniumClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "intel",
+        "indicator": "intel",
         "vulnerability": "findings",
-        "report":        "alerts",
+        "report": "alerts",
     }
 
     def __init__(
@@ -132,13 +132,9 @@ class TaniumClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single Tanium object by type and ID."""
         if stix_type == "indicator":
-            return self.get(
-                f"/plugin/products/threat-response/api/v1/intel/{object_id}"
-            )
+            return self.get(f"/plugin/products/threat-response/api/v1/intel/{object_id}")
         if stix_type == "report":
-            return self.get(
-                f"/plugin/products/threat-response/api/v1/alerts/{object_id}"
-            )
+            return self.get(f"/plugin/products/threat-response/api/v1/alerts/{object_id}")
         if stix_type == "vulnerability":
             resp = self.get(
                 "/plugin/products/comply/api/v1/findings",
@@ -163,17 +159,11 @@ class TaniumClient(BaseClient, ConnectorMixin):
         }
         params.update(f)
         if stix_type == "indicator":
-            resp = self.get(
-                "/plugin/products/threat-response/api/v1/intel", params=params
-            )
+            resp = self.get("/plugin/products/threat-response/api/v1/intel", params=params)
         elif stix_type == "report":
-            resp = self.get(
-                "/plugin/products/threat-response/api/v1/alerts", params=params
-            )
+            resp = self.get("/plugin/products/threat-response/api/v1/alerts", params=params)
         elif stix_type == "vulnerability":
-            resp = self.get(
-                "/plugin/products/comply/api/v1/findings", params=params
-            )
+            resp = self.get("/plugin/products/comply/api/v1/findings", params=params)
         else:
             raise GNATClientError(f"Unsupported STIX type for Tanium: {stix_type}")
         if not isinstance(resp, dict):
@@ -183,24 +173,16 @@ class TaniumClient(BaseClient, ConnectorMixin):
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update a Tanium intel document."""
         if stix_type == "indicator":
-            resp = self.post(
-                "/plugin/products/threat-response/api/v1/intel", json=payload
-            )
+            resp = self.post("/plugin/products/threat-response/api/v1/intel", json=payload)
             return resp if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"Tanium: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Tanium: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Delete a Tanium intel document."""
         if stix_type == "indicator":
-            self.delete(
-                f"/plugin/products/threat-response/api/v1/intel/{object_id}"
-            )
+            self.delete(f"/plugin/products/threat-response/api/v1/intel/{object_id}")
             return
-        raise GNATClientError(
-            f"Tanium: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Tanium: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -246,17 +228,16 @@ class TaniumClient(BaseClient, ConnectorMixin):
         params: dict[str, Any] = {"limit": limit}
         if state:
             params["state"] = state
-        resp = self.get(
-            "/plugin/products/threat-response/api/v1/alerts", params=params
-        )
+        resp = self.get("/plugin/products/threat-response/api/v1/alerts", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def deploy_action(self, package_name: str, target_filter: str) -> dict[str, Any]:
         """Deploy a Tanium action/package to endpoints."""
         payload = {
             "package_spec": {"name": package_name},
-            "target": {"sensor_and_filter": {"sensor": {"name": "Computer Name"},
-                                              "filter": target_filter}},
+            "target": {
+                "sensor_and_filter": {"sensor": {"name": "Computer Name"}, "filter": target_filter}
+            },
         }
         resp = self.post("/api/v2/actions", json=payload)
         return resp if isinstance(resp, dict) else {}
@@ -361,6 +342,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX dict to a Tanium intel document payload."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         value_match = re.search(r"= '([^']+)'", pattern)
         value = value_match.group(1) if value_match else stix_dict.get("name", "")

@@ -31,20 +31,21 @@ logger = logging.getLogger(__name__)
 
 # Colour palette for HTML/PDF
 _COLOURS = {
-    "primary":    "#1a3a5c",   # dark navy
-    "accent":     "#2e75b6",   # steel blue
-    "warning":    "#c55a11",   # amber
-    "critical":   "#c00000",   # red
-    "light_bg":   "#f5f7fa",
-    "border":     "#d0d7de",
-    "text":       "#1f2937",
-    "muted":      "#6b7280",
+    "primary": "#1a3a5c",  # dark navy
+    "accent": "#2e75b6",  # steel blue
+    "warning": "#c55a11",  # amber
+    "critical": "#c00000",  # red
+    "light_bg": "#f5f7fa",
+    "border": "#d0d7de",
+    "text": "#1f2937",
+    "muted": "#6b7280",
 }
 
 
 # ---------------------------------------------------------------------------
 # MarkdownRenderer
 # ---------------------------------------------------------------------------
+
 
 class MarkdownRenderer:
     """Renders a ReportDocument to Markdown."""
@@ -64,8 +65,10 @@ class MarkdownRenderer:
         lines.append("")
         lines.append(f"**Report Type:** {doc.report_type.title()}  ")
         lines.append(f"**Generated:** {doc.generated_at.strftime('%Y-%m-%d %H:%M UTC')}  ")
-        lines.append(f"**Period:** {doc.period_start.strftime('%Y-%m-%d')} "
-                     f"to {doc.period_end.strftime('%Y-%m-%d')}  ")
+        lines.append(
+            f"**Period:** {doc.period_start.strftime('%Y-%m-%d')} "
+            f"to {doc.period_end.strftime('%Y-%m-%d')}  "
+        )
         if doc.config and doc.config.sectors:
             lines.append(f"**Sectors:** {', '.join(doc.config.sectors)}  ")
         lines.append("")
@@ -95,6 +98,7 @@ class MarkdownRenderer:
 # HTMLRenderer
 # ---------------------------------------------------------------------------
 
+
 class HTMLRenderer:
     """Renders a ReportDocument to a self-contained HTML file."""
 
@@ -108,10 +112,7 @@ class HTMLRenderer:
         sections_html = "\n".join(self._section_html(s) for s in doc.sections)
         sector_badge = ""
         if doc.config and doc.config.sectors:
-            badges = "".join(
-                f'<span class="badge">{s}</span>'
-                for s in doc.config.sectors[:6]
-            )
+            badges = "".join(f'<span class="badge">{s}</span>' for s in doc.config.sectors[:6])
             sector_badge = f'<div class="sector-badges">{badges}</div>'
 
         return f"""<!DOCTYPE html>
@@ -174,9 +175,9 @@ class HTMLRenderer:
     <h1>{_esc(doc.title)}</h1>
     <div class="report-meta">
       <strong>Type:</strong> {doc.report_type.title()} &nbsp;|&nbsp;
-      <strong>Generated:</strong> {doc.generated_at.strftime('%Y-%m-%d %H:%M UTC')} &nbsp;|&nbsp;
-      <strong>Period:</strong> {doc.period_start.strftime('%Y-%m-%d')} to
-        {doc.period_end.strftime('%Y-%m-%d')}
+      <strong>Generated:</strong> {doc.generated_at.strftime("%Y-%m-%d %H:%M UTC")} &nbsp;|&nbsp;
+      <strong>Period:</strong> {doc.period_start.strftime("%Y-%m-%d")} to
+        {doc.period_end.strftime("%Y-%m-%d")}
     </div>
     {sector_badge}
   </div>
@@ -191,14 +192,8 @@ class HTMLRenderer:
     def _section_html(self, section: ReportSection) -> str:
         narrative_html = ""
         if section.has_narrative:
-            paragraphs = [
-                f"<p>{_esc(p)}</p>"
-                for p in section.narrative.split("\n\n")
-                if p.strip()
-            ]
-            narrative_html = (
-                f'<div class="narrative">{"".join(paragraphs)}</div>'
-            )
+            paragraphs = [f"<p>{_esc(p)}</p>" for p in section.narrative.split("\n\n") if p.strip()]
+            narrative_html = f'<div class="narrative">{"".join(paragraphs)}</div>'
 
         data_html = _render_data_html(section)
 
@@ -212,6 +207,7 @@ class HTMLRenderer:
 # ---------------------------------------------------------------------------
 # PDFRenderer
 # ---------------------------------------------------------------------------
+
 
 class PDFRenderer:
     """Renders a ReportDocument to PDF using reportlab."""
@@ -231,10 +227,7 @@ class PDFRenderer:
                 TableStyle,
             )
         except ImportError:
-            raise ImportError(
-                "reportlab required for PDF output: "
-                "pip install 'gnat[reports]'"
-            )
+            raise ImportError("reportlab required for PDF output: pip install 'gnat[reports]'")
 
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         pdf = SimpleDocTemplate(
@@ -252,7 +245,7 @@ class PDFRenderer:
 
         # Custom styles
         primary_rgb = colors.HexColor(_COLOURS["primary"])
-        accent_rgb  = colors.HexColor(_COLOURS["accent"])
+        accent_rgb = colors.HexColor(_COLOURS["accent"])
 
         title_style = ParagraphStyle(
             "ReportTitle",
@@ -291,33 +284,40 @@ class PDFRenderer:
 
         # Title block
         story.append(Paragraph(_safe_rl(doc.title), title_style))
-        story.append(Paragraph(
-            f"Report Type: {doc.report_type.title()}  |  "
-            f"Generated: {doc.generated_at.strftime('%Y-%m-%d %H:%M UTC')}",
-            meta_style,
-        ))
-        story.append(Paragraph(
-            f"Period: {doc.period_start.strftime('%Y-%m-%d')} to "
-            f"{doc.period_end.strftime('%Y-%m-%d')}",
-            meta_style,
-        ))
-        if doc.config and doc.config.sectors:
-            story.append(Paragraph(
-                "Sectors: " + ", ".join(doc.config.sectors[:6]),
+        story.append(
+            Paragraph(
+                f"Report Type: {doc.report_type.title()}  |  "
+                f"Generated: {doc.generated_at.strftime('%Y-%m-%d %H:%M UTC')}",
                 meta_style,
-            ))
-        story.append(HRFlowable(
-            width="100%", thickness=2, color=accent_rgb, spaceAfter=16
-        ))
+            )
+        )
+        story.append(
+            Paragraph(
+                f"Period: {doc.period_start.strftime('%Y-%m-%d')} to "
+                f"{doc.period_end.strftime('%Y-%m-%d')}",
+                meta_style,
+            )
+        )
+        if doc.config and doc.config.sectors:
+            story.append(
+                Paragraph(
+                    "Sectors: " + ", ".join(doc.config.sectors[:6]),
+                    meta_style,
+                )
+            )
+        story.append(HRFlowable(width="100%", thickness=2, color=accent_rgb, spaceAfter=16))
 
         # Sections
         for section in doc.sections:
             story.append(Paragraph(_safe_rl(section.title), h2_style))
-            story.append(HRFlowable(
-                width="100%", thickness=0.5,
-                color=colors.HexColor(_COLOURS["border"]),
-                spaceAfter=8,
-            ))
+            story.append(
+                HRFlowable(
+                    width="100%",
+                    thickness=0.5,
+                    color=colors.HexColor(_COLOURS["border"]),
+                    spaceAfter=8,
+                )
+            )
 
             if section.has_narrative:
                 for para in section.narrative.split("\n\n"):
@@ -330,29 +330,47 @@ class PDFRenderer:
             if table_items:
                 for tbl_data, col_widths in table_items:
                     tbl = Table(tbl_data, colWidths=col_widths)
-                    tbl.setStyle(TableStyle([
-                        ("BACKGROUND",  (0, 0), (-1, 0), primary_rgb),
-                        ("TEXTCOLOR",   (0, 0), (-1, 0), colors.white),
-                        ("FONTNAME",    (0, 0), (-1, 0), "Helvetica-Bold"),
-                        ("FONTSIZE",    (0, 0), (-1, -1), 9),
-                        ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-                         [colors.white, colors.HexColor(_COLOURS["light_bg"])]),
-                        ("GRID",        (0, 0), (-1, -1), 0.5,
-                         colors.HexColor(_COLOURS["border"])),
-                        ("VALIGN",      (0, 0), (-1, -1), "TOP"),
-                        ("PADDING",     (0, 0), (-1, -1), 6),
-                    ]))
+                    tbl.setStyle(
+                        TableStyle(
+                            [
+                                ("BACKGROUND", (0, 0), (-1, 0), primary_rgb),
+                                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                                (
+                                    "ROWBACKGROUNDS",
+                                    (0, 1),
+                                    (-1, -1),
+                                    [colors.white, colors.HexColor(_COLOURS["light_bg"])],
+                                ),
+                                (
+                                    "GRID",
+                                    (0, 0),
+                                    (-1, -1),
+                                    0.5,
+                                    colors.HexColor(_COLOURS["border"]),
+                                ),
+                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                                ("PADDING", (0, 0), (-1, -1), 6),
+                            ]
+                        )
+                    )
                     story.append(tbl)
                     story.append(Spacer(1, 12))
 
-        story.append(HRFlowable(width="100%", thickness=0.5,
-                                 color=colors.grey, spaceAfter=6))
-        story.append(Paragraph(
-            "Generated by GNAT Threat Intelligence Platform",
-            ParagraphStyle("Footer", parent=styles["Normal"],
-                           fontSize=8, textColor=colors.grey,
-                           alignment=1),  # centre
-        ))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.grey, spaceAfter=6))
+        story.append(
+            Paragraph(
+                "Generated by GNAT Threat Intelligence Platform",
+                ParagraphStyle(
+                    "Footer",
+                    parent=styles["Normal"],
+                    fontSize=8,
+                    textColor=colors.grey,
+                    alignment=1,
+                ),  # centre
+            )
+        )
 
         pdf.build(story)
         logger.info("PDFRenderer: wrote %s", path)
@@ -363,13 +381,14 @@ class PDFRenderer:
 # DOCXRenderer
 # ---------------------------------------------------------------------------
 
+
 class DOCXRenderer:
     """Renders a ReportDocument to DOCX using python-docx (pure Python)."""
 
     _PRIMARY = "1A3A5C"
-    _ACCENT  = "2E75B6"
-    _MUTED   = "6B7280"
-    _WHITE   = "FFFFFF"
+    _ACCENT = "2E75B6"
+    _MUTED = "6B7280"
+    _WHITE = "FFFFFF"
     _ALT_ROW = "F5F7FA"
 
     def render(self, doc: ReportDocument, path: str) -> str:
@@ -378,20 +397,17 @@ class DOCXRenderer:
             from docx.enum.text import WD_ALIGN_PARAGRAPH
             from docx.shared import Pt
         except ImportError:
-            raise ImportError(
-                "python-docx required for DOCX output: "
-                "pip install 'gnat[reports]'"
-            )
+            raise ImportError("python-docx required for DOCX output: pip install 'gnat[reports]'")
 
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         d = Document()
 
         # Page margins (1 inch all around)
         for section in d.sections:
-            section.top_margin    = self._pt(72)
+            section.top_margin = self._pt(72)
             section.bottom_margin = self._pt(72)
-            section.left_margin   = self._pt(72)
-            section.right_margin  = self._pt(72)
+            section.left_margin = self._pt(72)
+            section.right_margin = self._pt(72)
 
         # Title
         h1 = d.add_heading(doc.title, level=1)
@@ -399,11 +415,12 @@ class DOCXRenderer:
 
         # Metadata lines
         self._meta_line(d, "Report Type", doc.report_type.title())
-        self._meta_line(d, "Generated",
-                        doc.generated_at.strftime("%Y-%m-%d %H:%M UTC"))
-        self._meta_line(d, "Period",
-                        f"{doc.period_start.strftime('%Y-%m-%d')} to "
-                        f"{doc.period_end.strftime('%Y-%m-%d')}")
+        self._meta_line(d, "Generated", doc.generated_at.strftime("%Y-%m-%d %H:%M UTC"))
+        self._meta_line(
+            d,
+            "Period",
+            f"{doc.period_start.strftime('%Y-%m-%d')} to {doc.period_end.strftime('%Y-%m-%d')}",
+        )
         if doc.config and doc.config.sectors:
             self._meta_line(d, "Sectors", ", ".join(doc.config.sectors[:6]))
 
@@ -441,6 +458,7 @@ class DOCXRenderer:
 
     def _meta_line(self, d, label: str, value: str) -> None:
         from docx.shared import Pt
+
         p = d.add_paragraph()
         p.paragraph_format.space_after = self._pt(2)
         bold_run = p.add_run(f"{label}: ")
@@ -462,9 +480,11 @@ class DOCXRenderer:
 
         if "critical_vulns" in data and data["critical_vulns"]:
             rows = [
-                [v.get("cve_id") or v.get("name", ""),
-                 str(v.get("cvss", "N/A")),
-                 "Yes" if v.get("exploited") else "No"]
+                [
+                    v.get("cve_id") or v.get("name", ""),
+                    str(v.get("cvss", "N/A")),
+                    "Yes" if v.get("exploited") else "No",
+                ]
                 for v in data["critical_vulns"][:10]
             ]
             self._table(d, ["CVE / Name", "CVSS", "Exploited"], rows)
@@ -474,13 +494,11 @@ class DOCXRenderer:
             self._table(d, ["IOC Type", "Count"], rows)
 
         if "sector_distribution" in data and data["sector_distribution"]:
-            rows = [[k, str(v)]
-                    for k, v in list(data["sector_distribution"].items())[:8]]
+            rows = [[k, str(v)] for k, v in list(data["sector_distribution"].items())[:8]]
             self._table(d, ["Sector", "Object Count"], rows)
 
         if "source_breakdown" in data and data["source_breakdown"]:
-            rows = [[k, str(v)]
-                    for k, v in list(data["source_breakdown"].items())[:8]]
+            rows = [[k, str(v)] for k, v in list(data["source_breakdown"].items())[:8]]
             self._table(d, ["Source", "Objects"], rows)
 
     def _table(self, d, headers: list[str], rows: list[list[str]]) -> None:
@@ -513,12 +531,14 @@ class DOCXRenderer:
     @staticmethod
     def _rgb(hex6: str) -> RGBColor:
         from docx.shared import RGBColor
+
         r, g, b = int(hex6[0:2], 16), int(hex6[2:4], 16), int(hex6[4:6], 16)
         return RGBColor(r, g, b)
 
     @staticmethod
     def _pt(points: float) -> Pt:
         from docx.shared import Pt
+
         return Pt(points)
 
 
@@ -526,6 +546,7 @@ def _set_cell_bg(cell, hex6: str) -> None:
     """Set table cell background colour via direct OOXML (python-docx omits this)."""
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
+
     tc = cell._tc
     tcp = tc.get_or_add_tcPr()
     shd = OxmlElement("w:shd")
@@ -538,6 +559,7 @@ def _set_cell_bg(cell, hex6: str) -> None:
 # ---------------------------------------------------------------------------
 # Shared data rendering helpers
 # ---------------------------------------------------------------------------
+
 
 def _render_data_md(section: ReportSection) -> list[str]:
     """Render section data as Markdown table(s)."""
@@ -555,35 +577,34 @@ def _render_data_md(section: ReportSection) -> list[str]:
         lines.append("**Top Threat Actors**")
         _table(
             ["Name", "Motivation"],
-            [[a["name"], ", ".join(a.get("motivation", []))[:60]]
-             for a in data["top_actors"][:8]]
+            [[a["name"], ", ".join(a.get("motivation", []))[:60]] for a in data["top_actors"][:8]],
         )
     if "critical_vulns" in data and data["critical_vulns"]:
         lines.append("**Critical Vulnerabilities**")
         _table(
             ["CVE / Name", "CVSS", "Exploited"],
-            [[v.get("cve_id") or v.get("name", ""),
-              v.get("cvss", "N/A"),
-              "✓" if v.get("exploited") else ""]
-             for v in data["critical_vulns"][:10]]
+            [
+                [
+                    v.get("cve_id") or v.get("name", ""),
+                    v.get("cvss", "N/A"),
+                    "✓" if v.get("exploited") else "",
+                ]
+                for v in data["critical_vulns"][:10]
+            ],
         )
     if "ioc_by_type" in data and data["ioc_by_type"]:
         lines.append("**IOC Type Breakdown**")
-        _table(
-            ["Type", "Count"],
-            [[k, v] for k, v in list(data["ioc_by_type"].items())[:8]]
-        )
+        _table(["Type", "Count"], [[k, v] for k, v in list(data["ioc_by_type"].items())[:8]])
     if "sector_distribution" in data and data["sector_distribution"]:
         lines.append("**Sector Distribution**")
         _table(
             ["Sector", "Object Count"],
-            [[k, v] for k, v in list(data["sector_distribution"].items())[:8]]
+            [[k, v] for k, v in list(data["sector_distribution"].items())[:8]],
         )
     if "source_breakdown" in data and data["source_breakdown"]:
         lines.append("**Source Breakdown**")
         _table(
-            ["Source", "Objects"],
-            [[k, v] for k, v in list(data["source_breakdown"].items())[:8]]
+            ["Source", "Objects"], [[k, v] for k, v in list(data["source_breakdown"].items())[:8]]
         )
     return lines
 
@@ -602,10 +623,7 @@ def _render_data_html(section: ReportSection) -> str:
 
     if stats:
         cards = "".join(
-            f'<div class="stat-card">'
-            f'<div class="value">{v}</div>'
-            f'<div class="label">{k}</div>'
-            f'</div>'
+            f'<div class="stat-card"><div class="value">{v}</div><div class="label">{k}</div></div>'
             for k, v in stats.items()
         )
         parts.append(f'<div class="stat-grid">{cards}</div>')
@@ -613,40 +631,57 @@ def _render_data_html(section: ReportSection) -> str:
     def _html_table(headers, rows, caption=""):
         hdr = "".join(f"<th>{_esc(h)}</th>" for h in headers)
         body_rows = "".join(
-            "<tr>" + "".join(f"<td>{_esc(str(c))}</td>" for c in row) + "</tr>"
-            for row in rows
+            "<tr>" + "".join(f"<td>{_esc(str(c))}</td>" for c in row) + "</tr>" for row in rows
         )
-        cap = f"<caption style='text-align:left;font-weight:600;margin-bottom:6px'>{_esc(caption)}</caption>" if caption else ""
+        cap = (
+            f"<caption style='text-align:left;font-weight:600;margin-bottom:6px'>{_esc(caption)}</caption>"
+            if caption
+            else ""
+        )
         return f"<table>{cap}<thead><tr>{hdr}</tr></thead><tbody>{body_rows}</tbody></table>"
 
     if "top_actors" in data and data["top_actors"]:
-        parts.append(_html_table(
-            ["Threat Actor", "Motivation"],
-            [[a["name"], ", ".join(a.get("motivation", []))[:60]]
-             for a in data["top_actors"][:8]],
-            "Top Threat Actors",
-        ))
+        parts.append(
+            _html_table(
+                ["Threat Actor", "Motivation"],
+                [
+                    [a["name"], ", ".join(a.get("motivation", []))[:60]]
+                    for a in data["top_actors"][:8]
+                ],
+                "Top Threat Actors",
+            )
+        )
     if "critical_vulns" in data and data["critical_vulns"]:
-        parts.append(_html_table(
-            ["CVE / Name", "CVSS", "Exploited"],
-            [[v.get("cve_id") or v.get("name", ""),
-              v.get("cvss", "N/A"),
-              "Yes" if v.get("exploited") else "No"]
-             for v in data["critical_vulns"][:10]],
-            "Critical Vulnerabilities",
-        ))
+        parts.append(
+            _html_table(
+                ["CVE / Name", "CVSS", "Exploited"],
+                [
+                    [
+                        v.get("cve_id") or v.get("name", ""),
+                        v.get("cvss", "N/A"),
+                        "Yes" if v.get("exploited") else "No",
+                    ]
+                    for v in data["critical_vulns"][:10]
+                ],
+                "Critical Vulnerabilities",
+            )
+        )
     if "ioc_by_type" in data and data["ioc_by_type"]:
-        parts.append(_html_table(
-            ["IOC Type", "Count"],
-            list(data["ioc_by_type"].items())[:8],
-            "IOC Type Breakdown",
-        ))
+        parts.append(
+            _html_table(
+                ["IOC Type", "Count"],
+                list(data["ioc_by_type"].items())[:8],
+                "IOC Type Breakdown",
+            )
+        )
     if "sector_distribution" in data and data["sector_distribution"]:
-        parts.append(_html_table(
-            ["Sector", "Objects"],
-            list(data["sector_distribution"].items())[:8],
-            "Sector Distribution",
-        ))
+        parts.append(
+            _html_table(
+                ["Sector", "Objects"],
+                list(data["sector_distribution"].items())[:8],
+                "Sector Distribution",
+            )
+        )
 
     return "\n".join(parts)
 
@@ -654,21 +689,26 @@ def _render_data_html(section: ReportSection) -> str:
 def _extract_table_items(section: ReportSection):
     """Extract (table_data, col_widths) tuples for PDF rendering."""
     from reportlab.lib.units import inch
+
     items = []
     data = section.data
 
     if "top_actors" in data and data["top_actors"]:
         rows = [["Threat Actor", "Motivation"]]
-        rows += [[a["name"][:40], ", ".join(a.get("motivation", []))[:40]]
-                 for a in data["top_actors"][:8]]
+        rows += [
+            [a["name"][:40], ", ".join(a.get("motivation", []))[:40]]
+            for a in data["top_actors"][:8]
+        ]
         items.append((rows, [3 * inch, 3 * inch]))
 
     if "critical_vulns" in data and data["critical_vulns"]:
         rows = [["CVE / Name", "CVSS", "Exploited"]]
         rows += [
-            [v.get("cve_id") or v.get("name", "")[:40],
-             str(v.get("cvss", "N/A")),
-             "Yes" if v.get("exploited") else "No"]
+            [
+                v.get("cve_id") or v.get("name", "")[:40],
+                str(v.get("cvss", "N/A")),
+                "Yes" if v.get("exploited") else "No",
+            ]
             for v in data["critical_vulns"][:10]
         ]
         items.append((rows, [3 * inch, 1 * inch, 1 * inch]))
@@ -694,11 +734,4 @@ def _esc(text: str) -> str:
 
 def _safe_rl(text: str) -> str:
     """Escape for ReportLab Paragraph (strip XML-unsafe chars)."""
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
-
-
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

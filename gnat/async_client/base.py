@@ -119,9 +119,7 @@ class AsyncBaseClient:
         try:
             import httpx
         except ImportError:
-            raise ImportError(
-                "httpx is required for async support: pip install 'gnat[async]'"
-            )
+            raise ImportError("httpx is required for async support: pip install 'gnat[async]'")
         transport = httpx.AsyncHTTPTransport(retries=self.max_retries)
         self._http = httpx.AsyncClient(
             verify=self.verify_ssl,
@@ -172,9 +170,7 @@ class AsyncBaseClient:
         headers: dict[str, str] | None = None,
     ) -> Any:
         """Async POST request."""
-        return await self._request(
-            "POST", path, body=json, form_data=data, extra_headers=headers
-        )
+        return await self._request("POST", path, body=json, form_data=data, extra_headers=headers)
 
     async def put(
         self,
@@ -241,9 +237,7 @@ class AsyncBaseClient:
 
         logger.debug("ASYNC %s %s", method, url)
 
-        response = await self._http.request(
-            method, url, content=content, headers=req_headers
-        )
+        response = await self._http.request(method, url, content=content, headers=req_headers)
 
         if response.status_code >= 400:
             raise GNATClientError(
@@ -261,7 +255,4 @@ class AsyncBaseClient:
             return response.text
 
     def __repr__(self) -> str:  # pragma: no cover
-        return (
-            f"{type(self).__name__}("
-            f"host={self.host!r}, authenticated={self._authenticated})"
-        )
+        return f"{type(self).__name__}(host={self.host!r}, authenticated={self._authenticated})"

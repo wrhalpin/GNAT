@@ -82,7 +82,9 @@ class CISAClient(BaseClient, ConnectorMixin):
 
     def health_check(self) -> bool:
         """Verify connectivity by fetching a small portion of the KEV catalog."""
-        self.get("/sites/default/files/feeds/known_exploited_vulnerabilities.json", params={"_": "1"})  # cache-buster if needed
+        self.get(
+            "/sites/default/files/feeds/known_exploited_vulnerabilities.json", params={"_": "1"}
+        )  # cache-buster if needed
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
@@ -120,7 +122,12 @@ class CISAClient(BaseClient, ConnectorMixin):
             for entry in catalog:
                 match = True
                 for key, value in filters.items():
-                    if key == "cveID" and entry.get("cveID") != value or key.endswith("__gte") and entry.get(key.replace("__gte", "")) < value:
+                    if (
+                        key == "cveID"
+                        and entry.get("cveID") != value
+                        or key.endswith("__gte")
+                        and entry.get(key.replace("__gte", "")) < value
+                    ):
                         match = False
                     # Add more simple filters as needed
                 if match:

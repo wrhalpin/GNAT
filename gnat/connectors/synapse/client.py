@@ -99,27 +99,27 @@ class SynapseClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         # SCOs — Vertex Synapse inet/file forms
-        "ipv4-addr":     "inet:ipv4",
-        "ipv6-addr":     "inet:ipv6",
-        "domain-name":   "inet:fqdn",
-        "url":           "inet:url",
-        "email-addr":    "inet:email",
-        "file":          "file:bytes",
+        "ipv4-addr": "inet:ipv4",
+        "ipv6-addr": "inet:ipv6",
+        "domain-name": "inet:fqdn",
+        "url": "inet:url",
+        "email-addr": "inet:email",
+        "file": "file:bytes",
         "autonomous-system": "inet:asn",
         "network-traffic": "inet:flow",
         # SDOs
         "vulnerability": "risk:vuln",
         "attack-pattern": "it:mitre:attack:technique,risk:attack",
-        "malware":       "it:mitre:attack:software",
-        "tool":          "it:mitre:attack:software",
-        "campaign":      "risk:threat",
-        "threat-actor":  "risk:threat",
-        "identity":      "ou:org",
-        "report":        "media:news",
+        "malware": "it:mitre:attack:software",
+        "tool": "it:mitre:attack:software",
+        "campaign": "risk:threat",
+        "threat-actor": "risk:threat",
+        "identity": "ou:org",
+        "report": "media:news",
         "observed-data": "meta:event",
         "course-of-action": "risk:mitigation",
         # Broad indicator query: union of typical IOC forms
-        "indicator":     "inet:fqdn,inet:ipv4,inet:ipv6,inet:url,file:bytes",
+        "indicator": "inet:fqdn,inet:ipv4,inet:ipv6,inet:url,file:bytes",
     }
 
     def __init__(
@@ -348,9 +348,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
     # Storm methods
     # ------------------------------------------------------------------
 
-    def storm(
-        self, query: str, opts: dict[str, Any] | None = None
-    ) -> list[dict[str, Any]]:
+    def storm(self, query: str, opts: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """
         Execute a Storm query and return the resulting nodes.
 
@@ -447,9 +445,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             props = info_part.get("props", {}) if isinstance(info_part, dict) else {}
             tags = info_part.get("tags", {}) if isinstance(info_part, dict) else {}
             iden = info_part.get("iden", "") if isinstance(info_part, dict) else ""
-            nodes.append(
-                {"ndef": [form, value], "props": props, "tags": tags, "iden": iden}
-            )
+            nodes.append({"ndef": [form, value], "props": props, "tags": tags, "iden": iden})
         return nodes
 
     def storm_count(self, query: str) -> int:
@@ -472,9 +468,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
             return int(result)
         return len(self.storm(query))
 
-    def callstorm(
-        self, query: str, opts: dict[str, Any] | None = None
-    ) -> Any:
+    def callstorm(self, query: str, opts: dict[str, Any] | None = None) -> Any:
         """
         Execute a Storm query via ``/api/v1/storm/call`` and return the result.
 
@@ -758,9 +752,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/core/views/{view_iden}")
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def create_view(
-        self, name: str, layers: list[str] | None = None
-    ) -> dict[str, Any]:
+    def create_view(self, name: str, layers: list[str] | None = None) -> dict[str, Any]:
         """
         Create a new Cortex view.
 
@@ -771,14 +763,10 @@ class SynapseClient(BaseClient, ConnectorMixin):
         layers : list of str, optional
             Ordered list of layer idens.
         """
-        resp = self.post(
-            "/api/v1/core/views", json={"name": name, "layers": layers or []}
-        )
+        resp = self.post("/api/v1/core/views", json={"name": name, "layers": layers or []})
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
-    def fork_view(
-        self, view_iden: str, name: str | None = None
-    ) -> dict[str, Any]:
+    def fork_view(self, view_iden: str, name: str | None = None) -> dict[str, Any]:
         """
         Fork an existing view.
 
@@ -924,9 +912,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         passwd : str
             New password.
         """
-        resp = self.post(
-            "/api/v1/auth/setpasswd", json={"iden": user_iden, "passwd": passwd}
-        )
+        resp = self.post("/api/v1/auth/setpasswd", json={"iden": user_iden, "passwd": passwd})
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
     def list_roles(self) -> list[dict[str, Any]]:
@@ -965,9 +951,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         role_iden : str
             Role iden.
         """
-        resp = self.post(
-            "/api/v1/auth/grant", json={"user": user_iden, "role": role_iden}
-        )
+        resp = self.post("/api/v1/auth/grant", json={"user": user_iden, "role": role_iden})
         return resp.get("result", resp) if isinstance(resp, dict) else resp
 
     # ------------------------------------------------------------------

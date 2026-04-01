@@ -26,7 +26,7 @@ behaviour.
 ## References
 
 - https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTsearch
-  """
+"""
 
 import contextlib
 import time
@@ -39,7 +39,8 @@ from .exceptions import SplunkSearchError
 
 _TERMINAL_STATES = {"DONE", "FAILED"}
 _POLL_INTERVAL_SECONDS = 2.0
-_POLL_MAX_WAIT_SECONDS = 300.0   # 5 min default; override via timeout param
+_POLL_MAX_WAIT_SECONDS = 300.0  # 5 min default; override via timeout param
+
 
 class SplunkSearchCommands:
     """
@@ -370,13 +371,15 @@ class SplunkSearchCommands:
             namespaced=True,
             page_size=count,
         ):
-            results.append({
-                "name": entry.get("name"),
-                "search": entry.get("content", {}).get("search"),
-                "cron_schedule": entry.get("content", {}).get("cron_schedule"),
-                "is_scheduled": entry.get("content", {}).get("is_scheduled"),
-                "disabled": entry.get("content", {}).get("disabled"),
-            })
+            results.append(
+                {
+                    "name": entry.get("name"),
+                    "search": entry.get("content", {}).get("search"),
+                    "cron_schedule": entry.get("content", {}).get("cron_schedule"),
+                    "is_scheduled": entry.get("content", {}).get("is_scheduled"),
+                    "disabled": entry.get("content", {}).get("disabled"),
+                }
+            )
         return results
 
     def get_saved_search(self, name: str) -> dict:
@@ -394,6 +397,7 @@ class SplunkSearchCommands:
             Saved search content dict.
         """
         import urllib.parse as _up
+
         safe_name = _up.quote(name, safe="")
         response = self._client.get(
             f"saved/searches/{safe_name}",
@@ -402,6 +406,7 @@ class SplunkSearchCommands:
         entries = response.get("entry", [])
         if not entries:
             from .exceptions import SplunkNotFoundError
+
             raise SplunkNotFoundError(
                 f"Saved search '{name}' not found.",
                 status_code=404,
@@ -425,6 +430,7 @@ class SplunkSearchCommands:
             Search job SID.
         """
         import urllib.parse as _up
+
         safe_name = _up.quote(name, safe="")
         response = self._client.post(
             f"saved/searches/{safe_name}/dispatch",
@@ -456,13 +462,15 @@ class SplunkSearchCommands:
             page_size=100,
         ):
             content = entry.get("content", {})
-            results.append({
-                "name": entry.get("name"),
-                "total_event_count": content.get("totalEventCount"),
-                "current_db_size_mb": content.get("currentDBSizeMB"),
-                "disabled": content.get("disabled"),
-                "data_type": content.get("datatype"),
-            })
+            results.append(
+                {
+                    "name": entry.get("name"),
+                    "total_event_count": content.get("totalEventCount"),
+                    "current_db_size_mb": content.get("currentDBSizeMB"),
+                    "disabled": content.get("disabled"),
+                    "data_type": content.get("datatype"),
+                }
+            )
         return results
 
     def get_index_stats(self, index: str | None = None) -> dict:
@@ -480,12 +488,14 @@ class SplunkSearchCommands:
             Index stats dict.
         """
         import urllib.parse as _up
+
         target = index or self._client.config.default_index
         safe = _up.quote(target, safe="")
         response = self._client.get(f"data/indexes/{safe}", namespaced=False)
         entries = response.get("entry", [])
         if not entries:
             from .exceptions import SplunkNotFoundError
+
             raise SplunkNotFoundError(
                 f"Index '{target}' not found.",
                 status_code=404,

@@ -23,14 +23,13 @@ class XSOARClient(BaseClient, ConnectorMixin):
     """HTTP client for the XSOAR 6 REST API."""
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "indicator",
-        "malware":       "indicator",
-        "threat-actor":  "indicator",
+        "indicator": "indicator",
+        "malware": "indicator",
+        "threat-actor": "indicator",
         "vulnerability": "indicator",
     }
 
-    def __init__(self, host: str, api_key: str = "",
-                 auth_id: str = "", **kwargs: Any):
+    def __init__(self, host: str, api_key: str = "", auth_id: str = "", **kwargs: Any):
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._auth_id = auth_id
@@ -46,22 +45,30 @@ class XSOARClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
-        resp = self.post("/indicators/search", json={
-            "query": f"id:{object_id}", "size": 1
-        })
+        resp = self.post("/indicators/search", json={"query": f"id:{object_id}", "size": 1})
         items = resp.get("iocObjects", []) if isinstance(resp, dict) else []
         return items[0] if items else {}
 
-    def list_objects(self, stix_type: str, filters: Optional[dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         query = filters.get("query", "") if filters else ""
-        resp = self.post("/indicators/search", json={
-            "query": query, "size": page_size, "page": page - 1
-        })
+        resp = self.post(
+            "/indicators/search", json={"query": query, "size": page_size, "page": page - 1}
+        )
         return resp.get("iocObjects", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: dict[str, Any],
-                      incident_id: Optional[str] = None, **kwargs: Any) -> dict[str, Any]:
+    def upsert_object(
+        self,
+        stix_type: str,
+        payload: dict[str, Any],
+        incident_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         """Create or update an indicator. If *incident_id* is given, the
         indicator is linked to that incident after upsert."""
         result = self.post("/indicators/edit", json=payload)

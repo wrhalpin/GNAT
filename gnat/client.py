@@ -108,8 +108,7 @@ class GNATClient:
         target = target.lower()
         if target not in CLIENT_REGISTRY:
             raise KeyError(
-                f"Unknown target {target!r}. "
-                f"Available: {sorted(CLIENT_REGISTRY.keys())}"
+                f"Unknown target {target!r}. Available: {sorted(CLIENT_REGISTRY.keys())}"
             )
 
         cfg = self._load_config(target, override_kwargs)

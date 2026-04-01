@@ -161,10 +161,7 @@ class WazuhConnector(BaseClient, ConnectorMixin):
         # Default: alerts → observed-data
         alerts = self._alert_cmds.get_alerts(limit=limit)
         return [
-            self._mapper.alert_to_stix_bundle(
-                self._alert_cmds.normalise_alert(a)
-            )
-            for a in alerts
+            self._mapper.alert_to_stix_bundle(self._alert_cmds.normalise_alert(a)) for a in alerts
         ]
 
     def upsert_object(self, stix_type: str, payload: dict, **kwargs) -> dict:
@@ -190,9 +187,7 @@ class WazuhConnector(BaseClient, ConnectorMixin):
         GNATClientError
             Always raised.
         """
-        raise GNATClientError(
-            "Wazuh is a read-only platform. delete_object is not supported."
-        )
+        raise GNATClientError("Wazuh is a read-only platform. delete_object is not supported.")
 
     def to_stix(self, native_object: dict) -> dict:
         """

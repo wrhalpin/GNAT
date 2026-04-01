@@ -49,22 +49,31 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 DEFAULT_TTLS: dict[str, int] = {
-    "indicator":    24,
+    "indicator": 24,
     "vulnerability": 72,
-    "campaign":     14 * 24,   # 14 days
-    "threat_actor": 30 * 24,   # 30 days
-    "other":        7 * 24,    # 7 days
+    "campaign": 14 * 24,  # 14 days
+    "threat_actor": 30 * 24,  # 30 days
+    "other": 7 * 24,  # 7 days
 }
 
 # Keywords in topic strings that map to each category
 _TOPIC_KEYWORDS: dict[str, list[str]] = {
-    "indicator":     ["ioc", "ip", "domain", "hash", "url", "indicator", "blocklist"],
+    "indicator": ["ioc", "ip", "domain", "hash", "url", "indicator", "blocklist"],
     "vulnerability": ["cve", "vuln", "exploit", "patch", "advisory", "rce", "lpe"],
-    "threat_actor":  [
-        "apt", "threat actor", "group", "unc", "ta", "g0", "lazarus",
-        "cozy bear", "fancy bear", "volt typhoon", "scattered spider",
+    "threat_actor": [
+        "apt",
+        "threat actor",
+        "group",
+        "unc",
+        "ta",
+        "g0",
+        "lazarus",
+        "cozy bear",
+        "fancy bear",
+        "volt typhoon",
+        "scattered spider",
     ],
-    "campaign":      ["campaign", "operation", "intrusion", "incident", "breach"],
+    "campaign": ["campaign", "operation", "intrusion", "incident", "breach"],
 }
 
 
@@ -134,6 +143,7 @@ def topic_fingerprint(topic: str) -> str:
 # ResearchEntry
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ResearchEntry:
     """
@@ -175,18 +185,18 @@ class ResearchEntry:
         Arbitrary additional context.
     """
 
-    topic:            str
-    stix_objects:     list[dict[str, Any]]
-    researcher:       str
-    promoted_at:      datetime
-    note:             str                  = ""
-    source_workspace: str                  = ""
-    category:         str                  = ""
-    expires_at:       datetime | None   = None
-    curator_status:   str                  = "pending"
-    curated_at:       datetime | None   = None
-    entry_id:         str                  = ""
-    metadata:         dict[str, Any]       = field(default_factory=dict)
+    topic: str
+    stix_objects: list[dict[str, Any]]
+    researcher: str
+    promoted_at: datetime
+    note: str = ""
+    source_workspace: str = ""
+    category: str = ""
+    expires_at: datetime | None = None
+    curator_status: str = "pending"
+    curated_at: datetime | None = None
+    entry_id: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.category:
@@ -251,64 +261,64 @@ class ResearchEntry:
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict for storage."""
         return {
-            "entry_id":        self.entry_id,
-            "topic":           self.topic,
-            "topic_key":       topic_key(self.topic),
-            "category":        self.category,
-            "researcher":      self.researcher,
-            "note":            self.note,
-            "source_workspace":self.source_workspace,
-            "promoted_at":     self.promoted_at.isoformat(),
-            "expires_at":      self.expires_at.isoformat() if self.expires_at else None,
-            "curator_status":  self.curator_status,
-            "curated_at":      self.curated_at.isoformat() if self.curated_at else None,
+            "entry_id": self.entry_id,
+            "topic": self.topic,
+            "topic_key": topic_key(self.topic),
+            "category": self.category,
+            "researcher": self.researcher,
+            "note": self.note,
+            "source_workspace": self.source_workspace,
+            "promoted_at": self.promoted_at.isoformat(),
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "curator_status": self.curator_status,
+            "curated_at": self.curated_at.isoformat() if self.curated_at else None,
             "stix_object_count": len(self.stix_objects),
-            "stix_objects":    self.stix_objects,
-            "metadata":        self.metadata,
+            "stix_objects": self.stix_objects,
+            "metadata": self.metadata,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ResearchEntry:
         """Reconstruct a ``ResearchEntry`` from a stored dict."""
+
         def _parse_dt(s: str | None) -> datetime | None:
             if not s:
                 return None
             return datetime.fromisoformat(s)
 
         entry = cls(
-            topic            = data["topic"],
-            stix_objects     = data.get("stix_objects", []),
-            researcher       = data.get("researcher", ""),
-            promoted_at      = _parse_dt(data["promoted_at"]) or datetime.now(timezone.utc),
-            note             = data.get("note", ""),
-            source_workspace = data.get("source_workspace", ""),
-            category         = data.get("category", ""),
-            expires_at       = _parse_dt(data.get("expires_at")),
-            curator_status   = data.get("curator_status", "pending"),
-            curated_at       = _parse_dt(data.get("curated_at")),
-            entry_id         = data.get("entry_id", ""),
-            metadata         = data.get("metadata", {}),
+            topic=data["topic"],
+            stix_objects=data.get("stix_objects", []),
+            researcher=data.get("researcher", ""),
+            promoted_at=_parse_dt(data["promoted_at"]) or datetime.now(timezone.utc),
+            note=data.get("note", ""),
+            source_workspace=data.get("source_workspace", ""),
+            category=data.get("category", ""),
+            expires_at=_parse_dt(data.get("expires_at")),
+            curator_status=data.get("curator_status", "pending"),
+            curated_at=_parse_dt(data.get("curated_at")),
+            entry_id=data.get("entry_id", ""),
+            metadata=data.get("metadata", {}),
         )
         return entry
 
     def summary(self) -> dict[str, Any]:
         """Lightweight summary dict for listing without full STIX payloads."""
         return {
-            "entry_id":          self.entry_id,
-            "topic":             self.topic,
-            "category":          self.category,
-            "researcher":        self.researcher,
-            "note":              self.note[:200] if self.note else "",
-            "promoted_at":       self.promoted_at.isoformat(),
-            "age_hours":         round(self.age_hours, 1),
-            "is_fresh":          self.is_fresh,
+            "entry_id": self.entry_id,
+            "topic": self.topic,
+            "category": self.category,
+            "researcher": self.researcher,
+            "note": self.note[:200] if self.note else "",
+            "promoted_at": self.promoted_at.isoformat(),
+            "age_hours": round(self.age_hours, 1),
+            "is_fresh": self.is_fresh,
             "hours_until_expiry": (
-                round(self.hours_until_expiry, 1)
-                if self.hours_until_expiry is not None else None
+                round(self.hours_until_expiry, 1) if self.hours_until_expiry is not None else None
             ),
-            "curator_status":    self.curator_status,
+            "curator_status": self.curator_status,
             "stix_object_count": len(self.stix_objects),
-            "source_workspace":  self.source_workspace,
+            "source_workspace": self.source_workspace,
         }
 
     def __repr__(self) -> str:  # pragma: no cover

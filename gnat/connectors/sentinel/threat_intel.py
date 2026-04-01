@@ -65,9 +65,7 @@ class SentinelThreatIntelCommands:
         if order_by:
             params["$orderby"] = order_by
         items = []
-        for item in self._client.paginate(
-            "threatIntelligence/main/indicators", params=params
-        ):
+        for item in self._client.paginate("threatIntelligence/main/indicators", params=params):
             items.append(item)
             if limit and len(items) >= limit:
                 break
@@ -79,9 +77,7 @@ class SentinelThreatIntelCommands:
 
     def get_indicator(self, indicator_name: str) -> dict:
         """Get a single indicator by its resource name."""
-        return self._client.get(
-            f"threatIntelligence/main/indicators/{indicator_name}"
-        )
+        return self._client.get(f"threatIntelligence/main/indicators/{indicator_name}")
 
     def create_indicator(self, indicator: dict) -> dict:
         """
@@ -124,9 +120,7 @@ class SentinelThreatIntelCommands:
 
     def delete_indicator(self, indicator_name: str) -> dict:
         """Delete a TI indicator."""
-        return self._client.delete(
-            f"threatIntelligence/main/indicators/{indicator_name}"
-        )
+        return self._client.delete(f"threatIntelligence/main/indicators/{indicator_name}")
 
     def bulk_create_indicators(self, indicators: list[dict]) -> list[dict]:
         """

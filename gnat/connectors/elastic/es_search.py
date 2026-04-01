@@ -36,7 +36,7 @@ kibana.alert.rule.*  -- Kibana detection rule alert fields
 
 - https://www.elastic.co/guide/en/elasticsearch/reference/current/rest-apis.html
 - https://www.elastic.co/guide/en/ecs/current/ecs-reference.html
-  """
+"""
 
 from .client import ElasticClient
 
@@ -296,12 +296,13 @@ class ElasticSearchCommands:
         """
         responses = []
         for i in range(0, len(documents), batch_size):
-            batch = documents[i:i + batch_size]
+            batch = documents[i : i + batch_size]
             # Build NDJSON body: action line + source line per doc
             lines: list[str] = []
             for doc in batch:
                 lines.append('{"index": {}}')
                 import json as _json
+
                 lines.append(_json.dumps(doc))
             ndjson = "\n".join(lines) + "\n"
 
@@ -309,15 +310,15 @@ class ElasticSearchCommands:
             url = self._client.config.es_url(f"{index}/_bulk")
             if refresh != "false":
                 url += f"?refresh={refresh}"
-            headers = self._client.auth.get_es_headers(
-                {"Content-Type": "application/x-ndjson"}
-            )
+            headers = self._client.auth.get_es_headers({"Content-Type": "application/x-ndjson"})
             response = self._client._http.request(
-                "POST", url,
+                "POST",
+                url,
                 body=ndjson.encode("utf-8"),
                 headers=headers,
             )
             import json as _json2
+
             responses.append(
                 _json2.loads(response.data.decode("utf-8"))
                 if response.status in (200, 201)

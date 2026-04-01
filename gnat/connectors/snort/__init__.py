@@ -55,14 +55,18 @@ from datetime import datetime, timezone
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
+
 class SnortError(Exception):
     pass
+
 
 class SnortConfigError(SnortError):
     pass
 
+
 class SnortLogError(SnortError):
     pass
+
 
 class SnortSTIXError(SnortError):
     pass
@@ -70,10 +74,11 @@ class SnortSTIXError(SnortError):
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class SnortConfig:
     alert_log_path: str = "/var/log/snort/alert_json.txt"
-    log_format: str = "json"      # 'json' or 'fast'
+    log_format: str = "json"  # 'json' or 'fast'
     timeout: int = 10
 
     def __post_init__(self):
@@ -83,9 +88,7 @@ class SnortConfig:
             raise SnortConfigError("'log_format' must be 'json' or 'fast'.")
 
 
-def load_snort_config(
-    config: configparser.ConfigParser, section: str = "snort"
-) -> SnortConfig:
+def load_snort_config(config: configparser.ConfigParser, section: str = "snort") -> SnortConfig:
     if not config.has_section(section):
         raise SnortConfigError(f"Section '[{section}]' not found.")
     raw = {
@@ -102,6 +105,7 @@ def load_snort_config(
 
 
 # ── Snort 3 JSON Alert Reader ─────────────────────────────────────────────────
+
 
 class SnortJSONReader:
     """
@@ -268,6 +272,7 @@ class SnortFastReader:
 
 # ── Alert Reader Factory ──────────────────────────────────────────────────────
 
+
 class SnortAlertReader:
     """
     Factory that returns the appropriate reader based on log_format config.
@@ -316,9 +321,12 @@ class SnortSTIXMapper:
 
         for ip in (alert.get("src_ip"), alert.get("dst_ip")):
             if ip:
-                obj = {"type": "ipv4-addr",
-                       "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                       "spec_version": "2.1", "value": ip}
+                obj = {
+                    "type": "ipv4-addr",
+                    "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
+                    "spec_version": "2.1",
+                    "value": ip,
+                }
                 if obj["id"] not in seen:
                     seen.add(obj["id"])
                     objects.append(obj)
@@ -332,7 +340,9 @@ class SnortSTIXMapper:
             if nid not in seen:
                 seen.add(nid)
                 nt: dict = {
-                    "type": "network-traffic", "id": nid, "spec_version": "2.1",
+                    "type": "network-traffic",
+                    "id": nid,
+                    "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alert['src_ip'])}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alert['dst_ip'])}",
                     "protocols": [str(alert.get("proto", "tcp")).lower()],
@@ -347,24 +357,35 @@ class SnortSTIXMapper:
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data", "id": obs_id, "spec_version": "2.1",
-            "created": now, "modified": now,
-            "first_observed": ts, "last_observed": ts, "number_observed": 1,
-            "object_refs": refs,
-            "x_snort_alert": {
-                "signature": alert.get("signature"),
-                "sid": alert.get("sid"),
-                "gid": alert.get("gid"),
-                "rev": alert.get("rev"),
-                "classification": alert.get("classification"),
-                "priority": alert.get("priority"),
-                "severity": alert.get("severity"),
-                "action": alert.get("action"),
-            },
-        })
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": 1,
+                "object_refs": refs,
+                "x_snort_alert": {
+                    "signature": alert.get("signature"),
+                    "sid": alert.get("sid"),
+                    "gid": alert.get("gid"),
+                    "rev": alert.get("rev"),
+                    "classification": alert.get("classification"),
+                    "priority": alert.get("priority"),
+                    "severity": alert.get("severity"),
+                    "action": alert.get("action"),
+                },
+            }
+        )
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     def alerts_to_stix_bundle(self, alerts: list[dict]) -> dict:
         all_objects: list[dict] = []
@@ -374,12 +395,17 @@ class SnortSTIXMapper:
                 if obj["id"] not in seen:
                     seen.add(obj["id"])
                     all_objects.append(obj)
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": all_objects}
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": all_objects,
+        }
 
 
 def _det_uuid(t: str, v: str) -> str:
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
+
 
 def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

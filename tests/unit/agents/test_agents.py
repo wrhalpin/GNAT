@@ -22,29 +22,33 @@ Covers:
 
 from __future__ import annotations
 
-from datetime import datetime
-from unittest.mock import patch
 import json
 import time
+from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
 from gnat.agents import (
-    AgentConfig, ClaudeClient,
-    ResearchAgent, ParsingAgent, CopilotReader,
+    AgentConfig,
+    ClaudeClient,
+    CopilotReader,
+    ParsingAgent,
+    ResearchAgent,
 )
-from gnat.agents.base import ResearchResult, ParsedIntel
+from gnat.agents.base import ParsedIntel, ResearchResult
 from gnat.ingest.base import SourceReader
-
 
 # ===========================================================================
 # Fixtures
 # ===========================================================================
 
+
 @pytest.fixture
 def cfg():
-    return AgentConfig(api_key="test-key", model="claude-sonnet-4-6",
-                       max_tokens=1000, ai_confidence_ceiling=60)
+    return AgentConfig(
+        api_key="test-key", model="claude-sonnet-4-6", max_tokens=1000, ai_confidence_ceiling=60
+    )
 
 
 @pytest.fixture
@@ -62,63 +66,103 @@ def _json_resp(data) -> dict:
 
 
 def _mock_parsed_intel(**kwargs) -> ParsedIntel:
-    defaults = dict(
-        summary="APT29 active in energy sector.",
-        indicators=[{"type": "domain", "value": "c2.evil.com", "context": "C2 server"}],
-        ttps=[{"technique_id": "T1566", "name": "Phishing",
-               "tactic": "Initial Access", "context": "spearphishing"}],
-        actors=[{"name": "APT29", "aliases": ["Cozy Bear"],
-                 "motivation": "espionage", "attribution": "Russia",
-                 "context": "attributed to GRU"}],
-        vulnerabilities=[{"cve_id": "CVE-2024-3400", "cvss_score": 10.0,
-                           "description": "PAN-OS RCE", "exploited": True}],
-        affected_products=["PAN-OS"],
-        confidence=55,
-        source_url="https://example.com",
-        source_topic="APT29",
-        model="claude-sonnet-4-6",
-    )
+    defaults = {
+        "summary": "APT29 active in energy sector.",
+        "indicators": [{"type": "domain", "value": "c2.evil.com", "context": "C2 server"}],
+        "ttps": [
+            {
+                "technique_id": "T1566",
+                "name": "Phishing",
+                "tactic": "Initial Access",
+                "context": "spearphishing",
+            }
+        ],
+        "actors": [
+            {
+                "name": "APT29",
+                "aliases": ["Cozy Bear"],
+                "motivation": "espionage",
+                "attribution": "Russia",
+                "context": "attributed to GRU",
+            }
+        ],
+        "vulnerabilities": [
+            {
+                "cve_id": "CVE-2024-3400",
+                "cvss_score": 10.0,
+                "description": "PAN-OS RCE",
+                "exploited": True,
+            }
+        ],
+        "affected_products": ["PAN-OS"],
+        "confidence": 55,
+        "source_url": "https://example.com",
+        "source_topic": "APT29",
+        "model": "claude-sonnet-4-6",
+    }
     defaults.update(kwargs)
     return ParsedIntel(**defaults)
 
 
 def _mock_research_resp(title="Research: APT29") -> dict:
-    return _json_resp({
-        "title": title,
-        "summary": "APT29 conducted spearphishing campaigns.",
-        "key_findings": ["Finding 1", "Finding 2"],
-        "source_urls": ["https://example.com/apt29"],
-        "iocs_mentioned": [{"type": "domain", "value": "c2.evil.com", "context": "C2"}],
-        "ttps_mentioned": [{"technique_id": "T1566", "name": "Phishing", "context": "IA"}],
-        "actors_mentioned": [{"name": "APT29", "context": "Russia"}],
-        "cves_mentioned": [],
-        "confidence": 75,
-        "search_queries_used": ["APT29 2024"],
-    })
+    return _json_resp(
+        {
+            "title": title,
+            "summary": "APT29 conducted spearphishing campaigns.",
+            "key_findings": ["Finding 1", "Finding 2"],
+            "source_urls": ["https://example.com/apt29"],
+            "iocs_mentioned": [{"type": "domain", "value": "c2.evil.com", "context": "C2"}],
+            "ttps_mentioned": [{"technique_id": "T1566", "name": "Phishing", "context": "IA"}],
+            "actors_mentioned": [{"name": "APT29", "context": "Russia"}],
+            "cves_mentioned": [],
+            "confidence": 75,
+            "search_queries_used": ["APT29 2024"],
+        }
+    )
 
 
 def _mock_parsing_resp(confidence=80) -> dict:
-    return _json_resp({
-        "summary": "APT29 targeted energy sector with phishing.",
-        "indicators": [{"type": "domain", "value": "c2.apt29.ru", "context": "C2"}],
-        "ttps": [{"technique_id": "T1566", "name": "Phishing",
-                  "tactic": "Initial Access", "context": "spearphishing"}],
-        "actors": [{"name": "APT29", "aliases": ["Cozy Bear"],
-                    "motivation": "espionage", "attribution": "Russia",
-                    "context": "GRU"}],
-        "vulnerabilities": [{"cve_id": "CVE-2024-3400", "cvss_score": 10.0,
-                              "description": "PAN-OS RCE", "exploited": True}],
-        "affected_products": ["PAN-OS"],
-        "confidence": confidence,
-    })
+    return _json_resp(
+        {
+            "summary": "APT29 targeted energy sector with phishing.",
+            "indicators": [{"type": "domain", "value": "c2.apt29.ru", "context": "C2"}],
+            "ttps": [
+                {
+                    "technique_id": "T1566",
+                    "name": "Phishing",
+                    "tactic": "Initial Access",
+                    "context": "spearphishing",
+                }
+            ],
+            "actors": [
+                {
+                    "name": "APT29",
+                    "aliases": ["Cozy Bear"],
+                    "motivation": "espionage",
+                    "attribution": "Russia",
+                    "context": "GRU",
+                }
+            ],
+            "vulnerabilities": [
+                {
+                    "cve_id": "CVE-2024-3400",
+                    "cvss_score": 10.0,
+                    "description": "PAN-OS RCE",
+                    "exploited": True,
+                }
+            ],
+            "affected_products": ["PAN-OS"],
+            "confidence": confidence,
+        }
+    )
 
 
 # ===========================================================================
 # AgentConfig
 # ===========================================================================
 
-class TestAgentConfig:
 
+class TestAgentConfig:
     def test_defaults(self):
         cfg = AgentConfig(api_key="sk-test")
         assert cfg.model == "claude-sonnet-4-6"
@@ -128,8 +172,11 @@ class TestAgentConfig:
 
     def test_custom_values(self):
         cfg = AgentConfig(
-            api_key="sk-x", model="claude-opus-4-6",
-            max_tokens=8192, ai_confidence_ceiling=80, timeout=60,
+            api_key="sk-x",
+            model="claude-opus-4-6",
+            max_tokens=8192,
+            ai_confidence_ceiling=80,
+            timeout=60,
         )
         assert cfg.model == "claude-opus-4-6"
         assert cfg.ai_confidence_ceiling == 80
@@ -169,17 +216,19 @@ class TestAgentConfig:
 # ClaudeClient
 # ===========================================================================
 
-class TestClaudeClient:
 
+class TestClaudeClient:
     def test_text_from_first_text_block(self, client):
         resp = {"content": [{"type": "text", "text": "hello"}]}
         assert client.text_from(resp) == "hello"
 
     def test_text_from_skips_non_text(self, client):
-        resp = {"content": [
-            {"type": "tool_use", "name": "web_search"},
-            {"type": "text", "text": "result"},
-        ]}
+        resp = {
+            "content": [
+                {"type": "tool_use", "name": "web_search"},
+                {"type": "text", "text": "result"},
+            ]
+        }
         assert client.text_from(resp) == "result"
 
     def test_text_from_empty_content(self, client):
@@ -190,14 +239,14 @@ class TestClaudeClient:
         assert client.json_from(_text_resp('{"key": 42}')) == {"key": 42}
 
     def test_json_from_array(self, client):
-        assert client.json_from(_text_resp('[1, 2, 3]')) == [1, 2, 3]
+        assert client.json_from(_text_resp("[1, 2, 3]")) == [1, 2, 3]
 
     def test_json_from_fenced_json(self, client):
-        fenced = "```json\n{\"k\": 1}\n```"
+        fenced = '```json\n{"k": 1}\n```'
         assert client.json_from(_text_resp(fenced)) == {"k": 1}
 
     def test_json_from_fenced_no_lang(self, client):
-        fenced = "```\n{\"k\": 2}\n```"
+        fenced = '```\n{"k": 2}\n```'
         assert client.json_from(_text_resp(fenced)) == {"k": 2}
 
     def test_json_from_bad_returns_none(self, client):
@@ -211,8 +260,8 @@ class TestClaudeClient:
 # ResearchResult
 # ===========================================================================
 
-class TestResearchResult:
 
+class TestResearchResult:
     def test_to_raw_record_required_keys(self):
         rr = ResearchResult(topic="APT29", text="Some text", url="https://x.com")
         rec = rr.to_raw_record()
@@ -221,8 +270,10 @@ class TestResearchResult:
 
     def test_to_raw_record_values(self):
         rr = ResearchResult(
-            topic="Volt Typhoon", text="Research body",
-            url="https://example.com", title="VT Report",
+            topic="Volt Typhoon",
+            text="Research body",
+            url="https://example.com",
+            title="VT Report",
             source_urls=["https://a.com", "https://b.com"],
         )
         rec = rr.to_raw_record()
@@ -241,8 +292,8 @@ class TestResearchResult:
 # ParsedIntel
 # ===========================================================================
 
-class TestParsedIntel:
 
+class TestParsedIntel:
     def test_has_structured_data_true(self):
         intel = _mock_parsed_intel()
         assert intel.has_structured_data is True
@@ -264,8 +315,8 @@ class TestParsedIntel:
 # ResearchAgent — validation
 # ===========================================================================
 
-class TestResearchAgentValidation:
 
+class TestResearchAgentValidation:
     def test_requires_topics_or_sources(self, cfg):
         with pytest.raises(ValueError, match="topics.*monitored_sources"):
             ResearchAgent(cfg)
@@ -283,10 +334,7 @@ class TestResearchAgentValidation:
         assert isinstance(agent, SourceReader)
 
     def test_valid_sources(self, cfg):
-        agent = ResearchAgent(
-            cfg,
-            monitored_sources=[{"url": "https://x.com", "label": "X"}]
-        )
+        agent = ResearchAgent(cfg, monitored_sources=[{"url": "https://x.com", "label": "X"}])
         assert isinstance(agent, SourceReader)
 
 
@@ -294,8 +342,8 @@ class TestResearchAgentValidation:
 # ResearchAgent — topic-driven
 # ===========================================================================
 
-class TestResearchAgentTopicDriven:
 
+class TestResearchAgentTopicDriven:
     def test_one_record_per_topic(self, cfg):
         with patch.object(ClaudeClient, "complete", return_value=_mock_research_resp()):
             agent = ResearchAgent(cfg, topics=["APT29", "Volt Typhoon"])
@@ -325,17 +373,14 @@ class TestResearchAgentTopicDriven:
             return _mock_research_resp()
 
         with patch.object(ClaudeClient, "complete", side_effect=counting):
-            agent = ResearchAgent(
-                cfg, topics=["A", "B", "C", "D", "E"], max_calls_per_run=2
-            )
+            agent = ResearchAgent(cfg, topics=["A", "B", "C", "D", "E"], max_calls_per_run=2)
             records = list(agent)
 
         assert call_count[0] == 2
         assert len(records) == 2
 
     def test_api_error_yields_no_record(self, cfg):
-        with patch.object(ClaudeClient, "complete",
-                          side_effect=RuntimeError("HTTP 429")):
+        with patch.object(ClaudeClient, "complete", side_effect=RuntimeError("HTTP 429")):
             records = list(ResearchAgent(cfg, topics=["APT29"]))
         assert records == []
 
@@ -354,8 +399,7 @@ class TestResearchAgentTopicDriven:
             return _mock_research_resp()
 
         with patch.object(ClaudeClient, "complete", side_effect=capture):
-            list(ResearchAgent(cfg, topics=["APT29"],
-                               newer_than="2024-01-01T00:00:00+00:00"))
+            list(ResearchAgent(cfg, topics=["APT29"], newer_than="2024-01-01T00:00:00+00:00"))
 
         assert "2024-01-01" in captured[0]
 
@@ -364,14 +408,16 @@ class TestResearchAgentTopicDriven:
 # ResearchAgent — feed-driven
 # ===========================================================================
 
-class TestResearchAgentFeedDriven:
 
+class TestResearchAgentFeedDriven:
     def _feed_resp(self, n=1):
         items = [
-            {"url": f"https://example.com/article{i}",
-             "title": f"Article {i}",
-             "text": f"Threat content {i}",
-             "published_at": "2024-03-15"}
+            {
+                "url": f"https://example.com/article{i}",
+                "title": f"Article {i}",
+                "text": f"Threat content {i}",
+                "published_at": "2024-03-15",
+            }
             for i in range(n)
         ]
         return _json_resp(items)
@@ -419,10 +465,11 @@ class TestResearchAgentFeedDriven:
             return _json_resp([])
 
         with patch.object(ClaudeClient, "complete", side_effect=capture):
-            list(ResearchAgent(
-                cfg, monitored_sources=sources,
-                newer_than="2024-06-01T00:00:00+00:00"
-            ))
+            list(
+                ResearchAgent(
+                    cfg, monitored_sources=sources, newer_than="2024-06-01T00:00:00+00:00"
+                )
+            )
 
         assert "2024-06-01" in captured[0]
 
@@ -431,8 +478,8 @@ class TestResearchAgentFeedDriven:
 # ResearchAgent — _flatten_result
 # ===========================================================================
 
-class TestResearchAgentFlattenResult:
 
+class TestResearchAgentFlattenResult:
     def test_summary_always_present(self, cfg):
         agent = ResearchAgent(cfg, topics=["x"])
         flat = agent._flatten_result({"summary": "This is the summary."})
@@ -440,14 +487,16 @@ class TestResearchAgentFlattenResult:
 
     def test_all_sections_present(self, cfg):
         agent = ResearchAgent(cfg, topics=["x"])
-        flat = agent._flatten_result({
-            "summary": "Summary.",
-            "key_findings": ["Finding A"],
-            "iocs_mentioned": [{"type": "domain", "value": "evil.com", "context": "C2"}],
-            "ttps_mentioned": [{"technique_id": "T1190", "name": "Exploit", "context": "IA"}],
-            "actors_mentioned": [{"name": "APT29", "context": "Russia"}],
-            "cves_mentioned": [{"cve_id": "CVE-2024-1", "description": "RCE"}],
-        })
+        flat = agent._flatten_result(
+            {
+                "summary": "Summary.",
+                "key_findings": ["Finding A"],
+                "iocs_mentioned": [{"type": "domain", "value": "evil.com", "context": "C2"}],
+                "ttps_mentioned": [{"technique_id": "T1190", "name": "Exploit", "context": "IA"}],
+                "actors_mentioned": [{"name": "APT29", "context": "Russia"}],
+                "cves_mentioned": [{"cve_id": "CVE-2024-1", "description": "RCE"}],
+            }
+        )
         for expected in ["Summary.", "Finding A", "evil.com", "T1190", "APT29", "CVE-2024-1"]:
             assert expected in flat, f"{expected!r} not found in flattened output"
 
@@ -461,8 +510,8 @@ class TestResearchAgentFlattenResult:
 # ParsingAgent — STIX object construction
 # ===========================================================================
 
-class TestParsingAgentSTIX:
 
+class TestParsingAgentSTIX:
     def test_yields_all_four_stix_types(self, cfg):
         pa = ParsingAgent(cfg)
         intel = _mock_parsed_intel()
@@ -525,11 +574,11 @@ class TestParsingAgentSTIX:
     def test_stix_pattern_per_ioc_type(self, cfg):
         pa = ParsingAgent(cfg)
         for ioc_type, value, pattern_fragment in [
-            ("ipv4",   "1.2.3.4",      "ipv4-addr"),
-            ("domain", "evil.com",     "domain-name"),
-            ("url",    "http://x.com", "url"),
-            ("sha256", "abc123",       "SHA-256"),
-            ("email",  "a@b.com",      "email-addr"),
+            ("ipv4", "1.2.3.4", "ipv4-addr"),
+            ("domain", "evil.com", "domain-name"),
+            ("url", "http://x.com", "url"),
+            ("sha256", "abc123", "SHA-256"),
+            ("email", "a@b.com", "email-addr"),
         ]:
             intel = ParsedIntel(
                 summary="x",
@@ -577,8 +626,15 @@ class TestParsingAgentSTIX:
         pa = ParsingAgent(cfg)
         intel = ParsedIntel(
             summary="x",
-            actors=[{"name": "APT29", "aliases": ["Cozy Bear", "The Dukes"],
-                     "motivation": "espionage", "attribution": "Russia", "context": "x"}],
+            actors=[
+                {
+                    "name": "APT29",
+                    "aliases": ["Cozy Bear", "The Dukes"],
+                    "motivation": "espionage",
+                    "attribution": "Russia",
+                    "context": "x",
+                }
+            ],
             confidence=50,
         )
         objs = list(pa._actors_from(intel))
@@ -589,8 +645,14 @@ class TestParsingAgentSTIX:
         pa = ParsingAgent(cfg)
         intel = ParsedIntel(
             summary="x",
-            vulnerabilities=[{"cve_id": "CVE-2024-3400", "cvss_score": 10.0,
-                               "description": "RCE", "exploited": True}],
+            vulnerabilities=[
+                {
+                    "cve_id": "CVE-2024-3400",
+                    "cvss_score": 10.0,
+                    "description": "RCE",
+                    "exploited": True,
+                }
+            ],
             confidence=50,
         )
         objs = list(pa._vulns_from(intel))
@@ -612,21 +674,20 @@ class TestParsingAgentSTIX:
 # ParsingAgent — map()
 # ===========================================================================
 
-class TestParsingAgentMap:
 
+class TestParsingAgentMap:
     def test_map_returns_stix_objects(self, cfg):
         with patch.object(ClaudeClient, "complete", return_value=_mock_parsing_resp()):
-            results = list(ParsingAgent(cfg).map(
-                {"text": "APT29 advisory text", "url": "https://x.com", "topic": "APT29"}
-            ))
+            results = list(
+                ParsingAgent(cfg).map(
+                    {"text": "APT29 advisory text", "url": "https://x.com", "topic": "APT29"}
+                )
+            )
         assert len(results) > 0
 
     def test_map_confidence_capped(self, cfg):
-        with patch.object(ClaudeClient, "complete",
-                          return_value=_mock_parsing_resp(confidence=95)):
-            results = list(ParsingAgent(cfg).map(
-                {"text": "some text", "url": "", "topic": "test"}
-            ))
+        with patch.object(ClaudeClient, "complete", return_value=_mock_parsing_resp(confidence=95)):
+            results = list(ParsingAgent(cfg).map({"text": "some text", "url": "", "topic": "test"}))
         for obj in results:
             assert obj._properties.get("confidence", 0) <= cfg.ai_confidence_ceiling
 
@@ -639,11 +700,8 @@ class TestParsingAgentMap:
         assert results == []
 
     def test_map_api_error_yields_nothing(self, cfg):
-        with patch.object(ClaudeClient, "complete",
-                          side_effect=RuntimeError("API down")):
-            results = list(ParsingAgent(cfg).map(
-                {"text": "some text", "url": "", "topic": "x"}
-            ))
+        with patch.object(ClaudeClient, "complete", side_effect=RuntimeError("API down")):
+            results = list(ParsingAgent(cfg).map({"text": "some text", "url": "", "topic": "x"}))
         assert results == []
 
     def test_map_prose_response_yields_summary(self, cfg):
@@ -656,11 +714,17 @@ class TestParsingAgentMap:
         assert results[0]._properties.get("x_is_summary") is True
 
     def test_map_no_summary_when_disabled(self, cfg):
-        empty_resp = _json_resp({
-            "summary": "Summary text.",
-            "indicators": [], "ttps": [], "actors": [], "vulnerabilities": [],
-            "affected_products": [], "confidence": 50,
-        })
+        empty_resp = _json_resp(
+            {
+                "summary": "Summary text.",
+                "indicators": [],
+                "ttps": [],
+                "actors": [],
+                "vulnerabilities": [],
+                "affected_products": [],
+                "confidence": 50,
+            }
+        )
         with patch.object(ClaudeClient, "complete", return_value=empty_resp):
             pa = ParsingAgent(cfg, always_yield_summary=False)
             results = list(pa.map({"text": "some text", "url": "", "topic": "x"}))
@@ -696,8 +760,8 @@ class TestParsingAgentMap:
 # CopilotReader — validation
 # ===========================================================================
 
-class TestCopilotReaderValidation:
 
+class TestCopilotReaderValidation:
     def test_requires_at_least_one_source(self):
         with pytest.raises(ValueError, match="at least one source"):
             CopilotReader(directline_secret="s", sources=[])
@@ -705,8 +769,7 @@ class TestCopilotReaderValidation:
     def test_valid_construction(self):
         cr = CopilotReader(
             directline_secret="secret",
-            sources=[{"type": "sharepoint", "name": "TR",
-                      "url": "https://sp.example.com"}],
+            sources=[{"type": "sharepoint", "name": "TR", "url": "https://sp.example.com"}],
         )
         assert isinstance(cr, SourceReader)
 
@@ -714,25 +777,23 @@ class TestCopilotReaderValidation:
         ini = tmp_path / "config.ini"
         ini.write_text("[DEFAULT]\ntimeout = 30\n")
         with pytest.raises(KeyError, match=r"\[copilot\]"):
-            CopilotReader.from_ini(sources=[{"type": "sharepoint", "name": "x",
-                                              "url": "https://x.com"}],
-                                   config_path=str(ini))
+            CopilotReader.from_ini(
+                sources=[{"type": "sharepoint", "name": "x", "url": "https://x.com"}],
+                config_path=str(ini),
+            )
 
     def test_from_ini_missing_secret(self, tmp_path):
         ini = tmp_path / "config.ini"
         ini.write_text("[copilot]\nbot_timeout = 30\n")
         with pytest.raises(KeyError, match="directline_secret"):
-            CopilotReader.from_ini(sources=[{"type": "sharepoint", "name": "x",
-                                              "url": "https://x.com"}],
-                                   config_path=str(ini))
+            CopilotReader.from_ini(
+                sources=[{"type": "sharepoint", "name": "x", "url": "https://x.com"}],
+                config_path=str(ini),
+            )
 
     def test_from_ini_success(self, tmp_path):
         ini = tmp_path / "config.ini"
-        ini.write_text(
-            "[copilot]\n"
-            "directline_secret = my-dl-secret\n"
-            "bot_timeout = 45\n"
-        )
+        ini.write_text("[copilot]\ndirectline_secret = my-dl-secret\nbot_timeout = 45\n")
         cr = CopilotReader.from_ini(
             sources=[{"type": "mailbox", "name": "Inbox", "query": "from:vendor@x.com"}],
             config_path=str(ini),
@@ -745,14 +806,20 @@ class TestCopilotReaderValidation:
 # CopilotReader — _build_query
 # ===========================================================================
 
-class TestCopilotReaderBuildQuery:
 
+class TestCopilotReaderBuildQuery:
     def _cr(self, source):
         return CopilotReader("secret", [source])
 
     def test_sharepoint_query(self):
-        cr = self._cr({"type": "sharepoint", "name": "ThreatReports",
-                        "url": "https://sp.x.com", "library": "Intel"})
+        cr = self._cr(
+            {
+                "type": "sharepoint",
+                "name": "ThreatReports",
+                "url": "https://sp.x.com",
+                "library": "Intel",
+            }
+        )
         q = cr._build_query(cr._sources[0])
         assert "ThreatReports" in q
         assert "Intel" in q
@@ -763,15 +830,20 @@ class TestCopilotReaderBuildQuery:
         assert "TR" in q
 
     def test_mailbox_query(self):
-        cr = self._cr({"type": "mailbox", "name": "Advisories",
-                        "query": "from:vendor@x.com"})
+        cr = self._cr({"type": "mailbox", "name": "Advisories", "query": "from:vendor@x.com"})
         q = cr._build_query(cr._sources[0])
         assert "Advisories" in q
         assert "from:vendor@x.com" in q
 
     def test_teams_channel_query(self):
-        cr = self._cr({"type": "teams_channel", "name": "SOC Intel",
-                        "team": "Security", "channel": "Threat Intel"})
+        cr = self._cr(
+            {
+                "type": "teams_channel",
+                "name": "SOC Intel",
+                "team": "Security",
+                "channel": "Threat Intel",
+            }
+        )
         q = cr._build_query(cr._sources[0])
         assert "SOC Intel" in q
         assert "Threat Intel" in q
@@ -802,24 +874,25 @@ class TestCopilotReaderBuildQuery:
 
     def test_all_source_names_in_queries(self):
         sources = [
-            {"type": "sharepoint",    "name": "SP-Source",  "url": "https://x.com"},
-            {"type": "mailbox",       "name": "MB-Source",  "query": "x"},
-            {"type": "teams_channel", "name": "TC-Source",  "team": "T", "channel": "C"},
-            {"type": "onedrive",      "name": "OD-Source",  "path": "/p"},
+            {"type": "sharepoint", "name": "SP-Source", "url": "https://x.com"},
+            {"type": "mailbox", "name": "MB-Source", "query": "x"},
+            {"type": "teams_channel", "name": "TC-Source", "team": "T", "channel": "C"},
+            {"type": "onedrive", "name": "OD-Source", "path": "/p"},
         ]
         cr = CopilotReader("secret", sources)
         for source in sources:
             q = cr._build_query(source)
-            assert source["name"] in q, \
+            assert source["name"] in q, (
                 f"source name {source['name']!r} missing from query for type {source['type']!r}"
+            )
 
 
 # ===========================================================================
 # CopilotReader — _parse_reply
 # ===========================================================================
 
-class TestCopilotReaderParseReply:
 
+class TestCopilotReaderParseReply:
     def test_valid_json_array(self):
         items = CopilotReader._parse_reply(
             '[{"title": "T", "url": "http://x.com", "text": "body"}]',
@@ -864,6 +937,7 @@ class TestCopilotReaderParseReply:
 # ===========================================================================
 # CopilotReader — token exchange and refresh
 # ===========================================================================
+
 
 class TestCopilotTokenRefresh:
     """Tests for DirectLine token exchange and auto-refresh logic."""
@@ -920,8 +994,10 @@ class TestCopilotTokenRefresh:
         cr = self._cr(use_token_exchange=True)
         cr._token = "tok-1"
         cr._token_expires_at = time.time() + 1000  # plenty of time left
-        with patch.object(cr, "_exchange_for_token") as mock_ex, \
-             patch.object(cr, "_refresh_token") as mock_ref:
+        with (
+            patch.object(cr, "_exchange_for_token") as mock_ex,
+            patch.object(cr, "_refresh_token") as mock_ref,
+        ):
             cr._ensure_token()
             mock_ex.assert_not_called()
             mock_ref.assert_not_called()
@@ -986,42 +1062,30 @@ class TestCopilotTokenRefresh:
 
     def test_from_ini_reads_use_token_exchange_true(self, tmp_path):
         ini = tmp_path / "config.ini"
-        ini.write_text(
-            "[copilot]\n"
-            "directline_secret = sec\n"
-            "use_token_exchange = true\n"
-        )
-        cr = CopilotReader.from_ini(
-            sources=self._SOURCE, config_path=str(ini)
-        )
+        ini.write_text("[copilot]\ndirectline_secret = sec\nuse_token_exchange = true\n")
+        cr = CopilotReader.from_ini(sources=self._SOURCE, config_path=str(ini))
         assert cr._use_token_exchange is True
 
     def test_from_ini_reads_use_token_exchange_false(self, tmp_path):
         ini = tmp_path / "config.ini"
-        ini.write_text(
-            "[copilot]\n"
-            "directline_secret = sec\n"
-            "use_token_exchange = false\n"
-        )
-        cr = CopilotReader.from_ini(
-            sources=self._SOURCE, config_path=str(ini)
-        )
+        ini.write_text("[copilot]\ndirectline_secret = sec\nuse_token_exchange = false\n")
+        cr = CopilotReader.from_ini(sources=self._SOURCE, config_path=str(ini))
         assert cr._use_token_exchange is False
 
     def test_from_ini_default_no_token_exchange(self, tmp_path):
         ini = tmp_path / "config.ini"
         ini.write_text("[copilot]\ndirectline_secret = sec\n")
-        cr = CopilotReader.from_ini(
-            sources=self._SOURCE, config_path=str(ini)
-        )
+        cr = CopilotReader.from_ini(sources=self._SOURCE, config_path=str(ini))
         assert cr._use_token_exchange is False
 
     def test_query_source_calls_ensure_token(self):
         """_query_source should always call _ensure_token before opening a conversation."""
         cr = self._cr(use_token_exchange=True)
         call_order = []
-        with patch.object(cr, "_ensure_token", side_effect=lambda: call_order.append("ensure")), \
-             patch.object(cr, "_open_conversation", return_value=None):
+        with (
+            patch.object(cr, "_ensure_token", side_effect=lambda: call_order.append("ensure")),
+            patch.object(cr, "_open_conversation", return_value=None),
+        ):
             cr._query_source(self._SOURCE[0])
         assert call_order[0] == "ensure"
 
@@ -1030,12 +1094,12 @@ class TestCopilotTokenRefresh:
 # Integration: ResearchAgent → ParsingAgent chain
 # ===========================================================================
 
-class TestAgentChain:
 
+class TestAgentChain:
     def test_research_to_parsing_pipeline(self, cfg):
         """Research records feed directly into ParsingAgent.map()."""
         research_resp = _mock_research_resp()
-        parsing_resp  = _mock_parsing_resp()
+        parsing_resp = _mock_parsing_resp()
 
         with patch.object(ClaudeClient, "complete") as mock_complete:
             mock_complete.side_effect = [research_resp, parsing_resp]
@@ -1045,15 +1109,11 @@ class TestAgentChain:
             pa = ParsingAgent(cfg)
             ra = ResearchAgent(cfg, topics=["APT29"])
 
-            pipeline = (
-                IngestPipeline("research-chain")
-                .read_from(ra)
-                .map_with(pa)
-            )
+            pipeline = IngestPipeline("research-chain").read_from(ra).map_with(pa)
             result = pipeline.run()
 
-        assert result.total_records == 1   # one research record
-        assert result.mapped_objects > 0   # multiple STIX objects extracted
+        assert result.total_records == 1  # one research record
+        assert result.mapped_objects > 0  # multiple STIX objects extracted
         assert not result.errors
 
     def test_research_records_have_text_key(self, cfg):
@@ -1067,12 +1127,13 @@ class TestAgentChain:
     def test_confidence_ceiling_enforced_end_to_end(self, cfg):
         """No AI-extracted object should exceed the confidence ceiling."""
         research_resp = _mock_research_resp()
-        parsing_resp  = _mock_parsing_resp(confidence=99)
+        parsing_resp = _mock_parsing_resp(confidence=99)
 
         with patch.object(ClaudeClient, "complete") as mock_complete:
             mock_complete.side_effect = [research_resp, parsing_resp]
 
             from gnat.ingest import IngestPipeline
+
             pipeline = (
                 IngestPipeline("ceiling-test")
                 .read_from(ResearchAgent(cfg, topics=["APT29"]))
@@ -1084,9 +1145,9 @@ class TestAgentChain:
         # but we can test through _to_stix_objects directly with the mock data
         pa = ParsingAgent(cfg)
         intel = ParsedIntel(
-            summary="x", confidence=99,
+            summary="x",
+            confidence=99,
             indicators=[{"type": "domain", "value": "x.com", "context": "x"}],
         )
         objs = list(pa._to_stix_objects(intel))
-        assert all(o._properties.get("confidence", 0) <= cfg.ai_confidence_ceiling
-                   for o in objs)
+        assert all(o._properties.get("confidence", 0) <= cfg.ai_confidence_ceiling for o in objs)

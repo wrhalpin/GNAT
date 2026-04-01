@@ -49,6 +49,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("d4e5f678-90ab-cdef-1234-56789abcdef0")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -68,10 +69,12 @@ class OrcaClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "findings",
-        "report":        "assets",
+        "report": "assets",
     }
 
-    def __init__(self, host: str = "https://api.orcasecurity.io", api_token: str = "", **kwargs: Any):
+    def __init__(
+        self, host: str = "https://api.orcasecurity.io", api_token: str = "", **kwargs: Any
+    ):
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 

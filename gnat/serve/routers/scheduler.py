@@ -33,12 +33,12 @@ def _job_to_dict(job: Any) -> dict[str, Any]:
     else:
         d = getattr(job, "__dict__", {})
     return {
-        "job_id":    str(d.get("job_id", "")),
-        "enabled":   bool(d.get("enabled", False)),
-        "last_run":  (str(d.get("last_run") or ""))[:19],
-        "next_run":  (str(d.get("next_run") or ""))[:19],
+        "job_id": str(d.get("job_id", "")),
+        "enabled": bool(d.get("enabled", False)),
+        "last_run": (str(d.get("last_run") or ""))[:19],
+        "next_run": (str(d.get("next_run") or ""))[:19],
         "run_count": int(d.get("run_count", 0)),
-        "status":    str(d.get("status", "")),
+        "status": str(d.get("status", "")),
     }
 
 

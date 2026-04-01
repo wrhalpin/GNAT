@@ -28,7 +28,7 @@ informational -> 0
 
 - https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTalerts
 - https://docs.splunk.com/Documentation/ES/latest/API/NotableEvents
-  """
+"""
 
 import urllib.parse
 
@@ -38,23 +38,24 @@ from .exceptions import SplunkThreatIntelError
 # ── Severity mapping ──────────────────────────────────────────────────────────
 
 _ES_URGENCY_TO_SEVERITY: dict[str, int] = {
-"critical": 4,
-"high": 3,
-"medium": 2,
-"low": 1,
-"informational": 0,
-"unknown": 0,
+    "critical": 4,
+    "high": 3,
+    "medium": 2,
+    "low": 1,
+    "informational": 0,
+    "unknown": 0,
 }
 
 # ES notable status IDs (Splunk internal)
 
 _NOTABLE_STATUS = {
-"new": "0",
-"in_progress": "1",
-"pending": "2",
-"resolved": "3",
-"closed": "4",
+    "new": "0",
+    "in_progress": "1",
+    "pending": "2",
+    "resolved": "3",
+    "closed": "4",
 }
+
 
 class SplunkAlertCommands:
     """
@@ -95,15 +96,17 @@ class SplunkAlertCommands:
             page_size=min(count, 100),
         ):
             content = entry.get("content", {})
-            results.append({
-                "name": entry.get("name"),
-                "saved_search_name": content.get("savedsearch_name"),
-                "trigger_time": content.get("trigger_time"),
-                "trigger_time_rendered": content.get("trigger_time_rendered"),
-                "severity": content.get("severity"),
-                "result_count": content.get("result_count"),
-                "sid": content.get("sid"),
-            })
+            results.append(
+                {
+                    "name": entry.get("name"),
+                    "saved_search_name": content.get("savedsearch_name"),
+                    "trigger_time": content.get("trigger_time"),
+                    "trigger_time_rendered": content.get("trigger_time_rendered"),
+                    "severity": content.get("severity"),
+                    "result_count": content.get("result_count"),
+                    "sid": content.get("sid"),
+                }
+            )
             if len(results) >= count:
                 break
         return results
@@ -137,16 +140,18 @@ class SplunkAlertCommands:
         records = []
         for entry in response.get("entry", []):
             content = entry.get("content", {})
-            records.append({
-                "sid": entry.get("name"),
-                "dispatch_state": content.get("dispatchState"),
-                "event_count": content.get("eventCount"),
-                "result_count": content.get("resultCount"),
-                "run_duration": content.get("runDuration"),
-                "ttl": content.get("ttl"),
-                "is_done": content.get("isDone"),
-                "is_failed": content.get("isFailed"),
-            })
+            records.append(
+                {
+                    "sid": entry.get("name"),
+                    "dispatch_state": content.get("dispatchState"),
+                    "event_count": content.get("eventCount"),
+                    "result_count": content.get("resultCount"),
+                    "run_duration": content.get("runDuration"),
+                    "ttl": content.get("ttl"),
+                    "is_done": content.get("isDone"),
+                    "is_failed": content.get("isFailed"),
+                }
+            )
         return records
 
     def get_alert_metadata(self, saved_search_name: str) -> dict:
@@ -174,6 +179,7 @@ class SplunkAlertCommands:
         entries = response.get("entry", [])
         if not entries:
             from .exceptions import SplunkNotFoundError
+
             raise SplunkNotFoundError(
                 f"Alert '{saved_search_name}' not found.",
                 status_code=404,
@@ -236,22 +242,21 @@ class SplunkAlertCommands:
         """
         self._require_es()
 
-        filters = ['index=notable']
+        filters = ["index=notable"]
         if status and status in _NOTABLE_STATUS:
-            filters.append(f'status={_NOTABLE_STATUS[status]}')
+            filters.append(f"status={_NOTABLE_STATUS[status]}")
         if urgency:
-            filters.append(f'urgency={urgency}')
+            filters.append(f"urgency={urgency}")
         if owner:
             filters.append(f'owner="{owner}"')
 
         spl = (
-            "search "
-            + " ".join(filters)
-            + " | table event_id rule_name urgency status owner "
-              "_time src dest user rule_description"
+            "search " + " ".join(filters) + " | table event_id rule_name urgency status owner "
+            "_time src dest user rule_description"
         )
 
         from .search import SplunkSearchCommands
+
         searcher = SplunkSearchCommands(self._client)
         rows = searcher.run_search(
             spl,
@@ -293,10 +298,7 @@ class SplunkAlertCommands:
         self._require_es()
 
         if status not in _NOTABLE_STATUS:
-            raise ValueError(
-                f"Invalid status '{status}'. "
-                f"Valid values: {list(_NOTABLE_STATUS)}"
-            )
+            raise ValueError(f"Invalid status '{status}'. Valid values: {list(_NOTABLE_STATUS)}")
 
         data: dict = {
             "ruleUIDs[]": event_ids,

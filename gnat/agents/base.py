@@ -46,13 +46,14 @@ import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class AgentConfig:
@@ -75,10 +76,10 @@ class AgentConfig:
         at high confidence without analyst review.
     """
 
-    api_key:               str
-    model:                 str = "claude-sonnet-4-6"
-    max_tokens:            int = 4096
-    timeout:               int = 120
+    api_key: str
+    model: str = "claude-sonnet-4-6"
+    max_tokens: int = 4096
+    timeout: int = 120
     ai_confidence_ceiling: int = 60
 
     @classmethod
@@ -99,6 +100,7 @@ class AgentConfig:
             If no config file is found.
         """
         from gnat.config import GNATConfig
+
         cfg = GNATConfig(config_path)
         try:
             section = cfg.get("claude")
@@ -110,15 +112,13 @@ class AgentConfig:
                 "  model   = claude-sonnet-4-6\n"
             )
         if "api_key" not in section:
-            raise KeyError(
-                "[claude] section found but 'api_key' is missing from config.ini"
-            )
+            raise KeyError("[claude] section found but 'api_key' is missing from config.ini")
         return cls(
-            api_key               = section["api_key"],
-            model                 = section.get("model", "claude-sonnet-4-6"),
-            max_tokens            = int(section.get("max_tokens", 4096)),
-            timeout               = int(section.get("timeout", 120)),
-            ai_confidence_ceiling = int(section.get("ai_confidence_ceiling", 60)),
+            api_key=section["api_key"],
+            model=section.get("model", "claude-sonnet-4-6"),
+            max_tokens=int(section.get("max_tokens", 4096)),
+            timeout=int(section.get("timeout", 120)),
+            ai_confidence_ceiling=int(section.get("ai_confidence_ceiling", 60)),
         )
 
     @classmethod
@@ -146,21 +146,20 @@ class AgentConfig:
                 "  model   = claude-sonnet-4-6\n"
             ) from exc
         if "api_key" not in section:
-            raise KeyError(
-                "[claude] section found but 'api_key' is missing from config"
-            )
+            raise KeyError("[claude] section found but 'api_key' is missing from config")
         return cls(
-            api_key               = section["api_key"],
-            model                 = section.get("model", "claude-sonnet-4-6"),
-            max_tokens            = int(section.get("max_tokens", 4096)),
-            timeout               = int(section.get("timeout", 120)),
-            ai_confidence_ceiling = int(section.get("ai_confidence_ceiling", 60)),
+            api_key=section["api_key"],
+            model=section.get("model", "claude-sonnet-4-6"),
+            max_tokens=int(section.get("max_tokens", 4096)),
+            timeout=int(section.get("timeout", 120)),
+            ai_confidence_ceiling=int(section.get("ai_confidence_ceiling", 60)),
         )
 
 
 # ---------------------------------------------------------------------------
 # Result types
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ResearchResult:
@@ -189,24 +188,24 @@ class ResearchResult:
         Additional context: ``search_queries_used``, ``model``, etc.
     """
 
-    topic:        str
-    text:         str
-    url:          str          = ""
-    title:        str          = ""
-    retrieved_at: datetime     = field(default_factory=lambda: datetime.now(timezone.utc))
-    source_urls:  list[str]    = field(default_factory=list)
-    metadata:     dict[str, Any] = field(default_factory=dict)
+    topic: str
+    text: str
+    url: str = ""
+    title: str = ""
+    retrieved_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    source_urls: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_raw_record(self) -> dict[str, Any]:
         """Convert to a ``RawRecord`` dict for the ingest pipeline."""
         return {
-            "text":         self.text,
-            "url":          self.url,
-            "title":        self.title,
-            "topic":        self.topic,
+            "text": self.text,
+            "url": self.url,
+            "title": self.title,
+            "topic": self.topic,
             "retrieved_at": self.retrieved_at.isoformat(),
-            "source_urls":  self.source_urls,
-            "metadata":     self.metadata,
+            "source_urls": self.source_urls,
+            "metadata": self.metadata,
         }
 
 
@@ -240,33 +239,37 @@ class ParsedIntel:
         Claude model that performed the extraction.
     """
 
-    summary:           str
-    indicators:        list[dict[str, Any]] = field(default_factory=list)
-    ttps:              list[dict[str, Any]] = field(default_factory=list)
-    actors:            list[dict[str, Any]] = field(default_factory=list)
-    vulnerabilities:   list[dict[str, Any]] = field(default_factory=list)
-    affected_products: list[str]            = field(default_factory=list)
-    confidence:        int                  = 50
-    source_url:        str                  = ""
-    source_topic:      str                  = ""
-    model:             str                  = ""
+    summary: str
+    indicators: list[dict[str, Any]] = field(default_factory=list)
+    ttps: list[dict[str, Any]] = field(default_factory=list)
+    actors: list[dict[str, Any]] = field(default_factory=list)
+    vulnerabilities: list[dict[str, Any]] = field(default_factory=list)
+    affected_products: list[str] = field(default_factory=list)
+    confidence: int = 50
+    source_url: str = ""
+    source_topic: str = ""
+    model: str = ""
 
     @property
     def has_structured_data(self) -> bool:
         """True if at least one structured extraction category is non-empty."""
-        return any([
-            self.indicators, self.ttps,
-            self.actors, self.vulnerabilities,
-        ])
+        return any(
+            [
+                self.indicators,
+                self.ttps,
+                self.actors,
+                self.vulnerabilities,
+            ]
+        )
 
     def total_objects(self) -> int:
-        return (len(self.indicators) + len(self.ttps) +
-                len(self.actors) + len(self.vulnerabilities))
+        return len(self.indicators) + len(self.ttps) + len(self.actors) + len(self.vulnerabilities)
 
 
 # ---------------------------------------------------------------------------
 # Claude API client
 # ---------------------------------------------------------------------------
+
 
 class ClaudeClient:
     """
@@ -334,9 +337,9 @@ class ClaudeClient:
             On HTTP errors or JSON decode failures.
         """
         body: dict[str, Any] = {
-            "model":      self._cfg.model,
+            "model": self._cfg.model,
             "max_tokens": self._cfg.max_tokens,
-            "messages":   [{"role": "user", "content": user}],
+            "messages": [{"role": "user", "content": user}],
         }
         if system:
             body["system"] = system
@@ -345,8 +348,8 @@ class ClaudeClient:
 
         payload = json.dumps(body).encode("utf-8")
         headers = {
-            "Content-Type":      "application/json",
-            "x-api-key":         self._cfg.api_key,
+            "Content-Type": "application/json",
+            "x-api-key": self._cfg.api_key,
             "anthropic-version": self._API_VERSION,
         }
 
@@ -362,9 +365,7 @@ class ClaudeClient:
                 raw = resp.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             body_text = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(
-                f"Claude API HTTP {exc.code}: {body_text[:400]}"
-            ) from exc
+            raise RuntimeError(f"Claude API HTTP {exc.code}: {body_text[:400]}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"Claude API connection error: {exc.reason}") from exc
 
@@ -434,18 +435,18 @@ class LLMProvider(ABC):
     @abstractmethod
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return standard OpenAI-style chat completion response."""
 
     @abstractmethod
     def structured(
         self,
         prompt: str,
-        output_schema: Dict[str, Any],
+        output_schema: dict[str, Any],
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return structured JSON output matching the supplied schema."""

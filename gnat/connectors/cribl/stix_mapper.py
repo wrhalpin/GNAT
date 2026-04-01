@@ -288,6 +288,7 @@ class CriblSTIXMapper:
 # Module-level helpers
 # ------------------------------------------------------------------
 
+
 def _extract_fields_from_pattern(pattern: str) -> list[str]:
     """
     Extract observable field names from a STIX pattern string.

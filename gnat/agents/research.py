@@ -4,7 +4,7 @@ gnat.agents.research
 
 :class:`ResearchAgent` — a :class:`~gnat.ingest.base.SourceReader` that
 uses the Claude API (with web search enabled) to gather threat intelligence
-on specific topics or from monitored sources. 
+on specific topics or from monitored sources.
 
 **Now uses the unified LLMClient for multi-LLM support (Claude, OpenAI, Grok, etc.).**
 
@@ -71,7 +71,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.agents.llm import LLMClient
 from gnat.clients.base import GNATClientError
@@ -94,8 +94,8 @@ class ResearchAgent:
 
     def __init__(
         self,
-        config: Dict[str, Any],
-        llm_backend: Optional[str] = None,
+        config: dict[str, Any],
+        llm_backend: str | None = None,
     ) -> None:
         """
         Parameters
@@ -127,7 +127,7 @@ class ResearchAgent:
 
     # ── Core research methods ─────────────────────────────────────────────
 
-    def research_topic(self, topic: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def research_topic(self, topic: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Perform deep research on a threat topic using the configured LLM.
 
@@ -183,7 +183,7 @@ class ResearchAgent:
         except Exception as e:
             raise GNATClientError(f"Research on topic '{topic}' failed: {e}") from e
 
-    def analyze_feed_item(self, feed_item: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_feed_item(self, feed_item: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze a single feed item (e.g., from ingested threat intel) for relevance and enrichment.
         """
@@ -206,9 +206,9 @@ class ResearchAgent:
                 "extracted_iocs": {"type": "array", "items": {"type": "string"}},
                 "ttps": {"type": "array", "items": {"type": "string"}},
                 "summary": {"type": "string"},
-                "recommended_action": {"type": "string"}
+                "recommended_action": {"type": "string"},
             },
-            "required": ["relevance_score", "summary"]
+            "required": ["relevance_score", "summary"],
         }
 
         try:
@@ -221,10 +221,10 @@ class ResearchAgent:
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    def _parse_research_output(self, text: str) -> Dict[str, Any]:
+    def _parse_research_output(self, text: str) -> dict[str, Any]:
         """Attempt to extract structured fields from free-form LLM output."""
         # Simple heuristic parsing -- improve with better prompting or structured calls
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "summary": text[:800],
             "indicators": [],
             "ttps": [],
@@ -242,7 +242,7 @@ class ResearchAgent:
 
     # ── Feed-driven monitoring (existing pattern preserved) ───────────────
 
-    def monitor_feeds(self, feeds: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def monitor_feeds(self, feeds: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Analyze multiple feed items and return enriched results."""
         results = []
         for item in feeds:

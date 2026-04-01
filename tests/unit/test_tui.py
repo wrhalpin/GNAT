@@ -12,32 +12,35 @@ Tests cover:
 """
 
 import sys
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Import guards
 # ---------------------------------------------------------------------------
 
+
 def test_tui_package_imports():
     from gnat.tui import GNATApp
+
     assert GNATApp is not None
 
 
 def test_tui_screens_import():
-    from gnat.tui.screens.query import QueryScreen
     from gnat.tui.screens.library import LibraryScreen
-    from gnat.tui.screens.scheduler import SchedulerScreen
+    from gnat.tui.screens.query import QueryScreen
     from gnat.tui.screens.reports import ReportsScreen
+    from gnat.tui.screens.scheduler import SchedulerScreen
+
     assert all([QueryScreen, LibraryScreen, SchedulerScreen, ReportsScreen])
 
 
 def test_tui_widgets_import():
-    from gnat.tui.widgets.stix_table import STIXTable
     from gnat.tui.widgets.job_table import JobTable
+    from gnat.tui.widgets.stix_table import STIXTable
+
     assert STIXTable, JobTable
 
 
@@ -45,12 +48,14 @@ def test_tui_widgets_import():
 # STIXTable helper logic
 # ---------------------------------------------------------------------------
 
+
 class TestSTIXTableHelpers:
     """Test STIXTable data-shaping logic without instantiating a Textual widget."""
 
-    def _extract_row(self, obj: Dict[str, Any]) -> List[str]:
+    def _extract_row(self, obj: dict[str, Any]) -> list[str]:
         """Replicate STIXTable.load_stix() row-building logic for one object."""
         from gnat.tui.widgets.stix_table import STIXTable
+
         DEFAULT = STIXTable.DEFAULT_COLUMNS
         row = []
         show = {c[0] for c in DEFAULT}
@@ -61,8 +66,10 @@ class TestSTIXTableHelpers:
                 row.append(obj.get("type", ""))
             elif key == "name":
                 row.append(
-                    obj.get("name") or obj.get("value") or
-                    obj.get("indicator_value") or obj.get("id", "")[:40]
+                    obj.get("name")
+                    or obj.get("value")
+                    or obj.get("indicator_value")
+                    or obj.get("id", "")[:40]
                 )
             elif key == "created":
                 row.append(str(obj.get("created", obj.get("first_observed", "")))[:19])
@@ -75,7 +82,8 @@ class TestSTIXTableHelpers:
 
     def test_indicator_row(self):
         obj = {
-            "type": "indicator", "name": "1.2.3.4",
+            "type": "indicator",
+            "name": "1.2.3.4",
             "created": "2026-01-01T00:00:00",
             "confidence": 80,
             "x_source_platform": "virustotal",
@@ -113,8 +121,7 @@ class TestSTIXTableHelpers:
         assert row[4] == "mandiant"
 
     def test_created_truncated_to_19_chars(self):
-        obj = {"type": "indicator", "name": "x.com",
-               "created": "2026-01-15T12:34:56.789Z"}
+        obj = {"type": "indicator", "name": "x.com", "created": "2026-01-15T12:34:56.789Z"}
         row = self._extract_row(obj)
         assert len(row[2]) == 19
 
@@ -123,25 +130,31 @@ class TestSTIXTableHelpers:
 # JobTable helper logic
 # ---------------------------------------------------------------------------
 
+
 class TestJobTableHelpers:
     """Test JobTable row-building logic."""
 
-    def _build_row(self, job: Dict[str, Any]) -> List[str]:
+    def _build_row(self, job: dict[str, Any]) -> list[str]:
         last = (job.get("last_run") or "")[:19]
-        nxt  = (job.get("next_run") or "")[:19]
+        nxt = (job.get("next_run") or "")[:19]
         return [
             job.get("job_id", ""),
             "✓" if job.get("enabled") else "✗",
             last or "—",
-            nxt  or "—",
+            nxt or "—",
             str(job.get("run_count", 0)),
             job.get("status", ""),
         ]
 
     def test_enabled_job(self):
-        job = {"job_id": "blocklist", "enabled": True,
-               "last_run": "2026-01-01T06:00:00", "next_run": "2026-01-02T06:00:00",
-               "run_count": 42, "status": "ok"}
+        job = {
+            "job_id": "blocklist",
+            "enabled": True,
+            "last_run": "2026-01-01T06:00:00",
+            "next_run": "2026-01-02T06:00:00",
+            "run_count": 42,
+            "status": "ok",
+        }
         row = self._build_row(job)
         assert row[0] == "blocklist"
         assert row[1] == "✓"
@@ -165,8 +178,8 @@ class TestJobTableHelpers:
 # Reports screen helpers
 # ---------------------------------------------------------------------------
 
-class TestReportsScreenHelpers:
 
+class TestReportsScreenHelpers:
     def test_scan_reports_dir_finds_pdf_html(self, tmp_path):
         from gnat.tui.screens.reports import ReportsScreen
 
@@ -176,8 +189,8 @@ class TestReportsScreenHelpers:
         (tmp_path / "ignored.txt").write_bytes(b"notes")
 
         entries = ReportsScreen._scan_reports_dir(str(tmp_path))
-        names   = [e["name"] for e in entries]
-        fmts    = {e["fmt"] for e in entries}
+        names = [e["name"] for e in entries]
+        fmts = {e["fmt"] for e in entries}
 
         assert any("executive" in n for n in names)
         assert "pdf" in fmts
@@ -207,6 +220,7 @@ class TestReportsScreenHelpers:
 
     def test_resolve_reports_dir_explicit(self):
         from gnat.tui.screens.reports import ReportsScreen
+
         screen = ReportsScreen(reports_dir="/tmp/reports")
         assert screen._resolve_reports_dir() == "/tmp/reports"
 
@@ -214,14 +228,13 @@ class TestReportsScreenHelpers:
         from gnat.tui.screens.reports import ReportsScreen
 
         ini = tmp_path / "test.ini"
-        ini.write_text(
-            "[report:weekly]\noutput_dir = /var/reports/weekly\n"
-        )
+        ini.write_text("[report:weekly]\noutput_dir = /var/reports/weekly\n")
         screen = ReportsScreen(config_path=str(ini))
         assert screen._resolve_reports_dir() == "/var/reports/weekly"
 
     def test_resolve_reports_dir_none_when_unconfigured(self):
         from gnat.tui.screens.reports import ReportsScreen
+
         screen = ReportsScreen()
         assert screen._resolve_reports_dir() is None
 
@@ -230,16 +243,18 @@ class TestReportsScreenHelpers:
 # Query screen helpers
 # ---------------------------------------------------------------------------
 
-class TestQueryScreenHelpers:
 
+class TestQueryScreenHelpers:
     def test_build_engine_returns_engine(self):
         from gnat.tui.screens.query import QueryScreen
+
         screen = QueryScreen(backend="builtin")
         engine = screen._build_engine()
         assert engine is not None
 
     def test_build_engine_returns_none_on_import_error(self, monkeypatch):
         from gnat.tui.screens.query import QueryScreen
+
         monkeypatch.setitem(sys.modules, "gnat.nlp.parser", None)
         screen = QueryScreen(backend="builtin")
         # Should not raise; returns None
@@ -253,15 +268,17 @@ class TestQueryScreenHelpers:
 # Scheduler screen helpers
 # ---------------------------------------------------------------------------
 
-class TestSchedulerScreenHelpers:
 
+class TestSchedulerScreenHelpers:
     def test_no_scheduler_flag(self):
         from gnat.tui.screens.scheduler import SchedulerScreen
+
         screen = SchedulerScreen(scheduler=None)
         assert screen._scheduler is None
 
     def test_scheduler_stored(self):
         from gnat.tui.screens.scheduler import SchedulerScreen
+
         mock_sched = MagicMock()
         screen = SchedulerScreen(scheduler=mock_sched)
         assert screen._scheduler is mock_sched
@@ -271,32 +288,37 @@ class TestSchedulerScreenHelpers:
 # GNATApp construction
 # ---------------------------------------------------------------------------
 
-class TestGNATAppConstruction:
 
+class TestGNATAppConstruction:
     def test_app_title(self):
         from gnat.tui.app import GNATApp
+
         app = GNATApp()
         assert "GNAT" in app.TITLE
 
     def test_app_accepts_config_path(self):
         from gnat.tui.app import GNATApp
+
         app = GNATApp(config_path="/tmp/test.ini", initial_tab="library")
         assert app._config_path == "/tmp/test.ini"
         assert app._initial_tab == "library"
 
     def test_app_accepts_scheduler(self):
         from gnat.tui.app import GNATApp
+
         mock_sched = MagicMock()
         app = GNATApp(scheduler=mock_sched)
         assert app._scheduler is mock_sched
 
     def test_app_accepts_reports_dir(self):
         from gnat.tui.app import GNATApp
+
         app = GNATApp(reports_dir="/var/reports")
         assert app._reports_dir == "/var/reports"
 
     def test_app_bindings_include_fkeys(self):
         from gnat.tui.app import GNATApp
+
         keys = [b.key for b in GNATApp.BINDINGS]
         assert "f1" in keys
         assert "f2" in keys
@@ -305,6 +327,7 @@ class TestGNATAppConstruction:
 
     def test_app_bindings_include_quit(self):
         from gnat.tui.app import GNATApp
+
         keys = [b.key for b in GNATApp.BINDINGS]
         assert "q" in keys or "ctrl+c" in keys
 
@@ -313,10 +336,12 @@ class TestGNATAppConstruction:
 # Textual lifecycle (run_test)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.anyio
 async def test_app_mounts_without_error():
     """Full Textual lifecycle: compose + mount, no backend connections needed."""
     from gnat.tui.app import GNATApp
+
     app = GNATApp()
     async with app.run_test(headless=True) as pilot:
         # App mounted; check title
@@ -326,8 +351,10 @@ async def test_app_mounts_without_error():
 @pytest.mark.anyio
 async def test_app_has_four_tabs():
     """Verify all four TabPane ids exist in the composed app."""
-    from gnat.tui.app import GNATApp
     from textual.widgets import TabbedContent, TabPane
+
+    from gnat.tui.app import GNATApp
+
     app = GNATApp()
     async with app.run_test(headless=True) as pilot:
         tc = app.query_one(TabbedContent)
@@ -339,19 +366,21 @@ async def test_app_has_four_tabs():
 async def test_action_switch_tab_does_not_raise():
     """action_switch_tab() should not raise for any valid tab id."""
     from gnat.tui.app import GNATApp
+
     app = GNATApp()
     async with app.run_test(headless=True) as pilot:
         for tab_id in ("query", "library", "scheduler", "reports"):
             # Should not raise; reactive state update is async so we don't assert tc.active
             app.action_switch_tab(tab_id)
         # verify app is still running
-        assert not app.is_running is False
+        assert app.is_running is not False
 
 
 @pytest.mark.anyio
 async def test_action_switch_tab_invalid_id_does_not_raise():
     """action_switch_tab() with an unknown id should silently ignore (no crash)."""
     from gnat.tui.app import GNATApp
+
     app = GNATApp()
     async with app.run_test(headless=True) as pilot:
         app.action_switch_tab("nonexistent")
@@ -361,8 +390,10 @@ async def test_action_switch_tab_invalid_id_does_not_raise():
 @pytest.mark.anyio
 async def test_tabbed_content_active_assignment():
     """Setting TabbedContent.active directly works and doesn't crash."""
-    from gnat.tui.app import GNATApp
     from textual.widgets import TabbedContent
+
+    from gnat.tui.app import GNATApp
+
     app = GNATApp()
     async with app.run_test(headless=True) as pilot:
         tc = app.query_one(TabbedContent)
@@ -375,16 +406,18 @@ async def test_tabbed_content_active_assignment():
 # CLI registration
 # ---------------------------------------------------------------------------
 
-class TestCLITuiSubcommand:
 
+class TestCLITuiSubcommand:
     def test_tui_help_exits_zero(self):
         from gnat.cli.main import main
+
         with pytest.raises(SystemExit) as exc:
             main(["tui", "--help"])
         assert exc.value.code == 0
 
     def test_tui_registered_in_parser(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         # Ensure 'tui' is a recognised subcommand
         args = parser.parse_args(["tui"])
@@ -392,6 +425,7 @@ class TestCLITuiSubcommand:
 
     def test_tui_screen_choices(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         for screen in ["query", "library", "scheduler", "reports"]:
             args = parser.parse_args(["tui", screen])
@@ -401,6 +435,7 @@ class TestCLITuiSubcommand:
         """If textual is not installed, _cmd_tui should return exit code 1."""
         monkeypatch.setitem(sys.modules, "gnat.tui.app", None)
         from gnat.cli.main import _cmd_tui
+
         args = MagicMock()
         args.screen = "query"
         args.backend = None

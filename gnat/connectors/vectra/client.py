@@ -64,7 +64,7 @@ class VectraClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "observed-data": "detections",
-        "threat-actor":  "hosts",
+        "threat-actor": "hosts",
     }
 
     def __init__(
@@ -193,8 +193,9 @@ class VectraClient(BaseClient, ConnectorMixin):
         limit : int
             Maximum records to return.
         """
-        resp = self.get("/api/v2.5/search/detections",
-                        params={"query_string": query, "page_size": limit})
+        resp = self.get(
+            "/api/v2.5/search/detections", params={"query_string": query, "page_size": limit}
+        )
         return resp.get("results", []) if isinstance(resp, dict) else []
 
     # ── STIX Translation ──────────────────────────────────────────────────
@@ -208,8 +209,8 @@ class VectraClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a minimal Vectra search payload from a STIX object."""
         return {
-            "note":     "Vectra is read-only; this payload is for reference.",
-            "stix_id":  stix_dict.get("id", ""),
+            "note": "Vectra is read-only; this payload is for reference.",
+            "stix_id": stix_dict.get("id", ""),
             "stix_type": stix_dict.get("type", ""),
         }
 
@@ -217,26 +218,26 @@ class VectraClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         det_id = str(detection.get("id", ""))
         first_ts = detection.get("first_timestamp", now)
-        last_ts  = detection.get("last_timestamp", now)
+        last_ts = detection.get("last_timestamp", now)
         return {
-            "type":            "observed-data",
-            "id":              f"observed-data--{_uuid.uuid5(_STIX_NS, f'vectra:{det_id}')}",
-            "spec_version":    "2.1",
-            "created":         first_ts,
-            "modified":        last_ts,
-            "first_observed":  first_ts,
-            "last_observed":   last_ts,
+            "type": "observed-data",
+            "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'vectra:{det_id}')}",
+            "spec_version": "2.1",
+            "created": first_ts,
+            "modified": last_ts,
+            "first_observed": first_ts,
+            "last_observed": last_ts,
             "number_observed": 1,
-            "object_refs":     [],
+            "object_refs": [],
             "x_vectra": {
-                "detection_id":   det_id,
+                "detection_id": det_id,
                 "detection_type": detection.get("detection_type"),
-                "category":       detection.get("category"),
-                "threat":         detection.get("threat"),
-                "certainty":      detection.get("certainty"),
-                "src_ip":         detection.get("src_ip"),
-                "src_host":       detection.get("src_host", {}).get("name"),
-                "state":          detection.get("state"),
+                "category": detection.get("category"),
+                "threat": detection.get("threat"),
+                "certainty": detection.get("certainty"),
+                "src_ip": detection.get("src_ip"),
+                "src_host": detection.get("src_host", {}).get("name"),
+                "state": detection.get("state"),
             },
         }
 
@@ -244,19 +245,19 @@ class VectraClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         host_id = str(host.get("id", ""))
         return {
-            "type":         "threat-actor",
-            "id":           f"threat-actor--{_uuid.uuid5(_STIX_NS, f'vectra:{host_id}')}",
+            "type": "threat-actor",
+            "id": f"threat-actor--{_uuid.uuid5(_STIX_NS, f'vectra:{host_id}')}",
             "spec_version": "2.1",
-            "created":      now,
-            "modified":     now,
-            "name":         host.get("name", f"Vectra Host {host_id}"),
-            "description":  "Host entity scored by Vectra AI NDR",
+            "created": now,
+            "modified": now,
+            "name": host.get("name", f"Vectra Host {host_id}"),
+            "description": "Host entity scored by Vectra AI NDR",
             "x_vectra": {
-                "host_id":   host_id,
-                "ip":        host.get("ip"),
-                "threat":    host.get("threat"),
+                "host_id": host_id,
+                "ip": host.get("ip"),
+                "threat": host.get("threat"),
                 "certainty": host.get("certainty"),
-                "tags":      host.get("tags", []),
-                "state":     host.get("state"),
+                "tags": host.get("tags", []),
+                "state": host.get("state"),
             },
         }

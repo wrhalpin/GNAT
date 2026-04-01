@@ -51,6 +51,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -70,7 +71,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "findings",
-        "report":        "companies",
+        "report": "companies",
     }
 
     def __init__(self, host: str = "https://api.bitsighttech.com", token: str = "", **kwargs: Any):
@@ -183,7 +184,9 @@ class BitSightClient(BaseClient, ConnectorMixin):
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Dispatch findings (vulnerability) vs. company/ratings (report)."""
-        if "severity" in native and ("finding" in str(native).lower() or "breach" in str(native).lower()):
+        if "severity" in native and (
+            "finding" in str(native).lower() or "breach" in str(native).lower()
+        ):
             return self._finding_to_stix(native)
         return self._company_to_stix(native)
 

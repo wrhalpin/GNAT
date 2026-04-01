@@ -55,14 +55,18 @@ from datetime import datetime, timezone
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
+
 class ZeekError(Exception):
     pass
+
 
 class ZeekConfigError(ZeekError):
     pass
 
+
 class ZeekLogError(ZeekError):
     pass
+
 
 class ZeekSTIXError(ZeekError):
     pass
@@ -70,10 +74,11 @@ class ZeekSTIXError(ZeekError):
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class ZeekConfig:
     log_dir: str = "/var/log/zeek/current"
-    log_format: str = "tsv"   # 'tsv' or 'json'
+    log_format: str = "tsv"  # 'tsv' or 'json'
     timeout: int = 10
 
     def __post_init__(self):
@@ -88,9 +93,7 @@ class ZeekConfig:
         return os.path.join(self.log_dir, f"{log_name}.{ext}")
 
 
-def load_zeek_config(
-    config: configparser.ConfigParser, section: str = "zeek"
-) -> ZeekConfig:
+def load_zeek_config(config: configparser.ConfigParser, section: str = "zeek") -> ZeekConfig:
     if not config.has_section(section):
         raise ZeekConfigError(f"Section '[{section}]' not found.")
     raw = {"log_dir": "/var/log/zeek/current", "log_format": "tsv", "timeout": "10"}
@@ -103,6 +106,7 @@ def load_zeek_config(
 
 
 # ── TSV Log Reader ────────────────────────────────────────────────────────────
+
 
 class ZeekTSVReader:
     """
@@ -183,15 +187,14 @@ class ZeekTSVReader:
 
 # ── JSON Log Reader ───────────────────────────────────────────────────────────
 
+
 class ZeekJSONReader:
     """Reads Zeek JSON log files (json-logs package or zeek-cut -j output)."""
 
     def __init__(self, config: ZeekConfig):
         self.config = config
 
-    def iter_records(
-        self, log_name: str, path: str | None = None
-    ) -> Iterator[dict]:
+    def iter_records(self, log_name: str, path: str | None = None) -> Iterator[dict]:
         log_path = path or self.config.log_path(log_name)
         try:
             with open(log_path, encoding="utf-8", errors="replace") as f:
@@ -211,6 +214,7 @@ class ZeekJSONReader:
 
 
 # ── High-level Log Commands ───────────────────────────────────────────────────
+
 
 class ZeekLogCommands:
     """
@@ -332,9 +336,12 @@ class ZeekSTIXMapper:
 
         for ip in (notice.get("src_ip"), notice.get("dst_ip")):
             if ip:
-                obj = {"type": "ipv4-addr",
-                       "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                       "spec_version": "2.1", "value": ip}
+                obj = {
+                    "type": "ipv4-addr",
+                    "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
+                    "spec_version": "2.1",
+                    "value": ip,
+                }
                 if obj["id"] not in seen:
                     seen.add(obj["id"])
                     objects.append(obj)
@@ -348,7 +355,9 @@ class ZeekSTIXMapper:
             if nid not in seen:
                 seen.add(nid)
                 nt: dict = {
-                    "type": "network-traffic", "id": nid, "spec_version": "2.1",
+                    "type": "network-traffic",
+                    "id": nid,
+                    "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', notice['src_ip'])}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', notice['dst_ip'])}",
                     "protocols": [str(notice.get("proto", "tcp")).lower()],
@@ -363,22 +372,33 @@ class ZeekSTIXMapper:
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data", "id": obs_id, "spec_version": "2.1",
-            "created": now, "modified": now,
-            "first_observed": ts, "last_observed": ts, "number_observed": 1,
-            "object_refs": refs,
-            "x_zeek_notice": {
-                "uid": notice.get("uid"),
-                "note": notice.get("note"),
-                "message": notice.get("message"),
-                "sub": notice.get("sub"),
-                "actions": notice.get("actions"),
-                "dropped": notice.get("dropped"),
-            },
-        })
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": 1,
+                "object_refs": refs,
+                "x_zeek_notice": {
+                    "uid": notice.get("uid"),
+                    "note": notice.get("note"),
+                    "message": notice.get("message"),
+                    "sub": notice.get("sub"),
+                    "actions": notice.get("actions"),
+                    "dropped": notice.get("dropped"),
+                },
+            }
+        )
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     def connection_to_stix_bundle(self, conn: dict) -> dict:
         """Convert a normalised Zeek conn record to a STIX 2.1 bundle."""
@@ -392,9 +412,12 @@ class ZeekSTIXMapper:
         dst = conn.get("dst_ip")
         for ip in (src, dst):
             if ip:
-                obj = {"type": "ipv4-addr",
-                       "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                       "spec_version": "2.1", "value": ip}
+                obj = {
+                    "type": "ipv4-addr",
+                    "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
+                    "spec_version": "2.1",
+                    "value": ip,
+                }
                 if obj["id"] not in seen:
                     seen.add(obj["id"])
                     objects.append(obj)
@@ -408,7 +431,9 @@ class ZeekSTIXMapper:
             if nid not in seen:
                 seen.add(nid)
                 nt: dict = {
-                    "type": "network-traffic", "id": nid, "spec_version": "2.1",
+                    "type": "network-traffic",
+                    "id": nid,
+                    "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst)}",
                     "protocols": [str(conn.get("proto", "tcp")).lower()],
@@ -429,21 +454,32 @@ class ZeekSTIXMapper:
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data", "id": obs_id, "spec_version": "2.1",
-            "created": now, "modified": now,
-            "first_observed": ts, "last_observed": ts, "number_observed": 1,
-            "object_refs": refs,
-            "x_zeek_conn": {
-                "uid": conn.get("uid"),
-                "service": conn.get("service"),
-                "duration": conn.get("duration"),
-                "conn_state": conn.get("conn_state"),
-                "history": conn.get("history"),
-            },
-        })
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": 1,
+                "object_refs": refs,
+                "x_zeek_conn": {
+                    "uid": conn.get("uid"),
+                    "service": conn.get("service"),
+                    "duration": conn.get("duration"),
+                    "conn_state": conn.get("conn_state"),
+                    "history": conn.get("history"),
+                },
+            }
+        )
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     def notices_to_stix_bundle(self, notices: list[dict]) -> dict:
         all_objects: list[dict] = []
@@ -453,12 +489,17 @@ class ZeekSTIXMapper:
                 if obj["id"] not in seen:
                     seen.add(obj["id"])
                     all_objects.append(obj)
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": all_objects}
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": all_objects,
+        }
 
 
 def _det_uuid(t: str, v: str) -> str:
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
+
 
 def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

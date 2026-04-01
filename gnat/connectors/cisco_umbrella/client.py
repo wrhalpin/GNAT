@@ -160,9 +160,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         per-request in the domain-specific helper methods.
         """
         if not self._investigate_key:
-            raise GNATClientError(
-                "CiscoUmbrellaClient requires 'investigate_api_key' in config."
-            )
+            raise GNATClientError("CiscoUmbrellaClient requires 'investigate_api_key' in config.")
         self._auth_headers["Authorization"] = f"Bearer {self._investigate_key}"
         self._auth_headers["Accept"] = "application/json"
         self._authenticated = True
@@ -178,9 +176,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — CRUD ───────────────────────────────────────────
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single indicator or allow-list entry.
 
@@ -206,9 +202,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             for entry in entries:
                 if entry.get("name", "").lower() == domain.lower():
                     return self.to_stix({"type": "course-of-action", **entry})
-            raise GNATClientError(
-                f"Domain {domain!r} not found in Umbrella allow-list."
-            )
+            raise GNATClientError(f"Domain {domain!r} not found in Umbrella allow-list.")
 
         raise GNATClientError(
             f"get_object unsupported for STIX type {stix_type!r}. "
@@ -255,24 +249,20 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
                 except GNATClientError as exc:
                     logger.warning("Umbrella: skipping %r — %s", domain, exc)
             start = (page - 1) * page_size
-            return results[start: start + page_size]
+            return results[start : start + page_size]
 
         if stix_type == "course-of-action":
             entries = self.list_allow_list()
-            results_ca = [
-                self.to_stix({"type": "course-of-action", **e}) for e in entries
-            ]
+            results_ca = [self.to_stix({"type": "course-of-action", **e}) for e in entries]
             start = (page - 1) * page_size
-            return results_ca[start: start + page_size]
+            return results_ca[start : start + page_size]
 
         raise GNATClientError(
             f"list_objects unsupported for STIX type {stix_type!r}. "
             "Use 'indicator' or 'course-of-action'."
         )
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Push a domain to the Umbrella Enforcement (block-list) API.
 
@@ -348,8 +338,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         categories = native.get("security_categories", [])
         status = native.get("status", "unknown")
         is_malicious = bool(
-            categories
-            and any(c in _MALICIOUS_CATEGORIES for c in categories)
+            categories and any(c in _MALICIOUS_CATEGORIES for c in categories)
         ) or status in ("blocked", "malicious")
 
         confidence = 85 if is_malicious else 10
@@ -366,17 +355,13 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             "created": now,
             "modified": now,
             "name": domain,
-            "description": (
-                f"Umbrella classification: {', '.join(categories) or status}"
-            ),
+            "description": (f"Umbrella classification: {', '.join(categories) or status}"),
             "pattern": pattern,
             "pattern_type": "stix",
             "valid_from": now,
             "confidence": confidence,
             "labels": labels,
-            "object_marking_refs": [
-                f"marking-definition--{self._tlp_marking}"
-            ],
+            "object_marking_refs": [f"marking-definition--{self._tlp_marking}"],
             "x_umbrella": {
                 "domain": domain,
                 "status": status,
@@ -497,10 +482,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 "CiscoUmbrellaClient.add_to_allow_list requires 'management_api_key'."
             )
-        payload = [
-            {"type": "domain", "destination": d, "comment": comment}
-            for d in domains
-        ]
+        payload = [{"type": "domain", "destination": d, "comment": comment} for d in domains]
         resp = self._mgmt_http.request(
             "POST",
             f"{self._management_host}/v1/destinationlists/allow/destinations",
@@ -512,9 +494,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         )
         body = _json.loads(resp.data.decode())
         if resp.status not in (200, 201):
-            raise GNATClientError(
-                f"Umbrella Management API error {resp.status}: {body}"
-            )
+            raise GNATClientError(f"Umbrella Management API error {resp.status}: {body}")
         return body
 
     def push_block_list(self, domains: list[str]) -> dict[str, Any]:
@@ -565,9 +545,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             with contextlib.suppress(Exception):
                 body = _json.loads(resp.data.decode())
         if resp.status not in (200, 202):
-            raise GNATClientError(
-                f"Umbrella Enforcement API error {resp.status}: {body}"
-            )
+            raise GNATClientError(f"Umbrella Enforcement API error {resp.status}: {body}")
         return body
 
     # ── Internal helpers ────────────────────────────────────────────────
@@ -581,9 +559,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         """
         resp = self.get(f"/domains/categorization/{domain}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Unexpected response from Umbrella Investigate for {domain!r}."
-            )
+            raise GNATClientError(f"Unexpected response from Umbrella Investigate for {domain!r}.")
         classification = resp.get(domain, resp)
         return {
             "domain": domain,

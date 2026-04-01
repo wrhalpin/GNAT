@@ -51,12 +51,17 @@ class NucleusClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilities",
-        "indicator":     "threat-intel",
-        "asset":         "assets",
+        "indicator": "threat-intel",
+        "asset": "assets",
     }
 
-    def __init__(self, host: str = "https://api.nucleussec.com",
-                 api_key: str = "", project: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "https://api.nucleussec.com",
+        api_key: str = "",
+        project: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._project = project
@@ -68,23 +73,23 @@ class NucleusClient(BaseClient, ConnectorMixin):
         resp = self.get("/v2/projects")
         return isinstance(resp, (dict, list))
 
-    def get_object(self, stix_type: str,
-                   object_id: str) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         project = self._project
         if stix_type == "vulnerability":
-            resp = self.get(
-                f"/v2/projects/{project}/vulnerabilities/{object_id}"
-            )
+            resp = self.get(f"/v2/projects/{project}/vulnerabilities/{object_id}")
             return resp if isinstance(resp, dict) else {}
         if stix_type == "asset":
             resp = self.get(f"/v2/projects/{project}/assets/{object_id}")
             return resp if isinstance(resp, dict) else {}
         return {}
 
-    def list_objects(self, stix_type: str,
-                     filters: Optional[dict[str, Any]] = None,
-                     page: int = 1,
-                     page_size: int = 100) -> list[dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         """
         List vulnerabilities or assets from Nucleus.
 
@@ -98,9 +103,9 @@ class NucleusClient(BaseClient, ConnectorMixin):
         - ``cve`` (str): filter by CVE ID
         - ``industry`` (str): filter by asset industry classification
         """
-        project  = (filters or {}).get("project", self._project)
+        project = (filters or {}).get("project", self._project)
         params: dict[str, Any] = {
-            "page":      page - 1,
+            "page": page - 1,
             "page_size": page_size,
         }
 
@@ -131,8 +136,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
 
         return []
 
-    def upsert_object(self, stix_type: str,
-                      payload: dict[str, Any]) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Push external threat intel into Nucleus (indicators only).
 
@@ -141,9 +145,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         exploited by a known actor.
         """
         if stix_type != "indicator":
-            raise GNATClientError(
-                f"Nucleus upsert only supports 'indicator', not {stix_type!r}"
-            )
+            raise GNATClientError(f"Nucleus upsert only supports 'indicator', not {stix_type!r}")
         project = self._project
         resp = self.post(
             f"/v2/projects/{project}/threat-intel",
@@ -156,9 +158,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
             project = self._project
             self.delete(f"/v2/projects/{project}/threat-intel/{object_id}")
         else:
-            raise GNATClientError(
-                f"Nucleus delete only supports 'indicator', not {stix_type!r}"
-            )
+            raise GNATClientError(f"Nucleus delete only supports 'indicator', not {stix_type!r}")
 
     # ── STIX translation ───────────────────────────────────────────────────
 
@@ -170,27 +170,26 @@ class NucleusClient(BaseClient, ConnectorMixin):
         exploit availability, CVSS v3, affected assets count, and
         asset industry classifications.
         """
-        vuln_id   = native.get("id", "")
-        cve_id    = native.get("cve_id", "")
-        severity  = native.get("severity", "")
-        status    = native.get("status", "")
+        vuln_id = native.get("id", "")
+        cve_id = native.get("cve_id", "")
+        severity = native.get("severity", "")
+        status = native.get("status", "")
 
-        cvss_v3   = native.get("cvss_v3_base_score")
-        cvss_v2   = native.get("cvss_v2_base_score")
-        cvss      = cvss_v3 or cvss_v2
+        cvss_v3 = native.get("cvss_v3_base_score")
+        cvss_v2 = native.get("cvss_v2_base_score")
+        cvss = cvss_v3 or cvss_v2
 
-        epss      = native.get("epss_score")         # 0.0–1.0
-        kev       = native.get("cisa_kev", False)    # CISA Known Exploited
+        epss = native.get("epss_score")  # 0.0–1.0
+        kev = native.get("cisa_kev", False)  # CISA Known Exploited
         has_exploit = native.get("exploit_available", False)
         exploited = kev or has_exploit
 
         # Industry/sector from asset tags
         industries = native.get("industries", []) or []
         asset_tags = native.get("asset_tags", []) or []
-        sectors    = list(set(industries + [
-            t for t in asset_tags
-            if not t.startswith(("env:", "team:", "app:"))
-        ]))
+        sectors = list(
+            set(industries + [t for t in asset_tags if not t.startswith(("env:", "team:", "app:"))])
+        )
 
         # Confidence: KEV = 90, exploitable = 75, otherwise by severity
         if kev:
@@ -198,34 +197,36 @@ class NucleusClient(BaseClient, ConnectorMixin):
         elif has_exploit:
             confidence = 80
         else:
-            confidence = {"critical": 75, "high": 65,
-                          "medium": 50, "low": 35}.get(severity.lower(), 50)
+            confidence = {"critical": 75, "high": 65, "medium": 50, "low": 35}.get(
+                severity.lower(), 50
+            )
 
         return {
-            "type":              "vulnerability",
-            "id":                f"vulnerability--ns-{vuln_id}",
-            "name":              cve_id or vuln_id,
-            "description":       native.get("description", "")[:500],
-            "created":           native.get("first_found", ""),
-            "modified":          native.get("last_updated", ""),
-            "confidence":        confidence,
-            "x_cve_id":          cve_id,
-            "x_cvss_score":      cvss,
-            "x_severity":        severity,
+            "type": "vulnerability",
+            "id": f"vulnerability--ns-{vuln_id}",
+            "name": cve_id or vuln_id,
+            "description": native.get("description", "")[:500],
+            "created": native.get("first_found", ""),
+            "modified": native.get("last_updated", ""),
+            "confidence": confidence,
+            "x_cve_id": cve_id,
+            "x_cvss_score": cvss,
+            "x_severity": severity,
             "x_actively_exploited": exploited,
-            "x_nucleus_kev":     kev,
-            "x_nucleus_epss":    epss,
-            "x_nucleus_status":  status,
+            "x_nucleus_kev": kev,
+            "x_nucleus_epss": epss,
+            "x_nucleus_status": status,
             "x_nucleus_affected_assets": native.get("affected_assets_count", 0),
             "x_source_platform": "nucleus",
-            "x_target_sectors":  sectors,  # canonical sector field
+            "x_target_sectors": sectors,  # canonical sector field
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX Indicator to a Nucleus threat intel payload."""
         import re
-        pattern   = stix_dict.get("pattern", "")
-        m         = re.search(r"= '([^']+)'", pattern)
+
+        pattern = stix_dict.get("pattern", "")
+        m = re.search(r"= '([^']+)'", pattern)
         ioc_value = m.group(1) if m else stix_dict.get("name", "")
 
         # Infer IOC type from pattern
@@ -241,9 +242,9 @@ class NucleusClient(BaseClient, ConnectorMixin):
             ioc_type = "domain"
 
         return {
-            "value":      ioc_value,
-            "type":       ioc_type,
+            "value": ioc_value,
+            "type": ioc_type,
             "confidence": stix_dict.get("confidence", 50),
-            "source":     stix_dict.get("x_source_platform", "gnat"),
-            "tags":       stix_dict.get("x_source_topic", ""),
+            "source": stix_dict.get("x_source_platform", "gnat"),
+            "tags": stix_dict.get("x_source_topic", ""),
         }

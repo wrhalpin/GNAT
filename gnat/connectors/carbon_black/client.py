@@ -85,8 +85,8 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "alerts",
-        "malware":       "processes",
+        "indicator": "alerts",
+        "malware": "processes",
         "vulnerability": "devices",
     }
 
@@ -107,11 +107,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """Inject the composite X-Auth-Token header."""
-        token = (
-            f"{self._api_key}/{self._connector_id}"
-            if self._connector_id
-            else self._api_key
-        )
+        token = f"{self._api_key}/{self._connector_id}" if self._connector_id else self._api_key
         self._auth_headers["X-Auth-Token"] = token
         self._auth_headers["Content-Type"] = "application/json"
 
@@ -119,22 +115,17 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
 
     def health_check(self) -> bool:
         """Ping the device list endpoint for the org."""
-        self.get(f"/appservices/v6/orgs/{self._org_key}/devices/",
-                 params={"limit": 1})
+        self.get(f"/appservices/v6/orgs/{self._org_key}/devices/", params={"limit": 1})
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single alert or device by ID."""
         if stix_type == "indicator":
-            resp = self.get(
-                f"/appservices/v6/orgs/{self._org_key}/alerts/{object_id}"
-            )
+            resp = self.get(f"/appservices/v6/orgs/{self._org_key}/alerts/{object_id}")
             return resp if isinstance(resp, dict) else {}
 
         if stix_type == "vulnerability":
-            resp = self.get(
-                f"/appservices/v6/orgs/{self._org_key}/devices/{object_id}"
-            )
+            resp = self.get(f"/appservices/v6/orgs/{self._org_key}/devices/{object_id}")
             return resp if isinstance(resp, dict) else {}
 
         if stix_type == "malware":
@@ -180,9 +171,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
                 "start": start,
                 "sort": [{"field": "backend_update_timestamp", "order": "DESC"}],
             }
-            resp = self.post(
-                f"/appservices/v6/orgs/{self._org_key}/alerts/search", json=body
-            )
+            resp = self.post(f"/appservices/v6/orgs/{self._org_key}/alerts/search", json=body)
             return resp.get("results", []) if isinstance(resp, dict) else []
 
         if stix_type == "vulnerability":
@@ -191,9 +180,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
                 params["os"] = f["os"]
             if "status" in f:
                 params["status"] = f["status"]
-            resp = self.get(
-                f"/appservices/v6/orgs/{self._org_key}/devices/", params=params
-            )
+            resp = self.get(f"/appservices/v6/orgs/{self._org_key}/devices/", params=params)
             return resp.get("results", []) if isinstance(resp, dict) else []
 
         if stix_type == "malware":
@@ -223,9 +210,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
                 json={"threat_id": alert_id, "reason": reason},
             )
             return resp if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"Carbon Black: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Carbon Black: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Dismiss a CBC alert (no hard delete for alerts/processes)."""
@@ -235,21 +220,18 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
                 json={"threat_id": object_id, "reason": "Dismissed via GNAT"},
             )
             return
-        raise GNATClientError(
-            f"Carbon Black: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Carbon Black: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
     def get_watchlists(self) -> list[dict[str, Any]]:
         """Return all watchlists for the organization."""
-        resp = self.get(
-            f"/threathunter/watchlistmgr/v3/orgs/{self._org_key}/watchlists"
-        )
+        resp = self.get(f"/threathunter/watchlistmgr/v3/orgs/{self._org_key}/watchlists")
         return resp.get("results", []) if isinstance(resp, dict) else []
 
-    def create_watchlist(self, name: str, description: str = "",
-                         tags_enabled: bool = True) -> dict[str, Any]:
+    def create_watchlist(
+        self, name: str, description: str = "", tags_enabled: bool = True
+    ) -> dict[str, Any]:
         """Create a new CBC watchlist."""
         resp = self.post(
             f"/threathunter/watchlistmgr/v3/orgs/{self._org_key}/watchlists",
@@ -274,9 +256,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
             params["os"] = os
         if status:
             params["status"] = status
-        resp = self.get(
-            f"/appservices/v6/orgs/{self._org_key}/devices/", params=params
-        )
+        resp = self.get(f"/appservices/v6/orgs/{self._org_key}/devices/", params=params)
         return resp.get("results", []) if isinstance(resp, dict) else []
 
     def quarantine_device(self, device_id: str) -> dict[str, Any]:
@@ -335,7 +315,10 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a CBC alert, device, or process to STIX."""
         if "type" in native and native.get("type") in (
-            "CB_ANALYTICS", "WATCHLIST", "DEVICE_CONTROL", "INTRUSION_DETECTION_SYSTEM"
+            "CB_ANALYTICS",
+            "WATCHLIST",
+            "DEVICE_CONTROL",
+            "INTRUSION_DETECTION_SYSTEM",
         ):
             return self._alert_to_stix(native)
         if "device_os" in native or "sensor_version" in native:
@@ -348,8 +331,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"cbc-alert-{alert_id}"))
-        severity_map = {10: 90, 9: 85, 8: 75, 7: 65, 6: 55, 5: 50,
-                        4: 40, 3: 30, 2: 20, 1: 10}
+        severity_map = {10: 90, 9: 85, 8: 75, 7: 65, 6: 55, 5: 50, 4: 40, 3: 30, 2: 20, 1: 10}
         sev_int = int(alert.get("severity", 5))
         confidence = severity_map.get(sev_int, 50)
 

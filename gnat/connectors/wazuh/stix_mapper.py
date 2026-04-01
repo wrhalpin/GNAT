@@ -41,7 +41,7 @@ x-wazuh-agent   -- agent identity metadata
 
 - https://stix2.readthedocs.io/en/latest/
 - https://documentation.wazuh.com/current/user-manual/capabilities/
-  """
+"""
 
 from __future__ import annotations
 
@@ -59,21 +59,22 @@ _STIX_NAMESPACE = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 # ── Wazuh MITRE tactic -> STIX kill-chain phase name ──────────────────────────
 
 _MITRE_TACTIC_MAP = {
-"initial-access": "initial-access",
-"execution": "execution",
-"persistence": "persistence",
-"privilege-escalation": "privilege-escalation",
-"defense-evasion": "defense-evasion",
-"credential-access": "credential-access",
-"discovery": "discovery",
-"lateral-movement": "lateral-movement",
-"collection": "collection",
-"command-and-control": "command-and-control",
-"exfiltration": "exfiltration",
-"impact": "impact",
-"reconnaissance": "reconnaissance",
-"resource-development": "resource-development",
+    "initial-access": "initial-access",
+    "execution": "execution",
+    "persistence": "persistence",
+    "privilege-escalation": "privilege-escalation",
+    "defense-evasion": "defense-evasion",
+    "credential-access": "credential-access",
+    "discovery": "discovery",
+    "lateral-movement": "lateral-movement",
+    "collection": "collection",
+    "command-and-control": "command-and-control",
+    "exfiltration": "exfiltration",
+    "impact": "impact",
+    "reconnaissance": "reconnaissance",
+    "resource-development": "resource-development",
 }
+
 
 class WazuhSTIXMapper:
     """
@@ -151,8 +152,10 @@ class WazuhSTIXMapper:
         dst_port = raw.get("data", {}).get("dstport")
         if alert.get("src_ip") and alert.get("dst_ip") and (src_port or dst_port):
             net_obj = self._make_network_traffic(
-                alert["src_ip"], alert["dst_ip"],
-                src_port, dst_port,
+                alert["src_ip"],
+                alert["dst_ip"],
+                src_port,
+                dst_port,
                 raw.get("data", {}).get("protocol"),
             )
             if net_obj:
@@ -185,7 +188,11 @@ class WazuhSTIXMapper:
             refs.append(obj["id"])
 
         # ── Hostname / domain ──────────────────────────────────────────
-        if (hostname := raw.get("data", {}).get("hostname") or raw.get("hostname")) and "." in hostname and not hostname.replace(".", "").isdigit():
+        if (
+            (hostname := raw.get("data", {}).get("hostname") or raw.get("hostname"))
+            and "." in hostname
+            and not hostname.replace(".", "").isdigit()
+        ):
             obj = _make_domain(hostname)
             if obj["id"] not in seen:
                 seen.add(obj["id"])
@@ -336,9 +343,7 @@ class WazuhSTIXMapper:
         """
         cve = vuln.get("cve") or ""
         if not cve:
-            raise WazuhSTIXError(
-                "Cannot create STIX vulnerability SDO: 'cve' field is missing."
-            )
+            raise WazuhSTIXError("Cannot create STIX vulnerability SDO: 'cve' field is missing.")
         now = _now_ts()
         det_id = f"vulnerability--{_det_uuid('vulnerability', cve)}"
         return {
@@ -355,7 +360,8 @@ class WazuhSTIXMapper:
                     "external_id": cve,
                     "url": f"https://nvd.nist.gov/vuln/detail/{cve}",
                 }
-            ] + [
+            ]
+            + [
                 {"source_name": "reference", "url": ref}
                 for ref in vuln.get("references", [])
                 if isinstance(ref, str)
@@ -479,6 +485,7 @@ class WazuhSTIXMapper:
 
         # Extract observable value from simple patterns
         import re
+
         match = re.search(r"=\s*'([^']+)'", pattern)
         value = match.group(1) if match else ""
 
@@ -497,9 +504,7 @@ class WazuhSTIXMapper:
             rule_comment = f"IOC: {description}"
 
         if not value:
-            return (
-                f"<!-- GNAT: Could not extract observable value from pattern: {pattern} -->"
-            )
+            return f"<!-- GNAT: Could not extract observable value from pattern: {pattern} -->"
 
         return f"""<group name="{group}">
 
@@ -533,6 +538,7 @@ class WazuhSTIXMapper:
         }
         if file_path:
             import posixpath
+
             obj["name"] = posixpath.basename(file_path)
             obj["parent_directory_ref"] = None  # Would need dir SCO
         if fim.get("size") is not None:
@@ -587,57 +593,66 @@ class WazuhSTIXMapper:
             tactics = [tactics]
         for tactic in tactics:
             phase_name = _MITRE_TACTIC_MAP.get(tactic.lower(), tactic.lower())
-            phases.append({
-                "kill_chain_name": "mitre-attack",
-                "phase_name": phase_name,
-            })
+            phases.append(
+                {
+                    "kill_chain_name": "mitre-attack",
+                    "phase_name": phase_name,
+                }
+            )
         return phases
 
     # ── Standalone STIX object factory functions ──────────────────────────────────
 
+
 def _make_ipv4(value: str) -> dict:
     return {
-    "type": "ipv4-addr",
-    "id": f"ipv4-addr-{_det_uuid('ipv4-addr', value)}",
-    "spec_version": "2.1",
-    "value": value,
+        "type": "ipv4-addr",
+        "id": f"ipv4-addr-{_det_uuid('ipv4-addr', value)}",
+        "spec_version": "2.1",
+        "value": value,
     }
+
 
 def _make_user_account(user_id: str) -> dict:
     return {
-    "type": "user-account",
-    "id": f"user-account-{_det_uuid('user-account', user_id)}",
-    "spec_version": "2.1",
-    "user_id": user_id,
+        "type": "user-account",
+        "id": f"user-account-{_det_uuid('user-account', user_id)}",
+        "spec_version": "2.1",
+        "user_id": user_id,
     }
+
 
 def _make_process(name: str) -> dict:
     return {
-    "type": "process",
-    "id": f"process-{_det_uuid('process', name)}",
-    "spec_version": "2.1",
-    "name": name,
+        "type": "process",
+        "id": f"process-{_det_uuid('process', name)}",
+        "spec_version": "2.1",
+        "name": name,
     }
+
 
 def _make_domain(value: str) -> dict:
     return {
-    "type": "domain-name",
-    "id": f"domain-name-{_det_uuid('domain-name', value)}",
-    "spec_version": "2.1",
-    "value": value,
+        "type": "domain-name",
+        "id": f"domain-name-{_det_uuid('domain-name', value)}",
+        "spec_version": "2.1",
+        "value": value,
     }
+
 
 def _make_bundle(objects: list[dict]) -> dict:
     return {
-    "type": "bundle",
-    "id": f"bundle-{uuid.uuid4()}",
-    "spec_version": "2.1",
-    "objects": objects,
+        "type": "bundle",
+        "id": f"bundle-{uuid.uuid4()}",
+        "spec_version": "2.1",
+        "objects": objects,
     }
+
 
 def _det_uuid(stix_type: str, value: str) -> str:
     """Deterministic UUID5 using STIX 2.1 namespace."""
     return str(uuid.uuid5(_STIX_NAMESPACE, f"{stix_type}:{value}"))
+
 
 def _now_ts() -> str:
     """Current UTC time in STIX 2.1 format."""

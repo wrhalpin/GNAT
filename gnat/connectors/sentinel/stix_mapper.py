@@ -42,14 +42,15 @@ class SentinelSTIXMapper:
         props = indicator.get("properties", {})
         now = _now_ts()
         kcp = [
-            {"kill_chain_name": k.get("killChainName", ""),
-             "phase_name": k.get("phaseName", "")}
+            {"kill_chain_name": k.get("killChainName", ""), "phase_name": k.get("phaseName", "")}
             for k in props.get("killChainPhases", [])
         ]
         ext_refs = [
-            {"source_name": r.get("sourceName", ""),
-             "url": r.get("url", ""),
-             "description": r.get("description", "")}
+            {
+                "source_name": r.get("sourceName", ""),
+                "url": r.get("url", ""),
+                "description": r.get("description", ""),
+            }
             for r in props.get("externalReferences", [])
         ]
         obj: dict = {
@@ -106,18 +107,17 @@ class SentinelSTIXMapper:
             Properties dict for POST /createIndicator.
         """
         if indicator.get("type") != "indicator":
-            raise SentinelSTIXError(
-                f"Expected STIX indicator, got type='{indicator.get('type')}'."
-            )
+            raise SentinelSTIXError(f"Expected STIX indicator, got type='{indicator.get('type')}'.")
         kcp = [
-            {"killChainName": k.get("kill_chain_name", ""),
-             "phaseName": k.get("phase_name", "")}
+            {"killChainName": k.get("kill_chain_name", ""), "phaseName": k.get("phase_name", "")}
             for k in indicator.get("kill_chain_phases", [])
         ]
         ext_refs = [
-            {"sourceName": r.get("source_name", ""),
-             "url": r.get("url", ""),
-             "description": r.get("description", "")}
+            {
+                "sourceName": r.get("source_name", ""),
+                "url": r.get("url", ""),
+                "description": r.get("description", ""),
+            }
             for r in indicator.get("external_references", [])
         ]
         props: dict = {
@@ -161,28 +161,30 @@ class SentinelSTIXMapper:
         ts = incident.get("created") or now
         objects: list[dict] = []
         obs_id = f"observed-data--{uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data",
-            "id": obs_id,
-            "spec_version": "2.1",
-            "created": now,
-            "modified": now,
-            "first_observed": incident.get("first_activity") or ts,
-            "last_observed": incident.get("last_activity") or ts,
-            "number_observed": max(1, incident.get("alert_count", 1)),
-            "object_refs": [],
-            "x_sentinel_incident": {
-                "incident_id": incident.get("id"),
-                "incident_number": incident.get("number"),
-                "title": incident.get("title"),
-                "severity": incident.get("severity"),
-                "severity_label": incident.get("severity_label"),
-                "status": incident.get("status"),
-                "classification": incident.get("classification"),
-                "owner": incident.get("owner"),
-                "labels": incident.get("labels", []),
-            },
-        })
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": incident.get("first_activity") or ts,
+                "last_observed": incident.get("last_activity") or ts,
+                "number_observed": max(1, incident.get("alert_count", 1)),
+                "object_refs": [],
+                "x_sentinel_incident": {
+                    "incident_id": incident.get("id"),
+                    "incident_number": incident.get("number"),
+                    "title": incident.get("title"),
+                    "severity": incident.get("severity"),
+                    "severity_label": incident.get("severity_label"),
+                    "status": incident.get("status"),
+                    "classification": incident.get("classification"),
+                    "owner": incident.get("owner"),
+                    "labels": incident.get("labels", []),
+                },
+            }
+        )
         return _make_bundle(objects)
 
     # ── D: STIX bundle → Sentinel TI batch ────────────────────────────────
@@ -203,9 +205,7 @@ class SentinelSTIXMapper:
             List of properties dicts for SentinelThreatIntelCommands.bulk_create_indicators().
         """
         if bundle.get("type") != "bundle":
-            raise SentinelSTIXError(
-                f"Expected STIX bundle, got type='{bundle.get('type')}'."
-            )
+            raise SentinelSTIXError(f"Expected STIX bundle, got type='{bundle.get('type')}'.")
         results = []
         for obj in bundle.get("objects", []):
             if obj.get("type") == "indicator":

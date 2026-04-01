@@ -54,14 +54,16 @@ from gnat.connectors.elastic.threat_intel import ElasticThreatIntelCommands
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 def _make_config(**overrides) -> ElasticConfig:
     defaults = {
-    "es_host": "elastic.test.local",
-    "api_key_id": "test_key_id",
-    "api_key_secret": "test_key_secret",
+        "es_host": "elastic.test.local",
+        "api_key_id": "test_key_id",
+        "api_key_secret": "test_key_secret",
     }
     defaults.update(overrides)
     return ElasticConfig(**defaults)
+
 
 def _make_response(status: int = 200, body=None) -> MagicMock:
     resp = MagicMock()
@@ -70,14 +72,16 @@ def _make_response(status: int = 200, body=None) -> MagicMock:
     resp.data = json.dumps(payload).encode("utf-8")
     return resp
 
+
 def _es_hits(docs: list, total: int | None = None) -> dict:
     """Build a standard ES search response envelope."""
     return {
-    "hits": {
-    "total": {"value": total or len(docs), "relation": "eq"},
-    "hits": [{"_id": str(i), "_source": d} for i, d in enumerate(docs)],
+        "hits": {
+            "total": {"value": total or len(docs), "relation": "eq"},
+            "hits": [{"_id": str(i), "_source": d} for i, d in enumerate(docs)],
+        }
     }
-    }
+
 
 def _make_client(config: ElasticConfig | None = None) -> tuple[ElasticClient, MagicMock]:
     cfg = config or _make_config()
@@ -95,8 +99,8 @@ def _make_client(config: ElasticConfig | None = None) -> tuple[ElasticClient, Ma
 
         # ═════════════════════════════════════════════════════════════════════════════
 
-class TestElasticConfig(unittest.TestCase):
 
+class TestElasticConfig(unittest.TestCase):
     def test_minimal_config(self):
         cfg = _make_config()
         self.assertEqual(cfg.es_host, "elastic.test.local")
@@ -179,16 +183,18 @@ class TestElasticConfig(unittest.TestCase):
 
     def test_load_from_configparser(self):
         parser = configparser.ConfigParser()
-        parser.read_dict({
-            "elastic": {
-                "es_host": "myES.corp",
-                "api_key_id": "kid",
-                "api_key_secret": "ksec",
-                "kibana_host": "myKibana.corp",
-                "verify_ssl": "false",
-                "timeout": "45",
+        parser.read_dict(
+            {
+                "elastic": {
+                    "es_host": "myES.corp",
+                    "api_key_id": "kid",
+                    "api_key_secret": "ksec",
+                    "kibana_host": "myKibana.corp",
+                    "verify_ssl": "false",
+                    "timeout": "45",
+                }
             }
-        })
+        )
         cfg = load_elastic_config(parser)
         self.assertEqual(cfg.es_host, "myES.corp")
         self.assertEqual(cfg.kibana_host, "myKibana.corp")
@@ -211,8 +217,8 @@ class TestElasticConfig(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestElasticAuthManager(unittest.TestCase):
 
+class TestElasticAuthManager(unittest.TestCase):
     def _make_auth(self, config=None):
         cfg = config or _make_config()
         mock_http = MagicMock()
@@ -250,7 +256,9 @@ class TestElasticAuthManager(unittest.TestCase):
 
     def test_verify_kibana_success(self):
         auth, mock_http = self._make_auth()
-        mock_http.request.return_value = _make_response(200, {"status": {"overall": {"level": "green"}}})
+        mock_http.request.return_value = _make_response(
+            200, {"status": {"overall": {"level": "green"}}}
+        )
         result = auth.verify_kibana()
         self.assertIsInstance(result, dict)
 
@@ -266,8 +274,8 @@ class TestElasticAuthManager(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestElasticClient(unittest.TestCase):
 
+class TestElasticClient(unittest.TestCase):
     def test_es_get_returns_dict(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {"status": "green"})
@@ -294,7 +302,10 @@ class TestElasticClient(unittest.TestCase):
 
     def test_es_404_raises_not_found(self):
         client, mock_http = _make_client()
-        body = {"error": {"type": "index_not_found_exception", "reason": "no such index"}, "status": 404}
+        body = {
+            "error": {"type": "index_not_found_exception", "reason": "no such index"},
+            "status": 404,
+        }
         mock_http.request.return_value = _make_response(404, body)
         with self.assertRaises(ElasticNotFoundError) as ctx:
             client.es_get("missing-index/_doc/1")
@@ -302,7 +313,9 @@ class TestElasticClient(unittest.TestCase):
 
     def test_es_409_raises_conflict(self):
         client, mock_http = _make_client()
-        mock_http.request.return_value = _make_response(409, {"error": {"type": "version_conflict_engine_exception"}})
+        mock_http.request.return_value = _make_response(
+            409, {"error": {"type": "version_conflict_engine_exception"}}
+        )
         with self.assertRaises(ElasticConflictError):
             client.es_put("my-index/_doc/1", body={"field": "val"})
 
@@ -327,7 +340,10 @@ class TestElasticClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.elastic.client.urllib3.PoolManager"), ElasticClient(cfg) as client:
+        with (
+            patch("gnat.connectors.elastic.client.urllib3.PoolManager"),
+            ElasticClient(cfg) as client,
+        ):
             self.assertIsInstance(client, ElasticClient)
 
     def test_es_search_hits_extracts_sources(self):
@@ -372,8 +388,8 @@ class TestElasticClient(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestElasticSearchCommands(unittest.TestCase):
 
+class TestElasticSearchCommands(unittest.TestCase):
     def _make_search_cmd(self):
         client, mock_http = _make_client()
         return ElasticSearchCommands(client), mock_http
@@ -427,7 +443,7 @@ class TestElasticSearchCommands(unittest.TestCase):
                         {"key": "network", "doc_count": 30},
                     ]
                 }
-            }
+            },
         }
         mock_http.request.return_value = _make_response(200, agg_response)
         buckets = search.aggregate_by_field("logs-*", "event.category")
@@ -454,8 +470,8 @@ class TestElasticSearchCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestKibanaRulesCommands(unittest.TestCase):
 
+class TestKibanaRulesCommands(unittest.TestCase):
     def _make_rules(self):
         client, mock_http = _make_client()
         return KibanaRulesCommands(client), mock_http
@@ -463,8 +479,7 @@ class TestKibanaRulesCommands(unittest.TestCase):
     def test_list_rules(self):
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
-            200,
-            {"data": [{"rule_id": "test-123", "name": "Test Rule"}], "total": 1}
+            200, {"data": [{"rule_id": "test-123", "name": "Test Rule"}], "total": 1}
         )
         result = rules_cmd.list_rules()
         self.assertEqual(result["total"], 1)
@@ -482,14 +497,16 @@ class TestKibanaRulesCommands(unittest.TestCase):
         mock_http.request.return_value = _make_response(
             200, {"id": "kibana-id", "rule_id": "test-123", "name": "New Rule"}
         )
-        rule = rules_cmd.create_rule({
-            "name": "New Rule",
-            "type": "query",
-            "query": "process.name: malware.exe",
-            "language": "kuery",
-            "severity": "high",
-            "risk_score": 75,
-        })
+        rule = rules_cmd.create_rule(
+            {
+                "name": "New Rule",
+                "type": "query",
+                "query": "process.name: malware.exe",
+                "language": "kuery",
+                "severity": "high",
+                "risk_score": 75,
+            }
+        )
         self.assertEqual(rule["rule_id"], "test-123")
 
     def test_enable_rule(self):
@@ -502,9 +519,7 @@ class TestKibanaRulesCommands(unittest.TestCase):
 
     def test_delete_rule(self):
         rules_cmd, mock_http = self._make_rules()
-        mock_http.request.return_value = _make_response(
-            200, {"rule_id": "test-123"}
-        )
+        mock_http.request.return_value = _make_response(200, {"rule_id": "test-123"})
         result = rules_cmd.delete_rule("test-123")
         self.assertIsNotNone(result)
 
@@ -522,8 +537,11 @@ class TestKibanaRulesCommands(unittest.TestCase):
                 {
                     "tactic": {"id": "TA0006", "name": "Credential Access"},
                     "technique": [
-                        {"id": "T1110", "name": "Brute Force",
-                         "subtechnique": [{"id": "T1110.001"}]}
+                        {
+                            "id": "T1110",
+                            "name": "Brute Force",
+                            "subtechnique": [{"id": "T1110.001"}],
+                        }
                     ],
                 }
             ],
@@ -542,8 +560,8 @@ class TestKibanaRulesCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestKibanaAlertsCommands(unittest.TestCase):
 
+class TestKibanaAlertsCommands(unittest.TestCase):
     def _make_alerts_cmd(self):
         client, mock_http = _make_client()
         return KibanaAlertsCommands(client), mock_http
@@ -552,8 +570,14 @@ class TestKibanaAlertsCommands(unittest.TestCase):
         alerts_cmd, mock_http = self._make_alerts_cmd()
         doc = {
             "@timestamp": "2024-03-10T12:00:00Z",
-            "kibana": {"alert": {"rule": {"name": "Test"}, "severity": "high",
-                                  "workflow_status": "open", "severity_score": 73}},
+            "kibana": {
+                "alert": {
+                    "rule": {"name": "Test"},
+                    "severity": "high",
+                    "workflow_status": "open",
+                    "severity_score": 73,
+                }
+            },
         }
         mock_http.request.return_value = _make_response(
             200, {"hits": {"hits": [{"_id": "1", "_source": doc}]}}
@@ -595,16 +619,19 @@ class TestKibanaAlertsCommands(unittest.TestCase):
 
     def test_get_alert_counts(self):
         alerts_cmd, mock_http = self._make_alerts_cmd()
-        mock_http.request.return_value = _make_response(200, {
-            "aggregations": {
-                "by_status": {
-                    "buckets": [
-                        {"key": "open", "doc_count": 50},
-                        {"key": "closed", "doc_count": 10},
-                    ]
+        mock_http.request.return_value = _make_response(
+            200,
+            {
+                "aggregations": {
+                    "by_status": {
+                        "buckets": [
+                            {"key": "open", "doc_count": 50},
+                            {"key": "closed", "doc_count": 10},
+                        ]
+                    }
                 }
-            }
-        })
+            },
+        )
         counts = alerts_cmd.get_alert_counts_by_status()
         self.assertEqual(counts["open"], 50)
         self.assertEqual(counts["closed"], 10)
@@ -615,8 +642,8 @@ class TestKibanaAlertsCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestKibanaCasesCommands(unittest.TestCase):
 
+class TestKibanaCasesCommands(unittest.TestCase):
     def _make_cases(self):
         client, mock_http = _make_client()
         return KibanaCasesCommands(client), mock_http
@@ -647,9 +674,7 @@ class TestKibanaCasesCommands(unittest.TestCase):
 
     def test_close_case(self):
         cases_cmd, mock_http = self._make_cases()
-        mock_http.request.return_value = _make_response(
-            200, {"id": "case-1", "status": "closed"}
-        )
+        mock_http.request.return_value = _make_response(200, {"id": "case-1", "status": "closed"})
         result = cases_cmd.close_case("case-1", "v1")
         self.assertIsNotNone(result)
 
@@ -659,26 +684,22 @@ class TestKibanaCasesCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestElasticThreatIntelCommands(unittest.TestCase):
 
+class TestElasticThreatIntelCommands(unittest.TestCase):
     def _make_ti(self):
         client, mock_http = _make_client()
         return ElasticThreatIntelCommands(client), mock_http
 
     def test_search_indicators(self):
         ti_cmd, mock_http = self._make_ti()
-        doc = {
-            "threat": {"indicator": {"type": "ipv4-addr", "ip": "1.2.3.4"}}
-        }
+        doc = {"threat": {"indicator": {"type": "ipv4-addr", "ip": "1.2.3.4"}}}
         mock_http.request.return_value = _make_response(200, _es_hits([doc]))
         results = ti_cmd.search_indicators(indicator_type="ipv4-addr")
         self.assertEqual(len(results), 1)
 
     def test_index_indicator_adds_timestamp(self):
         ti_cmd, mock_http = self._make_ti()
-        mock_http.request.return_value = _make_response(
-            200, {"_id": "new-id", "result": "created"}
-        )
+        mock_http.request.return_value = _make_response(200, {"_id": "new-id", "result": "created"})
         doc = {"threat": {"indicator": {"type": "ipv4-addr", "ip": "10.0.0.1"}}}
         ti_cmd.index_indicator(doc)
         # The request body should contain @timestamp
@@ -697,7 +718,7 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
                     "first_seen": "2024-01-01T00:00:00Z",
                 },
                 "feed": {"name": "Test Feed"},
-            }
+            },
         }
         result = ElasticThreatIntelCommands.normalise_indicator(doc)
         self.assertEqual(result["type"], "ipv4-addr")
@@ -707,17 +728,20 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
 
     def test_get_indicator_counts_by_type(self):
         ti_cmd, mock_http = self._make_ti()
-        mock_http.request.return_value = _make_response(200, {
-            "hits": {"hits": [], "total": {"value": 0}},
-            "aggregations": {
-                "top_values": {
-                    "buckets": [
-                        {"key": "ipv4-addr", "doc_count": 100},
-                        {"key": "domain-name", "doc_count": 50},
-                    ]
-                }
-            }
-        })
+        mock_http.request.return_value = _make_response(
+            200,
+            {
+                "hits": {"hits": [], "total": {"value": 0}},
+                "aggregations": {
+                    "top_values": {
+                        "buckets": [
+                            {"key": "ipv4-addr", "doc_count": 100},
+                            {"key": "domain-name", "doc_count": 50},
+                        ]
+                    }
+                },
+            },
+        )
         buckets = ti_cmd.get_indicator_counts_by_type()
         self.assertEqual(buckets[0]["key"], "ipv4-addr")
 
@@ -727,8 +751,8 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestElasticSTIXMapper(unittest.TestCase):
 
+class TestElasticSTIXMapper(unittest.TestCase):
     def setUp(self):
         self.mapper = ElasticSTIXMapper()
 
@@ -736,8 +760,9 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_ipv4_sco_to_ecs(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
-            "objects": [{"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.2.3.4"}]
+            "type": "bundle",
+            "spec_version": "2.1",
+            "objects": [{"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.2.3.4"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
         self.assertEqual(len(docs), 1)
@@ -746,27 +771,27 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_ipv6_sco_to_ecs(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
-            "objects": [{"type": "ipv6-addr", "id": "ipv6-addr--1", "value": "::1"}]
+            "type": "bundle",
+            "spec_version": "2.1",
+            "objects": [{"type": "ipv6-addr", "id": "ipv6-addr--1", "value": "::1"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
         self.assertEqual(docs[0]["threat"]["indicator"]["ip"], "::1")
 
     def test_domain_sco_to_ecs(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
-            "objects": [{"type": "domain-name", "id": "domain-name--1", "value": "evil.com"}]
+            "type": "bundle",
+            "spec_version": "2.1",
+            "objects": [{"type": "domain-name", "id": "domain-name--1", "value": "evil.com"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
         self.assertEqual(docs[0]["threat"]["indicator"]["domain"], "evil.com")
 
     def test_url_sco_to_ecs_extracts_domain(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
-            "objects": [{
-                "type": "url", "id": "url--1",
-                "value": "https://evil.com/path?q=1"
-            }]
+            "type": "bundle",
+            "spec_version": "2.1",
+            "objects": [{"type": "url", "id": "url--1", "value": "https://evil.com/path?q=1"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
         ti = docs[0]["threat"]["indicator"]
@@ -775,16 +800,20 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_file_sco_to_ecs_with_hashes(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
-            "objects": [{
-                "type": "file", "id": "file--1",
-                "name": "malware.exe",
-                "hashes": {
-                    "MD5": "abc123",
-                    "SHA-1": "def456",
-                    "SHA-256": "ghi789",
+            "type": "bundle",
+            "spec_version": "2.1",
+            "objects": [
+                {
+                    "type": "file",
+                    "id": "file--1",
+                    "name": "malware.exe",
+                    "hashes": {
+                        "MD5": "abc123",
+                        "SHA-1": "def456",
+                        "SHA-256": "ghi789",
+                    },
                 }
-            }]
+            ],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
         file_field = docs[0]["threat"]["indicator"]["file"]
@@ -799,18 +828,21 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_indicator_sdo_to_ecs(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
-            "objects": [{
-                "type": "indicator",
-                "id": "indicator--1",
-                "name": "Malicious IP",
-                "description": "C2 server",
-                "pattern": "[ipv4-addr:value = '10.0.0.99']",
-                "pattern_type": "stix",
-                "valid_from": "2024-01-01T00:00:00Z",
-                "confidence": 85,
-                "indicator_types": ["malicious-activity"],
-            }]
+            "type": "bundle",
+            "spec_version": "2.1",
+            "objects": [
+                {
+                    "type": "indicator",
+                    "id": "indicator--1",
+                    "name": "Malicious IP",
+                    "description": "C2 server",
+                    "pattern": "[ipv4-addr:value = '10.0.0.99']",
+                    "pattern_type": "stix",
+                    "valid_from": "2024-01-01T00:00:00Z",
+                    "confidence": 85,
+                    "indicator_types": ["malicious-activity"],
+                }
+            ],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
         self.assertEqual(len(docs), 1)
@@ -829,8 +861,9 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_provider_and_feed_name_applied(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
-            "objects": [{"type": "ipv4-addr", "id": "ip--1", "value": "1.1.1.1"}]
+            "type": "bundle",
+            "spec_version": "2.1",
+            "objects": [{"type": "ipv4-addr", "id": "ip--1", "value": "1.1.1.1"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(
             bundle, provider="my-provider", feed_name="My Feed"
@@ -842,11 +875,13 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_ecs_ipv4_to_stix_indicator(self):
         doc = {
-            "threat": {"indicator": {
-                "type": "ipv4-addr",
-                "ip": "1.2.3.4",
-                "first_seen": "2024-01-01T00:00:00Z",
-            }}
+            "threat": {
+                "indicator": {
+                    "type": "ipv4-addr",
+                    "ip": "1.2.3.4",
+                    "first_seen": "2024-01-01T00:00:00Z",
+                }
+            }
         }
         obj = self.mapper.ecs_indicator_to_stix(doc)
         self.assertIsNotNone(obj)
@@ -878,12 +913,17 @@ class TestElasticSTIXMapper(unittest.TestCase):
     def test_alert_to_stix_bundle_structure(self):
         alert = {
             "timestamp": "2024-03-10T12:00:00Z",
-            "rule_name": "Test Rule", "rule_id": "r1",
-            "severity": 3, "severity_label": "high",
-            "status": "open", "reason": "test",
+            "rule_name": "Test Rule",
+            "rule_id": "r1",
+            "severity": 3,
+            "severity_label": "high",
+            "status": "open",
+            "reason": "test",
             "host_name": "server1",
-            "src_ip": "1.2.3.4", "dest_ip": "10.0.0.5",
-            "user_name": "jdoe", "process_name": "cmd.exe",
+            "src_ip": "1.2.3.4",
+            "dest_ip": "10.0.0.5",
+            "user_name": "jdoe",
+            "process_name": "cmd.exe",
             "_raw": {},
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
@@ -896,8 +936,10 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_alert_observed_data_has_elastic_extension(self):
         alert = {
-            "rule_name": "Test", "rule_id": "r1",
-            "severity": 1, "severity_label": "low",
+            "rule_name": "Test",
+            "rule_id": "r1",
+            "severity": 1,
+            "severity_label": "low",
             "_raw": {},
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
@@ -907,12 +949,13 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_alert_file_hash_creates_file_sco(self):
         alert = {
-            "rule_name": "Malware", "_raw": {
+            "rule_name": "Malware",
+            "_raw": {
                 "file": {
                     "name": "evil.exe",
                     "hash": {"sha256": "abc123def456"},
                 }
-            }
+            },
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
         types = [o["type"] for o in bundle["objects"]]
@@ -930,20 +973,15 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     def test_alert_url_creates_url_sco(self):
         alert = {
-            "rule_name": "Phishing", "_raw": {
-                "url": {"full": "https://phish.example.com/login"}
-            }
+            "rule_name": "Phishing",
+            "_raw": {"url": {"full": "https://phish.example.com/login"}},
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
         types = [o["type"] for o in bundle["objects"]]
         self.assertIn("url", types)
 
     def test_alert_domain_only_creates_domain_sco(self):
-        alert = {
-            "rule_name": "C2", "_raw": {
-                "url": {"domain": "c2.evil.com"}
-            }
-        }
+        alert = {"rule_name": "C2", "_raw": {"url": {"domain": "c2.evil.com"}}}
         bundle = self.mapper.alert_to_stix_bundle(alert)
         types = [o["type"] for o in bundle["objects"]]
         self.assertIn("domain-name", types)
@@ -955,21 +993,29 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestElasticExceptions(unittest.TestCase):
 
+class TestElasticExceptions(unittest.TestCase):
     def test_all_inherit_from_base(self):
         from gnat.connectors.elastic.exceptions import ElasticError
+
         for exc_cls in [
-            ElasticConfigError, ElasticAuthError, ElasticAPIError,
-            ElasticNotFoundError, ElasticConflictError, ElasticRateLimitError,
-            ElasticKibanaError, ElasticKibanaNotFoundError,
-            ElasticKibanaValidationError, ElasticSTIXError,
+            ElasticConfigError,
+            ElasticAuthError,
+            ElasticAPIError,
+            ElasticNotFoundError,
+            ElasticConflictError,
+            ElasticRateLimitError,
+            ElasticKibanaError,
+            ElasticKibanaNotFoundError,
+            ElasticKibanaValidationError,
+            ElasticSTIXError,
         ]:
             self.assertTrue(issubclass(exc_cls, ElasticError))
 
     def test_api_error_str_includes_context(self):
         exc = ElasticAPIError(
-            "msg", status_code=400,
+            "msg",
+            status_code=400,
             error_type="parsing_exception",
             reason="bad query",
             endpoint="/_search",
@@ -981,7 +1027,8 @@ class TestElasticExceptions(unittest.TestCase):
 
     def test_kibana_error_str_includes_message(self):
         exc = ElasticKibanaError(
-            "msg", status_code=400,
+            "msg",
+            status_code=400,
             kibana_message="[name]: required",
             endpoint="/api/detection_engine/rules",
         )

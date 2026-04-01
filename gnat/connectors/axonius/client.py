@@ -50,6 +50,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("c5d6e7f8-9a0b-1c2d-3e4f-5a6b7c8d9e0f")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -70,7 +71,7 @@ class AxoniusClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "report":        "assets",
+        "report": "assets",
         "vulnerability": "vulnerabilities",
     }
 

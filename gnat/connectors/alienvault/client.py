@@ -50,35 +50,35 @@ _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
 # OTX indicator type → STIX SCO type
 _OTX_TO_STIX: dict[str, str] = {
-    "IPv4":           "ipv4-addr",
-    "IPv6":           "ipv6-addr",
-    "domain":         "domain-name",
-    "hostname":       "domain-name",
-    "URL":            "url",
-    "URI":            "url",
-    "email":          "email-addr",
-    "FileHash-MD5":   "file",
-    "FileHash-SHA1":  "file",
+    "IPv4": "ipv4-addr",
+    "IPv6": "ipv6-addr",
+    "domain": "domain-name",
+    "hostname": "domain-name",
+    "URL": "url",
+    "URI": "url",
+    "email": "email-addr",
+    "FileHash-MD5": "file",
+    "FileHash-SHA1": "file",
     "FileHash-SHA256": "file",
     "FileHash-SHA512": "file",
-    "CVE":            "vulnerability",
+    "CVE": "vulnerability",
 }
 
 # OTX hash type → STIX hash algorithm name
 _HASH_ALGO: dict[str, str] = {
-    "FileHash-MD5":   "MD5",
-    "FileHash-SHA1":  "SHA-1",
+    "FileHash-MD5": "MD5",
+    "FileHash-SHA1": "SHA-1",
     "FileHash-SHA256": "SHA-256",
     "FileHash-SHA512": "SHA-512",
 }
 
 # STIX pattern templates
 _PATTERNS: dict[str, str] = {
-    "ipv4-addr":   "[ipv4-addr:value = '{v}']",
-    "ipv6-addr":   "[ipv6-addr:value = '{v}']",
+    "ipv4-addr": "[ipv4-addr:value = '{v}']",
+    "ipv6-addr": "[ipv6-addr:value = '{v}']",
     "domain-name": "[domain-name:value = '{v}']",
-    "url":         "[url:value = '{v}']",
-    "email-addr":  "[email-addr:value = '{v}']",
+    "url": "[url:value = '{v}']",
+    "email-addr": "[email-addr:value = '{v}']",
 }
 
 
@@ -104,7 +104,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "indicators",
-        "report":    "pulses",
+        "report": "pulses",
     }
 
     def __init__(self, host: str, api_key: str = "", **kwargs: Any):
@@ -294,23 +294,23 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         pulse_id = pulse.get("id", "")
         report_id = f"report--{_det_uuid('report', pulse_id)}"
         return {
-            "type":         "report",
-            "id":           report_id,
+            "type": "report",
+            "id": report_id,
             "spec_version": "2.1",
-            "created":      pulse.get("created") or now,
-            "modified":     pulse.get("modified") or now,
-            "name":         pulse.get("name", "OTX Pulse"),
-            "description":  pulse.get("description", ""),
+            "created": pulse.get("created") or now,
+            "modified": pulse.get("modified") or now,
+            "name": pulse.get("name", "OTX Pulse"),
+            "description": pulse.get("description", ""),
             "report_types": ["threat-report"],
-            "published":    pulse.get("created") or now,
-            "labels":       pulse.get("tags", []),
+            "published": pulse.get("created") or now,
+            "labels": pulse.get("tags", []),
             "x_otx_pulse": {
-                "pulse_id":        pulse_id,
-                "author":          pulse.get("author_name"),
-                "tlp":             pulse.get("tlp"),
-                "adversary":       pulse.get("adversary"),
+                "pulse_id": pulse_id,
+                "author": pulse.get("author_name"),
+                "tlp": pulse.get("tlp"),
+                "adversary": pulse.get("adversary"),
                 "malware_families": pulse.get("malware_families", []),
-                "attack_ids":      pulse.get("attack_ids", []),
+                "attack_ids": pulse.get("attack_ids", []),
                 "targeted_countries": pulse.get("targeted_countries", []),
             },
         }
@@ -333,16 +333,16 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
 
         ind_id = f"indicator--{_det_uuid('indicator', value or now)}"
         return {
-            "type":            "indicator",
-            "id":              ind_id,
-            "spec_version":    "2.1",
-            "created":         ind.get("created") or now,
-            "modified":        now,
-            "name":            value,
-            "description":     ind.get("description", ind.get("title", "")),
-            "pattern":         pattern,
-            "pattern_type":    "stix",
-            "valid_from":      ind.get("created") or now,
+            "type": "indicator",
+            "id": ind_id,
+            "spec_version": "2.1",
+            "created": ind.get("created") or now,
+            "modified": now,
+            "name": value,
+            "description": ind.get("description", ind.get("title", "")),
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "valid_from": ind.get("created") or now,
             "indicator_types": ["malicious-activity"],
-            "x_otx_type":      otx_type,
+            "x_otx_type": otx_type,
         }

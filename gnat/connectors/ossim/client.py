@@ -149,7 +149,9 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         alarm_id = payload.get("id")
         if not alarm_id:
             raise GNATClientError("OSSIM upsert_object: 'id' is required in payload.")
-        return self.put(f"/api/1.0/alarms/{alarm_id}", json={"status": payload.get("status", "open")})
+        return self.put(
+            f"/api/1.0/alarms/{alarm_id}", json={"status": payload.get("status", "open")}
+        )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Delete an OSSIM alarm by UUID."""
@@ -222,8 +224,8 @@ class OSSIMClient(BaseClient, ConnectorMixin):
             STIX ``observed-data`` object.
         """
         alarm = self._normalise(native)
-        now   = _now_ts()
-        ts    = alarm.get("timestamp") or now
+        now = _now_ts()
+        ts = alarm.get("timestamp") or now
 
         objects: list[dict[str, Any]] = []
         refs: list[str] = []
@@ -234,18 +236,20 @@ class OSSIMClient(BaseClient, ConnectorMixin):
                 ip_id = f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}"
                 if ip_id not in seen:
                     seen.add(ip_id)
-                    objects.append({
-                        "type": "ipv4-addr",
-                        "id":   ip_id,
-                        "spec_version": "2.1",
-                        "value": ip,
-                    })
+                    objects.append(
+                        {
+                            "type": "ipv4-addr",
+                            "id": ip_id,
+                            "spec_version": "2.1",
+                            "value": ip,
+                        }
+                    )
                 refs.append(ip_id)
 
         src_ip = alarm.get("src_ip")
         dst_ip = alarm.get("dst_ip")
-        src_p  = alarm.get("src_port")
-        dst_p  = alarm.get("dst_port")
+        src_p = alarm.get("src_port")
+        dst_p = alarm.get("dst_port")
         if src_ip and dst_ip and (src_p or dst_p):
             key = f"{src_ip}:{src_p}-{dst_ip}:{dst_p}"
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
@@ -253,7 +257,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
                 seen.add(nid)
                 nt: dict[str, Any] = {
                     "type": "network-traffic",
-                    "id":   nid,
+                    "id": nid,
                     "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src_ip)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst_ip)}",
@@ -270,22 +274,22 @@ class OSSIMClient(BaseClient, ConnectorMixin):
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         obs: dict[str, Any] = {
-            "type":           "observed-data",
-            "id":             obs_id,
-            "spec_version":   "2.1",
-            "created":        now,
-            "modified":       now,
+            "type": "observed-data",
+            "id": obs_id,
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
             "first_observed": ts,
-            "last_observed":  ts,
+            "last_observed": ts,
             "number_observed": max(1, alarm.get("event_count", 1)),
-            "object_refs":    refs,
+            "object_refs": refs,
             "x_ossim_alarm": {
                 "alarm_id": alarm.get("id"),
-                "name":     alarm.get("name"),
+                "name": alarm.get("name"),
                 "priority": alarm.get("priority"),
                 "severity": alarm.get("severity"),
-                "status":   alarm.get("status"),
-                "sensor":   alarm.get("sensor"),
+                "status": alarm.get("status"),
+                "sensor": alarm.get("sensor"),
             },
         }
         objects.append(obs)
@@ -299,7 +303,7 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         """
         ossim = stix_dict.get("x_ossim_alarm", {})
         return {
-            "id":     ossim.get("alarm_id", ""),
+            "id": ossim.get("alarm_id", ""),
             "status": ossim.get("status", "open"),
             "stix_id": stix_dict.get("id", ""),
         }
@@ -312,17 +316,17 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         prio = int(alarm.get("priority", 1))
         sev_map = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
         return {
-            "id":          alarm.get("uuid") or alarm.get("id"),
-            "timestamp":   alarm.get("timestamp"),
-            "name":        alarm.get("rule_name") or alarm.get("name"),
-            "priority":    prio,
-            "severity":    sev_map.get(prio, 1),
-            "status":      alarm.get("status"),
-            "src_ip":      alarm.get("src_ip"),
-            "dst_ip":      alarm.get("dst_ip"),
-            "src_port":    alarm.get("src_port"),
-            "dst_port":    alarm.get("dst_port"),
-            "protocol":    alarm.get("protocol"),
-            "sensor":      alarm.get("sensor"),
+            "id": alarm.get("uuid") or alarm.get("id"),
+            "timestamp": alarm.get("timestamp"),
+            "name": alarm.get("rule_name") or alarm.get("name"),
+            "priority": prio,
+            "severity": sev_map.get(prio, 1),
+            "status": alarm.get("status"),
+            "src_ip": alarm.get("src_ip"),
+            "dst_ip": alarm.get("dst_ip"),
+            "src_port": alarm.get("src_port"),
+            "dst_port": alarm.get("dst_port"),
+            "protocol": alarm.get("protocol"),
+            "sensor": alarm.get("sensor"),
             "event_count": alarm.get("event_count", 0),
         }

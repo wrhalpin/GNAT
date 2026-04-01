@@ -26,18 +26,19 @@ These map to STIX 2.1 vulnerability SDOs.
 ## References
 
 - https://documentation.wazuh.com/current/user-manual/api/reference.html#tag/Vulnerability
-  """
+"""
 
 from .client import WazuhClient
 
 _CVSS_SEVERITY_MAP = {
-"critical": 4,
-"high": 3,
-"medium": 2,
-"low": 1,
-"none": 0,
-"unknown": 0,
+    "critical": 4,
+    "high": 3,
+    "medium": 2,
+    "low": 1,
+    "none": 0,
+    "unknown": 0,
 }
+
 
 class WazuhVulnerabilityCommands:
     """
@@ -84,9 +85,7 @@ class WazuhVulnerabilityCommands:
         list[dict]
             Vulnerability records.
         """
-        params: dict = {
-            "limit": min(limit or self._client.config.max_results, 500)
-        }
+        params: dict = {"limit": min(limit or self._client.config.max_results, 500)}
         if severity:
             params["severity"] = severity
         if cve:
@@ -96,9 +95,7 @@ class WazuhVulnerabilityCommands:
         if sort:
             params["sort"] = sort
 
-        response = self._client.get(
-            f"vulnerability/{agent_id}", params=params
-        )
+        response = self._client.get(f"vulnerability/{agent_id}", params=params)
         return self._client.extract_items(response)
 
     def iter_all_vulnerabilities(
@@ -124,9 +121,7 @@ class WazuhVulnerabilityCommands:
         params: dict = {}
         if severity:
             params["severity"] = severity
-        yield from self._client.paginate(
-            f"vulnerability/{agent_id}", params=params
-        )
+        yield from self._client.paginate(f"vulnerability/{agent_id}", params=params)
 
     def get_vulnerability_summary(self, agent_id: str) -> dict:
         """

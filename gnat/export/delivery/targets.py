@@ -54,8 +54,8 @@ class FileDelivery(ExportDelivery):
         atomic: bool = True,
         encoding: str = "utf-8",
     ):
-        self._dir      = Path(output_dir)
-        self._atomic   = atomic
+        self._dir = Path(output_dir)
+        self._atomic = atomic
         self._encoding = encoding
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
@@ -73,9 +73,7 @@ class FileDelivery(ExportDelivery):
                     body = content  # bytes
 
                 if self._atomic:
-                    tmp_fd, tmp_path = tempfile.mkstemp(
-                        dir=self._dir, prefix=f".{name}.tmp"
-                    )
+                    tmp_fd, tmp_path = tempfile.mkstemp(dir=self._dir, prefix=f".{name}.tmp")
                     try:
                         os.write(tmp_fd, body)
                         os.fsync(tmp_fd)
@@ -146,11 +144,11 @@ class HTTPDelivery(ExportDelivery):
         per_payload_url: dict[str, str] | None = None,
         success_codes: list[int] | None = None,
     ):
-        self._url           = url
-        self._headers       = {"Content-Type": content_type, **(headers or {})}
-        self._auth          = auth
-        self._timeout       = timeout
-        self._per_url       = per_payload_url or {}
+        self._url = url
+        self._headers = {"Content-Type": content_type, **(headers or {})}
+        self._auth = auth
+        self._timeout = timeout
+        self._per_url = per_payload_url or {}
         self._success_codes = set(success_codes or [200, 201, 204])
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
@@ -171,13 +169,13 @@ class HTTPDelivery(ExportDelivery):
 
             validate_url_scheme(target_url)
             req = urllib.request.Request(
-                target_url, data=body, method="POST",
+                target_url,
+                data=body,
+                method="POST",
                 headers=dict(self._headers),
             )
             if self._auth:
-                creds = base64.b64encode(
-                    f"{self._auth[0]}:{self._auth[1]}".encode()
-                ).decode()
+                creds = base64.b64encode(f"{self._auth[0]}:{self._auth[1]}".encode()).decode()
                 req.add_header("Authorization", f"Basic {creds}")
 
             try:
@@ -235,10 +233,10 @@ class EDLServer(ExportDelivery):
     """
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8080):  # nosec B104 — overridable via --host flag
-        self._host   = host
-        self._port   = port
+        self._host = host
+        self._port = port
         self._files: dict[str, str] = {}
-        self._lock   = threading.Lock()
+        self._lock = threading.Lock()
         self._server = None
         self._thread = None
 
@@ -266,8 +264,9 @@ class EDLServer(ExportDelivery):
 
     def _start(self) -> None:
         import http.server
+
         files_ref = self._files
-        lock_ref  = self._lock
+        lock_ref = self._lock
 
         class _H(http.server.BaseHTTPRequestHandler):
             def do_GET(self):
@@ -290,7 +289,8 @@ class EDLServer(ExportDelivery):
 
         self._server = http.server.HTTPServer((self._host, self._port), _H)
         self._thread = threading.Thread(
-            target=self._server.serve_forever, daemon=True,
+            target=self._server.serve_forever,
+            daemon=True,
             name=f"gnat-edl:{self._port}",
         )
         self._thread.start()
@@ -336,8 +336,7 @@ class PlatformDelivery(ExportDelivery):
         if not objects:
             bundle_raw = result.payloads.get("bundle.json")
             if bundle_raw:
-                bundle = json.loads(bundle_raw) if isinstance(bundle_raw, str) \
-                         else bundle_raw
+                bundle = json.loads(bundle_raw) if isinstance(bundle_raw, str) else bundle_raw
                 objects = bundle.get("objects", [])
 
         dr = DeliveryResult()
@@ -345,7 +344,7 @@ class PlatformDelivery(ExportDelivery):
         for obj in objects:
             try:
                 stix_dict = obj.to_dict() if hasattr(obj, "to_dict") else obj
-                native    = self._client.client.from_stix(stix_dict)
+                native = self._client.client.from_stix(stix_dict)
                 self._client.client.upsert_object(stix_dict.get("type", ""), native)
                 written += 1
             except Exception as exc:  # noqa: BLE001
@@ -415,21 +414,21 @@ class LogDelivery(ExportDelivery):
     """
 
     def __init__(self, level: str = "debug", max_chars: int = 500):
-        self._level  = getattr(logging, level.upper(), logging.DEBUG)
-        self._max    = max_chars
+        self._level = getattr(logging, level.upper(), logging.DEBUG)
+        self._max = max_chars
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
         dr = DeliveryResult()
         for name, content in result.payloads.items():
             if isinstance(content, bytes):
-                body = content.decode("utf-8", errors="replace")[:self._max]
+                body = content.decode("utf-8", errors="replace")[: self._max]
             elif isinstance(content, (dict, list)):
                 try:
-                    body = json.dumps(content)[:self._max]
+                    body = json.dumps(content)[: self._max]
                 except (TypeError, ValueError):
-                    body = str(content)[:self._max]
+                    body = str(content)[: self._max]
             else:
-                body = str(content)[:self._max]
+                body = str(content)[: self._max]
             logger.log(self._level, "LogDelivery[%s]: %s", name, body)
             dr.delivered.append(name)
         return dr

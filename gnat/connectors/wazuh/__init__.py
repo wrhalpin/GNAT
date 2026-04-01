@@ -68,28 +68,28 @@ from .syscheck import WazuhSyscheckCommands
 from .vulnerabilities import WazuhVulnerabilityCommands
 
 __all__ = [
-"WazuhClient",
-"WazuhAuthManager",
-"WazuhAgentCommands",
-"WazuhAlertCommands",
-"WazuhSyscheckCommands",
-"WazuhVulnerabilityCommands",
-"WazuhRulesCommands",
-"WazuhActiveResponseCommands",
-"WazuhIndexerCommands",
-"WazuhSTIXMapper",
-"WazuhConfig",
-"load_wazuh_config",
-"WazuhAuthError",
-"WazuhAPIError",
-"WazuhNotFoundError",
-"WazuhPermissionError",
-"WazuhConfigError",
-"WazuhSTIXError",
-"WazuhIndexerError",
+    "WazuhClient",
+    "WazuhAuthManager",
+    "WazuhAgentCommands",
+    "WazuhAlertCommands",
+    "WazuhSyscheckCommands",
+    "WazuhVulnerabilityCommands",
+    "WazuhRulesCommands",
+    "WazuhActiveResponseCommands",
+    "WazuhIndexerCommands",
+    "WazuhSTIXMapper",
+    "WazuhConfig",
+    "load_wazuh_config",
+    "WazuhAuthError",
+    "WazuhAPIError",
+    "WazuhNotFoundError",
+    "WazuhPermissionError",
+    "WazuhConfigError",
+    "WazuhSTIXError",
+    "WazuhIndexerError",
 ]
 
 __version__ = "0.1.0"
 __platform__ = "Wazuh Open Source XDR / SIEM"
 __api_versions__ = ["4.7.x", "4.8.x", "4.9.x", "4.10.x", "4.11.x", "4.12.x"]
-__stix_support__ = "mapped"   # No native STIX; full mapping via WazuhSTIXMapper
+__stix_support__ = "mapped"  # No native STIX; full mapping via WazuhSTIXMapper

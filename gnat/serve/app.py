@@ -363,7 +363,7 @@ def create_app(
     app = FastAPI(
         title="GNAT Web Dashboard",
         version="0.1.0",
-        docs_url=None,     # no Swagger UI exposed publicly
+        docs_url=None,  # no Swagger UI exposed publicly
         redoc_url=None,
         openapi_url=None,
     )
@@ -384,8 +384,8 @@ def create_app(
 
     # ── Authenticated API routers ──────────────────────────────────────────
     _api_deps = [Depends(auth), Depends(limiter)]
-    app.include_router(library.router,   dependencies=_api_deps)
-    app.include_router(reports.router,   dependencies=_api_deps)
+    app.include_router(library.router, dependencies=_api_deps)
+    app.include_router(reports.router, dependencies=_api_deps)
     app.include_router(scheduler.router, dependencies=_api_deps)
 
     return app

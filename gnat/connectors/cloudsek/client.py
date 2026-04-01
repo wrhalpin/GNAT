@@ -42,10 +42,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":    "indicators",
+        "indicator": "indicators",
         "observed-data": "alerts",
         "threat-actor": "threat_actors",
-        "malware":      "malware",
+        "malware": "malware",
     }
 
     def __init__(
@@ -57,7 +57,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     ) -> None:
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
-        self._org_id  = org_id
+        self._org_id = org_id
 
     # ------------------------------------------------------------------
     # ConnectorMixin interface
@@ -66,7 +66,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Bearer token and optional organisation header."""
         self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
-        self._auth_headers["Content-Type"]  = "application/json"
+        self._auth_headers["Content-Type"] = "application/json"
         if self._org_id:
             self._auth_headers["X-Org-Id"] = self._org_id
 
@@ -75,9 +75,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/alerts", params={"limit": 1})
         return isinstance(resp, dict)
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve a CloudSEK alert or indicator by ID."""
         resource = self.stix_type_map.get(stix_type, "alerts")
         resp = self.get(f"{_API}/{resource}/{object_id}")
@@ -103,7 +101,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         """
         resource = self.stix_type_map.get(stix_type, "alerts")
         params: dict[str, Any] = {
-            "limit":  min(page_size, 500),
+            "limit": min(page_size, 500),
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -114,9 +112,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("data", resp.get("results", []))
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """CloudSEK XVigil API is read-only — raises :class:`GNATClientError`."""
         raise GNATClientError(
             "CloudSEK XVigil API is read-only. "
@@ -130,9 +126,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     # Extra helpers
     # ------------------------------------------------------------------
 
-    def update_alert_status(
-        self, alert_id: str, status: str, comment: str = ""
-    ) -> dict[str, Any]:
+    def update_alert_status(self, alert_id: str, status: str, comment: str = "") -> dict[str, Any]:
         """
         Update the status of a CloudSEK alert (triage workflow).
 
@@ -165,6 +159,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a CloudSEK search query from a STIX dict."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_dict.get("name", "")
@@ -176,45 +171,45 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         category = native.get("category", "")
-        value    = (
+        value = (
             native.get("email")
             or native.get("domain")
             or native.get("url")
             or native.get("keyword", native.get("title", ""))
         )
-        pattern  = self._make_pattern(category, value)
+        pattern = self._make_pattern(category, value)
         severity = native.get("severity", "medium")
         conf = {"critical": 95, "high": 75, "medium": 50, "low": 25}.get(
             severity.lower() if isinstance(severity, str) else "medium", 50
         )
         return {
-            "type":              "indicator",
-            "id":                f"indicator--cs-{native.get('id', '')}",
-            "name":              value or native.get("title", ""),
-            "description":       native.get("description", native.get("title", ""))[:500],
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("created_at", native.get("date", "")),
-            "modified":          native.get("updated_at", ""),
-            "confidence":        conf,
-            "indicator_types":   ["malicious-activity"],
+            "type": "indicator",
+            "id": f"indicator--cs-{native.get('id', '')}",
+            "name": value or native.get("title", ""),
+            "description": native.get("description", native.get("title", ""))[:500],
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("created_at", native.get("date", "")),
+            "modified": native.get("updated_at", ""),
+            "confidence": conf,
+            "indicator_types": ["malicious-activity"],
             "x_source_platform": "cloudsek",
-            "x_cs_id":           native.get("id", ""),
-            "x_cs_category":     category,
-            "x_cs_severity":     severity,
-            "x_cs_status":       native.get("status", ""),
+            "x_cs_id": native.get("id", ""),
+            "x_cs_category": category,
+            "x_cs_severity": severity,
+            "x_cs_status": native.get("status", ""),
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "threat-actor",
-            "id":                f"threat-actor--cs-{native.get('id', '')}",
-            "name":              native.get("name", ""),
-            "description":       native.get("description", "")[:500],
-            "created":           native.get("created_at", ""),
-            "modified":          native.get("updated_at", ""),
+            "type": "threat-actor",
+            "id": f"threat-actor--cs-{native.get('id', '')}",
+            "name": native.get("name", ""),
+            "description": native.get("description", "")[:500],
+            "created": native.get("created_at", ""),
+            "modified": native.get("updated_at", ""),
             "x_source_platform": "cloudsek",
-            "x_cs_id":           native.get("id", ""),
+            "x_cs_id": native.get("id", ""),
         }
 
     @staticmethod

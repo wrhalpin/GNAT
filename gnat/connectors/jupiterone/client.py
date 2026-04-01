@@ -39,12 +39,13 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("e9f0a1b2-c3d4-5e6f-7a8b-9c0d1e2f3a4b")
+
 
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
@@ -63,12 +64,14 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
         JupiterOne account-level API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "report": "entities",
         "vulnerability": "findings",
     }
 
-    def __init__(self, host: str = "https://graphql.us.jupiterone.io", api_key: str = "", **kwargs: Any):
+    def __init__(
+        self, host: str = "https://graphql.us.jupiterone.io", api_key: str = "", **kwargs: Any
+    ):
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -88,7 +91,7 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
         self._graphql_query(query)
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single entity or finding by ID (via GraphQL)."""
         if stix_type == "report":
             query = """
@@ -113,10 +116,10 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         filters = dict(filters or {})
         limit = page_size
 
@@ -125,9 +128,11 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
         # Default: entities/assets as reports
         return self.fetch_entities(limit=limit, **filters)
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         # JupiterOne supports mutations for custom entities; stub for now
-        raise GNATClientError("JupiterOne upsert via GraphQL mutation not implemented in this connector yet.")
+        raise GNATClientError(
+            "JupiterOne upsert via GraphQL mutation not implemented in this connector yet."
+        )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Deletion via GraphQL not implemented in this connector.")

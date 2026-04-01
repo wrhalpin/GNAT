@@ -51,6 +51,7 @@ class SentinelAuthError(SentinelError):
     azure_error_code : str
         Azure error code string (e.g. 'AuthorizationFailed').
     """
+
     def __init__(self, message: str, azure_error_code: str = "") -> None:
         super().__init__(message)
         self.azure_error_code = azure_error_code
@@ -71,6 +72,7 @@ class SentinelAPIError(SentinelError):
     azure_message : str
     endpoint : str | None
     """
+
     def __init__(
         self,
         message: str,

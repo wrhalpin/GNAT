@@ -40,11 +40,11 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "ioc",
-        "threat-actor":  "threat_actor",
-        "malware":       "malware",
+        "indicator": "ioc",
+        "threat-actor": "threat_actor",
+        "malware": "malware",
         "vulnerability": "vulnerability",
-        "campaign":      "campaign",
+        "campaign": "campaign",
     }
 
     def __init__(
@@ -55,7 +55,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._api_key   = api_key
+        self._api_key = api_key
         self._company_id = company_id
 
     # ------------------------------------------------------------------
@@ -65,16 +65,14 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Inject the SOCRadar API key header."""
         self._auth_headers["Authorization"] = self._api_key
-        self._auth_headers["Content-Type"]  = "application/json"
+        self._auth_headers["Content-Type"] = "application/json"
 
     def health_check(self) -> bool:
         """Ping the IOC feed with a minimal query."""
         resp = self.get(f"{_API}/cti/ioc/", params={"limit": 1})
         return isinstance(resp, dict)
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve a single SOCRadar object by ID."""
         resource = self.stix_type_map.get(stix_type, "ioc")
         resp = self.get(f"{_API}/cti/{resource}/{object_id}/")
@@ -99,7 +97,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         """
         resource = self.stix_type_map.get(stix_type, "ioc")
         params: dict[str, Any] = {
-            "limit":  min(page_size, 500),
+            "limit": min(page_size, 500),
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -110,9 +108,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("data", resp.get("results", []))
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """SOCRadar TI API is read-only — raises :class:`GNATClientError`."""
         raise GNATClientError(
             "SOCRadar TI API is read-only. Use the SOCRadar portal to manage IOCs."
@@ -137,11 +133,12 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a SOCRadar IOC search payload from a STIX dict."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_dict.get("name", "")
         return {
-            "value":    value,
+            "value": value,
             "ioc_type": self._stix_to_sr_type(pattern),
         }
 
@@ -151,49 +148,49 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
 
     def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         sr_type = native.get("ioc_type", native.get("type", ""))
-        value   = native.get("value", native.get("indicator", ""))
+        value = native.get("value", native.get("indicator", ""))
         pattern = self._make_pattern(sr_type, value)
         severity = native.get("severity", "medium")
         conf = {"critical": 95, "high": 75, "medium": 50, "low": 25}.get(
             severity.lower() if isinstance(severity, str) else "medium", 50
         )
         return {
-            "type":              "indicator",
-            "id":                f"indicator--sr-{native.get('id', '')}",
-            "name":              value,
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("created_at", native.get("date", "")),
-            "modified":          native.get("updated_at", ""),
-            "confidence":        conf,
-            "indicator_types":   ["malicious-activity"],
+            "type": "indicator",
+            "id": f"indicator--sr-{native.get('id', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("created_at", native.get("date", "")),
+            "modified": native.get("updated_at", ""),
+            "confidence": conf,
+            "indicator_types": ["malicious-activity"],
             "x_source_platform": "socradar",
-            "x_sr_id":           native.get("id", ""),
-            "x_sr_severity":     severity,
-            "x_sr_ioc_type":     sr_type,
+            "x_sr_id": native.get("id", ""),
+            "x_sr_severity": severity,
+            "x_sr_ioc_type": sr_type,
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "threat-actor",
-            "id":                f"threat-actor--sr-{native.get('id', '')}",
-            "name":              native.get("name", ""),
-            "description":       native.get("description", "")[:500],
-            "aliases":           native.get("aliases", []),
-            "created":           native.get("created_at", ""),
-            "modified":          native.get("updated_at", ""),
+            "type": "threat-actor",
+            "id": f"threat-actor--sr-{native.get('id', '')}",
+            "name": native.get("name", ""),
+            "description": native.get("description", "")[:500],
+            "aliases": native.get("aliases", []),
+            "created": native.get("created_at", ""),
+            "modified": native.get("updated_at", ""),
             "x_source_platform": "socradar",
         }
 
     def _malware_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "malware",
-            "id":                f"malware--sr-{native.get('id', '')}",
-            "name":              native.get("name", ""),
-            "description":       native.get("description", "")[:500],
-            "is_family":         True,
-            "created":           native.get("created_at", ""),
-            "modified":          native.get("updated_at", ""),
+            "type": "malware",
+            "id": f"malware--sr-{native.get('id', '')}",
+            "name": native.get("name", ""),
+            "description": native.get("description", "")[:500],
+            "is_family": True,
+            "created": native.get("created_at", ""),
+            "modified": native.get("updated_at", ""),
             "x_source_platform": "socradar",
         }
 

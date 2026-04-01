@@ -9,6 +9,7 @@ from typing import Any
 
 try:
     import yaml
+
     _HAS_YAML = True
 except ImportError:  # pragma: no cover
     _HAS_YAML = False
@@ -53,7 +54,7 @@ class ConnectorRegistry:
         return sorted(self._specs.keys())
 
     @classmethod
-    def load(cls, path: str | Path) -> "ConnectorRegistry":
+    def load(cls, path: str | Path) -> ConnectorRegistry:
         raw = _load_registry_file(Path(path))
         specs: dict[str, ConnectorSpec] = {}
         for name, item in raw.items():

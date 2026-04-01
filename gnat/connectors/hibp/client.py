@@ -78,7 +78,7 @@ class HIBPClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "breaches",
-        "identity":      "pasteaccount",
+        "identity": "pasteaccount",
     }
 
     def __init__(
@@ -141,7 +141,7 @@ class HIBPClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v3/breaches", params=params)
             items = resp if isinstance(resp, list) else []
             start = (page - 1) * page_size
-            return items[start: start + page_size]
+            return items[start : start + page_size]
         if stix_type == "identity":
             account = f.get("account", "")
             if not account:

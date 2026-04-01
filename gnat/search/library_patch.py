@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 # Mixin / patch showing the three changes — integrate into library.py
 # ---------------------------------------------------------------------------
 
+
 class _ResearchLibrarySearchPatch:
     """
     Shows only the changed / added methods.  Integrate these into the
@@ -58,6 +59,7 @@ class _ResearchLibrarySearchPatch:
             self._search_index = search_index
         else:
             from gnat.search.index import NullSearchIndex
+
             self._search_index: SearchIndex = NullSearchIndex()
 
     # --- Change 2: updated search() dispatcher ---
@@ -195,9 +197,7 @@ class _ResearchLibrarySearchPatch:
                     extra_fields={"research_topic": entry.topic},
                 )
                 if not ok:
-                    logger.debug(
-                        "Solr index skipped for %s (non-fatal)", obj.id
-                    )
+                    logger.debug("Solr index skipped for %s (non-fatal)", obj.id)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Solr index failed for %s: %s", obj.id, exc)
 
@@ -216,9 +216,11 @@ class _ResearchLibrarySearchPatch:
         try:
             from gnat.config import GNATConfig
             from gnat.search import build_search_index
+
             cfg = GNATConfig()
             return build_search_index(cfg)
         except Exception as exc:
             logger.debug("Search index not configured: %s", exc)
             from gnat.search.index import NullSearchIndex
+
             return NullSearchIndex()

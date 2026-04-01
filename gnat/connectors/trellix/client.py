@@ -68,8 +68,8 @@ class TrellixClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "iocs",
-        "malware":       "detections",
+        "indicator": "iocs",
+        "malware": "detections",
         "vulnerability": "vulnerabilities",
     }
 
@@ -93,10 +93,10 @@ class TrellixClient(BaseClient, ConnectorMixin):
         resp = self.post(
             "/iam/v1.0/token",
             data={
-                "grant_type":    "client_credentials",
-                "client_id":     self._client_id,
+                "grant_type": "client_credentials",
+                "client_id": self._client_id,
                 "client_secret": self._client_secret,
-                "scope":         "soc.act.tie",
+                "scope": "soc.act.tie",
             },
         )
         token = resp.get("access_token") if isinstance(resp, dict) else None
@@ -134,7 +134,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List threats, IOCs, or vulnerabilities with optional filters."""
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -153,7 +153,9 @@ class TrellixClient(BaseClient, ConnectorMixin):
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update an IOC in Trellix TIE."""
         if stix_type != "indicator":
-            raise GNATClientError(f"Trellix: upsert only supported for 'indicator', got '{stix_type}'")
+            raise GNATClientError(
+                f"Trellix: upsert only supported for 'indicator', got '{stix_type}'"
+            )
         resp = self.post("/mvision/epo/api/v2/iocs", json={"data": payload})
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
@@ -228,34 +230,39 @@ class TrellixClient(BaseClient, ConnectorMixin):
         name = stix_dict.get("name", "")
         pattern = stix_dict.get("pattern", "")
         return {
-            "type":        stix_dict.get("x_trellix_ioc_type", "domain"),
-            "value":       name,
-            "pattern":     pattern,
-            "confidence":  stix_dict.get("confidence", 50),
-            "action":      "block",
+            "type": stix_dict.get("x_trellix_ioc_type", "domain"),
+            "value": name,
+            "pattern": pattern,
+            "confidence": stix_dict.get("confidence", 50),
+            "action": "block",
         }
 
     def _ioc_to_stix(self, ioc: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         ioc_id = str(ioc.get("id", ""))
-        value  = ioc.get("value", "")
+        value = ioc.get("value", "")
         ioc_type = ioc.get("type", "domain")
-        type_map = {"ip": "ipv4-addr:value", "domain": "domain-name:value",
-                    "url": "url:value", "md5": "file:hashes.MD5",
-                    "sha256": "file:hashes.'SHA-256'", "sha1": "file:hashes.'SHA-1'"}
+        type_map = {
+            "ip": "ipv4-addr:value",
+            "domain": "domain-name:value",
+            "url": "url:value",
+            "md5": "file:hashes.MD5",
+            "sha256": "file:hashes.'SHA-256'",
+            "sha1": "file:hashes.'SHA-1'",
+        }
         stix_prop = type_map.get(ioc_type, "domain-name:value")
         return {
-            "type":            "indicator",
-            "id":              f"indicator--{_uuid.uuid5(_STIX_NS, f'trellix:{ioc_id}')}",
-            "spec_version":    "2.1",
-            "created":         ioc.get("created_at", now),
-            "modified":        ioc.get("updated_at", now),
-            "name":            value,
-            "description":     ioc.get("description", ""),
-            "pattern":         f"[{stix_prop} = '{value}']",
-            "pattern_type":    "stix",
+            "type": "indicator",
+            "id": f"indicator--{_uuid.uuid5(_STIX_NS, f'trellix:{ioc_id}')}",
+            "spec_version": "2.1",
+            "created": ioc.get("created_at", now),
+            "modified": ioc.get("updated_at", now),
+            "name": value,
+            "description": ioc.get("description", ""),
+            "pattern": f"[{stix_prop} = '{value}']",
+            "pattern_type": "stix",
             "indicator_types": ["malicious-activity"],
-            "confidence":      ioc.get("confidence", 50),
+            "confidence": ioc.get("confidence", 50),
             "x_trellix_ioc_type": ioc_type,
         }
 
@@ -263,20 +270,20 @@ class TrellixClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         tid = str(threat.get("id", ""))
         return {
-            "type":          "malware",
-            "id":            f"malware--{_uuid.uuid5(_STIX_NS, f'trellix:{tid}')}",
-            "spec_version":  "2.1",
-            "created":       threat.get("detected_at", now),
-            "modified":      threat.get("updated_at", now),
-            "name":          threat.get("name", "Unknown Trellix Threat"),
-            "description":   threat.get("description", ""),
+            "type": "malware",
+            "id": f"malware--{_uuid.uuid5(_STIX_NS, f'trellix:{tid}')}",
+            "spec_version": "2.1",
+            "created": threat.get("detected_at", now),
+            "modified": threat.get("updated_at", now),
+            "name": threat.get("name", "Unknown Trellix Threat"),
+            "description": threat.get("description", ""),
             "malware_types": [threat.get("category", "unknown")],
-            "is_family":     False,
+            "is_family": False,
             "x_trellix": {
                 "threat_id": tid,
-                "severity":  threat.get("severity"),
-                "status":    threat.get("status"),
-                "host":      threat.get("host_name"),
+                "severity": threat.get("severity"),
+                "status": threat.get("status"),
+                "host": threat.get("host_name"),
             },
         }
 
@@ -284,19 +291,19 @@ class TrellixClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         vid = str(vuln.get("id", ""))
         return {
-            "type":         "vulnerability",
-            "id":           f"vulnerability--{_uuid.uuid5(_STIX_NS, f'trellix:{vid}')}",
+            "type": "vulnerability",
+            "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, f'trellix:{vid}')}",
             "spec_version": "2.1",
-            "created":      vuln.get("published_at", now),
-            "modified":     vuln.get("updated_at", now),
-            "name":         vuln.get("cve_id", vuln.get("name", "Trellix Vulnerability")),
-            "description":  vuln.get("description", ""),
+            "created": vuln.get("published_at", now),
+            "modified": vuln.get("updated_at", now),
+            "name": vuln.get("cve_id", vuln.get("name", "Trellix Vulnerability")),
+            "description": vuln.get("description", ""),
             "external_references": [
                 {"source_name": "trellix", "external_id": vid},
             ],
             "x_trellix": {
-                "vuln_id":    vid,
+                "vuln_id": vid,
                 "cvss_score": vuln.get("cvss_score"),
-                "severity":   vuln.get("severity"),
+                "severity": vuln.get("severity"),
             },
         }

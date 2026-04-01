@@ -90,9 +90,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """Inject HTTP Basic auth header."""
-        creds = base64.b64encode(
-            f"{self._username}:{self._password}".encode()
-        ).decode()
+        creds = base64.b64encode(f"{self._username}:{self._password}".encode()).decode()
         self._auth_headers["Authorization"] = f"Basic {creds}"
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["X-Requested-By"] = "GNAT"
@@ -138,8 +136,8 @@ class GraylogClient(BaseClient, ConnectorMixin):
             * ``fields`` — comma-separated field list
         """
         filters = dict(filters or {})
-        query  = filters.pop("query", "*")
-        rng    = filters.pop("range", 3600)
+        query = filters.pop("query", "*")
+        rng = filters.pop("range", 3600)
         fields = filters.pop("fields", None)
 
         params: dict[str, Any] = {
@@ -242,7 +240,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
         """
         msg = native.get("message", native)
         now = _now_ts()
-        ts  = msg.get("timestamp") or now
+        ts = msg.get("timestamp") or now
 
         objects: list[dict[str, Any]] = []
         refs: list[str] = []
@@ -253,18 +251,20 @@ class GraylogClient(BaseClient, ConnectorMixin):
                 ip_id = f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}"
                 if ip_id not in seen:
                     seen.add(ip_id)
-                    objects.append({
-                        "type": "ipv4-addr",
-                        "id":   ip_id,
-                        "spec_version": "2.1",
-                        "value": ip,
-                    })
+                    objects.append(
+                        {
+                            "type": "ipv4-addr",
+                            "id": ip_id,
+                            "spec_version": "2.1",
+                            "value": ip,
+                        }
+                    )
                 refs.append(ip_id)
 
-        src_ip  = msg.get("src_ip")
-        dst_ip  = msg.get("dst_ip")
-        src_p   = msg.get("src_port")
-        dst_p   = msg.get("dst_port")
+        src_ip = msg.get("src_ip")
+        dst_ip = msg.get("dst_ip")
+        src_p = msg.get("src_port")
+        dst_p = msg.get("dst_port")
         if src_ip and dst_ip and (src_p or dst_p):
             key = f"{src_ip}:{src_p}-{dst_ip}:{dst_p}"
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
@@ -272,7 +272,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
                 seen.add(nid)
                 nt: dict[str, Any] = {
                     "type": "network-traffic",
-                    "id":   nid,
+                    "id": nid,
                     "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src_ip)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst_ip)}",
@@ -289,22 +289,22 @@ class GraylogClient(BaseClient, ConnectorMixin):
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         obs: dict[str, Any] = {
-            "type":           "observed-data",
-            "id":             obs_id,
-            "spec_version":   "2.1",
-            "created":        now,
-            "modified":       now,
+            "type": "observed-data",
+            "id": obs_id,
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
             "first_observed": ts,
-            "last_observed":  ts,
+            "last_observed": ts,
             "number_observed": 1,
-            "object_refs":    refs,
+            "object_refs": refs,
             "x_graylog_message": {
                 "message_id": msg.get("_id"),
-                "source":     msg.get("source"),
-                "level":      msg.get("level"),
-                "facility":   msg.get("facility"),
-                "message":    msg.get("message"),
-                "streams":    msg.get("streams", []),
+                "source": msg.get("source"),
+                "level": msg.get("level"),
+                "facility": msg.get("facility"),
+                "message": msg.get("message"),
+                "streams": msg.get("streams", []),
             },
         }
         objects.append(obs)

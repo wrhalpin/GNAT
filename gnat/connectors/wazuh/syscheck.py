@@ -28,7 +28,7 @@ These map naturally to STIX 2.1 file SCOs.
 ## References
 
 - https://documentation.wazuh.com/current/user-manual/api/reference.html#tag/Syscheck
-  """
+"""
 
 from .client import WazuhClient
 
@@ -89,9 +89,7 @@ class WazuhSyscheckCommands:
         list[dict]
             Syscheck event records.
         """
-        params: dict = {
-            "limit": min(limit or self._client.config.max_results, 500)
-        }
+        params: dict = {"limit": min(limit or self._client.config.max_results, 500)}
         q_parts: list[str] = []
 
         if event_type:
@@ -245,7 +243,7 @@ class WazuhSyscheckCommands:
             "md5": event.get("md5"),
             "sha1": event.get("sha1"),
             "sha256": event.get("sha256"),
-            "file_type": event.get("type"),     # 'file' or 'registry'
+            "file_type": event.get("type"),  # 'file' or 'registry'
             "attributes": event.get("attrs"),
             "_raw": event,
         }

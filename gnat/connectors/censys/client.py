@@ -78,7 +78,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._api_id     = api_id
+        self._api_id = api_id
         self._api_secret = api_secret
 
     # ── Authentication ─────────────────────────────────────────────────────
@@ -87,9 +87,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         """Inject HTTP Basic auth header (API ID + secret)."""
         if not self._api_id or not self._api_secret:
             raise GNATClientError("Censys: api_id and api_secret are required")
-        creds = base64.b64encode(
-            f"{self._api_id}:{self._api_secret}".encode()
-        ).decode()
+        creds = base64.b64encode(f"{self._api_id}:{self._api_secret}".encode()).decode()
         self._auth_headers["Authorization"] = f"Basic {creds}"
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
@@ -204,8 +202,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         per_page : int
             Records per page.
         """
-        resp = self.get(f"/api/v2/hosts/{ip_address}/history",
-                        params={"per_page": per_page})
+        resp = self.get(f"/api/v2/hosts/{ip_address}/history", params={"per_page": per_page})
         return resp.get("result", {}).get("hits", []) if isinstance(resp, dict) else []
 
     def search_certificates(self, query: str, per_page: int = 100) -> list[dict[str, Any]]:
@@ -220,8 +217,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         per_page : int
             Results per page.
         """
-        resp = self.post("/api/v2/certificates/search",
-                         json={"q": query, "per_page": per_page})
+        resp = self.post("/api/v2/certificates/search", json={"q": query, "per_page": per_page})
         return resp.get("result", {}).get("hits", []) if isinstance(resp, dict) else []
 
     def get_bulk_hosts(self, ip_addresses: list[str]) -> dict[str, Any]:
@@ -251,26 +247,29 @@ class CensysClient(BaseClient, ConnectorMixin):
                 if cve_id:
                     vuln_cves.append(cve_id)
         stix: dict[str, Any] = {
-            "type":            "observed-data",
-            "id":              f"observed-data--{_uuid.uuid5(_STIX_NS, f'censys:{ip}')}",
-            "spec_version":    "2.1",
-            "created":         last_updated,
-            "modified":        last_updated,
-            "first_observed":  last_updated,
-            "last_observed":   last_updated,
+            "type": "observed-data",
+            "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'censys:{ip}')}",
+            "spec_version": "2.1",
+            "created": last_updated,
+            "modified": last_updated,
+            "first_observed": last_updated,
+            "last_observed": last_updated,
             "number_observed": 1,
-            "object_refs":     [],
+            "object_refs": [],
             "x_censys": {
-                "ip":           ip,
-                "country":      native.get("location", {}).get("country"),
-                "asn":          native.get("autonomous_system", {}).get("asn"),
-                "org":          native.get("autonomous_system", {}).get("name"),
-                "services":     [
-                    {"port": s.get("port"), "transport_protocol": s.get("transport_protocol"),
-                     "service_name": s.get("service_name")}
+                "ip": ip,
+                "country": native.get("location", {}).get("country"),
+                "asn": native.get("autonomous_system", {}).get("asn"),
+                "org": native.get("autonomous_system", {}).get("name"),
+                "services": [
+                    {
+                        "port": s.get("port"),
+                        "transport_protocol": s.get("transport_protocol"),
+                        "service_name": s.get("service_name"),
+                    }
                     for s in services
                 ],
-                "open_ports":   [s.get("port") for s in services if s.get("port")],
+                "open_ports": [s.get("port") for s in services if s.get("port")],
             },
         }
         if vuln_cves:
@@ -280,7 +279,7 @@ class CensysClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a Censys host lookup reference from a STIX object."""
         return {
-            "note":      "Censys Search is read-only.",
-            "stix_id":   stix_dict.get("id", ""),
+            "note": "Censys Search is read-only.",
+            "stix_id": stix_dict.get("id", ""),
             "stix_type": stix_dict.get("type", ""),
         }

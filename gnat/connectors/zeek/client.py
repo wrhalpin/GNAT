@@ -75,7 +75,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ):
         super().__init__(host=host, **kwargs)
-        self.log_dir    = log_dir
+        self.log_dir = log_dir
         self.log_format = log_format
 
     # ── Authentication ─────────────────────────────────────────────────────
@@ -89,9 +89,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         """Verify the Zeek log directory exists and is readable."""
         path = Path(self.log_dir)
         if not path.is_dir():
-            raise GNATClientError(
-                f"Zeek log directory not found: {self.log_dir}"
-            )
+            raise GNATClientError(f"Zeek log directory not found: {self.log_dir}")
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
@@ -123,10 +121,10 @@ class ZeekClient(BaseClient, ConnectorMixin):
         list of dict
             Normalised Zeek record dicts.
         """
-        filters  = dict(filters or {})
+        filters = dict(filters or {})
         log_name = filters.pop("log_name", "notice")
-        path     = filters.pop("path", None)
-        limit    = filters.pop("limit", page_size)
+        path = filters.pop("path", None)
+        limit = filters.pop("limit", page_size)
 
         records = []
         for i, rec in enumerate(self._iter_records(log_name, path=path)):
@@ -165,9 +163,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         """
         return list(self._iter_records("conn", path=path))
 
-    def iter_stix_notices(
-        self, path: str | None = None
-    ) -> Iterator[dict[str, Any]]:
+    def iter_stix_notices(self, path: str | None = None) -> Iterator[dict[str, Any]]:
         """
         Yield STIX observed-data objects from ``notice.log``.
 
@@ -179,9 +175,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         for notice in self._iter_records("notice", path=path):
             yield self.to_stix(notice)
 
-    def iter_stix_connections(
-        self, path: str | None = None
-    ) -> Iterator[dict[str, Any]]:
+    def iter_stix_connections(self, path: str | None = None) -> Iterator[dict[str, Any]]:
         """
         Yield STIX observed-data objects from ``conn.log``.
 
@@ -199,8 +193,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         try:
             return [
                 f.replace(f".{ext}", "")
-                for f in sorted(Path(self.log_dir).iterdir(),
-                                key=lambda p: p.name)
+                for f in sorted(Path(self.log_dir).iterdir(), key=lambda p: p.name)
                 if f.name.endswith(f".{ext}") and not f.name.startswith(".")
             ]
         except OSError:
@@ -223,8 +216,8 @@ class ZeekClient(BaseClient, ConnectorMixin):
             STIX ``observed-data`` object.
         """
         notice = self._normalise_notice(native)
-        now    = _now_ts()
-        ts     = notice.get("timestamp") or now
+        now = _now_ts()
+        ts = notice.get("timestamp") or now
 
         objects: list[dict[str, Any]] = []
         refs: list[str] = []
@@ -235,18 +228,20 @@ class ZeekClient(BaseClient, ConnectorMixin):
                 ip_id = f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}"
                 if ip_id not in seen:
                     seen.add(ip_id)
-                    objects.append({
-                        "type": "ipv4-addr",
-                        "id":   ip_id,
-                        "spec_version": "2.1",
-                        "value": ip,
-                    })
+                    objects.append(
+                        {
+                            "type": "ipv4-addr",
+                            "id": ip_id,
+                            "spec_version": "2.1",
+                            "value": ip,
+                        }
+                    )
                 refs.append(ip_id)
 
         src_ip = notice.get("src_ip")
         dst_ip = notice.get("dst_ip")
-        src_p  = notice.get("src_port")
-        dst_p  = notice.get("dst_port")
+        src_p = notice.get("src_port")
+        dst_p = notice.get("dst_port")
         if src_ip and dst_ip and (src_p or dst_p):
             key = f"{src_ip}:{src_p}-{dst_ip}:{dst_p}"
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
@@ -254,7 +249,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
                 seen.add(nid)
                 nt: dict[str, Any] = {
                     "type": "network-traffic",
-                    "id":   nid,
+                    "id": nid,
                     "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src_ip)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst_ip)}",
@@ -271,20 +266,20 @@ class ZeekClient(BaseClient, ConnectorMixin):
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         obs: dict[str, Any] = {
-            "type":           "observed-data",
-            "id":             obs_id,
-            "spec_version":   "2.1",
-            "created":        now,
-            "modified":       now,
+            "type": "observed-data",
+            "id": obs_id,
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
             "first_observed": ts,
-            "last_observed":  ts,
+            "last_observed": ts,
             "number_observed": 1,
-            "object_refs":    refs,
+            "object_refs": refs,
             "x_zeek_notice": {
-                "uid":     notice.get("uid"),
-                "note":    notice.get("note"),
+                "uid": notice.get("uid"),
+                "note": notice.get("note"),
                 "message": notice.get("message"),
-                "sub":     notice.get("sub"),
+                "sub": notice.get("sub"),
                 "actions": notice.get("actions"),
                 "dropped": notice.get("dropped"),
             },
@@ -295,7 +290,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Zeek is read-only — from_stix returns an informational dict."""
         return {
-            "note":     "Zeek is file-based and read-only.",
+            "note": "Zeek is file-based and read-only.",
             "stix_id": stix_dict.get("id", ""),
         }
 
@@ -306,9 +301,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         ext = "log" if self.log_format == "tsv" else "json"
         return Path(self.log_dir) / f"{log_name}.{ext}"
 
-    def _iter_records(
-        self, log_name: str, path: str | None = None
-    ) -> Iterator[dict[str, Any]]:
+    def _iter_records(self, log_name: str, path: str | None = None) -> Iterator[dict[str, Any]]:
         """Yield raw record dicts from a Zeek log file."""
         log_path = Path(path) if path else self._log_path(log_name)
         if not log_path.exists():
@@ -358,27 +351,27 @@ class ZeekClient(BaseClient, ConnectorMixin):
         """Normalise a Zeek notice.log record."""
         return {
             "timestamp": record.get("ts"),
-            "uid":       record.get("uid"),
-            "src_ip":    record.get("id.orig_h") or record.get("src"),
-            "src_port":  record.get("id.orig_p"),
-            "dst_ip":    record.get("id.resp_h") or record.get("dst"),
-            "dst_port":  record.get("id.resp_p"),
-            "proto":     record.get("proto"),
-            "note":      record.get("note"),
-            "message":   record.get("msg"),
-            "sub":       record.get("sub"),
-            "actions":   record.get("actions"),
-            "dropped":   record.get("dropped") == "T",
+            "uid": record.get("uid"),
+            "src_ip": record.get("id.orig_h") or record.get("src"),
+            "src_port": record.get("id.orig_p"),
+            "dst_ip": record.get("id.resp_h") or record.get("dst"),
+            "dst_port": record.get("id.resp_p"),
+            "proto": record.get("proto"),
+            "note": record.get("note"),
+            "message": record.get("msg"),
+            "sub": record.get("sub"),
+            "actions": record.get("actions"),
+            "dropped": record.get("dropped") == "T",
         }
 
     def _conn_to_stix(self, conn: dict[str, Any]) -> dict[str, Any]:
         """Translate a Zeek conn.log record to a STIX observed-data SDO."""
         now = _now_ts()
-        ts  = conn.get("ts") or now
+        ts = conn.get("ts") or now
         src = conn.get("id.orig_h")
         dst = conn.get("id.resp_h")
-        sp  = conn.get("id.orig_p")
-        dp  = conn.get("id.resp_p")
+        sp = conn.get("id.orig_p")
+        dp = conn.get("id.resp_p")
 
         objects: list[dict[str, Any]] = []
         refs: list[str] = []
@@ -389,12 +382,14 @@ class ZeekClient(BaseClient, ConnectorMixin):
                 ip_id = f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}"
                 if ip_id not in seen:
                     seen.add(ip_id)
-                    objects.append({
-                        "type": "ipv4-addr",
-                        "id":   ip_id,
-                        "spec_version": "2.1",
-                        "value": ip,
-                    })
+                    objects.append(
+                        {
+                            "type": "ipv4-addr",
+                            "id": ip_id,
+                            "spec_version": "2.1",
+                            "value": ip,
+                        }
+                    )
                 refs.append(ip_id)
 
         if src and dst:
@@ -404,7 +399,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
                 seen.add(nid)
                 nt: dict[str, Any] = {
                     "type": "network-traffic",
-                    "id":   nid,
+                    "id": nid,
                     "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst)}",
@@ -427,21 +422,21 @@ class ZeekClient(BaseClient, ConnectorMixin):
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
         obs: dict[str, Any] = {
-            "type":           "observed-data",
-            "id":             obs_id,
-            "spec_version":   "2.1",
-            "created":        now,
-            "modified":       now,
+            "type": "observed-data",
+            "id": obs_id,
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
             "first_observed": ts,
-            "last_observed":  ts,
+            "last_observed": ts,
             "number_observed": 1,
-            "object_refs":    refs,
+            "object_refs": refs,
             "x_zeek_conn": {
-                "uid":        conn.get("uid"),
-                "service":    conn.get("service"),
-                "duration":   conn.get("duration"),
+                "uid": conn.get("uid"),
+                "service": conn.get("service"),
+                "duration": conn.get("duration"),
                 "conn_state": conn.get("conn_state"),
-                "history":    conn.get("history"),
+                "history": conn.get("history"),
             },
         }
         objects.append(obs)
