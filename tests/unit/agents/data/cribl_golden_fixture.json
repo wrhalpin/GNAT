@@ -1,0 +1,22 @@
+{
+  "expected": {
+    "type": "bundle",
+    "objects": [
+      {
+        "type": "indicator",
+        "id": "indicator--1234",
+        "pattern": "[ipv4-addr:value = '1.2.3.4']"
+      }
+    ]
+  },
+  "actual": {
+    "type": "bundle",
+    "objects": [
+      {
+        "id": "indicator--1234",
+        "pattern": "[ipv4-addr:value = '1.2.3.4']",
+        "type": "indicator"
+      }
+    ]
+  }
+}

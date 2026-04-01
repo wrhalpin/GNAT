@@ -1,0 +1,48 @@
+alienvault:
+  package_path: gnat/connectors/alienvault
+  client_class: AlienVaultClient
+  compatibility_strategy: versioned_adapter
+  files:
+    - gnat/connectors/alienvault/client.py
+    - gnat/connectors/alienvault/__init__.py
+  tests:
+    - tests/unit/agents/test_repo_maintenance_phase2.py
+  probes:
+    - type: version
+      target: https://otx.alienvault.com/api/v1/pulses/subscribed
+    - type: local_schema
+      target: file://gnat/connectors/alienvault/client.py
+  notes:
+    - Prefer request/response adapter changes over interface changes.
+
+cribl:
+  package_path: gnat/connectors/cribl
+  client_class: CriblClient
+  compatibility_strategy: translation
+  files:
+    - gnat/connectors/cribl/client.py
+    - gnat/connectors/cribl/stix_mapper.py
+    - gnat/connectors/cribl/config.py
+  golden_fixtures:
+    - tests/unit/agents/data/cribl_golden_fixture.json
+  tests:
+    - tests/unit/agents/test_repo_maintenance_phase2.py
+  probes:
+    - type: local_schema
+      target: file://gnat/connectors/cribl/stix_mapper.py
+    - type: local_schema
+      target: file://gnat/connectors/cribl/client.py
+  notes:
+    - Preserve STIX output compatibility when upstream fields move or rename.
+
+crowdstrike:
+  package_path: gnat/connectors/crowdstrike
+  client_class: CrowdStrikeClient
+  compatibility_strategy: versioned_adapter
+  files:
+    - gnat/connectors/crowdstrike/client.py
+  tests:
+    - tests/unit/agents/test_repo_maintenance_phase2.py
+  probes:
+    - type: local_schema
+      target: file://gnat/connectors/crowdstrike/client.py

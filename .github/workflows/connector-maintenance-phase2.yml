@@ -1,0 +1,140 @@
+name: connector-maintenance-phase2
+
+on:
+  workflow_dispatch:
+    inputs:
+      connector:
+        description: Optional connector name to scan
+        required: false
+        type: string
+      execute:
+        description: Create branch and commit maintenance plan
+        required: false
+        type: boolean
+        default: false
+      create_pr:
+        description: Create a draft pull request after verification passes
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: "31 5 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install GNAT and YAML support
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Run discovery, repair, and verification
+        env:
+          CONNECTOR: ${{ inputs.connector }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from gnat.agents.repo_maintenance.discovery import DiscoveryEngine
+          from gnat.agents.repo_maintenance.registry import ConnectorRegistry
+          from gnat.agents.repo_maintenance.repair import RepairPlanner
+          from gnat.agents.repo_maintenance.verifier import VerificationEngine
+
+          registry = ConnectorRegistry.load("gnat/connectors/_registry/connector_registry.yaml")
+          discovery = DiscoveryEngine(
+              registry=registry,
+              baseline_dir=Path(".gnat/maintenance-baselines"),
+              repo_root=Path("."),
+          )
+          repair = RepairPlanner(registry, repo_root=Path("."))
+          verifier = VerificationEngine(registry, repo_root=Path("."))
+
+          targets = [os.environ["CONNECTOR"]] if os.environ.get("CONNECTOR") else registry.names()
+          plans = []
+          for connector in targets:
+              plan = discovery.discover(connector)
+              discovery.persist_baseline(connector, plan)
+              repair_plan = repair.build(plan)
+              verification = verifier.verify(connector)
+              plan.verification = verification
+              plans.append(
+                  {
+                      "connector": plan.connector,
+                      "impact": plan.impact.value,
+                      "confidence": plan.confidence,
+                      "branch": plan.pull_request.branch_name,
+                      "draft": plan.pull_request.draft,
+                      "verification_passed": verification.passed,
+                      "repair_actions": [action.__dict__ for action in repair_plan.actions],
+                      "repair_notes": repair_plan.notes,
+                  }
+              )
+          Path("maintenance-phase2-plan.json").write_text(json.dumps(plans, indent=2), encoding="utf-8")
+          print(json.dumps(plans, indent=2))
+          PY
+
+      - name: Upload Phase 2 maintenance plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintenance-phase2-plan
+          path: maintenance-phase2-plan.json
+
+      - name: Create branch and commit plan
+        if: ${{ inputs.execute }}
+        env:
+          CONNECTOR: ${{ inputs.connector }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CREATE_PR: ${{ inputs.create_pr }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from gnat.agents.repo_maintenance.discovery import DiscoveryEngine
+          from gnat.agents.repo_maintenance.executor import MaintenanceExecutor
+          from gnat.agents.repo_maintenance.registry import ConnectorRegistry
+          from gnat.agents.repo_maintenance.repair import RepairPlanner
+          from gnat.agents.repo_maintenance.verifier import VerificationEngine
+
+          connector = os.environ.get("CONNECTOR")
+          if not connector:
+              raise SystemExit("connector input is required when execute=true")
+
+          registry = ConnectorRegistry.load("gnat/connectors/_registry/connector_registry.yaml")
+          discovery = DiscoveryEngine(registry, baseline_dir=Path(".gnat/maintenance-baselines"), repo_root=Path("."))
+          plan = discovery.discover(connector)
+          repair = RepairPlanner(registry, repo_root=Path("."))
+          repair.build(plan)
+          verification = VerificationEngine(registry, repo_root=Path(".")).verify(connector)
+          plan.verification = verification
+
+          executor = MaintenanceExecutor(
+              repo_root=Path("."),
+              github_token=os.environ.get("GITHUB_TOKEN"),
+              upstream_repo=os.environ.get("GITHUB_REPOSITORY"),
+          )
+          result = executor.execute(
+              plan,
+              verification=verification,
+              commit=True,
+              push=True,
+              create_pr=os.environ.get("CREATE_PR", "false").lower() == "true" and verification.passed,
+          )
+          if not result.success:
+              raise SystemExit(result.error or "maintenance execution failed")
+          print(result.__dict__)
+          PY

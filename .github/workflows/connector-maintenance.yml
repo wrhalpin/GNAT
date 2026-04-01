@@ -1,0 +1,75 @@
+name: connector-maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      connector:
+        description: Optional connector name to scan
+        required: false
+        type: string
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install GNAT and YAML support
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[yaml]
+
+      - name: Run discovery plan
+        env:
+          CONNECTOR: ${{ inputs.connector }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from gnat.agents.repo_maintenance.discovery import DiscoveryEngine
+          from gnat.agents.repo_maintenance.registry import ConnectorRegistry
+
+          registry = ConnectorRegistry.load("gnat/connectors/_registry/connector_registry.yaml")
+          engine = DiscoveryEngine(
+              registry=registry,
+              baseline_dir=Path(".gnat/maintenance-baselines"),
+              repo_root=Path("."),
+          )
+
+          targets = [os.environ["CONNECTOR"]] if os.environ.get("CONNECTOR") else registry.names()
+          plans = []
+          for connector in targets:
+              plan = engine.discover(connector)
+              engine.persist_baseline(connector, plan)
+              plans.append(
+                  {
+                      "connector": plan.connector,
+                      "impact": plan.impact.value,
+                      "confidence": plan.confidence,
+                      "branch": plan.pull_request.branch_name,
+                      "title": plan.pull_request.title,
+                      "draft": plan.pull_request.draft,
+                      "labels": plan.pull_request.labels,
+                      "files_to_touch": plan.files_to_touch,
+                  }
+              )
+          Path("maintenance-plan.json").write_text(json.dumps(plans, indent=2), encoding="utf-8")
+          print(json.dumps(plans, indent=2))
+          PY
+
+      - name: Upload maintenance plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintenance-plan
+          path: maintenance-plan.json
