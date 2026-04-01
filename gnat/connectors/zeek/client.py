@@ -192,7 +192,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         ext = "log" if self.log_format == "tsv" else "json"
         try:
             return [
-                f.replace(f".{ext}", "")
+                f.name.replace(f".{ext}", "")
                 for f in sorted(Path(self.log_dir).iterdir(), key=lambda p: p.name)
                 if f.name.endswith(f".{ext}") and not f.name.startswith(".")
             ]

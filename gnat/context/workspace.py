@@ -742,6 +742,28 @@ class Workspace:
     def __contains__(self, stix_id: str) -> bool:
         return stix_id in self.objects
 
+    def get(self, stix_id: str) -> STIXBase | None:
+        """Return the object with ``stix_id``, or ``None`` if not present."""
+        return self.objects.get(stix_id)
+
+    def filter(self, **kwargs: Any) -> list[STIXBase]:
+        """Return objects matching all supplied keyword criteria.
+
+        Supported keyword arguments correspond to object attributes.
+        The special key ``stix_type`` matches the STIX type string.
+
+        Example
+        -------
+        ::
+
+            indicators = ws.filter(stix_type="indicator")
+        """
+        result = []
+        for obj in self.objects.values():
+            if all(getattr(obj, k, None) == v for k, v in kwargs.items()):
+                result.append(obj)
+        return result
+
     def __repr__(self) -> str:  # pragma: no cover
         return f"Workspace(name={self.name!r}, objects={len(self)}, dirty={len(self.dirty)})"
 

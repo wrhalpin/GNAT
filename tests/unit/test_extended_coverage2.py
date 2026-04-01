@@ -518,7 +518,7 @@ class TestReportGeneratorAdditional(unittest.TestCase):
             formats=["markdown"],
             output_dir="./test_rg_out",
         )
-        gen = ReportGenerator(cfg, manager)
+        gen = ReportGenerator(manager, cfg)
         result = gen.run()
         self.assertTrue(result.success)
         import shutil
@@ -540,7 +540,7 @@ class TestReportGeneratorAdditional(unittest.TestCase):
             formats=["html"],
             output_dir="./test_rg_html_out",
         )
-        gen = ReportGenerator(cfg, manager)
+        gen = ReportGenerator(manager, cfg)
         result = gen.run()
         self.assertTrue(result.success)
         shutil.rmtree("./test_ws_rg", ignore_errors=True)
@@ -549,22 +549,30 @@ class TestReportGeneratorAdditional(unittest.TestCase):
     def test_report_result_success_false_on_error(self):
         from gnat.reports.generator import ReportResult
 
-        r = ReportResult()
+        r = ReportResult(
+            report_type="daily", title="T", generated_at=datetime.now(timezone.utc),
+            formats_rendered=["pdf"],
+        )
         r.errors = ["something failed"]
         self.assertFalse(r.success)
 
     def test_report_result_success_true(self):
         from gnat.reports.generator import ReportResult
 
-        r = ReportResult()
+        r = ReportResult(
+            report_type="daily", title="T", generated_at=datetime.now(timezone.utc),
+            formats_rendered=["pdf"],
+        )
         self.assertTrue(r.success)
 
     def test_report_result_output_paths(self):
         from gnat.reports.generator import ReportResult
 
-        r = ReportResult()
-        r.output_paths["markdown"] = "/tmp/report.md"
-        self.assertIn("markdown", r.output_paths)
+        r = ReportResult(
+            report_type="daily", title="T", generated_at=datetime.now(timezone.utc),
+        )
+        r.files_written.append("/tmp/report.md")  # nosec B108
+        self.assertIn("/tmp/report.md", r.files_written)  # nosec B108
 
 
 # ===========================================================================

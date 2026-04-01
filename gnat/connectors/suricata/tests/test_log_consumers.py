@@ -381,15 +381,15 @@ class TestZeekConfig(unittest.TestCase):
 
     def test_log_path(self):
         cfg = ZeekConfig(log_dir="/tmp/zeek")  # nosec B108
-        self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.log")
+        self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.log")  # nosec B108
 
     def test_log_path_json(self):
         cfg = ZeekConfig(log_dir="/tmp/zeek", log_format="json")  # nosec B108
-        self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.json")
+        self.assertEqual(cfg.log_path("conn"), "/tmp/zeek/conn.json")  # nosec B108
 
     def test_load_from_ini(self):
         p = configparser.ConfigParser()
-        p.read_dict({"zeek": {"log_dir": "/tmp/zeek", "log_format": "json"}})
+        p.read_dict({"zeek": {"log_dir": "/tmp/zeek", "log_format": "json"}})  # nosec B108
         cfg = load_zeek_config(p)
         self.assertEqual(cfg.log_format, "json")
 
