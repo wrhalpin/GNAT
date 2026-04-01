@@ -166,7 +166,7 @@ All ORM objects inherit from `STIXBase` (`gnat/orm/base.py`):
 
 ## Key Architecture Decisions
 
-See `ARCHITECTURE_DECISIONS.md` for the full rationale. Key choices:
+See `docs/architecture/adrs/` for the full rationale (individual ADR files). Key choices:
 
 | Decision | Choice | Reason |
 |----------|--------|--------|
@@ -379,7 +379,7 @@ The Claude model defaults to `claude-sonnet-4-6`. When modifying AI agent code, 
 | `README.md` | Feature overview, quickstart, platform table |
 | `CHANGELOG.md` | Version history — update `[Unreleased]` for every change |
 | `CONTRIBUTING.md` | Contributor guide, PR checklist |
-| `ARCHITECTURE_DECISIONS.md` | 15 documented design decisions with rationale |
+| `docs/architecture/adrs/` | 29 individual Architecture Decision Records with full rationale |
 | `IMPLEMENTATION_PLAN.md` | Project plan, layer diagram, roadmap |
 | `EXAMPLES.md` | Code snippets for all major features |
 | `PENDING_ITEMS.md` | Tracked outstanding tasks and TODOs |
