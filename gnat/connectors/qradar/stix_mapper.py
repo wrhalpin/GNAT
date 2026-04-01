@@ -116,13 +116,12 @@ class QRadarSTIXMapper:
                     objects.append(obj)
                 refs.append(obj["id"])
 
-        elif offense_type == 6:  # Hostname
-            if source:
-                obj = _domain(source)
-                if obj["id"] not in seen:
-                    seen.add(obj["id"])
-                    objects.append(obj)
-                refs.append(obj["id"])
+        elif offense_type == 6 and source:  # Hostname
+            obj = _domain(source)
+            if obj["id"] not in seen:
+                seen.add(obj["id"])
+                objects.append(obj)
+            refs.append(obj["id"])
 
         # ── Network traffic when port info is available ────────────────
         raw = offense.get("_raw", {})

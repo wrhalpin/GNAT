@@ -131,9 +131,8 @@ class TestGraylogClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("gnat.connectors.graylog.urllib3.PoolManager"):
-            with GraylogClient(cfg) as client:
-                self.assertIsInstance(client, GraylogClient)
+        with patch("gnat.connectors.graylog.urllib3.PoolManager"), GraylogClient(cfg) as client:
+            self.assertIsInstance(client, GraylogClient)
 
 
 class TestGraylogSearchCommands(unittest.TestCase):

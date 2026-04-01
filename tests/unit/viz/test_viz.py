@@ -20,12 +20,11 @@ import pytest
 from gnat.context import FlatFileStore, GlobalContext, GlobalContextRegistry, Workspace
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
-from gnat.orm.vulnerability import Vulnerability
 from gnat.orm.relationship import Relationship
-from gnat.viz.tabular import TabularView, _coerce, _get_field, _to_rows
-from gnat.viz.graph import GraphView
+from gnat.orm.vulnerability import Vulnerability
 from gnat.viz.export import PowerBIExporter, grafana_dashboard, save_grafana_dashboard
-
+from gnat.viz.graph import GraphView
+from gnat.viz.tabular import TabularView, _coerce, _get_field, _to_rows
 
 # ===========================================================================
 # Fixtures
@@ -321,9 +320,8 @@ class TestTabularExcel:
     def test_to_excel_requires_openpyxl(self, tmp_path):
         ws  = _populated_workspace(tmp_path)
         out = str(tmp_path / "output.xlsx")
-        with patch.dict("sys.modules", {"openpyxl": None}):
-            with pytest.raises(ImportError, match="openpyxl"):
-                TabularView(ws).to_excel(out)
+        with patch.dict("sys.modules", {"openpyxl": None}), pytest.raises(ImportError, match="openpyxl"):
+            TabularView(ws).to_excel(out)
 
     @pytest.mark.skipif(
         not __import__("importlib").util.find_spec("openpyxl"),
@@ -397,7 +395,9 @@ class TestGraphView:
     # ── Layout algorithms ─────────────────────────────────────────────────
 
     def test_barnes_hut_layout_covers_all_nodes(self, tmp_path):
-        import random as _r, math as _m
+        import math as _m
+        import random as _r
+
         from gnat.viz.graph import _barnes_hut_layout
         n   = 100
         ids = [f"n{i}" for i in range(n)]
@@ -410,6 +410,7 @@ class TestGraphView:
 
     def test_type_cluster_layout(self, tmp_path):
         import random as _r
+
         from gnat.viz.graph import _type_cluster_layout
         n    = 200
         ids  = [f"n{i}" for i in range(n)]
@@ -667,6 +668,7 @@ class TestGrafanaServer:
     def test_health_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.get("/")
@@ -678,6 +680,7 @@ class TestGrafanaServer:
     def test_workspaces_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.get("/workspaces")
@@ -690,6 +693,7 @@ class TestGrafanaServer:
     def test_search_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client  = TestClient(build_app(manager))
             resp    = client.post("/search", json={})
@@ -703,6 +707,7 @@ class TestGrafanaServer:
     def test_query_table_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/query", json={
@@ -720,6 +725,7 @@ class TestGrafanaServer:
     def test_query_summary_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/query", json={
@@ -737,6 +743,7 @@ class TestGrafanaServer:
     def test_query_timeseries_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/query", json={
@@ -752,6 +759,7 @@ class TestGrafanaServer:
     def test_tag_keys_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/tag-keys", json={})
@@ -764,6 +772,7 @@ class TestGrafanaServer:
     def test_tag_values_stix_type(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/tag-values", json={"key": "stix_type"})
@@ -776,6 +785,7 @@ class TestGrafanaServer:
     def test_annotations_endpoint(self, manager):
         try:
             from fastapi.testclient import TestClient
+
             from gnat.viz.grafana.server import build_app
             client = TestClient(build_app(manager))
             resp   = client.post("/annotations", json={

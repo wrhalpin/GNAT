@@ -185,13 +185,12 @@ class WazuhSTIXMapper:
             refs.append(obj["id"])
 
         # ── Hostname / domain ──────────────────────────────────────────
-        if hostname := raw.get("data", {}).get("hostname") or raw.get("hostname"):
-            if "." in hostname and not hostname.replace(".", "").isdigit():
-                obj = _make_domain(hostname)
-                if obj["id"] not in seen:
-                    seen.add(obj["id"])
-                    objects.append(obj)
-                refs.append(obj["id"])
+        if (hostname := raw.get("data", {}).get("hostname") or raw.get("hostname")) and "." in hostname and not hostname.replace(".", "").isdigit():
+            obj = _make_domain(hostname)
+            if obj["id"] not in seen:
+                seen.add(obj["id"])
+                objects.append(obj)
+            refs.append(obj["id"])
 
         # ── Kill chain phases from MITRE ───────────────────────────────
         kill_chain_phases = self._build_kill_chain_phases(alert.get("rule_mitre", {}))

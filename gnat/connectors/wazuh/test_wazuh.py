@@ -328,9 +328,8 @@ class TestWazuhClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.wazuh.client.urllib3.PoolManager"):
-            with WazuhClient(cfg) as client:
-                self.assertIsInstance(client, WazuhClient)
+        with patch("gnat.connectors.wazuh.client.urllib3.PoolManager"), WazuhClient(cfg) as client:
+            self.assertIsInstance(client, WazuhClient)
 
     def test_paginate_yields_all(self):
         """paginate() stops when offset >= total_affected_items."""

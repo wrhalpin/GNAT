@@ -481,12 +481,10 @@ class LimitFilter(ExportFilter):
         self.n = n
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
-        count = 0
-        for obj in objects:
+        for count, obj in enumerate(objects):
             if count >= self.n:
                 return
             yield obj
-            count += 1
 
     def __repr__(self) -> str:
         return f"LimitFilter(n={self.n})"

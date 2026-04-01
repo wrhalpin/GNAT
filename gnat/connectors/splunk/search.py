@@ -28,6 +28,7 @@ behaviour.
 - https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTsearch
   """
 
+import contextlib
 import time
 from collections.abc import Iterator
 
@@ -343,10 +344,8 @@ class SplunkSearchCommands:
         sid : str
             Search job SID to cancel.
         """
-        try:
+        with contextlib.suppress(Exception):
             self._client.delete(f"search/jobs/{sid}", namespaced=False)
-        except Exception:
-            pass  # Best-effort cleanup.
 
     # ── Saved searches ─────────────────────────────────────────────────────
 

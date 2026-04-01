@@ -565,13 +565,13 @@ class GraphView:
             html = self._build_sigma_html(nodes, edges, title, cluster_threshold)
             import tempfile
             import webbrowser
-            tmp = tempfile.NamedTemporaryFile(
+            with tempfile.NamedTemporaryFile(
                 suffix=".html", delete=False, mode="w", encoding="utf-8"
-            )
-            tmp.write(html)
-            tmp.flush()
-            webbrowser.open(f"file://{tmp.name}")
-            logger.info("GraphView: sigma.js graph opened at %s", tmp.name)
+            ) as tmp:
+                tmp.write(html)
+                tmp_name = tmp.name
+            webbrowser.open(f"file://{tmp_name}")
+            logger.info("GraphView: sigma.js graph opened at %s", tmp_name)
         else:
             fig = self._build_plotly_figure(nodes, edges, title)
             fig.show()
@@ -1040,12 +1040,12 @@ class GraphView:
             return None
         import tempfile
         import webbrowser
-        tmp = tempfile.NamedTemporaryFile(
+        with tempfile.NamedTemporaryFile(
             suffix=".html", delete=False, mode="w", encoding="utf-8"
-        )
-        tmp.write(html)
-        tmp.flush()
-        webbrowser.open(f"file://{tmp.name}")
+        ) as tmp:
+            tmp.write(html)
+            tmp_name = tmp.name
+        webbrowser.open(f"file://{tmp_name}")
         return None
 
     def _ego_subgraph(self, all_nodes, all_edges, seeds, depth):

@@ -11,22 +11,22 @@ Tests cover:
 - from_stix() output contract (platform payload keys)
 """
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from gnat.clients.base import GNATClientError
-from gnat.connectors.greymatter.client import GreyMatterClient
-from gnat.connectors.whistic.client import WhisticClient
-from gnat.connectors.riskrecon.client import RiskReconClient
+from gnat.connectors.crowdstrike.client import CrowdStrikeClient
 from gnat.connectors.feedly.client import FeedlyClient
+from gnat.connectors.greymatter.client import GreyMatterClient
+from gnat.connectors.netskope.client import NetskopeClient
+from gnat.connectors.proofpoint.client import ProofpointClient
+from gnat.connectors.recordedfuture.client import RecordedFutureClient
+from gnat.connectors.riskrecon.client import RiskReconClient
 from gnat.connectors.splunk.client import SplunkClient
 from gnat.connectors.threatq.client import ThreatQClient
-from gnat.connectors.proofpoint.client import ProofpointClient
-from gnat.connectors.netskope.client import NetskopeClient
-from gnat.connectors.crowdstrike.client import CrowdStrikeClient
+from gnat.connectors.whistic.client import WhisticClient
 from gnat.connectors.xsoar.client import XSOARClient
-from gnat.connectors.recordedfuture.client import RecordedFutureClient
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -232,7 +232,7 @@ class TestCrowdStrikeClient:
         c = CrowdStrikeClient(host="https://fake.example.com", client_id="x", client_secret="y")
         monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "cs-tok"}))
         c.authenticate()
-        assert "Bearer cs-tok" == c._auth_headers["Authorization"]
+        assert c._auth_headers["Authorization"] == "Bearer cs-tok"
 
     def test_authenticate_missing_token_raises(self, monkeypatch):
         c = CrowdStrikeClient(host="https://fake.example.com", client_id="x", client_secret="y")
@@ -767,7 +767,7 @@ class TestSplunkClient:
 # ControlUp
 # ===========================================================================
 
-from gnat.connectors.controlup.client import ControlUpClient
+from gnat.connectors.controlup.client import ControlUpClient  # noqa: E402
 
 
 class TestControlUpClient:
@@ -1054,7 +1054,7 @@ class TestControlUpClient:
 # AlienVault OTX
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.alienvault.client import AlienVaultClient
+from gnat.connectors.alienvault.client import AlienVaultClient  # noqa: E402
 
 
 class TestAlienVaultClient:
@@ -1116,7 +1116,7 @@ class TestAlienVaultClient:
 # Graylog
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.graylog.client import GraylogClient
+from gnat.connectors.graylog.client import GraylogClient  # noqa: E402
 
 
 class TestGraylogClient:
@@ -1168,7 +1168,7 @@ class TestGraylogClient:
 # OSSIM
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.ossim.client import OSSIMClient
+from gnat.connectors.ossim.client import OSSIMClient  # noqa: E402
 
 
 class TestOSSIMClient:
@@ -1222,7 +1222,7 @@ class TestOSSIMClient:
 # Security Onion
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.security_onion.client import SecurityOnionClient
+from gnat.connectors.security_onion.client import SecurityOnionClient  # noqa: E402
 
 
 class TestSecurityOnionClient:
@@ -1290,9 +1290,9 @@ class TestSecurityOnionClient:
 # Snort
 # ---------------------------------------------------------------------------
 
-import json as _json
+import json as _json  # noqa: E402
 
-from gnat.connectors.snort.client import SnortClient
+from gnat.connectors.snort.client import SnortClient  # noqa: E402
 
 
 class TestSnortClient:
@@ -1362,7 +1362,7 @@ class TestSnortClient:
 # Suricata
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.suricata.client import SuricataClient
+from gnat.connectors.suricata.client import SuricataClient  # noqa: E402
 
 
 class TestSuricataClient:
@@ -1444,7 +1444,7 @@ class TestSuricataClient:
 # Zeek
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.zeek.client import ZeekClient
+from gnat.connectors.zeek.client import ZeekClient  # noqa: E402
 
 
 class TestZeekClient:
@@ -2635,6 +2635,7 @@ class TestDefenderTIClient:
 
     def test_authenticate_sets_bearer(self, client, monkeypatch):
         import json as _json
+
         import urllib3 as _u3
         fake_response = MagicMock()
         fake_response.data = _json.dumps({"access_token": "az_tok"}).encode()
@@ -2646,7 +2647,9 @@ class TestDefenderTIClient:
 
     def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
         import json as _json
+
         import urllib3 as _u3
+
         from gnat.clients.base import GNATClientError
         fake_response = MagicMock()
         fake_response.data = _json.dumps({}).encode()
@@ -3658,8 +3661,8 @@ class TestCopilotClient:
         assert "Authorization" not in c._auth_headers
 
     def test_authenticate_unknown_raises(self):
-        from gnat.connectors.copilot.client import CopilotClient
         from gnat.clients.base import GNATClientError
+        from gnat.connectors.copilot.client import CopilotClient
         c = CopilotClient(host="https://fake.example.com", auth_type="bogus")
         with pytest.raises(GNATClientError):
             c.authenticate()
@@ -5100,6 +5103,7 @@ class TestSynapseClient:
     def test_storm_raises_on_err_message(self, client, monkeypatch):
         """Storm ``err`` messages must propagate as SynapseStormError."""
         import json as _json
+
         from gnat.connectors.synapse.exceptions import SynapseStormError
         ndjson = "\n".join([
             _json.dumps({"type": "err", "data": ["BadSyntax", {"mesg": "unexpected token"}]}),
@@ -5215,7 +5219,7 @@ class TestSynapseClient:
 # Trellix
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.trellix.client import TrellixClient
+from gnat.connectors.trellix.client import TrellixClient  # noqa: E402
 
 
 class TestTrellixClient:
@@ -5302,7 +5306,7 @@ class TestTrellixClient:
 # Sophos
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.sophos.client import SophosClient
+from gnat.connectors.sophos.client import SophosClient  # noqa: E402
 
 
 class TestSophosClient:
@@ -5378,7 +5382,7 @@ class TestSophosClient:
 # Vectra
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.vectra.client import VectraClient
+from gnat.connectors.vectra.client import VectraClient  # noqa: E402
 
 
 class TestVectraClient:
@@ -5448,7 +5452,7 @@ class TestVectraClient:
 # ExtraHop
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.extrahop.client import ExtraHopClient
+from gnat.connectors.extrahop.client import ExtraHopClient  # noqa: E402
 
 
 class TestExtraHopClient:
@@ -5519,7 +5523,7 @@ class TestExtraHopClient:
 # Darktrace
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.darktrace.client import DarktraceClient
+from gnat.connectors.darktrace.client import DarktraceClient  # noqa: E402
 
 
 class TestDarktraceClient:
@@ -5594,7 +5598,7 @@ class TestDarktraceClient:
 # Lansweeper
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.lansweeper.client import LansweeperClient
+from gnat.connectors.lansweeper.client import LansweeperClient  # noqa: E402
 
 
 class TestLansweeperClient:
@@ -5677,7 +5681,7 @@ class TestLansweeperClient:
 # Censys
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.censys.client import CensysClient
+from gnat.connectors.censys.client import CensysClient  # noqa: E402
 
 
 class TestCensysClient:
@@ -5768,7 +5772,7 @@ class TestCensysClient:
 # ServiceNow SecOps
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.servicenow_secops.client import ServiceNowSecOpsClient
+from gnat.connectors.servicenow_secops.client import ServiceNowSecOpsClient  # noqa: E402
 
 
 class TestServiceNowSecOpsClient:
@@ -6254,7 +6258,7 @@ class TestFlashpointClient:
         native = {"id": "i2", "value": "evil.com", "ioc_type": "domain"}
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
-        assert "[domain-name:value = 'evil.com']" == stix["pattern"]
+        assert stix["pattern"] == "[domain-name:value = 'evil.com']"
 
     def test_to_stix_alert_contract(self, client):
         native = {"id": "a1", "title": "LockBit Activity", "created_at": "2026-01-01",
@@ -7146,6 +7150,7 @@ class TestDragosClient:
 
     def test_authenticate_sets_basic_auth(self):
         import base64
+
         from gnat.connectors.dragos.client import DragosClient
         c = DragosClient(api_key="key", api_secret="secret")
         c.authenticate()
@@ -8960,8 +8965,8 @@ class TestShodanClient:
 # OsintFeedConnector
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.osint_feed.connector import OsintFeedConnector
-from gnat.connectors.osint_feed.feed_factory import FeedConnectorFactory
+from gnat.connectors.osint_feed.connector import OsintFeedConnector  # noqa: E402
+from gnat.connectors.osint_feed.feed_factory import FeedConnectorFactory  # noqa: E402
 
 
 class TestOsintFeedConnector:
@@ -9328,7 +9333,7 @@ class TestFeedConnectorFactory:
 # CiscoUmbrellaClient
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
+from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient  # noqa: E402
 
 
 class TestCiscoUmbrellaClient:

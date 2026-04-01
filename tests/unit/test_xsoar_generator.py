@@ -12,16 +12,15 @@ import zipfile
 import pytest
 
 from gnat.codegen.xsoar_generator import (
-    _to_pascal,
-    _to_kebab,
     _method_to_xsoar_command,
+    _render_integration_py,
+    _render_integration_yml,
     _render_pack_metadata,
     _render_release_notes,
-    _render_integration_yml,
-    _render_integration_py,
+    _to_kebab,
+    _to_pascal,
     generate_xsoar_pack,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helper utilities
@@ -226,7 +225,8 @@ class TestGenerateXSOARPack:
     def test_overwrite_true_replaces_file(self, tmp_path):
         zip1 = generate_xsoar_pack("threatq", output_dir=str(tmp_path))
         mtime1 = os.path.getmtime(zip1)
-        import time; time.sleep(0.05)
+        import time
+        time.sleep(0.05)
         zip2 = generate_xsoar_pack("threatq", output_dir=str(tmp_path), overwrite=True)
         assert zip1 == zip2
         assert os.path.getmtime(zip2) >= mtime1

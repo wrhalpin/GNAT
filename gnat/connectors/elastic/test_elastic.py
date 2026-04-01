@@ -327,9 +327,8 @@ class TestElasticClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.elastic.client.urllib3.PoolManager"):
-            with ElasticClient(cfg) as client:
-                self.assertIsInstance(client, ElasticClient)
+        with patch("gnat.connectors.elastic.client.urllib3.PoolManager"), ElasticClient(cfg) as client:
+            self.assertIsInstance(client, ElasticClient)
 
     def test_es_search_hits_extracts_sources(self):
         client, mock_http = _make_client()

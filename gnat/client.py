@@ -160,10 +160,8 @@ class GNATClient:
                 self._config = GNATConfig(self._config_path)
 
         if self._config is not None:
-            try:
+            with contextlib.suppress(KeyError):
                 cfg.update(self._config.get(target))
-            except KeyError:
-                pass  # Caller must supply all params via overrides
 
         cfg.update({k: v for k, v in overrides.items() if v is not None})
 

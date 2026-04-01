@@ -43,6 +43,7 @@ Available readers
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 import logging
@@ -564,10 +565,8 @@ class SQLReader(SourceReader):
 
     def close(self) -> None:
         if self._close_conn:
-            try:
+            with contextlib.suppress(Exception):  # noqa: BLE001
                 self._conn.close()
-            except Exception:  # noqa: BLE001
-                pass
         super().close()
 
     def _iter_records(self) -> Iterator[RawRecord]:
@@ -1248,7 +1247,5 @@ class ElasticReader(SourceReader):
 
         # Clear scroll context
         if scroll_id:
-            try:
+            with contextlib.suppress(Exception):  # noqa: BLE001
                 self._client.delete(f"/_search/scroll/{scroll_id}")
-            except Exception:  # noqa: BLE001
-                pass

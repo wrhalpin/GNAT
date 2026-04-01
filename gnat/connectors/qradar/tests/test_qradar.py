@@ -349,9 +349,8 @@ class TestQRadarClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.qradar.client.urllib3.PoolManager"):
-            with QRadarClient(cfg) as c:
-                self.assertIsInstance(c, QRadarClient)
+        with patch("gnat.connectors.qradar.client.urllib3.PoolManager"), QRadarClient(cfg) as c:
+            self.assertIsInstance(c, QRadarClient)
 
     def test_paginate_sends_range_header(self):
         """paginate() sends Range: items=0-49 on first call."""
@@ -560,9 +559,8 @@ class TestQRadarArielCommands(unittest.TestCase):
         mock_http.request.return_value = _make_response(200, {
             **_SAMPLE_ARIEL_JOB, "status": "EXECUTE"
         })
-        with patch("time.sleep"), patch("time.time", side_effect=[0, 0, 9999]):
-            with self.assertRaises(QRadarArielError) as ctx:
-                ariel.wait_for_completion("search-001", timeout_secs=1)
+        with patch("time.sleep"), patch("time.time", side_effect=[0, 0, 9999]), self.assertRaises(QRadarArielError) as ctx:
+            ariel.wait_for_completion("search-001", timeout_secs=1)
         self.assertIn("timed out", str(ctx.exception))
 
     def test_iter_results_yields_events(self):

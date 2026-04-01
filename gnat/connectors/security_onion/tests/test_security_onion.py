@@ -108,9 +108,8 @@ class TestSecurityOnionClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("gnat.connectors.security_onion.urllib3.PoolManager"):
-            with SecurityOnionClient(cfg) as client:
-                self.assertIsInstance(client, SecurityOnionClient)
+        with patch("gnat.connectors.security_onion.urllib3.PoolManager"), SecurityOnionClient(cfg) as client:
+            self.assertIsInstance(client, SecurityOnionClient)
 
     def test_paginate_stops_when_empty(self):
         c, mock_http = _make_client()

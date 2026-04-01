@@ -11,12 +11,12 @@ Covers:
 """
 
 import json
-import time
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import urllib3
 
+from gnat.connectors.splunk.alerts import SplunkAlertCommands
 from gnat.connectors.splunk.client import SplunkClient
 from gnat.connectors.splunk.config import SplunkConfig
 from gnat.connectors.splunk.exceptions import (
@@ -28,12 +28,10 @@ from gnat.connectors.splunk.exceptions import (
     SplunkSTIXError,
     SplunkThreatIntelError,
 )
+from gnat.connectors.splunk.kvstore import SplunkKVStoreCommands
+from gnat.connectors.splunk.search import SplunkSearchCommands
 from gnat.connectors.splunk.stix_mapper import SplunkSTIXMapper
 from gnat.connectors.splunk.threat_intel import SplunkThreatIntelCommands
-from gnat.connectors.splunk.search import SplunkSearchCommands
-from gnat.connectors.splunk.kvstore import SplunkKVStoreCommands
-from gnat.connectors.splunk.alerts import SplunkAlertCommands
-
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -269,9 +267,8 @@ class TestSplunkClientErrorHandling:
         client._splunk_auth.get_auth_headers.return_value = {"Authorization": "Splunk tok"}
         client._splunk_http = MagicMock()
         client._splunk_http.request.return_value = mock_resp
-        with patch("time.sleep"):  # speed up retries
-            with pytest.raises(SplunkAPIError):
-                client.get("server/info", namespaced=False)
+        with patch("time.sleep"), pytest.raises(SplunkAPIError):
+            client.get("server/info", namespaced=False)
 
     def test_401_on_first_attempt_invalidates_and_retries(self, client):
         ok_resp = _make_http_response(200, {"entry": []})
@@ -299,9 +296,8 @@ class TestSplunkClientErrorHandling:
         client._splunk_auth.get_auth_headers.return_value = {"Authorization": "Splunk tok"}
         client._splunk_http = MagicMock()
         client._splunk_http.request.return_value = rate_resp
-        with patch("time.sleep"):
-            with pytest.raises(SplunkRateLimitError):
-                client.get("server/info", namespaced=False)
+        with patch("time.sleep"), pytest.raises(SplunkRateLimitError):
+            client.get("server/info", namespaced=False)
 
     def test_invalid_json_response_raises_api_error(self, client):
         mock_resp = MagicMock()
@@ -319,9 +315,8 @@ class TestSplunkClientErrorHandling:
         client._splunk_auth.get_auth_headers.return_value = {"Authorization": "Splunk tok"}
         client._splunk_http = MagicMock()
         client._splunk_http.request.side_effect = urllib3.exceptions.HTTPError("conn refused")
-        with patch("time.sleep"):
-            with pytest.raises(SplunkAPIError, match="Connection error"):
-                client.get("server/info", namespaced=False)
+        with patch("time.sleep"), pytest.raises(SplunkAPIError, match="Connection error"):
+            client.get("server/info", namespaced=False)
 
 
 class TestSplunkClientPaginate:
@@ -1092,9 +1087,8 @@ class TestSplunkSearchCommands:
             "entry": [{"content": {"dispatchState": "RUNNING"}}]
         }
         client.get = MagicMock(return_value=running_response)
-        with patch("time.sleep"), patch("time.time", side_effect=[0, 0, 999]):
-            with pytest.raises(SplunkSearchError, match="timed out"):
-                searcher.poll_job("test-sid", timeout=5)
+        with patch("time.sleep"), patch("time.time", side_effect=[0, 0, 999]), pytest.raises(SplunkSearchError, match="timed out"):
+            searcher.poll_job("test-sid", timeout=5)
 
     def test_fetch_results_returns_rows(self, searcher, client):
         rows = [{"src": "10.0.0.1"}, {"src": "10.0.0.2"}]

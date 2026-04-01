@@ -25,24 +25,32 @@ Covers:
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gnat.reports import (
-    AIMode, ReportConfig, SectorFilter, DataAggregator, MarkdownRenderer, HTMLRenderer, PDFRenderer,
-    ReportGenerator, ReportJob, ReportResult,
-    ReportSection, ReportDocument,
-)
-from gnat.reports.renderers import DOCXRenderer
-from gnat.context import GlobalContextRegistry, GlobalContext, FlatFileStore
+from gnat.context import FlatFileStore, GlobalContext, GlobalContextRegistry
 from gnat.context.workspace import WorkspaceManager
+from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.indicator import Indicator
 from gnat.orm.threat_actor import ThreatActor
 from gnat.orm.vulnerability import Vulnerability
-from gnat.orm.attack_pattern import AttackPattern
-
+from gnat.reports import (
+    AIMode,
+    DataAggregator,
+    HTMLRenderer,
+    MarkdownRenderer,
+    PDFRenderer,
+    ReportConfig,
+    ReportDocument,
+    ReportGenerator,
+    ReportJob,
+    ReportResult,
+    ReportSection,
+    SectorFilter,
+)
+from gnat.reports.renderers import DOCXRenderer
 
 # ===========================================================================
 # Fixtures
@@ -56,9 +64,12 @@ def tmp_store(tmp_path):
 @pytest.fixture
 def manager(tmp_store):
     cli = MagicMock()
-    cli.target = "tq"; cli.ping.return_value = True; cli.client = MagicMock()
+    cli.target = "tq"
+    cli.ping.return_value = True
+    cli.client = MagicMock()
     reg = GlobalContextRegistry()
-    reg.register(GlobalContext("tq", cli)); reg.set_default("tq")
+    reg.register(GlobalContext("tq", cli))
+    reg.set_default("tq")
     return WorkspaceManager(reg, store=tmp_store)
 
 
@@ -109,15 +120,15 @@ def _populate(ws, n_inds=5, n_actors=2, n_vulns=2, n_ttps=2):
 
 
 def _daily_config(tmp_path, **kwargs):
-    defaults = dict(
-        report_type="daily",
-        workspaces=["_ctmsak_library"],
-        ai_mode=AIMode.NONE,
-        formats=["markdown"],
-        delivery=["file"],
-        output_dir=str(tmp_path / "reports"),
-        window_days=365,
-    )
+    defaults = {
+        "report_type": "daily",
+        "workspaces": ["_ctmsak_library"],
+        "ai_mode": AIMode.NONE,
+        "formats": ["markdown"],
+        "delivery": ["file"],
+        "output_dir": str(tmp_path / "reports"),
+        "window_days": 365,
+    }
     defaults.update(kwargs)
     return ReportConfig(**defaults)
 
@@ -426,13 +437,15 @@ class TestMarkdownRenderer:
         doc = _make_doc()
         path = str(tmp_path / "r.md")
         MarkdownRenderer().render(doc, path)
-        assert "# Test Report" in open(path).read()
+        with open(path) as f:
+            assert "# Test Report" in f.read()
 
     def test_sections_present(self, tmp_path):
         doc = _make_doc()
         path = str(tmp_path / "r.md")
         MarkdownRenderer().render(doc, path)
-        content = open(path).read()
+        with open(path) as f:
+            content = f.read()
         assert "## Executive Summary" in content
         assert "## Vulnerabilities" in content
 
@@ -440,13 +453,15 @@ class TestMarkdownRenderer:
         doc = _make_doc()
         path = str(tmp_path / "r.md")
         MarkdownRenderer().render(doc, path)
-        assert "APT29 targeted healthcare" in open(path).read()
+        with open(path) as f:
+            assert "APT29 targeted healthcare" in f.read()
 
     def test_data_table_rendered(self, tmp_path):
         doc = _make_doc()
         path = str(tmp_path / "r.md")
         MarkdownRenderer().render(doc, path)
-        content = open(path).read()
+        with open(path) as f:
+            content = f.read()
         assert "CVE-2024-1234" in content
 
     def test_render_string(self):
@@ -466,7 +481,8 @@ class TestHTMLRenderer:
         doc = _make_doc()
         path = str(tmp_path / "r.html")
         HTMLRenderer().render(doc, path)
-        content = open(path).read()
+        with open(path) as f:
+            content = f.read()
         assert "<!DOCTYPE html>" in content
         assert "</html>" in content
 
@@ -474,13 +490,15 @@ class TestHTMLRenderer:
         doc = _make_doc()
         path = str(tmp_path / "r.html")
         HTMLRenderer().render(doc, path)
-        assert "Test Report" in open(path).read()
+        with open(path) as f:
+            assert "Test Report" in f.read()
 
     def test_sections_in_html(self, tmp_path):
         doc = _make_doc()
         path = str(tmp_path / "r.html")
         HTMLRenderer().render(doc, path)
-        content = open(path).read()
+        with open(path) as f:
+            content = f.read()
         assert "Executive Summary" in content
         assert "Vulnerabilities" in content
 
@@ -488,14 +506,16 @@ class TestHTMLRenderer:
         doc = _make_doc()
         path = str(tmp_path / "r.html")
         HTMLRenderer().render(doc, path)
-        assert "APT29 targeted healthcare" in open(path).read()
+        with open(path) as f:
+            assert "APT29 targeted healthcare" in f.read()
 
     def test_sector_badges_when_config_has_sectors(self, tmp_path):
         cfg = ReportConfig(report_type="daily", sectors=["Healthcare"])
         doc = _make_doc(config=cfg)
         path = str(tmp_path / "r.html")
         HTMLRenderer().render(doc, path)
-        assert "Healthcare" in open(path).read()
+        with open(path) as f:
+            assert "Healthcare" in f.read()
 
 
 # ===========================================================================
@@ -584,9 +604,8 @@ class TestDOCXRenderer:
     def test_missing_python_docx_raises(self, tmp_path):
         import sys
         from unittest.mock import patch
-        with patch.dict(sys.modules, {"docx": None}):
-            with pytest.raises(ImportError, match="python-docx"):
-                DOCXRenderer().render(_make_doc(), str(tmp_path / "r.docx"))
+        with patch.dict(sys.modules, {"docx": None}), pytest.raises(ImportError, match="python-docx"):
+            DOCXRenderer().render(_make_doc(), str(tmp_path / "r.docx"))
 
 
 # ===========================================================================
@@ -756,6 +775,7 @@ class TestReportJob:
 
     def test_schedule_via_feedscheduler(self, manager, library_ws, tmp_path):
         import time
+
         from gnat.schedule import FeedScheduler
 
         fired = []
@@ -840,8 +860,8 @@ class TestEmailBodyHTML:
 
     def test_no_html_file_uses_executive_summary(self, manager, library_ws, tmp_path):
         """Without an HTML file, falls back to executive summary from doc."""
-        from gnat.reports.generator import ReportGenerator
         from gnat.reports.base import ReportDocument, ReportSection
+        from gnat.reports.generator import ReportGenerator
 
         cfg = ReportConfig(
             report_type="daily", workspaces=["_ctmsak_library"],
@@ -884,8 +904,8 @@ class TestEmailBodyHTML:
 
     def test_executive_summary_capped_at_2000_chars(self, manager, library_ws, tmp_path):
         """Executive summary is truncated at 2000 characters."""
-        from gnat.reports.generator import ReportGenerator
         from gnat.reports.base import ReportDocument, ReportSection
+        from gnat.reports.generator import ReportGenerator
 
         cfg = ReportConfig(
             report_type="daily", workspaces=["_ctmsak_library"],

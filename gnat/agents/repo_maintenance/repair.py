@@ -29,8 +29,7 @@ class RepairPlanner:
             full_path = self.repo_root / path
             if not full_path.exists():
                 continue
-            if plan.impact in {ChangeImpact.ADAPTER_UPDATE, ChangeImpact.BACKWARD_COMPATIBLE}:
-                if path.endswith("client.py"):
+            if plan.impact in {ChangeImpact.ADAPTER_UPDATE, ChangeImpact.BACKWARD_COMPATIBLE} and path.endswith("client.py"):
                     actions.append(
                         RepairAction(
                             action_type="patch_client_adapter",

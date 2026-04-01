@@ -21,21 +21,26 @@ Covers:
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
 
-from gnat.research import (
-    ResearchLibrary, ResearchEntry, CurationJob,
-    categorise_topic, topic_key, DEFAULT_TTLS,
-)
 from gnat.context import (
-    GlobalContextRegistry, GlobalContext, FlatFileStore,
+    FlatFileStore,
+    GlobalContext,
+    GlobalContextRegistry,
 )
 from gnat.context.workspace import WorkspaceManager
 from gnat.orm.indicator import Indicator
-
+from gnat.research import (
+    DEFAULT_TTLS,
+    CurationJob,
+    ResearchEntry,
+    ResearchLibrary,
+    categorise_topic,
+    topic_key,
+)
 
 # ===========================================================================
 # Fixtures
@@ -49,7 +54,9 @@ def tmp_store(tmp_path):
 @pytest.fixture
 def manager(tmp_store):
     cli = MagicMock()
-    cli.target = "tq"; cli.ping.return_value = True; cli.client = MagicMock()
+    cli.target = "tq"
+    cli.ping.return_value = True
+    cli.client = MagicMock()
     reg = GlobalContextRegistry()
     reg.register(GlobalContext("tq", cli))
     reg.set_default("tq")
@@ -76,7 +83,7 @@ def _ind(name: str, ai: bool = True) -> Indicator:
 def _populated_workspace(manager, ws_name: str, topics=None, ai=True):
     """Create a workspace with one indicator per topic."""
     ws = manager.create(ws_name)
-    for i, name in enumerate(topics or ["evil.com"]):
+    for _i, name in enumerate(topics or ["evil.com"]):
         ws.add(_ind(name, ai=ai), mark_dirty=False)
     return ws
 
@@ -286,8 +293,10 @@ class TestResearchLibraryPromote:
 
     def test_promote_specific_stix_ids(self, lib, manager):
         ws = manager.create("ws3")
-        ind_a = _ind("a.com"); ind_b = _ind("b.com")
-        ws.add(ind_a, mark_dirty=False); ws.add(ind_b, mark_dirty=False)
+        ind_a = _ind("a.com")
+        ind_b = _ind("b.com")
+        ws.add(ind_a, mark_dirty=False)
+        ws.add(ind_b, mark_dirty=False)
         entry = lib.promote(ws, topic="selective", researcher="analyst1",
                             stix_ids=[ind_a.id])
         assert len(entry.stix_objects) == 1
@@ -625,7 +634,7 @@ class TestResearchLibraryIntegration:
 
     def test_multiple_analysts_same_topic_dedup(self, lib, manager):
         """Three analysts research same topic; most recent curated."""
-        for i, researcher in enumerate(["analyst_a", "analyst_b", "analyst_c"]):
+        for _i, researcher in enumerate(["analyst_a", "analyst_b", "analyst_c"]):
             ws = _populated_workspace(manager, f"ws-{researcher}")
             lib.promote(ws, topic="LockBit 3.0", researcher=researcher,
                         note=f"Research by {researcher}")

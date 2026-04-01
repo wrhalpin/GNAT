@@ -25,27 +25,36 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from gnat.orm.indicator import Indicator
-from gnat.orm.malware import Malware
-
-from gnat.export import ExportPipeline, TransformResult, DeliveryResult
-from gnat.export.filters import (
-    TypeFilter, ConfidenceFilter, TLPFilter, TagFilter,
-    AgeFilter, IOCTypeFilter, LimitFilter, DeduplicateFilter, FunctionFilter,
-)
-from gnat.export.transforms.edl import EDLTransform
-from gnat.export.transforms.netskope import (
-    NetskopeCETransform, STIXBundleTransform, CSVTransform,
-)
+from gnat.export import DeliveryResult, ExportPipeline, TransformResult
 from gnat.export.delivery.targets import (
-    FileDelivery, LogDelivery, MultiDelivery,
+    FileDelivery,
+    LogDelivery,
+    MultiDelivery,
+)
+from gnat.export.filters import (
+    AgeFilter,
+    ConfidenceFilter,
+    DeduplicateFilter,
+    FunctionFilter,
+    IOCTypeFilter,
+    LimitFilter,
+    TagFilter,
+    TLPFilter,
+    TypeFilter,
 )
 from gnat.export.jobs import ExportJob
-
+from gnat.export.transforms.edl import EDLTransform
+from gnat.export.transforms.netskope import (
+    CSVTransform,
+    NetskopeCETransform,
+    STIXBundleTransform,
+)
+from gnat.orm.indicator import Indicator
+from gnat.orm.malware import Malware
 
 # ===========================================================================
 # Fixtures
@@ -264,9 +273,12 @@ class TestDeduplicateFilter:
         assert len(result) == len(_indicators())
 
     def test_custom_key_field(self):
-        ind1 = _ind("a.com"); ind1._properties["x_key"] = "same"
-        ind2 = _ind("b.com"); ind2._properties["x_key"] = "same"
-        ind3 = _ind("c.com"); ind3._properties["x_key"] = "different"
+        ind1 = _ind("a.com")
+        ind1._properties["x_key"] = "same"
+        ind2 = _ind("b.com")
+        ind2._properties["x_key"] = "same"
+        ind3 = _ind("c.com")
+        ind3._properties["x_key"] = "different"
         result = list(DeduplicateFilter(key_field="x_key")([ind1, ind2, ind3]))
         assert len(result) == 2
 
@@ -343,16 +355,16 @@ class TestEDLTransform:
         ind = _ind("dup.com")
         t = EDLTransform(ioc_types=["domain"], deduplicate=True)
         r = t.transform([ind, ind, ind])
-        lines = [l for l in r.payloads.get("indicators-domain.txt","").splitlines()
-                 if not l.startswith("#")]
+        lines = [ln for ln in r.payloads.get("indicators-domain.txt","").splitlines()
+                 if not ln.startswith("#")]
         assert lines.count("dup.com") == 1
 
     def test_max_per_file_truncates(self):
         inds = [_ind(f"x{i}.com") for i in range(20)]
         t = EDLTransform(ioc_types=["domain"], max_per_file=5)
         r = t.transform(inds)
-        lines = [l for l in r.payloads["indicators-domain.txt"].splitlines()
-                 if not l.startswith("#")]
+        lines = [ln for ln in r.payloads["indicators-domain.txt"].splitlines()
+                 if not ln.startswith("#")]
         assert len(lines) == 5
         assert "domain" in r.metadata.get("truncated", {})
 
@@ -360,8 +372,8 @@ class TestEDLTransform:
         inds = [_ind("z.com"), _ind("a.com"), _ind("m.com")]
         t = EDLTransform(ioc_types=["domain"], sort_output=True)
         r = t.transform(inds)
-        lines = [l for l in r.payloads["indicators-domain.txt"].splitlines()
-                 if not l.startswith("#")]
+        lines = [ln for ln in r.payloads["indicators-domain.txt"].splitlines()
+                 if not ln.startswith("#")]
         assert lines == sorted(lines)
 
     def test_malware_objects_skipped(self):
@@ -388,8 +400,8 @@ class TestEDLTransform:
     def test_object_count_reflects_extracted(self):
         t = EDLTransform(ioc_types=["domain"])
         r = t.transform(_indicators())
-        domain_lines = [l for l in r.payloads.get("indicators-domain.txt","").splitlines()
-                        if not l.startswith("#")]
+        domain_lines = [ln for ln in r.payloads.get("indicators-domain.txt","").splitlines()
+                        if not ln.startswith("#")]
         assert r.object_count == len(domain_lines)
 
 

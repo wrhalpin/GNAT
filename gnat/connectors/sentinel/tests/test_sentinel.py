@@ -340,9 +340,8 @@ class TestSentinelClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.sentinel.client.urllib3.PoolManager"):
-            with SentinelClient(cfg) as c:
-                self.assertIsInstance(c, SentinelClient)
+        with patch("gnat.connectors.sentinel.client.urllib3.PoolManager"), SentinelClient(cfg) as c:
+            self.assertIsInstance(c, SentinelClient)
 
 
 # ═════════════════════════════════════════════════════════════════════════════

@@ -12,10 +12,8 @@ Unit tests for the Grafana Solr search sidecar integration:
 from __future__ import annotations
 
 import json
-import types
 import unittest
-from unittest.mock import MagicMock, patch, call
-
+from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -58,6 +56,7 @@ def _make_search_index(
 def _make_router_app(search_index):
     """Build a TestClient-ready starlette app with just the /solr/ router."""
     from fastapi import FastAPI
+
     from gnat.viz.grafana.search_endpoints import build_search_router
     app = FastAPI()
 
@@ -107,6 +106,7 @@ class TestSolrHealthEndpoint(unittest.TestCase):
     def test_health_degraded_when_ping_fails(self):
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
         idx = _make_search_index(ping_result=False)
         app = FastAPI()
@@ -123,10 +123,12 @@ class TestSolrSearchTargets(unittest.TestCase):
         try:
             from fastapi.testclient import TestClient  # noqa: F401
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+            pytest.skip("fastapi not installed")
 
-        from fastapi.testclient import TestClient
         from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
 
         idx = _make_search_index()
@@ -176,10 +178,12 @@ class TestSolrQueryEndpoint(unittest.TestCase):
         try:
             from fastapi.testclient import TestClient  # noqa: F401
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+            pytest.skip("fastapi not installed")
 
-        from fastapi.testclient import TestClient
         from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
 
         self.idx = _make_search_index()
@@ -312,10 +316,12 @@ class TestSolrTagEndpoints(unittest.TestCase):
         try:
             from fastapi.testclient import TestClient  # noqa: F401
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+            pytest.skip("fastapi not installed")
 
-        from fastapi.testclient import TestClient
         from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
 
         self._patch = patch(
@@ -361,7 +367,8 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         try:
             from gnat.viz.grafana.server import build_app
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -374,7 +381,8 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         try:
             from gnat.viz.grafana.server import build_app
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -390,7 +398,8 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         try:
             from gnat.viz.grafana.server import GrafanaServer
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -402,7 +411,8 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         try:
             from gnat.viz.grafana.server import GrafanaServer
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -493,7 +503,10 @@ class TestSolrDashboardStructure(unittest.TestCase):
 
 class TestSaveSolrDashboard(unittest.TestCase):
     def test_writes_valid_json(self):
-        import tempfile, os, json
+        import json
+        import os
+        import tempfile
+
         from gnat.viz.export import save_solr_dashboard
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
@@ -506,7 +519,10 @@ class TestSaveSolrDashboard(unittest.TestCase):
             os.unlink(path)
 
     def test_custom_title_written(self):
-        import tempfile, os, json
+        import json
+        import os
+        import tempfile
+
         from gnat.viz.export import save_solr_dashboard
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
@@ -525,7 +541,9 @@ class TestSaveSolrDashboard(unittest.TestCase):
 
 class TestCLISolrDashboard(unittest.TestCase):
     def _run(self, args: list[str]):
-        import sys, io
+        import io
+        import sys
+
         from gnat.cli.main import main
         old_argv = sys.argv
         old_stdout = sys.stdout
@@ -543,7 +561,8 @@ class TestCLISolrDashboard(unittest.TestCase):
         return rc, out
 
     def test_solr_dashboard_cli(self):
-        import tempfile, os
+        import os
+        import tempfile
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
         os.unlink(path)
@@ -559,7 +578,8 @@ class TestCLISolrDashboard(unittest.TestCase):
                 os.unlink(path)
 
     def test_solr_dashboard_custom_title(self):
-        import tempfile, os
+        import os
+        import tempfile
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
         os.unlink(path)
@@ -586,7 +606,6 @@ class TestCLISolrDashboard(unittest.TestCase):
 class TestCLIVizServeWithSolr(unittest.TestCase):
     def test_serve_with_solr_builds_server(self):
         """Verify --with-solr arg is registered and parsed without error."""
-        import argparse
         # If the parser doesn't know --with-solr this will raise SystemExit
         from gnat.cli.main import _build_parser
         parser = _build_parser()
@@ -613,7 +632,6 @@ class TestFacetCounts(unittest.TestCase):
     """Test the flat Solr facet list parsing inside the router."""
 
     def test_flat_list_parsed_correctly(self):
-        from gnat.viz.grafana.search_endpoints import _solr_get
         # _solr_get is tested indirectly; verify the parsing logic inline
         # Solr flat format: [value, count, value, count, ...]
         flat = ["indicator", 20, "malware", 10, "threat-actor", 5]

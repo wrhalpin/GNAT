@@ -904,11 +904,10 @@ class WorkspaceManager:
             If a workspace with this name already exists.
         """
         from gnat.context.store import WorkspaceStore
-        if isinstance(self._store, WorkspaceStore):
-            if self._store.get_workspace(name) is not None:
-                raise ValueError(
-                    f"Workspace {name!r} already exists. Use manager.open({name!r})."
-                )
+        if isinstance(self._store, WorkspaceStore) and self._store.get_workspace(name) is not None:
+            raise ValueError(
+                f"Workspace {name!r} already exists. Use manager.open({name!r})."
+            )
         return Workspace(name, self._registry, self._store, description=description)
 
     def open(self, name: str) -> Workspace:

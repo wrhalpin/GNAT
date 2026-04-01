@@ -15,15 +15,12 @@ Extended coverage tests for:
 from __future__ import annotations
 
 import configparser
-import io
 import json
 import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open, PropertyMock
-
+from unittest.mock import MagicMock, mock_open, patch
 
 # ===========================================================================
 # Reports – Renderers
@@ -31,7 +28,7 @@ from unittest.mock import MagicMock, patch, mock_open, PropertyMock
 
 class TestMarkdownRenderer(unittest.TestCase):
     def _make_doc(self):
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig, AIMode
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="Test Report",
@@ -76,8 +73,8 @@ class TestMarkdownRenderer(unittest.TestCase):
             os.unlink(path)
 
     def test_render_data_top_actors(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -95,8 +92,8 @@ class TestMarkdownRenderer(unittest.TestCase):
         self.assertIn("APT1", md)
 
     def test_render_data_critical_vulns(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -114,8 +111,8 @@ class TestMarkdownRenderer(unittest.TestCase):
         self.assertIn("CVE-2024-1234", md)
 
     def test_render_data_ioc_by_type(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -133,8 +130,8 @@ class TestMarkdownRenderer(unittest.TestCase):
         self.assertIn("domain", md)
 
     def test_render_with_sectors(self):
+        from gnat.reports.base import ReportConfig, ReportDocument
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"], sectors=["Healthcare"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -148,7 +145,7 @@ class TestMarkdownRenderer(unittest.TestCase):
 
 class TestHTMLRenderer(unittest.TestCase):
     def _make_doc(self, with_sector=False):
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         sectors = ["Finance"] if with_sector else []
         cfg = ReportConfig(report_type="daily", workspaces=["ws"], sectors=sectors)
         doc = ReportDocument(
@@ -214,8 +211,8 @@ class TestHTMLRenderer(unittest.TestCase):
             os.unlink(path)
 
     def test_html_table_rendering(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -240,8 +237,8 @@ class TestHTMLRenderer(unittest.TestCase):
         self.assertEqual(_esc('"quoted"'), "&quot;quoted&quot;")
 
     def test_html_critical_vulns_table(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -259,8 +256,8 @@ class TestHTMLRenderer(unittest.TestCase):
         self.assertIn("CVE-2024-9999", html)
 
     def test_html_ioc_type_table(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -278,8 +275,8 @@ class TestHTMLRenderer(unittest.TestCase):
         self.assertIn("url", html)
 
     def test_html_sector_distribution_table(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="T", report_type="daily",
@@ -326,7 +323,7 @@ class TestReportSynthesizer(unittest.TestCase):
         return agg
 
     def _make_config(self, ai_mode_val="assisted"):
-        from gnat.reports.base import ReportConfig, AIMode
+        from gnat.reports.base import AIMode, ReportConfig
         mode = AIMode(ai_mode_val)
         return ReportConfig(report_type="daily", workspaces=["ws"], ai_mode=mode)
 
@@ -427,7 +424,7 @@ class TestReportSynthesizer(unittest.TestCase):
 
 class TestReportGeneratorAdditional(unittest.TestCase):
     def _make_manager_with_ws(self):
-        from gnat.context import GlobalContextRegistry, GlobalContext, FlatFileStore
+        from gnat.context import FlatFileStore, GlobalContext, GlobalContextRegistry
         from gnat.context.workspace import WorkspaceManager
         from gnat.orm.indicator import Indicator
         store = FlatFileStore(base_dir="./test_ws_rg")
@@ -453,8 +450,8 @@ class TestReportGeneratorAdditional(unittest.TestCase):
         return manager
 
     def test_generator_markdown_output(self):
+        from gnat.reports.base import AIMode, ReportConfig
         from gnat.reports.generator import ReportGenerator
-        from gnat.reports.base import ReportConfig, AIMode
         manager = self._make_manager_with_ws()
         cfg = ReportConfig(
             report_type="daily",
@@ -471,9 +468,10 @@ class TestReportGeneratorAdditional(unittest.TestCase):
         shutil.rmtree("./test_rg_out", ignore_errors=True)
 
     def test_generator_html_output(self):
-        from gnat.reports.generator import ReportGenerator
-        from gnat.reports.base import ReportConfig, AIMode
         import shutil
+
+        from gnat.reports.base import AIMode, ReportConfig
+        from gnat.reports.generator import ReportGenerator
         manager = self._make_manager_with_ws()
         cfg = ReportConfig(
             report_type="daily",
@@ -549,7 +547,6 @@ class TestZeekClientAdditional(unittest.TestCase):
         self.assertIn("note", result)
 
     def test_iter_tsv_records(self):
-        from gnat.connectors.zeek.client import ZeekClient
         tsv_content = "#fields\tts\tuid\tid.orig_h\tid.orig_p\tnote\tmsg\n1.0\tCxyz\t1.2.3.4\t1234\tTest::Notice\ttest msg\n"
         with patch("pathlib.Path.exists", return_value=True), \
              patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
@@ -558,7 +555,6 @@ class TestZeekClientAdditional(unittest.TestCase):
         self.assertEqual(records[0]["id.orig_h"], "1.2.3.4")
 
     def test_iter_tsv_skips_comment_lines(self):
-        from gnat.connectors.zeek.client import ZeekClient
         tsv_content = "#separator \\t\n#fields\tts\tuid\n1.0\tCabc\n"
         with patch("pathlib.Path.exists", return_value=True), \
              patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
@@ -573,7 +569,6 @@ class TestZeekClientAdditional(unittest.TestCase):
         self.assertEqual(len(records), 0)
 
     def test_iter_json_records(self):
-        from gnat.connectors.zeek.client import ZeekClient
         self.client.log_format = "json"
         json_content = '{"ts": 1.0, "uid": "Cxyz", "id.orig_h": "1.2.3.4"}\n{"bad json\n'
         with patch("pathlib.Path.exists", return_value=True), \
@@ -677,9 +672,8 @@ class TestZeekClientAdditional(unittest.TestCase):
 
     def test_iter_records_missing_file(self):
         from gnat.clients.base import GNATClientError
-        with patch("pathlib.Path.exists", return_value=False):
-            with self.assertRaises(GNATClientError):
-                list(self.client._iter_records("notice"))
+        with patch("pathlib.Path.exists", return_value=False), self.assertRaises(GNATClientError):
+            list(self.client._iter_records("notice"))
 
 
 # ===========================================================================
@@ -714,7 +708,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
         self.assertEqual(cfg.eve_log_path, "/var/log/suricata/eve.json")
 
     def test_load_suricata_config_missing_section(self):
-        from gnat.connectors.suricata import load_suricata_config, SuricataConfigError
+        from gnat.connectors.suricata import SuricataConfigError, load_suricata_config
         cp = configparser.ConfigParser()
         with self.assertRaises(SuricataConfigError):
             load_suricata_config(cp)
@@ -852,7 +846,6 @@ class TestSuricataClientAdditional(unittest.TestCase):
         self.assertEqual(len(events), 1)
 
     def test_socket_send_command_not_found(self):
-        import socket as _socket
         from gnat.connectors.suricata import SuricataSocketCommands, SuricataSocketError
         cfg = self._make_config()
         sc = SuricataSocketCommands(cfg)
@@ -876,7 +869,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
             self.assertTrue(sc.is_running())
 
     def test_stix_mapper_alert_to_bundle(self):
-        from gnat.connectors.suricata import SuricataSTIXMapper, SuricataEVEReader
+        from gnat.connectors.suricata import SuricataEVEReader, SuricataSTIXMapper
         mapper = SuricataSTIXMapper()
         event = {
             "timestamp": "2024-01-01T00:00:00",
@@ -891,7 +884,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
         self.assertIn("objects", bundle)
 
     def test_stix_mapper_alerts_to_bundle(self):
-        from gnat.connectors.suricata import SuricataSTIXMapper, SuricataEVEReader
+        from gnat.connectors.suricata import SuricataEVEReader, SuricataSTIXMapper
         mapper = SuricataSTIXMapper()
         events = [
             {"src_ip": "1.2.3.4", "src_port": 1234, "dst_ip": "5.6.7.8", "dst_port": 80,
@@ -1340,7 +1333,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
         return store
 
     def _make_registry(self):
-        from gnat.context import GlobalContextRegistry, GlobalContext
+        from gnat.context import GlobalContext, GlobalContextRegistry
         reg = GlobalContextRegistry()
         cli = MagicMock()
         cli.target = "tq"

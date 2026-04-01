@@ -87,6 +87,7 @@ Usage::
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import threading
 import time
@@ -645,10 +646,8 @@ class FeedScheduler:
                     job.job_id, exc,
                 )
                 if self._on_job_error:
-                    try:
+                    with contextlib.suppress(Exception):  # noqa: BLE001
                         self._on_job_error(job.job_id, exc)
-                    except Exception:  # noqa: BLE001
-                        pass
 
     def _next_trigger(self, job: FeedJob) -> datetime | None:
         """

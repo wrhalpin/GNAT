@@ -22,7 +22,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Skip the whole module if fastapi is not installed
 # ---------------------------------------------------------------------------
@@ -34,7 +33,6 @@ from gnat.serve.app import create_app  # noqa: E402
 from gnat.serve.auth import APIKeyAuth  # noqa: E402
 from gnat.serve.config import WebUIConfig  # noqa: E402
 from gnat.serve.rate_limit import RateLimiter  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -467,7 +465,8 @@ class TestSchedulerRouter:
         client = _client(scheduler=mock_sched)
         _authed(client, "post", "/api/scheduler/jobs/feed1/trigger")
         # Give the daemon thread a moment to start
-        import time; time.sleep(0.05)
+        import time
+        time.sleep(0.05)
         job.execute.assert_called()
 
     def test_trigger_job_503_no_scheduler(self):
@@ -553,9 +552,8 @@ class TestCLIServeSubcommand:
         args.reports_dir = None
         args.config = None
 
-        with patch("gnat.serve.app.run", mock_run):
-            with patch("gnat.serve.app.uvicorn", MagicMock(), create=True):
-                # Just test the key generation logic without starting server
-                import secrets
-                key = secrets.token_hex(16)
-                assert len(key) == 32  # 16 bytes = 32 hex chars
+        with patch("gnat.serve.app.run", mock_run), patch("gnat.serve.app.uvicorn", MagicMock(), create=True):
+            # Just test the key generation logic without starting server
+            import secrets
+            key = secrets.token_hex(16)
+            assert len(key) == 32  # 16 bytes = 32 hex chars
