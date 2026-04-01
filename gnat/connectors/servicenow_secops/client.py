@@ -56,9 +56,9 @@ _STIX_NS = _uuid.UUID("b8c9d0e1-f2a3-4567-1234-890123456789")
 
 # ServiceNow SecOps table mapping
 _TABLE_MAP: dict[str, str] = {
-    "observed-data":    "sn_si_incident",
-    "vulnerability":    "sn_vr_vulnerable_item",
-    "indicator":        "sn_ti_observable",
+    "observed-data": "sn_si_incident",
+    "vulnerability": "sn_vr_vulnerable_item",
+    "indicator": "sn_ti_observable",
     "course-of-action": "sn_si_task",
 }
 
@@ -105,7 +105,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
-        self._api_key  = api_key
+        self._api_key = api_key
 
     # ── Authentication ─────────────────────────────────────────────────────
 
@@ -114,9 +114,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         if self._api_key:
             self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
         elif self._username:
-            creds = base64.b64encode(
-                f"{self._username}:{self._password}".encode()
-            ).decode()
+            creds = base64.b64encode(f"{self._username}:{self._password}".encode()).decode()
             self._auth_headers["Authorization"] = f"Basic {creds}"
         else:
             raise GNATClientError("ServiceNow SecOps: provide api_key or username + password")
@@ -148,7 +146,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
             ServiceNow ``sys_id`` (32-char hex string).
         """
         table = self._resolve_table(stix_type)
-        resp  = self.get(f"{_TABLE_BASE}/{table}/{object_id}")
+        resp = self.get(f"{_TABLE_BASE}/{table}/{object_id}")
         return resp.get("result", {}) if isinstance(resp, dict) else {}
 
     def list_objects(
@@ -178,7 +176,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         """
         table = self._resolve_table(stix_type)
         params: dict[str, Any] = {
-            "sysparm_limit":  limit,
+            "sysparm_limit": limit,
             "sysparm_offset": offset,
         }
         if query:
@@ -248,9 +246,9 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         """
         payload: dict[str, Any] = {
             "short_description": short_description[:160],
-            "description":       description,
-            "priority":          priority,
-            "category":          category,
+            "description": description,
+            "priority": priority,
+            "category": category,
         }
         if work_notes:
             payload["work_notes"] = work_notes
@@ -273,14 +271,9 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
             STIX 2.1 SDO whose key fields are embedded in the work note.
         """
         stix_type = stix_obj.get("type", "unknown")
-        stix_id   = stix_obj.get("id", "")
-        name      = stix_obj.get("name", stix_obj.get("description", stix_id))
-        note = (
-            f"[GNAT] Linked STIX object\n"
-            f"Type: {stix_type}\n"
-            f"ID: {stix_id}\n"
-            f"Name/Value: {name}"
-        )
+        stix_id = stix_obj.get("id", "")
+        name = stix_obj.get("name", stix_obj.get("description", stix_id))
+        note = f"[GNAT] Linked STIX object\nType: {stix_type}\nID: {stix_id}\nName/Value: {name}"
         resp = self.put(
             f"{_TABLE_BASE}/sn_si_incident/{incident_sys_id}",
             json={"work_notes": note},
@@ -340,8 +333,8 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
             Human-readable description.
         """
         payload: dict[str, Any] = {
-            "value":       value,
-            "type":        observable_type,
+            "value": value,
+            "type": observable_type,
             "description": description,
         }
         resp = self.post(f"{_TABLE_BASE}/sn_ti_observable", json=payload)
@@ -384,59 +377,57 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         return self._to_sn_payload(stix_dict.get("type", "observed-data"), stix_dict)
 
     def _incident_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
-        sys_id     = record.get("sys_id", "")
-        opened_at  = record.get("opened_at", _now_ts())
+        sys_id = record.get("sys_id", "")
+        opened_at = record.get("opened_at", _now_ts())
         return {
-            "type":           "observed-data",
-            "id":             f"observed-data--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
-            "spec_version":   "2.1",
-            "created":        opened_at,
-            "modified":       record.get("sys_updated_on", opened_at),
+            "type": "observed-data",
+            "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
+            "spec_version": "2.1",
+            "created": opened_at,
+            "modified": record.get("sys_updated_on", opened_at),
             "first_observed": opened_at,
-            "last_observed":  opened_at,
+            "last_observed": opened_at,
             "number_observed": 1,
-            "object_refs":    [],
-            "name":           record.get("short_description", ""),
-            "description":    record.get("description", ""),
+            "object_refs": [],
+            "name": record.get("short_description", ""),
+            "description": record.get("description", ""),
             "x_sn_secops": {
-                "sys_id":      sys_id,
-                "state":       record.get("state", ""),
-                "priority":    record.get("priority", ""),
-                "category":    record.get("category", ""),
+                "sys_id": sys_id,
+                "state": record.get("state", ""),
+                "priority": record.get("priority", ""),
+                "category": record.get("category", ""),
                 "assigned_to": record.get("assigned_to", {}).get("value", ""),
-                "table":       "sn_si_incident",
+                "table": "sn_si_incident",
             },
         }
 
     def _vuln_item_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
-        sys_id   = record.get("sys_id", "")
-        cve      = record.get("vulnerability", {})
-        cve_id   = cve.get("value", "") if isinstance(cve, dict) else str(cve)
-        now      = _now_ts()
+        sys_id = record.get("sys_id", "")
+        cve = record.get("vulnerability", {})
+        cve_id = cve.get("value", "") if isinstance(cve, dict) else str(cve)
+        now = _now_ts()
         return {
-            "type":         "vulnerability",
-            "id":           f"vulnerability--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
+            "type": "vulnerability",
+            "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
             "spec_version": "2.1",
-            "created":      record.get("sys_created_on", now),
-            "modified":     record.get("sys_updated_on", now),
-            "name":         cve_id or record.get("short_description", "SN Vulnerability"),
-            "description":  record.get("description", ""),
-            "external_references": [
-                {"source_name": "servicenow", "external_id": sys_id}
-            ],
+            "created": record.get("sys_created_on", now),
+            "modified": record.get("sys_updated_on", now),
+            "name": cve_id or record.get("short_description", "SN Vulnerability"),
+            "description": record.get("description", ""),
+            "external_references": [{"source_name": "servicenow", "external_id": sys_id}],
             "x_sn_secops": {
-                "sys_id":      sys_id,
-                "cve_id":      cve_id,
-                "state":       record.get("state", ""),
-                "risk":        record.get("risk", ""),
+                "sys_id": sys_id,
+                "cve_id": cve_id,
+                "state": record.get("state", ""),
+                "risk": record.get("risk", ""),
                 "assigned_to": record.get("assigned_to", {}).get("value", ""),
-                "table":       "sn_vr_vulnerable_item",
+                "table": "sn_vr_vulnerable_item",
             },
         }
 
     def _observable_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
         sys_id = record.get("sys_id", "")
-        value  = record.get("value", "")
+        value = record.get("value", "")
         obs_type = record.get("type", "domain")
         type_map = {
             "IP Address": "ipv4-addr:value",
@@ -448,20 +439,20 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         stix_prop = type_map.get(obs_type, "domain-name:value")
         now = _now_ts()
         return {
-            "type":            "indicator",
-            "id":              f"indicator--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
-            "spec_version":    "2.1",
-            "created":         record.get("sys_created_on", now),
-            "modified":        record.get("sys_updated_on", now),
-            "name":            value,
-            "description":     record.get("description", ""),
-            "pattern":         f"[{stix_prop} = '{value}']",
-            "pattern_type":    "stix",
+            "type": "indicator",
+            "id": f"indicator--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
+            "spec_version": "2.1",
+            "created": record.get("sys_created_on", now),
+            "modified": record.get("sys_updated_on", now),
+            "name": value,
+            "description": record.get("description", ""),
+            "pattern": f"[{stix_prop} = '{value}']",
+            "pattern_type": "stix",
             "indicator_types": ["malicious-activity"],
             "x_sn_secops": {
                 "sys_id": sys_id,
-                "type":   obs_type,
-                "table":  "sn_ti_observable",
+                "type": obs_type,
+                "table": "sn_ti_observable",
             },
         }
 
@@ -486,19 +477,19 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         if stix_type == "vulnerability":
             return {
                 "short_description": name[:160],
-                "description":       desc,
-                "work_notes":        f"[GNAT] Ingested from STIX {stix_type}",
+                "description": desc,
+                "work_notes": f"[GNAT] Ingested from STIX {stix_type}",
             }
         if stix_type == "indicator":
             return {
-                "value":       name,
+                "value": name,
                 "description": desc,
-                "type":        stix_dict.get("x_observable_type", "Domain"),
+                "type": stix_dict.get("x_observable_type", "Domain"),
             }
         # Default: security incident
         return {
             "short_description": name[:160],
-            "description":       desc,
-            "category":          "threat-intelligence",
-            "work_notes":        f"[GNAT] Ingested from STIX {stix_type}",
+            "description": desc,
+            "category": "threat-intelligence",
+            "work_notes": f"[GNAT] Ingested from STIX {stix_type}",
         }

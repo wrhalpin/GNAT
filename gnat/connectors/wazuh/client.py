@@ -72,6 +72,7 @@ _WAZUH_ERR_PERMISSION = 4000
 _WAZUH_ERR_AUTH = 4001
 _WAZUH_NOT_FOUND_CODES = {1002, 6001, 6061, 1750, 1802}
 
+
 class WazuhClient:
     """
     urllib3-based HTTP client for the Wazuh Manager API.
@@ -225,6 +226,7 @@ class WazuhClient:
             Individual item dicts from affected_items.
         """
         from .config import WAZUH_MAX_LIMIT
+
         limit = min(page_size, WAZUH_MAX_LIMIT)
         base_params = dict(params or {})
         base_params["limit"] = limit

@@ -44,10 +44,7 @@ def search_library(
         results = lib.search(q or "")
     except Exception as exc:
         raise HTTPException(500, str(exc))
-    serialized = [
-        r.to_dict() if hasattr(r, "to_dict") else dict(r)
-        for r in (results or [])
-    ]
+    serialized = [r.to_dict() if hasattr(r, "to_dict") else dict(r) for r in (results or [])]
     return {"results": serialized, "count": len(serialized)}
 
 

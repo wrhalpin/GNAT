@@ -15,23 +15,22 @@ Extended coverage tests for:
 from __future__ import annotations
 
 import configparser
-import io
 import json
 import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open, PropertyMock
-
+from unittest.mock import MagicMock, mock_open, patch
 
 # ===========================================================================
 # Reports – Renderers
 # ===========================================================================
 
+
 class TestMarkdownRenderer(unittest.TestCase):
     def _make_doc(self):
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig, AIMode
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
             title="Test Report",
@@ -40,12 +39,19 @@ class TestMarkdownRenderer(unittest.TestCase):
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
         )
-        sec = ReportSection(title="Exec Summary", data={}, narrative="Some narrative.", section_type="summary", order=1)
+        sec = ReportSection(
+            title="Exec Summary",
+            data={},
+            narrative="Some narrative.",
+            section_type="summary",
+            order=1,
+        )
         doc.add_section(sec)
         return doc
 
     def test_render_string_contains_title(self):
         from gnat.reports.renderers import MarkdownRenderer
+
         doc = self._make_doc()
         md = MarkdownRenderer().render_string(doc)
         self.assertIn("# Test Report", md)
@@ -53,18 +59,21 @@ class TestMarkdownRenderer(unittest.TestCase):
 
     def test_render_string_contains_period(self):
         from gnat.reports.renderers import MarkdownRenderer
+
         doc = self._make_doc()
         md = MarkdownRenderer().render_string(doc)
         self.assertIn("2024-01-01", md)
 
     def test_render_string_narrative(self):
         from gnat.reports.renderers import MarkdownRenderer
+
         doc = self._make_doc()
         md = MarkdownRenderer().render_string(doc)
         self.assertIn("Some narrative.", md)
 
     def test_render_writes_file(self):
         from gnat.reports.renderers import MarkdownRenderer
+
         doc = self._make_doc()
         with tempfile.NamedTemporaryFile(suffix=".md", delete=False, dir=".") as f:
             path = f.name
@@ -76,11 +85,13 @@ class TestMarkdownRenderer(unittest.TestCase):
             os.unlink(path)
 
     def test_render_data_top_actors(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -88,18 +99,21 @@ class TestMarkdownRenderer(unittest.TestCase):
         sec = ReportSection(
             title="Actors",
             data={"top_actors": [{"name": "APT1", "motivation": ["espionage"]}]},
-            section_type="narrative", order=1,
+            section_type="narrative",
+            order=1,
         )
         doc.add_section(sec)
         md = MarkdownRenderer().render_string(doc)
         self.assertIn("APT1", md)
 
     def test_render_data_critical_vulns(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -107,18 +121,21 @@ class TestMarkdownRenderer(unittest.TestCase):
         sec = ReportSection(
             title="Vulns",
             data={"critical_vulns": [{"cve_id": "CVE-2024-1234", "cvss": 9.8, "exploited": True}]},
-            section_type="narrative", order=1,
+            section_type="narrative",
+            order=1,
         )
         doc.add_section(sec)
         md = MarkdownRenderer().render_string(doc)
         self.assertIn("CVE-2024-1234", md)
 
     def test_render_data_ioc_by_type(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -126,18 +143,21 @@ class TestMarkdownRenderer(unittest.TestCase):
         sec = ReportSection(
             title="IOCs",
             data={"ioc_by_type": {"domain": 5, "ip": 3}},
-            section_type="narrative", order=1,
+            section_type="narrative",
+            order=1,
         )
         doc.add_section(sec)
         md = MarkdownRenderer().render_string(doc)
         self.assertIn("domain", md)
 
     def test_render_with_sectors(self):
+        from gnat.reports.base import ReportConfig, ReportDocument
         from gnat.reports.renderers import MarkdownRenderer
-        from gnat.reports.base import ReportDocument, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"], sectors=["Healthcare"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -148,7 +168,8 @@ class TestMarkdownRenderer(unittest.TestCase):
 
 class TestHTMLRenderer(unittest.TestCase):
     def _make_doc(self, with_sector=False):
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
+
         sectors = ["Finance"] if with_sector else []
         cfg = ReportConfig(report_type="daily", workspaces=["ws"], sectors=sectors)
         doc = ReportDocument(
@@ -162,45 +183,53 @@ class TestHTMLRenderer(unittest.TestCase):
             title="Executive Summary",
             data={"total_new": 42, "total_objects": 100},
             narrative="Key findings here.\n\nMore details.",
-            section_type="summary", order=1,
+            section_type="summary",
+            order=1,
         )
         doc.add_section(sec)
         return doc
 
     def test_html_contains_doctype(self):
         from gnat.reports.renderers import HTMLRenderer
+
         html = HTMLRenderer()._build(self._make_doc())
         self.assertIn("<!DOCTYPE html>", html)
 
     def test_html_contains_title(self):
         from gnat.reports.renderers import HTMLRenderer
+
         html = HTMLRenderer()._build(self._make_doc())
         self.assertIn("HTML Report", html)
 
     def test_html_contains_section_title(self):
         from gnat.reports.renderers import HTMLRenderer
+
         html = HTMLRenderer()._build(self._make_doc())
         self.assertIn("Executive Summary", html)
 
     def test_html_contains_narrative(self):
         from gnat.reports.renderers import HTMLRenderer
+
         html = HTMLRenderer()._build(self._make_doc())
         self.assertIn("Key findings here.", html)
 
     def test_html_stat_cards(self):
         from gnat.reports.renderers import HTMLRenderer
+
         html = HTMLRenderer()._build(self._make_doc())
         self.assertIn("stat-card", html)
         self.assertIn("42", html)
 
     def test_html_with_sector_badges(self):
         from gnat.reports.renderers import HTMLRenderer
+
         html = HTMLRenderer()._build(self._make_doc(with_sector=True))
         self.assertIn("Finance", html)
         self.assertIn("badge", html)
 
     def test_html_render_writes_file(self):
         from gnat.reports.renderers import HTMLRenderer
+
         doc = self._make_doc()
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False, dir=".") as f:
             path = f.name
@@ -214,11 +243,13 @@ class TestHTMLRenderer(unittest.TestCase):
             os.unlink(path)
 
     def test_html_table_rendering(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -226,7 +257,8 @@ class TestHTMLRenderer(unittest.TestCase):
         sec = ReportSection(
             title="Actors",
             data={"top_actors": [{"name": "APT29", "motivation": ["espionage"]}]},
-            section_type="narrative", order=1,
+            section_type="narrative",
+            order=1,
         )
         doc.add_section(sec)
         html = HTMLRenderer()._build(doc)
@@ -235,16 +267,19 @@ class TestHTMLRenderer(unittest.TestCase):
 
     def test_html_escapes_special_chars(self):
         from gnat.reports.renderers import _esc
+
         self.assertEqual(_esc("<script>"), "&lt;script&gt;")
         self.assertEqual(_esc("a & b"), "a &amp; b")
         self.assertEqual(_esc('"quoted"'), "&quot;quoted&quot;")
 
     def test_html_critical_vulns_table(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -252,18 +287,21 @@ class TestHTMLRenderer(unittest.TestCase):
         sec = ReportSection(
             title="Vulns",
             data={"critical_vulns": [{"cve_id": "CVE-2024-9999", "cvss": 9.9, "exploited": True}]},
-            section_type="narrative", order=1,
+            section_type="narrative",
+            order=1,
         )
         doc.add_section(sec)
         html = HTMLRenderer()._build(doc)
         self.assertIn("CVE-2024-9999", html)
 
     def test_html_ioc_type_table(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -271,18 +309,21 @@ class TestHTMLRenderer(unittest.TestCase):
         sec = ReportSection(
             title="IOCs",
             data={"ioc_by_type": {"url": 7}},
-            section_type="narrative", order=1,
+            section_type="narrative",
+            order=1,
         )
         doc.add_section(sec)
         html = HTMLRenderer()._build(doc)
         self.assertIn("url", html)
 
     def test_html_sector_distribution_table(self):
+        from gnat.reports.base import ReportConfig, ReportDocument, ReportSection
         from gnat.reports.renderers import HTMLRenderer
-        from gnat.reports.base import ReportDocument, ReportSection, ReportConfig
+
         cfg = ReportConfig(report_type="daily", workspaces=["ws"])
         doc = ReportDocument(
-            title="T", report_type="daily",
+            title="T",
+            report_type="daily",
             period_start=datetime(2024, 1, 1, tzinfo=timezone.utc),
             period_end=datetime(2024, 1, 2, tzinfo=timezone.utc),
             config=cfg,
@@ -290,7 +331,8 @@ class TestHTMLRenderer(unittest.TestCase):
         sec = ReportSection(
             title="Sectors",
             data={"sector_distribution": {"Healthcare": 15}},
-            section_type="narrative", order=1,
+            section_type="narrative",
+            order=1,
         )
         doc.add_section(sec)
         html = HTMLRenderer()._build(doc)
@@ -301,9 +343,11 @@ class TestHTMLRenderer(unittest.TestCase):
 # Reports – Synthesizer
 # ===========================================================================
 
+
 class TestReportSynthesizer(unittest.TestCase):
     def _make_agg(self):
         from gnat.reports.aggregator import ReportAggregates
+
         agg = ReportAggregates()
         agg.new_objects = 10
         agg.updated_objects = 5
@@ -326,16 +370,19 @@ class TestReportSynthesizer(unittest.TestCase):
         return agg
 
     def _make_config(self, ai_mode_val="assisted"):
-        from gnat.reports.base import ReportConfig, AIMode
+        from gnat.reports.base import AIMode, ReportConfig
+
         mode = AIMode(ai_mode_val)
         return ReportConfig(report_type="daily", workspaces=["ws"], ai_mode=mode)
 
     def _make_agent_config(self):
         from gnat.agents.base import AgentConfig
+
         return AgentConfig(api_key="test-key", model="claude-haiku-3")
 
     def _synth_with_mock(self, report_type="daily", ai_mode="assisted"):
         from gnat.reports.synthesizer import ReportSynthesizer
+
         cfg = self._make_config(ai_mode)
         acfg = self._make_agent_config()
         with patch("gnat.agents.base.ClaudeClient") as MockClient:
@@ -383,6 +430,7 @@ class TestReportSynthesizer(unittest.TestCase):
 
     def test_calls_made_increments(self):
         from gnat.reports.synthesizer import ReportSynthesizer
+
         cfg = self._make_config()
         acfg = self._make_agent_config()
         with patch("gnat.agents.base.ClaudeClient"):
@@ -400,6 +448,7 @@ class TestReportSynthesizer(unittest.TestCase):
 
     def test_synthesize_no_actors_skips_highlights(self):
         from gnat.reports.synthesizer import ReportSynthesizer
+
         cfg = self._make_config()
         acfg = self._make_agent_config()
         with patch("gnat.agents.base.ClaudeClient"):
@@ -425,11 +474,13 @@ class TestReportSynthesizer(unittest.TestCase):
 # Reports – Generator (additional coverage)
 # ===========================================================================
 
+
 class TestReportGeneratorAdditional(unittest.TestCase):
     def _make_manager_with_ws(self):
-        from gnat.context import GlobalContextRegistry, GlobalContext, FlatFileStore
+        from gnat.context import FlatFileStore, GlobalContext, GlobalContextRegistry
         from gnat.context.workspace import WorkspaceManager
         from gnat.orm.indicator import Indicator
+
         store = FlatFileStore(base_dir="./test_ws_rg")
         reg = GlobalContextRegistry()
         cli = MagicMock()
@@ -440,21 +491,25 @@ class TestReportGeneratorAdditional(unittest.TestCase):
         reg.set_default("tq")
         manager = WorkspaceManager(reg, store=store)
         ws = manager.create("_ctmsak_library")
-        ws.add(Indicator(
-            name="evil.com",
-            pattern="[domain-name:value = 'evil.com']",
-            pattern_type="stix",
-            confidence=70,
-            x_target_sectors=["Healthcare"],
-            x_source_platform="threatq",
-            created="2024-01-01T00:00:00Z",
-            modified="2024-01-01T00:00:00Z",
-        ), mark_dirty=False)
+        ws.add(
+            Indicator(
+                name="evil.com",
+                pattern="[domain-name:value = 'evil.com']",
+                pattern_type="stix",
+                confidence=70,
+                x_target_sectors=["Healthcare"],
+                x_source_platform="threatq",
+                created="2024-01-01T00:00:00Z",
+                modified="2024-01-01T00:00:00Z",
+            ),
+            mark_dirty=False,
+        )
         return manager
 
     def test_generator_markdown_output(self):
+        from gnat.reports.base import AIMode, ReportConfig
         from gnat.reports.generator import ReportGenerator
-        from gnat.reports.base import ReportConfig, AIMode
+
         manager = self._make_manager_with_ws()
         cfg = ReportConfig(
             report_type="daily",
@@ -467,13 +522,16 @@ class TestReportGeneratorAdditional(unittest.TestCase):
         result = gen.run()
         self.assertTrue(result.success)
         import shutil
+
         shutil.rmtree("./test_ws_rg", ignore_errors=True)
         shutil.rmtree("./test_rg_out", ignore_errors=True)
 
     def test_generator_html_output(self):
-        from gnat.reports.generator import ReportGenerator
-        from gnat.reports.base import ReportConfig, AIMode
         import shutil
+
+        from gnat.reports.base import AIMode, ReportConfig
+        from gnat.reports.generator import ReportGenerator
+
         manager = self._make_manager_with_ws()
         cfg = ReportConfig(
             report_type="daily",
@@ -490,17 +548,20 @@ class TestReportGeneratorAdditional(unittest.TestCase):
 
     def test_report_result_success_false_on_error(self):
         from gnat.reports.generator import ReportResult
+
         r = ReportResult()
         r.errors = ["something failed"]
         self.assertFalse(r.success)
 
     def test_report_result_success_true(self):
         from gnat.reports.generator import ReportResult
+
         r = ReportResult()
         self.assertTrue(r.success)
 
     def test_report_result_output_paths(self):
         from gnat.reports.generator import ReportResult
+
         r = ReportResult()
         r.output_paths["markdown"] = "/tmp/report.md"
         self.assertIn("markdown", r.output_paths)
@@ -510,9 +571,11 @@ class TestReportGeneratorAdditional(unittest.TestCase):
 # Zeek Client
 # ===========================================================================
 
+
 class TestZeekClientAdditional(unittest.TestCase):
     def setUp(self):
         from gnat.connectors.zeek.client import ZeekClient
+
         self.client = ZeekClient(host="", log_dir="/fake/zeek", log_format="tsv")
 
     def test_authenticate_noop(self):
@@ -520,6 +583,7 @@ class TestZeekClientAdditional(unittest.TestCase):
 
     def test_health_check_missing_dir(self):
         from gnat.clients.base import GNATClientError
+
         with self.assertRaises(GNATClientError):
             self.client.health_check()
 
@@ -530,16 +594,19 @@ class TestZeekClientAdditional(unittest.TestCase):
 
     def test_get_object_raises(self):
         from gnat.clients.base import GNATClientError
+
         with self.assertRaises(GNATClientError):
             self.client.get_object("observed-data", "some-id")
 
     def test_upsert_raises(self):
         from gnat.clients.base import GNATClientError
+
         with self.assertRaises(GNATClientError):
             self.client.upsert_object("observed-data", {})
 
     def test_delete_raises(self):
         from gnat.clients.base import GNATClientError
+
         with self.assertRaises(GNATClientError):
             self.client.delete_object("observed-data", "id")
 
@@ -549,58 +616,69 @@ class TestZeekClientAdditional(unittest.TestCase):
         self.assertIn("note", result)
 
     def test_iter_tsv_records(self):
-        from gnat.connectors.zeek.client import ZeekClient
         tsv_content = "#fields\tts\tuid\tid.orig_h\tid.orig_p\tnote\tmsg\n1.0\tCxyz\t1.2.3.4\t1234\tTest::Notice\ttest msg\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             records = list(self.client._iter_records("notice"))
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["id.orig_h"], "1.2.3.4")
 
     def test_iter_tsv_skips_comment_lines(self):
-        from gnat.connectors.zeek.client import ZeekClient
         tsv_content = "#separator \\t\n#fields\tts\tuid\n1.0\tCabc\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             records = list(self.client._iter_records("notice"))
         self.assertEqual(len(records), 1)
 
     def test_iter_tsv_skips_mismatched_columns(self):
         tsv_content = "#fields\tts\tuid\tid.orig_h\n1.0\tonly_two\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             records = list(self.client._iter_records("notice"))
         self.assertEqual(len(records), 0)
 
     def test_iter_json_records(self):
-        from gnat.connectors.zeek.client import ZeekClient
         self.client.log_format = "json"
         json_content = '{"ts": 1.0, "uid": "Cxyz", "id.orig_h": "1.2.3.4"}\n{"bad json\n'
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=json_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=json_content)),
+        ):
             records = list(self.client._iter_records("notice"))
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["uid"], "Cxyz")
 
     def test_parse_notices(self):
         tsv_content = "#fields\tts\tuid\tnote\tmsg\n1.0\tCabc\tTest::Notice\thello\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             records = self.client.parse_notices()
         self.assertEqual(len(records), 1)
 
     def test_parse_connections(self):
         tsv_content = "#fields\tts\tuid\tid.orig_h\n1.0\tCabc\t10.0.0.1\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             records = self.client.parse_connections()
         self.assertEqual(len(records), 1)
 
     def test_iter_stix_notices(self):
         tsv_content = "#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tnote\tmsg\n"
         tsv_content += "1.0\tCabc\t1.2.3.4\t1234\t5.6.7.8\t80\tTest::Notice\thello\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             stix_objs = list(self.client.iter_stix_notices())
         self.assertEqual(len(stix_objs), 1)
         self.assertEqual(stix_objs[0]["type"], "observed-data")
@@ -608,16 +686,20 @@ class TestZeekClientAdditional(unittest.TestCase):
     def test_iter_stix_connections(self):
         tsv_content = "#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\n"
         tsv_content += "1.0\tCabc\t1.2.3.4\t1234\t5.6.7.8\t80\ttcp\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             stix_objs = list(self.client.iter_stix_connections())
         self.assertEqual(len(stix_objs), 1)
         self.assertEqual(stix_objs[0]["type"], "observed-data")
 
     def test_list_objects(self):
         tsv_content = "#fields\tts\tuid\tnote\n1.0\tCabc\tTest::Notice\n"
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.open", mock_open(read_data=tsv_content)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.open", mock_open(read_data=tsv_content)),
+        ):
             records = self.client.list_objects("observed-data", filters={"limit": 5})
         self.assertEqual(len(records), 1)
 
@@ -642,9 +724,12 @@ class TestZeekClientAdditional(unittest.TestCase):
 
     def test_to_stix_with_ports(self):
         notice = {
-            "id.orig_h": "1.2.3.4", "id.orig_p": "1234",
-            "id.resp_h": "5.6.7.8", "id.resp_p": "80",
-            "proto": "tcp", "note": "Scan::Port_Scan",
+            "id.orig_h": "1.2.3.4",
+            "id.orig_p": "1234",
+            "id.resp_h": "5.6.7.8",
+            "id.resp_p": "80",
+            "proto": "tcp",
+            "note": "Scan::Port_Scan",
         }
         stix = self.client.to_stix(notice)
         self.assertEqual(stix["type"], "observed-data")
@@ -652,12 +737,18 @@ class TestZeekClientAdditional(unittest.TestCase):
 
     def test_normalise_notice(self):
         from gnat.connectors.zeek.client import ZeekClient
+
         record = {
-            "ts": "1.0", "uid": "Cabc",
-            "id.orig_h": "1.2.3.4", "id.orig_p": "1234",
-            "id.resp_h": "5.6.7.8", "id.resp_p": "80",
-            "proto": "tcp", "note": "Test::Notice",
-            "msg": "hello", "dropped": "T",
+            "ts": "1.0",
+            "uid": "Cabc",
+            "id.orig_h": "1.2.3.4",
+            "id.orig_p": "1234",
+            "id.resp_h": "5.6.7.8",
+            "id.resp_p": "80",
+            "proto": "tcp",
+            "note": "Test::Notice",
+            "msg": "hello",
+            "dropped": "T",
         }
         n = ZeekClient._normalise_notice(record)
         self.assertEqual(n["src_ip"], "1.2.3.4")
@@ -666,10 +757,15 @@ class TestZeekClientAdditional(unittest.TestCase):
 
     def test_conn_to_stix_with_bytes(self):
         conn = {
-            "ts": "1.0", "uid": "Cabc",
-            "id.orig_h": "1.2.3.4", "id.orig_p": "5678",
-            "id.resp_h": "9.10.11.12", "id.resp_p": "443",
-            "proto": "tcp", "orig_bytes": "1024", "resp_bytes": "2048",
+            "ts": "1.0",
+            "uid": "Cabc",
+            "id.orig_h": "1.2.3.4",
+            "id.orig_p": "5678",
+            "id.resp_h": "9.10.11.12",
+            "id.resp_p": "443",
+            "proto": "tcp",
+            "orig_bytes": "1024",
+            "resp_bytes": "2048",
         }
         stix = self.client._conn_to_stix(conn)
         self.assertEqual(stix["type"], "observed-data")
@@ -677,18 +773,20 @@ class TestZeekClientAdditional(unittest.TestCase):
 
     def test_iter_records_missing_file(self):
         from gnat.clients.base import GNATClientError
-        with patch("pathlib.Path.exists", return_value=False):
-            with self.assertRaises(GNATClientError):
-                list(self.client._iter_records("notice"))
+
+        with patch("pathlib.Path.exists", return_value=False), self.assertRaises(GNATClientError):
+            list(self.client._iter_records("notice"))
 
 
 # ===========================================================================
 # Suricata Client
 # ===========================================================================
 
+
 class TestSuricataClientAdditional(unittest.TestCase):
     def _make_config(self):
         from gnat.connectors.suricata import SuricataConfig
+
         return SuricataConfig(
             eve_log_path="/fake/eve.json",
             socket_path="/fake/suricata.sock",
@@ -697,16 +795,19 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_config_defaults(self):
         from gnat.connectors.suricata import SuricataConfig
+
         cfg = SuricataConfig()
         self.assertEqual(cfg.eve_log_path, "/var/log/suricata/eve.json")
 
     def test_config_empty_eve_log_raises(self):
         from gnat.connectors.suricata import SuricataConfig, SuricataConfigError
+
         with self.assertRaises(SuricataConfigError):
             SuricataConfig(eve_log_path="")
 
     def test_load_suricata_config(self):
         from gnat.connectors.suricata import load_suricata_config
+
         cp = configparser.ConfigParser()
         cp.add_section("suricata")
         cp.set("suricata", "eve_log_path", "/var/log/suricata/eve.json")
@@ -714,13 +815,15 @@ class TestSuricataClientAdditional(unittest.TestCase):
         self.assertEqual(cfg.eve_log_path, "/var/log/suricata/eve.json")
 
     def test_load_suricata_config_missing_section(self):
-        from gnat.connectors.suricata import load_suricata_config, SuricataConfigError
+        from gnat.connectors.suricata import SuricataConfigError, load_suricata_config
+
         cp = configparser.ConfigParser()
         with self.assertRaises(SuricataConfigError):
             load_suricata_config(cp)
 
     def test_iter_events_file_not_found(self):
         from gnat.connectors.suricata import SuricataEVEReader, SuricataLogError
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         with self.assertRaises(SuricataLogError):
@@ -728,6 +831,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_iter_events_parses_json(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         evt = {"event_type": "alert", "src_ip": "1.2.3.4", "dest_ip": "5.6.7.8"}
@@ -739,11 +843,14 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_iter_events_filters_by_type(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         content = (
-            json.dumps({"event_type": "alert", "src_ip": "1.1.1.1"}) + "\n"
-            + json.dumps({"event_type": "flow", "src_ip": "2.2.2.2"}) + "\n"
+            json.dumps({"event_type": "alert", "src_ip": "1.1.1.1"})
+            + "\n"
+            + json.dumps({"event_type": "flow", "src_ip": "2.2.2.2"})
+            + "\n"
         )
         with patch("builtins.open", mock_open(read_data=content)):
             events = list(reader.iter_events(event_type="alert"))
@@ -751,6 +858,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_iter_events_skips_bad_json(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         content = "NOT JSON\n" + json.dumps({"event_type": "flow"}) + "\n"
@@ -760,6 +868,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_iter_alerts(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         content = json.dumps({"event_type": "alert", "alert": {"signature": "ET TEST"}}) + "\n"
@@ -769,6 +878,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_iter_flows(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         content = json.dumps({"event_type": "flow"}) + "\n"
@@ -778,6 +888,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_iter_dns(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         content = json.dumps({"event_type": "dns"}) + "\n"
@@ -787,11 +898,11 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_count_alerts(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         content = (
-            json.dumps({"event_type": "alert"}) + "\n"
-            + json.dumps({"event_type": "alert"}) + "\n"
+            json.dumps({"event_type": "alert"}) + "\n" + json.dumps({"event_type": "alert"}) + "\n"
         )
         with patch("builtins.open", mock_open(read_data=content)):
             count = reader.count_alerts()
@@ -799,6 +910,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_get_log_size(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         with patch("os.path.getsize", return_value=12345):
@@ -807,6 +919,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_get_log_size_oserror(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         with patch("os.path.getsize", side_effect=OSError):
@@ -815,15 +928,22 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_normalise_alert(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         event = {
             "timestamp": "2024-01-01T00:00:00",
-            "src_ip": "1.2.3.4", "src_port": 1234,
-            "dest_ip": "5.6.7.8", "dest_port": 80,
+            "src_ip": "1.2.3.4",
+            "src_port": 1234,
+            "dest_ip": "5.6.7.8",
+            "dest_port": 80,
             "proto": "TCP",
             "alert": {
-                "signature": "ET TEST", "signature_id": 999,
-                "category": "Misc", "severity": 1,
-                "action": "blocked", "rev": 1, "gid": 1,
+                "signature": "ET TEST",
+                "signature_id": 999,
+                "category": "Misc",
+                "severity": 1,
+                "action": "blocked",
+                "rev": 1,
+                "gid": 1,
             },
         }
         norm = SuricataEVEReader.normalise_alert(event)
@@ -834,6 +954,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_normalise_alert_severity_map(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         for raw, expected in [(1, 4), (2, 3), (3, 2), (4, 1)]:
             event = {"alert": {"severity": raw}}
             norm = SuricataEVEReader.normalise_alert(event)
@@ -841,19 +962,22 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_iter_events_from(self):
         from gnat.connectors.suricata import SuricataEVEReader
+
         cfg = self._make_config()
         reader = SuricataEVEReader(cfg)
         content = json.dumps({"event_type": "alert"}) + "\n"
-        with patch("os.path.getsize", return_value=50), \
-             patch("builtins.open", mock_open(read_data=content)):
+        with (
+            patch("os.path.getsize", return_value=50),
+            patch("builtins.open", mock_open(read_data=content)),
+        ):
             gen, new_offset = reader.iter_events_from(0)
             events = list(gen)
         self.assertEqual(new_offset, 50)
         self.assertEqual(len(events), 1)
 
     def test_socket_send_command_not_found(self):
-        import socket as _socket
         from gnat.connectors.suricata import SuricataSocketCommands, SuricataSocketError
+
         cfg = self._make_config()
         sc = SuricataSocketCommands(cfg)
         with patch("socket.socket") as mock_sock:
@@ -863,6 +987,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_socket_is_running_false(self):
         from gnat.connectors.suricata import SuricataSocketCommands, SuricataSocketError
+
         cfg = self._make_config()
         sc = SuricataSocketCommands(cfg)
         with patch.object(sc, "get_version", side_effect=SuricataSocketError("fail")):
@@ -870,18 +995,22 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_socket_is_running_true(self):
         from gnat.connectors.suricata import SuricataSocketCommands
+
         cfg = self._make_config()
         sc = SuricataSocketCommands(cfg)
         with patch.object(sc, "get_version", return_value={"return": "OK"}):
             self.assertTrue(sc.is_running())
 
     def test_stix_mapper_alert_to_bundle(self):
-        from gnat.connectors.suricata import SuricataSTIXMapper, SuricataEVEReader
+        from gnat.connectors.suricata import SuricataEVEReader, SuricataSTIXMapper
+
         mapper = SuricataSTIXMapper()
         event = {
             "timestamp": "2024-01-01T00:00:00",
-            "src_ip": "1.2.3.4", "src_port": 1234,
-            "dst_ip": "5.6.7.8", "dst_port": 80,
+            "src_ip": "1.2.3.4",
+            "src_port": 1234,
+            "dst_ip": "5.6.7.8",
+            "dst_port": 80,
             "proto": "tcp",
             "alert": {"signature": "ET TEST", "signature_id": 1, "severity": 2},
         }
@@ -891,13 +1020,24 @@ class TestSuricataClientAdditional(unittest.TestCase):
         self.assertIn("objects", bundle)
 
     def test_stix_mapper_alerts_to_bundle(self):
-        from gnat.connectors.suricata import SuricataSTIXMapper, SuricataEVEReader
+        from gnat.connectors.suricata import SuricataEVEReader, SuricataSTIXMapper
+
         mapper = SuricataSTIXMapper()
         events = [
-            {"src_ip": "1.2.3.4", "src_port": 1234, "dst_ip": "5.6.7.8", "dst_port": 80,
-             "alert": {"signature": "Test1", "severity": 2}},
-            {"src_ip": "1.2.3.4", "src_port": 1234, "dst_ip": "9.9.9.9", "dst_port": 443,
-             "alert": {"signature": "Test2", "severity": 1}},
+            {
+                "src_ip": "1.2.3.4",
+                "src_port": 1234,
+                "dst_ip": "5.6.7.8",
+                "dst_port": 80,
+                "alert": {"signature": "Test1", "severity": 2},
+            },
+            {
+                "src_ip": "1.2.3.4",
+                "src_port": 1234,
+                "dst_ip": "9.9.9.9",
+                "dst_port": 443,
+                "alert": {"signature": "Test2", "severity": 1},
+            },
         ]
         alerts = [SuricataEVEReader.normalise_alert(e) for e in events]
         bundle = mapper.alerts_to_stix_bundle(alerts)
@@ -905,6 +1045,7 @@ class TestSuricataClientAdditional(unittest.TestCase):
 
     def test_stix_mapper_no_ips(self):
         from gnat.connectors.suricata import SuricataSTIXMapper
+
         mapper = SuricataSTIXMapper()
         alert = {"signature": "Test", "severity": 2, "severity_raw": 2}
         bundle = mapper.alert_to_stix_bundle(alert)
@@ -915,9 +1056,11 @@ class TestSuricataClientAdditional(unittest.TestCase):
 # Rapid7 Client
 # ===========================================================================
 
+
 class TestRapid7ClientAdditional(unittest.TestCase):
     def _make_client(self, product="insightvm"):
         from gnat.connectors.rapid7.client import Rapid7Client
+
         client = Rapid7Client(
             host="https://us.api.insight.rapid7.com",
             api_key="test-key",
@@ -933,6 +1076,7 @@ class TestRapid7ClientAdditional(unittest.TestCase):
 
     def test_authenticate_with_account(self):
         from gnat.connectors.rapid7.client import Rapid7Client
+
         client = Rapid7Client(
             host="https://api.ti.insight.rapid7.com",
             api_key="key",
@@ -1026,12 +1170,14 @@ class TestRapid7ClientAdditional(unittest.TestCase):
 
     def test_upsert_insightvm_raises(self):
         from gnat.clients.base import GNATClientError
+
         client = self._make_client("insightvm")
         with self.assertRaises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
     def test_upsert_tc_wrong_type(self):
         from gnat.clients.base import GNATClientError
+
         client = self._make_client("threat_command")
         with self.assertRaises(GNATClientError):
             client.upsert_object("vulnerability", {})
@@ -1044,6 +1190,7 @@ class TestRapid7ClientAdditional(unittest.TestCase):
 
     def test_delete_insightvm_raises(self):
         from gnat.clients.base import GNATClientError
+
         client = self._make_client("insightvm")
         with self.assertRaises(GNATClientError):
             client.delete_object("vulnerability", "v1")
@@ -1056,7 +1203,8 @@ class TestRapid7ClientAdditional(unittest.TestCase):
     def test_vuln_to_stix(self):
         client = self._make_client("insightvm")
         native = {
-            "id": "vuln-1", "cves": ["CVE-2024-1234"],
+            "id": "vuln-1",
+            "cves": ["CVE-2024-1234"],
             "severity": "critical",
             "cvss": {"v3": {"base_score": 9.8}, "v2": {}},
             "exploits": [{"id": "exp1"}],
@@ -1079,7 +1227,8 @@ class TestRapid7ClientAdditional(unittest.TestCase):
     def test_vuln_to_stix_cvss_fallback_v2(self):
         client = self._make_client("insightvm")
         native = {
-            "id": "v3", "cves": ["CVE-2024-999"],
+            "id": "v3",
+            "cves": ["CVE-2024-999"],
             "cvss": {"v3": {}, "v2": {"base_score": 7.5}},
             "exploits": [],
         }
@@ -1089,9 +1238,12 @@ class TestRapid7ClientAdditional(unittest.TestCase):
     def test_ioc_to_stix(self):
         client = self._make_client("threat_command")
         native = {
-            "type": "domains", "value": "evil.com",
-            "severity": "high", "tags": ["malware", "phishing", "Finance"],
-            "firstSeen": "2024-01-01", "lastSeen": "2024-01-10",
+            "type": "domains",
+            "value": "evil.com",
+            "severity": "high",
+            "tags": ["malware", "phishing", "Finance"],
+            "firstSeen": "2024-01-01",
+            "lastSeen": "2024-01-10",
         }
         stix = client.to_stix(native)
         self.assertEqual(stix["type"], "indicator")
@@ -1133,9 +1285,11 @@ class TestRapid7ClientAdditional(unittest.TestCase):
 # Elastic – ElasticSearchCommands
 # ===========================================================================
 
+
 class TestElasticSearchCommandsAdditional(unittest.TestCase):
     def _make_commands(self):
         from gnat.connectors.elastic.es_search import ElasticSearchCommands
+
         client = MagicMock()
         client.config.es_index_alerts = ".alerts-security.*"
         return ElasticSearchCommands(client), client
@@ -1254,8 +1408,10 @@ class TestElasticSearchCommandsAdditional(unittest.TestCase):
         cmds, cli = self._make_commands()
         cli.es_search_hits.return_value = []
         cmds.search_alerts(
-            min_severity=50, rule_name="TestRule",
-            host_name="server1", user_name="admin",
+            min_severity=50,
+            rule_name="TestRule",
+            host_name="server1",
+            user_name="admin",
             time_range=("2024-01-01", "2024-01-02"),
         )
         call_kwargs = cli.es_search_hits.call_args
@@ -1296,9 +1452,7 @@ class TestElasticSearchCommandsAdditional(unittest.TestCase):
     def test_aggregate_by_field(self):
         cmds, cli = self._make_commands()
         cli.es_search.return_value = {
-            "aggregations": {
-                "top_values": {"buckets": [{"key": "bash", "doc_count": 50}]}
-            }
+            "aggregations": {"top_values": {"buckets": [{"key": "bash", "doc_count": 50}]}}
         }
         buckets = cmds.aggregate_by_field("logs-*", "process.name")
         self.assertEqual(len(buckets), 1)
@@ -1333,14 +1487,17 @@ class TestElasticSearchCommandsAdditional(unittest.TestCase):
 # Workspace
 # ===========================================================================
 
+
 class TestWorkspaceAdditional(unittest.TestCase):
     def _make_store(self):
         from gnat.context.store import FlatFileStore
+
         store = FlatFileStore(base_dir="./test_ws_ext_store")
         return store
 
     def _make_registry(self):
-        from gnat.context import GlobalContextRegistry, GlobalContext
+        from gnat.context import GlobalContext, GlobalContextRegistry
+
         reg = GlobalContextRegistry()
         cli = MagicMock()
         cli.target = "tq"
@@ -1354,15 +1511,18 @@ class TestWorkspaceAdditional(unittest.TestCase):
         self.store = self._make_store()
         self.reg = self._make_registry()
         import shutil
+
         shutil.rmtree("./test_ws_ext_store", ignore_errors=True)
         self.store = self._make_store()
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree("./test_ws_ext_store", ignore_errors=True)
 
     def test_workspace_creation(self):
         from gnat.context.workspace import Workspace
+
         ws = Workspace("test-ws", self.reg, self.store)
         self.assertEqual(ws.name, "test-ws")
         self.assertEqual(len(ws), 0)
@@ -1370,6 +1530,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_add_object(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws1", self.reg, self.store)
         ind = Indicator(
             name="evil.com",
@@ -1383,6 +1544,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_add_marks_dirty(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws2", self.reg, self.store)
         ind = Indicator(name="x.com", pattern="[domain-name:value = 'x.com']", pattern_type="stix")
         ws.add(ind)
@@ -1391,6 +1553,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_add_no_dirty(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws3", self.reg, self.store)
         ind = Indicator(name="y.com", pattern="[domain-name:value = 'y.com']", pattern_type="stix")
         ws.add(ind, mark_dirty=False)
@@ -1399,6 +1562,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_remove(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws4", self.reg, self.store)
         ind = Indicator(name="z.com", pattern="[domain-name:value = 'z.com']", pattern_type="stix")
         ws.add(ind)
@@ -1408,6 +1572,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_get(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws5", self.reg, self.store)
         ind = Indicator(name="a.com", pattern="[domain-name:value = 'a.com']", pattern_type="stix")
         ws.add(ind)
@@ -1417,6 +1582,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_workspace_get_missing(self):
         from gnat.context.workspace import Workspace
+
         ws = Workspace("ws6", self.reg, self.store)
         result = ws.get("nonexistent-id")
         self.assertIsNone(result)
@@ -1424,13 +1590,17 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_iter(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws7", self.reg, self.store)
         for i in range(3):
-            ws.add(Indicator(
-                name=f"ind{i}.com",
-                pattern=f"[domain-name:value = 'ind{i}.com']",
-                pattern_type="stix",
-            ), mark_dirty=False)
+            ws.add(
+                Indicator(
+                    name=f"ind{i}.com",
+                    pattern=f"[domain-name:value = 'ind{i}.com']",
+                    pattern_type="stix",
+                ),
+                mark_dirty=False,
+            )
         objects = list(ws)
         self.assertEqual(len(objects), 3)
 
@@ -1438,14 +1608,19 @@ class TestWorkspaceAdditional(unittest.TestCase):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
         from gnat.orm.malware import Malware
+
         ws = Workspace("ws8", self.reg, self.store)
-        ws.add(Indicator(name="x.com", pattern="[domain-name:value='x.com']", pattern_type="stix"), mark_dirty=False)
+        ws.add(
+            Indicator(name="x.com", pattern="[domain-name:value='x.com']", pattern_type="stix"),
+            mark_dirty=False,
+        )
         ws.add(Malware(name="BadMalware", malware_types=["trojan"]), mark_dirty=False)
         indicators = ws.filter(stix_type="indicator")
         self.assertEqual(len(indicators), 1)
 
     def test_workspace_diff_empty(self):
         from gnat.context.workspace import Workspace
+
         ws = Workspace("ws9", self.reg, self.store)
         diff = ws.diff()
         self.assertEqual(diff, {})
@@ -1453,6 +1628,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_diff_with_changes(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws10", self.reg, self.store)
         ind = Indicator(name="b.com", pattern="[domain-name:value = 'b.com']", pattern_type="stix")
         ws.add(ind)
@@ -1462,6 +1638,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_save(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws11", self.reg, self.store)
         ind = Indicator(name="c.com", pattern="[domain-name:value = 'c.com']", pattern_type="stix")
         ws.add(ind)
@@ -1469,6 +1646,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_commit_result_success(self):
         from gnat.context.workspace import CommitResult
+
         r = CommitResult("ws", "tq", dry_run=False)
         self.assertTrue(r.success)
         r.errors.append({"msg": "error"})
@@ -1476,11 +1654,13 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_commit_result_dry_run(self):
         from gnat.context.workspace import CommitResult
+
         r = CommitResult("ws", "tq", dry_run=True)
         self.assertTrue(r.dry_run)
 
     def test_workspace_manager_create_and_open(self):
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager(self.reg, store=self.store)
         ws = manager.create("new-ws")
         self.assertEqual(ws.name, "new-ws")
@@ -1489,18 +1669,21 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_workspace_manager_open_nonexistent(self):
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager(self.reg, store=self.store)
         with self.assertRaises(KeyError):
             manager.open("nonexistent-ws")
 
     def test_workspace_manager_get_or_create_new(self):
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager(self.reg, store=self.store)
         ws = manager.get_or_create("fresh-ws")
         self.assertEqual(ws.name, "fresh-ws")
 
     def test_workspace_manager_get_or_create_existing(self):
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager(self.reg, store=self.store)
         manager.create("existing-ws")
         ws = manager.get_or_create("existing-ws")
@@ -1508,6 +1691,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_workspace_manager_list(self):
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager(self.reg, store=self.store)
         manager.create("list-ws-1")
         manager.create("list-ws-2")
@@ -1518,6 +1702,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_workspace_manager_delete(self):
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager(self.reg, store=self.store)
         manager.create("delete-ws")
         result = manager.delete("delete-ws")
@@ -1525,6 +1710,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_workspace_manager_delete_nonexistent(self):
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager(self.reg, store=self.store)
         result = manager.delete("no-such-ws")
         self.assertFalse(result)
@@ -1532,6 +1718,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_from_dict_indicator(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         d = {
             "type": "indicator",
             "id": "indicator--test-1234",
@@ -1545,6 +1732,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_from_dict_unknown_type(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.base import STIXBase
+
         d = {"type": "x-custom-type", "id": "x-custom-type--1234", "name": "custom"}
         obj = Workspace._from_dict(d)
         self.assertIsInstance(obj, STIXBase)
@@ -1552,6 +1740,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_contains(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws-contains", self.reg, self.store)
         ind = Indicator(name="d.com", pattern="[domain-name:value='d.com']", pattern_type="stix")
         ws.add(ind)
@@ -1560,6 +1749,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
 
     def test_workspace_load_from_context(self):
         from gnat.context.workspace import Workspace
+
         ws = Workspace("ws-load", self.reg, self.store)
         ctx_mock = MagicMock()
         ctx_mock.list_objects.return_value = []
@@ -1570,6 +1760,7 @@ class TestWorkspaceAdditional(unittest.TestCase):
     def test_workspace_enrich_noop(self):
         from gnat.context.workspace import Workspace
         from gnat.orm.indicator import Indicator
+
         ws = Workspace("ws-enrich", self.reg, self.store)
         ind = Indicator(name="e.com", pattern="[domain-name:value='e.com']", pattern_type="stix")
         ws.add(ind)

@@ -236,9 +236,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
                 raise GNATClientError(
                     f"[{self._feed_name}] auth_type=basic requires 'username' and 'password'."
                 )
-            creds = base64.b64encode(
-                f"{self._username}:{self._password}".encode()
-            ).decode()
+            creds = base64.b64encode(f"{self._username}:{self._password}".encode()).decode()
             self._auth_headers["Authorization"] = f"Basic {creds}"
             self._auth_headers["Accept"] = "application/json"
 
@@ -286,9 +284,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
             self.get(self._feed_path or "/")
         return True
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Return the first STIX object whose ``id`` matches *object_id*.
 
@@ -302,9 +298,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
         for obj in self._fetch_objects(stix_types={stix_type}):
             if obj.get("id") == object_id:
                 return obj
-        raise GNATClientError(
-            f"[{self._feed_name}] Object {object_id!r} not found in feed."
-        )
+        raise GNATClientError(f"[{self._feed_name}] Object {object_id!r} not found in feed.")
 
     def list_objects(
         self,
@@ -332,19 +326,15 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
 
         if filters:
             all_objects = [
-                obj for obj in all_objects
-                if all(
-                    str(v).lower() in str(obj.get(k, "")).lower()
-                    for k, v in filters.items()
-                )
+                obj
+                for obj in all_objects
+                if all(str(v).lower() in str(obj.get(k, "")).lower() for k, v in filters.items())
             ]
 
         start = (page - 1) * page_size
-        return all_objects[start: start + page_size]
+        return all_objects[start : start + page_size]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Not supported — OSINT feeds are read-only."""
         raise GNATClientError(
             f"[{self._feed_name}] OSINT feed connector is read-only; "
@@ -392,9 +382,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
 
     # ── Internal helpers ────────────────────────────────────────────────
 
-    def _fetch_objects(
-        self, stix_types: set[str] | None = None
-    ) -> Any:
+    def _fetch_objects(self, stix_types: set[str] | None = None) -> Any:
         """
         Fetch and yield raw STIX objects from the feed.
 
@@ -414,9 +402,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
         else:
             yield from self._fetch_stix_json(effective_types)
 
-    def _fetch_stix_json(
-        self, stix_types: set[str] | None = None
-    ) -> Any:
+    def _fetch_stix_json(self, stix_types: set[str] | None = None) -> Any:
         """Fetch a STIX 2.1 bundle from a plain HTTP endpoint."""
         if not self._feed_path:
             raise GNATClientError(
@@ -436,9 +422,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
                 continue
             yield obj
 
-    def _fetch_taxii(
-        self, stix_types: set[str] | None = None
-    ) -> Any:
+    def _fetch_taxii(self, stix_types: set[str] | None = None) -> Any:
         """Connect to a TAXII 2.x server and yield objects from the target collection."""
         collection = self._get_taxii_collection()
         kwargs: dict[str, Any] = {}
@@ -503,10 +487,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
             for col in root.collections:
                 if self._collection_id and col.id == self._collection_id:
                     return col
-                if (
-                    self._collection_title
-                    and col.title.lower() == self._collection_title.lower()
-                ):
+                if self._collection_title and col.title.lower() == self._collection_title.lower():
                     return col
                 if not self._collection_id and not self._collection_title:
                     return col  # Return first available collection
@@ -520,6 +501,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
 # ---------------------------------------------------------------------------
 # Minimal bearer-auth helper for taxii2client compatibility
 # ---------------------------------------------------------------------------
+
 
 class _BearerAuth:
     """

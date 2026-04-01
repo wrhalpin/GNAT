@@ -25,7 +25,7 @@ permission. Restrict this to dedicated service accounts.
 
 - https://documentation.wazuh.com/current/user-manual/api/reference.html#tag/Active-response
 - https://documentation.wazuh.com/current/user-manual/capabilities/active-response/ar-use-cases/
-  """
+"""
 
 from .client import WazuhClient
 

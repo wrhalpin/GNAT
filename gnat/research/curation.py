@@ -64,9 +64,7 @@ class _CurationReader(SourceReader):
         self._lib = library
 
     def _iter_records(self):
-        for entry in self._lib._load_all_entries(
-            self._lib._staging_name, status="pending"
-        ):
+        for entry in self._lib._load_all_entries(self._lib._staging_name, status="pending"):
             yield entry.to_dict()
 
 
@@ -79,7 +77,7 @@ class _CurationMapper(RecordMapper):
 
     def __init__(self, library: ResearchLibrary, stats: dict[str, int]):
         super().__init__()
-        self._lib   = library
+        self._lib = library
         self._stats = stats
         self._seen_topics: dict[str, ResearchEntry] = {}
 
@@ -144,7 +142,9 @@ class _CurationMapper(RecordMapper):
             self._stats["promoted"] += 1
             logger.info(
                 "CurationJob: promoted %r → library (category=%r, ttl=%dh)",
-                entry.topic, entry.category, ttl_hours,
+                entry.topic,
+                entry.category,
+                ttl_hours,
             )
 
 
@@ -198,18 +198,16 @@ class CurationJob(FeedJob):
 
         # Build dummy reader/mapper factories; execute() is overridden
         super().__init__(
-            job_id          = job_id,
-            reader_factory  = lambda ctx: _CurationReader(library),
-            mapper_factory  = lambda ctx: None,  # replaced in execute()
-            interval_seconds = interval_seconds,
-            cron            = cron,
-            on_success      = on_success,
-            on_failure      = on_failure,
+            job_id=job_id,
+            reader_factory=lambda ctx: _CurationReader(library),
+            mapper_factory=lambda ctx: None,  # replaced in execute()
+            interval_seconds=interval_seconds,
+            cron=cron,
+            on_success=on_success,
+            on_failure=on_failure,
         )
 
-    def execute(
-        self, scheduled_at: datetime | None = None
-    ) -> RunRecord:
+    def execute(self, scheduled_at: datetime | None = None) -> RunRecord:
         """
         Run one curation cycle.
 
@@ -219,54 +217,51 @@ class CurationJob(FeedJob):
         """
         if not self.enabled:
             rec = RunRecord(
-                run_number   = self.run_count + 1,
-                scheduled_at = scheduled_at or _utcnow(),
-                started_at   = _utcnow(),
-                finished_at  = _utcnow(),
-                status       = "skipped",
+                run_number=self.run_count + 1,
+                scheduled_at=scheduled_at or _utcnow(),
+                started_at=_utcnow(),
+                finished_at=_utcnow(),
+                status="skipped",
             )
             return rec
 
         if not self._running_lock.acquire(blocking=False):
             rec = RunRecord(
-                run_number   = self.run_count + 1,
-                scheduled_at = scheduled_at or _utcnow(),
-                started_at   = _utcnow(),
-                finished_at  = _utcnow(),
-                status       = "skipped",
-                error        = "skipped: previous run still active",
+                run_number=self.run_count + 1,
+                scheduled_at=scheduled_at or _utcnow(),
+                started_at=_utcnow(),
+                finished_at=_utcnow(),
+                status="skipped",
+                error="skipped: previous run still active",
             )
             return rec
 
         self.run_count += 1
         started_at = _utcnow()
-        sched_at   = scheduled_at or started_at
+        sched_at = scheduled_at or started_at
 
         record = RunRecord(
-            run_number   = self.run_count,
-            scheduled_at = sched_at,
-            started_at   = started_at,
-            run_count    = self.run_count,
+            run_number=self.run_count,
+            scheduled_at=sched_at,
+            started_at=started_at,
+            run_count=self.run_count,
         )
 
         stats = {"promoted": 0, "archived": 0, "skipped": 0}
 
         try:
             # Load all pending staging entries
-            pending = self._library._load_all_entries(
-                self._library._staging_name, status="pending"
-            )
+            pending = self._library._load_all_entries(self._library._staging_name, status="pending")
             logger.info(
                 "CurationJob: run #%d — found %d pending staging entries",
-                self.run_count, len(pending),
+                self.run_count,
+                len(pending),
             )
 
             if not pending:
-                record.status       = "success"
-                record.finished_at  = _utcnow()
-                record.duration_seconds = (
-                    record.finished_at - started_at
-                ).total_seconds()
+                record.status = "success"
+                record.finished_at = _utcnow()
+                record.duration_seconds = (record.finished_at - started_at).total_seconds()
                 record.result = IngestResult(
                     source_id="curation",
                     total_records=0,
@@ -281,6 +276,7 @@ class CurationJob(FeedJob):
 
             # Dedup: group by topic key, keep most recent
             from gnat.research.entry import topic_key
+
             by_topic: dict[str, ResearchEntry] = {}
             for entry in pending:
                 tkey = topic_key(entry.topic)
@@ -288,16 +284,12 @@ class CurationJob(FeedJob):
                 if existing is None or entry.promoted_at > existing.promoted_at:
                     if existing is not None:
                         existing.mark_archived()
-                        self._library._save_entry(
-                            existing, self._library._staging_name
-                        )
+                        self._library._save_entry(existing, self._library._staging_name)
                         stats["archived"] += 1
                     by_topic[tkey] = entry
                 else:
                     entry.mark_archived()
-                    self._library._save_entry(
-                        entry, self._library._staging_name
-                    )
+                    self._library._save_entry(entry, self._library._staging_name)
                     stats["archived"] += 1
 
             # Promote winners to library
@@ -312,22 +304,20 @@ class CurationJob(FeedJob):
                     workspace_name=self._library._library_name,
                     status="curated",
                 )
-                if (existing_curated is not None and
-                        existing_curated.promoted_at >= entry.promoted_at):
+                if (
+                    existing_curated is not None
+                    and existing_curated.promoted_at >= entry.promoted_at
+                ):
                     # Library already has something newer — archive this one
                     entry.mark_archived()
-                    self._library._save_entry(
-                        entry, self._library._staging_name
-                    )
+                    self._library._save_entry(entry, self._library._staging_name)
                     stats["archived"] += 1
                     continue
 
                 # Archive any existing library entry for this topic
                 if existing_curated is not None:
                     existing_curated.mark_archived()
-                    self._library._save_entry(
-                        existing_curated, self._library._library_name
-                    )
+                    self._library._save_entry(existing_curated, self._library._library_name)
 
                 self._library._write_entry_to_library(entry)
                 # Mark staging copy as curated
@@ -336,30 +326,30 @@ class CurationJob(FeedJob):
                 stats["promoted"] += 1
 
                 logger.info(
-                    "CurationJob: promoted %r → library "
-                    "(category=%r, ttl=%dh, objects=%d)",
-                    entry.topic, entry.category, ttl_hours,
+                    "CurationJob: promoted %r → library (category=%r, ttl=%dh, objects=%d)",
+                    entry.topic,
+                    entry.category,
+                    ttl_hours,
                     len(entry.stix_objects),
                 )
 
-            record.status       = "success"
-            record.finished_at  = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - started_at
-            ).total_seconds()
+            record.status = "success"
+            record.finished_at = _utcnow()
+            record.duration_seconds = (record.finished_at - started_at).total_seconds()
             record.result = IngestResult(
-                source_id      = "curation",
-                total_records  = len(pending),
-                written_objects= stats["promoted"],
+                source_id="curation",
+                total_records=len(pending),
+                written_objects=stats["promoted"],
             )
             record.result.metadata = stats
             self.last_success_at = record.finished_at
 
             logger.info(
-                "CurationJob: run #%d complete — "
-                "promoted=%d archived=%d skipped=%d in %.2fs",
+                "CurationJob: run #%d complete — promoted=%d archived=%d skipped=%d in %.2fs",
                 self.run_count,
-                stats["promoted"], stats["archived"], stats["skipped"],
+                stats["promoted"],
+                stats["archived"],
+                stats["skipped"],
                 record.duration_seconds,
             )
 
@@ -367,12 +357,10 @@ class CurationJob(FeedJob):
                 self._safe_callback(self.on_success, record)
 
         except Exception as exc:  # noqa: BLE001
-            record.finished_at      = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - started_at
-            ).total_seconds()
+            record.finished_at = _utcnow()
+            record.duration_seconds = (record.finished_at - started_at).total_seconds()
             record.status = "failed"
-            record.error  = str(exc)
+            record.error = str(exc)
             logger.error("CurationJob run #%d FAILED — %s", self.run_count, exc)
             if self.on_failure:
                 self._safe_callback(self.on_failure, record)

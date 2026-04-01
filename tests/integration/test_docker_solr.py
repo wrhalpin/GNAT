@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import json
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 import pytest
 
@@ -92,28 +92,37 @@ class TestSolrDocuments:
         return body
 
     def test_add_single_document(self, solr_url):
-        self._add_doc(solr_url, {
-            "id": "indicator--dddddddd-0001-0001-0001-000000000001",
-            "stix_type": "indicator",
-            "name": "Solr docker test IOC",
-        })
+        self._add_doc(
+            solr_url,
+            {
+                "id": "indicator--dddddddd-0001-0001-0001-000000000001",
+                "stix_type": "indicator",
+                "name": "Solr docker test IOC",
+            },
+        )
 
     def test_query_by_id(self, solr_url):
         doc_id = "indicator--dddddddd-0001-0001-0001-000000000002"
-        self._add_doc(solr_url, {
-            "id": doc_id,
-            "stix_type": "indicator",
-            "name": "Unique solr query test",
-        })
+        self._add_doc(
+            solr_url,
+            {
+                "id": doc_id,
+                "stix_type": "indicator",
+                "name": "Unique solr query test",
+            },
+        )
         result = self._query(solr_url, f"id:{doc_id}")
         assert result["response"]["numFound"] >= 1
 
     def test_full_text_search(self, solr_url):
-        self._add_doc(solr_url, {
-            "id": "indicator--dddddddd-0001-0001-0001-000000000003",
-            "stix_type": "indicator",
-            "name": "SOLRUNIQUE_FULLTEXT_TERM",
-        })
+        self._add_doc(
+            solr_url,
+            {
+                "id": "indicator--dddddddd-0001-0001-0001-000000000003",
+                "stix_type": "indicator",
+                "name": "SOLRUNIQUE_FULLTEXT_TERM",
+            },
+        )
         result = self._query(solr_url, "SOLRUNIQUE_FULLTEXT_TERM")
         assert result["response"]["numFound"] >= 1
 
@@ -150,10 +159,12 @@ enabled = true
 batch_size = 10
 """)
         import os
+
         os.environ["GNAT_CONFIG"] = str(ini)
 
         try:
             from gnat.search import GNATIndexer, SolrSearchConfig
+
             cfg = SolrSearchConfig(solr_url=f"{solr_url}/solr/gnat", enabled=True, batch_size=10)
             self.indexer = GNATIndexer(cfg)
         except ImportError:

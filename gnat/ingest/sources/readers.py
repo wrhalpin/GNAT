@@ -43,6 +43,7 @@ Available readers
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 import logging
@@ -103,17 +104,17 @@ class PlainTextReader(SourceReader):
     """
 
     _PATTERNS: dict[str, re.Pattern] = {
-        "sha256":  re.compile(r"^[0-9a-fA-F]{64}$"),
-        "sha1":    re.compile(r"^[0-9a-fA-F]{40}$"),
-        "md5":     re.compile(r"^[0-9a-fA-F]{32}$"),
-        "ip":      re.compile(
+        "sha256": re.compile(r"^[0-9a-fA-F]{64}$"),
+        "sha1": re.compile(r"^[0-9a-fA-F]{40}$"),
+        "md5": re.compile(r"^[0-9a-fA-F]{32}$"),
+        "ip": re.compile(
             r"^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
             r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:/\d{1,2})?$"
         ),
-        "ipv6":    re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
-        "url":     re.compile(r"^https?://", re.IGNORECASE),
-        "email":   re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
-        "domain":  re.compile(
+        "ipv6": re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
+        "url": re.compile(r"^https?://", re.IGNORECASE),
+        "email": re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
+        "domain": re.compile(
             r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+"
             r"[a-zA-Z]{2,}$"
         ),
@@ -564,10 +565,8 @@ class SQLReader(SourceReader):
 
     def close(self) -> None:
         if self._close_conn:
-            try:
+            with contextlib.suppress(Exception):  # noqa: BLE001
                 self._conn.close()
-            except Exception:  # noqa: BLE001
-                pass
         super().close()
 
     def _iter_records(self) -> Iterator[RawRecord]:
@@ -578,10 +577,7 @@ class SQLReader(SourceReader):
             else:
                 cursor.execute(self._query)
 
-            columns = [
-                self._column_map.get(desc[0], desc[0])
-                for desc in cursor.description
-            ]
+            columns = [self._column_map.get(desc[0], desc[0]) for desc in cursor.description]
 
             while True:
                 rows = cursor.fetchmany(self.batch_size)
@@ -651,31 +647,25 @@ class MISPReader(SourceReader):
         for event_wrapper in self._load():
             event = event_wrapper.get("Event", event_wrapper)
             event_meta = {
-                "event_id":        event.get("id", ""),
-                "event_uuid":      event.get("uuid", ""),
-                "event_info":      event.get("info", ""),
+                "event_id": event.get("id", ""),
+                "event_uuid": event.get("uuid", ""),
+                "event_info": event.get("info", ""),
                 "threat_level_id": event.get("threat_level_id", ""),
-                "event_tags":      [
-                    t.get("Tag", {}).get("name", "")
-                    for t in event.get("Tag", [])
-                ],
-                "org":             event.get("Orgc", {}).get("name", ""),
-                "distribution":    event.get("distribution", ""),
-                "timestamp":       event.get("timestamp", ""),
+                "event_tags": [t.get("Tag", {}).get("name", "") for t in event.get("Tag", [])],
+                "org": event.get("Orgc", {}).get("name", ""),
+                "distribution": event.get("distribution", ""),
+                "timestamp": event.get("timestamp", ""),
             }
             for attr in event.get("Attribute", []):
                 if self._attr_types and attr.get("type") not in self._attr_types:
                     continue
                 record = {
-                    "value":   attr.get("value", ""),
-                    "type":    attr.get("type", ""),
-                    "uuid":    attr.get("uuid", ""),
+                    "value": attr.get("value", ""),
+                    "type": attr.get("type", ""),
+                    "uuid": attr.get("uuid", ""),
                     "comment": attr.get("comment", ""),
-                    "tags":    [
-                        t.get("Tag", {}).get("name", "")
-                        for t in attr.get("Tag", [])
-                    ],
-                    "to_ids":  attr.get("to_ids", False),
+                    "tags": [t.get("Tag", {}).get("name", "") for t in attr.get("Tag", [])],
+                    "to_ids": attr.get("to_ids", False),
                     "category": attr.get("category", ""),
                 }
                 record.update(event_meta)
@@ -867,9 +857,7 @@ class RSSReader(SourceReader):
         try:
             import feedparser  # type: ignore
         except ImportError:
-            raise ImportError(
-                "feedparser is required for RSSReader: pip install feedparser"
-            )
+            raise ImportError("feedparser is required for RSSReader: pip install feedparser")
 
         if self._http_client:
             raw_content = self._http_client._request("GET", self._url)
@@ -883,15 +871,15 @@ class RSSReader(SourceReader):
 
         for entry in entries:
             yield {
-                "title":      getattr(entry, "title", ""),
-                "link":       getattr(entry, "link", ""),
-                "summary":    getattr(entry, "summary", ""),
-                "published":  getattr(entry, "published", ""),
-                "id":         getattr(entry, "id", ""),
-                "author":     getattr(entry, "author", ""),
-                "tags":       [t.get("term", "") for t in getattr(entry, "tags", [])],
+                "title": getattr(entry, "title", ""),
+                "link": getattr(entry, "link", ""),
+                "summary": getattr(entry, "summary", ""),
+                "published": getattr(entry, "published", ""),
+                "id": getattr(entry, "id", ""),
+                "author": getattr(entry, "author", ""),
+                "tags": [t.get("term", "") for t in getattr(entry, "tags", [])],
                 "_feed_title": feed.feed.get("title", ""),
-                "_feed_url":   self._url,
+                "_feed_url": self._url,
             }
 
 
@@ -966,11 +954,13 @@ class EmailReader(SourceReader):
             ct = part.get_content_type()
             disp = str(part.get("Content-Disposition", ""))
             if "attachment" in disp:
-                attachments.append({
-                    "filename": part.get_filename(""),
-                    "content_type": ct,
-                    "size": len(part.get_payload(decode=True) or b""),
-                })
+                attachments.append(
+                    {
+                        "filename": part.get_filename(""),
+                        "content_type": ct,
+                        "size": len(part.get_payload(decode=True) or b""),
+                    }
+                )
             elif ct == "text/plain" and not body_text:
                 body_text = part.get_content() or ""
             elif ct == "text/html" and not body_html:
@@ -979,30 +969,34 @@ class EmailReader(SourceReader):
         combined_text = body_text + " " + body_html
         classifier = PlainTextReader("", from_string=True)
 
-        urls     = re.findall(r"https?://[^\s\"'<>]+", combined_text)
-        ips      = [v for v in re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", combined_text)
-                    if classifier._classify(v) == "ip"]
-        domains  = re.findall(
+        urls = re.findall(r"https?://[^\s\"'<>]+", combined_text)
+        ips = [
+            v
+            for v in re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", combined_text)
+            if classifier._classify(v) == "ip"
+        ]
+        domains = re.findall(
             r"(?<![/@])\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+"
-            r"[a-zA-Z]{2,}\b", combined_text
+            r"[a-zA-Z]{2,}\b",
+            combined_text,
         )
-        hashes   = re.findall(r"\b[0-9a-fA-F]{32,64}\b", combined_text)
+        hashes = re.findall(r"\b[0-9a-fA-F]{32,64}\b", combined_text)
 
         return {
-            "subject":    str(msg.get("Subject", "")),
-            "from":       str(msg.get("From", "")),
-            "to":         str(msg.get("To", "")),
-            "date":       str(msg.get("Date", "")),
+            "subject": str(msg.get("Subject", "")),
+            "from": str(msg.get("From", "")),
+            "to": str(msg.get("To", "")),
+            "date": str(msg.get("Date", "")),
             "message_id": str(msg.get("Message-ID", "")),
-            "body_text":  body_text,
-            "body_html":  body_html,
+            "body_text": body_text,
+            "body_html": body_html,
             "attachments": attachments,
-            "headers":    dict(msg.items()),
-            "urls":       list(set(urls)),
-            "ips":        list(set(ips)),
-            "domains":    list(set(domains)),
-            "hashes":     list(set(hashes)),
-            "_path":      path,
+            "headers": dict(msg.items()),
+            "urls": list(set(urls)),
+            "ips": list(set(ips)),
+            "domains": list(set(domains)),
+            "hashes": list(set(hashes)),
+            "_path": path,
         }
 
 
@@ -1031,7 +1025,7 @@ class OpenIOCReader(SourceReader):
     """
 
     _NS = {
-        "ioc":  "http://schemas.mandiant.com/2010/ioc",
+        "ioc": "http://schemas.mandiant.com/2010/ioc",
         "ioc2": "http://openioc.org/schemas/OpenIOC_1.1",
     }
 
@@ -1040,11 +1034,7 @@ class OpenIOCReader(SourceReader):
         self._source = Path(source)
 
     def _iter_records(self) -> Iterator[RawRecord]:
-        paths = (
-            list(self._source.glob("*.ioc"))
-            if self._source.is_dir()
-            else [self._source]
-        )
+        paths = list(self._source.glob("*.ioc")) if self._source.is_dir() else [self._source]
         for path in paths:
             try:
                 yield from self._parse_file(path)
@@ -1061,23 +1051,23 @@ class OpenIOCReader(SourceReader):
         if ns_tag.startswith("{"):
             ns = ns_tag.split("}")[0] + "}"
 
-        ioc_id   = root.get("id", "")
+        ioc_id = root.get("id", "")
         ioc_name_el = root.find(f"{ns}short_description")
         ioc_name = ioc_name_el.text if ioc_name_el is not None else path.stem
 
         for item in root.iter(f"{ns}IndicatorItem"):
-            context  = item.find(f"{ns}Context")
-            content  = item.find(f"{ns}Content")
+            context = item.find(f"{ns}Context")
+            content = item.find(f"{ns}Content")
             yield {
-                "ioc_id":           ioc_id,
-                "ioc_name":         ioc_name,
-                "item_id":          item.get("id", ""),
-                "condition":        item.get("condition", "is"),
+                "ioc_id": ioc_id,
+                "ioc_name": ioc_name,
+                "item_id": item.get("id", ""),
+                "condition": item.get("condition", "is"),
                 "context_document": context.get("document", "") if context is not None else "",
-                "context_search":   context.get("search", "") if context is not None else "",
-                "content_type":     content.get("type", "") if content is not None else "",
-                "content":          content.text or "" if content is not None else "",
-                "_file":            str(path),
+                "context_search": context.get("search", "") if context is not None else "",
+                "content_type": content.get("type", "") if content is not None else "",
+                "content": content.text or "" if content is not None else "",
+                "_file": str(path),
             }
 
 
@@ -1248,7 +1238,5 @@ class ElasticReader(SourceReader):
 
         # Clear scroll context
         if scroll_id:
-            try:
+            with contextlib.suppress(Exception):  # noqa: BLE001
                 self._client.delete(f"/_search/scroll/{scroll_id}")
-            except Exception:  # noqa: BLE001
-                pass

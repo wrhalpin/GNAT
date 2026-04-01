@@ -67,22 +67,22 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":      "indicators",
-        "threat-actor":   "threat-actors-group",
-        "malware":        "malwares",
+        "indicator": "indicators",
+        "threat-actor": "threat-actors-group",
+        "malware": "malwares",
         "attack-pattern": "attack-patterns",
-        "vulnerability":  "vulnerabilities",
-        "report":         "reports",
+        "vulnerability": "vulnerabilities",
+        "report": "reports",
     }
 
     # GraphQL type names for list queries
     _GQL_TYPES: dict[str, str] = {
-        "indicator":      "Indicators",
-        "threat-actor":   "ThreatActors",
-        "malware":        "Malwares",
+        "indicator": "Indicators",
+        "threat-actor": "ThreatActors",
+        "malware": "Malwares",
         "attack-pattern": "AttackPatterns",
-        "vulnerability":  "Vulnerabilities",
-        "report":         "Reports",
+        "vulnerability": "Vulnerabilities",
+        "report": "Reports",
     }
 
     def __init__(self, host: str, api_key: str = "", **kwargs: Any):
@@ -154,17 +154,15 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
             * ``orderBy``   — field to sort by
             * ``orderMode`` — ``"asc"`` or ``"desc"``
         """
-        filters  = dict(filters or {})
+        filters = dict(filters or {})
         gql_type = self._GQL_TYPES.get(stix_type)
         if not gql_type:
-            raise GNATClientError(
-                f"OpenCTI: unsupported STIX type '{stix_type}'"
-            )
-        search     = filters.pop("search", None)
-        order_by   = filters.pop("orderBy", "created_at")
+            raise GNATClientError(f"OpenCTI: unsupported STIX type '{stix_type}'")
+        search = filters.pop("search", None)
+        order_by = filters.pop("orderBy", "created_at")
         order_mode = filters.pop("orderMode", "desc")
-        first      = page_size
-        _after     = None  # cursor-based pagination not implemented here
+        first = page_size
+        _after = None  # cursor-based pagination not implemented here
 
         query = f"""
         query List{gql_type}($first: Int, $orderBy: String, $orderMode: OrderingMode, $search: String) {{
@@ -197,8 +195,8 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
 
         resp = self.post("/graphql", json={"query": query, "variables": variables})
         if isinstance(resp, dict):
-            data  = resp.get("data", {})
-            key   = gql_type[0].lower() + gql_type[1:]
+            data = resp.get("data", {})
+            key = gql_type[0].lower() + gql_type[1:]
             edges = data.get(key, {}).get("edges", [])
             return [e.get("node", {}) for e in edges]
         return []
@@ -247,54 +245,54 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
         field names and returns a valid STIX dict.
         """
         entity_type = native.get("entity_type", "")
-        obj_id      = native.get("id", "")
+        obj_id = native.get("id", "")
 
         if entity_type == "Indicator":
             return {
-                "type":            "indicator",
-                "id":              obj_id,
-                "name":            native.get("name", ""),
-                "pattern":         native.get("pattern", ""),
-                "pattern_type":    "stix",
-                "created":         native.get("created", ""),
-                "modified":        native.get("modified", ""),
+                "type": "indicator",
+                "id": obj_id,
+                "name": native.get("name", ""),
+                "pattern": native.get("pattern", ""),
+                "pattern_type": "stix",
+                "created": native.get("created", ""),
+                "modified": native.get("modified", ""),
                 "indicator_types": ["malicious-activity"],
-                "confidence":      native.get("confidence", 50),
+                "confidence": native.get("confidence", 50),
             }
 
         if entity_type in ("Malware",):
             return {
-                "type":        "malware",
-                "id":          obj_id,
-                "name":        native.get("name", ""),
+                "type": "malware",
+                "id": obj_id,
+                "name": native.get("name", ""),
                 "description": native.get("description", ""),
-                "is_family":   False,
+                "is_family": False,
             }
 
         if entity_type in ("ThreatActor", "ThreatActorGroup"):
             return {
-                "type":        "threat-actor",
-                "id":          obj_id,
-                "name":        native.get("name", ""),
+                "type": "threat-actor",
+                "id": obj_id,
+                "name": native.get("name", ""),
                 "description": native.get("description", ""),
             }
 
         if entity_type == "AttackPattern":
             return {
-                "type":        "attack-pattern",
-                "id":          obj_id,
-                "name":        native.get("name", ""),
+                "type": "attack-pattern",
+                "id": obj_id,
+                "name": native.get("name", ""),
                 "description": native.get("description", ""),
-                "x_mitre_id":  native.get("x_mitre_id", ""),
+                "x_mitre_id": native.get("x_mitre_id", ""),
             }
 
         if entity_type == "Vulnerability":
             return {
-                "type":          "vulnerability",
-                "id":            obj_id,
-                "name":          native.get("name", ""),
-                "description":   native.get("description", ""),
-                "x_cvss_score":  native.get("x_opencti_cvss_base_score"),
+                "type": "vulnerability",
+                "id": obj_id,
+                "name": native.get("name", ""),
+                "description": native.get("description", ""),
+                "x_cvss_score": native.get("x_opencti_cvss_base_score"),
             }
 
         # Generic passthrough

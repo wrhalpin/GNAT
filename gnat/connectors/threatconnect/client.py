@@ -57,11 +57,11 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":    "indicators",
+        "indicator": "indicators",
         "threat-actor": "groups",
-        "malware":      "groups",
-        "campaign":     "groups",
-        "report":       "groups",
+        "malware": "groups",
+        "campaign": "groups",
+        "report": "groups",
     }
 
     def __init__(
@@ -101,9 +101,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         self.get(f"{_API}/whoami")
         return True
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve one TC object by numeric ID."""
         resource = self.stix_type_map.get(stix_type, "indicators")
         resp = self._request_signed("GET", f"{_API}/{resource}/{object_id}")
@@ -142,9 +140,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         data = resp.get("data", [])
         return data if isinstance(data, list) else []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update a TC indicator/group."""
         resource = self.stix_type_map.get(stix_type, "indicators")
         obj_id = payload.pop("id", None)
@@ -166,35 +162,36 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a TC indicator dict to a STIX Indicator SDO."""
         tc_type = native.get("type", "")
-        value   = native.get("summary", native.get("name", ""))
+        value = native.get("summary", native.get("name", ""))
         pattern = self._make_pattern(tc_type, value)
         return {
-            "type":             "indicator",
-            "id":               f"indicator--tc-{native.get('id', '')}",
-            "name":             value,
-            "pattern":          pattern,
-            "pattern_type":     "stix",
-            "created":          native.get("dateAdded", ""),
-            "modified":         native.get("lastModified", ""),
-            "confidence":       native.get("confidence", 0),
-            "indicator_types":  [native.get("type", "unknown").lower()],
+            "type": "indicator",
+            "id": f"indicator--tc-{native.get('id', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("dateAdded", ""),
+            "modified": native.get("lastModified", ""),
+            "confidence": native.get("confidence", 0),
+            "indicator_types": [native.get("type", "unknown").lower()],
             "x_source_platform": "threatconnect",
-            "x_tc_id":          native.get("id", ""),
-            "x_tc_type":        tc_type,
-            "x_tc_owner":       native.get("ownerName", ""),
+            "x_tc_id": native.get("id", ""),
+            "x_tc_type": tc_type,
+            "x_tc_owner": native.get("ownerName", ""),
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX Indicator to a TC indicator payload."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_dict.get("name", "")
         return {
-            "summary":    value,
-            "type":       self._stix_pattern_to_tc_type(pattern),
+            "summary": value,
+            "type": self._stix_pattern_to_tc_type(pattern),
             "confidence": stix_dict.get("confidence", 0),
-            "rating":     min(5, stix_dict.get("confidence", 0) // 20),
+            "rating": min(5, stix_dict.get("confidence", 0) // 20),
         }
 
     # ------------------------------------------------------------------
@@ -230,8 +227,8 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
     def _compute_hmac(self, path: str, method: str, timestamp: str) -> str:
         """Compute HMAC-SHA256 signature: HMAC(secret_key, path:method:timestamp)."""
         message = f"{path}:{method.upper()}:{timestamp}".encode()
-        secret  = self._secret_key.encode("utf-8")
-        digest  = _hmac.new(secret, message, hashlib.sha256).digest()
+        secret = self._secret_key.encode("utf-8")
+        digest = _hmac.new(secret, message, hashlib.sha256).digest()
         return base64.b64encode(digest).decode("utf-8")
 
     @staticmethod

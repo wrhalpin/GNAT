@@ -9,10 +9,10 @@ Uses urllib3 (GNAT standard) – no requests dependency.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from gnat.clients.base import BaseClient, GNATClientError
 from gnat.agents.base import LLMProvider
+from gnat.clients.base import BaseClient, GNATClientError
 
 
 class ClaudeProvider(LLMProvider, BaseClient):
@@ -41,11 +41,11 @@ class ClaudeProvider(LLMProvider, BaseClient):
 
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = 4096,
+        max_tokens: int | None = 4096,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Claude Messages API chat completion."""
         self.authenticate()
         payload = {
@@ -61,9 +61,9 @@ class ClaudeProvider(LLMProvider, BaseClient):
     def structured(
         self,
         prompt: str,
-        output_schema: Dict[str, Any],
+        output_schema: dict[str, Any],
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Structured output via XML/JSON prompting (Claude has no native JSON mode)."""
         system = (
             "You are a helpful assistant. Respond ONLY with valid JSON matching this schema:\n"

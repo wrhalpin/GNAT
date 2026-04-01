@@ -117,9 +117,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
             resp = self.get("/v1/models")
             models = resp.get("data", []) if isinstance(resp, dict) else []
             return [{"id": m.get("id"), "type": "model"} for m in models]
-        raise GNATClientError(
-            f"list_objects not meaningfully supported for STIX type: {stix_type}"
-        )
+        raise GNATClientError(f"list_objects not meaningfully supported for STIX type: {stix_type}")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """ChatGPT is inference-only — no object creation/updates."""

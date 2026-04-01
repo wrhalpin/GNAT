@@ -303,9 +303,7 @@ class QRadarClient:
         raw: bool = False,
     ) -> dict | list | bytes:
         """Execute a request and return parsed JSON or raw bytes."""
-        response = self._raw_request(
-            method, url, body=body, extra_headers=extra_headers
-        )
+        response = self._raw_request(method, url, body=body, extra_headers=extra_headers)
         if raw:
             return response.data
         return self._parse_json_response(response, url)
@@ -326,15 +324,12 @@ class QRadarClient:
         """
         if headers is None:
             headers = dict(
-                self.config.json_headers if body is not None
-                else self.config.base_headers
+                self.config.json_headers if body is not None else self.config.base_headers
             )
         if extra_headers:
             headers.update(extra_headers)
 
-        encoded: bytes | None = (
-            json.dumps(body).encode("utf-8") if body is not None else None
-        )
+        encoded: bytes | None = json.dumps(body).encode("utf-8") if body is not None else None
 
         delay = _RETRY_BASE_DELAY
         last_exc: Exception | None = None
@@ -342,9 +337,7 @@ class QRadarClient:
         for attempt in range(_MAX_RETRIES + 1):
             try:
                 if encoded is not None:
-                    response = self._http.request(
-                        method, url, body=encoded, headers=headers
-                    )
+                    response = self._http.request(method, url, body=encoded, headers=headers)
                 else:
                     response = self._http.request(method, url, headers=headers)
             except urllib3.exceptions.HTTPError as exc:
@@ -360,8 +353,7 @@ class QRadarClient:
 
             if response.status == 401:
                 raise QRadarAuthError(
-                    "QRadar rejected the SEC token (HTTP 401). "
-                    "Check token in [qradar] config."
+                    "QRadar rejected the SEC token (HTTP 401). Check token in [qradar] config."
                 )
 
             if response.status == 403:
@@ -423,9 +415,7 @@ class QRadarClient:
             raise QRadarAPIError(str(last_exc), endpoint=url) from last_exc
         raise QRadarAPIError("Request failed after retries.", endpoint=url)
 
-    def _parse_json_response(
-        self, response: urllib3.HTTPResponse, url: str
-    ) -> dict | list:
+    def _parse_json_response(self, response: urllib3.HTTPResponse, url: str) -> dict | list:
         try:
             return json.loads(response.data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:

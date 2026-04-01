@@ -50,6 +50,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5e")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -69,7 +70,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "credentials",
-        "report":    "breaches",
+        "report": "breaches",
     }
 
     def __init__(self, host: str = "https://api.hudsonrock.com", api_key: str = "", **kwargs: Any):
@@ -128,7 +129,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         self,
         limit: int = 50,
         since: str | None = None,
-        victim_type: str | None = None,   # company, individual, etc.
+        victim_type: str | None = None,  # company, individual, etc.
     ) -> list[dict[str, Any]]:
         """Fetch recent breach events."""
         params: dict[str, Any] = {"limit": limit}

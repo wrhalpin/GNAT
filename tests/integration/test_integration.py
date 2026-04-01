@@ -23,15 +23,16 @@ Prerequisites (per target):
 """
 
 import os
+
 import pytest
 
 from gnat.client import GNATClient
 from gnat.orm.indicator import Indicator
 
-
 # ---------------------------------------------------------------------------
 # Pytest config
 # ---------------------------------------------------------------------------
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -58,6 +59,7 @@ def pytest_collection_modifyitems(config, items):
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def cli():
     """Return a GNATClient using the real integration config."""
@@ -69,9 +71,9 @@ def cli():
 # ThreatQ Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestThreatQIntegration:
-
     def test_ping(self, cli):
         cli.connect("threatq")
         assert cli.ping() is True
@@ -100,9 +102,9 @@ class TestThreatQIntegration:
 # CrowdStrike Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestCrowdStrikeIntegration:
-
     def test_ping(self, cli):
         cli.connect("crowdstrike")
         assert cli.ping() is True
@@ -117,9 +119,9 @@ class TestCrowdStrikeIntegration:
 # Proofpoint Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestProofpointIntegration:
-
     def test_ping(self, cli):
         cli.connect("proofpoint")
         assert cli.ping() is True
@@ -134,9 +136,9 @@ class TestProofpointIntegration:
 # Netskope Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestNetskopeIntegration:
-
     def test_ping(self, cli):
         cli.connect("netskope")
         assert cli.ping() is True
@@ -151,9 +153,9 @@ class TestNetskopeIntegration:
 # XSOAR Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestXSOARIntegration:
-
     def test_ping(self, cli):
         cli.connect("xsoar")
         assert cli.ping() is True
@@ -168,9 +170,9 @@ class TestXSOARIntegration:
 # Recorded Future Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestRecordedFutureIntegration:
-
     def test_ping(self, cli):
         cli.connect("recordedfuture")
         assert cli.ping() is True

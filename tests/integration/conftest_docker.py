@@ -30,8 +30,8 @@ import socket
 import subprocess
 import sys
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 import pytest
 
@@ -104,8 +104,10 @@ def _wait_for_http(url: str, timeout: int = 120, interval: float = 2.0) -> bool:
 def _docker_compose(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
     """Run ``docker compose -f <compose-file> <args>``."""
     cmd = [
-        "docker", "compose",
-        "-f", str(_COMPOSE_FILE),
+        "docker",
+        "compose",
+        "-f",
+        str(_COMPOSE_FILE),
         *args,
     ]
     return subprocess.run(cmd, check=check, capture_output=True, text=True)
@@ -179,11 +181,16 @@ workspace_dir = {workspace_dir}
     ini_path.write_text(ini_content)
 
     cmd = [
-        sys.executable, "-m", "gnat.cli.main",
+        sys.executable,
+        "-m",
+        "gnat.cli.main",
         "taxii",
-        "--host", "127.0.0.1",
-        "--port", str(port),
-        "--api-key", api_key,
+        "--host",
+        "127.0.0.1",
+        "--port",
+        str(port),
+        "--api-key",
+        api_key,
     ]
 
     env = os.environ.copy()
@@ -204,10 +211,7 @@ workspace_dir = {workspace_dir}
         proc.terminate()
         stdout = proc.stdout.read().decode(errors="replace") if proc.stdout else ""
         stderr = proc.stderr.read().decode(errors="replace") if proc.stderr else ""
-        pytest.fail(
-            f"TAXII server did not start within 30 s\n"
-            f"stdout: {stdout}\nstderr: {stderr}"
-        )
+        pytest.fail(f"TAXII server did not start within 30 s\nstdout: {stdout}\nstderr: {stderr}")
 
     yield {"base_url": base_url, "api_key": api_key, "port": port}
 

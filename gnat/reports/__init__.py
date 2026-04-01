@@ -78,16 +78,26 @@ from gnat.reports.synthesizer import ReportSynthesizer
 
 __all__ = [
     # Configuration
-    "AIMode", "ReportConfig", "SectorFilter",
+    "AIMode",
+    "ReportConfig",
+    "SectorFilter",
     # Document model
-    "ReportSection", "ReportDocument", "ReportResult",
+    "ReportSection",
+    "ReportDocument",
+    "ReportResult",
     # Pipeline stages
-    "DataAggregator", "ReportAggregates",
+    "DataAggregator",
+    "ReportAggregates",
     "ReportSynthesizer",
     # Renderers
-    "MarkdownRenderer", "HTMLRenderer", "PDFRenderer", "DOCXRenderer",
+    "MarkdownRenderer",
+    "HTMLRenderer",
+    "PDFRenderer",
+    "DOCXRenderer",
     # Delivery
-    "EmailDelivery", "SharePointDelivery",
+    "EmailDelivery",
+    "SharePointDelivery",
     # Orchestration
-    "ReportGenerator", "ReportJob",
+    "ReportGenerator",
+    "ReportJob",
 ]

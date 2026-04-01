@@ -63,25 +63,36 @@ from .exceptions import QRadarNotFoundError
 
 # Offense type code → human-readable label
 OFFENSE_TYPE_LABELS = {
-    0: "Source IP", 1: "Destination IP", 2: "Event Name",
-    3: "Username", 4: "MAC Address", 5: "Log Source",
-    6: "Hostname", 7: "Port", 8: "Rule Group",
-    9: "MAC/Hostname", 10: "Log Source Type", 11: "Post NAT Source IP",
-    12: "Post NAT Destination IP", 13: "GTI Address",
+    0: "Source IP",
+    1: "Destination IP",
+    2: "Event Name",
+    3: "Username",
+    4: "MAC Address",
+    5: "Log Source",
+    6: "Hostname",
+    7: "Port",
+    8: "Rule Group",
+    9: "MAC/Hostname",
+    10: "Log Source Type",
+    11: "Post NAT Source IP",
+    12: "Post NAT Destination IP",
+    13: "GTI Address",
     14: "Username/Source IP",
 }
+
 
 # Magnitude → GNAT severity (0–4)
 def _magnitude_to_severity(magnitude: int) -> int:
     if magnitude >= 9:
-        return 4   # critical
+        return 4  # critical
     if magnitude >= 7:
-        return 3   # high
+        return 3  # high
     if magnitude >= 5:
-        return 2   # medium
+        return 2  # medium
     if magnitude >= 3:
-        return 1   # low
-    return 0       # informational
+        return 1  # low
+    return 0  # informational
+
 
 _SEVERITY_LABELS = {0: "informational", 1: "low", 2: "medium", 3: "high", 4: "critical"}
 
@@ -147,9 +158,7 @@ class QRadarOffenseCommands:
 
         page_size = min(limit or self._client.config.max_results, 500)
         items = []
-        for item in self._client.paginate(
-            "siem/offenses", params=params, page_size=page_size
-        ):
+        for item in self._client.paginate("siem/offenses", params=params, page_size=page_size):
             items.append(item)
             if limit and len(items) >= limit:
                 break
@@ -349,9 +358,7 @@ class QRadarOffenseCommands:
         list[dict]
             Note records with id, note_text, create_time, username.
         """
-        return list(
-            self._client.paginate(f"siem/offenses/{offense_id}/notes")
-        )
+        return list(self._client.paginate(f"siem/offenses/{offense_id}/notes"))
 
     def add_note(self, offense_id: int, note_text: str) -> dict:
         """
@@ -469,6 +476,10 @@ def _epoch_ms_to_iso(epoch_ms: int | None) -> str | None:
     if not epoch_ms:
         return None
     from datetime import datetime, timezone
-    return datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%S.%f"
-    )[:-3] + "Z"
+
+    return (
+        datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[
+            :-3
+        ]
+        + "Z"
+    )

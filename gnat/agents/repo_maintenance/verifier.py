@@ -30,8 +30,14 @@ class VerificationEngine:
             checks.append(self._run_pytest(spec.tests))
 
         passed = all(check.passed for check in checks) if checks else True
-        summary = "All verification checks passed." if passed else "One or more verification checks failed."
-        return VerificationResult(connector=connector, passed=passed, checks=checks, summary=summary)
+        summary = (
+            "All verification checks passed."
+            if passed
+            else "One or more verification checks failed."
+        )
+        return VerificationResult(
+            connector=connector, passed=passed, checks=checks, summary=summary
+        )
 
     def _verify_golden_fixture(self, fixture_path: str) -> VerificationCheck:
         full_path = self.repo_root / fixture_path
@@ -48,7 +54,9 @@ class VerificationEngine:
         return VerificationCheck(
             name=f"golden:{fixture_path}",
             passed=passed,
-            details="Fixture output matches expected canonical JSON." if passed else "Fixture output drifted from expected canonical JSON.",
+            details="Fixture output matches expected canonical JSON."
+            if passed
+            else "Fixture output drifted from expected canonical JSON.",
             artifacts=[fixture_path],
         )
 

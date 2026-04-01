@@ -123,7 +123,9 @@ class CopilotClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List available models as lightweight "objects" for STIX report discovery."""
         if stix_type != "report":
-            raise GNATClientError(f"list_objects not meaningfully supported for STIX type: {stix_type}")
+            raise GNATClientError(
+                f"list_objects not meaningfully supported for STIX type: {stix_type}"
+            )
 
         resp = self.get("/v1/models")
         models = resp.get("data", []) if isinstance(resp, dict) else []
@@ -207,7 +209,10 @@ class CopilotClient(BaseClient, ConnectorMixin):
             "note": "Copilot connector is inference-only. Use chat_completion with messages derived from this STIX object.",
             "suggested_messages": [
                 {"role": "system", "content": "You are a helpful threat intelligence analyst."},
-                {"role": "user", "content": stix_dict.get("description", "Analyze this threat intel.")},
+                {
+                    "role": "user",
+                    "content": stix_dict.get("description", "Analyze this threat intel."),
+                },
             ],
             "stix_id": stix_dict.get("id", ""),
         }

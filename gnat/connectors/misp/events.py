@@ -150,9 +150,7 @@ class MISPEventCommands:
         if date_from:
             base_body["date_from"] = date_from
 
-        yield from self._client.paginate(
-            "events/restSearch", body=base_body, response_key="Event"
-        )
+        yield from self._client.paginate("events/restSearch", body=base_body, response_key="Event")
 
     def get_event(self, event_id: int | str) -> dict:
         """
@@ -240,14 +238,12 @@ class MISPEventCommands:
             "date": date,
             "published": published,
             "threat_level_id": threat_level_id
-                if threat_level_id is not None
-                else self._client.config.default_threat_level,
-            "analysis": analysis
-                if analysis is not None
-                else self._client.config.default_analysis,
+            if threat_level_id is not None
+            else self._client.config.default_threat_level,
+            "analysis": analysis if analysis is not None else self._client.config.default_analysis,
             "distribution": distribution
-                if distribution is not None
-                else self._client.config.default_distribution,
+            if distribution is not None
+            else self._client.config.default_distribution,
         }
         response = self._client.post_json("events/add", body={"Event": event})
         if isinstance(response, dict):
@@ -268,9 +264,7 @@ class MISPEventCommands:
         -------
         dict
         """
-        response = self._client.post_json(
-            f"events/edit/{event_id}", body={"Event": updates}
-        )
+        response = self._client.post_json(f"events/edit/{event_id}", body={"Event": updates})
         if isinstance(response, dict):
             return response.get("Event", response)
         return response

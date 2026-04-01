@@ -75,7 +75,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "report":        "assets",
+        "report": "assets",
         "vulnerability": "software",
     }
 
@@ -89,10 +89,10 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._client_id     = client_id
+        self._client_id = client_id
         self._client_secret = client_secret
-        self._site_id       = site_id
-        self._api_key       = api_key
+        self._site_id = site_id
+        self._api_key = api_key
 
     # ── Authentication ─────────────────────────────────────────────────────
 
@@ -104,8 +104,8 @@ class LansweeperClient(BaseClient, ConnectorMixin):
             resp = self.post(
                 "/ls/connect/token",
                 data={
-                    "grant_type":    "client_credentials",
-                    "client_id":     self._client_id,
+                    "grant_type": "client_credentials",
+                    "client_id": self._client_id,
                     "client_secret": self._client_secret,
                 },
             )
@@ -228,8 +228,8 @@ class LansweeperClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a reference payload (Lansweeper is read-only)."""
         return {
-            "note":      "Lansweeper is read-only.",
-            "stix_id":   stix_dict.get("id", ""),
+            "note": "Lansweeper is read-only.",
+            "stix_id": stix_dict.get("id", ""),
             "stix_type": stix_dict.get("type", ""),
         }
 
@@ -237,23 +237,23 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         aid = str(asset.get("id", asset.get("assetId", "")))
         return {
-            "type":          "report",
-            "id":            f"report--{_uuid.uuid5(_STIX_NS, f'lansweeper:{aid}')}",
-            "spec_version":  "2.1",
-            "created":       asset.get("firstSeen", now),
-            "modified":      asset.get("lastSeen", now),
-            "name":          asset.get("name", f"Asset {aid}"),
-            "description":   f"Lansweeper managed asset: {asset.get('type', 'unknown')}",
-            "report_types":  ["asset-inventory"],
-            "object_refs":   [],
+            "type": "report",
+            "id": f"report--{_uuid.uuid5(_STIX_NS, f'lansweeper:{aid}')}",
+            "spec_version": "2.1",
+            "created": asset.get("firstSeen", now),
+            "modified": asset.get("lastSeen", now),
+            "name": asset.get("name", f"Asset {aid}"),
+            "description": f"Lansweeper managed asset: {asset.get('type', 'unknown')}",
+            "report_types": ["asset-inventory"],
+            "object_refs": [],
             "x_lansweeper": {
-                "asset_id":   aid,
-                "type":       asset.get("type"),
-                "os":         asset.get("operatingSystem"),
-                "ip":         asset.get("ip"),
-                "mac":        asset.get("mac"),
-                "domain":     asset.get("domain"),
-                "site_id":    self._site_id,
+                "asset_id": aid,
+                "type": asset.get("type"),
+                "os": asset.get("operatingSystem"),
+                "ip": asset.get("ip"),
+                "mac": asset.get("mac"),
+                "domain": asset.get("domain"),
+                "site_id": self._site_id,
             },
         }
 
@@ -261,20 +261,18 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         sid = str(sw.get("id", ""))
         return {
-            "type":          "vulnerability",
-            "id":            f"vulnerability--{_uuid.uuid5(_STIX_NS, f'lansweeper:sw:{sid}')}",
-            "spec_version":  "2.1",
-            "created":       now,
-            "modified":      now,
-            "name":          f"{sw.get('softwareName', 'Unknown')} {sw.get('softwareVersion', '')}".strip(),
-            "description":   f"Software installed on {sw.get('assetCount', 0)} asset(s)",
-            "external_references": [
-                {"source_name": "lansweeper", "external_id": sid}
-            ],
+            "type": "vulnerability",
+            "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, f'lansweeper:sw:{sid}')}",
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
+            "name": f"{sw.get('softwareName', 'Unknown')} {sw.get('softwareVersion', '')}".strip(),
+            "description": f"Software installed on {sw.get('assetCount', 0)} asset(s)",
+            "external_references": [{"source_name": "lansweeper", "external_id": sid}],
             "x_lansweeper_software": {
-                "name":        sw.get("softwareName"),
-                "version":     sw.get("softwareVersion"),
-                "publisher":   sw.get("publisher"),
+                "name": sw.get("softwareName"),
+                "version": sw.get("softwareVersion"),
+                "publisher": sw.get("publisher"),
                 "asset_count": sw.get("assetCount", 0),
             },
         }

@@ -29,20 +29,22 @@ class RepairPlanner:
             full_path = self.repo_root / path
             if not full_path.exists():
                 continue
-            if plan.impact in {ChangeImpact.ADAPTER_UPDATE, ChangeImpact.BACKWARD_COMPATIBLE}:
-                if path.endswith("client.py"):
-                    actions.append(
-                        RepairAction(
-                            action_type="patch_client_adapter",
-                            path=path,
-                            summary="Adjust request/response adapter while preserving public method signatures.",
-                            details={
-                                "insert_compatibility_aliases": True,
-                                "preserve_signatures": True,
-                            },
-                            requires_review=True,
-                        )
+            if plan.impact in {
+                ChangeImpact.ADAPTER_UPDATE,
+                ChangeImpact.BACKWARD_COMPATIBLE,
+            } and path.endswith("client.py"):
+                actions.append(
+                    RepairAction(
+                        action_type="patch_client_adapter",
+                        path=path,
+                        summary="Adjust request/response adapter while preserving public method signatures.",
+                        details={
+                            "insert_compatibility_aliases": True,
+                            "preserve_signatures": True,
+                        },
+                        requires_review=True,
                     )
+                )
             if plan.impact == ChangeImpact.TRANSLATION_UPDATE and (
                 path.endswith("stix_mapper.py") or "mapper" in path
             ):
@@ -84,8 +86,12 @@ class RepairPlanner:
         if plan.impact in {ChangeImpact.BREAKING_CHANGE, ChangeImpact.SECURITY_REVIEW}:
             notes.append("Open as draft PR only; do not merge without maintainer review.")
         if not actions and plan.impact != ChangeImpact.NO_CHANGE:
-            notes.append("No deterministic file-level patch was inferred; manual connector review required.")
+            notes.append(
+                "No deterministic file-level patch was inferred; manual connector review required."
+            )
 
-        repair_plan = RepairPlan(connector=plan.connector, impact=plan.impact, actions=actions, notes=notes)
+        repair_plan = RepairPlan(
+            connector=plan.connector, impact=plan.impact, actions=actions, notes=notes
+        )
         plan.repair = repair_plan
         return repair_plan

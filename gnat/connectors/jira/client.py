@@ -76,9 +76,9 @@ class JiraClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "note":             "issue",
+        "note": "issue",
         "course-of-action": "issue",
-        "indicator":        "issue",
+        "indicator": "issue",
     }
 
     def __init__(
@@ -90,9 +90,9 @@ class JiraClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._email     = email
+        self._email = email
         self._api_token = api_token
-        self._api_key   = api_key
+        self._api_key = api_key
 
     # ── ConnectorMixin interface ──────────────────────────────────────────
 
@@ -104,13 +104,11 @@ class JiraClient(BaseClient, ConnectorMixin):
         are supplied; falls back to Bearer token when only *api_key* is set.
         """
         if self._email and self._api_token:
-            creds = base64.b64encode(
-                f"{self._email}:{self._api_token}".encode()
-            ).decode()
+            creds = base64.b64encode(f"{self._email}:{self._api_token}".encode()).decode()
             self._auth_headers["Authorization"] = f"Basic {creds}"
         elif self._api_key:
             self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
-        self._auth_headers["Accept"]       = "application/json"
+        self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
 
     def health_check(self) -> bool:
@@ -171,11 +169,20 @@ class JiraClient(BaseClient, ConnectorMixin):
             Pagination offset.  Default 0.
         """
         payload = {
-            "jql":        jql or "order by created DESC",
+            "jql": jql or "order by created DESC",
             "maxResults": limit,
-            "startAt":    start_at,
-            "fields":     ["summary", "description", "status", "assignee",
-                           "priority", "labels", "created", "updated", "issuetype"],
+            "startAt": start_at,
+            "fields": [
+                "summary",
+                "description",
+                "status",
+                "assignee",
+                "priority",
+                "labels",
+                "created",
+                "updated",
+                "issuetype",
+            ],
         }
         resp = self.post(f"{_API_V3}/issue/search", json=payload)
         return resp.get("issues", []) if isinstance(resp, dict) else []
@@ -221,27 +228,27 @@ class JiraClient(BaseClient, ConnectorMixin):
         native_object : dict
             Jira issue dict (the ``fields`` sub-dict is handled automatically).
         """
-        issue_id  = native_object.get("id", "")
-        key       = native_object.get("key", issue_id)
-        fields    = native_object.get("fields", native_object)
-        summary   = fields.get("summary", "")
-        desc      = self._adf_to_text(fields.get("description") or {})
-        created   = fields.get("created", "")
-        updated   = fields.get("updated", created)
+        issue_id = native_object.get("id", "")
+        key = native_object.get("key", issue_id)
+        fields = native_object.get("fields", native_object)
+        summary = fields.get("summary", "")
+        desc = self._adf_to_text(fields.get("description") or {})
+        created = fields.get("created", "")
+        updated = fields.get("updated", created)
         issuetype = (fields.get("issuetype") or {}).get("name", "").lower()
 
         stix_type = "course-of-action" if "action" in issuetype else "note"
         return {
-            "type":            stix_type,
-            "id":              f"{stix_type}--{issue_id}",
-            "created":         created,
-            "modified":        updated,
-            "name":            summary,
-            "content":         desc,
-            "x_jira_key":      key,
-            "x_jira_status":   (fields.get("status") or {}).get("name", ""),
+            "type": stix_type,
+            "id": f"{stix_type}--{issue_id}",
+            "created": created,
+            "modified": updated,
+            "name": summary,
+            "content": desc,
+            "x_jira_key": key,
+            "x_jira_status": (fields.get("status") or {}).get("name", ""),
             "x_jira_priority": (fields.get("priority") or {}).get("name", ""),
-            "x_jira_labels":   fields.get("labels", []),
+            "x_jira_labels": fields.get("labels", []),
             "x_jira_assignee": (fields.get("assignee") or {}).get("displayName", ""),
         }
 
@@ -302,9 +309,9 @@ class JiraClient(BaseClient, ConnectorMixin):
             If the comment POST fails.
         """
         stix_type = stix_obj.get("type", "unknown")
-        stix_id   = stix_obj.get("id", "")
-        name      = stix_obj.get("name", stix_obj.get("description", stix_id))
-        desc      = stix_obj.get("description", "")
+        stix_id = stix_obj.get("id", "")
+        name = stix_obj.get("name", stix_obj.get("description", stix_id))
+        desc = stix_obj.get("description", "")
 
         body = self._build_adf_comment(stix_type, stix_id, name, desc)
         resp = self.post(f"{_API_V3}/issue/{issue_key}/comment", json={"body": body})
@@ -321,30 +328,29 @@ class JiraClient(BaseClient, ConnectorMixin):
         limit : int
             Max results.  Default 50.
         """
-        return self.list_objects(jql=f'labels = "{label}" ORDER BY created DESC',
-                                 limit=limit)
+        return self.list_objects(jql=f'labels = "{label}" ORDER BY created DESC', limit=limit)
 
     # ── Private helpers ───────────────────────────────────────────────────
 
     def _stix_to_jira(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Build a Jira create/update fields payload from a STIX SDO."""
-        name    = payload.get("name", payload.get("id", ""))
-        desc    = payload.get("description", payload.get("content", ""))
+        name = payload.get("name", payload.get("id", ""))
+        desc = payload.get("description", payload.get("content", ""))
         pattern = payload.get("pattern", "")
 
         issue_type = {
-            "note":             "Task",
+            "note": "Task",
             "course-of-action": "Task",
-            "indicator":        "Task",
+            "indicator": "Task",
         }.get(stix_type, "Task")
 
         body_text = desc or (f"Pattern: {pattern}" if pattern else "")
         return {
             "fields": {
-                "summary":     name[:255] if name else f"GNAT {stix_type}",
-                "issuetype":   {"name": issue_type},
+                "summary": name[:255] if name else f"GNAT {stix_type}",
+                "issuetype": {"name": issue_type},
                 "description": self._build_adf_paragraph(body_text),
-                "labels":      ["gnat", "threat-intelligence", stix_type],
+                "labels": ["gnat", "threat-intelligence", stix_type],
             }
         }
 
@@ -352,20 +358,18 @@ class JiraClient(BaseClient, ConnectorMixin):
     def _build_adf_paragraph(text: str) -> dict[str, Any]:
         """Wrap plain text in minimal Atlassian Document Format (ADF)."""
         return {
-            "type":    "doc",
+            "type": "doc",
             "version": 1,
             "content": [
                 {
-                    "type":    "paragraph",
+                    "type": "paragraph",
                     "content": [{"type": "text", "text": text or " "}],
                 }
             ],
         }
 
     @staticmethod
-    def _build_adf_comment(
-        stix_type: str, stix_id: str, name: str, desc: str
-    ) -> dict[str, Any]:
+    def _build_adf_comment(stix_type: str, stix_id: str, name: str, desc: str) -> dict[str, Any]:
         """Build a structured ADF comment block for a STIX annotation."""
         lines = [
             "[GNAT] Linked STIX object",
@@ -377,11 +381,11 @@ class JiraClient(BaseClient, ConnectorMixin):
             lines.append(f"Description: {desc}")
 
         return {
-            "type":    "doc",
+            "type": "doc",
             "version": 1,
             "content": [
                 {
-                    "type":    "paragraph",
+                    "type": "paragraph",
                     "content": [{"type": "text", "text": line}],
                 }
                 for line in lines

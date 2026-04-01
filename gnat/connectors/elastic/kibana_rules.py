@@ -41,7 +41,7 @@ Kibana Detection Engine API base path:
 ## References
 
 - https://www.elastic.co/guide/en/security/current/rule-api-overview.html
-  """
+"""
 
 import urllib.parse
 from collections.abc import Iterator
@@ -49,6 +49,7 @@ from collections.abc import Iterator
 from .client import ElasticClient
 
 _RULES_BASE = "api/detection_engine/rules"
+
 
 class KibanaRulesCommands:
     """
@@ -156,9 +157,7 @@ class KibanaRulesCommands:
         ElasticKibanaNotFoundError
             If no rule with this rule_id exists.
         """
-        return self._client.kibana_get(
-            _RULES_BASE, params={"rule_id": rule_id}
-        )
+        return self._client.kibana_get(_RULES_BASE, params={"rule_id": rule_id})
 
     def get_rule_by_id(self, rule_id: str) -> dict:
         """
@@ -249,9 +248,7 @@ class KibanaRulesCommands:
         dict
             Deleted rule info.
         """
-        return self._client.kibana_delete(
-            _RULES_BASE, params={"rule_id": rule_id}
-        )
+        return self._client.kibana_delete(_RULES_BASE, params={"rule_id": rule_id})
 
     # ── Enable / disable ───────────────────────────────────────────────────
 
@@ -364,19 +361,16 @@ class KibanaRulesCommands:
         bytes
             NDJSON-encoded rule definitions.
         """
-        url = self._client.config.kibana_url(
-            f"{_RULES_BASE}/_export"
-        )
+        url = self._client.config.kibana_url(f"{_RULES_BASE}/_export")
         body = None
         if rule_ids:
             body = {"objects": [{"rule_id": rid} for rid in rule_ids]}
 
         headers = self._client.auth.get_kibana_headers("POST")
         import json
+
         encoded = json.dumps(body).encode() if body else b""
-        response = self._client._http.request(
-            "POST", url, body=encoded, headers=headers
-        )
+        response = self._client._http.request("POST", url, body=encoded, headers=headers)
         return response.data
 
     def import_rules(
@@ -400,9 +394,7 @@ class KibanaRulesCommands:
             Import summary with success_count, errors_count, rules_count.
         """
         params = {"overwrite": str(overwrite).lower()}
-        url = self._client.config.kibana_url(
-            f"{_RULES_BASE}/_import"
-        )
+        url = self._client.config.kibana_url(f"{_RULES_BASE}/_import")
         if params:
             url += f"?{urllib.parse.urlencode(params)}"
 
@@ -412,7 +404,8 @@ class KibanaRulesCommands:
             "Content-Type": "application/ndjson",
         }
         response = self._client._http.request(
-            "POST", url,
+            "POST",
+            url,
             body=ndjson_data,
             headers=headers,
         )

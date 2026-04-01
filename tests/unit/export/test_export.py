@@ -25,45 +25,57 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from gnat.orm.indicator import Indicator
-from gnat.orm.malware import Malware
-
-from gnat.export import ExportPipeline, TransformResult, DeliveryResult
-from gnat.export.filters import (
-    TypeFilter, ConfidenceFilter, TLPFilter, TagFilter,
-    AgeFilter, IOCTypeFilter, LimitFilter, DeduplicateFilter, FunctionFilter,
-)
-from gnat.export.transforms.edl import EDLTransform
-from gnat.export.transforms.netskope import (
-    NetskopeCETransform, STIXBundleTransform, CSVTransform,
-)
+from gnat.export import DeliveryResult, ExportPipeline, TransformResult
 from gnat.export.delivery.targets import (
-    FileDelivery, LogDelivery, MultiDelivery,
+    FileDelivery,
+    LogDelivery,
+    MultiDelivery,
+)
+from gnat.export.filters import (
+    AgeFilter,
+    ConfidenceFilter,
+    DeduplicateFilter,
+    FunctionFilter,
+    IOCTypeFilter,
+    LimitFilter,
+    TagFilter,
+    TLPFilter,
+    TypeFilter,
 )
 from gnat.export.jobs import ExportJob
-
+from gnat.export.transforms.edl import EDLTransform
+from gnat.export.transforms.netskope import (
+    CSVTransform,
+    NetskopeCETransform,
+    STIXBundleTransform,
+)
+from gnat.orm.indicator import Indicator
+from gnat.orm.malware import Malware
 
 # ===========================================================================
 # Fixtures
 # ===========================================================================
 
-def _ind(name="evil.com", pattern=None, confidence=70, tlp="white",
-         tags=None, modified_days_ago=1):
+
+def _ind(name="evil.com", pattern=None, confidence=70, tlp="white", tags=None, modified_days_ago=1):
     if pattern is None:
         pattern = f"[domain-name:value = '{name}']"
     dt = (datetime.now(timezone.utc) - timedelta(days=modified_days_ago)).isoformat()
     obj = Indicator(
-        name=name, pattern=pattern, pattern_type="stix",
-        confidence=confidence, x_tlp=tlp,
+        name=name,
+        pattern=pattern,
+        pattern_type="stix",
+        confidence=confidence,
+        x_tlp=tlp,
     )
     if tags:
         obj._properties["x_gm_tags"] = tags
     obj._properties["modified"] = dt
-    obj._properties["created"]  = dt
+    obj._properties["created"] = dt
     return obj
 
 
@@ -72,7 +84,8 @@ def _ip(addr="1.2.3.4", confidence=80):
         name=addr,
         pattern=f"[ipv4-addr:value = '{addr}']",
         pattern_type="stix",
-        confidence=confidence, x_tlp="white",
+        confidence=confidence,
+        x_tlp="white",
     )
 
 
@@ -81,7 +94,7 @@ def _indicators():
         _ind("evil-0.com", confidence=40, tlp="white", tags=["apt28"]),
         _ind("evil-1.com", confidence=60, tlp="green", tags=["apt28"]),
         _ind("evil-2.com", confidence=80, tlp="amber", tags=["internal"]),
-        _ind("evil-3.com", confidence=90, tlp="red",   tags=["apt28"]),
+        _ind("evil-3.com", confidence=90, tlp="red", tags=["apt28"]),
         _ip("10.0.0.1", confidence=85),
         _ip("10.0.0.2", confidence=55),
     ]
@@ -91,13 +104,16 @@ def _sha256_ind():
     return Indicator(
         name="abc123",
         pattern="[file:hashes.SHA-256 = 'abc123def456']",
-        pattern_type="stix", confidence=75, x_tlp="white",
+        pattern_type="stix",
+        confidence=75,
+        x_tlp="white",
     )
 
 
 # ===========================================================================
 # Filters
 # ===========================================================================
+
 
 class TestTypeFilter:
     def test_passes_matching_type(self):
@@ -264,18 +280,21 @@ class TestDeduplicateFilter:
         assert len(result) == len(_indicators())
 
     def test_custom_key_field(self):
-        ind1 = _ind("a.com"); ind1._properties["x_key"] = "same"
-        ind2 = _ind("b.com"); ind2._properties["x_key"] = "same"
-        ind3 = _ind("c.com"); ind3._properties["x_key"] = "different"
+        ind1 = _ind("a.com")
+        ind1._properties["x_key"] = "same"
+        ind2 = _ind("b.com")
+        ind2._properties["x_key"] = "same"
+        ind3 = _ind("c.com")
+        ind3._properties["x_key"] = "different"
         result = list(DeduplicateFilter(key_field="x_key")([ind1, ind2, ind3]))
         assert len(result) == 2
 
 
 class TestFunctionFilter:
     def test_custom_predicate(self):
-        result = list(FunctionFilter(
-            lambda o: o._properties.get("confidence", 0) > 70
-        )(_indicators()))
+        result = list(
+            FunctionFilter(lambda o: o._properties.get("confidence", 0) > 70)(_indicators())
+        )
         assert all(o._properties.get("confidence", 0) > 70 for o in result)
 
 
@@ -298,8 +317,8 @@ class TestCompositeFilter:
 # EDLTransform
 # ===========================================================================
 
-class TestEDLTransform:
 
+class TestEDLTransform:
     def test_produces_per_type_files(self):
         t = EDLTransform(ioc_types=["ipv4", "domain"])
         r = t.transform(_indicators())
@@ -343,16 +362,20 @@ class TestEDLTransform:
         ind = _ind("dup.com")
         t = EDLTransform(ioc_types=["domain"], deduplicate=True)
         r = t.transform([ind, ind, ind])
-        lines = [l for l in r.payloads.get("indicators-domain.txt","").splitlines()
-                 if not l.startswith("#")]
+        lines = [
+            ln
+            for ln in r.payloads.get("indicators-domain.txt", "").splitlines()
+            if not ln.startswith("#")
+        ]
         assert lines.count("dup.com") == 1
 
     def test_max_per_file_truncates(self):
         inds = [_ind(f"x{i}.com") for i in range(20)]
         t = EDLTransform(ioc_types=["domain"], max_per_file=5)
         r = t.transform(inds)
-        lines = [l for l in r.payloads["indicators-domain.txt"].splitlines()
-                 if not l.startswith("#")]
+        lines = [
+            ln for ln in r.payloads["indicators-domain.txt"].splitlines() if not ln.startswith("#")
+        ]
         assert len(lines) == 5
         assert "domain" in r.metadata.get("truncated", {})
 
@@ -360,8 +383,9 @@ class TestEDLTransform:
         inds = [_ind("z.com"), _ind("a.com"), _ind("m.com")]
         t = EDLTransform(ioc_types=["domain"], sort_output=True)
         r = t.transform(inds)
-        lines = [l for l in r.payloads["indicators-domain.txt"].splitlines()
-                 if not l.startswith("#")]
+        lines = [
+            ln for ln in r.payloads["indicators-domain.txt"].splitlines() if not ln.startswith("#")
+        ]
         assert lines == sorted(lines)
 
     def test_malware_objects_skipped(self):
@@ -388,8 +412,11 @@ class TestEDLTransform:
     def test_object_count_reflects_extracted(self):
         t = EDLTransform(ioc_types=["domain"])
         r = t.transform(_indicators())
-        domain_lines = [l for l in r.payloads.get("indicators-domain.txt","").splitlines()
-                        if not l.startswith("#")]
+        domain_lines = [
+            ln
+            for ln in r.payloads.get("indicators-domain.txt", "").splitlines()
+            if not ln.startswith("#")
+        ]
         assert r.object_count == len(domain_lines)
 
 
@@ -397,8 +424,8 @@ class TestEDLTransform:
 # NetskopeCETransform
 # ===========================================================================
 
-class TestNetskopeCETransform:
 
+class TestNetskopeCETransform:
     def test_produces_json_payload(self):
         t = NetskopeCETransform()
         r = t.transform(_indicators())
@@ -429,8 +456,7 @@ class TestNetskopeCETransform:
         assert entry["reputation"] == 85
 
     def test_default_reputation_when_no_score(self):
-        ind = Indicator(name="x.com", pattern="[domain-name:value = 'x.com']",
-                        pattern_type="stix")
+        ind = Indicator(name="x.com", pattern="[domain-name:value = 'x.com']", pattern_type="stix")
         t = NetskopeCETransform(default_reputation=42)
         r = t.transform([ind])
         entry = json.loads(r.payloads["netskope_payload.json"])["indicator_list"][0]
@@ -495,36 +521,50 @@ class TestCSVTransform:
 # ExportPipeline
 # ===========================================================================
 
-class TestExportPipeline:
 
+class TestExportPipeline:
     def test_list_source(self):
-        p = ExportPipeline("t").read_from(_indicators()).transform_with(
-            EDLTransform(ioc_types=["domain"])
-        ).deliver_to(LogDelivery())
+        p = (
+            ExportPipeline("t")
+            .read_from(_indicators())
+            .transform_with(EDLTransform(ioc_types=["domain"]))
+            .deliver_to(LogDelivery())
+        )
         result = p.run()
         assert result.success
         assert result.source_objects == len(_indicators())
 
     def test_filter_reduces_objects(self):
-        p = ExportPipeline("t").read_from(_indicators()).filter_with(
-            ConfidenceFilter(min_confidence=85)
-        ).transform_with(EDLTransform(ioc_types=["domain", "ipv4"])).deliver_to(LogDelivery())
+        p = (
+            ExportPipeline("t")
+            .read_from(_indicators())
+            .filter_with(ConfidenceFilter(min_confidence=85))
+            .transform_with(EDLTransform(ioc_types=["domain", "ipv4"]))
+            .deliver_to(LogDelivery())
+        )
         result = p.run()
         assert result.filtered_objects < result.source_objects
 
     def test_zero_match_skips_transform_and_deliver(self):
-        p = ExportPipeline("t").read_from(_indicators()).filter_with(
-            ConfidenceFilter(min_confidence=999)
-        ).transform_with(EDLTransform()).deliver_to(LogDelivery())
+        p = (
+            ExportPipeline("t")
+            .read_from(_indicators())
+            .filter_with(ConfidenceFilter(min_confidence=999))
+            .transform_with(EDLTransform())
+            .deliver_to(LogDelivery())
+        )
         result = p.run()
         assert result.success
         assert result.filtered_objects == 0
         assert result.transform_result is None
 
     def test_dry_run_skips_delivery(self):
-        p = ExportPipeline("t").read_from(_indicators()).transform_with(
-            EDLTransform(ioc_types=["domain"])
-        ).deliver_to(LogDelivery())
+        p = (
+            ExportPipeline("t")
+            .read_from(_indicators())
+            .transform_with(EDLTransform(ioc_types=["domain"]))
+            .deliver_to(LogDelivery())
+        )
         result = p.dry_run()
         assert result.delivery_result is None
         assert result.transform_result is not None
@@ -540,13 +580,15 @@ class TestExportPipeline:
         assert result.errors
 
     def test_multiple_filters_chained(self):
-        p = (ExportPipeline("t")
-             .read_from(_indicators())
-             .filter_with(TypeFilter("indicator"))
-             .filter_with(ConfidenceFilter(70))
-             .filter_with(TLPFilter(["white"]))
-             .transform_with(EDLTransform(ioc_types=["domain", "ipv4"]))
-             .deliver_to(LogDelivery()))
+        p = (
+            ExportPipeline("t")
+            .read_from(_indicators())
+            .filter_with(TypeFilter("indicator"))
+            .filter_with(ConfidenceFilter(70))
+            .filter_with(TLPFilter(["white"]))
+            .transform_with(EDLTransform(ioc_types=["domain", "ipv4"]))
+            .deliver_to(LogDelivery())
+        )
         result = p.run()
         assert result.success
 
@@ -561,8 +603,8 @@ class TestExportPipeline:
 # Delivery
 # ===========================================================================
 
-class TestFileDelivery:
 
+class TestFileDelivery:
     def test_creates_files(self, tmp_path):
         t = EDLTransform(ioc_types=["domain"])
         tr = t.transform(_indicators())
@@ -635,8 +677,8 @@ class TestMultiDelivery:
 # ExportJob
 # ===========================================================================
 
-class TestExportJob:
 
+class TestExportJob:
     def _build_pipeline(self):
         return (
             ExportPipeline("test")
@@ -656,9 +698,12 @@ class TestExportJob:
 
     def test_on_success_callback(self):
         fired = []
-        job = ExportJob("j", lambda ctx: self._build_pipeline(),
-                        interval_seconds=60,
-                        on_success=lambda rec: fired.append(rec.status))
+        job = ExportJob(
+            "j",
+            lambda ctx: self._build_pipeline(),
+            interval_seconds=60,
+            on_success=lambda rec: fired.append(rec.status),
+        )
         job.execute()
         assert fired == ["success"]
 
@@ -667,22 +712,23 @@ class TestExportJob:
             raise RuntimeError("pipeline error")
 
         fired = []
-        job = ExportJob("j", bad_factory, interval_seconds=60,
-                        on_failure=lambda rec: fired.append(rec.error))
+        job = ExportJob(
+            "j", bad_factory, interval_seconds=60, on_failure=lambda rec: fired.append(rec.error)
+        )
         rec = job.execute()
         assert rec.status == "failed"
         assert "pipeline error" in (rec.error or "")
         assert fired and "pipeline error" in fired[0]
 
     def test_disabled_returns_skipped(self):
-        job = ExportJob("j", lambda ctx: self._build_pipeline(),
-                        interval_seconds=60, enabled=False)
+        job = ExportJob("j", lambda ctx: self._build_pipeline(), interval_seconds=60, enabled=False)
         rec = job.execute()
         assert rec.status == "skipped"
         assert job.run_count == 0
 
     def test_ctx_last_success_iso_propagates(self):
         seen = []
+
         def factory(ctx):
             seen.append(ctx.last_success_iso)
             return self._build_pipeline()
@@ -695,6 +741,7 @@ class TestExportJob:
 
     def test_integrates_with_feed_scheduler(self):
         from gnat.schedule import FeedScheduler
+
         job = ExportJob("j", lambda ctx: self._build_pipeline(), interval_seconds=60)
         sched = FeedScheduler()
         sched.add(job)
@@ -703,8 +750,7 @@ class TestExportJob:
         assert rec.status == "success"
 
     def test_max_history_respected(self):
-        job = ExportJob("j", lambda ctx: self._build_pipeline(),
-                        interval_seconds=60, max_history=3)
+        job = ExportJob("j", lambda ctx: self._build_pipeline(), interval_seconds=60, max_history=3)
         for _ in range(5):
             job.execute()
         assert len(job.history) == 3

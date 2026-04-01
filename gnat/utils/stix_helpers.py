@@ -3,6 +3,7 @@ gnat.utils.stix_helpers
 ===========================
 Utility functions for working with STIX 2.1 objects and bundles.
 """
+
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -28,9 +29,7 @@ def extract_objects(bundle: dict[str, Any]) -> list[dict[str, Any]]:
     return bundle.get("objects", [])
 
 
-def filter_by_type(
-    objects: list[dict[str, Any]], stix_type: str
-) -> list[dict[str, Any]]:
+def filter_by_type(objects: list[dict[str, Any]], stix_type: str) -> list[dict[str, Any]]:
     """Filter a list of STIX objects by type."""
     return [o for o in objects if o.get("type") == stix_type]
 

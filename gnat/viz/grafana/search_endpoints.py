@@ -48,10 +48,11 @@ logger = logging.getLogger(__name__)
 # (i.e. this module's namespace), so Request must be bound here unconditionally.
 try:
     from fastapi import APIRouter, Request  # noqa: F401 — needed for annotation resolution
+
     _FASTAPI_AVAILABLE = True
 except ImportError:  # pragma: no cover
     APIRouter = None  # type: ignore[assignment,misc]
-    Request = None    # type: ignore[assignment,misc]
+    Request = None  # type: ignore[assignment,misc]
     _FASTAPI_AVAILABLE = False
 
 
@@ -61,9 +62,7 @@ def _solr_get(base_url: str, path: str, params: dict[str, Any]) -> dict | None:
 
     Returns the parsed JSON body, or None on failure.
     """
-    qs = urllib.parse.urlencode(
-        {k: v for k, v in params.items() if v is not None}, doseq=True
-    )
+    qs = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None}, doseq=True)
     url = f"{base_url.rstrip('/')}/{path.lstrip('/')}?{qs}"
     try:
         with urllib.request.urlopen(url, timeout=5) as resp:
@@ -104,15 +103,19 @@ def build_search_router(search_index: SearchIndex) -> Any:
         base = _base_url()
         if not base:
             return []
-        data = _solr_get(base, "select", {
-            "q": "*:*",
-            "rows": 0,
-            "facet": "true",
-            "facet.field": field,
-            "facet.limit": limit,
-            "facet.mincount": 1,
-            "wt": "json",
-        })
+        data = _solr_get(
+            base,
+            "select",
+            {
+                "q": "*:*",
+                "rows": 0,
+                "facet": "true",
+                "facet.field": field,
+                "facet.limit": limit,
+                "facet.mincount": 1,
+                "wt": "json",
+            },
+        )
         if not data:
             return []
         ff = data.get("facet_counts", {}).get("facet_fields", {}).get(field, [])
@@ -132,29 +135,33 @@ def build_search_router(search_index: SearchIndex) -> Any:
             return 0
         return int(data.get("response", {}).get("numFound", 0))
 
-    def _date_facet(field: str = "date_indexed", gap: str = "+1DAY",
-                    start: str = "NOW-30DAYS/DAY", end: str = "NOW/DAY+1DAY") -> list[tuple]:
+    def _date_facet(
+        field: str = "date_indexed",
+        gap: str = "+1DAY",
+        start: str = "NOW-30DAYS/DAY",
+        end: str = "NOW/DAY+1DAY",
+    ) -> list[tuple]:
         """Return ``[(iso_date, count), ...]`` from a Solr date range facet."""
         base = _base_url()
         if not base:
             return []
-        data = _solr_get(base, "select", {
-            "q": "*:*",
-            "rows": 0,
-            "facet": "true",
-            "facet.range": field,
-            "facet.range.start": start,
-            "facet.range.end": end,
-            "facet.range.gap": gap,
-            "wt": "json",
-        })
+        data = _solr_get(
+            base,
+            "select",
+            {
+                "q": "*:*",
+                "rows": 0,
+                "facet": "true",
+                "facet.range": field,
+                "facet.range.start": start,
+                "facet.range.end": end,
+                "facet.range.gap": gap,
+                "wt": "json",
+            },
+        )
         if not data:
             return []
-        range_data = (
-            data.get("facet_counts", {})
-                .get("facet_ranges", {})
-                .get(field, {})
-        )
+        range_data = data.get("facet_counts", {}).get("facet_ranges", {}).get(field, {})
         counts = range_data.get("counts", [])  # flat: [date, count, ...]
         pairs = []
         for i in range(0, len(counts) - 1, 2):
@@ -166,14 +173,18 @@ def build_search_router(search_index: SearchIndex) -> Any:
         base = _base_url()
         if not base:
             return []
-        data = _solr_get(base, "select", {
-            "q": query,
-            "defType": "edismax",
-            "qf": "text_content",
-            "fl": "id,stix_type,source_platform,display_name",
-            "rows": limit,
-            "wt": "json",
-        })
+        data = _solr_get(
+            base,
+            "select",
+            {
+                "q": query,
+                "defType": "edismax",
+                "qf": "text_content",
+                "fl": "id,stix_type,source_platform,display_name",
+                "rows": limit,
+                "wt": "json",
+            },
+        )
         if not data:
             return []
         return data.get("response", {}).get("docs", [])
@@ -225,46 +236,51 @@ def build_search_router(search_index: SearchIndex) -> Any:
             # ── stats/total ───────────────────────────────────────────────
             if target == "stats/total":
                 total = _total_docs()
-                results.append({
-                    "columns": [{"text": "Total Documents", "type": "number"}],
-                    "rows": [[total]],
-                    "type": "table",
-                })
+                results.append(
+                    {
+                        "columns": [{"text": "Total Documents", "type": "number"}],
+                        "rows": [[total]],
+                        "type": "table",
+                    }
+                )
 
             # ── stats/type_counts ─────────────────────────────────────────
             elif target == "stats/type_counts":
                 pairs = _facet_counts("stix_type")
-                results.append({
-                    "columns": [
-                        {"text": "STIX Type",  "type": "string"},
-                        {"text": "Doc Count",  "type": "number"},
-                    ],
-                    "rows": [[v, c] for v, c in pairs],
-                    "type": "table",
-                })
+                results.append(
+                    {
+                        "columns": [
+                            {"text": "STIX Type", "type": "string"},
+                            {"text": "Doc Count", "type": "number"},
+                        ],
+                        "rows": [[v, c] for v, c in pairs],
+                        "type": "table",
+                    }
+                )
 
             # ── stats/platform_counts ─────────────────────────────────────
             elif target == "stats/platform_counts":
                 pairs = _facet_counts("source_platform")
-                results.append({
-                    "columns": [
-                        {"text": "Platform",   "type": "string"},
-                        {"text": "Doc Count",  "type": "number"},
-                    ],
-                    "rows": [[v, c] for v, c in pairs],
-                    "type": "table",
-                })
+                results.append(
+                    {
+                        "columns": [
+                            {"text": "Platform", "type": "string"},
+                            {"text": "Doc Count", "type": "number"},
+                        ],
+                        "rows": [[v, c] for v, c in pairs],
+                        "type": "table",
+                    }
+                )
 
             # ── timeseries/ingest ─────────────────────────────────────────
             elif target == "timeseries/ingest":
                 import datetime
+
                 pairs = _date_facet("date_indexed")
                 datapoints = []
                 for iso_str, count in pairs:
                     try:
-                        dt = datetime.datetime.fromisoformat(
-                            iso_str.replace("Z", "+00:00")
-                        )
+                        dt = datetime.datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
                         datapoints.append([count, int(dt.timestamp() * 1000)])
                     except ValueError:
                         pass
@@ -272,39 +288,43 @@ def build_search_router(search_index: SearchIndex) -> Any:
 
             # ── facet/<field> ─────────────────────────────────────────────
             elif target.startswith("facet/"):
-                field = target[len("facet/"):]
+                field = target[len("facet/") :]
                 pairs = _facet_counts(field)
-                results.append({
-                    "columns": [
-                        {"text": field,      "type": "string"},
-                        {"text": "Count",    "type": "number"},
-                    ],
-                    "rows": [[v, c] for v, c in pairs],
-                    "type": "table",
-                })
+                results.append(
+                    {
+                        "columns": [
+                            {"text": field, "type": "string"},
+                            {"text": "Count", "type": "number"},
+                        ],
+                        "rows": [[v, c] for v, c in pairs],
+                        "type": "table",
+                    }
+                )
 
             # ── search/<query> ────────────────────────────────────────────
             elif target.startswith("search/"):
-                query = target[len("search/"):]
+                query = target[len("search/") :]
                 docs = _search_stix(query)
-                results.append({
-                    "columns": [
-                        {"text": "STIX ID",          "type": "string"},
-                        {"text": "Type",             "type": "string"},
-                        {"text": "Platform",         "type": "string"},
-                        {"text": "Display Name",     "type": "string"},
-                    ],
-                    "rows": [
-                        [
-                            d.get("id", ""),
-                            d.get("stix_type", ""),
-                            d.get("source_platform", ""),
-                            d.get("display_name", ""),
-                        ]
-                        for d in docs
-                    ],
-                    "type": "table",
-                })
+                results.append(
+                    {
+                        "columns": [
+                            {"text": "STIX ID", "type": "string"},
+                            {"text": "Type", "type": "string"},
+                            {"text": "Platform", "type": "string"},
+                            {"text": "Display Name", "type": "string"},
+                        ],
+                        "rows": [
+                            [
+                                d.get("id", ""),
+                                d.get("stix_type", ""),
+                                d.get("source_platform", ""),
+                                d.get("display_name", ""),
+                            ]
+                            for d in docs
+                        ],
+                        "type": "table",
+                    }
+                )
 
         return results
 

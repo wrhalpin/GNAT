@@ -83,9 +83,9 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":      "alarms",
-        "malware":        "cases",
-        "observed-data":  "events",
+        "indicator": "alarms",
+        "malware": "cases",
+        "observed-data": "events",
     }
 
     def __init__(
@@ -108,11 +108,14 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         if self._api_token:
             self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
         elif self._client_id and self._client_secret:
-            resp = self.post("/oauth2/token", data={
-                "grant_type": "client_credentials",
-                "client_id": self._client_id,
-                "client_secret": self._client_secret,
-            })
+            resp = self.post(
+                "/oauth2/token",
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": self._client_id,
+                    "client_secret": self._client_secret,
+                },
+            )
             token = resp.get("access_token") if isinstance(resp, dict) else None
             if not token:
                 raise GNATClientError("LogRhythm: failed to obtain OAuth2 token")
@@ -138,10 +141,13 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
 
         if stix_type == "observed-data":
             # Log search is async; return a search stub
-            resp = self.get("/lr-search-api/actions/search", params={
-                "logCacheSize": 1,
-                "query": f"msgId:{object_id}",
-            })
+            resp = self.get(
+                "/lr-search-api/actions/search",
+                params={
+                    "logCacheSize": 1,
+                    "query": f"msgId:{object_id}",
+                },
+            )
             return resp if isinstance(resp, dict) else {}
 
         raise GNATClientError(f"Unsupported STIX type for LogRhythm: {stix_type}")
@@ -181,10 +187,13 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
 
         if stix_type == "observed-data":
             query = f.get("query", "*")
-            resp = self.get("/lr-search-api/actions/search", params={
-                "logCacheSize": page_size,
-                "query": query,
-            })
+            resp = self.get(
+                "/lr-search-api/actions/search",
+                params={
+                    "logCacheSize": page_size,
+                    "query": query,
+                },
+            )
             return resp.get("items", []) if isinstance(resp, dict) else []
 
         raise GNATClientError(f"Unsupported STIX type for LogRhythm: {stix_type}")
@@ -210,23 +219,17 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
             )
             return resp if isinstance(resp, dict) else {}
 
-        raise GNATClientError(
-            f"LogRhythm: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"LogRhythm: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Close/complete a LogRhythm alarm or case."""
         if stix_type == "indicator":
-            self.post(f"/lr-alarm-api/alarms/{object_id}/status",
-                      json={"status": "Completed"})
+            self.post(f"/lr-alarm-api/alarms/{object_id}/status", json={"status": "Completed"})
             return
         if stix_type == "malware":
-            self.patch(f"/lr-case-api/cases/{object_id}",
-                       json={"status": {"name": "Completed"}})
+            self.patch(f"/lr-case-api/cases/{object_id}", json={"status": {"name": "Completed"}})
             return
-        raise GNATClientError(
-            f"LogRhythm: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"LogRhythm: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -248,16 +251,17 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
-    def create_case_from_alarm(
-        self, alarm_id: str, name: str, priority: int = 3
-    ) -> dict[str, Any]:
+    def create_case_from_alarm(self, alarm_id: str, name: str, priority: int = 3) -> dict[str, Any]:
         """Create a new investigation case from an existing alarm."""
-        resp = self.post("/lr-case-api/cases", json={
-            "name": name,
-            "priority": priority,
-            "externalId": str(alarm_id),
-            "summary": f"Created from LogRhythm alarm {alarm_id} via GNAT",
-        })
+        resp = self.post(
+            "/lr-case-api/cases",
+            json={
+                "name": name,
+                "priority": priority,
+                "externalId": str(alarm_id),
+                "summary": f"Created from LogRhythm alarm {alarm_id} via GNAT",
+            },
+        )
         return resp if isinstance(resp, dict) else {}
 
     def search_logs(
@@ -266,10 +270,13 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         max_results: int = 500,
     ) -> dict[str, Any]:
         """Submit an asynchronous log search and return the search handle."""
-        resp = self.get("/lr-search-api/actions/search", params={
-            "logCacheSize": max_results,
-            "query": query,
-        })
+        resp = self.get(
+            "/lr-search-api/actions/search",
+            params={
+                "logCacheSize": max_results,
+                "query": query,
+            },
+        )
         return resp if isinstance(resp, dict) else {}
 
     def get_lists(self, list_type: str | None = None) -> list[dict[str, Any]]:
@@ -282,9 +289,10 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
 
     def update_list(self, list_id: int, items: list[str]) -> dict[str, Any]:
         """Append items to a LogRhythm list (e.g., blocklist IPs)."""
-        resp = self.post(f"/lr-admin-api/lists/{list_id}/items", json={
-            "items": [{"value": v, "isExpired": False} for v in items]
-        })
+        resp = self.post(
+            f"/lr-admin-api/lists/{list_id}/items",
+            json={"items": [{"value": v, "isExpired": False} for v in items]},
+        )
         return resp if isinstance(resp, dict) else {}
 
     # ── STIX translation ───────────────────────────────────────────────────
@@ -370,7 +378,8 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
                 "priority": case.get("priority", ""),
                 "status": status_name,
                 "owner": case.get("owner", {}).get("name", "")
-                         if isinstance(case.get("owner"), dict) else "",
+                if isinstance(case.get("owner"), dict)
+                else "",
                 "due_date": case.get("dueDate", ""),
                 "external_id": case.get("externalId", ""),
             },

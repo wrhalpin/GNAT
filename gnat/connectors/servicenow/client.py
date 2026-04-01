@@ -66,7 +66,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
 
     # Base path for all Table API calls
     _TABLE_BASE = "/api/now/table"
-    _SI_TABLE   = "sn_si_incident"
+    _SI_TABLE = "sn_si_incident"
 
     def __init__(
         self,
@@ -79,7 +79,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
-        self._api_key  = api_key
+        self._api_key = api_key
 
     # ── ConnectorMixin interface ──────────────────────────────────────────
 
@@ -89,11 +89,10 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
             self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
         elif self._username:
             import base64
-            creds = base64.b64encode(
-                f"{self._username}:{self._password}".encode()
-            ).decode()
+
+            creds = base64.b64encode(f"{self._username}:{self._password}".encode()).decode()
             self._auth_headers["Authorization"] = f"Basic {creds}"
-        self._auth_headers["Accept"]       = "application/json"
+        self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
 
     def health_check(self) -> bool:
@@ -111,8 +110,10 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
             On connection failure or non-2xx response.
         """
         try:
-            self.get("/api/now/table/sys_properties",
-                     params={"sysparm_limit": "1", "sysparm_fields": "name"})
+            self.get(
+                "/api/now/table/sys_properties",
+                params={"sysparm_limit": "1", "sysparm_fields": "name"},
+            )
             return True
         except Exception as exc:
             raise GNATClientError(f"ServiceNow health check failed: {exc}") from exc
@@ -129,7 +130,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
             ServiceNow ``sys_id`` (32-char hex string).
         """
         table = self._resolve(stix_type)
-        resp  = self.get(f"{self._TABLE_BASE}/{table}/{object_id}")
+        resp = self.get(f"{self._TABLE_BASE}/{table}/{object_id}")
         return resp.get("result", {}) if isinstance(resp, dict) else {}
 
     def list_objects(
@@ -154,9 +155,9 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         offset : int
             Pagination offset.  Default 0.
         """
-        table  = self._resolve(stix_type)
+        table = self._resolve(stix_type)
         params: dict[str, Any] = {
-            "sysparm_limit":  limit,
+            "sysparm_limit": limit,
             "sysparm_offset": offset,
         }
         if query:
@@ -205,26 +206,26 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         native_object : dict
             ServiceNow ``sn_si_incident`` record dict (``result`` payload).
         """
-        sys_id      = native_object.get("sys_id", "")
+        sys_id = native_object.get("sys_id", "")
         description = native_object.get("description", "")
-        short_desc  = native_object.get("short_description", "")
-        opened_at   = native_object.get("opened_at", "")
+        short_desc = native_object.get("short_description", "")
+        opened_at = native_object.get("opened_at", "")
         return {
-            "type":              "observed-data",
-            "id":                f"observed-data--{sys_id}",
-            "created":           opened_at,
-            "modified":          native_object.get("sys_updated_on", opened_at),
-            "first_observed":    opened_at,
-            "last_observed":     opened_at,
-            "number_observed":   1,
-            "object_refs":       [],
-            "name":              short_desc,
-            "description":       description,
-            "x_sn_sys_id":       sys_id,
-            "x_sn_state":        native_object.get("state", ""),
-            "x_sn_priority":     native_object.get("priority", ""),
-            "x_sn_category":     native_object.get("category", ""),
-            "x_sn_assigned_to":  native_object.get("assigned_to", {}).get("value", ""),
+            "type": "observed-data",
+            "id": f"observed-data--{sys_id}",
+            "created": opened_at,
+            "modified": native_object.get("sys_updated_on", opened_at),
+            "first_observed": opened_at,
+            "last_observed": opened_at,
+            "number_observed": 1,
+            "object_refs": [],
+            "name": short_desc,
+            "description": description,
+            "x_sn_sys_id": sys_id,
+            "x_sn_state": native_object.get("state", ""),
+            "x_sn_priority": native_object.get("priority", ""),
+            "x_sn_category": native_object.get("category", ""),
+            "x_sn_assigned_to": native_object.get("assigned_to", {}).get("value", ""),
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
@@ -269,14 +270,9 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
             If the incident does not exist or the update fails.
         """
         stix_type = stix_obj.get("type", "unknown")
-        stix_id   = stix_obj.get("id", "")
-        name      = stix_obj.get("name", stix_obj.get("description", stix_id))
-        note = (
-            f"[GNAT] Linked STIX object\n"
-            f"Type: {stix_type}\n"
-            f"ID: {stix_id}\n"
-            f"Name/Value: {name}"
-        )
+        stix_id = stix_obj.get("id", "")
+        name = stix_obj.get("name", stix_obj.get("description", stix_id))
+        note = f"[GNAT] Linked STIX object\nType: {stix_type}\nID: {stix_id}\nName/Value: {name}"
         resp = self.put(
             f"{self._TABLE_BASE}/{self._SI_TABLE}/{incident_sys_id}",
             json={"work_notes": note},
@@ -289,7 +285,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
     def _resolve(stix_type: str) -> str:
         """Map a STIX type to a ServiceNow table name."""
         mapping = {
-            "observed-data":   "sn_si_incident",
+            "observed-data": "sn_si_incident",
             "course-of-action": "sn_si_incident",
         }
         table = mapping.get(stix_type)
@@ -307,7 +303,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         desc = stix_dict.get("description", "")
         return {
             "short_description": name[:160] if name else "",
-            "description":       desc,
-            "category":          "threat-intelligence",
-            "work_notes":        f"[GNAT] Ingested from STIX {stix_dict.get('type', 'unknown')}",
+            "description": desc,
+            "category": "threat-intelligence",
+            "work_notes": f"[GNAT] Ingested from STIX {stix_dict.get('type', 'unknown')}",
         }

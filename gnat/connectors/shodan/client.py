@@ -102,7 +102,9 @@ class ShodanClient(BaseClient, ConnectorMixin):
         """Fetch a single host by IP (most common use case)."""
         if stix_type in ("observed-data", "indicator"):
             return self.host_lookup(object_id)
-        raise GNATClientError(f"get_object limited for {stix_type} in Shodan (use host_lookup helper)")
+        raise GNATClientError(
+            f"get_object limited for {stix_type} in Shodan (use host_lookup helper)"
+        )
 
     def list_objects(
         self,
@@ -124,16 +126,12 @@ class ShodanClient(BaseClient, ConnectorMixin):
                 query=filters.get("query", ""),
                 page=page,
                 limit=page_size,
-                **{k: v for k, v in filters.items() if k != "query"}
+                **{k: v for k, v in filters.items() if k != "query"},
             )
 
         if stix_type == "vulnerability":
             # Use exploits search (separate base if needed)
-            return self.search_exploits(
-                query=filters.get("query", ""),
-                page=page,
-                limit=page_size
-            )
+            return self.search_exploits(query=filters.get("query", ""), page=page, limit=page_size)
 
         raise GNATClientError(f"list_objects not implemented for STIX type {stix_type} in Shodan")
 

@@ -17,7 +17,12 @@ class GeminiClient(BaseClient, ConnectorMixin):
         "report": "generate_content",
     }
 
-    def __init__(self, host: str = "https://generativelanguage.googleapis.com", api_key: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "https://generativelanguage.googleapis.com",
+        api_key: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -36,7 +41,12 @@ class GeminiClient(BaseClient, ConnectorMixin):
         Parses Gemini's response. Ideally, we prompt Gemini to return
         valid STIX 2.1 JSON directly in the 'text' field.
         """
-        content = native.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        content = (
+            native.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
         try:
             # Attempt to parse Gemini's output as STIX JSON
             return json.loads(content)
@@ -50,7 +60,7 @@ class GeminiClient(BaseClient, ConnectorMixin):
                 "created": now,
                 "modified": now,
                 "name": "Gemini Research Result",
-                "description": content[:500]
+                "description": content[:500],
             }
 
     def research_to_stix(self, concept: str) -> dict[str, Any]:
@@ -59,16 +69,20 @@ class GeminiClient(BaseClient, ConnectorMixin):
         to use search and return a STIX 2.1 Report.
         """
         payload = {
-            "contents": [{
-                "parts": [{
-                    "text": (
-                        f"Research the following concept: {concept}. "
-                        "Search for recent threat intelligence, actors, and indicators. "
-                        "Return the results strictly as a valid STIX 2.1 JSON Report object."
-                    )
-                }]
-            }],
-            "tools": [{"google_search": {}}] # Enables search grounding
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": (
+                                f"Research the following concept: {concept}. "
+                                "Search for recent threat intelligence, actors, and indicators. "
+                                "Return the results strictly as a valid STIX 2.1 JSON Report object."
+                            )
+                        }
+                    ]
+                }
+            ],
+            "tools": [{"google_search": {}}],  # Enables search grounding
         }
 
         # Call Gemini's generation endpoint

@@ -45,6 +45,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("b9c8d7e6-f5a4-3b2c-1d0e-9f8a7b6c5d4e")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -66,15 +67,23 @@ class WizClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilityFindings",
-        "report":        "issues",  # covers toxic combinations, misconfigs, etc.
+        "report": "issues",  # covers toxic combinations, misconfigs, etc.
     }
 
-    def __init__(self, host: str = "https://api.us1.app.wiz.io", client_id: str = "", client_secret: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "https://api.us1.app.wiz.io",
+        client_id: str = "",
+        client_secret: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
         self._token: str | None = None
-        self._auth_host = "https://auth.app.wiz.io"  # usually fixed; can be auth.wiz.io for some tenants
+        self._auth_host = (
+            "https://auth.app.wiz.io"  # usually fixed; can be auth.wiz.io for some tenants
+        )
 
     # ── Authentication ─────────────────────────────────────────────────────
 
@@ -103,7 +112,9 @@ class WizClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
-        raise GNATClientError("Wiz get_object by single ID not directly supported; use filtered list_objects.")
+        raise GNATClientError(
+            "Wiz get_object by single ID not directly supported; use filtered list_objects."
+        )
 
     def list_objects(
         self,
@@ -157,7 +168,9 @@ class WizClient(BaseClient, ConnectorMixin):
                 "name": name,
                 "x_wiz_severity": obj.get("severity", ""),
                 "x_wiz_status": obj.get("status", ""),
-                "external_references": [{"source_name": "cve", "external_id": cve_id}] if cve_id else [],
+                "external_references": [{"source_name": "cve", "external_id": cve_id}]
+                if cve_id
+                else [],
             }
         # Issue → STIX report
         return {

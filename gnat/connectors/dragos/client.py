@@ -81,10 +81,10 @@ class DragosClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "threat-actor": "activity-groups",
-        "indicator":    "indicators",
-        "malware":      "threats",
-        "vulnerability":"vulnerabilities",
-        "report":       "products",
+        "indicator": "indicators",
+        "malware": "threats",
+        "vulnerability": "vulnerabilities",
+        "report": "products",
     }
 
     def __init__(
@@ -102,9 +102,7 @@ class DragosClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """Inject Basic auth header (api_key:api_secret)."""
-        credentials = base64.b64encode(
-            f"{self._api_key}:{self._api_secret}".encode()
-        ).decode()
+        credentials = base64.b64encode(f"{self._api_key}:{self._api_secret}".encode()).decode()
         self._auth_headers["Authorization"] = f"Basic {credentials}"
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
@@ -142,11 +140,11 @@ class DragosClient(BaseClient, ConnectorMixin):
         params: dict[str, Any] = {"page": page, "page_size": page_size}
         params.update(f)
         endpoint_map = {
-            "indicator":    "/api/v1/indicators",
+            "indicator": "/api/v1/indicators",
             "threat-actor": "/api/v1/activity-groups",
-            "malware":      "/api/v1/threats",
-            "vulnerability":"/api/v1/vulnerabilities",
-            "report":       "/api/v1/products",
+            "malware": "/api/v1/threats",
+            "vulnerability": "/api/v1/vulnerabilities",
+            "report": "/api/v1/products",
         }
         endpoint = endpoint_map.get(stix_type)
         if not endpoint:
@@ -154,19 +152,22 @@ class DragosClient(BaseClient, ConnectorMixin):
         resp = self.get(endpoint, params=params)
         if not isinstance(resp, dict):
             return []
-        return resp.get("indicators", resp.get("activity_groups",
-               resp.get("threats", resp.get("vulnerabilities",
-               resp.get("products", resp.get("data", []))))))
+        return resp.get(
+            "indicators",
+            resp.get(
+                "activity_groups",
+                resp.get(
+                    "threats",
+                    resp.get("vulnerabilities", resp.get("products", resp.get("data", []))),
+                ),
+            ),
+        )
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        raise GNATClientError(
-            "Dragos API is read-only — upsert not supported."
-        )
+        raise GNATClientError("Dragos API is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise GNATClientError(
-            "Dragos API is read-only — delete not supported."
-        )
+        raise GNATClientError("Dragos API is read-only — delete not supported.")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -254,12 +255,12 @@ class DragosClient(BaseClient, ConnectorMixin):
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-ioc-{value}"))
 
         pattern_map = {
-            "ip":          f"[ipv4-addr:value = '{value}']",
-            "domain":      f"[domain-name:value = '{value}']",
-            "url":         f"[url:value = '{value}']",
-            "md5":         f"[file:hashes.MD5 = '{value}']",
-            "sha256":      f"[file:hashes.'SHA-256' = '{value}']",
-            "sha1":        f"[file:hashes.SHA1 = '{value}']",
+            "ip": f"[ipv4-addr:value = '{value}']",
+            "domain": f"[domain-name:value = '{value}']",
+            "url": f"[url:value = '{value}']",
+            "md5": f"[file:hashes.MD5 = '{value}']",
+            "sha256": f"[file:hashes.'SHA-256' = '{value}']",
+            "sha1": f"[file:hashes.SHA1 = '{value}']",
         }
         pattern = pattern_map.get(ioc_type, f"[domain-name:value = '{value}']")
         return {

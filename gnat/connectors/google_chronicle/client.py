@@ -142,11 +142,15 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
             # Detection Engine
             return self.list_detections(limit=page_size)
 
-        raise GNATClientError(f"list_objects support for {stix_type} in Google Chronicle is partial — extend as needed.")
+        raise GNATClientError(
+            f"list_objects support for {stix_type} in Google Chronicle is partial — extend as needed."
+        )
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Limited write (e.g., update detection rule or incident comment)."""
-        raise GNATClientError("Write operations in Google Chronicle are limited; extend for specific use cases (e.g., rule updates).")
+        raise GNATClientError(
+            "Write operations in Google Chronicle are limited; extend for specific use cases (e.g., rule updates)."
+        )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Deletion support is limited in Chronicle API.")

@@ -49,6 +49,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -70,10 +71,16 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "exposures",
-        "report":        "assets",
+        "report": "assets",
     }
 
-    def __init__(self, host: str = "https://api.xpanse.paloaltonetworks.com", api_key: str = "", api_key_id: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "https://api.xpanse.paloaltonetworks.com",
+        api_key: str = "",
+        api_key_id: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._api_key_id = api_key_id
@@ -120,7 +127,9 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        raise GNATClientError("Cortex Xpanse connector is primarily read-only (limited incident updates).")
+        raise GNATClientError(
+            "Cortex Xpanse connector is primarily read-only (limited incident updates)."
+        )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Deletion not supported in this connector.")

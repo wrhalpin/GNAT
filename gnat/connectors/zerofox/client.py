@@ -48,6 +48,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -67,7 +68,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "threats",
-        "report":    "alerts",
+        "report": "alerts",
     }
 
     def __init__(self, host: str = "https://api.zerofox.com", token: str = "", **kwargs: Any):

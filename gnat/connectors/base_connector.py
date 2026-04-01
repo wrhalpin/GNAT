@@ -24,26 +24,35 @@ from typing import Any, Callable, Optional
 
 # Standard interface methods and their read/write classification
 _STANDARD_METHODS: dict[str, str] = {
-    "authenticate":   "auth",
-    "health_check":   "read",
-    "get_object":     "read",
-    "list_objects":   "read",
-    "to_stix":        "read",
-    "from_stix":      "read",
-    "upsert_object":  "write",
-    "delete_object":  "write",
+    "authenticate": "auth",
+    "health_check": "read",
+    "get_object": "read",
+    "list_objects": "read",
+    "to_stix": "read",
+    "from_stix": "read",
+    "upsert_object": "write",
+    "delete_object": "write",
 }
 
 # Prefixes / names that are never exposed via capabilities()
 _PRIVATE_PREFIXES = ("_", "__")
-_EXCLUDED_NAMES = frozenset({
-    # Python object protocol
-    "mro", "subclasshook",
-    # BaseClient plumbing — not connector capabilities
-    "request", "get", "post", "put", "delete", "patch",
-    # ConnectorMixin meta methods themselves
-    "capabilities", "call",
-})
+_EXCLUDED_NAMES = frozenset(
+    {
+        # Python object protocol
+        "mro",
+        "subclasshook",
+        # BaseClient plumbing — not connector capabilities
+        "request",
+        "get",
+        "post",
+        "put",
+        "delete",
+        "patch",
+        # ConnectorMixin meta methods themselves
+        "capabilities",
+        "call",
+    }
+)
 
 
 class ConnectorMixin:
@@ -194,9 +203,9 @@ class ConnectorMixin:
                     doc = first_line
 
                 result[name] = {
-                    "signature":         sig_str,
-                    "doc":               doc,
-                    "type":              method_type,
+                    "signature": sig_str,
+                    "doc": doc,
+                    "type": method_type,
                     "platform_specific": platform_specific,
                 }
 
@@ -254,10 +263,7 @@ class ConnectorMixin:
         meta = caps[method_name]
         if meta["type"] == "write" and not allow_write:
             raise ValueError(
-                f"'{method_name}' is a write operation.  "
-                f"Pass allow_write=True to permit it."
+                f"'{method_name}' is a write operation.  Pass allow_write=True to permit it."
             )
         method: Callable[..., Any] = getattr(self, method_name)
         return method(*args, **kwargs)
-
-

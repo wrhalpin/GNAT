@@ -70,6 +70,7 @@ _RETRY_BACKOFF = 2.0
 
 ES_MAX_RESULT_WINDOW = 10_000
 
+
 class ElasticClient:
     """
     urllib3-based HTTP client for Elasticsearch + Kibana Security APIs.
@@ -234,9 +235,7 @@ class ElasticClient:
         list[dict]
             List of ``_source`` dicts from matching documents.
         """
-        response = self.es_search(
-            index, query=query, size=size, sort=sort, source=source
-        )
+        response = self.es_search(index, query=query, size=size, sort=sort, source=source)
         return [hit.get("_source", {}) for hit in response.get("hits", {}).get("hits", [])]
 
     def es_count(self, index: str, query: dict | None = None) -> int:
@@ -482,7 +481,8 @@ class ElasticClient:
         for attempt in range(_MAX_RETRIES + 1):
             try:
                 response = self._http.request(
-                    method, url,
+                    method,
+                    url,
                     body=encoded,
                     headers=headers,
                 )
@@ -492,9 +492,7 @@ class ElasticClient:
                     time.sleep(delay)
                     delay *= _RETRY_BACKOFF
                     continue
-                raise ElasticAPIError(
-                    f"Connection error: {exc}", endpoint=url
-                ) from exc
+                raise ElasticAPIError(f"Connection error: {exc}", endpoint=url) from exc
 
             if response.status in (401, 403):
                 raise ElasticAuthError(
@@ -579,7 +577,8 @@ class ElasticClient:
         for attempt in range(_MAX_RETRIES + 1):
             try:
                 response = self._http.request(
-                    method, url,
+                    method,
+                    url,
                     body=encoded,
                     headers=headers,
                 )
@@ -589,9 +588,7 @@ class ElasticClient:
                     time.sleep(delay)
                     delay *= _RETRY_BACKOFF
                     continue
-                raise ElasticKibanaError(
-                    f"Kibana connection error: {exc}", endpoint=url
-                ) from exc
+                raise ElasticKibanaError(f"Kibana connection error: {exc}", endpoint=url) from exc
 
             if response.status in (401, 403):
                 raise ElasticAuthError(

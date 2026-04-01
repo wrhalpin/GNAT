@@ -60,17 +60,17 @@ class ControlUpClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "infrastructure": "devices",
-        "observed-data":  "sessions",
-        "indicator":      "alerts",
-        "vulnerability":  "vulnerabilities",
+        "observed-data": "sessions",
+        "indicator": "alerts",
+        "vulnerability": "vulnerabilities",
     }
 
     _SEVERITY_CONFIDENCE: dict[str, int] = {
         "critical": 90,
-        "high":     75,
-        "medium":   55,
-        "low":      35,
-        "info":     20,
+        "high": 75,
+        "medium": 55,
+        "low": 35,
+        "info": 20,
     }
 
     def __init__(
@@ -139,15 +139,13 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         """
         route_map = {
             "infrastructure": f"devices/{object_id}",
-            "observed-data":  f"sessions/{object_id}",
-            "indicator":      f"alerts/{object_id}",
-            "vulnerability":  f"vulnerabilities/{object_id}",
+            "observed-data": f"sessions/{object_id}",
+            "indicator": f"alerts/{object_id}",
+            "vulnerability": f"vulnerabilities/{object_id}",
         }
         route = route_map.get(stix_type)
         if route is None:
-            raise GNATClientError(
-                f"ControlUp connector does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"ControlUp connector does not support stix_type={stix_type!r}")
         resp = self.get(self._url(route))
         return resp if isinstance(resp, dict) else {}
 
@@ -182,17 +180,15 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         """
         route_map = {
             "infrastructure": "devices",
-            "observed-data":  "sessions",
-            "indicator":      "alerts",
-            "vulnerability":  "vulnerabilities",
+            "observed-data": "sessions",
+            "indicator": "alerts",
+            "vulnerability": "vulnerabilities",
         }
         route = route_map.get(stix_type)
         if route is None:
-            raise GNATClientError(
-                f"ControlUp connector does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"ControlUp connector does not support stix_type={stix_type!r}")
         params: dict[str, Any] = {
-            "page":     page - 1,   # API is 0-based
+            "page": page - 1,  # API is 0-based
             "pageSize": min(page_size, 1000),
         }
         if filters:
@@ -202,9 +198,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             return resp.get("data", resp.get("items", []))
         return []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         ControlUp is primarily read-only from an external integration
         perspective. The only writable surface exposed by the API is device
@@ -306,8 +300,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             filters["osFamily"] = os_family
         if tag:
             filters["tag"] = tag
-        return self.list_objects("infrastructure", filters=filters,
-                                 page=page, page_size=page_size)
+        return self.list_objects("infrastructure", filters=filters, page=page, page_size=page_size)
 
     def list_sessions(
         self,
@@ -345,8 +338,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             filters["deviceId"] = device_id
         if state:
             filters["state"] = state
-        return self.list_objects("observed-data", filters=filters,
-                                 page=page, page_size=page_size)
+        return self.list_objects("observed-data", filters=filters, page=page, page_size=page_size)
 
     def list_alerts(
         self,
@@ -384,8 +376,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             filters["resolved"] = str(resolved).lower()
         if device_id:
             filters["deviceId"] = device_id
-        return self.list_objects("indicator", filters=filters,
-                                 page=page, page_size=page_size)
+        return self.list_objects("indicator", filters=filters, page=page, page_size=page_size)
 
     def query_data_index(
         self,
@@ -438,8 +429,8 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         [{"processName": "chrome.exe", "cpuUsage": 12.4, ...}, ...]
         """
         body: dict[str, Any] = {
-            "index":    index,
-            "page":     page - 1,
+            "index": index,
+            "page": page - 1,
             "pageSize": min(page_size, 1000),
         }
         if metrics:
@@ -451,9 +442,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         resp = self.post(self._url("data/query"), json=body)
         return resp if isinstance(resp, dict) else {"data": [], "totalCount": 0}
 
-    def get_session_statistics(
-        self, device_id: Optional[str] = None
-    ) -> dict[str, Any]:
+    def get_session_statistics(self, device_id: Optional[str] = None) -> dict[str, Any]:
         """
         Retrieve aggregated session statistics.
 
@@ -506,16 +495,16 @@ class ControlUpClient(BaseClient, ConnectorMixin):
 
     def _device_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp device/endpoint → STIX infrastructure SDO."""
-        device_id  = native.get("deviceId", native.get("id", ""))
-        hostname   = native.get("hostname", native.get("name", ""))
-        os_name    = native.get("osName", "")
+        device_id = native.get("deviceId", native.get("id", ""))
+        hostname = native.get("hostname", native.get("name", ""))
+        os_name = native.get("osName", "")
         os_version = native.get("osVersion", "")
-        os_family  = native.get("osFamily", "").lower()
-        last_seen  = native.get("lastSeen", native.get("lastContact", ""))
-        tags       = native.get("tags", [])
-        health     = native.get("healthScore", native.get("dexScore"))
-        ip_addrs   = native.get("ipAddresses", [])
-        status     = native.get("status", native.get("connectionStatus", ""))
+        os_family = native.get("osFamily", "").lower()
+        last_seen = native.get("lastSeen", native.get("lastContact", ""))
+        tags = native.get("tags", [])
+        health = native.get("healthScore", native.get("dexScore"))
+        ip_addrs = native.get("ipAddresses", [])
+        status = native.get("status", native.get("connectionStatus", ""))
 
         # Map OS family to STIX infrastructure type labels
         infra_type = "workstation"
@@ -523,138 +512,142 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             infra_type = "server"
 
         stix: dict[str, Any] = {
-            "type":                "infrastructure",
-            "id":                  f"infrastructure--cu-{device_id}",
-            "name":                hostname,
+            "type": "infrastructure",
+            "id": f"infrastructure--cu-{device_id}",
+            "name": hostname,
             "infrastructure_types": [infra_type],
-            "created":             last_seen,
-            "modified":            last_seen,
-            "x_cu_device_id":      device_id,
-            "x_cu_os_name":        os_name,
-            "x_cu_os_version":     os_version,
-            "x_cu_os_family":      os_family,
-            "x_cu_status":         status,
-            "x_cu_health_score":   health,
-            "x_cu_tags":           tags[:20],
-            "x_cu_ip_addresses":   ip_addrs[:10],
-            "x_source_platform":   "controlup",
+            "created": last_seen,
+            "modified": last_seen,
+            "x_cu_device_id": device_id,
+            "x_cu_os_name": os_name,
+            "x_cu_os_version": os_version,
+            "x_cu_os_family": os_family,
+            "x_cu_status": status,
+            "x_cu_health_score": health,
+            "x_cu_tags": tags[:20],
+            "x_cu_ip_addresses": ip_addrs[:10],
+            "x_source_platform": "controlup",
         }
         return stix
 
     def _session_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp session → STIX observed-data SDO."""
-        session_id   = native.get("sessionId", native.get("id", ""))
-        username     = native.get("username", "")
-        device_id    = native.get("deviceId", "")
-        hostname     = native.get("hostname", "")
-        state        = native.get("sessionState", "")
-        logon_time   = native.get("logonTime", "")
-        last_active  = native.get("lastActivity", logon_time)
-        logon_dur    = native.get("logonDuration")    # seconds
-        protocol     = native.get("protocol", "")
+        session_id = native.get("sessionId", native.get("id", ""))
+        username = native.get("username", "")
+        device_id = native.get("deviceId", "")
+        hostname = native.get("hostname", "")
+        state = native.get("sessionState", "")
+        logon_time = native.get("logonTime", "")
+        last_active = native.get("lastActivity", logon_time)
+        logon_dur = native.get("logonDuration")  # seconds
+        protocol = native.get("protocol", "")
 
         user_ref: dict[str, Any] = {
-            "type":        "user-account",
-            "user_id":     username,
+            "type": "user-account",
+            "user_id": username,
             "display_name": native.get("displayName", username),
-            "x_domain":    native.get("domain", ""),
+            "x_domain": native.get("domain", ""),
         }
 
         stix: dict[str, Any] = {
-            "type":              "observed-data",
-            "id":                f"observed-data--cu-{session_id}",
-            "first_observed":    logon_time,
-            "last_observed":     last_active,
-            "number_observed":   1,
-            "object_refs":       [],   # populated by caller if bundling
-            "x_cu_session_id":   session_id,
-            "x_cu_username":     username,
-            "x_cu_device_id":    device_id,
-            "x_cu_hostname":     hostname,
-            "x_cu_state":        state,
-            "x_cu_protocol":     protocol,
+            "type": "observed-data",
+            "id": f"observed-data--cu-{session_id}",
+            "first_observed": logon_time,
+            "last_observed": last_active,
+            "number_observed": 1,
+            "object_refs": [],  # populated by caller if bundling
+            "x_cu_session_id": session_id,
+            "x_cu_username": username,
+            "x_cu_device_id": device_id,
+            "x_cu_hostname": hostname,
+            "x_cu_state": state,
+            "x_cu_protocol": protocol,
             "x_cu_logon_duration_s": logon_dur,
-            "x_cu_user_ref":     user_ref,
+            "x_cu_user_ref": user_ref,
             "x_source_platform": "controlup",
         }
         return stix
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp alert/trigger event → STIX indicator SDO."""
-        alert_id   = native.get("alertId", native.get("id", ""))
-        name       = native.get("name", native.get("alertType", "ControlUp Alert"))
-        severity   = native.get("severity", "medium").lower()
+        alert_id = native.get("alertId", native.get("id", ""))
+        name = native.get("name", native.get("alertType", "ControlUp Alert"))
+        severity = native.get("severity", "medium").lower()
         description = native.get("description", native.get("message", ""))
-        created    = native.get("createdAt", native.get("triggeredAt", ""))
-        resolved   = native.get("resolved", False)
-        device_id  = native.get("deviceId", "")
-        hostname   = native.get("hostname", "")
+        created = native.get("createdAt", native.get("triggeredAt", ""))
+        resolved = native.get("resolved", False)
+        device_id = native.get("deviceId", "")
+        hostname = native.get("hostname", "")
         alert_type = native.get("alertType", "")
-        category   = native.get("category", "")
+        category = native.get("category", "")
 
         # Build a generic pattern — ControlUp alerts are behavioural, not IOC-based
-        pattern = f"[process:name = '{alert_type}']" if alert_type else "[domain-name:value = 'controlup.alert']"
+        pattern = (
+            f"[process:name = '{alert_type}']"
+            if alert_type
+            else "[domain-name:value = 'controlup.alert']"
+        )
         confidence = self._SEVERITY_CONFIDENCE.get(severity, 50)
 
         stix: dict[str, Any] = {
-            "type":             "indicator",
-            "id":               f"indicator--cu-{alert_id}",
-            "name":             name,
-            "description":      description[:500],
-            "pattern":          pattern,
-            "pattern_type":     "stix",
-            "created":          created,
-            "modified":         created,
-            "confidence":       confidence,
-            "indicator_types":  ["anomalous-activity"],
-            "x_cu_alert_id":    alert_id,
-            "x_cu_severity":    severity,
-            "x_cu_category":    category,
-            "x_cu_alert_type":  alert_type,
-            "x_cu_device_id":   device_id,
-            "x_cu_hostname":    hostname,
-            "x_cu_resolved":    resolved,
+            "type": "indicator",
+            "id": f"indicator--cu-{alert_id}",
+            "name": name,
+            "description": description[:500],
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": created,
+            "modified": created,
+            "confidence": confidence,
+            "indicator_types": ["anomalous-activity"],
+            "x_cu_alert_id": alert_id,
+            "x_cu_severity": severity,
+            "x_cu_category": category,
+            "x_cu_alert_type": alert_type,
+            "x_cu_device_id": device_id,
+            "x_cu_hostname": hostname,
+            "x_cu_resolved": resolved,
             "x_source_platform": "controlup",
         }
         return stix
 
     def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """ControlUp vulnerability finding → STIX vulnerability SDO."""
-        vuln_id   = native.get("id", native.get("cveId", ""))
-        cve_id    = native.get("cveId", "")
-        name      = cve_id or native.get("title", vuln_id)
-        severity  = native.get("severity", "")
-        cvss      = native.get("cvssScore")
-        desc      = native.get("description", "")
-        detected  = native.get("detectedAt", native.get("firstSeen", ""))
+        vuln_id = native.get("id", native.get("cveId", ""))
+        cve_id = native.get("cveId", "")
+        name = cve_id or native.get("title", vuln_id)
+        severity = native.get("severity", "")
+        cvss = native.get("cvssScore")
+        desc = native.get("description", "")
+        detected = native.get("detectedAt", native.get("firstSeen", ""))
         device_id = native.get("deviceId", "")
 
         return {
-            "type":               "vulnerability",
-            "id":                 f"vulnerability--cu-{vuln_id}",
-            "name":               name,
-            "description":        desc[:500],
-            "created":            detected,
-            "modified":           detected,
-            "x_cve_id":           cve_id,
-            "x_cvss_score":       cvss,
-            "x_severity":         severity,
-            "x_cu_device_id":     device_id,
-            "x_source_platform":  "controlup",
+            "type": "vulnerability",
+            "id": f"vulnerability--cu-{vuln_id}",
+            "name": name,
+            "description": desc[:500],
+            "created": detected,
+            "modified": detected,
+            "x_cve_id": cve_id,
+            "x_cvss_score": cvss,
+            "x_severity": severity,
+            "x_cu_device_id": device_id,
+            "x_source_platform": "controlup",
         }
 
     def _generic_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Fallback: wrap an unknown ControlUp object as observed-data."""
-        obj_id  = str(native.get("id", native.get("deviceId", "unknown")))
+        obj_id = str(native.get("id", native.get("deviceId", "unknown")))
         created = native.get("createdAt", native.get("timestamp", ""))
         return {
-            "type":              "observed-data",
-            "id":                f"observed-data--cu-{obj_id}",
-            "first_observed":    created,
-            "last_observed":     created,
-            "number_observed":   1,
-            "object_refs":       [],
-            "x_cu_raw":          native,
+            "type": "observed-data",
+            "id": f"observed-data--cu-{obj_id}",
+            "first_observed": created,
+            "last_observed": created,
+            "number_observed": 1,
+            "object_refs": [],
+            "x_cu_raw": native,
             "x_source_platform": "controlup",
         }
 
@@ -678,15 +671,15 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         if stix_type == "infrastructure":
             return {
                 "device_id": stix_dict.get("x_cu_device_id", ""),
-                "tags":      stix_dict.get("x_cu_tags", []),
+                "tags": stix_dict.get("x_cu_tags", []),
             }
         if stix_type == "indicator":
             # Extract the raw value from a STIX pattern for reference only
             pattern = stix_dict.get("pattern", "")
             m = re.search(r"= '([^']+)'", pattern)
             return {
-                "name":     stix_dict.get("name", ""),
-                "value":    m.group(1) if m else "",
+                "name": stix_dict.get("name", ""),
+                "value": m.group(1) if m else "",
                 "severity": stix_dict.get("x_cu_severity", "medium"),
             }
         return {"name": stix_dict.get("name", ""), "type": stix_type}

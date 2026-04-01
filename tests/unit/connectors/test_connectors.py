@@ -11,26 +11,27 @@ Tests cover:
 - from_stix() output contract (platform payload keys)
 """
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from gnat.clients.base import GNATClientError
-from gnat.connectors.greymatter.client import GreyMatterClient
-from gnat.connectors.whistic.client import WhisticClient
-from gnat.connectors.riskrecon.client import RiskReconClient
+from gnat.connectors.crowdstrike.client import CrowdStrikeClient
 from gnat.connectors.feedly.client import FeedlyClient
+from gnat.connectors.greymatter.client import GreyMatterClient
+from gnat.connectors.netskope.client import NetskopeClient
+from gnat.connectors.proofpoint.client import ProofpointClient
+from gnat.connectors.recordedfuture.client import RecordedFutureClient
+from gnat.connectors.riskrecon.client import RiskReconClient
 from gnat.connectors.splunk.client import SplunkClient
 from gnat.connectors.threatq.client import ThreatQClient
-from gnat.connectors.proofpoint.client import ProofpointClient
-from gnat.connectors.netskope.client import NetskopeClient
-from gnat.connectors.crowdstrike.client import CrowdStrikeClient
+from gnat.connectors.whistic.client import WhisticClient
 from gnat.connectors.xsoar.client import XSOARClient
-from gnat.connectors.recordedfuture.client import RecordedFutureClient
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _authenticated(connector_cls, **kwargs):
     """Return a connector instance with authenticate() no-oped."""
@@ -42,17 +43,17 @@ def _authenticated(connector_cls, **kwargs):
 def _assert_stix_contract(stix_dict: dict):
     """Assert that a to_stix() result satisfies the minimum STIX contract."""
     assert isinstance(stix_dict, dict), "to_stix() must return a dict"
-    assert "type" in stix_dict,         "STIX dict must have 'type'"
-    assert "id" in stix_dict,           "STIX dict must have 'id'"
-    assert "--" in stix_dict["id"],      "STIX id must be in <type>--<uuid> format"
+    assert "type" in stix_dict, "STIX dict must have 'type'"
+    assert "id" in stix_dict, "STIX dict must have 'id'"
+    assert "--" in stix_dict["id"], "STIX id must be in <type>--<uuid> format"
 
 
 # ---------------------------------------------------------------------------
 # ThreatQ
 # ---------------------------------------------------------------------------
 
-class TestThreatQClient:
 
+class TestThreatQClient:
     @pytest.fixture
     def client(self):
         return _authenticated(ThreatQClient, client_id="cid", client_secret="sec")
@@ -70,7 +71,9 @@ class TestThreatQClient:
             c.authenticate()
 
     def test_get_object(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": {"id": 42, "value": "1.2.3.4"}}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": {"id": 42, "value": "1.2.3.4"}})
+        )
         result = client.get_object("indicator", "42")
         assert isinstance(result, dict)
 
@@ -99,62 +102,100 @@ class TestThreatQClient:
         mock_delete.assert_called_once()
 
     def test_to_stix_contract(self, client):
-        native = {"data": {"id": 1, "value": "1.2.3.4", "type": "IP Address",
-                            "class": "malicious", "created_at": "", "updated_at": ""}}
+        native = {
+            "data": {
+                "id": 1,
+                "value": "1.2.3.4",
+                "type": "IP Address",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+            }
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
         assert "1.2.3.4" in stix.get("pattern", "")
 
     def test_to_stix_extracts_targeted_industry(self, client):
-        native = {"data": {
-            "id": 1, "value": "evil.com", "type": "FQDN", "class": "malicious",
-            "created_at": "", "updated_at": "",
-            "attributes": [
-                {"name": "Targeted Industry", "value": "Healthcare"},
-            ],
-        }}
+        native = {
+            "data": {
+                "id": 1,
+                "value": "evil.com",
+                "type": "FQDN",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+                "attributes": [
+                    {"name": "Targeted Industry", "value": "Healthcare"},
+                ],
+            }
+        }
         stix = client.to_stix(native)
         assert stix.get("x_target_sectors") == ["Healthcare"]
 
     def test_to_stix_extracts_targeted_sector(self, client):
-        native = {"data": {
-            "id": 2, "value": "1.2.3.4", "type": "IP Address", "class": "malicious",
-            "created_at": "", "updated_at": "",
-            "attributes": [{"name": "Targeted Sector", "value": "Finance"}],
-        }}
+        native = {
+            "data": {
+                "id": 2,
+                "value": "1.2.3.4",
+                "type": "IP Address",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+                "attributes": [{"name": "Targeted Sector", "value": "Finance"}],
+            }
+        }
         stix = client.to_stix(native)
         assert "Finance" in stix.get("x_target_sectors", [])
 
     def test_to_stix_attr_name_case_insensitive(self, client):
-        native = {"data": {
-            "id": 3, "value": "bad.ru", "type": "FQDN", "class": "malicious",
-            "created_at": "", "updated_at": "",
-            "attributes": [{"name": "TARGETED INDUSTRY", "value": "Energy"}],
-        }}
+        native = {
+            "data": {
+                "id": 3,
+                "value": "bad.ru",
+                "type": "FQDN",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+                "attributes": [{"name": "TARGETED INDUSTRY", "value": "Energy"}],
+            }
+        }
         stix = client.to_stix(native)
         assert stix.get("x_target_sectors") == ["Energy"]
 
     def test_to_stix_targets_attr_name(self, client):
         """'Targets' is used by the Adversary Reader CDF feed."""
-        native = {"data": {
-            "id": 4, "value": "apt28.example", "type": "FQDN", "class": "malicious",
-            "created_at": "", "updated_at": "",
-            "attributes": [{"name": "Targets", "value": "Government"}],
-        }}
+        native = {
+            "data": {
+                "id": 4,
+                "value": "apt28.example",
+                "type": "FQDN",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+                "attributes": [{"name": "Targets", "value": "Government"}],
+            }
+        }
         stix = client.to_stix(native)
         assert "Government" in stix.get("x_target_sectors", [])
 
     def test_to_stix_multiple_sector_attrs(self, client):
-        native = {"data": {
-            "id": 5, "value": "evil.com", "type": "FQDN", "class": "malicious",
-            "created_at": "", "updated_at": "",
-            "attributes": [
-                {"name": "Targeted Industry", "value": "Healthcare"},
-                {"name": "Targeted Sector",   "value": "Pharmaceuticals"},
-                {"name": "Description",        "value": "some notes"},
-            ],
-        }}
+        native = {
+            "data": {
+                "id": 5,
+                "value": "evil.com",
+                "type": "FQDN",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+                "attributes": [
+                    {"name": "Targeted Industry", "value": "Healthcare"},
+                    {"name": "Targeted Sector", "value": "Pharmaceuticals"},
+                    {"name": "Description", "value": "some notes"},
+                ],
+            }
+        }
         stix = client.to_stix(native)
         sectors = stix.get("x_target_sectors", [])
         assert "Healthcare" in sectors
@@ -162,20 +203,34 @@ class TestThreatQClient:
         assert "some notes" not in sectors
 
     def test_to_stix_no_attributes_omits_sector_key(self, client):
-        native = {"data": {"id": 6, "value": "1.2.3.4", "type": "IP Address",
-                            "class": "malicious", "created_at": "", "updated_at": ""}}
+        native = {
+            "data": {
+                "id": 6,
+                "value": "1.2.3.4",
+                "type": "IP Address",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+            }
+        }
         stix = client.to_stix(native)
         assert "x_target_sectors" not in stix
 
     def test_to_stix_unrelated_attrs_ignored(self, client):
-        native = {"data": {
-            "id": 7, "value": "evil.com", "type": "FQDN", "class": "malicious",
-            "created_at": "", "updated_at": "",
-            "attributes": [
-                {"name": "Description", "value": "Some description"},
-                {"name": "Source",      "value": "internal"},
-            ],
-        }}
+        native = {
+            "data": {
+                "id": 7,
+                "value": "evil.com",
+                "type": "FQDN",
+                "class": "malicious",
+                "created_at": "",
+                "updated_at": "",
+                "attributes": [
+                    {"name": "Description", "value": "Some description"},
+                    {"name": "Source", "value": "internal"},
+                ],
+            }
+        }
         stix = client.to_stix(native)
         assert "x_target_sectors" not in stix
 
@@ -194,21 +249,31 @@ class TestThreatQClient:
         assert "attributes" in kwargs.get("params", {}).get("with", "")
 
     def test_get_attribute_types(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "data": [
-                {"name": "Targeted Industry"},
-                {"name": "Description"},
-                {"name": "Source"},
-            ]
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": [
+                        {"name": "Targeted Industry"},
+                        {"name": "Description"},
+                        {"name": "Source"},
+                    ]
+                }
+            ),
+        )
         names = client.get_attribute_types()
         assert "Targeted Industry" in names
         assert "Description" in names
         assert len(names) == 3
 
     def test_from_stix_returns_dict(self, client):
-        stix = {"type": "indicator", "id": "indicator--1", "name": "evil.com",
-                 "pattern": "[domain-name:value = 'evil.com']"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--1",
+            "name": "evil.com",
+            "pattern": "[domain-name:value = 'evil.com']",
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
         assert "value" in result
@@ -222,8 +287,8 @@ class TestThreatQClient:
 # CrowdStrike
 # ---------------------------------------------------------------------------
 
-class TestCrowdStrikeClient:
 
+class TestCrowdStrikeClient:
     @pytest.fixture
     def client(self):
         return _authenticated(CrowdStrikeClient, client_id="cid", client_secret="sec")
@@ -232,7 +297,7 @@ class TestCrowdStrikeClient:
         c = CrowdStrikeClient(host="https://fake.example.com", client_id="x", client_secret="y")
         monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "cs-tok"}))
         c.authenticate()
-        assert "Bearer cs-tok" == c._auth_headers["Authorization"]
+        assert c._auth_headers["Authorization"] == "Bearer cs-tok"
 
     def test_authenticate_missing_token_raises(self, monkeypatch):
         c = CrowdStrikeClient(host="https://fake.example.com", client_id="x", client_secret="y")
@@ -251,28 +316,48 @@ class TestCrowdStrikeClient:
         assert result == {}
 
     def test_to_stix_contract(self, client):
-        native = {"id": "cs-1", "value": "192.168.0.1", "type": "ipv4",
-                  "created_timestamp": "", "modified_timestamp": ""}
+        native = {
+            "id": "cs-1",
+            "value": "192.168.0.1",
+            "type": "ipv4",
+            "created_timestamp": "",
+            "modified_timestamp": "",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
 
     def test_to_stix_target_industries(self, client):
-        native = {"id": "cs-2", "value": "apt28", "type": "actor",
-                  "created_timestamp": "", "modified_timestamp": "",
-                  "target_industries": ["Healthcare", "Government"]}
+        native = {
+            "id": "cs-2",
+            "value": "apt28",
+            "type": "actor",
+            "created_timestamp": "",
+            "modified_timestamp": "",
+            "target_industries": ["Healthcare", "Government"],
+        }
         stix = client.to_stix(native)
         assert stix.get("x_target_sectors") == ["Healthcare", "Government"]
 
     def test_to_stix_no_industries_omits_key(self, client):
-        native = {"id": "cs-3", "value": "1.2.3.4", "type": "ipv4",
-                  "created_timestamp": "", "modified_timestamp": ""}
+        native = {
+            "id": "cs-3",
+            "value": "1.2.3.4",
+            "type": "ipv4",
+            "created_timestamp": "",
+            "modified_timestamp": "",
+        }
         stix = client.to_stix(native)
         assert "x_target_sectors" not in stix
 
     def test_to_stix_empty_industries_omits_key(self, client):
-        native = {"id": "cs-4", "value": "1.2.3.4", "type": "ipv4",
-                  "created_timestamp": "", "modified_timestamp": "",
-                  "target_industries": []}
+        native = {
+            "id": "cs-4",
+            "value": "1.2.3.4",
+            "type": "ipv4",
+            "created_timestamp": "",
+            "modified_timestamp": "",
+            "target_industries": [],
+        }
         stix = client.to_stix(native)
         assert "x_target_sectors" not in stix
 
@@ -286,18 +371,20 @@ class TestCrowdStrikeClient:
 # Proofpoint
 # ---------------------------------------------------------------------------
 
-class TestProofpointClient:
 
+class TestProofpointClient:
     @pytest.fixture
     def client(self):
         return _authenticated(ProofpointClient, service_principal="sp", secret="sec")
 
     def test_authenticate_sets_basic(self):
         import base64
-        c = ProofpointClient(host="https://fake.example.com",
-                             service_principal="user", secret="pass")
+
+        c = ProofpointClient(
+            host="https://fake.example.com", service_principal="user", secret="pass"
+        )
         c._authenticated = False
-        c.authenticate()   # no HTTP call for Basic auth
+        c.authenticate()  # no HTTP call for Basic auth
         expected = "Basic " + base64.b64encode(b"user:pass").decode()
         assert c._auth_headers["Authorization"] == expected
 
@@ -315,9 +402,9 @@ class TestProofpointClient:
         _assert_stix_contract(stix)
 
     def test_list_returns_list(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"messagesDelivered": [{"id": "m1"}]}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"messagesDelivered": [{"id": "m1"}]})
+        )
         result = client.list_objects("indicator")
         assert isinstance(result, list)
 
@@ -326,8 +413,8 @@ class TestProofpointClient:
 # Netskope
 # ---------------------------------------------------------------------------
 
-class TestNetskopeClient:
 
+class TestNetskopeClient:
     @pytest.fixture
     def client(self):
         return _authenticated(NetskopeClient, api_token="ns-tok")
@@ -359,8 +446,8 @@ class TestNetskopeClient:
 # XSOAR
 # ---------------------------------------------------------------------------
 
-class TestXSOARClient:
 
+class TestXSOARClient:
     @pytest.fixture
     def client(self):
         return _authenticated(XSOARClient, api_key="xsoar-key")
@@ -376,15 +463,22 @@ class TestXSOARClient:
         assert c._auth_headers["x-xdr-auth-id"] == "99"
 
     def test_get_object_returns_first(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"iocObjects": [{"id": "xsoar-1", "value": "bad.com"}]}
-        ))
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"iocObjects": [{"id": "xsoar-1", "value": "bad.com"}]}),
+        )
         result = client.get_object("indicator", "xsoar-1")
         assert result["id"] == "xsoar-1"
 
     def test_to_stix_contract(self, client):
-        native = {"id": "x1", "value": "10.0.0.1", "indicator_type": "IP",
-                  "timestamp": "", "modified": ""}
+        native = {
+            "id": "x1",
+            "value": "10.0.0.1",
+            "indicator_type": "IP",
+            "timestamp": "",
+            "modified": "",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
@@ -405,8 +499,8 @@ class TestXSOARClient:
 # Recorded Future
 # ---------------------------------------------------------------------------
 
-class TestRecordedFutureClient:
 
+class TestRecordedFutureClient:
     @pytest.fixture
     def client(self):
         return _authenticated(RecordedFutureClient, api_token="rf-tok")
@@ -442,7 +536,7 @@ class TestRecordedFutureClient:
             "relatedEntities": [
                 {"type": "Industry", "entity": {"name": "Healthcare"}},
                 {"type": "Industry", "entity": {"name": "Finance"}},
-                {"type": "Country",  "entity": {"name": "United States"}},
+                {"type": "Country", "entity": {"name": "United States"}},
             ],
         }
         stix = client.to_stix(native)
@@ -468,9 +562,9 @@ class TestRecordedFutureClient:
         assert "relatedEntities" in kwargs.get("params", {}).get("fields", "")
 
     def test_list_objects_returns_list(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": {"results": [{"id": "r1"}]}}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": {"results": [{"id": "r1"}]}})
+        )
         result = client.list_objects("indicator")
         assert isinstance(result, list)
         assert result[0]["id"] == "r1"
@@ -480,12 +574,11 @@ class TestRecordedFutureClient:
 # GreyMatter
 # ===========================================================================
 
-class TestGreyMatterClient:
 
+class TestGreyMatterClient:
     @pytest.fixture
     def client(self):
-        c = GreyMatterClient(host="https://fake.example.com",
-                             client_id="cid", client_secret="sec")
+        c = GreyMatterClient(host="https://fake.example.com", client_id="cid", client_secret="sec")
         c._authenticated = True
         return c
 
@@ -502,21 +595,37 @@ class TestGreyMatterClient:
             c.authenticate()
 
     def test_to_stix_ipv4(self, client):
-        s = client.to_stix({"id": "g1", "type": "ipv4", "value": "1.2.3.4",
-                             "confidence": 80, "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {
+                "id": "g1",
+                "type": "ipv4",
+                "value": "1.2.3.4",
+                "confidence": 80,
+                "created_at": "",
+                "updated_at": "",
+            }
+        )
         _assert_stix_contract(s)
         assert "ipv4-addr" in s["pattern"]
         assert s["x_gm_type"] == "ipv4"
 
     def test_to_stix_domain(self, client):
-        s = client.to_stix({"id": "g2", "type": "domain", "value": "evil.com",
-                             "confidence": 70, "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {
+                "id": "g2",
+                "type": "domain",
+                "value": "evil.com",
+                "confidence": 70,
+                "created_at": "",
+                "updated_at": "",
+            }
+        )
         assert "domain-name" in s["pattern"]
 
     def test_from_stix_infers_type(self, client):
-        p = client.from_stix({"name": "evil.com",
-                               "pattern": "[domain-name:value = 'evil.com']",
-                               "x_tlp": "amber"})
+        p = client.from_stix(
+            {"name": "evil.com", "pattern": "[domain-name:value = 'evil.com']", "x_tlp": "amber"}
+        )
         assert p["type"] == "domain"
         assert p["value"] == "evil.com"
 
@@ -529,8 +638,8 @@ class TestGreyMatterClient:
 # Whistic
 # ===========================================================================
 
-class TestWhisticClient:
 
+class TestWhisticClient:
     @pytest.fixture
     def client(self):
         c = WhisticClient(host="https://fake.example.com", api_key="wsk")
@@ -543,22 +652,37 @@ class TestWhisticClient:
         assert c._auth_headers["X-Whistic-Token"] == "mykey"
 
     def test_to_stix_vendor(self, client):
-        s = client.to_stix({"id": "v1", "name": "Acme", "trust_score": 85,
-                             "assessment_status": "complete",
-                             "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {
+                "id": "v1",
+                "name": "Acme",
+                "trust_score": 85,
+                "assessment_status": "complete",
+                "created_at": "",
+                "updated_at": "",
+            }
+        )
         _assert_stix_contract(s)
         assert s["type"] == "threat-actor"
         assert s["x_whistic_trust_score"] == 85
 
     def test_to_stix_categories_map_to_sectors(self, client):
-        s = client.to_stix({"id": "v2", "name": "HealthCo",
-                             "categories": ["Healthcare", "Pharmaceuticals"],
-                             "trust_score": 70, "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {
+                "id": "v2",
+                "name": "HealthCo",
+                "categories": ["Healthcare", "Pharmaceuticals"],
+                "trust_score": 70,
+                "created_at": "",
+                "updated_at": "",
+            }
+        )
         assert s.get("x_target_sectors") == ["Healthcare", "Pharmaceuticals"]
 
     def test_to_stix_no_categories_omits_sectors(self, client):
-        s = client.to_stix({"id": "v3", "name": "Acme",
-                             "trust_score": 60, "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {"id": "v3", "name": "Acme", "trust_score": 60, "created_at": "", "updated_at": ""}
+        )
         assert "x_target_sectors" not in s
 
     def test_upsert_raises_for_vendor(self, client):
@@ -566,8 +690,7 @@ class TestWhisticClient:
             client.upsert_object("threat-actor", {"name": "New Vendor"})
 
     def test_list_vendors(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            MagicMock(return_value={"vendors": [{"id": "v1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"vendors": [{"id": "v1"}]}))
         result = client.list_objects("threat-actor")
         assert isinstance(result, list)
 
@@ -580,12 +703,11 @@ class TestWhisticClient:
 # RiskRecon
 # ===========================================================================
 
-class TestRiskReconClient:
 
+class TestRiskReconClient:
     @pytest.fixture
     def client(self):
-        c = RiskReconClient(host="https://fake.example.com",
-                            client_id="cid", client_secret="sec")
+        c = RiskReconClient(host="https://fake.example.com", client_id="cid", client_secret="sec")
         c._authenticated = True
         return c
 
@@ -596,45 +718,81 @@ class TestRiskReconClient:
         assert c._auth_headers["Authorization"] == "Bearer rr-tok"
 
     def test_to_stix_company(self, client):
-        s = client.to_stix({"id": "c1", "name": "Corp A", "domain": "corp.com",
-                             "score": 7.5, "grade": "C",
-                             "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {
+                "id": "c1",
+                "name": "Corp A",
+                "domain": "corp.com",
+                "score": 7.5,
+                "grade": "C",
+                "created_at": "",
+                "updated_at": "",
+            }
+        )
         _assert_stix_contract(s)
         assert s["type"] == "threat-actor"
         assert s["x_rr_score"] == 7.5
         assert s["x_rr_domain"] == "corp.com"
 
     def test_to_stix_company_industries_map_to_sectors(self, client):
-        s = client.to_stix({"id": "c2", "name": "HealthCorp", "domain": "hc.com",
-                             "score": 8.0, "grade": "B",
-                             "industries": ["Healthcare", "Insurance"],
-                             "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {
+                "id": "c2",
+                "name": "HealthCorp",
+                "domain": "hc.com",
+                "score": 8.0,
+                "grade": "B",
+                "industries": ["Healthcare", "Insurance"],
+                "created_at": "",
+                "updated_at": "",
+            }
+        )
         assert s.get("x_rr_industries") == ["Healthcare", "Insurance"]
         assert s.get("x_target_sectors") == ["Healthcare", "Insurance"]
 
     def test_to_stix_company_no_industries_omits_sectors(self, client):
-        s = client.to_stix({"id": "c3", "name": "Corp B", "domain": "b.com",
-                             "score": 6.0, "grade": "C",
-                             "created_at": "", "updated_at": ""})
+        s = client.to_stix(
+            {
+                "id": "c3",
+                "name": "Corp B",
+                "domain": "b.com",
+                "score": 6.0,
+                "grade": "C",
+                "created_at": "",
+                "updated_at": "",
+            }
+        )
         assert "x_target_sectors" not in s
 
     def test_to_stix_finding(self, client):
-        s = client.to_stix({"id": "f1", "criterion": "TLS/SSL",
-                             "severity": "high", "first_seen": "", "last_seen": ""})
+        s = client.to_stix(
+            {
+                "id": "f1",
+                "criterion": "TLS/SSL",
+                "severity": "high",
+                "first_seen": "",
+                "last_seen": "",
+            }
+        )
         assert s["type"] == "vulnerability"
         assert s["x_rr_severity"] == "high"
         assert s["confidence"] == 80
 
     def test_to_stix_finding_severity_confidence_mapping(self, client):
-        for sev, expected in [("critical", 95), ("high", 80),
-                               ("medium", 60), ("low", 40), ("info", 20)]:
-            s = client.to_stix({"id": "x", "criterion": "test",
-                                 "severity": sev, "first_seen": "", "last_seen": ""})
+        for sev, expected in [
+            ("critical", 95),
+            ("high", 80),
+            ("medium", 60),
+            ("low", 40),
+            ("info", 20),
+        ]:
+            s = client.to_stix(
+                {"id": "x", "criterion": "test", "severity": sev, "first_seen": "", "last_seen": ""}
+            )
             assert s["confidence"] == expected
 
     def test_list_companies(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            MagicMock(return_value={"companies": [{"id": "c1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"companies": [{"id": "c1"}]}))
         result = client.list_objects("threat-actor")
         assert isinstance(result, list)
 
@@ -643,8 +801,8 @@ class TestRiskReconClient:
 # Feedly
 # ===========================================================================
 
-class TestFeedlyClient:
 
+class TestFeedlyClient:
     @pytest.fixture
     def client(self):
         c = FeedlyClient(host="https://api.feedly.com", api_token="fd-tok")
@@ -657,40 +815,78 @@ class TestFeedlyClient:
         assert c._auth_headers["Authorization"] == "Bearer mytok"
 
     def test_to_stix_ioc(self, client):
-        s = client.to_stix({"id": "i1", "type": "domain", "value": "evil.com",
-                             "confidence": 75, "first_seen": 1704067200000,
-                             "last_seen": 1704153600000, "sources": []})
+        s = client.to_stix(
+            {
+                "id": "i1",
+                "type": "domain",
+                "value": "evil.com",
+                "confidence": 75,
+                "first_seen": 1704067200000,
+                "last_seen": 1704153600000,
+                "sources": [],
+            }
+        )
         _assert_stix_contract(s)
         assert s["type"] == "indicator"
         assert "domain-name" in s["pattern"]
         assert s["x_feedly_type"] == "domain"
 
     def test_to_stix_cve(self, client):
-        s = client.to_stix({"id": "c1", "cve_id": "CVE-2024-1234",
-                             "cvss_score": 9.8, "description": "Critical",
-                             "first_seen": 1704067200000, "sources": []})
+        s = client.to_stix(
+            {
+                "id": "c1",
+                "cve_id": "CVE-2024-1234",
+                "cvss_score": 9.8,
+                "description": "Critical",
+                "first_seen": 1704067200000,
+                "sources": [],
+            }
+        )
         assert s["type"] == "vulnerability"
         assert s["name"] == "CVE-2024-1234"
         assert s["x_cvss_score"] == 9.8
 
     def test_to_stix_ttp(self, client):
-        s = client.to_stix({"id": "t1", "type": "attack-pattern",
-                             "mitre_id": "T1190", "name": "Exploit Public-Facing App",
-                             "description": "", "first_seen": 0, "sources": []})
+        s = client.to_stix(
+            {
+                "id": "t1",
+                "type": "attack-pattern",
+                "mitre_id": "T1190",
+                "name": "Exploit Public-Facing App",
+                "description": "",
+                "first_seen": 0,
+                "sources": [],
+            }
+        )
         assert s["type"] == "attack-pattern"
         assert s["x_mitre_id"] == "T1190"
 
     def test_to_stix_ttp_sectors(self, client):
-        s = client.to_stix({"id": "t2", "type": "threat-actor",
-                             "name": "APT-X", "description": "",
-                             "first_seen": 0, "sources": [],
-                             "sectors": ["Healthcare", "Energy"]})
+        s = client.to_stix(
+            {
+                "id": "t2",
+                "type": "threat-actor",
+                "name": "APT-X",
+                "description": "",
+                "first_seen": 0,
+                "sources": [],
+                "sectors": ["Healthcare", "Energy"],
+            }
+        )
         assert s.get("x_target_sectors") == ["Healthcare", "Energy"]
 
     def test_to_stix_ttp_no_sectors_omits_key(self, client):
-        s = client.to_stix({"id": "t3", "type": "attack-pattern",
-                             "mitre_id": "T1059", "name": "Command Execution",
-                             "description": "", "first_seen": 0, "sources": []})
+        s = client.to_stix(
+            {
+                "id": "t3",
+                "type": "attack-pattern",
+                "mitre_id": "T1059",
+                "name": "Command Execution",
+                "description": "",
+                "first_seen": 0,
+                "sources": [],
+            }
+        )
         assert "x_target_sectors" not in s
 
     def test_upsert_raises(self, client):
@@ -713,8 +909,8 @@ class TestFeedlyClient:
 # Splunk
 # ===========================================================================
 
-class TestSplunkClient:
 
+class TestSplunkClient:
     @pytest.fixture
     def client(self):
         c = SplunkClient(host="https://splunk.example.com:8089", api_token="sp-tok")
@@ -727,8 +923,7 @@ class TestSplunkClient:
         assert c._auth_headers["Authorization"] == "Bearer tok"
 
     def test_authenticate_username_password(self, monkeypatch):
-        c = SplunkClient(host="https://splunk.example.com:8089",
-                         username="admin", password="pass")
+        c = SplunkClient(host="https://splunk.example.com:8089", username="admin", password="pass")
         monkeypatch.setattr(c, "post", MagicMock(return_value={"sessionKey": "sess"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Splunk sess"
@@ -739,9 +934,17 @@ class TestSplunkClient:
             c.authenticate()
 
     def test_to_stix_notable(self, client):
-        s = client.to_stix({"rule_name": "Brute Force", "severity": "high",
-                             "src": "10.0.0.1", "dest": "192.168.1.5",
-                             "event_id": "EVT1", "urgency": "high", "_time": ""})
+        s = client.to_stix(
+            {
+                "rule_name": "Brute Force",
+                "severity": "high",
+                "src": "10.0.0.1",
+                "dest": "192.168.1.5",
+                "event_id": "EVT1",
+                "urgency": "high",
+                "_time": "",
+            }
+        )
         _assert_stix_contract(s)
         assert s["x_splunk_severity"] == "high"
         assert s["x_splunk_src"] == "10.0.0.1"
@@ -752,14 +955,12 @@ class TestSplunkClient:
         assert "5.5.5.5" in s["pattern"]
 
     def test_from_stix_domain(self, client):
-        p = client.from_stix({"name": "evil.com",
-                               "pattern": "[domain-name:value = 'evil.com']"})
+        p = client.from_stix({"name": "evil.com", "pattern": "[domain-name:value = 'evil.com']"})
         assert p["ioc_type"] == "domain"
         assert p["value"] == "evil.com"
 
     def test_from_stix_ip(self, client):
-        p = client.from_stix({"name": "1.2.3.4",
-                               "pattern": "[ipv4-addr:value = '1.2.3.4']"})
+        p = client.from_stix({"name": "1.2.3.4", "pattern": "[ipv4-addr:value = '1.2.3.4']"})
         assert p["ioc_type"] == "ip"
 
 
@@ -767,11 +968,10 @@ class TestSplunkClient:
 # ControlUp
 # ===========================================================================
 
-from gnat.connectors.controlup.client import ControlUpClient
+from gnat.connectors.controlup.client import ControlUpClient  # noqa: E402
 
 
 class TestControlUpClient:
-
     @pytest.fixture
     def client(self):
         c = ControlUpClient(
@@ -823,7 +1023,9 @@ class TestControlUpClient:
     # -- get_object -----------------------------------------------------------
 
     def test_get_object_device(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"deviceId": "d1", "hostname": "pc1"}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"deviceId": "d1", "hostname": "pc1"})
+        )
         result = client.get_object("infrastructure", "d1")
         assert result["deviceId"] == "d1"
 
@@ -848,7 +1050,7 @@ class TestControlUpClient:
         monkeypatch.setattr(client, "get", mock_get)
         client.list_objects("infrastructure", page=3, page_size=50)
         _, kwargs = mock_get.call_args
-        assert kwargs["params"]["page"] == 2   # page 3 → 0-based index 2
+        assert kwargs["params"]["page"] == 2  # page 3 → 0-based index 2
 
     def test_list_objects_unsupported_type(self, client):
         with pytest.raises(GNATClientError, match="does not support"):
@@ -883,7 +1085,9 @@ class TestControlUpClient:
 
     def test_upsert_device_tags(self, client, monkeypatch):
         monkeypatch.setattr(client, "put", MagicMock(return_value={"success": True}))
-        result = client.upsert_object("infrastructure", {"device_id": "d1", "tags": ["prod", "finance"]})
+        result = client.upsert_object(
+            "infrastructure", {"device_id": "d1", "tags": ["prod", "finance"]}
+        )
         assert result["success"] is True
 
     def test_upsert_missing_device_id_raises(self, client):
@@ -903,7 +1107,9 @@ class TestControlUpClient:
     # -- query_data_index -----------------------------------------------------
 
     def test_query_data_index(self, client, monkeypatch):
-        mock_post = MagicMock(return_value={"data": [{"processName": "chrome.exe"}], "totalCount": 1})
+        mock_post = MagicMock(
+            return_value={"data": [{"processName": "chrome.exe"}], "totalCount": 1}
+        )
         monkeypatch.setattr(client, "post", mock_post)
         result = client.query_data_index(
             index="processes",
@@ -915,7 +1121,7 @@ class TestControlUpClient:
         assert body["index"] == "processes"
         assert body["metrics"] == ["processName", "cpuUsage"]
         assert body["filters"]["deviceId"] == "d1"
-        assert body["page"] == 0   # page=1 → 0
+        assert body["page"] == 0  # page=1 → 0
 
     def test_query_data_index_bad_response(self, client, monkeypatch):
         monkeypatch.setattr(client, "post", MagicMock(return_value=None))
@@ -933,16 +1139,16 @@ class TestControlUpClient:
 
     def test_device_to_stix(self, client):
         native = {
-            "deviceId":   "d-abc",
-            "hostname":   "WIN-PC1",
-            "osName":     "Windows 11",
-            "osVersion":  "22H2",
-            "osFamily":   "windows",
-            "status":     "active",
+            "deviceId": "d-abc",
+            "hostname": "WIN-PC1",
+            "osName": "Windows 11",
+            "osVersion": "22H2",
+            "osFamily": "windows",
+            "status": "active",
             "healthScore": 87,
-            "lastSeen":   "2025-01-15T10:00:00Z",
+            "lastSeen": "2025-01-15T10:00:00Z",
             "ipAddresses": ["192.168.1.50"],
-            "tags":       ["finance", "prod"],
+            "tags": ["finance", "prod"],
         }
         s = client.to_stix(native)
         _assert_stix_contract(s)
@@ -961,14 +1167,14 @@ class TestControlUpClient:
 
     def test_session_to_stix(self, client):
         native = {
-            "sessionId":    "sess-99",
-            "username":     "jsmith",
-            "deviceId":     "d-abc",
-            "hostname":     "WIN-PC1",
+            "sessionId": "sess-99",
+            "username": "jsmith",
+            "deviceId": "d-abc",
+            "hostname": "WIN-PC1",
             "sessionState": "active",
-            "logonTime":    "2025-01-15T08:30:00Z",
+            "logonTime": "2025-01-15T08:30:00Z",
             "lastActivity": "2025-01-15T10:00:00Z",
-            "protocol":     "RDP",
+            "protocol": "RDP",
         }
         s = client.to_stix(native)
         _assert_stix_contract(s)
@@ -981,19 +1187,19 @@ class TestControlUpClient:
 
     def test_alert_to_stix(self, client):
         native = {
-            "alertId":     "alert-7",
-            "name":        "High CPU Usage",
-            "alertType":   "HighCPU",
-            "severity":    "high",
+            "alertId": "alert-7",
+            "name": "High CPU Usage",
+            "alertType": "HighCPU",
+            "severity": "high",
             "description": "CPU above 95% for 5 minutes",
-            "createdAt":   "2025-01-15T09:00:00Z",
-            "deviceId":    "d-abc",
-            "resolved":    False,
+            "createdAt": "2025-01-15T09:00:00Z",
+            "deviceId": "d-abc",
+            "resolved": False,
         }
         s = client.to_stix(native)
         _assert_stix_contract(s)
         assert s["type"] == "indicator"
-        assert s["confidence"] == 75   # high → 75
+        assert s["confidence"] == 75  # high → 75
         assert s["x_cu_severity"] == "high"
         assert s["x_cu_resolved"] is False
         assert s["x_source_platform"] == "controlup"
@@ -1007,13 +1213,13 @@ class TestControlUpClient:
 
     def test_vuln_to_stix(self, client):
         native = {
-            "id":          "v-001",
-            "cveId":       "CVE-2024-12345",
-            "severity":    "critical",
-            "cvssScore":   9.8,
+            "id": "v-001",
+            "cveId": "CVE-2024-12345",
+            "severity": "critical",
+            "cvssScore": 9.8,
             "description": "Remote code execution vulnerability.",
-            "detectedAt":  "2025-01-10T00:00:00Z",
-            "deviceId":    "d-abc",
+            "detectedAt": "2025-01-10T00:00:00Z",
+            "deviceId": "d-abc",
         }
         s = client.to_stix(native)
         _assert_stix_contract(s)
@@ -1026,9 +1232,9 @@ class TestControlUpClient:
 
     def test_from_stix_infrastructure(self, client):
         stix = {
-            "type":            "infrastructure",
-            "x_cu_device_id":  "d-abc",
-            "x_cu_tags":       ["prod", "finance"],
+            "type": "infrastructure",
+            "x_cu_device_id": "d-abc",
+            "x_cu_tags": ["prod", "finance"],
         }
         payload = client.from_stix(stix)
         assert payload["device_id"] == "d-abc"
@@ -1036,9 +1242,9 @@ class TestControlUpClient:
 
     def test_from_stix_indicator(self, client):
         stix = {
-            "type":         "indicator",
-            "name":         "High CPU",
-            "pattern":      "[process:name = 'malware.exe']",
+            "type": "indicator",
+            "name": "High CPU",
+            "pattern": "[process:name = 'malware.exe']",
             "x_cu_severity": "high",
         }
         payload = client.from_stix(stix)
@@ -1054,11 +1260,10 @@ class TestControlUpClient:
 # AlienVault OTX
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.alienvault.client import AlienVaultClient
+from gnat.connectors.alienvault.client import AlienVaultClient  # noqa: E402
 
 
 class TestAlienVaultClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(AlienVaultClient, api_key="otx-key-123")
@@ -1075,7 +1280,11 @@ class TestAlienVaultClient:
         assert result[0]["id"] == "p1"
 
     def test_list_objects_indicators(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"results": [{"indicator": "1.2.3.4", "type": "IPv4"}]}))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"results": [{"indicator": "1.2.3.4", "type": "IPv4"}]}),
+        )
         result = client.list_objects("indicator")
         assert isinstance(result, list)
 
@@ -1116,30 +1325,38 @@ class TestAlienVaultClient:
 # Graylog
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.graylog.client import GraylogClient
+from gnat.connectors.graylog.client import GraylogClient  # noqa: E402
 
 
 class TestGraylogClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(GraylogClient, username="admin", password="pass")
 
     def test_authenticate_sets_basic_header(self):
         import base64
+
         c = GraylogClient(host="https://graylog.example.com", username="u", password="p")
         c.authenticate()
         expected = "Basic " + base64.b64encode(b"u:p").decode()
         assert c._auth_headers["Authorization"] == expected
 
     def test_list_objects_messages(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"messages": [{"message": {"_id": "m1"}}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"messages": [{"message": {"_id": "m1"}}]})
+        )
         result = client.list_objects("observed-data")
         assert isinstance(result, list)
         assert result[0]["message"]["_id"] == "m1"
 
     def test_to_stix_with_ips(self, client):
-        msg = {"message": {"src_ip": "10.0.0.1", "dst_ip": "8.8.8.8", "timestamp": "2024-01-01T00:00:00Z"}}
+        msg = {
+            "message": {
+                "src_ip": "10.0.0.1",
+                "dst_ip": "8.8.8.8",
+                "timestamp": "2024-01-01T00:00:00Z",
+            }
+        }
         stix = client.to_stix(msg)
         assert stix["type"] == "observed-data"
         _assert_stix_contract(stix)
@@ -1168,11 +1385,10 @@ class TestGraylogClient:
 # OSSIM
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.ossim.client import OSSIMClient
+from gnat.connectors.ossim.client import OSSIMClient  # noqa: E402
 
 
 class TestOSSIMClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(OSSIMClient, api_key="ossim-key")
@@ -1183,7 +1399,9 @@ class TestOSSIMClient:
         assert c._auth_headers["X-USM-API-KEY"] == "testkey"
 
     def test_list_objects_alarms(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"uuid": "u1", "rule_name": "Scan"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"uuid": "u1", "rule_name": "Scan"}]})
+        )
         result = client.list_objects("observed-data")
         assert isinstance(result, list)
         assert result[0]["uuid"] == "u1"
@@ -1222,35 +1440,36 @@ class TestOSSIMClient:
 # Security Onion
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.security_onion.client import SecurityOnionClient
+from gnat.connectors.security_onion.client import SecurityOnionClient  # noqa: E402
 
 
 class TestSecurityOnionClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(SecurityOnionClient, username="analyst", password="secret")
 
     def test_authenticate_sets_bearer(self, monkeypatch):
-        c = SecurityOnionClient(
-            host="https://so.example.com", username="u", password="p"
-        )
+        c = SecurityOnionClient(host="https://so.example.com", username="u", password="p")
         monkeypatch.setattr(c, "post", MagicMock(return_value={"token": "jwt-abc"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer jwt-abc"
 
     def test_authenticate_raises_on_missing_token(self, monkeypatch):
-        c = SecurityOnionClient(
-            host="https://so.example.com", username="u", password="p"
-        )
+        c = SecurityOnionClient(host="https://so.example.com", username="u", password="p")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
         with pytest.raises(GNATClientError, match="login failed"):
             c.authenticate()
 
     def test_list_objects_alerts(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(return_value={
-            "hits": {"hits": [{"_source": {"uid": "a1", "@timestamp": "2024-01-01"}}]}
-        }))
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={
+                    "hits": {"hits": [{"_source": {"uid": "a1", "@timestamp": "2024-01-01"}}]}
+                }
+            ),
+        )
         result = client.list_objects("observed-data")
         assert isinstance(result, list)
         assert result[0]["uid"] == "a1"
@@ -1290,13 +1509,12 @@ class TestSecurityOnionClient:
 # Snort
 # ---------------------------------------------------------------------------
 
-import json as _json
+import json as _json  # noqa: E402
 
-from gnat.connectors.snort.client import SnortClient
+from gnat.connectors.snort.client import SnortClient  # noqa: E402
 
 
 class TestSnortClient:
-
     @pytest.fixture
     def client(self):
         return SnortClient(host="", alert_log_path="/tmp/nonexistent.json", log_format="json")
@@ -1313,9 +1531,19 @@ class TestSnortClient:
 
     def test_list_objects_json(self, tmp_path):
         f = tmp_path / "alert.json"
-        alert = {"timestamp": "2024-01-01T00:00:00", "msg": "ET MALWARE", "gid": 1,
-                 "sid": 1000, "rev": 1, "priority": 2, "proto": "TCP",
-                 "src_addr": "1.2.3.4", "src_port": 4444, "dst_addr": "5.6.7.8", "dst_port": 80}
+        alert = {
+            "timestamp": "2024-01-01T00:00:00",
+            "msg": "ET MALWARE",
+            "gid": 1,
+            "sid": 1000,
+            "rev": 1,
+            "priority": 2,
+            "proto": "TCP",
+            "src_addr": "1.2.3.4",
+            "src_port": 4444,
+            "dst_addr": "5.6.7.8",
+            "dst_port": 80,
+        }
         f.write_text(_json.dumps(alert) + "\n")
         c = SnortClient(host="", alert_log_path=str(f), log_format="json")
         result = c.list_objects("observed-data")
@@ -1336,11 +1564,16 @@ class TestSnortClient:
         alert = {
             "timestamp": "2024-01-01T00:00:00Z",
             "signature": "ET MALWARE Bad Thing",
-            "sid": 12345, "gid": 1, "rev": 3,
-            "priority": 1, "severity": 4,
+            "sid": 12345,
+            "gid": 1,
+            "rev": 3,
+            "priority": 1,
+            "severity": 4,
             "proto": "TCP",
-            "src_ip": "10.0.0.1", "src_port": 5555,
-            "dst_ip": "8.8.8.8", "dst_port": 53,
+            "src_ip": "10.0.0.1",
+            "src_port": 5555,
+            "dst_ip": "8.8.8.8",
+            "dst_port": 53,
             "action": "alert",
         }
         stix = c.to_stix(alert)
@@ -1362,11 +1595,10 @@ class TestSnortClient:
 # Suricata
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.suricata.client import SuricataClient
+from gnat.connectors.suricata.client import SuricataClient  # noqa: E402
 
 
 class TestSuricataClient:
-
     @pytest.fixture
     def client(self):
         return SuricataClient(host="", eve_log_path="/tmp/nonexistent.json")
@@ -1399,7 +1631,7 @@ class TestSuricataClient:
                 "action": "allowed",
                 "rev": 5,
                 "gid": 1,
-            }
+            },
         }
         f.write_text(_json.dumps(event) + "\n")
         c = SuricataClient(host="", eve_log_path=str(f))
@@ -1444,11 +1676,10 @@ class TestSuricataClient:
 # Zeek
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.zeek.client import ZeekClient
+from gnat.connectors.zeek.client import ZeekClient  # noqa: E402
 
 
 class TestZeekClient:
-
     @pytest.fixture
     def client(self, tmp_path):
         return ZeekClient(host="", log_dir=str(tmp_path), log_format="json")
@@ -1523,6 +1754,7 @@ class TestVirusTotalClient:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.virustotal.client import VirusTotalClient
+
         return VirusTotalClient(api_key="vt-test-key")
 
     def test_auth_header_set(self, client):
@@ -1539,27 +1771,41 @@ class TestVirusTotalClient:
             client.health_check()
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": [{"id": "abc123", "type": "file"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"id": "abc123", "type": "file"}]})
+        )
         results = client.list_objects("indicator", page_size=5)
         assert isinstance(results, list)
 
     def test_to_stix_file(self, client):
-        raw = {"id": "abc123", "type": "file",
-               "attributes": {"sha256": "a" * 64, "meaningful_name": "malware.exe",
-                              "last_analysis_stats": {"malicious": 30, "total": 70}}}
+        raw = {
+            "id": "abc123",
+            "type": "file",
+            "attributes": {
+                "sha256": "a" * 64,
+                "meaningful_name": "malware.exe",
+                "last_analysis_stats": {"malicious": 30, "total": 70},
+            },
+        }
         stix = client.to_stix(raw)
         assert stix.get("type") in ("indicator", "file", "observed-data", "bundle")
 
     def test_to_stix_ip(self, client):
-        raw = {"id": "1.2.3.4", "type": "ip_address",
-               "attributes": {"last_analysis_stats": {"malicious": 5, "total": 70}}}
+        raw = {
+            "id": "1.2.3.4",
+            "type": "ip_address",
+            "attributes": {"last_analysis_stats": {"malicious": 5, "total": 70}},
+        }
         stix = client.to_stix(raw)
         assert stix.get("type") in ("indicator", "observed-data", "bundle")
 
     def test_from_stix(self, client):
-        stix = {"type": "indicator", "id": "indicator--1",
-                "pattern": "[file:hashes.SHA256 = 'abc']", "name": "Test"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--1",
+            "pattern": "[file:hashes.SHA256 = 'abc']",
+            "name": "Test",
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
 
@@ -1575,6 +1821,7 @@ class TestShadowServerClient:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.shadowserver.client import ShadowServerClient
+
         return ShadowServerClient(api_key="ss-key", api_secret="ss-secret")
 
     def test_auth(self, client):
@@ -1582,31 +1829,38 @@ class TestShadowServerClient:
         assert client._auth_headers["Accept"] == "application/json"
 
     def test_health_check(self, client, monkeypatch):
-        monkeypatch.setattr(client, "_signed_post",
-                            MagicMock(return_value={"pong": 1}))
+        monkeypatch.setattr(client, "_signed_post", MagicMock(return_value={"pong": 1}))
         assert client.health_check() is True
 
     def test_health_check_failure(self, client, monkeypatch):
-        monkeypatch.setattr(client, "_signed_post",
-                            MagicMock(side_effect=GNATClientError("err")))
+        monkeypatch.setattr(client, "_signed_post", MagicMock(side_effect=GNATClientError("err")))
         with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects(self, client, monkeypatch):
-        monkeypatch.setattr(client, "_signed_post",
-                            MagicMock(return_value=[{"ip": "1.2.3.4", "asn": "12345"}]))
+        monkeypatch.setattr(
+            client, "_signed_post", MagicMock(return_value=[{"ip": "1.2.3.4", "asn": "12345"}])
+        )
         results = client.list_objects("indicator", page_size=10)
         assert isinstance(results, list)
 
     def test_to_stix(self, client):
-        raw = {"ip": "10.0.0.1", "asn": "64496", "country_code": "US",
-               "type": "C2", "timestamp": "2024-01-01 00:00:00"}
+        raw = {
+            "ip": "10.0.0.1",
+            "asn": "64496",
+            "country_code": "US",
+            "type": "C2",
+            "timestamp": "2024-01-01 00:00:00",
+        }
         stix = client.to_stix(raw)
         assert stix.get("type") in ("indicator", "observed-data", "bundle")
 
     def test_from_stix(self, client):
-        stix = {"type": "indicator", "id": "indicator--1",
-                "pattern": "[ipv4-addr:value = '1.2.3.4']"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--1",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
 
@@ -1622,6 +1876,7 @@ class TestRapid7Client:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.rapid7.client import Rapid7Client
+
         return Rapid7Client(host="https://insight.rapid7.com", api_key="r7-key")
 
     def test_auth(self, client):
@@ -1633,14 +1888,22 @@ class TestRapid7Client:
         assert client.health_check() is True
 
     def test_list_objects_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": [{"id": "vuln-1", "title": "CVE-2024-1234"}]}))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": "vuln-1", "title": "CVE-2024-1234"}]}),
+        )
         results = client.list_objects("vulnerability", page_size=5)
         assert isinstance(results, list)
 
     def test_to_stix(self, client):
-        raw = {"id": "vuln-1", "title": "CVE-2024-1234", "severity": "Critical",
-               "cvss_score": 9.8, "published": "2024-01-01T00:00:00Z"}
+        raw = {
+            "id": "vuln-1",
+            "title": "CVE-2024-1234",
+            "severity": "Critical",
+            "cvss_score": 9.8,
+            "published": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(raw)
         assert stix.get("type") in ("vulnerability", "indicator", "observed-data", "bundle")
 
@@ -1661,6 +1924,7 @@ class TestNucleusClient:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.nucleus.client import NucleusClient
+
         return NucleusClient(host="nucleus.example.com", api_key="nucleus-key")
 
     def test_auth(self, client):
@@ -1672,14 +1936,20 @@ class TestNucleusClient:
         assert client.health_check() is True
 
     def test_list_objects(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": [{"id": "proj-1", "name": "MyProject"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"id": "proj-1", "name": "MyProject"}]})
+        )
         results = client.list_objects("x-nucleus-project", page_size=5)
         assert isinstance(results, list)
 
     def test_to_stix(self, client):
-        raw = {"id": "vuln-1", "cve_id": "CVE-2024-0001", "severity": "high",
-               "asset": "server01", "first_found": "2024-01-01"}
+        raw = {
+            "id": "vuln-1",
+            "cve_id": "CVE-2024-0001",
+            "severity": "high",
+            "asset": "server01",
+            "first_found": "2024-01-01",
+        }
         stix = client.to_stix(raw)
         assert stix.get("type") in ("vulnerability", "observed-data", "bundle")
 
@@ -1692,9 +1962,15 @@ class TestNucleusClient:
         monkeypatch.setattr(client, "post", MagicMock(return_value={"data": {"id": "new-1"}}))
         result = client.upsert_object(
             "indicator",
-            {"type": "indicator", "id": "indicator--1",
-             "pattern": "[ipv4-addr:value = '1.2.3.4']",
-             "pattern_type": "stix", "name": "Test", "valid_from": "2024-01-01T00:00:00Z"})
+            {
+                "type": "indicator",
+                "id": "indicator--1",
+                "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                "pattern_type": "stix",
+                "name": "Test",
+                "valid_from": "2024-01-01T00:00:00Z",
+            },
+        )
         assert isinstance(result, dict)
 
 
@@ -1705,6 +1981,7 @@ class TestElasticConnector:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.elastic.connector import ElasticConnector
+
         return ElasticConnector(
             host="https://es.example.com:9200",
             api_key_id="key-id",
@@ -1720,33 +1997,54 @@ class TestElasticConnector:
         assert client.health_check() is True
 
     def test_health_check_failure(self, client, monkeypatch):
-        monkeypatch.setattr(client._elastic, "es_get",
-                            MagicMock(side_effect=GNATClientError("err")))
+        monkeypatch.setattr(
+            client._elastic, "es_get", MagicMock(side_effect=GNATClientError("err"))
+        )
         with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects_indicators(self, client, monkeypatch):
-        ind = {"_id": "ind-1", "_source": {"threat": {"indicator": {"type": "ipv4-addr",
-               "ip": "1.2.3.4"}}, "@timestamp": "2024-01-01T00:00:00Z"}}
+        ind = {
+            "_id": "ind-1",
+            "_source": {
+                "threat": {"indicator": {"type": "ipv4-addr", "ip": "1.2.3.4"}},
+                "@timestamp": "2024-01-01T00:00:00Z",
+            },
+        }
         monkeypatch.setattr(client._ti, "search_indicators", MagicMock(return_value=[ind]))
         results = client.list_objects("indicator", limit=5)
         assert isinstance(results, list)
 
     def test_list_objects_observed_data(self, client, monkeypatch):
-        alert = {"_id": "alert-1", "_source": {"event": {"kind": "signal"},
-                 "kibana.alert.rule.name": "Test", "@timestamp": "2024-01-01T00:00:00Z"}}
+        alert = {
+            "_id": "alert-1",
+            "_source": {
+                "event": {"kind": "signal"},
+                "kibana.alert.rule.name": "Test",
+                "@timestamp": "2024-01-01T00:00:00Z",
+            },
+        }
         monkeypatch.setattr(client._alerts, "search_alerts", MagicMock(return_value=[alert]))
         results = client.list_objects("observed-data", limit=5)
         assert isinstance(results, list)
 
     def test_upsert_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client._ti, "index_indicator",
-                            MagicMock(return_value={"result": "created", "_id": "doc-1"}))
-        result = client.upsert_object("indicator",
-                                      {"type": "indicator", "id": "indicator--1",
-                                       "pattern": "[ipv4-addr:value = '1.2.3.4']",
-                                       "pattern_type": "stix", "name": "Test IOC",
-                                       "valid_from": "2024-01-01T00:00:00Z"})
+        monkeypatch.setattr(
+            client._ti,
+            "index_indicator",
+            MagicMock(return_value={"result": "created", "_id": "doc-1"}),
+        )
+        result = client.upsert_object(
+            "indicator",
+            {
+                "type": "indicator",
+                "id": "indicator--1",
+                "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                "pattern_type": "stix",
+                "name": "Test IOC",
+                "valid_from": "2024-01-01T00:00:00Z",
+            },
+        )
         assert isinstance(result, dict)
 
     def test_upsert_observed_data_raises(self, client):
@@ -1765,6 +2063,7 @@ class TestMISPConnector:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.misp.connector import MISPConnector
+
         return MISPConnector(host="misp.example.com", api_key="misp-key")
 
     def test_authenticate_sets_flag(self, client):
@@ -1772,51 +2071,79 @@ class TestMISPConnector:
         assert client._authenticated is True
 
     def test_health_check_success(self, client, monkeypatch):
-        monkeypatch.setattr(client._misp, "get_json",
-                            MagicMock(return_value={"version": "2.4.170"}))
+        monkeypatch.setattr(
+            client._misp, "get_json", MagicMock(return_value={"version": "2.4.170"})
+        )
         assert client.health_check() is True
 
     def test_health_check_failure(self, client, monkeypatch):
-        monkeypatch.setattr(client._misp, "get_json",
-                            MagicMock(side_effect=GNATClientError("err")))
+        monkeypatch.setattr(client._misp, "get_json", MagicMock(side_effect=GNATClientError("err")))
         with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects(self, client, monkeypatch):
-        evt = {"id": "1", "uuid": "evt-uuid-1", "info": "Phishing campaign",
-               "date": "2024-01-01", "threat_level_id": "2",
-               "distribution": "0", "Attribute": []}
+        evt = {
+            "id": "1",
+            "uuid": "evt-uuid-1",
+            "info": "Phishing campaign",
+            "date": "2024-01-01",
+            "threat_level_id": "2",
+            "distribution": "0",
+            "Attribute": [],
+        }
         monkeypatch.setattr(client._events, "list_events", MagicMock(return_value=[evt]))
         results = client.list_objects("report", limit=5)
         assert isinstance(results, list)
 
     def test_get_object(self, client, monkeypatch):
-        evt = {"id": "1", "uuid": "evt-uuid-1", "info": "Test event",
-               "date": "2024-01-01", "threat_level_id": "1",
-               "distribution": "0", "Attribute": []}
+        evt = {
+            "id": "1",
+            "uuid": "evt-uuid-1",
+            "info": "Test event",
+            "date": "2024-01-01",
+            "threat_level_id": "1",
+            "distribution": "0",
+            "Attribute": [],
+        }
         monkeypatch.setattr(client._events, "get_event", MagicMock(return_value=evt))
         result = client.get_object("report", "1")
         assert isinstance(result, dict)
 
     def test_delete_object(self, client, monkeypatch):
-        monkeypatch.setattr(client._events, "delete_event",
-                            MagicMock(return_value={"saved": True}))
+        monkeypatch.setattr(client._events, "delete_event", MagicMock(return_value={"saved": True}))
         client.delete_object("report", "1")  # should not raise
 
     def test_to_stix(self, client):
-        raw = {"Event": {"id": "1", "uuid": "evt-uuid-1", "info": "Test",
-                          "date": "2024-01-01", "threat_level_id": "2",
-                          "distribution": "0", "Attribute": []}}
+        raw = {
+            "Event": {
+                "id": "1",
+                "uuid": "evt-uuid-1",
+                "info": "Test",
+                "date": "2024-01-01",
+                "threat_level_id": "2",
+                "distribution": "0",
+                "Attribute": [],
+            }
+        }
         stix = client.to_stix(raw)
         assert stix.get("type") in ("bundle", "report", "observed-data")
 
     def test_from_stix(self, client):
         # from_stix requires a STIX bundle
-        bundle = {"type": "bundle", "id": "bundle--1", "objects": [
-            {"type": "indicator", "id": "indicator--1", "name": "Test IOC",
-             "pattern": "[ipv4-addr:value = '1.2.3.4']",
-             "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z"}
-        ]}
+        bundle = {
+            "type": "bundle",
+            "id": "bundle--1",
+            "objects": [
+                {
+                    "type": "indicator",
+                    "id": "indicator--1",
+                    "name": "Test IOC",
+                    "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                    "pattern_type": "stix",
+                    "valid_from": "2024-01-01T00:00:00Z",
+                }
+            ],
+        }
         result = client.from_stix(bundle)
         assert isinstance(result, dict)
 
@@ -1828,6 +2155,7 @@ class TestQRadarConnector:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.qradar.connector import QRadarConnector
+
         return QRadarConnector(host="qradar.example.com", token="qr-token")
 
     def test_authenticate_sets_flag(self, client):
@@ -1839,25 +2167,36 @@ class TestQRadarConnector:
         assert client.health_check() is True
 
     def test_health_check_failure(self, client, monkeypatch):
-        monkeypatch.setattr(client._qradar, "get",
-                            MagicMock(side_effect=GNATClientError("err")))
+        monkeypatch.setattr(client._qradar, "get", MagicMock(side_effect=GNATClientError("err")))
         with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_list_objects_offenses(self, client, monkeypatch):
-        offense = {"id": 1, "description": "Suspicious activity",
-                   "start_time": 1704067200000, "status": "OPEN",
-                   "offense_type": 0, "magnitude": 5,
-                   "source_address_ids": [], "local_destination_address_ids": []}
+        offense = {
+            "id": 1,
+            "description": "Suspicious activity",
+            "start_time": 1704067200000,
+            "status": "OPEN",
+            "offense_type": 0,
+            "magnitude": 5,
+            "source_address_ids": [],
+            "local_destination_address_ids": [],
+        }
         monkeypatch.setattr(client._offenses, "list_offenses", MagicMock(return_value=[offense]))
         results = client.list_objects("observed-data", limit=5)
         assert isinstance(results, list)
 
     def test_get_object(self, client, monkeypatch):
-        offense = {"id": 1, "description": "Test offense",
-                   "start_time": 1704067200000, "status": "OPEN",
-                   "offense_type": 0, "magnitude": 3,
-                   "source_address_ids": [], "local_destination_address_ids": []}
+        offense = {
+            "id": 1,
+            "description": "Test offense",
+            "start_time": 1704067200000,
+            "status": "OPEN",
+            "offense_type": 0,
+            "magnitude": 3,
+            "source_address_ids": [],
+            "local_destination_address_ids": [],
+        }
         monkeypatch.setattr(client._offenses, "get_offense", MagicMock(return_value=offense))
         result = client.get_object("observed-data", "1")
         assert isinstance(result, dict)
@@ -1871,11 +2210,20 @@ class TestQRadarConnector:
             client.upsert_object("observed-data", {})
 
     def test_from_stix(self, client):
-        stix = {"type": "bundle", "id": "bundle--1", "objects": [
-            {"type": "indicator", "id": "indicator--1", "name": "Bad IP",
-             "pattern": "[ipv4-addr:value = '1.2.3.4']",
-             "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z"}
-        ]}
+        stix = {
+            "type": "bundle",
+            "id": "bundle--1",
+            "objects": [
+                {
+                    "type": "indicator",
+                    "id": "indicator--1",
+                    "name": "Bad IP",
+                    "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                    "pattern_type": "stix",
+                    "valid_from": "2024-01-01T00:00:00Z",
+                }
+            ],
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
 
@@ -1887,6 +2235,7 @@ class TestSentinelConnector:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.sentinel.connector import SentinelConnector
+
         return SentinelConnector(
             tenant_id="tenant-1",
             client_id="client-1",
@@ -1897,48 +2246,72 @@ class TestSentinelConnector:
         )
 
     def test_authenticate_success(self, client, monkeypatch):
-        monkeypatch.setattr(client._sentinel.auth, "get_headers",
-                            MagicMock(return_value={"Authorization": "Bearer tok"}))
+        monkeypatch.setattr(
+            client._sentinel.auth,
+            "get_headers",
+            MagicMock(return_value={"Authorization": "Bearer tok"}),
+        )
         client.authenticate()
         assert client._authenticated is True
 
     def test_authenticate_failure(self, client, monkeypatch):
-        monkeypatch.setattr(client._sentinel.auth, "get_headers",
-                            MagicMock(side_effect=Exception("invalid_client")))
+        monkeypatch.setattr(
+            client._sentinel.auth, "get_headers", MagicMock(side_effect=Exception("invalid_client"))
+        )
         with pytest.raises(GNATClientError, match="authentication"):
             client.authenticate()
 
     def test_health_check(self, client, monkeypatch):
-        monkeypatch.setattr(client._sentinel, "get",
-                            MagicMock(return_value={"value": []}))
+        monkeypatch.setattr(client._sentinel, "get", MagicMock(return_value={"value": []}))
         assert client.health_check() is True
 
     def test_list_objects_indicators(self, client, monkeypatch):
-        ind = {"id": "ind-1", "name": "indicator-1",
-               "properties": {"pattern": "[ipv4-addr:value = '1.2.3.4']",
-                              "patternType": "Stix", "displayName": "Bad IP",
-                              "createdTimeUtc": "2024-01-01T00:00:00Z"}}
+        ind = {
+            "id": "ind-1",
+            "name": "indicator-1",
+            "properties": {
+                "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                "patternType": "Stix",
+                "displayName": "Bad IP",
+                "createdTimeUtc": "2024-01-01T00:00:00Z",
+            },
+        }
         monkeypatch.setattr(client._ti, "list_indicators", MagicMock(return_value=[ind]))
         results = client.list_objects("indicator", limit=5)
         assert isinstance(results, list)
 
     def test_list_objects_incidents(self, client, monkeypatch):
-        inc = {"id": "inc-1", "name": "incident-1",
-               "properties": {"title": "Phishing Alert", "severity": "High",
-                              "status": "New", "createdTimeUtc": "2024-01-01T00:00:00Z"}}
+        inc = {
+            "id": "inc-1",
+            "name": "incident-1",
+            "properties": {
+                "title": "Phishing Alert",
+                "severity": "High",
+                "status": "New",
+                "createdTimeUtc": "2024-01-01T00:00:00Z",
+            },
+        }
         monkeypatch.setattr(client._incidents, "list_incidents", MagicMock(return_value=[inc]))
         results = client.list_objects("observed-data", limit=5)
         assert isinstance(results, list)
 
     def test_upsert_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client._ti, "create_indicator",
-                            MagicMock(return_value={"id": "ind-new", "name": "indicator-new"}))
-        result = client.upsert_object("indicator",
-                                       {"type": "indicator", "id": "indicator--1",
-                                        "name": "Bad IP",
-                                        "pattern": "[ipv4-addr:value = '1.2.3.4']",
-                                        "pattern_type": "stix",
-                                        "valid_from": "2024-01-01T00:00:00Z"})
+        monkeypatch.setattr(
+            client._ti,
+            "create_indicator",
+            MagicMock(return_value={"id": "ind-new", "name": "indicator-new"}),
+        )
+        result = client.upsert_object(
+            "indicator",
+            {
+                "type": "indicator",
+                "id": "indicator--1",
+                "name": "Bad IP",
+                "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                "pattern_type": "stix",
+                "valid_from": "2024-01-01T00:00:00Z",
+            },
+        )
         assert isinstance(result, dict)
 
     def test_upsert_incident_raises(self, client):
@@ -1946,9 +2319,14 @@ class TestSentinelConnector:
             client.upsert_object("observed-data", {})
 
     def test_from_stix(self, client):
-        stix = {"type": "indicator", "id": "indicator--1", "name": "Test",
-                "pattern": "[ipv4-addr:value = '1.2.3.4']",
-                "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--1",
+            "name": "Test",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "pattern_type": "stix",
+            "valid_from": "2024-01-01T00:00:00Z",
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
 
@@ -1960,31 +2338,43 @@ class TestWazuhConnector:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.wazuh.connector import WazuhConnector
+
         return WazuhConnector(host="wazuh.example.com", username="wazuh", password="pass")
 
     def test_authenticate_sets_flag(self, client, monkeypatch):
-        monkeypatch.setattr(client._wazuh.auth, "get_auth_headers",
-                            MagicMock(return_value={"Authorization": "Bearer jwt"}))
+        monkeypatch.setattr(
+            client._wazuh.auth,
+            "get_auth_headers",
+            MagicMock(return_value={"Authorization": "Bearer jwt"}),
+        )
         client.authenticate()
         assert client._authenticated is True
 
     def test_health_check(self, client, monkeypatch):
-        monkeypatch.setattr(client._wazuh, "get",
-                            MagicMock(return_value={"data": {"affected_items": []}}))
+        monkeypatch.setattr(
+            client._wazuh, "get", MagicMock(return_value={"data": {"affected_items": []}})
+        )
         assert client.health_check() is True
 
     def test_list_objects_alerts(self, client, monkeypatch):
-        alert = {"id": "1680100001.12345",
-                 "rule": {"id": "100001", "level": 5, "description": "Suspicious login"},
-                 "agent": {"id": "001", "name": "host1"},
-                 "timestamp": "2024-01-01T00:00:00+0000"}
+        alert = {
+            "id": "1680100001.12345",
+            "rule": {"id": "100001", "level": 5, "description": "Suspicious login"},
+            "agent": {"id": "001", "name": "host1"},
+            "timestamp": "2024-01-01T00:00:00+0000",
+        }
         monkeypatch.setattr(client._alert_cmds, "get_alerts", MagicMock(return_value=[alert]))
         results = client.list_objects("observed-data", limit=5)
         assert isinstance(results, list)
 
     def test_list_objects_agents(self, client, monkeypatch):
-        agent = {"id": "001", "name": "host1", "ip": "10.0.0.1",
-                 "status": "active", "os": {"name": "Ubuntu"}}
+        agent = {
+            "id": "001",
+            "name": "host1",
+            "ip": "10.0.0.1",
+            "status": "active",
+            "os": {"name": "Ubuntu"},
+        }
         monkeypatch.setattr(client._agent_cmds, "list_agents", MagicMock(return_value=[agent]))
         results = client.list_objects("identity", limit=5)
         assert isinstance(results, list)
@@ -2003,10 +2393,15 @@ class TestWazuhConnector:
 
     def test_from_stix_returns_xml(self, client):
         # WazuhConnector.from_stix() converts a STIX indicator to a Wazuh rule XML string
-        stix = {"type": "indicator", "id": "indicator--1", "name": "Test",
-                "pattern": "[ipv4-addr:value = '1.2.3.4']",
-                "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z",
-                "indicator_types": ["malicious-activity"]}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--1",
+            "name": "Test",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "pattern_type": "stix",
+            "valid_from": "2024-01-01T00:00:00Z",
+            "indicator_types": ["malicious-activity"],
+        }
         result = client.from_stix(stix)
         assert isinstance(result, str)
 
@@ -2018,6 +2413,7 @@ class TestOpenCTIClient:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.opencti.client import OpenCTIClient
+
         return OpenCTIClient(host="opencti.example.com", api_key="opencti-key")
 
     def test_auth_header_set(self, client):
@@ -2029,34 +2425,48 @@ class TestOpenCTIClient:
         assert client.health_check() is True
 
     def test_list_objects(self, client, monkeypatch):
-        ind = {"id": "ind-1", "name": "Bad IP",
-               "pattern": "[ipv4-addr:value = '1.2.3.4']",
-               "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z",
-               "entity_type": "Indicator"}
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"data": {"indicators": {"edges": [{"node": ind}]}}}))
+        ind = {
+            "id": "ind-1",
+            "name": "Bad IP",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "pattern_type": "stix",
+            "valid_from": "2024-01-01T00:00:00Z",
+            "entity_type": "Indicator",
+        }
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"data": {"indicators": {"edges": [{"node": ind}]}}}),
+        )
         results = client.list_objects("indicator", page_size=5)
         assert isinstance(results, list)
 
     def test_to_stix_indicator(self, client):
-        raw = {"id": "ind-1", "name": "Bad IP",
-               "pattern": "[ipv4-addr:value = '1.2.3.4']",
-               "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z",
-               "entity_type": "Indicator"}
+        raw = {
+            "id": "ind-1",
+            "name": "Bad IP",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "pattern_type": "stix",
+            "valid_from": "2024-01-01T00:00:00Z",
+            "entity_type": "Indicator",
+        }
         stix = client.to_stix(raw)
         assert stix.get("type") in ("indicator", "bundle")
 
     def test_to_stix_malware(self, client):
-        raw = {"id": "mal-1", "name": "Ransomware X",
-               "entity_type": "Malware",
-               "is_family": False}
+        raw = {"id": "mal-1", "name": "Ransomware X", "entity_type": "Malware", "is_family": False}
         stix = client.to_stix(raw)
         assert stix.get("type") in ("malware", "bundle", "indicator")
 
     def test_from_stix(self, client):
-        stix = {"type": "indicator", "id": "indicator--1", "name": "Test",
-                "pattern": "[ipv4-addr:value = '1.2.3.4']",
-                "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--1",
+            "name": "Test",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "pattern_type": "stix",
+            "valid_from": "2024-01-01T00:00:00Z",
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
 
@@ -2065,8 +2475,8 @@ class TestOpenCTIClient:
 # Incident Linking: XSOAR link_incident
 # ===========================================================================
 
-class TestXSOARIncidentLinking:
 
+class TestXSOARIncidentLinking:
     @pytest.fixture
     def client(self):
         return _authenticated(XSOARClient, api_key="xsoar-key")
@@ -2112,27 +2522,31 @@ class TestXSOARIncidentLinking:
 # Incident Linking: ServiceNow annotate_incident
 # ===========================================================================
 
-class TestServiceNowClient:
 
+class TestServiceNowClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.servicenow.client import ServiceNowClient
-        c = ServiceNowClient(host="https://dev12345.service-now.com",
-                             username="admin", password="pass")
+
+        c = ServiceNowClient(
+            host="https://dev12345.service-now.com", username="admin", password="pass"
+        )
         c._authenticated = True
         return c
 
     def test_authenticate_sets_basic_header(self):
         from gnat.connectors.servicenow.client import ServiceNowClient
-        c = ServiceNowClient(host="https://dev12345.service-now.com",
-                             username="user", password="secret")
+
+        c = ServiceNowClient(
+            host="https://dev12345.service-now.com", username="user", password="secret"
+        )
         c.authenticate()
         assert c._auth_headers["Authorization"].startswith("Basic ")
 
     def test_authenticate_sets_bearer_when_api_key(self):
         from gnat.connectors.servicenow.client import ServiceNowClient
-        c = ServiceNowClient(host="https://dev12345.service-now.com",
-                             api_key="tok123")
+
+        c = ServiceNowClient(host="https://dev12345.service-now.com", api_key="tok123")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer tok123"
 
@@ -2141,20 +2555,17 @@ class TestServiceNowClient:
         assert client.health_check() is True
 
     def test_health_check_failure_raises(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            MagicMock(side_effect=GNATClientError("unreachable")))
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=GNATClientError("unreachable")))
         with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_get_object_returns_result(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            MagicMock(return_value={"result": {"sys_id": "abc123"}}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"result": {"sys_id": "abc123"}}))
         result = client.get_object("observed-data", "abc123")
         assert result["sys_id"] == "abc123"
 
     def test_list_objects_returns_list(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            MagicMock(return_value={"result": [{"sys_id": "r1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"result": [{"sys_id": "r1"}]}))
         results = client.list_objects("observed-data")
         assert isinstance(results, list)
         assert results[0]["sys_id"] == "r1"
@@ -2167,8 +2578,7 @@ class TestServiceNowClient:
         assert kwargs["params"]["sysparm_query"] == "state=1^priority=1"
 
     def test_upsert_object_creates_new(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            MagicMock(return_value={"result": {"sys_id": "new-1"}}))
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"result": {"sys_id": "new-1"}}))
         result = client.upsert_object("observed-data", {"name": "Ransomware event"})
         assert result.get("sys_id") == "new-1"
 
@@ -2181,12 +2591,12 @@ class TestServiceNowClient:
 
     def test_to_stix_contract(self, client):
         native = {
-            "sys_id":            "abc123",
+            "sys_id": "abc123",
             "short_description": "Ransomware detected",
-            "description":       "Details here",
-            "opened_at":         "2026-01-01T00:00:00Z",
-            "state":             "1",
-            "priority":          "1",
+            "description": "Details here",
+            "opened_at": "2026-01-01T00:00:00Z",
+            "state": "1",
+            "priority": "1",
         }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
@@ -2194,8 +2604,12 @@ class TestServiceNowClient:
         assert stix["x_sn_sys_id"] == "abc123"
 
     def test_from_stix_returns_sn_payload(self, client):
-        stix = {"type": "indicator", "id": "indicator--x", "name": "bad.exe",
-                "description": "Malicious binary"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--x",
+            "name": "bad.exe",
+            "description": "Malicious binary",
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
         assert "short_description" in result
@@ -2204,8 +2618,7 @@ class TestServiceNowClient:
     def test_annotate_incident_calls_put(self, client, monkeypatch):
         mock_put = MagicMock(return_value={"result": {"sys_id": "inc-1"}})
         monkeypatch.setattr(client, "put", mock_put)
-        stix = {"type": "indicator", "id": "indicator--abc",
-                "name": "10.0.0.1"}
+        stix = {"type": "indicator", "id": "indicator--abc", "name": "10.0.0.1"}
         result = client.annotate_incident("inc-1", stix)
         assert result.get("sys_id") == "inc-1"
         mock_put.assert_called_once()
@@ -2233,21 +2646,23 @@ class TestServiceNowClient:
 # Incident Linking: GreyMatter link_investigation
 # ===========================================================================
 
-class TestGreyMatterIncidentLinking:
 
+class TestGreyMatterIncidentLinking:
     @pytest.fixture
     def client(self):
-        c = GreyMatterClient(host="https://fake.example.com",
-                             client_id="cid", client_secret="sec")
+        c = GreyMatterClient(host="https://fake.example.com", client_id="cid", client_secret="sec")
         c._authenticated = True
         return c
 
     def test_link_investigation_calls_correct_endpoint(self, client, monkeypatch):
         mock_post = MagicMock(return_value={"id": "obs-link-1"})
         monkeypatch.setattr(client, "post", mock_post)
-        stix = {"type": "indicator", "id": "indicator--aaa",
-                "name": "1.2.3.4",
-                "pattern": "[ipv4-addr:value = '1.2.3.4']"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--aaa",
+            "name": "1.2.3.4",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+        }
         result = client.link_investigation("case-99", stix)
         assert result == {"id": "obs-link-1"}
         url_called = mock_post.call_args[0][0]
@@ -2262,9 +2677,12 @@ class TestGreyMatterIncidentLinking:
             return {}
 
         monkeypatch.setattr(client, "post", fake_post)
-        stix = {"type": "indicator", "id": "indicator--bbb",
-                "name": "evil.com",
-                "pattern": "[domain-name:value = 'evil.com']"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--bbb",
+            "name": "evil.com",
+            "pattern": "[domain-name:value = 'evil.com']",
+        }
         client.link_investigation("case-01", stix)
         assert captured.get("type") == "domain"
         assert captured.get("value") == "evil.com"
@@ -2278,9 +2696,7 @@ class TestGreyMatterIncidentLinking:
             return {}
 
         monkeypatch.setattr(client, "post", fake_post)
-        stix = {"type": "indicator", "id": "indicator--ccc",
-                "name": "sha256hash",
-                "pattern": ""}
+        stix = {"type": "indicator", "id": "indicator--ccc", "name": "sha256hash", "pattern": ""}
         client.link_investigation("case-02", stix)
         assert captured.get("value") == "sha256hash"
 
@@ -2297,25 +2713,28 @@ class TestGreyMatterIncidentLinking:
 # Jira
 # ===========================================================================
 
-class TestJiraClient:
 
+class TestJiraClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.jira.client import JiraClient
-        c = JiraClient(host="https://fake.atlassian.net",
-                       email="user@example.com", api_token="tok")
+
+        c = JiraClient(host="https://fake.atlassian.net", email="user@example.com", api_token="tok")
         c._authenticated = True
         return c
 
     def test_authenticate_basic_sets_header(self):
         from gnat.connectors.jira.client import JiraClient
-        c = JiraClient(host="https://fake.atlassian.net",
-                       email="u@example.com", api_token="mytoken")
+
+        c = JiraClient(
+            host="https://fake.atlassian.net", email="u@example.com", api_token="mytoken"
+        )
         c.authenticate()
         assert c._auth_headers["Authorization"].startswith("Basic ")
 
     def test_authenticate_bearer_when_api_key(self):
         from gnat.connectors.jira.client import JiraClient
+
         c = JiraClient(host="https://jira.corp.example.com", api_key="bearer-tok")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer bearer-tok"
@@ -2325,15 +2744,14 @@ class TestJiraClient:
         assert client.health_check() is True
 
     def test_health_check_failure_raises(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            MagicMock(side_effect=GNATClientError("down")))
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=GNATClientError("down")))
         with pytest.raises(GNATClientError):
             client.health_check()
 
     def test_get_object_returns_issue(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            MagicMock(return_value={"id": "10001", "key": "PROJ-1",
-                                                    "fields": {}}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "10001", "key": "PROJ-1", "fields": {}})
+        )
         result = client.get_object("note", "PROJ-1")
         assert result["key"] == "PROJ-1"
 
@@ -2354,11 +2772,10 @@ class TestJiraClient:
         assert "order by created" in kwargs["json"]["jql"].lower()
 
     def test_upsert_creates_new(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            MagicMock(return_value={"id": "10002", "key": "SEC-5"}))
-        result = client.upsert_object("note",
-                                      {"name": "ThreatActor campaign",
-                                       "description": "APT28 activity"})
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "10002", "key": "SEC-5"}))
+        result = client.upsert_object(
+            "note", {"name": "ThreatActor campaign", "description": "APT28 activity"}
+        )
         assert result.get("key") == "SEC-5"
 
     def test_upsert_updates_existing(self, client, monkeypatch):
@@ -2370,17 +2787,18 @@ class TestJiraClient:
 
     def test_to_stix_note_contract(self, client):
         native = {
-            "id": "10001", "key": "SEC-1",
+            "id": "10001",
+            "key": "SEC-1",
             "fields": {
-                "summary":   "Malware IOC",
+                "summary": "Malware IOC",
                 "issuetype": {"name": "Task"},
-                "created":   "2026-01-01T00:00:00Z",
-                "updated":   "2026-01-01T00:00:00Z",
-                "status":    {"name": "Open"},
-                "priority":  {"name": "High"},
-                "labels":    ["threat-intel"],
-                "assignee":  {"displayName": "Alice"},
-            }
+                "created": "2026-01-01T00:00:00Z",
+                "updated": "2026-01-01T00:00:00Z",
+                "status": {"name": "Open"},
+                "priority": {"name": "High"},
+                "labels": ["threat-intel"],
+                "assignee": {"displayName": "Alice"},
+            },
         }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
@@ -2390,12 +2808,13 @@ class TestJiraClient:
 
     def test_to_stix_course_of_action_for_action_type(self, client):
         native = {
-            "id": "10002", "key": "SEC-2",
+            "id": "10002",
+            "key": "SEC-2",
             "fields": {
-                "summary":   "Patch KB12345",
+                "summary": "Patch KB12345",
                 "issuetype": {"name": "Action Item"},
-                "created":   "2026-01-01T00:00:00Z",
-            }
+                "created": "2026-01-01T00:00:00Z",
+            },
         }
         stix = client.to_stix(native)
         assert stix["type"] == "course-of-action"
@@ -2442,11 +2861,12 @@ class TestJiraClient:
 # ThreatConnectClient
 # ---------------------------------------------------------------------------
 
-class TestThreatConnectClient:
 
+class TestThreatConnectClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.threatconnect.client import ThreatConnectClient
+
         return ThreatConnectClient(
             host="https://app.threatconnect.com",
             api_key="tc-token-abc",
@@ -2459,6 +2879,7 @@ class TestThreatConnectClient:
 
     def test_authenticate_hmac_mode(self):
         from gnat.connectors.threatconnect.client import ThreatConnectClient
+
         c = ThreatConnectClient(
             host="https://app.threatconnect.com",
             access_id="aid",
@@ -2490,9 +2911,11 @@ class TestThreatConnectClient:
 
     def test_upsert_creates(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["path"] = path
             return {"data": {"id": 99}}
+
         monkeypatch.setattr(client, "post", fake_post)
         result = client.upsert_object("indicator", {"summary": "evil.com", "type": "Host"})
         assert "/indicators" in captured["path"]
@@ -2500,17 +2923,25 @@ class TestThreatConnectClient:
 
     def test_upsert_updates_when_id_present(self, client, monkeypatch):
         captured = {}
+
         def fake_put(path, **kw):
             captured["path"] = path
             return {"data": {"id": 42}}
+
         monkeypatch.setattr(client, "put", fake_put)
         result = client.upsert_object("indicator", {"id": 42, "summary": "evil.com"})
         assert "42" in captured["path"]
 
     def test_to_stix_address(self, client):
-        native = {"id": 1, "summary": "1.2.3.4", "type": "Address",
-                  "dateAdded": "2026-01-01", "lastModified": "2026-01-02",
-                  "confidence": 75, "ownerName": "Org"}
+        native = {
+            "id": 1,
+            "summary": "1.2.3.4",
+            "type": "Address",
+            "dateAdded": "2026-01-01",
+            "lastModified": "2026-01-02",
+            "confidence": 75,
+            "ownerName": "Org",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "ipv4-addr" in stix["pattern"]
@@ -2530,10 +2961,13 @@ class TestThreatConnectClient:
 
     def test_hmac_signature_length(self, client):
         from gnat.connectors.threatconnect.client import ThreatConnectClient
-        c = ThreatConnectClient(host="https://app.threatconnect.com",
-                                access_id="a", secret_key="s", auth_type="hmac")
+
+        c = ThreatConnectClient(
+            host="https://app.threatconnect.com", access_id="a", secret_key="s", auth_type="hmac"
+        )
         sig = c._compute_hmac("/api/v3/indicators", "GET", "1234567890")
         import base64
+
         # base64-encoded 32-byte SHA256 = 44 chars
         assert len(base64.b64decode(sig + "==")) == 32
 
@@ -2542,11 +2976,12 @@ class TestThreatConnectClient:
 # MandiantClient
 # ---------------------------------------------------------------------------
 
-class TestMandiantClient:
 
+class TestMandiantClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.mandiant.client import MandiantClient
+
         return MandiantClient(
             host="https://api.intelligence.mandiant.com",
             api_key="key123",
@@ -2554,13 +2989,13 @@ class TestMandiantClient:
         )
 
     def test_authenticate_sets_bearer(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"access_token": "tok_abc"})
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"access_token": "tok_abc"})
         client.authenticate()
         assert client._auth_headers["Authorization"] == "Bearer tok_abc"
 
     def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
+
         monkeypatch.setattr(client, "post", lambda path, **kw: {})
         with pytest.raises(GNATClientError, match="Mandiant"):
             client.authenticate()
@@ -2570,25 +3005,30 @@ class TestMandiantClient:
         assert client.health_check() is True
 
     def test_list_objects_indicators(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"indicator": [{"value": "1.2.3.4"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"indicator": [{"value": "1.2.3.4"}]})
         results = client.list_objects("indicator")
         assert len(results) == 1
 
     def test_list_objects_actors(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"actor": [{"name": "APT1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"actor": [{"name": "APT1"}]})
         results = client.list_objects("threat-actor")
         assert results[0]["name"] == "APT1"
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {"value": "1.2.3.4"})
 
     def test_to_stix_indicator(self, client):
-        native = {"id": "i1", "value": "1.2.3.4", "type": "ipv4",
-                  "mscore": 80, "first_seen": "2026-01-01", "last_seen": "2026-02-01"}
+        native = {
+            "id": "i1",
+            "value": "1.2.3.4",
+            "type": "ipv4",
+            "mscore": 80,
+            "first_seen": "2026-01-01",
+            "last_seen": "2026-02-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "ipv4-addr" in stix["pattern"]
@@ -2596,16 +3036,26 @@ class TestMandiantClient:
         assert stix["x_source_platform"] == "mandiant"
 
     def test_to_stix_actor(self, client):
-        native = {"type": "Actor", "id": "a1", "name": "APT28",
-                  "description": "Russian APT", "aliases": [{"name": "Fancy Bear"}]}
+        native = {
+            "type": "Actor",
+            "id": "a1",
+            "name": "APT28",
+            "description": "Russian APT",
+            "aliases": [{"name": "Fancy Bear"}],
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "threat-actor"
         assert stix["name"] == "APT28"
         assert "Fancy Bear" in stix["aliases"]
 
     def test_to_stix_malware(self, client):
-        native = {"type": "Malware", "id": "m1", "name": "WannaCry",
-                  "description": "Ransomware", "aliases": []}
+        native = {
+            "type": "Malware",
+            "id": "m1",
+            "name": "WannaCry",
+            "description": "Ransomware",
+            "aliases": [],
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "malware"
         assert stix["is_family"] is True
@@ -2621,11 +3071,12 @@ class TestMandiantClient:
 # DefenderTIClient
 # ---------------------------------------------------------------------------
 
-class TestDefenderTIClient:
 
+class TestDefenderTIClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.defenderti.client import DefenderTIClient
+
         return DefenderTIClient(
             host="https://graph.microsoft.com",
             tenant_id="tenant-123",
@@ -2635,7 +3086,9 @@ class TestDefenderTIClient:
 
     def test_authenticate_sets_bearer(self, client, monkeypatch):
         import json as _json
+
         import urllib3 as _u3
+
         fake_response = MagicMock()
         fake_response.data = _json.dumps({"access_token": "az_tok"}).encode()
         fake_pool = MagicMock()
@@ -2646,8 +3099,11 @@ class TestDefenderTIClient:
 
     def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
         import json as _json
+
         import urllib3 as _u3
+
         from gnat.clients.base import GNATClientError
+
         fake_response = MagicMock()
         fake_response.data = _json.dumps({}).encode()
         fake_pool = MagicMock()
@@ -2661,47 +3117,65 @@ class TestDefenderTIClient:
         assert client.health_check() is True
 
     def test_list_objects(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"value": [{"id": "ti-1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"value": [{"id": "ti-1"}]})
         results = client.list_objects("indicator")
         assert results[0]["id"] == "ti-1"
 
     def test_upsert_creates(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["json"] = kw.get("json", {})
             return {"id": "new-ti"}
+
         monkeypatch.setattr(client, "post", fake_post)
         result = client.upsert_object("indicator", {"networkIPv4": "1.2.3.4"})
         assert result["id"] == "new-ti"
 
     def test_upsert_patches_when_id_present(self, client, monkeypatch):
         captured = {}
+
         def fake_patch(path, **kw):
             captured["path"] = path
             return {"id": "ti-42"}
+
         monkeypatch.setattr(client, "patch", fake_patch)
         client.upsert_object("indicator", {"id": "ti-42", "networkIPv4": "1.2.3.4"})
         assert "ti-42" in captured["path"]
 
     def test_to_stix_ipv4(self, client):
-        native = {"id": "ti-1", "networkIPv4": "1.2.3.4", "confidence": 70,
-                  "threatType": "Malware", "action": "alert",
-                  "createdDateTime": "2026-01-01", "lastReportedDateTime": "2026-02-01"}
+        native = {
+            "id": "ti-1",
+            "networkIPv4": "1.2.3.4",
+            "confidence": 70,
+            "threatType": "Malware",
+            "action": "alert",
+            "createdDateTime": "2026-01-01",
+            "lastReportedDateTime": "2026-02-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "1.2.3.4" in stix["pattern"]
         assert stix["x_source_platform"] == "defenderti"
 
     def test_to_stix_domain(self, client):
-        native = {"id": "ti-2", "domainName": "evil.com", "confidence": 90,
-                  "threatType": "C2", "createdDateTime": "2026-01-01"}
+        native = {
+            "id": "ti-2",
+            "domainName": "evil.com",
+            "confidence": 90,
+            "threatType": "C2",
+            "createdDateTime": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert "domain-name" in stix["pattern"]
 
     def test_from_stix_ipv4(self, client):
-        stix = {"pattern": "[ipv4-addr:value = '10.0.0.1']", "name": "10.0.0.1",
-                "confidence": 60, "description": "bad IP"}
+        stix = {
+            "pattern": "[ipv4-addr:value = '10.0.0.1']",
+            "name": "10.0.0.1",
+            "confidence": 60,
+            "description": "bad IP",
+        }
         payload = client.from_stix(stix)
         assert payload["networkIPv4"] == "10.0.0.1"
         assert payload["action"] == "alert"
@@ -2718,11 +3192,12 @@ class TestDefenderTIClient:
 # TheHiveClient
 # ---------------------------------------------------------------------------
 
-class TestTheHiveClient:
 
+class TestTheHiveClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.thehive.client import TheHiveClient
+
         return TheHiveClient(host="https://thehive.example.com", api_key="hive-key-123")
 
     def test_authenticate_sets_bearer(self, client):
@@ -2731,6 +3206,7 @@ class TestTheHiveClient:
 
     def test_authenticate_sets_org_header(self):
         from gnat.connectors.thehive.client import TheHiveClient
+
         c = TheHiveClient(host="https://thehive.example.com", api_key="k", org="CorpA")
         c.authenticate()
         assert c._auth_headers["X-Organisation"] == "CorpA"
@@ -2740,15 +3216,13 @@ class TestTheHiveClient:
         assert client.health_check() is True
 
     def test_list_objects_returns_list(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: [{"_id": "c1", "title": "Test"}])
+        monkeypatch.setattr(client, "post", lambda path, **kw: [{"_id": "c1", "title": "Test"}])
         results = client.list_objects("case")
         assert len(results) == 1
         assert results[0]["_id"] == "c1"
 
     def test_list_objects_with_dict_response(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"items": [{"_id": "a1"}]})
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"items": [{"_id": "a1"}]})
         results = client.list_objects("alert")
         assert results[0]["_id"] == "a1"
 
@@ -2759,9 +3233,11 @@ class TestTheHiveClient:
 
     def test_upsert_creates(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["path"] = path
             return {"_id": "new"}
+
         monkeypatch.setattr(client, "post", fake_post)
         result = client.upsert_object("case", {"title": "New Case"})
         assert "/case" in captured["path"]
@@ -2769,53 +3245,79 @@ class TestTheHiveClient:
 
     def test_upsert_patches_when_id_present(self, client, monkeypatch):
         captured = {}
+
         def fake_patch(path, **kw):
             captured["path"] = path
             return {"_id": "existing"}
+
         monkeypatch.setattr(client, "patch", fake_patch)
         client.upsert_object("case", {"id": "existing", "title": "Updated"})
         assert "existing" in captured["path"]
 
     def test_add_observable_calls_post(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["path"] = path
             captured["json"] = kw.get("json", {})
             return {}
+
         monkeypatch.setattr(client, "post", fake_post)
-        stix = {"type": "indicator", "pattern": "[ipv4-addr:value = '1.2.3.4']",
-                "name": "1.2.3.4"}
+        stix = {"type": "indicator", "pattern": "[ipv4-addr:value = '1.2.3.4']", "name": "1.2.3.4"}
         client.add_observable("case-99", stix)
         assert "case-99" in captured["path"]
         assert captured["json"]["dataType"] == "ip"
         assert captured["json"]["data"] == "1.2.3.4"
 
     def test_to_stix_case(self, client):
-        native = {"_type": "case", "_id": "c1", "title": "Phishing",
-                  "description": "Phishing attack", "_createdAt": "2026-01-01",
-                  "_updatedAt": "2026-01-02", "severity": 3, "status": "Open",
-                  "tags": ["phishing"]}
+        native = {
+            "_type": "case",
+            "_id": "c1",
+            "title": "Phishing",
+            "description": "Phishing attack",
+            "_createdAt": "2026-01-01",
+            "_updatedAt": "2026-01-02",
+            "severity": 3,
+            "status": "Open",
+            "tags": ["phishing"],
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "observed-data"
         assert stix["name"] == "Phishing"
         assert stix["x_source_platform"] == "thehive"
 
     def test_to_stix_alert(self, client):
-        native = {"_type": "alert", "_id": "a1", "title": "Malware Alert",
-                  "sourceRef": "malware.com", "_createdAt": "2026-01-01",
-                  "severity": 2, "type": "external"}
+        native = {
+            "_type": "alert",
+            "_id": "a1",
+            "title": "Malware Alert",
+            "sourceRef": "malware.com",
+            "_createdAt": "2026-01-01",
+            "severity": 2,
+            "type": "external",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
 
     def test_to_stix_observable_domain(self, client):
-        native = {"_id": "o1", "dataType": "domain", "data": "evil.com",
-                  "_createdAt": "2026-01-01", "ioc": True, "tags": []}
+        native = {
+            "_id": "o1",
+            "dataType": "domain",
+            "data": "evil.com",
+            "_createdAt": "2026-01-01",
+            "ioc": True,
+            "tags": [],
+        }
         stix = client.to_stix(native)
         assert "domain-name" in stix["pattern"]
 
     def test_from_stix_builds_case_payload(self, client):
-        stix = {"type": "indicator", "name": "Suspicious IP",
-                "description": "IP seen in attacks", "confidence": 75}
+        stix = {
+            "type": "indicator",
+            "name": "Suspicious IP",
+            "description": "IP seen in attacks",
+            "confidence": 75,
+        }
         payload = client.from_stix(stix)
         assert payload["title"] == "Suspicious IP"
         assert "severity" in payload
@@ -2825,11 +3327,12 @@ class TestTheHiveClient:
 # ThreatStreamClient
 # ---------------------------------------------------------------------------
 
-class TestThreatStreamClient:
 
+class TestThreatStreamClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.threatstream.client import ThreatStreamClient
+
         return ThreatStreamClient(
             host="https://api.threatstream.com",
             username="analyst@example.com",
@@ -2842,8 +3345,7 @@ class TestThreatStreamClient:
         assert client._ts_auth["api_key"] == "ts-key-xyz"
 
     def test_health_check_success(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"objects": [], "meta": {}})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"objects": [], "meta": {}})
         assert client.health_check() is True
 
     def test_health_check_failure(self, client, monkeypatch):
@@ -2851,49 +3353,61 @@ class TestThreatStreamClient:
         assert client.health_check() is False
 
     def test_list_objects_returns_objects(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"objects": [{"id": 1, "type": "ip"}]})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"objects": [{"id": 1, "type": "ip"}]}
+        )
         results = client.list_objects("indicator")
         assert len(results) == 1
         assert results[0]["id"] == 1
 
     def test_list_objects_with_filters(self, client, monkeypatch):
         captured = {}
+
         def fake_get(path, **kw):
             captured["params"] = kw.get("params", {})
             return {"objects": []}
+
         monkeypatch.setattr(client, "get", fake_get)
         client.list_objects("indicator", filters={"status": "active", "confidence__gte": 70})
         assert captured["params"]["status"] == "active"
 
     def test_get_object(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"id": 42, "type": "domain"})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"id": 42, "type": "domain"})
         obj = client.get_object("indicator", "42")
         assert obj["id"] == 42
 
     def test_upsert_creates(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["json"] = kw.get("json", {})
             return {}
+
         monkeypatch.setattr(client, "post", fake_post)
         client.upsert_object("indicator", {"value": "1.2.3.4", "type": "ip"})
         assert "objects" in captured["json"]
 
     def test_upsert_patches_when_id_present(self, client, monkeypatch):
         captured = {}
+
         def fake_patch(path, **kw):
             captured["path"] = path
             return {}
+
         monkeypatch.setattr(client, "patch", fake_patch)
         client.upsert_object("indicator", {"id": 77, "value": "evil.com"})
         assert "77" in captured["path"]
 
     def test_to_stix_ip(self, client):
-        native = {"id": 1, "type": "ip", "value": "1.2.3.4",
-                  "confidence": 85, "status": "active",
-                  "created_ts": "2026-01-01", "modified_ts": "2026-01-02"}
+        native = {
+            "id": 1,
+            "type": "ip",
+            "value": "1.2.3.4",
+            "confidence": 85,
+            "status": "active",
+            "created_ts": "2026-01-01",
+            "modified_ts": "2026-01-02",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "ipv4-addr" in stix["pattern"]
@@ -2906,8 +3420,7 @@ class TestThreatStreamClient:
         assert "domain-name" in stix["pattern"]
 
     def test_from_stix_returns_payload(self, client):
-        stix = {"pattern": "[domain-name:value = 'evil.com']",
-                "name": "evil.com", "confidence": 80}
+        stix = {"pattern": "[domain-name:value = 'evil.com']", "name": "evil.com", "confidence": 80}
         payload = client.from_stix(stix)
         assert payload["value"] == "evil.com"
         assert payload["type"] == "domain"
@@ -2918,11 +3431,12 @@ class TestThreatStreamClient:
 # SOCRadarClient
 # ---------------------------------------------------------------------------
 
-class TestSOCRadarClient:
 
+class TestSOCRadarClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.socradar.client import SOCRadarClient
+
         return SOCRadarClient(host="https://platform.socradar.com", api_key="sr-key")
 
     def test_authenticate_sets_header(self, client):
@@ -2934,15 +3448,15 @@ class TestSOCRadarClient:
         assert client.health_check() is True
 
     def test_list_objects_returns_data(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"data": [{"id": 1, "value": "1.2.3.4"}]})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"data": [{"id": 1, "value": "1.2.3.4"}]}
+        )
         results = client.list_objects("indicator")
         assert len(results) == 1
         assert results[0]["value"] == "1.2.3.4"
 
     def test_list_objects_results_key(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"results": [{"id": 2}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"results": [{"id": 2}]})
         results = client.list_objects("indicator")
         assert results[0]["id"] == 2
 
@@ -2953,12 +3467,18 @@ class TestSOCRadarClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {"value": "1.2.3.4"})
 
     def test_to_stix_ip(self, client):
-        native = {"id": 1, "ioc_type": "ip", "value": "1.2.3.4",
-                  "severity": "high", "created_at": "2026-01-01"}
+        native = {
+            "id": 1,
+            "ioc_type": "ip",
+            "value": "1.2.3.4",
+            "severity": "high",
+            "created_at": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "ipv4-addr" in stix["pattern"]
@@ -2966,14 +3486,24 @@ class TestSOCRadarClient:
         assert stix["x_source_platform"] == "socradar"
 
     def test_to_stix_actor(self, client):
-        native = {"type": "threat_actor", "id": 5, "name": "Cobalt Group",
-                  "description": "FIN group", "created_at": "2026-01-01"}
+        native = {
+            "type": "threat_actor",
+            "id": 5,
+            "name": "Cobalt Group",
+            "description": "FIN group",
+            "created_at": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "threat-actor"
 
     def test_to_stix_malware(self, client):
-        native = {"type": "malware", "id": 6, "name": "BlackCat",
-                  "description": "Ransomware", "created_at": "2026-01-01"}
+        native = {
+            "type": "malware",
+            "id": 6,
+            "name": "BlackCat",
+            "description": "Ransomware",
+            "created_at": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "malware"
         assert stix["is_family"] is True
@@ -2989,11 +3519,12 @@ class TestSOCRadarClient:
 # PulseDiveClient
 # ---------------------------------------------------------------------------
 
-class TestPulseDiveClient:
 
+class TestPulseDiveClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.pulsedive.client import PulseDiveClient
+
         return PulseDiveClient(host="https://pulsedive.com", api_key="pd-key")
 
     def test_authenticate_is_noop(self, client):
@@ -3008,8 +3539,9 @@ class TestPulseDiveClient:
         assert client.health_check() is True
 
     def test_list_objects_indicators(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"results": [{"iid": 1, "indicator": "1.2.3.4"}]})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"results": [{"iid": 1, "indicator": "1.2.3.4"}]}
+        )
         results = client.list_objects("indicator")
         assert results[0]["iid"] == 1
 
@@ -3019,31 +3551,43 @@ class TestPulseDiveClient:
         assert obj["iid"] == 7
 
     def test_enrich(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"iid": 9, "indicator": "evil.com"})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"iid": 9, "indicator": "evil.com"})
         result = client.enrich("evil.com")
         assert result["indicator"] == "evil.com"
 
     def test_upsert_posts(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["json"] = kw.get("json", {})
             return {}
+
         monkeypatch.setattr(client, "post", fake_post)
         client.upsert_object("indicator", {"value": "evil.com", "type": "domain"})
         assert captured["json"]["indicator"] == "evil.com"
 
     def test_to_stix_domain(self, client):
-        native = {"iid": 1, "type": "domain", "indicator": "evil.com",
-                  "risk": "high", "stamp_added": "2026-01-01", "threats": []}
+        native = {
+            "iid": 1,
+            "type": "domain",
+            "indicator": "evil.com",
+            "risk": "high",
+            "stamp_added": "2026-01-01",
+            "threats": [],
+        }
         stix = client.to_stix(native)
         assert "domain-name" in stix["pattern"]
         assert stix["confidence"] == 75
         assert stix["x_source_platform"] == "pulsedive"
 
     def test_to_stix_threat(self, client):
-        native = {"type": "threat", "tid": 2, "name": "Lazarus",
-                  "risk": "critical", "stamp_added": "2026-01-01"}
+        native = {
+            "type": "threat",
+            "tid": 2,
+            "name": "Lazarus",
+            "risk": "critical",
+            "stamp_added": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "threat-actor"
 
@@ -3058,11 +3602,12 @@ class TestPulseDiveClient:
 # FlareClient
 # ---------------------------------------------------------------------------
 
-class TestFlareClient:
 
+class TestFlareClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.flare.client import FlareClient
+
         return FlareClient(host="https://api.flare.io", api_key="flare-key")
 
     def test_authenticate_sets_bearer(self, client):
@@ -3074,14 +3619,12 @@ class TestFlareClient:
         assert client.health_check() is True
 
     def test_list_objects_items(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"items": [{"id": "f1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"items": [{"id": "f1"}]})
         results = client.list_objects("indicator")
         assert results[0]["id"] == "f1"
 
     def test_list_objects_hits(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"hits": [{"id": "f2"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"hits": [{"id": "f2"}]})
         results = client.list_objects("observed-data")
         assert results[0]["id"] == "f2"
 
@@ -3092,32 +3635,42 @@ class TestFlareClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("indicator", {})
 
     def test_search_leaks(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"items": [{"id": "lk1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"items": [{"id": "lk1"}]})
         results = client.search_leaks("victim@example.com")
         assert results[0]["id"] == "lk1"
 
     def test_to_stix_credential_leak(self, client):
-        native = {"id": "f1", "type": "credential", "email": "user@example.com",
-                  "severity": "high", "created_at": "2026-01-01", "source": "darkweb"}
+        native = {
+            "id": "f1",
+            "type": "credential",
+            "email": "user@example.com",
+            "severity": "high",
+            "created_at": "2026-01-01",
+            "source": "darkweb",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "email" in stix["pattern"]
         assert stix["x_source_platform"] == "flare"
 
     def test_to_stix_actor(self, client):
-        native = {"type": "actor", "id": "a1", "name": "DarkTeam",
-                  "description": "Dark web actor", "created_at": "2026-01-01"}
+        native = {
+            "type": "actor",
+            "id": "a1",
+            "name": "DarkTeam",
+            "description": "Dark web actor",
+            "created_at": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "threat-actor"
 
     def test_from_stix(self, client):
-        stix = {"pattern": "[domain-name:value = 'leak.example.com']",
-                "name": "leak.example.com"}
+        stix = {"pattern": "[domain-name:value = 'leak.example.com']", "name": "leak.example.com"}
         payload = client.from_stix(stix)
         assert payload["query"] == "leak.example.com"
 
@@ -3126,11 +3679,12 @@ class TestFlareClient:
 # StellarCyberClient
 # ---------------------------------------------------------------------------
 
-class TestStellarCyberClient:
 
+class TestStellarCyberClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.stellarcyber.client import StellarCyberClient
+
         return StellarCyberClient(
             host="https://tenant.stellarcyber.ai",
             username="admin",
@@ -3138,13 +3692,13 @@ class TestStellarCyberClient:
         )
 
     def test_authenticate_sets_bearer(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"access_token": "jwt_tok"})
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"access_token": "jwt_tok"})
         client.authenticate()
         assert client._auth_headers["Authorization"] == "Bearer jwt_tok"
 
     def test_authenticate_raises_on_missing_token(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
+
         monkeypatch.setattr(client, "post", lambda path, **kw: {})
         with pytest.raises(GNATClientError, match="StellarCyber"):
             client.authenticate()
@@ -3154,38 +3708,48 @@ class TestStellarCyberClient:
         assert client.health_check() is True
 
     def test_list_objects_alerts(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"data": [{"_id": "a1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": [{"_id": "a1"}]})
         results = client.list_objects("observed-data")
         assert results[0]["_id"] == "a1"
 
     def test_list_objects_ti(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"hits": [{"id": "ti1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"hits": [{"id": "ti1"}]})
         results = client.list_objects("indicator")
         assert results[0]["id"] == "ti1"
 
     def test_upsert_creates(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["path"] = path
             return {"id": "new"}
+
         monkeypatch.setattr(client, "post", fake_post)
         result = client.upsert_object("indicator", {"indicator_value": "1.2.3.4"})
         assert "threat_intel" in captured["path"]
 
     def test_to_stix_alert(self, client):
-        native = {"_id": "a1", "alert_name": "Lateral Movement",
-                  "srcip": "10.0.0.5", "dstip": "192.168.1.1",
-                  "severity": 4, "timestamp": "2026-01-01", "msg": "SMB sweep"}
+        native = {
+            "_id": "a1",
+            "alert_name": "Lateral Movement",
+            "srcip": "10.0.0.5",
+            "dstip": "192.168.1.1",
+            "severity": 4,
+            "timestamp": "2026-01-01",
+            "msg": "SMB sweep",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "observed-data"
         assert "10.0.0.5" in stix["pattern"]
         assert stix["x_source_platform"] == "stellarcyber"
 
     def test_to_stix_ti_indicator(self, client):
-        native = {"id": "ti1", "indicator_type": "domain",
-                  "indicator_value": "evil.com", "confidence": 80}
+        native = {
+            "id": "ti1",
+            "indicator_type": "domain",
+            "indicator_value": "evil.com",
+            "confidence": 80,
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "domain-name" in stix["pattern"]
@@ -3201,11 +3765,12 @@ class TestStellarCyberClient:
 # YetiClient
 # ---------------------------------------------------------------------------
 
-class TestYetiClient:
 
+class TestYetiClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.yeti.client import YetiClient
+
         return YetiClient(host="https://yeti.example.com", api_key="yeti-key")
 
     def test_authenticate_sets_header(self, client):
@@ -3217,55 +3782,69 @@ class TestYetiClient:
         assert client.health_check() is True
 
     def test_list_objects_observables(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"observables": [{"id": "o1"}]})
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"observables": [{"id": "o1"}]})
         results = client.list_objects("indicator")
         assert results[0]["id"] == "o1"
 
     def test_list_objects_entities(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"entities": [{"id": "e1"}]})
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"entities": [{"id": "e1"}]})
         results = client.list_objects("threat-actor")
         assert results[0]["id"] == "e1"
 
     def test_upsert_creates(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["path"] = path
             return {"id": "new"}
+
         monkeypatch.setattr(client, "post", fake_post)
         result = client.upsert_object("indicator", {"value": "evil.com", "type": "hostname"})
         assert "observables" in captured["path"]
 
     def test_upsert_updates_when_id(self, client, monkeypatch):
         captured = {}
+
         def fake_put(path, **kw):
             captured["path"] = path
             return {}
+
         monkeypatch.setattr(client, "put", fake_put)
         client.upsert_object("indicator", {"id": "obs-42", "value": "evil.com"})
         assert "obs-42" in captured["path"]
 
     def test_add_tag(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["json"] = kw.get("json", {})
             return {}
+
         monkeypatch.setattr(client, "post", fake_post)
         client.add_tag("o1", "indicator", "malware")
         assert "malware" in captured["json"]["tags"]
 
     def test_to_stix_observable(self, client):
-        native = {"id": "o1", "type": "ip", "value": "1.2.3.4",
-                  "created": "2026-01-01", "tags": [{"name": "apt"}]}
+        native = {
+            "id": "o1",
+            "type": "ip",
+            "value": "1.2.3.4",
+            "created": "2026-01-01",
+            "tags": [{"name": "apt"}],
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "ipv4-addr" in stix["pattern"]
         assert stix["x_source_platform"] == "yeti"
 
     def test_to_stix_actor(self, client):
-        native = {"type": "ThreatActor", "id": "ta1", "name": "APT29",
-                  "description": "Russian APT", "aliases": ["Cozy Bear"]}
+        native = {
+            "type": "ThreatActor",
+            "id": "ta1",
+            "name": "APT29",
+            "description": "Russian APT",
+            "aliases": ["Cozy Bear"],
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "threat-actor"
 
@@ -3286,11 +3865,12 @@ class TestYetiClient:
 # CloudSEKClient
 # ---------------------------------------------------------------------------
 
-class TestCloudSEKClient:
 
+class TestCloudSEKClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.cloudsek.client import CloudSEKClient
+
         return CloudSEKClient(host="https://api.cloudsek.com", api_key="cs-key")
 
     def test_authenticate_sets_bearer(self, client):
@@ -3299,6 +3879,7 @@ class TestCloudSEKClient:
 
     def test_authenticate_sets_org_header(self):
         from gnat.connectors.cloudsek.client import CloudSEKClient
+
         c = CloudSEKClient(host="https://api.cloudsek.com", api_key="k", org_id="org-1")
         c.authenticate()
         assert c._auth_headers["X-Org-Id"] == "org-1"
@@ -3308,37 +3889,43 @@ class TestCloudSEKClient:
         assert client.health_check() is True
 
     def test_list_objects_returns_data(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"data": [{"id": "cs1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": [{"id": "cs1"}]})
         results = client.list_objects("observed-data")
         assert results[0]["id"] == "cs1"
 
     def test_get_object_unwraps_data(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"data": {"id": "cs42"}})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": {"id": "cs42"}})
         obj = client.get_object("observed-data", "cs42")
         assert obj["id"] == "cs42"
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="read-only"):
             client.upsert_object("observed-data", {})
 
     def test_update_alert_status(self, client, monkeypatch):
         captured = {}
+
         def fake_patch(path, **kw):
             captured["path"] = path
             captured["json"] = kw.get("json", {})
             return {}
+
         monkeypatch.setattr(client, "patch", fake_patch)
         client.update_alert_status("a1", "resolved", "reviewed by analyst")
         assert "a1" in captured["path"]
         assert captured["json"]["status"] == "resolved"
 
     def test_to_stix_credential_alert(self, client):
-        native = {"id": "cs1", "category": "credential_leak",
-                  "email": "user@corp.com", "severity": "high",
-                  "created_at": "2026-01-01", "title": "Leaked credential"}
+        native = {
+            "id": "cs1",
+            "category": "credential_leak",
+            "email": "user@corp.com",
+            "severity": "high",
+            "created_at": "2026-01-01",
+            "title": "Leaked credential",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "email" in stix["pattern"]
@@ -3346,21 +3933,32 @@ class TestCloudSEKClient:
         assert stix["x_source_platform"] == "cloudsek"
 
     def test_to_stix_brand_abuse(self, client):
-        native = {"id": "cs2", "category": "brand_abuse",
-                  "domain": "corp-phishing.com", "severity": "critical",
-                  "created_at": "2026-01-01"}
+        native = {
+            "id": "cs2",
+            "category": "brand_abuse",
+            "domain": "corp-phishing.com",
+            "severity": "critical",
+            "created_at": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert "domain-name" in stix["pattern"]
 
     def test_to_stix_actor(self, client):
-        native = {"category": "threat_actor", "id": "ta1", "name": "DarkGroup",
-                  "description": "APT group", "created_at": "2026-01-01"}
+        native = {
+            "category": "threat_actor",
+            "id": "ta1",
+            "name": "DarkGroup",
+            "description": "APT group",
+            "created_at": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "threat-actor"
 
     def test_from_stix(self, client):
-        stix = {"pattern": "[email-message:from_ref.value = 'evil@bad.com']",
-                "name": "evil@bad.com"}
+        stix = {
+            "pattern": "[email-message:from_ref.value = 'evil@bad.com']",
+            "name": "evil@bad.com",
+        }
         payload = client.from_stix(stix)
         assert payload["keyword"] == "evil@bad.com"
         assert payload["category"] == "credential_leak"
@@ -3370,11 +3968,12 @@ class TestCloudSEKClient:
 # ArmisClient
 # ---------------------------------------------------------------------------
 
-class TestArmisClient:
 
+class TestArmisClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.armis.client import ArmisClient
+
         return ArmisClient(host="https://fake.armis.com", api_key="armis-key")
 
     def test_authenticate_sets_header(self, client):
@@ -3392,12 +3991,15 @@ class TestArmisClient:
         assert isinstance(result, dict)
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", lambda path, **kw: {"id": "c1", "cve_id": "CVE-2024-1234"})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"id": "c1", "cve_id": "CVE-2024-1234"}
+        )
         result = client.get_object("vulnerability", "c1")
         assert isinstance(result, dict)
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
@@ -3414,11 +4016,13 @@ class TestArmisClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("report", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("report", "x")
 
@@ -3430,8 +4034,13 @@ class TestArmisClient:
         assert "--" in stix["id"]
 
     def test_to_stix_vulnerability(self, client):
-        native = {"id": "v1", "cve_id": "CVE-2024-0001", "title": "Buffer Overflow",
-                  "severity": "critical", "vulnerability": True}
+        native = {
+            "id": "v1",
+            "cve_id": "CVE-2024-0001",
+            "title": "Buffer Overflow",
+            "severity": "critical",
+            "vulnerability": True,
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
@@ -3457,11 +4066,12 @@ class TestArmisClient:
 # AxoniusClient
 # ---------------------------------------------------------------------------
 
-class TestAxoniusClient:
 
+class TestAxoniusClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.axonius.client import AxoniusClient
+
         return AxoniusClient(host="https://fake.axonius.com", api_key="axkey", api_secret="axsec")
 
     def test_authenticate_sets_header(self, client):
@@ -3486,6 +4096,7 @@ class TestAxoniusClient:
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
@@ -3502,23 +4113,34 @@ class TestAxoniusClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("report", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("report", "x")
 
     def test_to_stix_asset(self, client):
-        native = {"id": "a1", "name": "webserver", "hostname": "web01", "ip_addresses": ["10.0.0.1"]}
+        native = {
+            "id": "a1",
+            "name": "webserver",
+            "hostname": "web01",
+            "ip_addresses": ["10.0.0.1"],
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
 
     def test_to_stix_vulnerability(self, client):
-        native = {"id": "v1", "title": "CVE Vuln", "severity": "high",
-                  "vulnerabilities": [{"cve_id": "CVE-2024-1234"}]}
+        native = {
+            "id": "v1",
+            "title": "CVE Vuln",
+            "severity": "high",
+            "vulnerabilities": [{"cve_id": "CVE-2024-1234"}],
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
@@ -3544,11 +4166,12 @@ class TestAxoniusClient:
 # ChatGPTClient
 # ---------------------------------------------------------------------------
 
-class TestChatGPTClient:
 
+class TestChatGPTClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.chatgpt.client import ChatGPTClient
+
         return ChatGPTClient(host="https://api.openai.com", api_key="openai-key")
 
     def test_authenticate_sets_bearer(self, client):
@@ -3562,34 +4185,40 @@ class TestChatGPTClient:
 
     def test_get_object_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("report", "id-1")
 
     def test_get_object_unsupported_type_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "id-1")
 
     def test_list_objects_returns_models(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"data": [{"id": "gpt-4.1"}, {"id": "gpt-4o"}]})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"data": [{"id": "gpt-4.1"}, {"id": "gpt-4o"}]}
+        )
         result = client.list_objects("report")
         assert isinstance(result, list)
         assert result[0]["id"] == "gpt-4.1"
 
     def test_list_objects_unsupported_raises(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
+
         monkeypatch.setattr(client, "get", lambda path, **kw: {"data": []})
         with pytest.raises(GNATClientError):
             client.list_objects("indicator")
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("report", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("report", "x")
 
@@ -3597,7 +4226,12 @@ class TestChatGPTClient:
         fake_resp = {
             "id": "chatcmpl-1",
             "model": "gpt-4.1",
-            "choices": [{"message": {"role": "assistant", "content": "Test response"}, "finish_reason": "stop"}],
+            "choices": [
+                {
+                    "message": {"role": "assistant", "content": "Test response"},
+                    "finish_reason": "stop",
+                }
+            ],
             "usage": {},
         }
         monkeypatch.setattr(client, "post", lambda path, **kw: fake_resp)
@@ -3608,7 +4242,12 @@ class TestChatGPTClient:
         native = {
             "id": "chatcmpl-1",
             "model": "gpt-4.1",
-            "choices": [{"message": {"role": "assistant", "content": "Threat analysis"}, "finish_reason": "stop"}],
+            "choices": [
+                {
+                    "message": {"role": "assistant", "content": "Threat analysis"},
+                    "finish_reason": "stop",
+                }
+            ],
             "usage": {"total_tokens": 100},
         }
         stix = client.to_stix(native)
@@ -3634,12 +4273,15 @@ class TestChatGPTClient:
 # CopilotClient
 # ---------------------------------------------------------------------------
 
-class TestCopilotClient:
 
+class TestCopilotClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.copilot.client import CopilotClient
-        return CopilotClient(host="https://fake-copilot.example.com", auth_type="api_key", api_key="cop-key")
+
+        return CopilotClient(
+            host="https://fake-copilot.example.com", auth_type="api_key", api_key="cop-key"
+        )
 
     def test_authenticate_api_key(self, client):
         client.authenticate()
@@ -3647,19 +4289,24 @@ class TestCopilotClient:
 
     def test_authenticate_azure(self):
         from gnat.connectors.copilot.client import CopilotClient
-        c = CopilotClient(host="https://fake.example.com", auth_type="azure", azure_token="az-token")
+
+        c = CopilotClient(
+            host="https://fake.example.com", auth_type="azure", azure_token="az-token"
+        )
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer az-token"
 
     def test_authenticate_none(self):
         from gnat.connectors.copilot.client import CopilotClient
+
         c = CopilotClient(host="https://fake.example.com", auth_type="none")
         c.authenticate()
         assert "Authorization" not in c._auth_headers
 
     def test_authenticate_unknown_raises(self):
-        from gnat.connectors.copilot.client import CopilotClient
         from gnat.clients.base import GNATClientError
+        from gnat.connectors.copilot.client import CopilotClient
+
         c = CopilotClient(host="https://fake.example.com", auth_type="bogus")
         with pytest.raises(GNATClientError):
             c.authenticate()
@@ -3670,28 +4317,31 @@ class TestCopilotClient:
 
     def test_get_object_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("report", "x")
 
     def test_list_objects_returns_models(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"data": [{"id": "copilot-latest"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": [{"id": "copilot-latest"}]})
         result = client.list_objects("report")
         assert isinstance(result, list)
         assert result[0]["id"] == "copilot-latest"
 
     def test_list_objects_unsupported_raises(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.list_objects("indicator")
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("report", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("report", "x")
 
@@ -3726,12 +4376,15 @@ class TestCopilotClient:
 # CortexXpanseClient
 # ---------------------------------------------------------------------------
 
-class TestCortexXpanseClient:
 
+class TestCortexXpanseClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.cortex_xpanse.client import CortexXpanseClient
-        return CortexXpanseClient(host="https://fake.xpanse.com", api_key="xp-key", api_key_id="xp-id")
+
+        return CortexXpanseClient(
+            host="https://fake.xpanse.com", api_key="xp-key", api_key_id="xp-id"
+        )
 
     def test_authenticate_sets_headers(self, client):
         client.authenticate()
@@ -3754,6 +4407,7 @@ class TestCortexXpanseClient:
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
@@ -3769,17 +4423,18 @@ class TestCortexXpanseClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("report", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("report", "x")
 
     def test_to_stix_exposure(self, client):
-        native = {"id": "e1", "title": "Open RDP", "severity": "high",
-                  "exposure": True, "risk": 80}
+        native = {"id": "e1", "title": "Open RDP", "severity": "high", "exposure": True, "risk": 80}
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
@@ -3806,11 +4461,12 @@ class TestCortexXpanseClient:
 # CyCognitoClient
 # ---------------------------------------------------------------------------
 
-class TestCyCognitoClient:
 
+class TestCyCognitoClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.cycognito.client import CyCognitoClient
+
         return CyCognitoClient(host="https://fake.cycognito.com", api_key="cyc-key")
 
     def test_authenticate_sets_bearer(self, client):
@@ -3833,6 +4489,7 @@ class TestCyCognitoClient:
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
@@ -3849,17 +4506,24 @@ class TestCyCognitoClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("vulnerability", "x")
 
     def test_to_stix_issue(self, client):
-        native = {"id": "i1", "title": "Exposed RDP", "severity": "critical",
-                  "description": "RDP port open", "status": "open"}
+        native = {
+            "id": "i1",
+            "title": "Exposed RDP",
+            "severity": "critical",
+            "description": "RDP port open",
+            "status": "open",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
@@ -3890,11 +4554,12 @@ class TestCyCognitoClient:
 # CybleVisionClient
 # ---------------------------------------------------------------------------
 
-class TestCybleVisionClient:
 
+class TestCybleVisionClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.cyble_vision.client import CybleVisionClient
+
         return CybleVisionClient(host="https://fake.cyble.ai", api_token="cyble-token")
 
     def test_authenticate_sets_bearer(self, client):
@@ -3906,7 +4571,9 @@ class TestCybleVisionClient:
         assert client.health_check() is True
 
     def test_get_object_alert(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", lambda path, **kw: {"id": "ev1", "title": "Dark web alert"})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"id": "ev1", "title": "Dark web alert"}
+        )
         result = client.get_object("report", "ev1")
         assert isinstance(result, dict)
 
@@ -3917,11 +4584,16 @@ class TestCybleVisionClient:
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("vulnerability", "x")
 
     def test_list_objects_indicators(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": [{"ioc_value": "evil.com", "type": "domain"}]})
+        monkeypatch.setattr(
+            client,
+            "get",
+            lambda path, **kw: {"data": [{"ioc_value": "evil.com", "type": "domain"}]},
+        )
         result = client.list_objects("indicator")
         assert isinstance(result, list)
 
@@ -3932,17 +4604,23 @@ class TestCybleVisionClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("indicator", "x")
 
     def test_to_stix_ioc_domain(self, client):
-        native = {"ioc_value": "evil.com", "type": "domain", "confidence": 80,
-                  "first_seen": "2026-01-01T00:00:00Z"}
+        native = {
+            "ioc_value": "evil.com",
+            "type": "domain",
+            "confidence": 80,
+            "first_seen": "2026-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "domain-name" in stix["pattern"]
@@ -3955,14 +4633,20 @@ class TestCybleVisionClient:
         assert "ipv4-addr" in stix["pattern"]
 
     def test_to_stix_alert(self, client):
-        native = {"id": "ev1", "title": "Dark web mention", "event_type": "darkweb_mention",
-                  "priority": "high", "date": "2026-01-01T00:00:00Z"}
+        native = {
+            "id": "ev1",
+            "title": "Dark web mention",
+            "event_type": "darkweb_mention",
+            "priority": "high",
+            "date": "2026-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
 
     def test_from_stix_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.from_stix({"id": "indicator--abc"})
 
@@ -3981,11 +4665,12 @@ class TestCybleVisionClient:
 # GeminiClient
 # ---------------------------------------------------------------------------
 
-class TestGeminiClient:
 
+class TestGeminiClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.gemini.client import GeminiClient
+
         return GeminiClient(host="https://generativelanguage.googleapis.com", api_key="gemini-key")
 
     def test_authenticate_sets_header(self, client):
@@ -3999,48 +4684,46 @@ class TestGeminiClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("report", {})
 
     def test_to_stix_valid_json(self, client):
         import json
-        inner = {"type": "report", "id": "report--abc123", "spec_version": "2.1",
-                 "name": "Test", "created": "2026-01-01T00:00:00Z", "modified": "2026-01-01T00:00:00Z"}
-        native = {
-            "candidates": [{"content": {"parts": [{"text": json.dumps(inner)}]}}]
+
+        inner = {
+            "type": "report",
+            "id": "report--abc123",
+            "spec_version": "2.1",
+            "name": "Test",
+            "created": "2026-01-01T00:00:00Z",
+            "modified": "2026-01-01T00:00:00Z",
         }
+        native = {"candidates": [{"content": {"parts": [{"text": json.dumps(inner)}]}}]}
         stix = client.to_stix(native)
         assert stix["type"] == "report"
 
     def test_to_stix_fallback_on_invalid_json(self, client):
-        native = {
-            "candidates": [{"content": {"parts": [{"text": "This is plain text analysis"}]}}]
-        }
+        native = {"candidates": [{"content": {"parts": [{"text": "This is plain text analysis"}]}}]}
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "id" in stix
 
     def test_research_to_stix(self, client, monkeypatch):
-        fake_resp = {
-            "candidates": [{"content": {"parts": [{"text": "Plain text analysis"}]}}]
-        }
+        fake_resp = {"candidates": [{"content": {"parts": [{"text": "Plain text analysis"}]}}]}
         monkeypatch.setattr(client, "post", lambda path, **kw: fake_resp)
         stix = client.research_to_stix("APT29 malware")
         assert stix["type"] == "report"
 
     def test_to_stix_id_has_dashes(self, client):
-        native = {
-            "candidates": [{"content": {"parts": [{"text": "analysis"}]}}]
-        }
+        native = {"candidates": [{"content": {"parts": [{"text": "analysis"}]}}]}
         stix = client.to_stix(native)
         assert "--" in stix["id"]
 
     def test_to_stix_empty_candidates(self, client):
         # Empty candidates list causes IndexError in the connector;
         # test that a non-empty candidates with empty parts falls back gracefully
-        native = {
-            "candidates": [{"content": {"parts": [{"text": ""}]}}]
-        }
+        native = {"candidates": [{"content": {"parts": [{"text": ""}]}}]}
         stix = client.to_stix(native)
         assert stix["type"] == "report"
 
@@ -4053,33 +4736,43 @@ class TestGeminiClient:
 # GreenboneClient
 # ---------------------------------------------------------------------------
 
-class TestGreenboneClient:
 
+class TestGreenboneClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.greenbone.client import GreenboneClient
+
         return GreenboneClient(host="localhost", port=9390, username="admin", password="pass")
 
     def test_authenticate_raises_without_gvm(self, client, monkeypatch):
         import gnat.connectors.greenbone.client as mod
+
         monkeypatch.setattr(mod, "_HAS_GVM", False)
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError, match="python-gvm"):
             client.authenticate()
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("vulnerability", "x")
 
     def test_to_stix_result(self, client):
-        native = {"id": "r1", "name": "SSH Weak Password", "severity": "high",
-                  "description": "Weak credentials", "host": "10.0.0.1"}
+        native = {
+            "id": "r1",
+            "name": "SSH Weak Password",
+            "severity": "high",
+            "description": "Weak credentials",
+            "host": "10.0.0.1",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
@@ -4116,11 +4809,12 @@ class TestGreenboneClient:
 # GrokClient
 # ---------------------------------------------------------------------------
 
-class TestGrokClient:
 
+class TestGrokClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.grok.client import GrokClient
+
         return GrokClient(host="https://api.x.ai", api_key="grok-key")
 
     def test_authenticate_sets_bearer(self, client):
@@ -4133,33 +4827,37 @@ class TestGrokClient:
 
     def test_get_object_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("report", "x")
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
     def test_list_objects_models(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"data": [{"id": "grok-4-0709"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"data": [{"id": "grok-4-0709"}]})
         result = client.list_objects("report")
         assert isinstance(result, list)
         assert result[0]["id"] == "grok-4-0709"
 
     def test_list_objects_unsupported_raises(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.list_objects("indicator")
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("report", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("report", "x")
 
@@ -4203,12 +4901,15 @@ class TestGrokClient:
 # GroupIBClient
 # ---------------------------------------------------------------------------
 
-class TestGroupIBClient:
 
+class TestGroupIBClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.group_ib.client import GroupIBClient
-        return GroupIBClient(host="https://fake.group-ib.com/api/v2/", username="user", token="token")
+
+        return GroupIBClient(
+            host="https://fake.group-ib.com/api/v2/", username="user", token="token"
+        )
 
     def test_authenticate_sets_header(self, client):
         client._basic_auth = lambda u, p: "Basic fake-token"
@@ -4231,17 +4932,23 @@ class TestGroupIBClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("indicator", "x")
 
     def test_to_stix_compromised(self, client):
-        native = {"id": "c1", "email": "user@corp.com", "login": "user@corp.com",
-                  "source": "darkweb"}
+        native = {
+            "id": "c1",
+            "email": "user@corp.com",
+            "login": "user@corp.com",
+            "source": "darkweb",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "--" in stix["id"]
@@ -4252,8 +4959,13 @@ class TestGroupIBClient:
         assert stix["type"] == "indicator"
 
     def test_to_stix_event(self, client):
-        native = {"id": "ev1", "title": "Ransomware Campaign", "severity": "high",
-                  "date": "2026-01-01", "collection": "attacks"}
+        native = {
+            "id": "ev1",
+            "title": "Ransomware Campaign",
+            "severity": "high",
+            "date": "2026-01-01",
+            "collection": "attacks",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
@@ -4279,12 +4991,15 @@ class TestGroupIBClient:
 # TenableOneClient
 # ---------------------------------------------------------------------------
 
-class TestTenableOneClient:
 
+class TestTenableOneClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.tenable_one.client import TenableOneClient
-        return TenableOneClient(host="https://cloud.tenable.com", access_key="acc-key", secret_key="sec-key")
+
+        return TenableOneClient(
+            host="https://cloud.tenable.com", access_key="acc-key", secret_key="sec-key"
+        )
 
     def test_authenticate_sets_apikeys_header(self, client):
         client.authenticate()
@@ -4307,42 +5022,58 @@ class TestTenableOneClient:
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
     def test_list_objects_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"vulnerabilities": [{"id": "v1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"vulnerabilities": [{"id": "v1"}]})
         result = client.list_objects("vulnerability")
         assert isinstance(result, list)
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("vulnerability", "x")
 
     def test_to_stix_vulnerability(self, client):
-        native = {"id": "v1", "plugin_id": "12345", "name": "OpenSSL Vuln",
-                  "severity": "critical", "risk": {"cvss": 9.8}}
+        native = {
+            "id": "v1",
+            "plugin_id": "12345",
+            "name": "OpenSSL Vuln",
+            "severity": "critical",
+            "risk": {"cvss": 9.8},
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
 
     def test_to_stix_exposure_card(self, client):
-        native = {"id": "card1", "title": "Unpatched Servers", "type": "cyber-exposure-score",
-                  "cyber_exposure_score": 750}
+        native = {
+            "id": "card1",
+            "title": "Unpatched Servers",
+            "type": "cyber-exposure-score",
+            "cyber_exposure_score": 750,
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
 
     def test_to_stix_attack_path(self, client):
-        native = {"id": "path1", "name": "Admin compromise", "technique": "T1078",
-                  "priority_rating": "high", "attack_path": True}
+        native = {
+            "id": "path1",
+            "name": "Admin compromise",
+            "technique": "T1078",
+            "priority_rating": "high",
+            "attack_path": True,
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
 
@@ -4352,14 +5083,12 @@ class TestTenableOneClient:
         assert isinstance(payload, dict)
 
     def test_fetch_attack_paths(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"attack_paths": [{"id": "p1"}]})
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"attack_paths": [{"id": "p1"}]})
         result = client.fetch_attack_paths(limit=5)
         assert isinstance(result, list)
 
     def test_fetch_exposure_cards(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"cards": [{"id": "c1"}]})
+        monkeypatch.setattr(client, "get", lambda path, **kw: {"cards": [{"id": "c1"}]})
         result = client.fetch_exposure_cards(limit=5)
         assert isinstance(result, list)
 
@@ -4368,12 +5097,15 @@ class TestTenableOneClient:
 # WizClient
 # ---------------------------------------------------------------------------
 
-class TestWizClient:
 
+class TestWizClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.wiz.client import WizClient
-        return WizClient(host="https://api.us1.app.wiz.io", client_id="wiz-id", client_secret="wiz-sec")
+
+        return WizClient(
+            host="https://api.us1.app.wiz.io", client_id="wiz-id", client_secret="wiz-sec"
+        )
 
     def test_authenticate_sets_bearer(self, client, monkeypatch):
         fake_token_resp = {"access_token": "tok-abc123"}
@@ -4383,13 +5115,17 @@ class TestWizClient:
 
     def test_authenticate_raises_on_bad_response(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
+
         monkeypatch.setattr(client, "post", lambda path, **kw: {"error": "invalid_client"})
         with pytest.raises(GNATClientError):
             client.authenticate()
 
     def test_health_check(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"data": {"__schema": {"queryType": {"name": "Query"}}}})
+        monkeypatch.setattr(
+            client,
+            "post",
+            lambda path, **kw: {"data": {"__schema": {"queryType": {"name": "Query"}}}},
+        )
         assert client.health_check() is True
 
     def test_list_objects_vulnerabilities(self, client, monkeypatch):
@@ -4407,46 +5143,59 @@ class TestWizClient:
 
     def test_get_object_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("vulnerability", "v1")
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("vulnerability", "x")
 
     def test_to_stix_vulnerability(self, client):
-        native = {"id": "v1", "name": "CVE-2024-1234",
-                  "cve": {"id": "CVE-2024-1234"},
-                  "severity": "CRITICAL",
-                  "status": "OPEN"}
+        native = {
+            "id": "v1",
+            "name": "CVE-2024-1234",
+            "cve": {"id": "CVE-2024-1234"},
+            "severity": "CRITICAL",
+            "status": "OPEN",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
 
     def test_to_stix_issue(self, client):
-        native = {"id": "i1", "title": "Toxic Combination",
-                  "severity": "HIGH", "status": "OPEN",
-                  "type": "TOXIC_COMBINATION",
-                  "createdAt": "2026-01-01T00:00:00Z"}
+        native = {
+            "id": "i1",
+            "title": "Toxic Combination",
+            "severity": "HIGH",
+            "status": "OPEN",
+            "type": "TOXIC_COMBINATION",
+            "createdAt": "2026-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
 
     def test_from_stix_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.from_stix({"id": "vulnerability--abc"})
 
     def test_graphql_query_raises_on_errors(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"errors": [{"message": "Not authorized"}]})
+
+        monkeypatch.setattr(
+            client, "post", lambda path, **kw: {"errors": [{"message": "Not authorized"}]}
+        )
         with pytest.raises(GNATClientError):
             client._graphql_query("query { test }")
 
@@ -4455,11 +5204,12 @@ class TestWizClient:
 # ZeroFoxClient
 # ---------------------------------------------------------------------------
 
-class TestZeroFoxClient:
 
+class TestZeroFoxClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.zerofox.client import ZeroFoxClient
+
         return ZeroFoxClient(host="https://api.zerofox.com", token="zf-token")
 
     def test_authenticate_sets_bearer(self, client):
@@ -4482,6 +5232,7 @@ class TestZeroFoxClient:
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("vulnerability", "x")
 
@@ -4497,33 +5248,42 @@ class TestZeroFoxClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("indicator", "x")
 
     def test_to_stix_alert(self, client):
-        native = {"id": "a1", "title": "Brand Impersonation",
-                  "type": "impersonation", "severity": "high",
-                  "created_at": "2026-01-01T00:00:00Z"}
+        native = {
+            "id": "a1",
+            "title": "Brand Impersonation",
+            "type": "impersonation",
+            "severity": "high",
+            "created_at": "2026-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
 
     def test_to_stix_threat_url(self, client):
-        native = {"id": "t1", "name": "Phishing URL", "url": "http://evil.com/phish",
-                  "type": "phishing"}
+        native = {
+            "id": "t1",
+            "name": "Phishing URL",
+            "url": "http://evil.com/phish",
+            "type": "phishing",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "--" in stix["id"]
         assert "url:value" in stix["pattern"]
 
     def test_to_stix_threat_hash(self, client):
-        native = {"id": "t2", "name": "Malware Hash", "hash": "abc123def",
-                  "type": "malware"}
+        native = {"id": "t2", "name": "Malware Hash", "hash": "abc123def", "type": "malware"}
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
         assert "SHA-256" in stix["pattern"]
@@ -4548,11 +5308,12 @@ class TestZeroFoxClient:
 # OrcaClient
 # ---------------------------------------------------------------------------
 
-class TestOrcaClient:
 
+class TestOrcaClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.orca.client import OrcaClient
+
         return OrcaClient(host="https://api.orcasecurity.io", api_token="orca-token")
 
     def test_authenticate_sets_bearer(self, client):
@@ -4575,6 +5336,7 @@ class TestOrcaClient:
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
@@ -4591,25 +5353,37 @@ class TestOrcaClient:
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("vulnerability", "x")
 
     def test_to_stix_finding(self, client):
-        native = {"id": "f1", "title": "S3 Bucket Public",
-                  "severity": "high", "risk": 85,
-                  "cloud_provider": "AWS", "resource_type": "s3"}
+        native = {
+            "id": "f1",
+            "title": "S3 Bucket Public",
+            "severity": "high",
+            "risk": 85,
+            "cloud_provider": "AWS",
+            "resource_type": "s3",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
 
     def test_to_stix_asset(self, client):
-        native = {"id": "a1", "name": "web-server", "type": "ec2",
-                  "cloud_provider": "AWS", "region": "us-east-1"}
+        native = {
+            "id": "a1",
+            "name": "web-server",
+            "type": "ec2",
+            "cloud_provider": "AWS",
+            "region": "us-east-1",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
@@ -4634,12 +5408,15 @@ class TestOrcaClient:
 # QualysVMDRClient
 # ---------------------------------------------------------------------------
 
-class TestQualysVMDRClient:
 
+class TestQualysVMDRClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.qualys.client import QualysVMDRClient
-        return QualysVMDRClient(host="https://qualysapi.qualys.com", username="quser", password="qpass")
+
+        return QualysVMDRClient(
+            host="https://qualysapi.qualys.com", username="quser", password="qpass"
+        )
 
     def test_authenticate_sets_header(self, client):
         client._basic_auth = lambda u, p: "Basic qualys-token"
@@ -4651,42 +5428,55 @@ class TestQualysVMDRClient:
         assert client.health_check() is True
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"VULN_LIST": {"VULN": [{"QID": "12345"}]}})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"VULN_LIST": {"VULN": [{"QID": "12345"}]}}
+        )
         result = client.get_object("vulnerability", "12345")
         assert isinstance(result, dict)
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("indicator", "x")
 
     def test_list_objects_vulnerabilities(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"VULN_LIST": {"VULN": [{"QID": "1", "TITLE": "Vuln1"}]}})
+        monkeypatch.setattr(
+            client,
+            "get",
+            lambda path, **kw: {"VULN_LIST": {"VULN": [{"QID": "1", "TITLE": "Vuln1"}]}},
+        )
         result = client.list_objects("vulnerability")
         assert isinstance(result, list)
 
     def test_list_objects_detections(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"HOST_LIST": {"HOST": [{"ID": "h1"}]}})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"HOST_LIST": {"HOST": [{"ID": "h1"}]}}
+        )
         result = client.list_objects("report")
         assert isinstance(result, list)
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("vulnerability", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("vulnerability", "x")
 
     def test_to_stix_vulnerability(self, client):
-        native = {"QID": "12345", "TITLE": "SSL Certificate Expired",
-                  "SEVERITY": "3", "CVSS": "7.5",
-                  "DESCRIPTION": "SSL cert is expired", "PATCHABLE": "1"}
+        native = {
+            "QID": "12345",
+            "TITLE": "SSL Certificate Expired",
+            "SEVERITY": "3",
+            "CVSS": "7.5",
+            "DESCRIPTION": "SSL cert is expired",
+            "PATCHABLE": "1",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "vulnerability"
         assert "--" in stix["id"]
@@ -4704,14 +5494,16 @@ class TestQualysVMDRClient:
         assert isinstance(payload, dict)
 
     def test_fetch_vulnerabilities(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"VULN_LIST": {"VULN": [{"QID": "1"}]}})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"VULN_LIST": {"VULN": [{"QID": "1"}]}}
+        )
         result = client.fetch_vulnerabilities(limit=5, severity="3")
         assert isinstance(result, list)
 
     def test_fetch_detections(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"HOST_LIST": {"HOST": [{"ID": "h1"}]}})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"HOST_LIST": {"HOST": [{"ID": "h1"}]}}
+        )
         result = client.fetch_detections(limit=5)
         assert isinstance(result, list)
 
@@ -4720,11 +5512,12 @@ class TestQualysVMDRClient:
 # SentinelOneClient
 # ---------------------------------------------------------------------------
 
-class TestSentinelOneClient:
 
+class TestSentinelOneClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.sentinelone.client import SentinelOneClient
+
         return SentinelOneClient(host="https://usea1.sentinelone.net", token="s1-token")
 
     def test_authenticate_sets_apitoken(self, client):
@@ -4736,19 +5529,22 @@ class TestSentinelOneClient:
         assert client.health_check() is True
 
     def test_get_object_threat(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"id": "t1", "threatInfo": {"sha1": "abc"}})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"id": "t1", "threatInfo": {"sha1": "abc"}}
+        )
         result = client.get_object("indicator", "t1")
         assert isinstance(result, dict)
 
     def test_get_object_report(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"id": "t1", "mitigationStatus": "mitigated"})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"id": "t1", "mitigationStatus": "mitigated"}
+        )
         result = client.get_object("report", "t1")
         assert isinstance(result, dict)
 
     def test_get_object_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.get_object("vulnerability", "x")
 
@@ -4760,16 +5556,19 @@ class TestSentinelOneClient:
 
     def test_list_objects_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.list_objects("vulnerability")
 
     def test_upsert_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.upsert_object("indicator", {})
 
     def test_delete_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.delete_object("indicator", "x")
 
@@ -4791,8 +5590,12 @@ class TestSentinelOneClient:
         assert "SHA-1" in stix["pattern"]
 
     def test_to_stix_agent(self, client):
-        native = {"id": "ag1", "computerName": "DESKTOP-01",
-                  "osName": "Windows 10", "lastSeen": "2026-01-01"}
+        native = {
+            "id": "ag1",
+            "computerName": "DESKTOP-01",
+            "osName": "Windows 10",
+            "lastSeen": "2026-01-01",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "report"
         assert "--" in stix["id"]
@@ -4803,16 +5606,19 @@ class TestSentinelOneClient:
         assert isinstance(payload, dict)
 
     def test_get_hash_reputation(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get",
-                            lambda path, **kw: {"rank": 10, "classification": "malware"})
+        monkeypatch.setattr(
+            client, "get", lambda path, **kw: {"rank": 10, "classification": "malware"}
+        )
         result = client.get_hash_reputation("aabbcc1122")
         assert isinstance(result, dict)
 
     def test_add_to_blocklist(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["json"] = kw.get("json", {})
             return {"success": True}
+
         monkeypatch.setattr(client, "post", fake_post)
         client.add_to_blocklist("aabbcc1122", "block malware")
         assert "aabbcc1122" in captured["json"]["hashes"]
@@ -4827,11 +5633,12 @@ class TestSentinelOneClient:
 # CriblClient
 # ---------------------------------------------------------------------------
 
-class TestCriblClient:
 
+class TestCriblClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.cribl.client import CriblClient
+
         return CriblClient(
             host="https://cribl.example.com",
             username="admin",
@@ -4842,6 +5649,7 @@ class TestCriblClient:
     @pytest.fixture
     def token_client(self):
         from gnat.connectors.cribl.client import CriblClient
+
         return CriblClient(
             host="https://cribl.example.com",
             token="my-api-token",
@@ -4859,6 +5667,7 @@ class TestCriblClient:
 
     def test_authenticate_failure_raises(self, client, monkeypatch):
         from gnat.connectors.cribl.exceptions import CriblAuthError
+
         monkeypatch.setattr(client, "post", lambda path, **kw: {})
         with pytest.raises(CriblAuthError):
             client.authenticate()
@@ -4880,9 +5689,11 @@ class TestCriblClient:
 
     def test_create_pipeline(self, client, monkeypatch):
         captured = {}
+
         def fake_post(path, **kw):
             captured["json"] = kw.get("json", {})
             return {"id": "p2", "conf": {}}
+
         monkeypatch.setattr(client, "post", fake_post)
         result = client.create_pipeline({"id": "p2", "conf": {}})
         assert result["id"] == "p2"
@@ -4917,6 +5728,7 @@ class TestCriblClient:
 
     def test_list_objects_unsupported_raises(self, client):
         from gnat.clients.base import GNATClientError
+
         with pytest.raises(GNATClientError):
             client.list_objects("vulnerability")
 
@@ -4927,7 +5739,12 @@ class TestCriblClient:
         assert "--" in stix["id"]
 
     def test_to_stix_event(self, client):
-        native = {"_raw": "some log line", "_time": 1700000000, "cribl_pipe": "main", "src_ip": "1.2.3.4"}
+        native = {
+            "_raw": "some log line",
+            "_time": 1700000000,
+            "cribl_pipe": "main",
+            "src_ip": "1.2.3.4",
+        }
         stix = client.to_stix(native)
         assert stix["type"] == "observed-data"
         assert "--" in stix["id"]
@@ -4949,11 +5766,12 @@ class TestCriblClient:
 # SynapseClient
 # ---------------------------------------------------------------------------
 
-class TestSynapseClient:
 
+class TestSynapseClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.synapse.client import SynapseClient
+
         return SynapseClient(
             host="https://synapse.example.com",
             username="root",
@@ -4963,6 +5781,7 @@ class TestSynapseClient:
     @pytest.fixture
     def apikey_client(self):
         from gnat.connectors.synapse.client import SynapseClient
+
         return SynapseClient(
             host="https://synapse.example.com",
             api_key="my-api-key",
@@ -4973,8 +5792,7 @@ class TestSynapseClient:
         assert apikey_client._auth_headers["Authorization"] == "Bearer my-api-key"
 
     def test_authenticate_with_credentials(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post",
-                            lambda path, **kw: {"result": {"token": "sess-token"}})
+        monkeypatch.setattr(client, "post", lambda path, **kw: {"result": {"token": "sess-token"}})
         client.authenticate()
         assert client._auth_headers["Authorization"] == "Bearer sess-token"
 
@@ -4984,7 +5802,10 @@ class TestSynapseClient:
 
     def test_storm_returns_nodes(self, client, monkeypatch):
         storm_messages = [
-            {"type": "node", "data": [["inet:ipv4", "1.2.3.4"], {"props": {}, "tags": {}, "iden": "abc"}]},
+            {
+                "type": "node",
+                "data": [["inet:ipv4", "1.2.3.4"], {"props": {}, "tags": {}, "iden": "abc"}],
+            },
         ]
         monkeypatch.setattr(client, "post", lambda path, **kw: storm_messages)
         nodes = client.storm("inet:ipv4")
@@ -4993,14 +5814,17 @@ class TestSynapseClient:
 
     def test_get_node_by_iden(self, client, monkeypatch):
         node = {"ndef": ["inet:ipv4", "1.2.3.4"], "props": {}, "tags": {}, "iden": "abc"}
+
         def fake_storm(query, opts=None):
             return [node]
+
         monkeypatch.setattr(client, "storm", fake_storm)
         result = client.get_node_by_iden("abc")
         assert result["ndef"] == ["inet:ipv4", "1.2.3.4"]
 
     def test_get_node_by_iden_not_found(self, client, monkeypatch):
         from gnat.clients.base import GNATClientError
+
         monkeypatch.setattr(client, "storm", lambda q, **kw: [])
         with pytest.raises(GNATClientError):
             client.get_node_by_iden("nonexistent")
@@ -5011,15 +5835,22 @@ class TestSynapseClient:
             {"ndef": ["inet:ipv4", "1.2.3.4"], "props": {}, "tags": {}, "iden": "n2"},
         ]
         call_count = [0]
+
         def fake_storm(query, opts=None):
             call_count[0] += 1
-            return [nodes[call_count[0]-1]] if call_count[0] <= len(nodes) else []
+            return [nodes[call_count[0] - 1]] if call_count[0] <= len(nodes) else []
+
         monkeypatch.setattr(client, "storm", fake_storm)
         result = client.list_objects("indicator", page_size=10)
         assert isinstance(result, list)
 
     def test_to_stix_ipv4(self, client):
-        node = {"ndef": ["inet:ipv4", "192.168.1.1"], "props": {}, "tags": {"tlp.red": [None, None]}, "iden": "abc123"}
+        node = {
+            "ndef": ["inet:ipv4", "192.168.1.1"],
+            "props": {},
+            "tags": {"tlp.red": [None, None]},
+            "iden": "abc123",
+        }
         stix = client.to_stix(node)
         assert stix["type"] == "ipv4-addr"
         assert stix["value"] == "192.168.1.1"
@@ -5031,7 +5862,12 @@ class TestSynapseClient:
         assert stix["value"] == "evil.com"
 
     def test_to_stix_url(self, client):
-        node = {"ndef": ["inet:url", "https://evil.com/path"], "props": {}, "tags": {}, "iden": "ghi"}
+        node = {
+            "ndef": ["inet:url", "https://evil.com/path"],
+            "props": {},
+            "tags": {},
+            "iden": "ghi",
+        }
         stix = client.to_stix(node)
         assert stix["type"] == "url"
         assert stix["value"] == "https://evil.com/path"
@@ -5041,19 +5877,29 @@ class TestSynapseClient:
             "ndef": ["file:bytes", "sha256:aabbcc"],
             "props": {"sha256": "aabbcc", "md5": "1234"},
             "tags": {},
-            "iden": "jkl"
+            "iden": "jkl",
         }
         stix = client.to_stix(node)
         assert stix["type"] == "file"
         assert "SHA-256" in stix.get("hashes", {}) or isinstance(stix.get("hashes"), dict)
 
     def test_to_stix_vuln(self, client):
-        node = {"ndef": ["risk:vuln", "CVE-2024-0001"], "props": {"name": "Test Vuln"}, "tags": {}, "iden": "mno"}
+        node = {
+            "ndef": ["risk:vuln", "CVE-2024-0001"],
+            "props": {"name": "Test Vuln"},
+            "tags": {},
+            "iden": "mno",
+        }
         stix = client.to_stix(node)
         assert stix["type"] == "vulnerability"
 
     def test_to_stix_threat_actor(self, client):
-        node = {"ndef": ["risk:threat", "APT28"], "props": {"name": "APT28"}, "tags": {}, "iden": "pqr"}
+        node = {
+            "ndef": ["risk:threat", "APT28"],
+            "props": {"name": "APT28"},
+            "tags": {},
+            "iden": "pqr",
+        }
         stix = client.to_stix(node)
         assert stix["type"] == "threat-actor"
 
@@ -5086,12 +5932,22 @@ class TestSynapseClient:
     def test_storm_parses_ndjson_string(self, client, monkeypatch):
         """Real Synapse returns NDJSON; BaseClient returns it as a str."""
         import json as _json
-        ndjson = "\n".join([
-            _json.dumps({"type": "init",  "data": {"tick": 0}}),
-            _json.dumps({"type": "node",  "data": [["inet:ipv4", "5.6.7.8"],
-                                                     {"props": {}, "tags": {}, "iden": "aaa"}]}),
-            _json.dumps({"type": "fini",  "data": {"count": 1}}),
-        ])
+
+        ndjson = "\n".join(
+            [
+                _json.dumps({"type": "init", "data": {"tick": 0}}),
+                _json.dumps(
+                    {
+                        "type": "node",
+                        "data": [
+                            ["inet:ipv4", "5.6.7.8"],
+                            {"props": {}, "tags": {}, "iden": "aaa"},
+                        ],
+                    }
+                ),
+                _json.dumps({"type": "fini", "data": {"count": 1}}),
+            ]
+        )
         monkeypatch.setattr(client, "post", lambda path, **kw: ndjson)
         nodes = client.storm("inet:ipv4")
         assert len(nodes) == 1
@@ -5100,10 +5956,14 @@ class TestSynapseClient:
     def test_storm_raises_on_err_message(self, client, monkeypatch):
         """Storm ``err`` messages must propagate as SynapseStormError."""
         import json as _json
+
         from gnat.connectors.synapse.exceptions import SynapseStormError
-        ndjson = "\n".join([
-            _json.dumps({"type": "err", "data": ["BadSyntax", {"mesg": "unexpected token"}]}),
-        ])
+
+        ndjson = "\n".join(
+            [
+                _json.dumps({"type": "err", "data": ["BadSyntax", {"mesg": "unexpected token"}]}),
+            ]
+        )
         monkeypatch.setattr(client, "post", lambda path, **kw: ndjson)
         with pytest.raises(SynapseStormError):
             client.storm("bad query !!!")
@@ -5215,11 +6075,10 @@ class TestSynapseClient:
 # Trellix
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.trellix.client import TrellixClient
+from gnat.connectors.trellix.client import TrellixClient  # noqa: E402
 
 
 class TestTrellixClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(TrellixClient, client_id="cid", client_secret="sec")
@@ -5237,7 +6096,9 @@ class TestTrellixClient:
             c.authenticate()
 
     def test_get_object_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": {"id": "1", "value": "evil.com"}}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": {"id": "1", "value": "evil.com"}})
+        )
         result = client.get_object("indicator", "1")
         assert isinstance(result, dict)
 
@@ -5270,16 +6131,26 @@ class TestTrellixClient:
             client.upsert_object("malware", {})
 
     def test_to_stix_ioc_contract(self, client):
-        native = {"id": "ioc1", "type": "domain", "value": "evil.com",
-                  "confidence": 80, "created_at": "2024-01-01T00:00:00Z"}
+        native = {
+            "id": "ioc1",
+            "type": "domain",
+            "value": "evil.com",
+            "confidence": 80,
+            "created_at": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
         assert "evil.com" in stix.get("pattern", "")
 
     def test_to_stix_threat_contract(self, client):
-        native = {"id": "t1", "name": "Ransomware.X", "category": "ransomware",
-                  "severity": "HIGH", "status": "active"}
+        native = {
+            "id": "t1",
+            "name": "Ransomware.X",
+            "category": "ransomware",
+            "severity": "HIGH",
+            "status": "active",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "malware"
@@ -5291,8 +6162,13 @@ class TestTrellixClient:
         assert stix["type"] == "vulnerability"
 
     def test_from_stix(self, client):
-        stix = {"type": "indicator", "id": "indicator--abc", "name": "1.2.3.4",
-                "pattern": "[ipv4-addr:value = '1.2.3.4']", "confidence": 70}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--abc",
+            "name": "1.2.3.4",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "confidence": 70,
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
         assert result["value"] == "1.2.3.4"
@@ -5302,11 +6178,10 @@ class TestTrellixClient:
 # Sophos
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.sophos.client import SophosClient
+from gnat.connectors.sophos.client import SophosClient  # noqa: E402
 
 
 class TestSophosClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(SophosClient, client_id="cid", client_secret="sec")
@@ -5352,23 +6227,37 @@ class TestSophosClient:
             client.upsert_object("malware", {})
 
     def test_to_stix_blocked_item_contract(self, client):
-        native = {"id": "bi1", "sha256": "aabbcc", "type": "sha256",
-                  "comment": "test", "created_at": "2024-01-01T00:00:00Z"}
+        native = {
+            "id": "bi1",
+            "sha256": "aabbcc",
+            "type": "sha256",
+            "comment": "test",
+            "created_at": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
         assert "aabbcc" in stix.get("pattern", "")
 
     def test_to_stix_detection_contract(self, client):
-        native = {"id": "det1", "name": "Troj/BackDoor", "category": "trojan",
-                  "endpoint_id": "ep1", "severity": "high"}
+        native = {
+            "id": "det1",
+            "name": "Troj/BackDoor",
+            "category": "trojan",
+            "endpoint_id": "ep1",
+            "severity": "high",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "malware"
 
     def test_from_stix_sha256(self, client):
-        stix = {"type": "indicator", "id": "indicator--abc",
-                "name": "aabbcc", "pattern": "[file:hashes.'SHA-256' = 'aabbcc']"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--abc",
+            "name": "aabbcc",
+            "pattern": "[file:hashes.'SHA-256' = 'aabbcc']",
+        }
         result = client.from_stix(stix)
         assert result["type"] == "sha256"
         assert result["value"] == "aabbcc"
@@ -5378,11 +6267,10 @@ class TestSophosClient:
 # Vectra
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.vectra.client import VectraClient
+from gnat.connectors.vectra.client import VectraClient  # noqa: E402
 
 
 class TestVectraClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(VectraClient, api_key="vectra_key_123")
@@ -5408,7 +6296,9 @@ class TestVectraClient:
         assert isinstance(result, list)
 
     def test_get_object_detection(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": 5, "detection_type": "C2"}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": 5, "detection_type": "C2"})
+        )
         result = client.get_object("observed-data", "5")
         assert isinstance(result, dict)
 
@@ -5421,18 +6311,31 @@ class TestVectraClient:
             client.delete_object("observed-data", "1")
 
     def test_to_stix_detection_contract(self, client):
-        native = {"id": 42, "detection_type": "Command & Control",
-                  "category": "COMMAND & CONTROL", "threat": 90, "certainty": 85,
-                  "src_ip": "10.0.0.1", "src_host": {"name": "workstation01"},
-                  "first_timestamp": "2024-01-01T00:00:00Z"}
+        native = {
+            "id": 42,
+            "detection_type": "Command & Control",
+            "category": "COMMAND & CONTROL",
+            "threat": 90,
+            "certainty": 85,
+            "src_ip": "10.0.0.1",
+            "src_host": {"name": "workstation01"},
+            "first_timestamp": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "observed-data"
         assert stix["x_vectra"]["threat"] == 90
 
     def test_to_stix_host_contract(self, client):
-        native = {"id": 7, "name": "desktop01", "ip": "192.168.1.10",
-                  "threat": 60, "certainty": 70, "tags": [], "state": "active"}
+        native = {
+            "id": 7,
+            "name": "desktop01",
+            "ip": "192.168.1.10",
+            "threat": 60,
+            "certainty": 70,
+            "tags": [],
+            "state": "active",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "threat-actor"
@@ -5448,11 +6351,10 @@ class TestVectraClient:
 # ExtraHop
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.extrahop.client import ExtraHopClient
+from gnat.connectors.extrahop.client import ExtraHopClient  # noqa: E402
 
 
 class TestExtraHopClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(ExtraHopClient, api_key="eh_key_123")
@@ -5463,8 +6365,7 @@ class TestExtraHopClient:
         assert "ExtraHop apikey=mykey" in c._auth_headers["Authorization"]
 
     def test_authenticate_oauth2(self, monkeypatch):
-        c = ExtraHopClient(host="https://fake.extrahop.com",
-                           client_id="cid", client_secret="csec")
+        c = ExtraHopClient(host="https://fake.extrahop.com", client_id="cid", client_secret="csec")
         monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "tok"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer tok"
@@ -5493,18 +6394,28 @@ class TestExtraHopClient:
             client.delete_object("observed-data", "1")
 
     def test_to_stix_detection_contract(self, client):
-        native = {"id": 10, "detection_type": "Lateral Movement",
-                  "category": "LATERAL_MOVEMENT", "risk_score": 75,
-                  "status": "new", "start_time": "2024-01-01T00:00:00Z",
-                  "participants": []}
+        native = {
+            "id": 10,
+            "detection_type": "Lateral Movement",
+            "category": "LATERAL_MOVEMENT",
+            "risk_score": 75,
+            "status": "new",
+            "start_time": "2024-01-01T00:00:00Z",
+            "participants": [],
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "observed-data"
         assert stix["x_extrahop"]["risk_score"] == 75
 
     def test_to_stix_record_contract(self, client):
-        native = {"id": "rec1", "type": "DNS", "src_addr": "10.0.0.1",
-                  "dst_addr": "8.8.8.8", "timestamp": "2024-01-01T00:00:00Z"}
+        native = {
+            "id": "rec1",
+            "type": "DNS",
+            "src_addr": "10.0.0.1",
+            "dst_addr": "8.8.8.8",
+            "timestamp": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "observed-data"
@@ -5519,19 +6430,16 @@ class TestExtraHopClient:
 # Darktrace
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.darktrace.client import DarktraceClient
+from gnat.connectors.darktrace.client import DarktraceClient  # noqa: E402
 
 
 class TestDarktraceClient:
-
     @pytest.fixture
     def client(self):
-        return _authenticated(DarktraceClient,
-                              public_key="pub123", private_key="priv456")
+        return _authenticated(DarktraceClient, public_key="pub123", private_key="priv456")
 
     def test_authenticate_sets_accept_header(self):
-        c = DarktraceClient(host="https://fake.dt.com",
-                            public_key="pub", private_key="priv")
+        c = DarktraceClient(host="https://fake.dt.com", public_key="pub", private_key="priv")
         c.authenticate()
         assert c._auth_headers["Accept"] == "application/json"
 
@@ -5565,26 +6473,39 @@ class TestDarktraceClient:
             client.upsert_object("malware", {})
 
     def test_to_stix_breach_contract(self, client):
-        native = {"pbid": 42, "score": 0.85,
-                  "model": {"name": "Anomalous Connection"},
-                  "device": {"hostname": "server01", "ip": "192.168.0.1"},
-                  "time": "2024-01-01T00:00:00Z",
-                  "triggeredComponents": []}
+        native = {
+            "pbid": 42,
+            "score": 0.85,
+            "model": {"name": "Anomalous Connection"},
+            "device": {"hostname": "server01", "ip": "192.168.0.1"},
+            "time": "2024-01-01T00:00:00Z",
+            "triggeredComponents": [],
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "observed-data"
         assert stix["x_darktrace"]["score"] == 0.85
 
     def test_to_stix_device_contract(self, client):
-        native = {"did": 10, "hostname": "laptop01", "ip": "10.0.0.50",
-                  "macaddress": "aa:bb:cc:dd:ee:ff", "os": "Windows 11", "tags": []}
+        native = {
+            "did": 10,
+            "hostname": "laptop01",
+            "ip": "10.0.0.50",
+            "macaddress": "aa:bb:cc:dd:ee:ff",
+            "os": "Windows 11",
+            "tags": [],
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "threat-actor"
 
     def test_from_stix(self, client):
-        stix = {"type": "indicator", "id": "indicator--abc",
-                "name": "evil.com", "description": "test"}
+        stix = {
+            "type": "indicator",
+            "id": "indicator--abc",
+            "name": "evil.com",
+            "description": "test",
+        }
         result = client.from_stix(stix)
         assert result["value"] == "evil.com"
         assert result["type"] == "hostname"
@@ -5594,11 +6515,10 @@ class TestDarktraceClient:
 # Lansweeper
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.lansweeper.client import LansweeperClient
+from gnat.connectors.lansweeper.client import LansweeperClient  # noqa: E402
 
 
 class TestLansweeperClient:
-
     @pytest.fixture
     def client(self):
         c = LansweeperClient(
@@ -5616,8 +6536,9 @@ class TestLansweeperClient:
         assert c._auth_headers["Authorization"] == "Bearer tok"
 
     def test_authenticate_with_oauth2(self, monkeypatch):
-        c = LansweeperClient(host="https://api.lansweeper.com",
-                             client_id="cid", client_secret="csec")
+        c = LansweeperClient(
+            host="https://api.lansweeper.com", client_id="cid", client_secret="csec"
+        )
         monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "tok"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer tok"
@@ -5652,17 +6573,27 @@ class TestLansweeperClient:
             client.delete_object("report", "a1")
 
     def test_to_stix_asset_contract(self, client):
-        native = {"id": "a1", "name": "laptop01", "type": "Windows",
-                  "ip": "10.0.0.5", "mac": "aa:bb:cc:dd:ee:ff",
-                  "firstSeen": "2024-01-01T00:00:00Z"}
+        native = {
+            "id": "a1",
+            "name": "laptop01",
+            "type": "Windows",
+            "ip": "10.0.0.5",
+            "mac": "aa:bb:cc:dd:ee:ff",
+            "firstSeen": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
         assert stix["x_lansweeper"]["ip"] == "10.0.0.5"
 
     def test_to_stix_software_contract(self, client):
-        native = {"id": "sw1", "softwareName": "Log4j", "softwareVersion": "2.14.0",
-                  "publisher": "Apache", "assetCount": 50}
+        native = {
+            "id": "sw1",
+            "softwareName": "Log4j",
+            "softwareVersion": "2.14.0",
+            "publisher": "Apache",
+            "assetCount": 50,
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
@@ -5677,11 +6608,10 @@ class TestLansweeperClient:
 # Censys
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.censys.client import CensysClient
+from gnat.connectors.censys.client import CensysClient  # noqa: E402
 
 
 class TestCensysClient:
-
     @pytest.fixture
     def client(self):
         c = CensysClient(
@@ -5690,6 +6620,7 @@ class TestCensysClient:
             api_secret="cns_sec",
         )
         import base64
+
         creds = base64.b64encode(b"cns_id:cns_sec").decode()
         c._auth_headers["Authorization"] = f"Basic {creds}"
         c._authenticated = True
@@ -5697,8 +6628,8 @@ class TestCensysClient:
 
     def test_authenticate_sets_basic_header(self):
         import base64
-        c = CensysClient(host="https://search.censys.io",
-                         api_id="myid", api_secret="mysec")
+
+        c = CensysClient(host="https://search.censys.io", api_id="myid", api_secret="mysec")
         c.authenticate()
         expected = base64.b64encode(b"myid:mysec").decode()
         assert c._auth_headers["Authorization"] == f"Basic {expected}"
@@ -5709,16 +6640,16 @@ class TestCensysClient:
             c.authenticate()
 
     def test_get_object(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "result": {"ip": "1.2.3.4", "services": []}
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"result": {"ip": "1.2.3.4", "services": []}})
+        )
         result = client.get_object("observed-data", "1.2.3.4")
         assert result["ip"] == "1.2.3.4"
 
     def test_list_objects(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(return_value={
-            "result": {"hits": [{"ip": "1.2.3.4"}]}
-        }))
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"result": {"hits": [{"ip": "1.2.3.4"}]}})
+        )
         result = client.list_objects("observed-data", filters={"q": "services.port=443"})
         assert isinstance(result, list)
         assert len(result) == 1
@@ -5749,9 +6680,14 @@ class TestCensysClient:
         native = {
             "ip": "1.2.3.4",
             "last_updated_at": "2024-01-01T00:00:00Z",
-            "services": [{"port": 80, "transport_protocol": "TCP",
-                          "service_name": "HTTP",
-                          "vulnerabilities": [{"cve_id": "CVE-2021-44228"}]}],
+            "services": [
+                {
+                    "port": 80,
+                    "transport_protocol": "TCP",
+                    "service_name": "HTTP",
+                    "vulnerabilities": [{"cve_id": "CVE-2021-44228"}],
+                }
+            ],
             "location": {},
             "autonomous_system": {},
         }
@@ -5768,26 +6704,26 @@ class TestCensysClient:
 # ServiceNow SecOps
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.servicenow_secops.client import ServiceNowSecOpsClient
+from gnat.connectors.servicenow_secops.client import ServiceNowSecOpsClient  # noqa: E402
 
 
 class TestServiceNowSecOpsClient:
-
     @pytest.fixture
     def client(self):
         return _authenticated(ServiceNowSecOpsClient, username="admin", password="pass")
 
     def test_authenticate_basic(self):
         import base64
-        c = ServiceNowSecOpsClient(host="https://fake.service-now.com",
-                                   username="admin", password="pass123")
+
+        c = ServiceNowSecOpsClient(
+            host="https://fake.service-now.com", username="admin", password="pass123"
+        )
         c.authenticate()
         expected = base64.b64encode(b"admin:pass123").decode()
         assert c._auth_headers["Authorization"] == f"Basic {expected}"
 
     def test_authenticate_bearer(self):
-        c = ServiceNowSecOpsClient(host="https://fake.service-now.com",
-                                   api_key="bearer_token")
+        c = ServiceNowSecOpsClient(host="https://fake.service-now.com", api_key="bearer_token")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer bearer_token"
 
@@ -5797,9 +6733,11 @@ class TestServiceNowSecOpsClient:
             c.authenticate()
 
     def test_get_object_incident(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "result": {"sys_id": "abc", "short_description": "Test"}
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"result": {"sys_id": "abc", "short_description": "Test"}}),
+        )
         result = client.get_object("observed-data", "abc")
         assert result["sys_id"] == "abc"
 
@@ -5813,9 +6751,7 @@ class TestServiceNowSecOpsClient:
             client.get_object("unknown-type", "1")
 
     def test_list_objects_incidents(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "result": [{"sys_id": "i1"}]
-        }))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"result": [{"sys_id": "i1"}]}))
         result = client.list_objects("observed-data", query="state=1")
         assert isinstance(result, list)
 
@@ -5825,9 +6761,7 @@ class TestServiceNowSecOpsClient:
         assert isinstance(result, list)
 
     def test_upsert_create_incident(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(return_value={
-            "result": {"sys_id": "new1"}
-        }))
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"result": {"sys_id": "new1"}}))
         result = client.upsert_object("observed-data", {"name": "Test Incident"})
         assert isinstance(result, dict)
 
@@ -5845,9 +6779,9 @@ class TestServiceNowSecOpsClient:
         mock_del.assert_called_once()
 
     def test_create_security_incident(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(return_value={
-            "result": {"sys_id": "new_si"}
-        }))
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"result": {"sys_id": "new_si"}})
+        )
         result = client.create_security_incident("Critical Alert", priority="1")
         assert isinstance(result, dict)
 
@@ -5875,36 +6809,55 @@ class TestServiceNowSecOpsClient:
         assert isinstance(result, list)
 
     def test_to_stix_incident_contract(self, client):
-        native = {"sys_id": "inc1", "short_description": "Ransomware Attack",
-                  "description": "Ransomware detected", "state": "1",
-                  "priority": "1", "category": "threat", "opened_at": "2024-01-01T00:00:00Z",
-                  "assigned_to": {"value": "admin"}}
+        native = {
+            "sys_id": "inc1",
+            "short_description": "Ransomware Attack",
+            "description": "Ransomware detected",
+            "state": "1",
+            "priority": "1",
+            "category": "threat",
+            "opened_at": "2024-01-01T00:00:00Z",
+            "assigned_to": {"value": "admin"},
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "observed-data"
         assert stix["x_sn_secops"]["table"] == "sn_si_incident"
 
     def test_to_stix_vuln_contract(self, client):
-        native = {"sys_id": "v1", "vulnerability": {"value": "CVE-2021-44228"},
-                  "short_description": "Log4Shell", "state": "open",
-                  "sys_class_name": "sn_vr_vulnerable_item",
-                  "sys_created_on": "2024-01-01T00:00:00Z"}
+        native = {
+            "sys_id": "v1",
+            "vulnerability": {"value": "CVE-2021-44228"},
+            "short_description": "Log4Shell",
+            "state": "open",
+            "sys_class_name": "sn_vr_vulnerable_item",
+            "sys_created_on": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
         assert stix["x_sn_secops"]["cve_id"] == "CVE-2021-44228"
 
     def test_to_stix_observable_contract(self, client):
-        native = {"sys_id": "obs1", "value": "1.2.3.4", "type": "IP Address",
-                  "description": "Malicious IP", "sys_created_on": "2024-01-01T00:00:00Z"}
+        native = {
+            "sys_id": "obs1",
+            "value": "1.2.3.4",
+            "type": "IP Address",
+            "description": "Malicious IP",
+            "sys_created_on": "2024-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
         assert "1.2.3.4" in stix.get("pattern", "")
 
     def test_from_stix_incident(self, client):
-        stix = {"type": "observed-data", "id": "observed-data--abc",
-                "name": "Phishing Campaign", "description": "Detailed desc"}
+        stix = {
+            "type": "observed-data",
+            "id": "observed-data--abc",
+            "name": "Phishing Campaign",
+            "description": "Detailed desc",
+        }
         result = client.from_stix(stix)
         assert isinstance(result, dict)
         assert result["short_description"] == "Phishing Campaign"
@@ -5914,17 +6867,19 @@ class TestServiceNowSecOpsClient:
 # BitSightClient
 # ---------------------------------------------------------------------------
 
-class TestBitSightClient:
 
+class TestBitSightClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.bitsight.client import BitSightClient
+
         c = BitSightClient(host="https://api.bitsighttech.com", token="bitsight-tok")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_token_header(self):
         from gnat.connectors.bitsight.client import BitSightClient
+
         c = BitSightClient(token="mytoken")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Token mytoken"
@@ -5997,8 +6952,13 @@ class TestBitSightClient:
 
     def test_to_stix_finding_contract(self, client):
         # "finding" keyword in title triggers _finding_to_stix dispatch
-        native = {"id": "f1", "severity": "high", "title": "BitSight finding: Open Port",
-                  "description": "Port 22 exposed", "date": "2026-01-01"}
+        native = {
+            "id": "f1",
+            "severity": "high",
+            "title": "BitSight finding: Open Port",
+            "description": "Port 22 exposed",
+            "date": "2026-01-01",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
@@ -6021,17 +6981,19 @@ class TestBitSightClient:
 # DefectDojoClient
 # ---------------------------------------------------------------------------
 
-class TestDefectDojoClient:
 
+class TestDefectDojoClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.defectdojo.client import DefectDojoClient
+
         c = DefectDojoClient(host="https://defectdojo.example.com", token="dd-token")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_token_header(self):
         from gnat.connectors.defectdojo.client import DefectDojoClient
+
         c = DefectDojoClient(host="https://dd.example.com", token="tok123")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Token tok123"
@@ -6126,9 +7088,16 @@ class TestDefectDojoClient:
         assert result["id"] == 99
 
     def test_to_stix_finding_contract(self, client):
-        native = {"id": 1, "title": "SQL Injection", "severity": "Critical",
-                  "description": "SQL injection in login form", "cve": "CVE-2024-1234",
-                  "cwe": 89, "active": True, "verified": False}
+        native = {
+            "id": 1,
+            "title": "SQL Injection",
+            "severity": "Critical",
+            "description": "SQL injection in login form",
+            "cve": "CVE-2024-1234",
+            "cwe": 89,
+            "active": True,
+            "verified": False,
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
@@ -6136,23 +7105,36 @@ class TestDefectDojoClient:
         assert stix["x_defectdojo"]["cve"] == "CVE-2024-1234"
 
     def test_to_stix_engagement_contract(self, client):
-        native = {"id": 3, "name": "Q1 Pentest", "description": "Quarterly assessment",
-                  "status": "In Progress", "product": 1}
+        native = {
+            "id": 3,
+            "name": "Q1 Pentest",
+            "description": "Quarterly assessment",
+            "status": "In Progress",
+            "product": 1,
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
         assert stix["x_defectdojo"]["status"] == "In Progress"
 
     def test_from_stix_vulnerability(self, client):
-        stix = {"type": "vulnerability", "id": "vulnerability--abc",
-                "name": "SQLi", "description": "SQL injection"}
+        stix = {
+            "type": "vulnerability",
+            "id": "vulnerability--abc",
+            "name": "SQLi",
+            "description": "SQL injection",
+        }
         result = client.from_stix(stix)
         assert result["title"] == "SQLi"
         assert result["severity"] == "Info"
 
     def test_from_stix_report(self, client):
-        stix = {"type": "report", "id": "report--abc",
-                "name": "Pentest Report", "description": "Q1 assessment"}
+        stix = {
+            "type": "report",
+            "id": "report--abc",
+            "name": "Pentest Report",
+            "description": "Q1 assessment",
+        }
         result = client.from_stix(stix)
         assert result["name"] == "Pentest Report"
 
@@ -6161,17 +7143,19 @@ class TestDefectDojoClient:
 # FlashpointClient
 # ---------------------------------------------------------------------------
 
-class TestFlashpointClient:
 
+class TestFlashpointClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.flashpoint.client import FlashpointClient
+
         c = FlashpointClient(host="https://api.flashpoint.io", token="fp-token")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.flashpoint.client import FlashpointClient
+
         c = FlashpointClient(token="mytoken")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer mytoken"
@@ -6243,8 +7227,13 @@ class TestFlashpointClient:
         assert result[0]["id"] == "s1"
 
     def test_to_stix_ioc_ip_contract(self, client):
-        native = {"id": "i1", "value": "1.2.3.4", "ioc_type": "ip",
-                  "first_seen": "2026-01-01", "last_seen": "2026-01-02"}
+        native = {
+            "id": "i1",
+            "value": "1.2.3.4",
+            "ioc_type": "ip",
+            "first_seen": "2026-01-01",
+            "last_seen": "2026-01-02",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
@@ -6254,11 +7243,15 @@ class TestFlashpointClient:
         native = {"id": "i2", "value": "evil.com", "ioc_type": "domain"}
         stix = client.to_stix(native)
         assert stix["type"] == "indicator"
-        assert "[domain-name:value = 'evil.com']" == stix["pattern"]
+        assert stix["pattern"] == "[domain-name:value = 'evil.com']"
 
     def test_to_stix_alert_contract(self, client):
-        native = {"id": "a1", "title": "LockBit Activity", "created_at": "2026-01-01",
-                  "category": "ransomware"}
+        native = {
+            "id": "a1",
+            "title": "LockBit Activity",
+            "created_at": "2026-01-01",
+            "category": "ransomware",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
@@ -6273,17 +7266,19 @@ class TestFlashpointClient:
 # HudsonRockClient
 # ---------------------------------------------------------------------------
 
-class TestHudsonRockClient:
 
+class TestHudsonRockClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.hudsonrock.client import HudsonRockClient
+
         c = HudsonRockClient(host="https://api.hudsonrock.com", api_key="hr-key")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_api_key_header(self):
         from gnat.connectors.hudsonrock.client import HudsonRockClient
+
         c = HudsonRockClient(api_key="my-hr-key")
         c.authenticate()
         assert c._auth_headers["x-api-key"] == "my-hr-key"
@@ -6330,7 +7325,9 @@ class TestHudsonRockClient:
         assert result[0]["id"] == "b1"
 
     def test_fetch_credentials(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"email": "u@corp.com"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"email": "u@corp.com"}]})
+        )
         result = client.fetch_credentials(domain="corp.com")
         assert result[0]["email"] == "u@corp.com"
 
@@ -6345,16 +7342,26 @@ class TestHudsonRockClient:
         assert result[0]["id"] == "v1"
 
     def test_to_stix_credential_contract(self, client):
-        native = {"id": "cred1", "email": "user@corp.com", "source": "stealer",
-                  "breach_date": "2026-01-01", "breach_id": "breach99"}
+        native = {
+            "id": "cred1",
+            "email": "user@corp.com",
+            "source": "stealer",
+            "breach_date": "2026-01-01",
+            "breach_id": "breach99",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
         assert "user@corp.com" in stix["pattern"]
 
     def test_to_stix_breach_contract(self, client):
-        native = {"id": "b1", "title": "Corp DB Leak", "date": "2026-01-01",
-                  "victim_count": 50000, "severity": "critical"}
+        native = {
+            "id": "b1",
+            "title": "Corp DB Leak",
+            "date": "2026-01-01",
+            "victim_count": 50000,
+            "severity": "critical",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
@@ -6370,17 +7377,19 @@ class TestHudsonRockClient:
 # Intel471Client
 # ---------------------------------------------------------------------------
 
-class TestIntel471Client:
 
+class TestIntel471Client:
     @pytest.fixture
     def client(self):
         from gnat.connectors.intel471.client import Intel471Client
+
         c = Intel471Client(host="https://api.intel471.com", token="intel-token")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.intel471.client import Intel471Client
+
         c = Intel471Client(token="mytoken")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer mytoken"
@@ -6452,8 +7461,7 @@ class TestIntel471Client:
         assert result[0]["id"] == "s1"
 
     def test_to_stix_ioc_ip_contract(self, client):
-        native = {"id": "i1", "value": "192.168.1.1", "ioc_type": "ip",
-                  "first_seen": "2026-01-01"}
+        native = {"id": "i1", "value": "192.168.1.1", "ioc_type": "ip", "first_seen": "2026-01-01"}
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
@@ -6465,8 +7473,12 @@ class TestIntel471Client:
         assert "SHA256" in stix["pattern"]
 
     def test_to_stix_actor_contract(self, client):
-        native = {"id": "a1", "handle": "lockbit_admin",
-                  "description": "LockBit operator", "observed_at": "2026-01-01"}
+        native = {
+            "id": "a1",
+            "handle": "lockbit_admin",
+            "description": "LockBit operator",
+            "observed_at": "2026-01-01",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
@@ -6482,17 +7494,19 @@ class TestIntel471Client:
 # UpGuardClient
 # ---------------------------------------------------------------------------
 
-class TestUpGuardClient:
 
+class TestUpGuardClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.upguard.client import UpGuardClient
+
         c = UpGuardClient(host="https://cyber-risk.upguard.com", api_key="ug-key")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_token_header(self):
         from gnat.connectors.upguard.client import UpGuardClient
+
         c = UpGuardClient(api_key="mykey")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Token mykey"
@@ -6559,8 +7573,14 @@ class TestUpGuardClient:
         assert result[0]["id"] == "cl1"
 
     def test_to_stix_breach_contract(self, client):
-        native = {"id": "b1", "title": "Identity Breach", "description": "breach desc",
-                  "date": "2026-01-01", "severity": "high", "identity_count": 10000}
+        native = {
+            "id": "b1",
+            "title": "Identity Breach",
+            "description": "breach desc",
+            "date": "2026-01-01",
+            "severity": "high",
+            "identity_count": 10000,
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
@@ -6583,17 +7603,21 @@ class TestUpGuardClient:
 # TrendMicroVisionOneClient
 # ---------------------------------------------------------------------------
 
-class TestTrendMicroVisionOneClient:
 
+class TestTrendMicroVisionOneClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClient
-        c = TrendMicroVisionOneClient(host="https://api.xdr.trendmicro.com", token="visionone-token")
+
+        c = TrendMicroVisionOneClient(
+            host="https://api.xdr.trendmicro.com", token="visionone-token"
+        )
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClient
+
         c = TrendMicroVisionOneClient(token="tok123")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer tok123"
@@ -6603,7 +7627,9 @@ class TestTrendMicroVisionOneClient:
         assert client.health_check() is True
 
     def test_get_object_report(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "a1", "description": "Alert"}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "a1", "description": "Alert"})
+        )
         result = client.get_object("report", "a1")
         assert result["id"] == "a1"
 
@@ -6661,8 +7687,12 @@ class TestTrendMicroVisionOneClient:
         assert result[0]["id"] == "i1"
 
     def test_to_stix_alert_contract(self, client):
-        native = {"id": "alert-1", "description": "Malware alert", "severity": "high",
-                  "createdDateTime": "2026-01-01T00:00:00Z"}
+        native = {
+            "id": "alert-1",
+            "description": "Malware alert",
+            "severity": "high",
+            "createdDateTime": "2026-01-01T00:00:00Z",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
@@ -6675,15 +7705,23 @@ class TestTrendMicroVisionOneClient:
         assert "[ipv4-addr:value = '192.168.1.1']" in stix["pattern"]
 
     def test_to_stix_sandbox_contract(self, client):
-        native = {"id": "s1", "riskLevel": "high", "threatClassification": "ransomware",
-                  "displayName": "Ransom.WannaCry"}
+        native = {
+            "id": "s1",
+            "riskLevel": "high",
+            "threatClassification": "ransomware",
+            "displayName": "Ransom.WannaCry",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "malware"
 
     def test_from_stix(self, client):
-        stix = {"id": "indicator--abc", "type": "indicator",
-                "pattern": "[ipv4-addr:value = '1.2.3.4']", "name": "1.2.3.4"}
+        stix = {
+            "id": "indicator--abc",
+            "type": "indicator",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "name": "1.2.3.4",
+        }
         result = client.from_stix(stix)
         assert result["value"] == "1.2.3.4"
         assert result["type"] == "ip"
@@ -6693,17 +7731,19 @@ class TestTrendMicroVisionOneClient:
 # HIBPClient
 # ---------------------------------------------------------------------------
 
-class TestHIBPClient:
 
+class TestHIBPClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.hibp.client import HIBPClient
+
         c = HIBPClient(host="https://haveibeenpwned.com", api_key="hibp-key")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_header(self):
         from gnat.connectors.hibp.client import HIBPClient
+
         c = HIBPClient(api_key="mykey")
         c.authenticate()
         assert c._auth_headers["hibp-api-key"] == "mykey"
@@ -6713,7 +7753,9 @@ class TestHIBPClient:
         assert client.health_check() is True
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"Name": "Adobe", "Title": "Adobe"}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"Name": "Adobe", "Title": "Adobe"})
+        )
         result = client.get_object("vulnerability", "Adobe")
         assert result["Name"] == "Adobe"
 
@@ -6766,10 +7808,14 @@ class TestHIBPClient:
 
     def test_to_stix_breach_contract(self, client):
         native = {
-            "Name": "Adobe", "Title": "Adobe", "Domain": "adobe.com",
-            "BreachDate": "2013-10-04", "PwnCount": 152445165,
+            "Name": "Adobe",
+            "Title": "Adobe",
+            "Domain": "adobe.com",
+            "BreachDate": "2013-10-04",
+            "PwnCount": 152445165,
             "DataClasses": ["Email addresses", "Passwords"],
-            "IsVerified": True, "AddedDate": "2013-12-04",
+            "IsVerified": True,
+            "AddedDate": "2013-12-04",
         }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
@@ -6792,33 +7838,34 @@ class TestHIBPClient:
 # TaniumClient
 # ---------------------------------------------------------------------------
 
-class TestTaniumClient:
 
+class TestTaniumClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.tanium.client import TaniumClient
+
         c = TaniumClient(host="https://tanium.corp.example.com", api_key="tanium-token")
         c._authenticated = True
         return c
 
     def test_authenticate_api_key(self):
         from gnat.connectors.tanium.client import TaniumClient
+
         c = TaniumClient(host="https://fake.example.com", api_key="tok")
         c.authenticate()
         assert c._auth_headers["session"] == "tok"
 
     def test_authenticate_session_login(self, monkeypatch):
         from gnat.connectors.tanium.client import TaniumClient
+
         c = TaniumClient(host="https://fake.example.com", username="admin", password="pass")
-        monkeypatch.setattr(
-            c, "post",
-            MagicMock(return_value={"data": {"session": "sess123"}})
-        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"data": {"session": "sess123"}}))
         c.authenticate()
         assert c._auth_headers["session"] == "sess123"
 
     def test_authenticate_no_credentials_raises(self):
         from gnat.connectors.tanium.client import TaniumClient
+
         c = TaniumClient(host="https://fake.example.com")
         with pytest.raises(GNATClientError, match="provide api_key"):
             c.authenticate()
@@ -6838,7 +7885,9 @@ class TestTaniumClient:
         assert result["id"] == "a1"
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"cveId": "CVE-2021-44228"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"cveId": "CVE-2021-44228"}]})
+        )
         result = client.get_object("vulnerability", "CVE-2021-44228")
         assert result["cveId"] == "CVE-2021-44228"
 
@@ -6871,27 +7920,38 @@ class TestTaniumClient:
             client.delete_object("report", "a1")
 
     def test_get_endpoints(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": {"endpoints": [{"id": "ep1"}]}}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": {"endpoints": [{"id": "ep1"}]}})
+        )
         result = client.get_endpoints()
         assert result[0]["id"] == "ep1"
 
     def test_get_comply_findings(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"cveId": "CVE-2021-1"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"cveId": "CVE-2021-1"}]})
+        )
         result = client.get_comply_findings()
         assert result[0]["cveId"] == "CVE-2021-1"
 
     def test_to_stix_finding_contract(self, client):
-        native = {"cveId": "CVE-2021-44228", "summary": "Log4Shell",
-                  "severity": "critical", "cvss": {"score": 10.0}}
+        native = {
+            "cveId": "CVE-2021-44228",
+            "summary": "Log4Shell",
+            "severity": "critical",
+            "cvss": {"score": 10.0},
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
         assert stix["x_tanium"]["cve_id"] == "CVE-2021-44228"
 
     def test_to_stix_intel_contract(self, client):
-        native = {"id": "doc1", "name": "BadActor", "type": "stix",
-                  "iocs": [{"type": "ip_address", "value": "1.2.3.4"}]}
+        native = {
+            "id": "doc1",
+            "name": "BadActor",
+            "type": "stix",
+            "iocs": [{"type": "ip_address", "value": "1.2.3.4"}],
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
@@ -6903,8 +7963,12 @@ class TestTaniumClient:
         assert stix["type"] == "report"
 
     def test_from_stix(self, client):
-        stix = {"id": "indicator--abc", "type": "indicator",
-                "pattern": "[domain-name:value = 'evil.com']", "name": "evil.com"}
+        stix = {
+            "id": "indicator--abc",
+            "type": "indicator",
+            "pattern": "[domain-name:value = 'evil.com']",
+            "name": "evil.com",
+        }
         result = client.from_stix(stix)
         assert result["iocs"][0]["value"] == "evil.com"
 
@@ -6913,11 +7977,12 @@ class TestTaniumClient:
 # AWSSecurityClient
 # ---------------------------------------------------------------------------
 
-class TestAWSSecurityClient:
 
+class TestAWSSecurityClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.aws_security.client import AWSSecurityClient
+
         c = AWSSecurityClient(
             host="https://securityhub.us-east-1.amazonaws.com",
             aws_access_key="AKID",
@@ -6929,12 +7994,14 @@ class TestAWSSecurityClient:
 
     def test_authenticate_sets_service_header(self):
         from gnat.connectors.aws_security.client import AWSSecurityClient
+
         c = AWSSecurityClient(aws_access_key="AKID", aws_secret_key="SECRET")
         c.authenticate()
         assert "securityhub" in c._auth_headers.get("X-Gnat-AWS-Service", "")
 
     def test_authenticate_missing_keys_raises(self):
         from gnat.connectors.aws_security.client import AWSSecurityClient
+
         c = AWSSecurityClient()
         with pytest.raises(GNATClientError, match="aws_access_key"):
             c.authenticate()
@@ -6944,8 +8011,9 @@ class TestAWSSecurityClient:
         assert client.health_check() is True
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"Findings": [{"Id": "f1", "Title": "vuln"}]}))
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"Findings": [{"Id": "f1", "Title": "vuln"}]})
+        )
         result = client.get_object("vulnerability", "f1")
         assert result["Id"] == "f1"
 
@@ -6959,14 +8027,12 @@ class TestAWSSecurityClient:
             client.get_object("malware", "x")
 
     def test_list_objects_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"Findings": [{"Id": "f1"}]}))
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"Findings": [{"Id": "f1"}]}))
         result = client.list_objects("vulnerability")
         assert result[0]["Id"] == "f1"
 
     def test_list_objects_report(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"Insights": [{"Name": "i1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"Insights": [{"Name": "i1"}]}))
         result = client.list_objects("report")
         assert result[0]["Name"] == "i1"
 
@@ -6980,8 +8046,7 @@ class TestAWSSecurityClient:
             client.upsert_object("report", {})
 
     def test_get_security_hub_findings(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"Findings": [{"Id": "f1"}]}))
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"Findings": [{"Id": "f1"}]}))
         result = client.get_security_hub_findings(severity="HIGH")
         assert result[0]["Id"] == "f1"
 
@@ -7010,9 +8075,7 @@ class TestAWSSecurityClient:
             "Service": {
                 "Action": {
                     "ActionType": "AWS_API_CALL",
-                    "NetworkConnectionAction": {
-                        "RemoteIpDetails": {"IpAddressV4": "10.0.0.1"}
-                    },
+                    "NetworkConnectionAction": {"RemoteIpDetails": {"IpAddressV4": "10.0.0.1"}},
                 }
             },
         }
@@ -7031,19 +8094,19 @@ class TestAWSSecurityClient:
 # SecurityScorecardClient
 # ---------------------------------------------------------------------------
 
-class TestSecurityScorecardClient:
 
+class TestSecurityScorecardClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.securityscorecard.client import SecurityScorecardClient
-        c = SecurityScorecardClient(
-            host="https://api.securityscorecard.io", api_key="ssc-key"
-        )
+
+        c = SecurityScorecardClient(host="https://api.securityscorecard.io", api_key="ssc-key")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_token(self):
         from gnat.connectors.securityscorecard.client import SecurityScorecardClient
+
         c = SecurityScorecardClient(api_key="mykey")
         c.authenticate()
         assert c._auth_headers["Token"] == "mykey"
@@ -7053,19 +8116,23 @@ class TestSecurityScorecardClient:
         assert client.health_check() is True
 
     def test_get_object_report(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"domain": "example.com", "score": 90}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"domain": "example.com", "score": 90})
+        )
         result = client.get_object("report", "example.com")
         assert result["domain"] == "example.com"
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"entries": [{"type": "open_port"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"entries": [{"type": "open_port"}]})
+        )
         result = client.get_object("vulnerability", "example.com")
         assert "entries" in result
 
     def test_get_object_identity(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "p1", "name": "My Portfolio"}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "p1", "name": "My Portfolio"})
+        )
         result = client.get_object("identity", "p1")
         assert result["id"] == "p1"
 
@@ -7095,27 +8162,40 @@ class TestSecurityScorecardClient:
             client.delete_object("report", "x")
 
     def test_get_company_score(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"domain": "example.com", "score": 85}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"domain": "example.com", "score": 85})
+        )
         result = client.get_company_score("example.com")
         assert result["score"] == 85
 
     def test_get_company_issues(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"entries": [{"type": "open_port"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"entries": [{"type": "open_port"}]})
+        )
         result = client.get_company_issues("example.com")
         assert result[0]["type"] == "open_port"
 
     def test_to_stix_score_contract(self, client):
-        native = {"domain": "example.com", "score": 85, "grade": "A",
-                  "industry": "technology", "last_scorecard_change": "2026-01-01"}
+        native = {
+            "domain": "example.com",
+            "score": 85,
+            "grade": "A",
+            "industry": "technology",
+            "last_scorecard_change": "2026-01-01",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
         assert stix["x_securityscorecard"]["score"] == 85
 
     def test_to_stix_issue_contract(self, client):
-        native = {"id": "iss1", "type": "open_port", "severity": "medium",
-                  "factor": "network_security", "detail": "Port 22 open"}
+        native = {
+            "id": "iss1",
+            "type": "open_port",
+            "severity": "medium",
+            "factor": "network_security",
+            "detail": "Port 22 open",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
@@ -7131,11 +8211,12 @@ class TestSecurityScorecardClient:
 # DragosClient
 # ---------------------------------------------------------------------------
 
-class TestDragosClient:
 
+class TestDragosClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.dragos.client import DragosClient
+
         c = DragosClient(
             host="https://portal.dragos.com",
             api_key="dragos-key",
@@ -7146,7 +8227,9 @@ class TestDragosClient:
 
     def test_authenticate_sets_basic_auth(self):
         import base64
+
         from gnat.connectors.dragos.client import DragosClient
+
         c = DragosClient(api_key="key", api_secret="secret")
         c.authenticate()
         expected = "Basic " + base64.b64encode(b"key:secret").decode()
@@ -7176,14 +8259,14 @@ class TestDragosClient:
             client.get_object("identity", "x")
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"indicators": [{"id": "i1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"indicators": [{"id": "i1"}]}))
         result = client.list_objects("indicator")
         assert result[0]["id"] == "i1"
 
     def test_list_objects_threat_actor(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"activity_groups": [{"group_name": "ELECTRUM"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"activity_groups": [{"group_name": "ELECTRUM"}]})
+        )
         result = client.list_objects("threat-actor")
         assert result[0]["group_name"] == "ELECTRUM"
 
@@ -7196,50 +8279,69 @@ class TestDragosClient:
             client.delete_object("indicator", "i1")
 
     def test_get_indicators(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"indicators": [{"value": "1.2.3.4"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"indicators": [{"value": "1.2.3.4"}]})
+        )
         result = client.get_indicators(indicator_type="ip")
         assert result[0]["value"] == "1.2.3.4"
 
     def test_get_activity_groups(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"activity_groups": [{"group_name": "XENOTIME"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"activity_groups": [{"group_name": "XENOTIME"}]})
+        )
         result = client.get_activity_groups()
         assert result[0]["group_name"] == "XENOTIME"
 
     def test_get_vulnerabilities(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"vulnerabilities": [{"cve_id": "CVE-2020-1"}]}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"vulnerabilities": [{"cve_id": "CVE-2020-1"}]})
+        )
         result = client.get_vulnerabilities()
         assert result[0]["cve_id"] == "CVE-2020-1"
 
     def test_to_stix_ioc_ip_contract(self, client):
-        native = {"id": "i1", "value": "1.2.3.4", "indicator_type": "ip",
-                  "first_seen": "2026-01-01"}
+        native = {
+            "id": "i1",
+            "value": "1.2.3.4",
+            "indicator_type": "ip",
+            "first_seen": "2026-01-01",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "indicator"
         assert "[ipv4-addr:value = '1.2.3.4']" in stix["pattern"]
 
     def test_to_stix_actor_contract(self, client):
-        native = {"group_name": "ELECTRUM", "profile": "ICS threat actor",
-                  "target_industries": ["electric"], "first_activity": "2017-01-01"}
+        native = {
+            "group_name": "ELECTRUM",
+            "profile": "ICS threat actor",
+            "target_industries": ["electric"],
+            "first_activity": "2017-01-01",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "threat-actor"
         assert stix["name"] == "ELECTRUM"
 
     def test_to_stix_vuln_contract(self, client):
-        native = {"cve_id": "CVE-2021-44228", "description": "Log4Shell",
-                  "cvss_score": 10.0, "severity": "critical"}
+        native = {
+            "cve_id": "CVE-2021-44228",
+            "description": "Log4Shell",
+            "cvss_score": 10.0,
+            "severity": "critical",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "vulnerability"
         assert stix["x_dragos"]["cvss_score"] == 10.0
 
     def test_to_stix_report_contract(self, client):
-        native = {"serial": "YR-2026-001", "title": "ICS Advisory",
-                  "executive_summary": "Critical finding", "tlp": "amber"}
+        native = {
+            "serial": "YR-2026-001",
+            "title": "ICS Advisory",
+            "executive_summary": "Critical finding",
+            "tlp": "amber",
+        }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
         assert stix["type"] == "report"
@@ -7255,11 +8357,12 @@ class TestDragosClient:
 # DatadogClient
 # ---------------------------------------------------------------------------
 
-class TestDatadogClient:
 
+class TestDatadogClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.datadog.client import DatadogClient
+
         c = DatadogClient(
             host="https://api.datadoghq.com",
             api_key="dd-api-key",
@@ -7270,6 +8373,7 @@ class TestDatadogClient:
 
     def test_authenticate_sets_headers(self):
         from gnat.connectors.datadog.client import DatadogClient
+
         c = DatadogClient(api_key="apikey", app_key="appkey")
         c.authenticate()
         assert c._auth_headers["DD-API-KEY"] == "apikey"
@@ -7280,20 +8384,21 @@ class TestDatadogClient:
         assert client.health_check() is True
 
     def test_get_object_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": {"id": "sig1", "type": "security_signals"}}))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": {"id": "sig1", "type": "security_signals"}}),
+        )
         result = client.get_object("indicator", "sig1")
         assert result["id"] == "sig1"
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": {"id": "f1"}}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": {"id": "f1"}}))
         result = client.get_object("vulnerability", "f1")
         assert result["id"] == "f1"
 
     def test_get_object_report(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": {"id": "inc1"}}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": {"id": "inc1"}}))
         result = client.get_object("report", "inc1")
         assert result["id"] == "inc1"
 
@@ -7302,26 +8407,22 @@ class TestDatadogClient:
             client.get_object("malware", "x")
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": [{"id": "sig1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"id": "sig1"}]}))
         result = client.list_objects("indicator")
         assert result[0]["id"] == "sig1"
 
     def test_list_objects_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": [{"id": "f1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"id": "f1"}]}))
         result = client.list_objects("vulnerability")
         assert result[0]["id"] == "f1"
 
     def test_list_objects_report(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"data": [{"id": "inc1"}]}))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"id": "inc1"}]}))
         result = client.list_objects("report")
         assert result[0]["id"] == "inc1"
 
     def test_upsert_incident(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"data": {"id": "inc-new"}}))
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"data": {"id": "inc-new"}}))
         result = client.upsert_object("report", {"title": "New Incident"})
         assert result["id"] == "inc-new"
 
@@ -7410,11 +8511,12 @@ class TestDatadogClient:
 # Cortex XDR
 # ──────────────────────────────────────────────────────────────────────────────
 
-class TestCortexXDRClient:
 
+class TestCortexXDRClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.cortex_xdr.client import CortexXDRClient
+
         c = CortexXDRClient(
             host="https://api.xdr.paloaltonetworks.com",
             api_key_id="1",
@@ -7425,6 +8527,7 @@ class TestCortexXDRClient:
 
     def test_authenticate_sets_headers(self):
         from gnat.connectors.cortex_xdr.client import CortexXDRClient
+
         c = CortexXDRClient(api_key_id="42", api_key="secret")
         c.authenticate()
         assert "Authorization" in c._auth_headers
@@ -7435,16 +8538,20 @@ class TestCortexXDRClient:
         assert client.health_check() is True
 
     def test_get_object_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"reply": {"alerts": [{"alert_id": "a1", "severity": "high"}]}}
-        ))
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"reply": {"alerts": [{"alert_id": "a1", "severity": "high"}]}}),
+        )
         result = client.get_object("indicator", "a1")
         assert result["alert_id"] == "a1"
 
     def test_get_object_malware(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"reply": {"incidents": [{"incident_id": "i1"}]}}
-        ))
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"reply": {"incidents": [{"incident_id": "i1"}]}}),
+        )
         result = client.get_object("malware", "i1")
         assert result["incident_id"] == "i1"
 
@@ -7453,16 +8560,18 @@ class TestCortexXDRClient:
             client.get_object("report", "x")
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"reply": {"alerts": [{"alert_id": "a1"}]}}
-        ))
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"reply": {"alerts": [{"alert_id": "a1"}]}})
+        )
         result = client.list_objects("indicator")
         assert result[0]["alert_id"] == "a1"
 
     def test_list_objects_malware(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"reply": {"incidents": [{"incident_id": "i1"}]}}
-        ))
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"reply": {"incidents": [{"incident_id": "i1"}]}}),
+        )
         result = client.list_objects("malware")
         assert result[0]["incident_id"] == "i1"
 
@@ -7488,9 +8597,11 @@ class TestCortexXDRClient:
             client.delete_object("indicator", "x")
 
     def test_get_endpoints(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"reply": {"endpoints": [{"endpoint_id": "ep1"}]}}
-        ))
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"reply": {"endpoints": [{"endpoint_id": "ep1"}]}}),
+        )
         result = client.get_endpoints()
         assert result[0]["endpoint_id"] == "ep1"
 
@@ -7543,11 +8654,12 @@ class TestCortexXDRClient:
 # Prisma Cloud
 # ──────────────────────────────────────────────────────────────────────────────
 
-class TestPrismaCloudClient:
 
+class TestPrismaCloudClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.prisma_cloud.client import PrismaCloudClient
+
         c = PrismaCloudClient(
             host="https://api.prismacloud.io",
             access_key_id="access-key-id",
@@ -7558,6 +8670,7 @@ class TestPrismaCloudClient:
 
     def test_authenticate_sets_header(self, monkeypatch):
         from gnat.connectors.prisma_cloud.client import PrismaCloudClient
+
         c = PrismaCloudClient(access_key_id="kid", secret_key="skey")
         monkeypatch.setattr(c, "post", MagicMock(return_value={"token": "jwt-token"}))
         c.authenticate()
@@ -7565,6 +8678,7 @@ class TestPrismaCloudClient:
 
     def test_authenticate_raises_on_missing_token(self, monkeypatch):
         from gnat.connectors.prisma_cloud.client import PrismaCloudClient
+
         c = PrismaCloudClient(access_key_id="kid", secret_key="skey")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
         with pytest.raises(GNATClientError, match="failed to obtain"):
@@ -7594,16 +8708,14 @@ class TestPrismaCloudClient:
             client.get_object("malware", "x")
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"items": [{"id": "alert1"}]}
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": [{"id": "alert1"}]}))
         result = client.list_objects("indicator")
         assert result[0]["id"] == "alert1"
 
     def test_list_objects_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"items": [{"cveId": "CVE-2024-0001"}]}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"items": [{"cveId": "CVE-2024-0001"}]})
+        )
         result = client.list_objects("vulnerability")
         assert result[0]["cveId"] == "CVE-2024-0001"
 
@@ -7621,20 +8733,28 @@ class TestPrismaCloudClient:
             client.upsert_object("vulnerability", {})
 
     def test_search_config(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"data": {"items": [{"id": "r1"}]}}
-        ))
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"data": {"items": [{"id": "r1"}]}})
+        )
         result = client.search_config("config from cloud.resource where ...")
         assert result[0]["id"] == "r1"
 
     def test_to_stix_alert_contract(self, client):
         native = {
             "id": "alert1",
-            "policy": {"name": "S3 Bucket Public", "severity": "high",
-                       "policyId": "p1", "policyType": "config"},
+            "policy": {
+                "name": "S3 Bucket Public",
+                "severity": "high",
+                "policyId": "p1",
+                "policyType": "config",
+            },
             "alertTime": 1700000000000,
-            "resource": {"name": "my-bucket", "cloudType": "aws",
-                         "id": "r1", "region": "us-east-1"},
+            "resource": {
+                "name": "my-bucket",
+                "cloudType": "aws",
+                "id": "r1",
+                "region": "us-east-1",
+            },
         }
         stix = client.to_stix(native)
         _assert_stix_contract(stix)
@@ -7676,11 +8796,12 @@ class TestPrismaCloudClient:
 # Nozomi Networks
 # ──────────────────────────────────────────────────────────────────────────────
 
-class TestNozomiClient:
 
+class TestNozomiClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.nozomi.client import NozomiClient
+
         c = NozomiClient(
             host="https://nozomi.example.com",
             api_token="nozomi-api-token",
@@ -7690,12 +8811,14 @@ class TestNozomiClient:
 
     def test_authenticate_token(self):
         from gnat.connectors.nozomi.client import NozomiClient
+
         c = NozomiClient(api_token="mytoken")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Token mytoken"
 
     def test_authenticate_basic(self):
         from gnat.connectors.nozomi.client import NozomiClient
+
         c = NozomiClient(username="user", password="pass")
         c.authenticate()
         assert c._auth_headers["Authorization"].startswith("Basic ")
@@ -7705,23 +8828,25 @@ class TestNozomiClient:
         assert client.health_check() is True
 
     def test_get_object_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"id": "alert1", "type_name": "Malware"}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "alert1", "type_name": "Malware"})
+        )
         result = client.get_object("indicator", "alert1")
         assert result["id"] == "alert1"
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"result": [{"id": "v1", "cve_id": "CVE-2024-0001"}]}
-        ))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"result": [{"id": "v1", "cve_id": "CVE-2024-0001"}]}),
+        )
         result = client.get_object("vulnerability", "v1")
         assert result["cve_id"] == "CVE-2024-0001"
 
     def test_get_object_infrastructure(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"result": [{"id": "n1", "vendor": "Siemens"}]}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"result": [{"id": "n1", "vendor": "Siemens"}]})
+        )
         result = client.get_object("infrastructure", "n1")
         assert result["vendor"] == "Siemens"
 
@@ -7730,9 +8855,9 @@ class TestNozomiClient:
             client.get_object("report", "x")
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"result": [{"id": "a1", "risk": "high"}]}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"result": [{"id": "a1", "risk": "high"}]})
+        )
         result = client.list_objects("indicator")
         assert result[0]["id"] == "a1"
 
@@ -7758,16 +8883,14 @@ class TestNozomiClient:
             client.delete_object("vulnerability", "v1")
 
     def test_get_nodes(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"result": [{"id": "n1"}]}
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"result": [{"id": "n1"}]}))
         result = client.get_nodes()
         assert result[0]["id"] == "n1"
 
     def test_get_vulnerabilities(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"result": [{"cve_id": "CVE-2024-0001"}]}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"result": [{"cve_id": "CVE-2024-0001"}]})
+        )
         result = client.get_vulnerabilities()
         assert result[0]["cve_id"] == "CVE-2024-0001"
 
@@ -7817,11 +8940,12 @@ class TestNozomiClient:
 # VMware Carbon Black
 # ──────────────────────────────────────────────────────────────────────────────
 
-class TestCarbonBlackClient:
 
+class TestCarbonBlackClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.carbon_black.client import CarbonBlackClient
+
         c = CarbonBlackClient(
             host="https://defense.conferdeploy.net",
             org_key="ABC123",
@@ -7833,12 +8957,14 @@ class TestCarbonBlackClient:
 
     def test_authenticate_sets_header(self):
         from gnat.connectors.carbon_black.client import CarbonBlackClient
+
         c = CarbonBlackClient(org_key="ORG", api_key="KEY", connector_id="CID")
         c.authenticate()
         assert c._auth_headers["X-Auth-Token"] == "KEY/CID"
 
     def test_authenticate_no_connector_id(self):
         from gnat.connectors.carbon_black.client import CarbonBlackClient
+
         c = CarbonBlackClient(org_key="ORG", api_key="ONLYKEY")
         c.authenticate()
         assert c._auth_headers["X-Auth-Token"] == "ONLYKEY"
@@ -7848,16 +8974,16 @@ class TestCarbonBlackClient:
         assert client.health_check() is True
 
     def test_get_object_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"id": "alert1", "type": "CB_ANALYTICS"}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "alert1", "type": "CB_ANALYTICS"})
+        )
         result = client.get_object("indicator", "alert1")
         assert result["id"] == "alert1"
 
     def test_get_object_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"id": "dev1", "device_os": "WINDOWS"}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "dev1", "device_os": "WINDOWS"})
+        )
         result = client.get_object("vulnerability", "dev1")
         assert result["id"] == "dev1"
 
@@ -7866,16 +8992,18 @@ class TestCarbonBlackClient:
             client.get_object("report", "x")
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"results": [{"id": "a1", "severity": 8}]}
-        ))
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"results": [{"id": "a1", "severity": 8}]})
+        )
         result = client.list_objects("indicator")
         assert result[0]["id"] == "a1"
 
     def test_list_objects_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"results": [{"id": "dev1", "device_os": "LINUX"}]}
-        ))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"results": [{"id": "dev1", "device_os": "LINUX"}]}),
+        )
         result = client.list_objects("vulnerability")
         assert result[0]["id"] == "dev1"
 
@@ -7901,9 +9029,7 @@ class TestCarbonBlackClient:
             client.delete_object("vulnerability", "v1")
 
     def test_get_devices(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"results": [{"id": "dev1"}]}
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"results": [{"id": "dev1"}]}))
         result = client.get_devices()
         assert result[0]["id"] == "dev1"
 
@@ -7913,9 +9039,7 @@ class TestCarbonBlackClient:
         assert isinstance(result, dict)
 
     def test_get_watchlists(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"results": [{"id": "wl1"}]}
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"results": [{"id": "wl1"}]}))
         result = client.get_watchlists()
         assert result[0]["id"] == "wl1"
 
@@ -7979,11 +9103,12 @@ class TestCarbonBlackClient:
 # LogRhythm
 # ──────────────────────────────────────────────────────────────────────────────
 
-class TestLogRhythmClient:
 
+class TestLogRhythmClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.logrhythm.client import LogRhythmClient
+
         c = LogRhythmClient(
             host="https://logrhythm.example.com:8501",
             api_token="lr-bearer-token",
@@ -7993,44 +9118,51 @@ class TestLogRhythmClient:
 
     def test_authenticate_token(self):
         from gnat.connectors.logrhythm.client import LogRhythmClient
+
         c = LogRhythmClient(api_token="mytoken")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer mytoken"
 
     def test_authenticate_oauth2(self, monkeypatch):
         from gnat.connectors.logrhythm.client import LogRhythmClient
+
         c = LogRhythmClient(client_id="cid", client_secret="csecret")
-        monkeypatch.setattr(c, "post", MagicMock(
-            return_value={"access_token": "oauth-token"}
-        ))
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "oauth-token"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer oauth-token"
 
     def test_authenticate_oauth2_raises(self, monkeypatch):
         from gnat.connectors.logrhythm.client import LogRhythmClient
+
         c = LogRhythmClient(client_id="cid", client_secret="csecret")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
         with pytest.raises(GNATClientError, match="failed to obtain"):
             c.authenticate()
 
     def test_health_check(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"alarmsSearchDetails": []}
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"alarmsSearchDetails": []}))
         assert client.health_check() is True
 
     def test_get_object_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"alarmId": 42, "alarmRuleName": "Brute Force"}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"alarmId": 42, "alarmRuleName": "Brute Force"})
+        )
         result = client.get_object("indicator", "42")
         assert result["alarmId"] == 42
 
     def test_get_object_malware(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"id": "case1", "name": "IR Case", "priority": 3,
-                          "status": {"name": "Created"}}
-        ))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "id": "case1",
+                    "name": "IR Case",
+                    "priority": 3,
+                    "status": {"name": "Created"},
+                }
+            ),
+        )
         result = client.get_object("malware", "case1")
         assert result["id"] == "case1"
 
@@ -8039,16 +9171,14 @@ class TestLogRhythmClient:
             client.get_object("report", "x")
 
     def test_list_objects_alarms(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"alarmsSearchDetails": [{"alarmId": 1}]}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"alarmsSearchDetails": [{"alarmId": 1}]})
+        )
         result = client.list_objects("indicator")
         assert result[0]["alarmId"] == 1
 
     def test_list_objects_cases(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value=[{"id": "c1"}]
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[{"id": "c1"}]))
         result = client.list_objects("malware")
         assert result[0]["id"] == "c1"
 
@@ -8062,9 +9192,7 @@ class TestLogRhythmClient:
         assert isinstance(result, dict)
 
     def test_upsert_create_case(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"id": "new-case"}
-        ))
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "new-case"}))
         result = client.upsert_object("malware", {"name": "New Case", "priority": 2})
         assert result["id"] == "new-case"
 
@@ -8085,9 +9213,7 @@ class TestLogRhythmClient:
             client.delete_object("vulnerability", "v1")
 
     def test_get_alarm_events(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"logList": [{"msgId": "e1"}]}
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"logList": [{"msgId": "e1"}]}))
         result = client.get_alarm_events("42")
         assert result[0]["msgId"] == "e1"
 
@@ -8157,8 +9283,12 @@ class TestLogRhythmClient:
         assert stix["type"] == "observed-data"
 
     def test_from_stix_case(self, client):
-        stix = {"id": "malware--abc", "name": "IR Case", "type": "malware",
-                "description": "Investigation summary"}
+        stix = {
+            "id": "malware--abc",
+            "name": "IR Case",
+            "type": "malware",
+            "description": "Investigation summary",
+        }
         result = client.from_stix(stix)
         assert result["name"] == "IR Case"
 
@@ -8172,11 +9302,12 @@ class TestLogRhythmClient:
 # FortiSOAR (fix regression tests)
 # ──────────────────────────────────────────────────────────────────────────────
 
-class TestFortiSOARClient:
 
+class TestFortiSOARClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.fortisoar.client import FortiSOARClient
+
         c = FortiSOARClient(
             host="https://fortisoar.example.com",
             username="admin",
@@ -8188,14 +9319,15 @@ class TestFortiSOARClient:
 
     def test_authenticate_jwt(self, monkeypatch):
         from gnat.connectors.fortisoar.client import FortiSOARClient
-        c = FortiSOARClient(host="https://fortisoar.example.com",
-                            username="admin", password="pass")
+
+        c = FortiSOARClient(host="https://fortisoar.example.com", username="admin", password="pass")
         monkeypatch.setattr(c, "post", MagicMock(return_value={"token": "jwt"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer jwt"
 
     def test_authenticate_uses_cached_token(self):
         from gnat.connectors.fortisoar.client import FortiSOARClient
+
         c = FortiSOARClient(host="https://fortisoar.example.com")
         c._token = "cached-jwt"
         c.authenticate()
@@ -8206,30 +9338,26 @@ class TestFortiSOARClient:
         assert client.health_check() is True
 
     def test_get_object(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"id": "uuid-1", "name": "Test Alert"}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "uuid-1", "name": "Test Alert"})
+        )
         result = client.get_object("observed-data", "uuid-1")
         assert result["id"] == "uuid-1"
 
     def test_list_objects(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"hydra:member": [{"id": "uuid-1"}]}
-        ))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"hydra:member": [{"id": "uuid-1"}]})
+        )
         result = client.list_objects("indicator")
         assert result[0]["id"] == "uuid-1"
 
     def test_upsert_create(self, client, monkeypatch):
-        monkeypatch.setattr(client, "post", MagicMock(
-            return_value={"id": "new-uuid"}
-        ))
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "new-uuid"}))
         result = client.upsert_object("incident", {"name": "New Incident"})
         assert result["id"] == "new-uuid"
 
     def test_upsert_update(self, client, monkeypatch):
-        monkeypatch.setattr(client, "put", MagicMock(
-            return_value={"id": "existing-uuid"}
-        ))
+        monkeypatch.setattr(client, "put", MagicMock(return_value={"id": "existing-uuid"}))
         result = client.upsert_object("incident", {"id": "existing-uuid", "name": "Updated"})
         assert result["id"] == "existing-uuid"
 
@@ -8238,9 +9366,7 @@ class TestFortiSOARClient:
         client.delete_object("observed-data", "uuid-1")
 
     def test_list_alerts(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(
-            return_value={"hydra:member": [{"id": "a1"}]}
-        ))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"hydra:member": [{"id": "a1"}]}))
         result = client.list_alerts(status="Open")
         assert result[0]["id"] == "a1"
 
@@ -8302,17 +9428,19 @@ class TestFortiSOARClient:
 # CISA
 # ---------------------------------------------------------------------------
 
-class TestCISAClient:
 
+class TestCISAClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.CISA.client import CISAClient
+
         c = CISAClient(host="https://www.cisa.gov")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_accept_header(self):
         from gnat.connectors.CISA.client import CISAClient
+
         c = CISAClient(host="https://www.cisa.gov")
         c.authenticate()
         assert c._auth_headers["Accept"] == "application/json"
@@ -8323,11 +9451,17 @@ class TestCISAClient:
         assert result is True
 
     def test_list_objects_returns_vulnerabilities(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "vulnerabilities": [
-                {"cveID": "CVE-2021-44228", "vendorProject": "Apache", "product": "Log4j"},
-            ]
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "vulnerabilities": [
+                        {"cveID": "CVE-2021-44228", "vendorProject": "Apache", "product": "Log4j"},
+                    ]
+                }
+            ),
+        )
         result = client.list_objects("vulnerability")
         assert len(result) == 1
         assert result[0]["cveID"] == "CVE-2021-44228"
@@ -8348,9 +9482,15 @@ class TestCISAClient:
             client.list_objects("malware")
 
     def test_get_object_finds_cve(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "vulnerabilities": [{"cveID": "CVE-2021-44228"}, {"cveID": "CVE-2022-0001"}]
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "vulnerabilities": [{"cveID": "CVE-2021-44228"}, {"cveID": "CVE-2022-0001"}]
+                }
+            ),
+        )
         result = client.get_object("vulnerability", "CVE-2021-44228")
         assert result["cveID"] == "CVE-2021-44228"
 
@@ -8378,9 +9518,11 @@ class TestCISAClient:
         assert result["title"] == "CISA KEV"
 
     def test_get_kev_by_cve_found(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "vulnerabilities": [{"cveID": "CVE-2021-44228"}]
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"vulnerabilities": [{"cveID": "CVE-2021-44228"}]}),
+        )
         result = client.get_kev_by_cve("CVE-2021-44228")
         assert result is not None
         assert result["cveID"] == "CVE-2021-44228"
@@ -8423,20 +9565,20 @@ class TestCISAClient:
 # FortiEDR
 # ---------------------------------------------------------------------------
 
-class TestFortiEDRClient:
 
+class TestFortiEDRClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.fortiedr.client import FortiEDRClient
-        c = FortiEDRClient(host="https://fortiedr.example.com",
-                           username="admin", password="secret")
+
+        c = FortiEDRClient(host="https://fortiedr.example.com", username="admin", password="secret")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_headers(self):
         from gnat.connectors.fortiedr.client import FortiEDRClient
-        c = FortiEDRClient(host="https://fortiedr.example.com",
-                           username="admin", password="secret")
+
+        c = FortiEDRClient(host="https://fortiedr.example.com", username="admin", password="secret")
         c.authenticate()
         assert c._auth_headers["Accept"] == "application/json"
         assert c._auth_headers["Content-Type"] == "application/json"
@@ -8451,16 +9593,18 @@ class TestFortiEDRClient:
             client.get_object("malware", "id-1")
 
     def test_list_objects_incidents(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "data": [{"incidentId": "inc-1"}, {"incidentId": "inc-2"}]
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"incidentId": "inc-1"}, {"incidentId": "inc-2"}]}),
+        )
         result = client.list_objects("incident")
         assert len(result) == 2
 
     def test_list_objects_collectors(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "data": [{"collectorId": "col-1"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"collectorId": "col-1"}]})
+        )
         result = client.list_objects("report")
         assert result[0]["collectorId"] == "col-1"
 
@@ -8483,9 +9627,11 @@ class TestFortiEDRClient:
             client.delete_object("incident", "inc-1")
 
     def test_list_collectors_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "data": [{"collectorId": "col-1", "hostname": "host1"}]
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"collectorId": "col-1", "hostname": "host1"}]}),
+        )
         result = client.list_collectors()
         assert result[0]["hostname"] == "host1"
 
@@ -8524,28 +9670,30 @@ class TestFortiEDRClient:
 # FortiSIEM
 # ---------------------------------------------------------------------------
 
-class TestFortiSIEMClient:
 
+class TestFortiSIEMClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.fortisiem.client import FortiSIEMClient
-        c = FortiSIEMClient(host="https://fortisiem.example.com",
-                            username="super/admin", password="secret")
+
+        c = FortiSIEMClient(
+            host="https://fortisiem.example.com", username="super/admin", password="secret"
+        )
         c._authenticated = True
         return c
 
     def test_authenticate_sets_headers(self):
         from gnat.connectors.fortisiem.client import FortiSIEMClient
-        c = FortiSIEMClient(host="https://fortisiem.example.com",
-                            username="admin", password="pass")
+
+        c = FortiSIEMClient(host="https://fortisiem.example.com", username="admin", password="pass")
         c.authenticate()
         assert c._auth_headers["Accept"] == "application/json"
         assert c._auth_headers["Content-Type"] == "application/json"
 
     def test_get_object_incident(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "response": [{"incidentId": "5001"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"response": [{"incidentId": "5001"}]})
+        )
         result = client.get_object("incident", "5001")
         assert result["incidentId"] == "5001"
 
@@ -8554,9 +9702,11 @@ class TestFortiSIEMClient:
             client.get_object("malware", "id-1")
 
     def test_list_objects_incidents(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "response": [{"incidentId": "5001"}, {"incidentId": "5002"}]
-        }))
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"response": [{"incidentId": "5001"}, {"incidentId": "5002"}]}),
+        )
         result = client.list_objects("incident")
         assert len(result) == 2
 
@@ -8578,9 +9728,9 @@ class TestFortiSIEMClient:
             client.delete_object("incident", "5001")
 
     def test_fetch_incidents_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "response": [{"incidentId": "5001"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"response": [{"incidentId": "5001"}]})
+        )
         result = client.fetch_incidents(time_from=0, time_to=9999999999)
         assert result[0]["incidentId"] == "5001"
 
@@ -8616,19 +9766,20 @@ class TestFortiSIEMClient:
 # GoogleChronicle
 # ---------------------------------------------------------------------------
 
-class TestGoogleChronicleClient:
 
+class TestGoogleChronicleClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.google_chronicle.client import GoogleChronicleClient
-        c = GoogleChronicleClient(host="https://backstory.googleapis.com",
-                                  service_account={})
+
+        c = GoogleChronicleClient(host="https://backstory.googleapis.com", service_account={})
         c._token = "fake-token"
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer_header(self):
         from gnat.connectors.google_chronicle.client import GoogleChronicleClient
+
         c = GoogleChronicleClient(service_account={})
         c._token = "test-token"
         c.authenticate()
@@ -8640,17 +9791,17 @@ class TestGoogleChronicleClient:
         assert result is True
 
     def test_list_objects_observed_data(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "events": [{"id": "ev-1", "udm": {}}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"events": [{"id": "ev-1", "udm": {}}]})
+        )
         result = client.list_objects("observed-data", filters={"query": "ip = '1.2.3.4'"})
         assert isinstance(result, list)
         assert len(result) == 1
 
     def test_list_objects_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "detections": [{"id": "det-1"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"detections": [{"id": "det-1"}]})
+        )
         result = client.list_objects("indicator")
         assert result[0]["id"] == "det-1"
 
@@ -8667,16 +9818,14 @@ class TestGoogleChronicleClient:
             client.delete_object("observed-data", "ev-1")
 
     def test_search_udm_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "events": [{"id": "ev-1"}]
-        }))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"events": [{"id": "ev-1"}]}))
         result = client.search_udm(query="ip.dst.address = '1.2.3.4'")
         assert len(result) == 1
 
     def test_list_detections_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "detections": [{"id": "det-1"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"detections": [{"id": "det-1"}]})
+        )
         result = client.list_detections()
         assert result[0]["id"] == "det-1"
 
@@ -8710,17 +9859,19 @@ class TestGoogleChronicleClient:
 # GreyNoise
 # ---------------------------------------------------------------------------
 
-class TestGreyNoiseClient:
 
+class TestGreyNoiseClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.greynoise.client import GreyNoiseClient
+
         c = GreyNoiseClient(host="https://api.greynoise.io", api_key="gn-test-key")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_api_key_header(self):
         from gnat.connectors.greynoise.client import GreyNoiseClient
+
         c = GreyNoiseClient(host="https://api.greynoise.io", api_key="my-key")
         c.authenticate()
         assert c._auth_headers["key"] == "my-key"
@@ -8732,16 +9883,16 @@ class TestGreyNoiseClient:
         assert result is True
 
     def test_get_object_ip_lookup(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "ip": "1.2.3.4", "classification": "malicious"
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"ip": "1.2.3.4", "classification": "malicious"})
+        )
         result = client.get_object("observed-data", "1.2.3.4")
         assert result["ip"] == "1.2.3.4"
 
     def test_get_object_indicator(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "ip": "1.2.3.4", "classification": "malicious"
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"ip": "1.2.3.4", "classification": "malicious"})
+        )
         result = client.get_object("indicator", "1.2.3.4")
         assert result["ip"] == "1.2.3.4"
 
@@ -8750,9 +9901,7 @@ class TestGreyNoiseClient:
             client.get_object("malware", "id-1")
 
     def test_list_objects_gnql_query(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "data": [{"ip": "1.2.3.4"}]
-        }))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"ip": "1.2.3.4"}]}))
         result = client.list_objects("observed-data", filters={"query": "classification:malicious"})
         assert result[0]["ip"] == "1.2.3.4"
 
@@ -8783,19 +9932,21 @@ class TestGreyNoiseClient:
         assert result["ip"] == "8.8.8.8"
 
     def test_community_ip_lookup(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"ip": "8.8.8.8", "noise": False}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"ip": "8.8.8.8", "noise": False})
+        )
         result = client.community_ip_lookup("8.8.8.8")
         assert result["ip"] == "8.8.8.8"
 
     def test_gnql_query_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "data": [{"ip": "1.2.3.4"}]
-        }))
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"ip": "1.2.3.4"}]}))
         result = client.gnql_query("classification:malicious port:445")
         assert result[0]["ip"] == "1.2.3.4"
 
     def test_riot_lookup_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"ip": "8.8.8.8", "is_riot": True}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"ip": "8.8.8.8", "is_riot": True})
+        )
         result = client.riot_lookup("8.8.8.8")
         assert result["is_riot"] is True
 
@@ -8834,17 +9985,19 @@ class TestGreyNoiseClient:
 # Shodan
 # ---------------------------------------------------------------------------
 
-class TestShodanClient:
 
+class TestShodanClient:
     @pytest.fixture
     def client(self):
         from gnat.connectors.shodan.client import ShodanClient
+
         c = ShodanClient(host="https://api.shodan.io", api_key="shodan-test-key")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_headers(self):
         from gnat.connectors.shodan.client import ShodanClient
+
         c = ShodanClient(host="https://api.shodan.io", api_key="my-key")
         c.authenticate()
         assert c._auth_headers["X-API-Key"] == "my-key"
@@ -8856,9 +10009,9 @@ class TestShodanClient:
         assert result is True
 
     def test_get_object_host(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "ip_str": "1.2.3.4", "ports": [80, 443]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"ip_str": "1.2.3.4", "ports": [80, 443]})
+        )
         result = client.get_object("observed-data", "1.2.3.4")
         assert result["ip_str"] == "1.2.3.4"
 
@@ -8872,16 +10025,16 @@ class TestShodanClient:
             client.get_object("malware", "id-1")
 
     def test_list_objects_hosts(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "matches": [{"ip_str": "1.2.3.4"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"matches": [{"ip_str": "1.2.3.4"}]})
+        )
         result = client.list_objects("observed-data", filters={"query": "port:80"})
         assert result[0]["ip_str"] == "1.2.3.4"
 
     def test_list_objects_vulnerability(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "matches": [{"cve": "CVE-2021-44228"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"matches": [{"cve": "CVE-2021-44228"}]})
+        )
         result = client.list_objects("vulnerability", filters={"query": "log4j"})
         assert result[0]["cve"] == "CVE-2021-44228"
 
@@ -8899,16 +10052,16 @@ class TestShodanClient:
             client.delete_object("observed-data", "1.2.3.4")
 
     def test_host_lookup_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "ip_str": "8.8.8.8", "ports": [53]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"ip_str": "8.8.8.8", "ports": [53]})
+        )
         result = client.host_lookup("8.8.8.8")
         assert result["ip_str"] == "8.8.8.8"
 
     def test_search_hosts_helper(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={
-            "matches": [{"ip_str": "1.2.3.4"}]
-        }))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"matches": [{"ip_str": "1.2.3.4"}]})
+        )
         result = client.search_hosts("port:443")
         assert result[0]["ip_str"] == "1.2.3.4"
 
@@ -8960,8 +10113,8 @@ class TestShodanClient:
 # OsintFeedConnector
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.osint_feed.connector import OsintFeedConnector
-from gnat.connectors.osint_feed.feed_factory import FeedConnectorFactory
+from gnat.connectors.osint_feed.connector import OsintFeedConnector  # noqa: E402
+from gnat.connectors.osint_feed.feed_factory import FeedConnectorFactory  # noqa: E402
 
 
 class TestOsintFeedConnector:
@@ -9112,7 +10265,11 @@ class TestOsintFeedConnector:
             "type": "bundle",
             "id": "bundle--1",
             "objects": [
-                {"type": "indicator", "id": "indicator--aaa", "pattern": "[ipv4-addr:value = '1.2.3.4']"},
+                {
+                    "type": "indicator",
+                    "id": "indicator--aaa",
+                    "pattern": "[ipv4-addr:value = '1.2.3.4']",
+                },
                 {"type": "malware", "id": "malware--bbb", "name": "BadBot"},
             ],
         }
@@ -9122,10 +10279,7 @@ class TestOsintFeedConnector:
         assert results[0]["type"] == "indicator"
 
     def test_list_objects_pagination(self, stix_json_client, monkeypatch):
-        objects = [
-            {"type": "indicator", "id": f"indicator--{i:03d}"}
-            for i in range(10)
-        ]
+        objects = [{"type": "indicator", "id": f"indicator--{i:03d}"} for i in range(10)]
         bundle = {"type": "bundle", "objects": objects}
         monkeypatch.setattr(stix_json_client, "get", MagicMock(return_value=bundle))
         page1 = stix_json_client.list_objects("indicator", page=1, page_size=5)
@@ -9179,7 +10333,11 @@ class TestOsintFeedConnector:
     # ── to_stix / from_stix passthrough ──────────────────────────────────
 
     def test_to_stix_adds_feed_source(self, stix_json_client):
-        obj = {"type": "indicator", "id": "indicator--aaa", "pattern": "[ipv4-addr:value = '1.2.3.4']"}
+        obj = {
+            "type": "indicator",
+            "id": "indicator--aaa",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+        }
         result = stix_json_client.to_stix(obj)
         _assert_stix_contract(result)
         assert "x_feed_source" in result
@@ -9237,6 +10395,7 @@ class TestOsintFeedConnector:
 # ---------------------------------------------------------------------------
 # FeedConnectorFactory
 # ---------------------------------------------------------------------------
+
 
 class TestFeedConnectorFactory:
     """Tests for config-driven feed connector registration."""
@@ -9328,7 +10487,7 @@ class TestFeedConnectorFactory:
 # CiscoUmbrellaClient
 # ---------------------------------------------------------------------------
 
-from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
+from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient  # noqa: E402
 
 
 class TestCiscoUmbrellaClient:
@@ -9416,7 +10575,11 @@ class TestCiscoUmbrellaClient:
 
     def test_get_object_indicator_returns_stix(self, client, monkeypatch):
         raw_resp = {
-            "evil.com": {"status": -1, "security_categories": ["Phishing"], "content_categories": []}
+            "evil.com": {
+                "status": -1,
+                "security_categories": ["Phishing"],
+                "content_categories": [],
+            }
         }
         monkeypatch.setattr(client, "get", MagicMock(return_value=raw_resp))
         result = client.get_object("indicator", "evil.com")

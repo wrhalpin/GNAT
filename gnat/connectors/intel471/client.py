@@ -71,7 +71,7 @@ class Intel471Client(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "iocs",
-        "report":    "actors",
+        "report": "actors",
     }
 
     def __init__(self, host: str = "https://api.intel471.com", token: str = "", **kwargs: Any):

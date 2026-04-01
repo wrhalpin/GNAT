@@ -49,6 +49,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("a2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -70,10 +71,16 @@ class GroupIBClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "collections",
-        "report":    "collections",
+        "report": "collections",
     }
 
-    def __init__(self, host: str = "https://tap.group-ib.com/api/v2/", username: str = "", token: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "https://tap.group-ib.com/api/v2/",
+        username: str = "",
+        token: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
         self._username = username
         self._token = token
@@ -201,7 +208,9 @@ class GroupIBClient(BaseClient, ConnectorMixin):
             "modified": now,
             "name": ioc.get("value", "Group-IB IOC"),
             "description": ioc.get("description", ""),
-            "pattern": f"[file:hashes.'SHA-256' = '{ioc.get('hash')}']" if ioc.get("hash") else None,
+            "pattern": f"[file:hashes.'SHA-256' = '{ioc.get('hash')}']"
+            if ioc.get("hash")
+            else None,
             "pattern_type": "stix",
             "indicator_types": ["malicious-activity"],
             "x_groupib": {

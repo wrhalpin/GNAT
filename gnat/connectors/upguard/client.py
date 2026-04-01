@@ -51,6 +51,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("e8f9a0b1-c2d3-4e5f-6a7b-8c9d0e1f2a3b")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -70,10 +71,12 @@ class UpGuardClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "breaches",
-        "report":        "vendors",
+        "report": "vendors",
     }
 
-    def __init__(self, host: str = "https://cyber-risk.upguard.com", api_key: str = "", **kwargs: Any):
+    def __init__(
+        self, host: str = "https://cyber-risk.upguard.com", api_key: str = "", **kwargs: Any
+    ):
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 

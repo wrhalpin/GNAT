@@ -42,10 +42,10 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":    "intelligence",
+        "indicator": "intelligence",
         "threat-actor": "actor",
-        "malware":      "malware",
-        "campaign":     "campaign",
+        "malware": "malware",
+        "campaign": "campaign",
         "vulnerability": "vulnerability",
     }
 
@@ -58,7 +58,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
     ) -> None:
         super().__init__(host=host, **kwargs)
         self._username = username
-        self._api_key  = api_key
+        self._api_key = api_key
 
     # ------------------------------------------------------------------
     # ConnectorMixin interface
@@ -75,7 +75,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         # Store them for use in _auth_params()
         self._ts_auth = {
             "username": self._username,
-            "api_key":  self._api_key,
+            "api_key": self._api_key,
         }
 
     def health_check(self) -> bool:
@@ -86,9 +86,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         )
         return isinstance(resp, dict) and "objects" in resp
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve a single ThreatStream object by numeric ID."""
         resource = self.stix_type_map.get(stix_type, "intelligence")
         resp = self.get(
@@ -117,7 +115,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         resource = self.stix_type_map.get(stix_type, "intelligence")
         params: dict[str, Any] = {
             **self._ts_auth,
-            "limit":  min(page_size, 1000),
+            "limit": min(page_size, 1000),
             "offset": (page - 1) * page_size,
             "format": "json",
         }
@@ -129,9 +127,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("objects", [])
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Import an indicator into ThreatStream.
 
@@ -169,38 +165,39 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a ThreatStream intelligence object to a STIX Indicator SDO."""
         ts_type = native.get("type", "")
-        value   = native.get("value", native.get("ip", native.get("domain", "")))
+        value = native.get("value", native.get("ip", native.get("domain", "")))
         pattern = self._make_pattern(ts_type, value)
-        conf    = native.get("confidence", 0)
+        conf = native.get("confidence", 0)
         return {
-            "type":              "indicator",
-            "id":                f"indicator--ts-{native.get('id', '')}",
-            "name":              value,
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("created_ts", ""),
-            "modified":          native.get("modified_ts", ""),
-            "confidence":        conf,
-            "indicator_types":   ["malicious-activity"] if conf >= 50 else ["unknown"],
+            "type": "indicator",
+            "id": f"indicator--ts-{native.get('id', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("created_ts", ""),
+            "modified": native.get("modified_ts", ""),
+            "confidence": conf,
+            "indicator_types": ["malicious-activity"] if conf >= 50 else ["unknown"],
             "x_source_platform": "threatstream",
-            "x_ts_id":           native.get("id", ""),
-            "x_ts_type":         ts_type,
-            "x_ts_status":       native.get("status", ""),
-            "x_ts_feed_id":      native.get("feed_id", ""),
+            "x_ts_id": native.get("id", ""),
+            "x_ts_type": ts_type,
+            "x_ts_status": native.get("status", ""),
+            "x_ts_feed_id": native.get("feed_id", ""),
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a ThreatStream intelligence import payload from a STIX dict."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_dict.get("name", "")
         return {
-            "value":      value,
-            "type":       self._stix_to_ts_type(pattern),
+            "value": value,
+            "type": self._stix_to_ts_type(pattern),
             "confidence": stix_dict.get("confidence", 50),
-            "status":     "active",
-            "source":     "gnat",
+            "status": "active",
+            "source": "gnat",
         }
 
     # ------------------------------------------------------------------

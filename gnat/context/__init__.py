@@ -45,6 +45,7 @@ from gnat.context.workspace import (
 
 try:
     from gnat.context.store import WorkspaceStore
+
     _HAS_SQLALCHEMY = True
 except Exception:
     _HAS_SQLALCHEMY = False

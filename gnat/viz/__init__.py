@@ -50,6 +50,7 @@ from gnat.viz.tabular import TabularView
 
 try:
     from gnat.viz.grafana.server import GrafanaServer
+
     _HAS_GRAFANA = True
 except ImportError:
     _HAS_GRAFANA = False

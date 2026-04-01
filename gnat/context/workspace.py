@@ -126,10 +126,10 @@ class Workspace:
         store: Any,  # WorkspaceStore | FlatFileStore
         description: str = "",
     ):
-        self.name        = name
+        self.name = name
         self.description = description
-        self._registry   = registry
-        self._store      = store
+        self._registry = registry
+        self._store = store
 
         # In-memory cache: stix_id → STIXBase
         self.objects: dict[str, STIXBase] = {}
@@ -149,9 +149,7 @@ class Workspace:
         from gnat.context.store import WorkspaceStore
 
         if isinstance(self._store, WorkspaceStore):
-            ws_model = self._store.get_or_create_workspace(
-                self.name, description=self.description
-            )
+            ws_model = self._store.get_or_create_workspace(self.name, description=self.description)
             self._ws_id = ws_model.id
             # Re-hydrate in-memory cache from persisted objects
             for stix_dict in self._store.get_objects(self._ws_id):
@@ -159,16 +157,15 @@ class Workspace:
                 self.objects[obj.id] = obj
                 self._snapshot[obj.id] = stix_dict
         else:  # FlatFileStore
-            self._store.get_or_create_workspace(
-                self.name, description=self.description
-            )
+            self._store.get_or_create_workspace(self.name, description=self.description)
             for stix_dict in self._store.get_objects(self.name):
                 obj = self._from_dict(stix_dict)
                 self.objects[obj.id] = obj
                 self._snapshot[obj.id] = stix_dict
 
-        logger.debug("Workspace %r initialised with %d cached objects",
-                     self.name, len(self.objects))
+        logger.debug(
+            "Workspace %r initialised with %d cached objects", self.name, len(self.objects)
+        )
 
     # ── Load from global context ────────────────────────────────────────────
 
@@ -212,8 +209,7 @@ class Workspace:
 
         loaded = 0
         for page in range(1, max_pages + 1):
-            stix_list = gc.list_objects(stix_type, filters=filters,
-                                        page=page, page_size=page_size)
+            stix_list = gc.list_objects(stix_type, filters=filters, page=page, page_size=page_size)
             if not stix_list:
                 break
             for stix_dict in stix_list:
@@ -222,8 +218,9 @@ class Workspace:
             if len(stix_list) < page_size:
                 break  # last page
 
-        logger.info("Workspace %r: loaded %d %s objects from %r",
-                    self.name, loaded, stix_type, gc.name)
+        logger.info(
+            "Workspace %r: loaded %d %s objects from %r", self.name, loaded, stix_type, gc.name
+        )
         return self
 
     def add(self, obj: STIXBase, mark_dirty: bool = True) -> Workspace:
@@ -287,12 +284,14 @@ class Workspace:
         Workspace
             ``self`` for chaining.
         """
-        source_names = sources or [g.name for g in self._registry.all()
-                                   if g.name != self._registry.default.name]
+        source_names = sources or [
+            g.name for g in self._registry.all() if g.name != self._registry.default.name
+        ]
         targets = stix_ids or list(self.objects.keys())
 
-        logger.info("Workspace %r: enriching %d objects from %s",
-                    self.name, len(targets), source_names)
+        logger.info(
+            "Workspace %r: enriching %d objects from %s", self.name, len(targets), source_names
+        )
 
         try:
             loop = asyncio.get_event_loop()
@@ -330,8 +329,9 @@ class Workspace:
                 ws = manager.open("investigation")
                 await ws.aenrich(sources=["recorded_future", "crowdstrike"])
         """
-        source_names = sources or [g.name for g in self._registry.all()
-                                   if g.name != self._registry.default.name]
+        source_names = sources or [
+            g.name for g in self._registry.all() if g.name != self._registry.default.name
+        ]
         targets = stix_ids or list(self.objects.keys())
         await self._enrich_async(source_names, targets, strategy, confidence_floor)
         return self
@@ -354,9 +354,7 @@ class Workspace:
                 obj = self.objects.get(stix_id)
                 if obj is None:
                     continue
-                tasks.append(
-                    self._enrich_one_async(gc, obj, strategy, confidence_floor)
-                )
+                tasks.append(self._enrich_one_async(gc, obj, strategy, confidence_floor))
         if tasks:
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for r in results:
@@ -380,18 +378,16 @@ class Workspace:
                     obj.stix_type,
                     filters={"value": getattr(obj, "name", "")},
                     page_size=5,
-                )
+                ),
             )
         except Exception as exc:  # noqa: BLE001
             logger.debug("Enrich %r from %r: no results — %s", obj.id, gc.name, exc)
             return
 
         for enrichment_dict in stix_list:
-            conf = enrichment_dict.get("confidence",
-                   enrichment_dict.get("x_rf_risk_score", 100))
+            conf = enrichment_dict.get("confidence", enrichment_dict.get("x_rf_risk_score", 100))
             if isinstance(conf, (int, float)) and conf < confidence_floor:
-                logger.debug("Skipping low-confidence enrichment %s < %d",
-                             conf, confidence_floor)
+                logger.debug("Skipping low-confidence enrichment %s < %d", conf, confidence_floor)
                 continue
             self._apply_enrichment(obj, enrichment_dict, gc.name, strategy)
 
@@ -440,20 +436,18 @@ class Workspace:
             # Add the enrichment SDO + a Relationship linking original → enrichment
             enrich_obj = self._from_dict(enrichment_dict)
             enrich_obj._properties["x_enrichment_source"] = source_platform
-            self._add_object(enrich_obj.to_dict(), source_platform=source_platform,
-                             mark_dirty=True)
+            self._add_object(enrich_obj.to_dict(), source_platform=source_platform, mark_dirty=True)
 
             rel = Relationship(
-                relationship_type = "related-to",
-                source_ref        = original.id,
-                target_ref        = enrich_obj.id,
-                x_enrichment_source = source_platform,
-                x_enrichment_strategy = strategy,
-                created           = _utcnow(),
-                modified          = _utcnow(),
+                relationship_type="related-to",
+                source_ref=original.id,
+                target_ref=enrich_obj.id,
+                x_enrichment_source=source_platform,
+                x_enrichment_strategy=strategy,
+                created=_utcnow(),
+                modified=_utcnow(),
             )
-            self._add_object(rel.to_dict(), source_platform=source_platform,
-                             mark_dirty=True)
+            self._add_object(rel.to_dict(), source_platform=source_platform, mark_dirty=True)
             # Log to store
             self._log_enrichment(original.id, source_platform, enrichment_dict, strategy)
 
@@ -473,14 +467,13 @@ class Workspace:
         elif strategy == "tag_only":
             live = self.objects.get(original.id, original)
             tags = list(live._properties.get("x_enrichment_tags", []))
-            tag  = f"{source_platform}:enriched"
+            tag = f"{source_platform}:enriched"
             if tag not in tags:
                 tags.append(tag)
                 live._properties["x_enrichment_tags"] = tags
                 self.dirty.add(live.id)
                 self._persist_object(live.to_dict(), mark_dirty=True)
-                self._log_enrichment(live.id, source_platform,
-                                     {"tag": tag}, strategy)
+                self._log_enrichment(live.id, source_platform, {"tag": tag}, strategy)
         else:
             raise ValueError(
                 f"Unknown enrichment strategy {strategy!r}. "
@@ -513,8 +506,7 @@ class Workspace:
                 result[stix_id] = {"action": "added", "changed_fields": []}
             else:
                 snap = self._snapshot[stix_id]
-                changed = [k for k in current_dict
-                           if current_dict.get(k) != snap.get(k)]
+                changed = [k for k in current_dict if current_dict.get(k) != snap.get(k)]
                 if changed:
                     result[stix_id] = {"action": "modified", "changed_fields": changed}
 
@@ -560,13 +552,12 @@ class Workspace:
         """
         gc = self._resolve_target(target)
         ids_to_commit = set(stix_ids or self.dirty)
-        to_write = {sid: self.objects[sid]
-                    for sid in ids_to_commit if sid in self.objects}
+        to_write = {sid: self.objects[sid] for sid in ids_to_commit if sid in self.objects}
 
         result = CommitResult(
-            workspace_name  = self.name,
-            target_platform = gc.name,
-            dry_run         = dry_run,
+            workspace_name=self.name,
+            target_platform=gc.name,
+            dry_run=dry_run,
         )
 
         for stix_id, obj in to_write.items():
@@ -623,14 +614,16 @@ class Workspace:
         Useful for sharing with external tools or archiving.
         """
         from gnat.context.store import FlatFileStore
+
         if isinstance(self._store, FlatFileStore):
             return self._store.export_bundle(self.name)
         import uuid as _uuid
+
         return {
-            "type":         "bundle",
-            "id":           f"bundle--{_uuid.uuid4()}",
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
             "spec_version": "2.1",
-            "objects":      [o.to_dict() for o in self.objects.values()],
+            "objects": [o.to_dict() for o in self.objects.values()],
         }
 
     def remove(self, stix_id: str) -> bool:
@@ -644,6 +637,7 @@ class Workspace:
         del self.objects[stix_id]
         self.dirty.add(stix_id)
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             self._store.soft_delete_object(self._ws_id, stix_id)
         else:
@@ -653,14 +647,16 @@ class Workspace:
     def get_enrichment_history(self, stix_id: str | None = None) -> list[dict]:
         """Return the enrichment log for this workspace."""
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             return self._store.get_enrichment_history(self._ws_id, stix_id)
         return self._store.get_enrichment_history(self.name, stix_id)
 
     # ── Internal ────────────────────────────────────────────────────────────
 
-    def _add_object(self, stix_dict: dict, source_platform: str = "",
-                    mark_dirty: bool = False) -> STIXBase:
+    def _add_object(
+        self, stix_dict: dict, source_platform: str = "", mark_dirty: bool = False
+    ) -> STIXBase:
         obj = self._from_dict(stix_dict)
         self.objects[obj.id] = obj
         if mark_dirty:
@@ -668,27 +664,26 @@ class Workspace:
         # Only snapshot objects that come from a platform (not analyst-created dirty objects)
         if not mark_dirty and obj.id not in self._snapshot:
             self._snapshot[obj.id] = stix_dict
-        self._persist_object(stix_dict, source_platform=source_platform,
-                             mark_dirty=mark_dirty)
+        self._persist_object(stix_dict, source_platform=source_platform, mark_dirty=mark_dirty)
         return obj
 
-    def _persist_object(self, stix_dict: dict, source_platform: str = "",
-                        mark_dirty: bool = False) -> None:
+    def _persist_object(
+        self, stix_dict: dict, source_platform: str = "", mark_dirty: bool = False
+    ) -> None:
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             self._store.upsert_object(
-                self._ws_id, stix_dict,
-                source_platform=source_platform, is_dirty=mark_dirty
+                self._ws_id, stix_dict, source_platform=source_platform, is_dirty=mark_dirty
             )
         else:
             self._store.save_object(
-                self.name, stix_dict,
-                source_platform=source_platform, is_dirty=mark_dirty
+                self.name, stix_dict, source_platform=source_platform, is_dirty=mark_dirty
             )
 
-    def _log_enrichment(self, stix_id: str, source: str,
-                        data: dict, strategy: str) -> None:
+    def _log_enrichment(self, stix_id: str, source: str, data: dict, strategy: str) -> None:
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             self._store.log_enrichment(self._ws_id, stix_id, source, data, strategy)
         else:
@@ -696,6 +691,7 @@ class Workspace:
 
     def _mark_clean(self) -> None:
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             self._store.mark_clean(self._ws_id)
 
@@ -723,13 +719,14 @@ class Workspace:
         from gnat.orm.relationship import Relationship as rel_cls
         from gnat.orm.threat_actor import ThreatActor
         from gnat.orm.vulnerability import Vulnerability
+
         _MAP = {
-            "indicator":     Indicator,
-            "malware":       Malware,
+            "indicator": Indicator,
+            "malware": Malware,
             "vulnerability": Vulnerability,
-            "threat-actor":  ThreatActor,
+            "threat-actor": ThreatActor,
             "attack-pattern": AttackPattern,
-            "relationship":  rel_cls,
+            "relationship": rel_cls,
         }
         cls = _MAP.get(stix_dict.get("type", ""), stix_cls)
         return cls.from_dict(stix_dict)
@@ -746,26 +743,24 @@ class Workspace:
         return stix_id in self.objects
 
     def __repr__(self) -> str:  # pragma: no cover
-        return (
-            f"Workspace(name={self.name!r}, objects={len(self)}, "
-            f"dirty={len(self.dirty)})"
-        )
+        return f"Workspace(name={self.name!r}, objects={len(self)}, dirty={len(self.dirty)})"
 
 
 # ---------------------------------------------------------------------------
 # CommitResult
 # ---------------------------------------------------------------------------
 
+
 class CommitResult:
     """Summary of a :meth:`Workspace.commit` operation."""
 
     def __init__(self, workspace_name: str, target_platform: str, dry_run: bool):
-        self.workspace_name  = workspace_name
+        self.workspace_name = workspace_name
         self.target_platform = target_platform
-        self.dry_run         = dry_run
-        self.written:     list[str] = []
-        self.deleted:     list[str] = []
-        self.errors:      list[dict] = []
+        self.dry_run = dry_run
+        self.written: list[str] = []
+        self.deleted: list[str] = []
+        self.errors: list[dict] = []
         self.would_write: list[dict] = []
 
     @property
@@ -774,8 +769,10 @@ class CommitResult:
 
     def __str__(self) -> str:  # pragma: no cover
         if self.dry_run:
-            return (f"CommitResult(dry_run, workspace={self.workspace_name!r}, "
-                    f"would_write={len(self.would_write)})")
+            return (
+                f"CommitResult(dry_run, workspace={self.workspace_name!r}, "
+                f"would_write={len(self.would_write)})"
+            )
         return (
             f"CommitResult(workspace={self.workspace_name!r}, "
             f"target={self.target_platform!r}, "
@@ -787,6 +784,7 @@ class CommitResult:
 # ---------------------------------------------------------------------------
 # WorkspaceManager
 # ---------------------------------------------------------------------------
+
 
 class WorkspaceManager:
     """
@@ -827,7 +825,7 @@ class WorkspaceManager:
         store: Any = None,
     ):
         self._registry = registry
-        self._store    = store or self._default_store()
+        self._store = store or self._default_store()
 
     @classmethod
     def default(
@@ -846,8 +844,9 @@ class WorkspaceManager:
             SQLAlchemy URL (defaults to ``~/.gnat/workspaces.db``).
         """
         from gnat.context.global_context import GlobalContextRegistry
+
         registry = GlobalContextRegistry.from_config(config_path)
-        store    = cls._default_store(db_url)
+        store = cls._default_store(db_url)
         return cls(registry=registry, store=store)
 
     @classmethod
@@ -887,9 +886,8 @@ class WorkspaceManager:
             )
         """
         from gnat.context.global_context import GlobalContextRegistry
-        registry = GlobalContextRegistry.from_clients(
-            clients, default=default, read_only=read_only
-        )
+
+        registry = GlobalContextRegistry.from_clients(clients, default=default, read_only=read_only)
         return cls(registry=registry, store=cls._default_store(db_url))
 
     # ── Workspace lifecycle ─────────────────────────────────────────────────
@@ -904,11 +902,9 @@ class WorkspaceManager:
             If a workspace with this name already exists.
         """
         from gnat.context.store import WorkspaceStore
-        if isinstance(self._store, WorkspaceStore):
-            if self._store.get_workspace(name) is not None:
-                raise ValueError(
-                    f"Workspace {name!r} already exists. Use manager.open({name!r})."
-                )
+
+        if isinstance(self._store, WorkspaceStore) and self._store.get_workspace(name) is not None:
+            raise ValueError(f"Workspace {name!r} already exists. Use manager.open({name!r}).")
         return Workspace(name, self._registry, self._store, description=description)
 
     def open(self, name: str) -> Workspace:
@@ -921,12 +917,10 @@ class WorkspaceManager:
             If no workspace with this name exists.
         """
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             if self._store.get_workspace(name) is None:
-                raise KeyError(
-                    f"No workspace named {name!r}. "
-                    "Use manager.create() to make one."
-                )
+                raise KeyError(f"No workspace named {name!r}. Use manager.create() to make one.")
         else:
             if self._store.get_workspace(name) is None:
                 raise KeyError(f"No workspace named {name!r}.")
@@ -942,13 +936,14 @@ class WorkspaceManager:
     def list(self) -> builtins.list[dict]:
         """Return metadata dicts for all workspaces."""
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             return [
                 {
-                    "name":        ws.name,
+                    "name": ws.name,
                     "description": ws.description or "",
-                    "created_at":  ws.created_at.isoformat() if ws.created_at else "",
-                    "updated_at":  ws.updated_at.isoformat() if ws.updated_at else "",
+                    "created_at": ws.created_at.isoformat() if ws.created_at else "",
+                    "updated_at": ws.updated_at.isoformat() if ws.updated_at else "",
                     "object_count": self._store.object_count(ws.id),
                 }
                 for ws in self._store.list_workspaces()
@@ -958,6 +953,7 @@ class WorkspaceManager:
     def delete(self, name: str) -> bool:
         """Permanently delete a workspace. Returns ``True`` if found."""
         from gnat.context.store import WorkspaceStore
+
         if isinstance(self._store, WorkspaceStore):
             return self._store.delete_workspace(name)
         return self._store.delete_workspace(name)
@@ -989,6 +985,7 @@ class WorkspaceManager:
             ws = acme.create("apt28-investigation")
         """
         from gnat.context.tenant import TenantWorkspaceManager
+
         return TenantWorkspaceManager(tenant_id, self)
 
     # ── Internal ────────────────────────────────────────────────────────────
@@ -996,9 +993,10 @@ class WorkspaceManager:
     @staticmethod
     def _default_store(db_url: str | None = None) -> Any:
         from gnat.context.store import FlatFileStore, WorkspaceStore
+
         if _HAS_SQLALCHEMY := WorkspaceStore.__module__ != "builtins":
             try:
-                url   = db_url or "sqlite:///~/.gnat/workspaces.db"
+                url = db_url or "sqlite:///~/.gnat/workspaces.db"
                 store = WorkspaceStore(url)
                 store.create_all()
                 return store
@@ -1009,6 +1007,4 @@ class WorkspaceManager:
         return FlatFileStore()
 
     def __repr__(self) -> str:  # pragma: no cover
-        return (
-            f"WorkspaceManager(registry={self._registry!r}, store={self._store!r})"
-        )
+        return f"WorkspaceManager(registry={self._registry!r}, store={self._store!r})"

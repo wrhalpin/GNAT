@@ -23,8 +23,8 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
     """HTTP client for the CrowdStrike Falcon REST API."""
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "iocs",
-        "malware":       "detections",
+        "indicator": "iocs",
+        "malware": "detections",
         "vulnerability": "vulnerabilities",
     }
 
@@ -54,8 +54,13 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
         return resources[0] if resources else {}
 
-    def list_objects(self, stix_type: str, filters: Optional[dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         resource = self.stix_type_map.get(stix_type, stix_type)
         params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         if filters:

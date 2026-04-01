@@ -64,8 +64,10 @@ class MISPTagCommands:
         dict
         """
         tag: dict = {
-            "name": name, "colour": colour,
-            "exportable": exportable, "hide_tag": hide_tag,
+            "name": name,
+            "colour": colour,
+            "exportable": exportable,
+            "hide_tag": hide_tag,
         }
         response = self._client.post_json("tags/add", body={"Tag": tag})
         if isinstance(response, dict):

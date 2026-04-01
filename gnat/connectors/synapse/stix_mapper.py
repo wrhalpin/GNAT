@@ -33,33 +33,33 @@ class SynapseSTIXMapper:
 
     _FORM_TO_STIX: dict[str, str] = {
         # Network SCOs
-        "inet:ipv4":   "ipv4-addr",
-        "inet:ipv6":   "ipv6-addr",
-        "inet:fqdn":   "domain-name",
-        "inet:url":    "url",
-        "inet:email":  "email-addr",
-        "inet:asn":    "autonomous-system",
-        "inet:flow":   "network-traffic",
+        "inet:ipv4": "ipv4-addr",
+        "inet:ipv6": "ipv6-addr",
+        "inet:fqdn": "domain-name",
+        "inet:url": "url",
+        "inet:email": "email-addr",
+        "inet:asn": "autonomous-system",
+        "inet:flow": "network-traffic",
         # File / hash forms
-        "file:bytes":  "file",
-        "hash:md5":    "file",
-        "hash:sha1":   "file",
+        "file:bytes": "file",
+        "hash:md5": "file",
+        "hash:sha1": "file",
         "hash:sha256": "file",
         # Risk / threat intel SDOs
-        "risk:vuln":       "vulnerability",
-        "risk:attack":     "attack-pattern",
-        "risk:threat":     "threat-actor",
+        "risk:vuln": "vulnerability",
+        "risk:attack": "attack-pattern",
+        "risk:threat": "threat-actor",
         "risk:mitigation": "course-of-action",
         # MITRE ATT&CK forms
         "it:mitre:attack:technique": "attack-pattern",
-        "it:mitre:attack:software":  "malware",
-        "it:mitre:attack:group":     "threat-actor",
+        "it:mitre:attack:software": "malware",
+        "it:mitre:attack:group": "threat-actor",
         # Identity / people / org
-        "ou:org":    "identity",
+        "ou:org": "identity",
         "ps:person": "identity",
         # Reports and events
-        "media:news":  "report",
-        "meta:event":  "observed-data",
+        "media:news": "report",
+        "meta:event": "observed-data",
     }
 
     # ------------------------------------------------------------------
@@ -128,28 +128,28 @@ class SynapseSTIXMapper:
         form = node.get("ndef", ["", ""])[0]
 
         dispatch = {
-            "inet:ipv4":   self._ipv4_to_stix,
-            "inet:ipv6":   self._ipv6_to_stix,
-            "inet:fqdn":   self._fqdn_to_stix,
-            "inet:url":    self._url_to_stix,
-            "inet:email":  self._email_to_stix,
-            "inet:asn":    self._asn_to_stix,
-            "inet:flow":   self._flow_to_stix,
-            "file:bytes":  self._file_to_stix,
-            "hash:md5":    self._file_to_stix,
-            "hash:sha1":   self._file_to_stix,
+            "inet:ipv4": self._ipv4_to_stix,
+            "inet:ipv6": self._ipv6_to_stix,
+            "inet:fqdn": self._fqdn_to_stix,
+            "inet:url": self._url_to_stix,
+            "inet:email": self._email_to_stix,
+            "inet:asn": self._asn_to_stix,
+            "inet:flow": self._flow_to_stix,
+            "file:bytes": self._file_to_stix,
+            "hash:md5": self._file_to_stix,
+            "hash:sha1": self._file_to_stix,
             "hash:sha256": self._file_to_stix,
-            "risk:vuln":       self._vuln_to_stix,
-            "risk:attack":     self._attack_to_stix,
-            "risk:threat":     self._threat_actor_to_stix,
+            "risk:vuln": self._vuln_to_stix,
+            "risk:attack": self._attack_to_stix,
+            "risk:threat": self._threat_actor_to_stix,
             "risk:mitigation": self._mitigation_to_stix,
             "it:mitre:attack:technique": self._attack_to_stix,
-            "it:mitre:attack:software":  self._malware_to_stix,
-            "it:mitre:attack:group":     self._threat_actor_to_stix,
-            "ou:org":      self._identity_to_stix,
-            "ps:person":   self._identity_to_stix,
-            "media:news":  self._report_to_stix,
-            "meta:event":  self._observed_data_to_stix,
+            "it:mitre:attack:software": self._malware_to_stix,
+            "it:mitre:attack:group": self._threat_actor_to_stix,
+            "ou:org": self._identity_to_stix,
+            "ps:person": self._identity_to_stix,
+            "media:news": self._report_to_stix,
+            "meta:event": self._observed_data_to_stix,
         }
 
         handler = dispatch.get(form)
@@ -174,9 +174,7 @@ class SynapseSTIXMapper:
     # Per-form helpers
     # ------------------------------------------------------------------
 
-    def _base_fields(
-        self, stix_type: str, value: str, node: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _base_fields(self, stix_type: str, value: str, node: dict[str, Any]) -> dict[str, Any]:
         ts = _now_iso()
         tags = node.get("tags", {})
         labels = self._tags_to_stix_labels(tags)
@@ -269,9 +267,7 @@ class SynapseSTIXMapper:
         # Expose CVE identifier when present (risk:vuln stores it as :cve)
         cve = props.get("cve", "")
         if cve:
-            obj["external_references"] = [
-                {"source_name": "cve", "external_id": str(cve)}
-            ]
+            obj["external_references"] = [{"source_name": "cve", "external_id": str(cve)}]
         return obj
 
     def _attack_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
@@ -507,26 +503,26 @@ class SynapseSTIXMapper:
 # ------------------------------------------------------------------
 
 _PATTERN_MAP: list[tuple] = [
-    (r"ipv4-addr:value\s*=\s*['\"]([^'\"]+)['\"]",           "inet:ipv4"),
-    (r"ipv6-addr:value\s*=\s*['\"]([^'\"]+)['\"]",           "inet:ipv6"),
-    (r"domain-name:value\s*=\s*['\"]([^'\"]+)['\"]",         "inet:fqdn"),
-    (r"url:value\s*=\s*['\"]([^'\"]+)['\"]",                 "inet:url"),
-    (r"email-addr:value\s*=\s*['\"]([^'\"]+)['\"]",          "inet:email"),
+    (r"ipv4-addr:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:ipv4"),
+    (r"ipv6-addr:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:ipv6"),
+    (r"domain-name:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:fqdn"),
+    (r"url:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:url"),
+    (r"email-addr:value\s*=\s*['\"]([^'\"]+)['\"]", "inet:email"),
     # File hashes — unquoted dot notation  (file:hashes.SHA-256 = '…')
-    (r"file:hashes\.MD5\s*=\s*['\"]([^'\"]+)['\"]",          "hash:md5"),
-    (r"file:hashes\.SHA-1\s*=\s*['\"]([^'\"]+)['\"]",        "hash:sha1"),
-    (r"file:hashes\.SHA-256\s*=\s*['\"]([^'\"]+)['\"]",      "hash:sha256"),
-    (r"file:hashes\.SHA-512\s*=\s*['\"]([^'\"]+)['\"]",      "hash:sha256"),
+    (r"file:hashes\.MD5\s*=\s*['\"]([^'\"]+)['\"]", "hash:md5"),
+    (r"file:hashes\.SHA-1\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha1"),
+    (r"file:hashes\.SHA-256\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha256"),
+    (r"file:hashes\.SHA-512\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha256"),
     # File hashes — bracket notation  (file:hashes['SHA-256'] = '…')
-    (r"file:hashes\[.MD5.\]\s*=\s*['\"]([^'\"]+)['\"]",      "hash:md5"),
-    (r"file:hashes\[.SHA-1.\]\s*=\s*['\"]([^'\"]+)['\"]",    "hash:sha1"),
-    (r"file:hashes\[.SHA-256.\]\s*=\s*['\"]([^'\"]+)['\"]",  "hash:sha256"),
+    (r"file:hashes\[.MD5.\]\s*=\s*['\"]([^'\"]+)['\"]", "hash:md5"),
+    (r"file:hashes\[.SHA-1.\]\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha1"),
+    (r"file:hashes\[.SHA-256.\]\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha256"),
     # File hashes — single-quoted key notation (file:hashes.'SHA-256' = '…')
-    (r"file:hashes\.'MD5'\s*=\s*['\"]([^'\"]+)['\"]",        "hash:md5"),
-    (r"file:hashes\.'SHA-1'\s*=\s*['\"]([^'\"]+)['\"]",      "hash:sha1"),
-    (r"file:hashes\.'SHA-256'\s*=\s*['\"]([^'\"]+)['\"]",    "hash:sha256"),
+    (r"file:hashes\.'MD5'\s*=\s*['\"]([^'\"]+)['\"]", "hash:md5"),
+    (r"file:hashes\.'SHA-1'\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha1"),
+    (r"file:hashes\.'SHA-256'\s*=\s*['\"]([^'\"]+)['\"]", "hash:sha256"),
     # Autonomous system
-    (r"autonomous-system:number\s*=\s*(\d+)",                 "inet:asn"),
+    (r"autonomous-system:number\s*=\s*(\d+)", "inet:asn"),
 ]
 
 

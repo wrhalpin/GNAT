@@ -1,4 +1,5 @@
 """tests for AlienVault OTX connector"""
+
 import configparser
 import json
 import unittest
@@ -25,11 +26,13 @@ def _cfg(**kw):
     d.update(kw)
     return OTXConfig(**d)
 
+
 def _resp(status=200, body=None):
     r = MagicMock()
     r.status = status
     r.data = json.dumps(body if body is not None else {}).encode()
     return r
+
 
 def _make_client():
     cfg = _cfg()
@@ -40,22 +43,48 @@ def _make_client():
         c._http = mock_http
     return c, mock_http
 
+
 _PULSE = {
-    "id": "pulse-abc", "name": "APT Campaign IOCs",
+    "id": "pulse-abc",
+    "name": "APT Campaign IOCs",
     "description": "Indicators from APT campaign",
-    "author_name": "researcher1", "TLP": "white",
-    "tags": ["apt", "c2"], "created": "2024-03-01T00:00:00Z",
-    "modified": "2024-03-10T00:00:00Z", "indicator_count": 3,
-    "public": True, "adversary": "APT28",
-    "targeted_countries": ["US"], "industries": [],
-    "malware_families": ["Sofacy"], "attack_ids": [{"id": "T1059"}],
+    "author_name": "researcher1",
+    "TLP": "white",
+    "tags": ["apt", "c2"],
+    "created": "2024-03-01T00:00:00Z",
+    "modified": "2024-03-10T00:00:00Z",
+    "indicator_count": 3,
+    "public": True,
+    "adversary": "APT28",
+    "targeted_countries": ["US"],
+    "industries": [],
+    "malware_families": ["Sofacy"],
+    "attack_ids": [{"id": "T1059"}],
     "indicators": [
-        {"id": "i1", "type": "IPv4", "indicator": "1.2.3.4",
-         "created": "2024-03-01T00:00:00Z", "description": "C2 IP", "is_active": True},
-        {"id": "i2", "type": "domain", "indicator": "evil.com",
-         "created": "2024-03-01T00:00:00Z", "description": "", "is_active": True},
-        {"id": "i3", "type": "FileHash-SHA256", "indicator": "abc123def456",
-         "created": "2024-03-01T00:00:00Z", "description": "", "is_active": True},
+        {
+            "id": "i1",
+            "type": "IPv4",
+            "indicator": "1.2.3.4",
+            "created": "2024-03-01T00:00:00Z",
+            "description": "C2 IP",
+            "is_active": True,
+        },
+        {
+            "id": "i2",
+            "type": "domain",
+            "indicator": "evil.com",
+            "created": "2024-03-01T00:00:00Z",
+            "description": "",
+            "is_active": True,
+        },
+        {
+            "id": "i3",
+            "type": "FileHash-SHA256",
+            "indicator": "abc123def456",
+            "created": "2024-03-01T00:00:00Z",
+            "description": "",
+            "is_active": True,
+        },
     ],
 }
 
@@ -113,8 +142,11 @@ class TestOTXClient(unittest.TestCase):
 
     def test_paginate_follows_next(self):
         c, mock_http = _make_client()
-        page1 = {"results": [{"id": "p1"}], "count": 2,
-                 "next": "https://otx.alienvault.com/api/v1/pulses/subscribed?page=2"}
+        page1 = {
+            "results": [{"id": "p1"}],
+            "count": 2,
+            "next": "https://otx.alienvault.com/api/v1/pulses/subscribed?page=2",
+        }
         page2 = {"results": [{"id": "p2"}], "count": 2, "next": None}
         mock_http.request.side_effect = [_resp(200, page1), _resp(200, page2)]
         items = list(c.paginate("pulses/subscribed"))
@@ -148,9 +180,7 @@ class TestOTXPulseCommands(unittest.TestCase):
 
     def test_get_pulse_indicators(self):
         cmd, mock_http = self._make_pulses()
-        mock_http.request.return_value = _resp(200, {
-            "results": _PULSE["indicators"], "count": 3
-        })
+        mock_http.request.return_value = _resp(200, {"results": _PULSE["indicators"], "count": 3})
         inds = cmd.get_pulse_indicators("pulse-abc")
         self.assertEqual(len(inds), 3)
 
@@ -170,9 +200,7 @@ class TestOTXIndicatorCommands(unittest.TestCase):
 
     def test_get_ip_details(self):
         cmd, mock_http = self._make_inds()
-        mock_http.request.return_value = _resp(200, {
-            "pulse_info": {"count": 5}, "reputation": 2
-        })
+        mock_http.request.return_value = _resp(200, {"pulse_info": {"count": 5}, "reputation": 2})
         result = cmd.get_ip_details("1.2.3.4")
         self.assertIn("pulse_info", result)
 
@@ -192,8 +220,10 @@ class TestOTXIndicatorCommands(unittest.TestCase):
 
     def test_stix_type_mapping(self):
         for otx_type, expected in [
-            ("IPv4", "ipv4-addr"), ("domain", "domain-name"),
-            ("URL", "url"), ("FileHash-SHA256", "file"),
+            ("IPv4", "ipv4-addr"),
+            ("domain", "domain-name"),
+            ("URL", "url"),
+            ("FileHash-SHA256", "file"),
             ("email", "email-addr"),
         ]:
             ind = {"type": otx_type, "indicator": "test", "id": "x"}
@@ -206,8 +236,7 @@ class TestOTXSTIXMapper(unittest.TestCase):
         self.mapper = OTXSTIXMapper()
         self.norm_pulse = OTXPulseCommands.normalise_pulse(_PULSE)
         self.norm_indicators = [
-            OTXIndicatorCommands.normalise_indicator(i)
-            for i in _PULSE["indicators"]
+            OTXIndicatorCommands.normalise_indicator(i) for i in _PULSE["indicators"]
         ]
 
     def test_indicator_ipv4_to_stix(self):
@@ -231,9 +260,7 @@ class TestOTXSTIXMapper(unittest.TestCase):
         self.assertEqual(file_obj["hashes"]["SHA-256"], "abc123def456")
 
     def test_pulse_to_stix_bundle(self):
-        bundle = self.mapper.pulse_to_stix_bundle(
-            self.norm_pulse, self.norm_indicators
-        )
+        bundle = self.mapper.pulse_to_stix_bundle(self.norm_pulse, self.norm_indicators)
         self.assertEqual(bundle["type"], "bundle")
         types = {o["type"] for o in bundle["objects"]}
         self.assertIn("report", types)
@@ -242,9 +269,7 @@ class TestOTXSTIXMapper(unittest.TestCase):
         self.assertIn("file", types)
 
     def test_report_has_otx_extension(self):
-        bundle = self.mapper.pulse_to_stix_bundle(
-            self.norm_pulse, self.norm_indicators
-        )
+        bundle = self.mapper.pulse_to_stix_bundle(self.norm_pulse, self.norm_indicators)
         report = next(o for o in bundle["objects"] if o["type"] == "report")
         self.assertIn("x_otx_pulse", report)
         self.assertEqual(report["x_otx_pulse"]["adversary"], "APT28")
@@ -254,9 +279,7 @@ class TestOTXSTIXMapper(unittest.TestCase):
         self.assertEqual(bundle["type"], "bundle")
 
     def test_deduplication(self):
-        bundle = self.mapper.indicators_to_stix_bundle(
-            self.norm_indicators + self.norm_indicators
-        )
+        bundle = self.mapper.indicators_to_stix_bundle(self.norm_indicators + self.norm_indicators)
         ip_objs = [o for o in bundle["objects"] if o["type"] == "ipv4-addr"]
         self.assertEqual(len([o for o in ip_objs if o["value"] == "1.2.3.4"]), 1)
 
@@ -269,8 +292,7 @@ class TestOTXSTIXMapper(unittest.TestCase):
 
 class TestOTXExceptions(unittest.TestCase):
     def test_hierarchy(self):
-        for cls in [OTXConfigError, OTXAuthError, OTXAPIError,
-                    OTXNotFoundError, OTXRateLimitError]:
+        for cls in [OTXConfigError, OTXAuthError, OTXAPIError, OTXNotFoundError, OTXRateLimitError]:
             self.assertTrue(issubclass(cls, OTXError))
 
 

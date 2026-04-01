@@ -182,15 +182,15 @@ class CopilotReader(SourceReader):
         super().__init__(source_id=label)
         if not sources:
             raise ValueError("CopilotReader: at least one source must be configured")
-        self._secret            = directline_secret
-        self._sources           = sources
-        self._newer_than        = newer_than
-        self._timeout           = bot_timeout
-        self._poll_interval     = poll_interval
-        self._max_polls         = max_poll_attempts
+        self._secret = directline_secret
+        self._sources = sources
+        self._newer_than = newer_than
+        self._timeout = bot_timeout
+        self._poll_interval = poll_interval
+        self._max_polls = max_poll_attempts
         self._use_token_exchange = use_token_exchange
         # Token state (populated on first use when use_token_exchange=True)
-        self._token:            str | None   = None
+        self._token: str | None = None
         self._token_expires_at: float | None = None  # UNIX timestamp
 
     @classmethod
@@ -218,6 +218,7 @@ class CopilotReader(SourceReader):
             If ``[copilot]`` section or ``directline_secret`` key is missing.
         """
         from gnat.config import GNATConfig
+
         cfg = GNATConfig(config_path)
         try:
             section = cfg.get("copilot")
@@ -231,16 +232,18 @@ class CopilotReader(SourceReader):
         if not secret:
             raise KeyError("[copilot] section missing 'directline_secret'")
 
-        use_token_exchange = section.get(
-            "use_token_exchange", "false"
-        ).strip().lower() in ("true", "1", "yes")
+        use_token_exchange = section.get("use_token_exchange", "false").strip().lower() in (
+            "true",
+            "1",
+            "yes",
+        )
 
         return cls(
-            directline_secret  = secret,
-            sources            = sources,
-            newer_than         = newer_than,
-            bot_timeout        = int(section.get("bot_timeout", 60)),
-            use_token_exchange = use_token_exchange,
+            directline_secret=secret,
+            sources=sources,
+            newer_than=newer_than,
+            bot_timeout=int(section.get("bot_timeout", 60)),
+            use_token_exchange=use_token_exchange,
         )
 
     # ── SourceReader interface ─────────────────────────────────────────────
@@ -251,22 +254,20 @@ class CopilotReader(SourceReader):
             source_type = source.get("type", "unknown")
             source_name = source.get("name", source_type)
 
-            logger.info(
-                "CopilotReader: querying %s source %r", source_type, source_name
-            )
+            logger.info("CopilotReader: querying %s source %r", source_type, source_name)
 
             items = self._query_source(source)
             for item in items:
                 yield {
-                    "text":         item.get("text", ""),
-                    "url":          item.get("url", ""),
-                    "title":        item.get("title", f"{source_name} content"),
-                    "topic":        source_name,
+                    "text": item.get("text", ""),
+                    "url": item.get("url", ""),
+                    "title": item.get("title", f"{source_name} content"),
+                    "topic": source_name,
                     "retrieved_at": _utcnow_iso(),
-                    "source_type":  source_type,
-                    "author":       item.get("author", ""),
-                    "date":         item.get("date", ""),
-                    "metadata":     {
+                    "source_type": source_type,
+                    "author": item.get("author", ""),
+                    "date": item.get("date", ""),
+                    "metadata": {
                         "m365_source_type": source_type,
                         "m365_source_name": source_name,
                     },
@@ -336,7 +337,7 @@ class CopilotReader(SourceReader):
             if query_filter:
                 descriptor += f" (filter: {query_filter})"
         elif source_type == "teams_channel":
-            team    = source.get("team", "")
+            team = source.get("team", "")
             channel = source.get("channel", "")
             descriptor = f'"{source_name}" (Teams channel "{channel}" in team "{team}")'
         elif source_type == "onedrive":
@@ -381,12 +382,12 @@ class CopilotReader(SourceReader):
             if token:
                 self._token = token
                 self._token_expires_at = now + self._TOKEN_LIFETIME
-                logger.debug("CopilotReader: obtained DirectLine token (expires in %ds)",
-                             self._TOKEN_LIFETIME)
-            else:
-                logger.warning(
-                    "CopilotReader: token exchange failed — falling back to secret"
+                logger.debug(
+                    "CopilotReader: obtained DirectLine token (expires in %ds)",
+                    self._TOKEN_LIFETIME,
                 )
+            else:
+                logger.warning("CopilotReader: token exchange failed — falling back to secret")
         elif (
             self._token_expires_at is not None
             and (self._token_expires_at - now) < self._TOKEN_REFRESH_BUFFER
@@ -398,9 +399,7 @@ class CopilotReader(SourceReader):
                 self._token_expires_at = now + self._TOKEN_LIFETIME
                 logger.debug("CopilotReader: refreshed DirectLine token")
             else:
-                logger.warning(
-                    "CopilotReader: token refresh failed — reusing existing token"
-                )
+                logger.warning("CopilotReader: token refresh failed — reusing existing token")
 
     def _exchange_for_token(self) -> str | None:
         """
@@ -459,7 +458,7 @@ class CopilotReader(SourceReader):
     def _dl_headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self._bearer()}",
-            "Content-Type":  "application/json",
+            "Content-Type": "application/json",
         }
 
     def _dl_request(
@@ -481,9 +480,7 @@ class CopilotReader(SourceReader):
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
-            logger.error(
-                "CopilotReader: DirectLine HTTP %d: %.300s", exc.code, body
-            )
+            logger.error("CopilotReader: DirectLine HTTP %d: %.300s", exc.code, body)
             return None
         except (urllib.error.URLError, json.JSONDecodeError) as exc:
             logger.error("CopilotReader: DirectLine request error: %s", exc)
@@ -502,11 +499,13 @@ class CopilotReader(SourceReader):
 
     def _send_message(self, conv_id: str, text: str) -> bool:
         """POST an activity (user message) to the conversation."""
-        body = json.dumps({
-            "type": "message",
-            "from": {"id": "gnat-agent", "name": "GNAT"},
-            "text": text,
-        }).encode("utf-8")
+        body = json.dumps(
+            {
+                "type": "message",
+                "from": {"id": "gnat-agent", "name": "GNAT"},
+                "text": text,
+            }
+        ).encode("utf-8")
 
         resp = self._dl_request(
             f"{_DIRECTLINE_BASE}/conversations/{conv_id}/activities",
@@ -546,16 +545,12 @@ class CopilotReader(SourceReader):
                     if not text:
                         text = self._extract_card_text(activity)
                     if text:
-                        logger.debug(
-                            "CopilotReader: got reply after %d polls", attempt + 1
-                        )
+                        logger.debug("CopilotReader: got reply after %d polls", attempt + 1)
                         return text
 
             time.sleep(self._poll_interval)
 
-        logger.warning(
-            "CopilotReader: no reply after %d poll attempts", self._max_polls
-        )
+        logger.warning("CopilotReader: no reply after %d poll attempts", self._max_polls)
         return None
 
     @staticmethod
@@ -564,8 +559,8 @@ class CopilotReader(SourceReader):
         for attachment in activity.get("attachments", []):
             if attachment.get("contentType") == "application/vnd.microsoft.card.adaptive":
                 content = attachment.get("content", {})
-                bodies  = content.get("body", [])
-                parts   = []
+                bodies = content.get("body", [])
+                parts = []
                 for element in bodies:
                     if element.get("type") == "TextBlock":
                         parts.append(element.get("text", ""))
@@ -585,7 +580,7 @@ class CopilotReader(SourceReader):
         # Strip markdown fences
         if text.startswith("```"):
             lines = text.split("\n")
-            text  = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+            text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
 
         try:
             data = json.loads(text)
@@ -596,20 +591,20 @@ class CopilotReader(SourceReader):
 
         # Prose fallback — wrap as single item
         if reply_text.strip():
-            return [{
-                "title": source.get("name", "M365 content"),
-                "url":   "",
-                "text":  reply_text.strip(),
-            }]
+            return [
+                {
+                    "title": source.get("name", "M365 content"),
+                    "url": "",
+                    "text": reply_text.strip(),
+                }
+            ]
         return []
 
     def __repr__(self) -> str:  # pragma: no cover
-        return (
-            f"CopilotReader(sources={len(self._sources)}, "
-            f"newer_than={self._newer_than!r})"
-        )
+        return f"CopilotReader(sources={len(self._sources)}, newer_than={self._newer_than!r})"
 
 
 def _utcnow_iso() -> str:
     from datetime import datetime, timezone
+
     return datetime.now(timezone.utc).isoformat()

@@ -109,21 +109,15 @@ class IngestPipeline:
         self._client = client
         return self
 
-    def deduplicate(
-        self, key_fields: list[str] | None = None
-    ) -> IngestPipeline:
+    def deduplicate(self, key_fields: list[str] | None = None) -> IngestPipeline:
         self._dedup = DeduplicationCache(key_fields)
         return self
 
-    def filter(
-        self, predicate: Callable[[STIXBase], bool]
-    ) -> IngestPipeline:
+    def filter(self, predicate: Callable[[STIXBase], bool]) -> IngestPipeline:
         self._filters.append(predicate)
         return self
 
-    def transform(
-        self, fn: Callable[[STIXBase], STIXBase]
-    ) -> IngestPipeline:
+    def transform(self, fn: Callable[[STIXBase], STIXBase]) -> IngestPipeline:
         self._transforms.append(fn)
         return self
 
@@ -178,9 +172,7 @@ class IngestPipeline:
                         obj = self._apply_transforms(obj)
                         yield obj
                 except Exception as exc:  # noqa: BLE001
-                    logger.warning(
-                        "Pipeline %r: error mapping record — %s", self._name, exc
-                    )
+                    logger.warning("Pipeline %r: error mapping record — %s", self._name, exc)
 
     def run(self) -> IngestResult:
         """
@@ -245,13 +237,9 @@ class IngestPipeline:
 
     def _validate(self) -> None:
         if self._reader is None:
-            raise RuntimeError(
-                "IngestPipeline: no reader configured. Call .read_from() first."
-            )
+            raise RuntimeError("IngestPipeline: no reader configured. Call .read_from() first.")
         if self._mapper is None:
-            raise RuntimeError(
-                "IngestPipeline: no mapper configured. Call .map_with() first."
-            )
+            raise RuntimeError("IngestPipeline: no mapper configured. Call .map_with() first.")
 
     def _passes_filters(self, obj: STIXBase) -> bool:
         return all(f(obj) for f in self._filters)
@@ -263,8 +251,7 @@ class IngestPipeline:
 
     def __repr__(self) -> str:  # pragma: no cover
         return (
-            f"IngestPipeline(name={self._name!r}, "
-            f"reader={self._reader!r}, mapper={self._mapper!r})"
+            f"IngestPipeline(name={self._name!r}, reader={self._reader!r}, mapper={self._mapper!r})"
         )
 
 
@@ -283,7 +270,4 @@ class _SearchAwareIngestResult(IngestResult):
 
     def __str__(self) -> str:
         base = super().__str__()
-        return (
-            f"{base} | indexed={self.indexed_objects}"
-            f" index_errors={self.index_errors}"
-        )
+        return f"{base} | indexed={self.indexed_objects} index_errors={self.index_errors}"

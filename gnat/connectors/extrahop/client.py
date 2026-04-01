@@ -72,7 +72,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "observed-data":  "detections",
+        "observed-data": "detections",
         "network-traffic": "records",
     }
 
@@ -99,8 +99,8 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
             resp = self.post(
                 "/oauth2/token",
                 data={
-                    "grant_type":    "client_credentials",
-                    "client_id":     self._client_id,
+                    "grant_type": "client_credentials",
+                    "client_id": self._client_id,
                     "client_secret": self._client_secret,
                 },
             )
@@ -229,8 +229,8 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a minimal ExtraHop reference payload from a STIX object."""
         return {
-            "note":      "ExtraHop Reveal(x) is read-only.",
-            "stix_id":   stix_dict.get("id", ""),
+            "note": "ExtraHop Reveal(x) is read-only.",
+            "stix_id": stix_dict.get("id", ""),
             "stix_type": stix_dict.get("type", ""),
         }
 
@@ -240,22 +240,22 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         start_time = detection.get("start_time", now)
         update_time = detection.get("update_time", now)
         return {
-            "type":            "observed-data",
-            "id":              f"observed-data--{_uuid.uuid5(_STIX_NS, f'extrahop:{det_id}')}",
-            "spec_version":    "2.1",
-            "created":         start_time,
-            "modified":        update_time,
-            "first_observed":  start_time,
-            "last_observed":   update_time,
+            "type": "observed-data",
+            "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'extrahop:{det_id}')}",
+            "spec_version": "2.1",
+            "created": start_time,
+            "modified": update_time,
+            "first_observed": start_time,
+            "last_observed": update_time,
             "number_observed": 1,
-            "object_refs":     [],
+            "object_refs": [],
             "x_extrahop": {
-                "detection_id":   det_id,
+                "detection_id": det_id,
                 "detection_type": detection.get("detection_type"),
-                "category":       detection.get("category"),
-                "risk_score":     detection.get("risk_score"),
-                "status":         detection.get("status"),
-                "participants":   detection.get("participants", []),
+                "category": detection.get("category"),
+                "risk_score": detection.get("risk_score"),
+                "status": detection.get("status"),
+                "participants": detection.get("participants", []),
             },
         }
 
@@ -263,21 +263,21 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         now = _now_ts()
         rec_id = str(record.get("id", ""))
         return {
-            "type":            "observed-data",
-            "id":              f"observed-data--{_uuid.uuid5(_STIX_NS, f'extrahop:rec:{rec_id}')}",
-            "spec_version":    "2.1",
-            "created":         now,
-            "modified":        now,
-            "first_observed":  record.get("timestamp", now),
-            "last_observed":   record.get("timestamp", now),
+            "type": "observed-data",
+            "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'extrahop:rec:{rec_id}')}",
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
+            "first_observed": record.get("timestamp", now),
+            "last_observed": record.get("timestamp", now),
             "number_observed": 1,
-            "object_refs":     [],
+            "object_refs": [],
             "x_extrahop_record": {
                 "record_type": record.get("type"),
-                "src_ip":      record.get("src_addr"),
-                "dst_ip":      record.get("dst_addr"),
-                "src_port":    record.get("src_port"),
-                "dst_port":    record.get("dst_port"),
-                "proto":       record.get("proto"),
+                "src_ip": record.get("src_addr"),
+                "dst_ip": record.get("dst_addr"),
+                "src_port": record.get("src_port"),
+                "dst_port": record.get("dst_port"),
+                "proto": record.get("proto"),
             },
         }

@@ -75,9 +75,9 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "report":        "companies",
+        "report": "companies",
         "vulnerability": "issues",
-        "identity":      "portfolios",
+        "identity": "portfolios",
     }
 
     def __init__(
@@ -138,8 +138,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
             portfolio_id = f.get("portfolio_id", "")
             if not portfolio_id:
                 raise GNATClientError(
-                    "SSC list_objects for 'report' requires "
-                    "filters={'portfolio_id': '<id>'}"
+                    "SSC list_objects for 'report' requires filters={'portfolio_id': '<id>'}"
                 )
             params: dict[str, Any] = {"page": page, "size": page_size}
             resp = self.get(f"/portfolios/{portfolio_id}/companies", params=params)
@@ -149,8 +148,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
             domain = f.get("domain", "")
             if not domain:
                 raise GNATClientError(
-                    "SSC list_objects for 'vulnerability' requires "
-                    "filters={'domain': '<domain>'}"
+                    "SSC list_objects for 'vulnerability' requires filters={'domain': '<domain>'}"
                 )
             factor = f.get("factor", "")
             params_v: dict[str, Any] = {"page": page, "page_size": page_size}
@@ -162,14 +160,10 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"Unsupported STIX type for SecurityScorecard: {stix_type}")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        raise GNATClientError(
-            "SecurityScorecard API is read-only — upsert not supported."
-        )
+        raise GNATClientError("SecurityScorecard API is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise GNATClientError(
-            "SecurityScorecard API is read-only — delete not supported."
-        )
+        raise GNATClientError("SecurityScorecard API is read-only — delete not supported.")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 

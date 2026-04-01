@@ -136,7 +136,9 @@ class ClarotyClient(BaseClient, ConnectorMixin):
 
         if stix_type == "report":  # Assets
             params = {"limit": limit, "page": page, **filters}
-            resp = self.get("/v1/assets", params=params)  # Common path; adjust if your instance uses different versioning
+            resp = self.get(
+                "/v1/assets", params=params
+            )  # Common path; adjust if your instance uses different versioning
             return resp.get("data", []) if isinstance(resp, dict) else []
 
         if stix_type == "observed-data":  # Alerts

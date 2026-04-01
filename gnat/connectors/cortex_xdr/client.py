@@ -100,9 +100,9 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "alerts",
-        "malware":       "incidents",
-        "threat-actor":  "incidents",
+        "indicator": "alerts",
+        "malware": "incidents",
+        "threat-actor": "incidents",
         "vulnerability": "alerts",
     }
 
@@ -131,37 +131,44 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
 
     def health_check(self) -> bool:
         """Ping the incidents endpoint with an empty filter."""
-        self.post("/public_api/v1/incidents/get_incidents", json={
-            "request_data": {"filters": [], "search_from": 0, "search_to": 1}
-        })
+        self.post(
+            "/public_api/v1/incidents/get_incidents",
+            json={"request_data": {"filters": [], "search_from": 0, "search_to": 1}},
+        )
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single alert or incident by ID."""
         if stix_type in ("indicator", "vulnerability"):
-            resp = self.post("/public_api/v1/alerts/get_alerts_multi_events", json={
-                "request_data": {
-                    "filters": [{"field": "alert_id_list", "operator": "in",
-                                 "value": [object_id]}],
-                    "search_from": 0,
-                    "search_to": 1,
-                }
-            })
-            alerts = (resp.get("reply", {}).get("alerts", [])
-                      if isinstance(resp, dict) else [])
+            resp = self.post(
+                "/public_api/v1/alerts/get_alerts_multi_events",
+                json={
+                    "request_data": {
+                        "filters": [
+                            {"field": "alert_id_list", "operator": "in", "value": [object_id]}
+                        ],
+                        "search_from": 0,
+                        "search_to": 1,
+                    }
+                },
+            )
+            alerts = resp.get("reply", {}).get("alerts", []) if isinstance(resp, dict) else []
             return alerts[0] if alerts else {}
 
         if stix_type in ("malware", "threat-actor"):
-            resp = self.post("/public_api/v1/incidents/get_incidents", json={
-                "request_data": {
-                    "filters": [{"field": "incident_id_list", "operator": "in",
-                                 "value": [object_id]}],
-                    "search_from": 0,
-                    "search_to": 1,
-                }
-            })
-            incidents = (resp.get("reply", {}).get("incidents", [])
-                         if isinstance(resp, dict) else [])
+            resp = self.post(
+                "/public_api/v1/incidents/get_incidents",
+                json={
+                    "request_data": {
+                        "filters": [
+                            {"field": "incident_id_list", "operator": "in", "value": [object_id]}
+                        ],
+                        "search_from": 0,
+                        "search_to": 1,
+                    }
+                },
+            )
+            incidents = resp.get("reply", {}).get("incidents", []) if isinstance(resp, dict) else []
             return incidents[0] if incidents else {}
 
         raise GNATClientError(f"Unsupported STIX type for Cortex XDR: {stix_type}")
@@ -179,33 +186,35 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         search_to = search_from + page_size
         api_filters: list[dict[str, Any]] = []
         if "severity" in f:
-            api_filters.append({"field": "severity", "operator": "in",
-                                 "value": [f["severity"]]})
+            api_filters.append({"field": "severity", "operator": "in", "value": [f["severity"]]})
         if "status" in f:
-            api_filters.append({"field": "status", "operator": "in",
-                                 "value": [f["status"]]})
+            api_filters.append({"field": "status", "operator": "in", "value": [f["status"]]})
 
         if stix_type in ("indicator", "vulnerability"):
-            resp = self.post("/public_api/v1/alerts/get_alerts_multi_events", json={
-                "request_data": {
-                    "filters": api_filters,
-                    "search_from": search_from,
-                    "search_to": search_to,
-                }
-            })
-            return (resp.get("reply", {}).get("alerts", [])
-                    if isinstance(resp, dict) else [])
+            resp = self.post(
+                "/public_api/v1/alerts/get_alerts_multi_events",
+                json={
+                    "request_data": {
+                        "filters": api_filters,
+                        "search_from": search_from,
+                        "search_to": search_to,
+                    }
+                },
+            )
+            return resp.get("reply", {}).get("alerts", []) if isinstance(resp, dict) else []
 
         if stix_type in ("malware", "threat-actor"):
-            resp = self.post("/public_api/v1/incidents/get_incidents", json={
-                "request_data": {
-                    "filters": api_filters,
-                    "search_from": search_from,
-                    "search_to": search_to,
-                }
-            })
-            return (resp.get("reply", {}).get("incidents", [])
-                    if isinstance(resp, dict) else [])
+            resp = self.post(
+                "/public_api/v1/incidents/get_incidents",
+                json={
+                    "request_data": {
+                        "filters": api_filters,
+                        "search_from": search_from,
+                        "search_to": search_to,
+                    }
+                },
+            )
+            return resp.get("reply", {}).get("incidents", []) if isinstance(resp, dict) else []
 
         raise GNATClientError(f"Unsupported STIX type for Cortex XDR: {stix_type}")
 
@@ -220,23 +229,22 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
                 body["request_data"]["resolve_comment"] = payload["resolve_comment"]
             resp = self.post("/public_api/v1/incidents/update_incident", json=body)
             return resp if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"Cortex XDR: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Cortex XDR: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Resolve an incident (Cortex XDR has no hard delete on alerts/incidents)."""
         if stix_type in ("malware", "threat-actor"):
-            self.post("/public_api/v1/incidents/update_incident", json={
-                "request_data": {
-                    "incident_id": object_id,
-                    "status": "resolved",
-                }
-            })
+            self.post(
+                "/public_api/v1/incidents/update_incident",
+                json={
+                    "request_data": {
+                        "incident_id": object_id,
+                        "status": "resolved",
+                    }
+                },
+            )
             return
-        raise GNATClientError(
-            f"Cortex XDR: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Cortex XDR: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -246,38 +254,44 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         """Return a list of managed endpoints."""
-        resp = self.post("/public_api/v1/endpoints/get_endpoints", json={
-            "request_data": {
-                "filters": filters or [],
-                "search_from": 0,
-                "search_to": limit,
-            }
-        })
-        return (resp.get("reply", {}).get("endpoints", [])
-                if isinstance(resp, dict) else [])
+        resp = self.post(
+            "/public_api/v1/endpoints/get_endpoints",
+            json={
+                "request_data": {
+                    "filters": filters or [],
+                    "search_from": 0,
+                    "search_to": limit,
+                }
+            },
+        )
+        return resp.get("reply", {}).get("endpoints", []) if isinstance(resp, dict) else []
 
     def get_incident_extra_data(self, incident_id: str) -> dict[str, Any]:
         """Retrieve detailed alert and artifact data for an incident."""
-        resp = self.post("/public_api/v1/incidents/get_incident_extra_data", json={
-            "request_data": {"incident_id": incident_id, "alerts_limit": 100}
-        })
+        resp = self.post(
+            "/public_api/v1/incidents/get_incident_extra_data",
+            json={"request_data": {"incident_id": incident_id, "alerts_limit": 100}},
+        )
         return resp.get("reply", {}) if isinstance(resp, dict) else {}
 
     def update_alert(self, alert_id: str, status: str) -> dict[str, Any]:
         """Update the status of a single alert."""
-        resp = self.post("/public_api/v1/alerts/update_alerts", json={
-            "request_data": {
-                "alert_id_list": [alert_id],
-                "update_data": {"status": status},
-            }
-        })
+        resp = self.post(
+            "/public_api/v1/alerts/update_alerts",
+            json={
+                "request_data": {
+                    "alert_id_list": [alert_id],
+                    "update_data": {"status": status},
+                }
+            },
+        )
         return resp if isinstance(resp, dict) else {}
 
     def isolate_endpoint(self, endpoint_id: str) -> dict[str, Any]:
         """Isolate a managed endpoint from the network."""
-        resp = self.post("/public_api/v1/endpoints/isolate", json={
-            "request_data": {"endpoint_id": endpoint_id}
-        })
+        resp = self.post(
+            "/public_api/v1/endpoints/isolate", json={"request_data": {"endpoint_id": endpoint_id}}
+        )
         return resp if isinstance(resp, dict) else {}
 
     def get_indicators(
@@ -286,14 +300,11 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         """Retrieve threat indicators (IOCs) from the XDR/XSIAM feed."""
-        body: dict[str, Any] = {
-            "request_data": {"page_size": limit, "page_number": 0}
-        }
+        body: dict[str, Any] = {"request_data": {"page_size": limit, "page_number": 0}}
         if ioc_type:
             body["request_data"]["type"] = ioc_type
         resp = self.post("/public_api/v1/indicators/", json=body)
-        return (resp.get("reply", {}).get("indicators", [])
-                if isinstance(resp, dict) else [])
+        return resp.get("reply", {}).get("indicators", []) if isinstance(resp, dict) else []
 
     # ── STIX translation ───────────────────────────────────────────────────
 

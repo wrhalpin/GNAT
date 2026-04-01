@@ -51,10 +51,10 @@ class TheHiveClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "case":          "case",
-        "alert":         "alert",
+        "case": "case",
+        "alert": "alert",
         "observed-data": "alert",
-        "indicator":     "observable",
+        "indicator": "observable",
         "course-of-action": "case/task",
     }
 
@@ -67,7 +67,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
     ) -> None:
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
-        self._org     = org
+        self._org = org
 
     # ------------------------------------------------------------------
     # ConnectorMixin interface
@@ -76,7 +76,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Bearer token and optional organisation header."""
         self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
-        self._auth_headers["Content-Type"]  = "application/json"
+        self._auth_headers["Content-Type"] = "application/json"
         if self._org:
             self._auth_headers["X-Organisation"] = self._org
 
@@ -85,9 +85,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/status")
         return isinstance(resp, dict)
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve a case, alert, or observable by ID."""
         resource = self._resolve_resource(stix_type)
         resp = self.get(f"{_API}/{resource}/{object_id}")
@@ -122,18 +120,16 @@ class TheHiveClient(BaseClient, ConnectorMixin):
                 criteria.append({"_field": key, "_value": value})
             if criteria:
                 query["query"].append({"_name": "filter", "_and": criteria})
-        query["query"].append({"_name": "page",
-                               "from": (page - 1) * page_size,
-                               "to": page * page_size})
+        query["query"].append(
+            {"_name": "page", "from": (page - 1) * page_size, "to": page * page_size}
+        )
 
         resp = self.post(f"{_API}/query", json=query)
         if isinstance(resp, list):
             return resp
         return resp.get("items", []) if isinstance(resp, dict) else []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Create or update a TheHive case/alert.
 
@@ -157,9 +153,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
     # Extra helpers
     # ------------------------------------------------------------------
 
-    def add_observable(
-        self, case_id: str, stix_obj: dict[str, Any]
-    ) -> dict[str, Any]:
+    def add_observable(self, case_id: str, stix_obj: dict[str, Any]) -> dict[str, Any]:
         """
         Add an observable (IOC) to an existing TheHive case.
 
@@ -169,11 +163,11 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         data_type, value = self._stix_to_observable(stix_obj)
         payload = {
             "dataType": data_type,
-            "data":     value,
-            "tlp":      1,
-            "ioc":      True,
-            "tags":     ["gnat"],
-            "message":  stix_obj.get("description", stix_obj.get("name", "")),
+            "data": value,
+            "tlp": 1,
+            "ioc": True,
+            "tags": ["gnat"],
+            "message": stix_obj.get("description", stix_obj.get("name", "")),
         }
         resp = self.post(f"{_API}/case/{case_id}/observable", json=payload)
         return resp if isinstance(resp, dict) else {}
@@ -195,16 +189,16 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         """Build a TheHive case payload from a STIX object."""
         stix_type = stix_dict.get("type", "")
         title = stix_dict.get("name", stix_dict.get("title", "Imported from GNAT"))
-        sev   = min(4, max(1, stix_dict.get("confidence", 50) // 25 + 1))
+        sev = min(4, max(1, stix_dict.get("confidence", 50) // 25 + 1))
         payload: dict[str, Any] = {
-            "title":       title,
+            "title": title,
             "description": stix_dict.get("description", title),
-            "severity":    sev,
-            "tlp":         1,
-            "tags":        ["gnat", stix_type],
+            "severity": sev,
+            "tlp": 1,
+            "tags": ["gnat", stix_type],
         }
         if stix_type == "indicator":
-            payload["type"]   = "indicator"
+            payload["type"] = "indicator"
             payload["source"] = "gnat"
         return payload
 
@@ -215,75 +209,75 @@ class TheHiveClient(BaseClient, ConnectorMixin):
     @staticmethod
     def _resolve_resource(stix_type: str) -> str:
         mapping = {
-            "case":          "case",
-            "alert":         "alert",
+            "case": "case",
+            "alert": "alert",
             "observed-data": "alert",
-            "indicator":     "case",  # indicators become observables in cases
+            "indicator": "case",  # indicators become observables in cases
             "course-of-action": "case",
         }
         return mapping.get(stix_type, "case")
 
     def _case_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "observed-data",
-            "id":                f"observed-data--hive-{native.get('_id', '')}",
-            "name":              native.get("title", ""),
-            "description":       native.get("description", "")[:500],
-            "created":           native.get("_createdAt", ""),
-            "modified":          native.get("_updatedAt", ""),
-            "first_observed":    native.get("startDate", ""),
-            "last_observed":     native.get("endDate", ""),
-            "number_observed":   1,
-            "confidence":        (native.get("severity", 2) - 1) * 25,
+            "type": "observed-data",
+            "id": f"observed-data--hive-{native.get('_id', '')}",
+            "name": native.get("title", ""),
+            "description": native.get("description", "")[:500],
+            "created": native.get("_createdAt", ""),
+            "modified": native.get("_updatedAt", ""),
+            "first_observed": native.get("startDate", ""),
+            "last_observed": native.get("endDate", ""),
+            "number_observed": 1,
+            "confidence": (native.get("severity", 2) - 1) * 25,
             "x_source_platform": "thehive",
-            "x_hive_case_id":    native.get("_id", ""),
-            "x_hive_status":     native.get("status", ""),
-            "x_hive_tags":       native.get("tags", []),
+            "x_hive_case_id": native.get("_id", ""),
+            "x_hive_status": native.get("status", ""),
+            "x_hive_tags": native.get("tags", []),
         }
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "indicator",
-            "id":                f"indicator--hive-{native.get('_id', '')}",
-            "name":              native.get("title", ""),
-            "description":       native.get("description", "")[:500],
-            "pattern":           f"[domain-name:value = '{native.get('sourceRef', '')}']",
-            "pattern_type":      "stix",
-            "created":           native.get("_createdAt", ""),
-            "modified":          native.get("_updatedAt", ""),
-            "confidence":        (native.get("severity", 2) - 1) * 25,
-            "indicator_types":   [native.get("type", "unknown")],
+            "type": "indicator",
+            "id": f"indicator--hive-{native.get('_id', '')}",
+            "name": native.get("title", ""),
+            "description": native.get("description", "")[:500],
+            "pattern": f"[domain-name:value = '{native.get('sourceRef', '')}']",
+            "pattern_type": "stix",
+            "created": native.get("_createdAt", ""),
+            "modified": native.get("_updatedAt", ""),
+            "confidence": (native.get("severity", 2) - 1) * 25,
+            "indicator_types": [native.get("type", "unknown")],
             "x_source_platform": "thehive",
-            "x_hive_alert_id":   native.get("_id", ""),
-            "x_hive_status":     native.get("status", ""),
+            "x_hive_alert_id": native.get("_id", ""),
+            "x_hive_status": native.get("status", ""),
         }
 
     def _observable_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         data_type = native.get("dataType", "domain")
-        value     = native.get("data", "")
-        pattern   = self._observable_pattern(data_type, value)
+        value = native.get("data", "")
+        pattern = self._observable_pattern(data_type, value)
         return {
-            "type":              "indicator",
-            "id":                f"indicator--hive-obs-{native.get('_id', '')}",
-            "name":              value,
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("_createdAt", ""),
-            "modified":          native.get("_updatedAt", ""),
+            "type": "indicator",
+            "id": f"indicator--hive-obs-{native.get('_id', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("_createdAt", ""),
+            "modified": native.get("_updatedAt", ""),
             "x_source_platform": "thehive",
-            "x_hive_data_type":  data_type,
-            "x_hive_ioc":        native.get("ioc", False),
-            "x_hive_tags":       native.get("tags", []),
+            "x_hive_data_type": data_type,
+            "x_hive_ioc": native.get("ioc", False),
+            "x_hive_tags": native.get("tags", []),
         }
 
     @staticmethod
     def _observable_pattern(data_type: str, value: str) -> str:
         mapping = {
-            "ip":     f"[ipv4-addr:value = '{value}']",
+            "ip": f"[ipv4-addr:value = '{value}']",
             "domain": f"[domain-name:value = '{value}']",
-            "url":    f"[url:value = '{value}']",
-            "hash":   f"[file:hashes.'SHA-256' = '{value}']",
-            "mail":   f"[email-message:from_ref.value = '{value}']",
+            "url": f"[url:value = '{value}']",
+            "hash": f"[file:hashes.'SHA-256' = '{value}']",
+            "mail": f"[email-message:from_ref.value = '{value}']",
             "filename": f"[file:name = '{value}']",
         }
         return mapping.get(data_type, f"[domain-name:value = '{value}']")
@@ -292,6 +286,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
     def _stix_to_observable(stix_obj: dict[str, Any]) -> tuple:
         """Return (data_type, value) from a STIX Indicator pattern."""
         import re
+
         pattern = stix_obj.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_obj.get("name", "")

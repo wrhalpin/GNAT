@@ -90,6 +90,7 @@ TENANT_SEPARATOR = "::"
 # Tenant dataclass
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Tenant:
     """
@@ -134,6 +135,7 @@ class Tenant:
 # ---------------------------------------------------------------------------
 # TenantRegistry
 # ---------------------------------------------------------------------------
+
 
 class TenantRegistry:
     """
@@ -235,8 +237,7 @@ class TenantRegistry:
         """
         if tenant_id in self._tenants:
             raise ValueError(
-                f"Tenant {tenant_id!r} is already registered. "
-                "Use update() to modify it."
+                f"Tenant {tenant_id!r} is already registered. Use update() to modify it."
             )
         tenant = Tenant(
             tenant_id=tenant_id,
@@ -323,6 +324,7 @@ class TenantRegistry:
 # TenantWorkspaceManager
 # ---------------------------------------------------------------------------
 
+
 class TenantWorkspaceManager:
     """
     A :class:`~gnat.context.workspace.WorkspaceManager` scoped to one tenant.
@@ -381,7 +383,7 @@ class TenantWorkspaceManager:
 
     def _unscoped(self, full_name: str) -> str:
         """Strip the tenant prefix from a stored workspace name."""
-        return full_name[len(self._prefix):]
+        return full_name[len(self._prefix) :]
 
     def _strip_meta(self, ws_meta: dict) -> dict:
         """Return a copy of a workspace metadata dict with name unscoped."""
@@ -502,6 +504,7 @@ class TenantWorkspaceManager:
         TenantWorkspaceManager
         """
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager.default(config_path=config_path, db_url=db_url)
         return cls(tenant_id, manager)
 

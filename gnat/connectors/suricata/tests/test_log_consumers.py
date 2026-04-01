@@ -41,6 +41,7 @@ from gnat.connectors.zeek import (
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _write_temp(content: str, suffix: str = ".log") -> str:
     """Write content to a temp file and return its path."""
     fd, path = tempfile.mkstemp(suffix=suffix)
@@ -58,20 +59,27 @@ _EVE_ALERT = {
     "flow_id": 123456789,
     "in_iface": "eth0",
     "event_type": "alert",
-    "src_ip": "1.2.3.4", "src_port": 49152,
-    "dest_ip": "10.0.0.1", "dest_port": 22,
+    "src_ip": "1.2.3.4",
+    "src_port": 49152,
+    "dest_ip": "10.0.0.1",
+    "dest_port": 22,
     "proto": "TCP",
     "alert": {
-        "action": "allowed", "gid": 1, "signature_id": 2001219,
-        "rev": 5, "signature": "ET SCAN SSH Brute Force",
-        "category": "Attempted Information Leak", "severity": 2,
+        "action": "allowed",
+        "gid": 1,
+        "signature_id": 2001219,
+        "rev": 5,
+        "signature": "ET SCAN SSH Brute Force",
+        "category": "Attempted Information Leak",
+        "severity": 2,
     },
 }
 
 _EVE_FLOW = {
     "timestamp": "2024-03-10T12:01:00.000000+0000",
     "event_type": "flow",
-    "src_ip": "1.2.3.4", "dest_ip": "10.0.0.1",
+    "src_ip": "1.2.3.4",
+    "dest_ip": "10.0.0.1",
     "flow": {"pkts_toserver": 10},
 }
 
@@ -142,7 +150,7 @@ class TestSuricataEVEReader(unittest.TestCase):
         self.assertEqual(norm["src_ip"], "1.2.3.4")
         self.assertEqual(norm["dst_ip"], "10.0.0.1")
         self.assertEqual(norm["signature"], "ET SCAN SSH Brute Force")
-        self.assertEqual(norm["severity"], 3)   # Suricata severity 2 → GNAT 3 (high)
+        self.assertEqual(norm["severity"], 3)  # Suricata severity 2 → GNAT 3 (high)
         self.assertEqual(norm["signature_id"], 2001219)
         self.assertEqual(norm["action"], "allowed")
 
@@ -200,12 +208,17 @@ class TestSuricataSTIXMapper(unittest.TestCase):
 
 _SNORT3_JSON_ALERT = {
     "timestamp": "01/15-12:00:00.123456",
-    "gid": 1, "sid": 1000001, "rev": 1,
+    "gid": 1,
+    "sid": 1000001,
+    "rev": 1,
     "msg": "ET MALWARE C2 Traffic",
     "proto": "TCP",
-    "src_addr": "192.168.1.100", "src_port": 49152,
-    "dst_addr": "1.2.3.4", "dst_port": 443,
-    "action": "alert", "priority": 2,
+    "src_addr": "192.168.1.100",
+    "src_port": 49152,
+    "dst_addr": "1.2.3.4",
+    "dst_port": 443,
+    "action": "alert",
+    "priority": 2,
     "classification": "Potential Corporate Privacy Violation",
 }
 
@@ -343,11 +356,17 @@ _ZEEK_TSV_NOTICE = (
 _ZEEK_JSON_CONN = {
     "ts": 1709640000.123456,
     "uid": "Cabc123",
-    "id.orig_h": "1.2.3.4", "id.orig_p": 49152,
-    "id.resp_h": "10.0.0.1", "id.resp_p": 22,
-    "proto": "tcp", "service": "ssh",
-    "duration": 5.0, "orig_bytes": 2048, "resp_bytes": 1024,
-    "conn_state": "SF", "history": "ShADadfF",
+    "id.orig_h": "1.2.3.4",
+    "id.orig_p": 49152,
+    "id.resp_h": "10.0.0.1",
+    "id.resp_p": 22,
+    "proto": "tcp",
+    "service": "ssh",
+    "duration": 5.0,
+    "orig_bytes": 2048,
+    "resp_bytes": 1024,
+    "conn_state": "SF",
+    "history": "ShADadfF",
 }
 
 
@@ -450,12 +469,18 @@ class TestZeekJSONReader(unittest.TestCase):
 class TestZeekLogCommands(unittest.TestCase):
     def test_normalise_notice(self):
         tsv_record = {
-            "ts": "1709640000.123456", "uid": "Cabc123",
-            "id.orig_h": "1.2.3.4", "id.orig_p": "49152",
-            "id.resp_h": "10.0.0.1", "id.resp_p": "22",
-            "proto": "tcp", "note": "SSH::Password_Guessing",
-            "msg": "SSH brute force", "sub": "10 attempts",
-            "actions": "Notice::ACTION_LOG", "dropped": "F",
+            "ts": "1709640000.123456",
+            "uid": "Cabc123",
+            "id.orig_h": "1.2.3.4",
+            "id.orig_p": "49152",
+            "id.resp_h": "10.0.0.1",
+            "id.resp_p": "22",
+            "proto": "tcp",
+            "note": "SSH::Password_Guessing",
+            "msg": "SSH brute force",
+            "sub": "10 attempts",
+            "actions": "Notice::ACTION_LOG",
+            "dropped": "F",
         }
         norm = ZeekLogCommands.normalise_notice(tsv_record)
         self.assertEqual(norm["src_ip"], "1.2.3.4")
@@ -473,13 +498,20 @@ class TestZeekLogCommands(unittest.TestCase):
 class TestZeekSTIXMapper(unittest.TestCase):
     def setUp(self):
         self.mapper = ZeekSTIXMapper()
-        self.notice = ZeekLogCommands.normalise_notice({
-            "ts": "1709640000.0", "uid": "Cabc123",
-            "id.orig_h": "1.2.3.4", "id.orig_p": "49152",
-            "id.resp_h": "10.0.0.1", "id.resp_p": "22",
-            "proto": "tcp", "note": "SSH::Password_Guessing",
-            "msg": "SSH brute force", "dropped": "F",
-        })
+        self.notice = ZeekLogCommands.normalise_notice(
+            {
+                "ts": "1709640000.0",
+                "uid": "Cabc123",
+                "id.orig_h": "1.2.3.4",
+                "id.orig_p": "49152",
+                "id.resp_h": "10.0.0.1",
+                "id.resp_p": "22",
+                "proto": "tcp",
+                "note": "SSH::Password_Guessing",
+                "msg": "SSH brute force",
+                "dropped": "F",
+            }
+        )
         self.conn = ZeekLogCommands.normalise_connection(_ZEEK_JSON_CONN)
 
     def test_notice_bundle_structure(self):

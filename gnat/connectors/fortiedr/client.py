@@ -130,9 +130,11 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
             params = {
                 "limit": limit,
                 "offset": (page - 1) * limit,
-                **{k: v for k, v in filters.items() if k in ("from", "to", "severity", "status")}
+                **{k: v for k, v in filters.items() if k in ("from", "to", "severity", "status")},
             }
-            resp = self.get("/rest/incidents", params={k: v for k, v in params.items() if v is not None})
+            resp = self.get(
+                "/rest/incidents", params={k: v for k, v in params.items() if v is not None}
+            )
             return resp.get("data", []) if isinstance(resp, dict) else []
 
         if stix_type == "report":  # Collectors / inventory
@@ -146,7 +148,9 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
         """Limited write support (e.g., update incident status or trigger playbook action)."""
         if stix_type == "incident":
             # Example: update incident or trigger action
-            return self.post("/rest/incidents/update", json=payload)  # placeholder — adapt to real endpoint
+            return self.post(
+                "/rest/incidents/update", json=payload
+            )  # placeholder — adapt to real endpoint
         raise GNATClientError(f"upsert_object limited for {stix_type} in FortiEDR")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:

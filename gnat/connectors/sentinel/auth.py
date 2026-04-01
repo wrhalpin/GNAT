@@ -104,9 +104,7 @@ class SentinelAuthManager:
                 timeout=self._config.timeout,
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise SentinelAuthError(
-                f"Failed to connect to Azure token endpoint: {exc}"
-            ) from exc
+            raise SentinelAuthError(f"Failed to connect to Azure token endpoint: {exc}") from exc
 
         if response.status == 400:
             try:
@@ -127,9 +125,7 @@ class SentinelAuthManager:
             )
 
         if response.status != 200:
-            raise SentinelAuthError(
-                f"Unexpected HTTP {response.status} from Azure token endpoint."
-            )
+            raise SentinelAuthError(f"Unexpected HTTP {response.status} from Azure token endpoint.")
 
         try:
             body = json.loads(response.data.decode("utf-8"))
@@ -137,6 +133,4 @@ class SentinelAuthManager:
             self._expires_in = int(body.get("expires_in", 3600))
             self._acquired_at = time.time()
         except (KeyError, json.JSONDecodeError) as exc:
-            raise SentinelAuthError(
-                f"Could not parse Azure token response: {exc}"
-            ) from exc
+            raise SentinelAuthError(f"Could not parse Azure token response: {exc}") from exc

@@ -46,7 +46,7 @@ field names as they appear in search results.
 - https://docs.splunk.com/Documentation/CIM/latest/User/Overview
 - https://docs.splunk.com/Documentation/ES/latest/Admin/Threatsources
 - https://stix2.readthedocs.io/en/latest/
-  """
+"""
 
 from __future__ import annotations
 
@@ -63,91 +63,92 @@ from .exceptions import SplunkSTIXError
 # Key: stix_property, Value: splunk_field_name
 
 _IP_FIELD_MAP: dict[str, str] = {
-"value": "ip",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "value": "ip",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _DOMAIN_FIELD_MAP: dict[str, str] = {
-"value": "domain",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "value": "domain",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _URL_FIELD_MAP: dict[str, str] = {
-"value": "url",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "value": "url",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _FILE_FIELD_MAP: dict[str, str] = {
-"name": "file_name",
-"hashes.MD5": "md5",
-"hashes.SHA-1": "sha1",
-"hashes.SHA-256": "sha256",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "name": "file_name",
+    "hashes.MD5": "md5",
+    "hashes.SHA-1": "sha1",
+    "hashes.SHA-256": "sha256",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _EMAIL_FIELD_MAP: dict[str, str] = {
-"value": "src_user",
-"display_name": "user",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "value": "src_user",
+    "display_name": "user",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _PROCESS_FIELD_MAP: dict[str, str] = {
-"name": "process",
-"command_line": "process_exec",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "name": "process",
+    "command_line": "process_exec",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _REGISTRY_FIELD_MAP: dict[str, str] = {
-"key": "registry_key_name",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "key": "registry_key_name",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _CERT_FIELD_MAP: dict[str, str] = {
-"hashes.SHA-256": "ssl_hash",
-"serial_number": "ssl_serial",
-"subject": "ssl_subject",
-"issuer": "ssl_issuer",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "hashes.SHA-256": "ssl_hash",
+    "serial_number": "ssl_serial",
+    "subject": "ssl_subject",
+    "issuer": "ssl_issuer",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 _USER_FIELD_MAP: dict[str, str] = {
-"user_id": "user",
-"account_login": "src_user",
-"x_gnat_description": "description",
-"x_gnat_threat_type": "threat_key",
-"x_gnat_weight": "weight",
+    "user_id": "user",
+    "account_login": "src_user",
+    "x_gnat_description": "description",
+    "x_gnat_threat_type": "threat_key",
+    "x_gnat_weight": "weight",
 }
 
 # Map STIX SCO type -> (collection_key, field_map)
 
 _SCO_COLLECTION_MAP: dict[str, tuple[str, dict]] = {
-"ipv4-addr": ("ip", _IP_FIELD_MAP),
-"ipv6-addr": ("ip", _IP_FIELD_MAP),
-"domain-name": ("domain", _DOMAIN_FIELD_MAP),
-"url": ("url", _URL_FIELD_MAP),
-"file": ("file", _FILE_FIELD_MAP),
-"email-addr": ("email", _EMAIL_FIELD_MAP),
-"process": ("process", _PROCESS_FIELD_MAP),
-"windows-registry-key": ("registry", _REGISTRY_FIELD_MAP),
-"x509-certificate": ("certificate", _CERT_FIELD_MAP),
-"user-account": ("user", _USER_FIELD_MAP),
+    "ipv4-addr": ("ip", _IP_FIELD_MAP),
+    "ipv6-addr": ("ip", _IP_FIELD_MAP),
+    "domain-name": ("domain", _DOMAIN_FIELD_MAP),
+    "url": ("url", _URL_FIELD_MAP),
+    "file": ("file", _FILE_FIELD_MAP),
+    "email-addr": ("email", _EMAIL_FIELD_MAP),
+    "process": ("process", _PROCESS_FIELD_MAP),
+    "windows-registry-key": ("registry", _REGISTRY_FIELD_MAP),
+    "x509-certificate": ("certificate", _CERT_FIELD_MAP),
+    "user-account": ("user", _USER_FIELD_MAP),
 }
+
 
 class SplunkSTIXMapper:
     """
@@ -211,9 +212,7 @@ class SplunkSTIXMapper:
                 nested = self._extract_observed_data_objects(obj)
                 for nested_obj in nested:
                     try:
-                        record_info = self._sco_to_record(
-                            nested_obj, default_weight
-                        )
+                        record_info = self._sco_to_record(nested_obj, default_weight)
                         results.append(record_info)
                     except SplunkSTIXError:
                         pass
@@ -250,8 +249,7 @@ class SplunkSTIXMapper:
         """
         if bundle.get("type") != "bundle":
             raise SplunkSTIXError(
-                "Expected a STIX 2.1 bundle (type='bundle'). "
-                f"Got type='{bundle.get('type')}'."
+                f"Expected a STIX 2.1 bundle (type='bundle'). Got type='{bundle.get('type')}'."
             )
         return self.stix_objects_to_splunk_records(
             bundle.get("objects", []),
@@ -298,11 +296,13 @@ class SplunkSTIXMapper:
         # user account
         if user := notable.get("user"):
             user_id = f"user-account--{_deterministic_uuid('user-account', user)}"
-            objects.append({
-                "type": "user-account",
-                "id": user_id,
-                "user_id": user,
-            })
+            objects.append(
+                {
+                    "type": "user-account",
+                    "id": user_id,
+                    "user_id": user,
+                }
+            )
             refs.append(user_id)
 
         # observed-data SDO
@@ -441,29 +441,33 @@ class SplunkSTIXMapper:
                     uid = f"user-account--{_deterministic_uuid('user-account', val)}"
                     if uid not in seen:
                         seen.add(uid)
-                        objects.append({
-                            "type": "user-account",
-                            "id": uid,
-                            "user_id": val,
-                        })
+                        objects.append(
+                            {
+                                "type": "user-account",
+                                "id": uid,
+                                "user_id": val,
+                            }
+                        )
                     refs.append(uid)
                     break
 
             if refs:
                 obs_id = f"observed-data--{str(uuid.uuid4())}"
-                objects.append({
-                    "type": "observed-data",
-                    "id": obs_id,
-                    "spec_version": "2.1",
-                    "created": now_ts,
-                    "modified": now_ts,
-                    "first_observed": fo,
-                    "last_observed": lo,
-                    "number_observed": 1,
-                    "object_refs": refs,
-                    "x_gnat_source": "splunk_search",
-                    "x_gnat_raw": row,
-                })
+                objects.append(
+                    {
+                        "type": "observed-data",
+                        "id": obs_id,
+                        "spec_version": "2.1",
+                        "created": now_ts,
+                        "modified": now_ts,
+                        "first_observed": fo,
+                        "last_observed": lo,
+                        "number_observed": 1,
+                        "object_refs": refs,
+                        "x_gnat_source": "splunk_search",
+                        "x_gnat_raw": row,
+                    }
+                )
 
         return {
             "type": "bundle",
@@ -549,6 +553,7 @@ class SplunkSTIXMapper:
           [url:value = 'https://evil.com/path']
         """
         import re
+
         match = re.search(r"=\s*'([^']+)'", pattern)
         if not match:
             return
@@ -603,8 +608,8 @@ class SplunkSTIXMapper:
         return [r for r in refs if isinstance(r, dict)]
 
 
-
 # ── Module-level utility functions ────────────────────────────────────────────
+
 
 def _deterministic_uuid(stix_type: str, value: str) -> str:
     """

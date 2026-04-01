@@ -43,7 +43,7 @@ before calling the upload/upsert methods here.
 
 - https://docs.splunk.com/Documentation/ES/latest/Admin/Threatsources
 - https://docs.splunk.com/Documentation/ES/latest/API/Threatsources
-  """
+"""
 
 import json
 import urllib.parse
@@ -54,36 +54,37 @@ from .exceptions import SplunkThreatIntelError
 # ── Supported intel collections ───────────────────────────────────────────────
 
 INTEL_COLLECTIONS = {
-"ip",
-"domain",
-"url",
-"file",
-"email",
-"process",
-"registry",
-"certificate",
-"user",
-"http",
+    "ip",
+    "domain",
+    "url",
+    "file",
+    "email",
+    "process",
+    "registry",
+    "certificate",
+    "user",
+    "http",
 }
 
 # KV store collection names as Splunk expects them
 
 _COLLECTION_MAP: dict[str, str] = {
-"ip": "ip_intel",
-"domain": "domain_intel",
-"url": "url_intel",
-"file": "file_intel",
-"email": "email_intel",
-"process": "process_intel",
-"registry": "registry_intel",
-"certificate": "certificate_intel",
-"user": "user_intel",
-"http": "http_intel",
+    "ip": "ip_intel",
+    "domain": "domain_intel",
+    "url": "url_intel",
+    "file": "file_intel",
+    "email": "email_intel",
+    "process": "process_intel",
+    "registry": "registry_intel",
+    "certificate": "certificate_intel",
+    "user": "user_intel",
+    "http": "http_intel",
 }
 
 # ES app namespace for threat intel endpoints
 
 _ES_APP = "SplunkEnterpriseSecuritySuite"
+
 
 class SplunkThreatIntelCommands:
     """
@@ -103,8 +104,7 @@ class SplunkThreatIntelCommands:
     def _require_es(self) -> None:
         if not self._client.config.es_enabled:
             raise SplunkThreatIntelError(
-                "Threat Intel commands require 'es_enabled = true' "
-                "in [splunk] config."
+                "Threat Intel commands require 'es_enabled = true' in [splunk] config."
             )
 
     def _es_path(self, endpoint: str) -> str:
@@ -183,9 +183,7 @@ class SplunkThreatIntelCommands:
         self._require_es()
         coll_name = self._validate_collection(collection)
         safe_key = urllib.parse.quote(key, safe="")
-        url = self._es_path(
-            f"storage/collections/data/{coll_name}/{safe_key}"
-        )
+        url = self._es_path(f"storage/collections/data/{coll_name}/{safe_key}")
         try:
             return self._client.get(url, namespaced=False)
         except Exception:
@@ -217,9 +215,7 @@ class SplunkThreatIntelCommands:
 
         if key:
             safe_key = urllib.parse.quote(key, safe="")
-            url = self._es_path(
-                f"storage/collections/data/{coll_name}/{safe_key}"
-            )
+            url = self._es_path(f"storage/collections/data/{coll_name}/{safe_key}")
             return self._client.put(url, data=record, namespaced=False)
 
         url = self._es_path(f"storage/collections/data/{coll_name}")
@@ -262,7 +258,7 @@ class SplunkThreatIntelCommands:
 
         responses = []
         for i in range(0, len(records), batch_size):
-            batch = records[i:i + batch_size]
+            batch = records[i : i + batch_size]
             resp = self._client.post(
                 url,
                 raw_body=json.dumps(batch).encode("utf-8"),
@@ -286,9 +282,7 @@ class SplunkThreatIntelCommands:
         self._require_es()
         coll_name = self._validate_collection(collection)
         safe_key = urllib.parse.quote(key, safe="")
-        url = self._es_path(
-            f"storage/collections/data/{coll_name}/{safe_key}"
-        )
+        url = self._es_path(f"storage/collections/data/{coll_name}/{safe_key}")
         self._client.delete(url, namespaced=False)
 
     def clear_collection(self, collection: str) -> None:
@@ -351,14 +345,12 @@ class SplunkThreatIntelCommands:
         coll_name = self._validate_collection(collection)
 
         # Splunk ES threat intel upload endpoint
-        url = self._es_path(
-            f"services/data/threat_intel_by_source/{source_name}"
-        )
+        url = self._es_path(f"services/data/threat_intel_by_source/{source_name}")
 
         # Build multipart-style POST body; Splunk accepts raw file POST here
         data = {
             "name": source_name,
-            "type": "stix2",          # tells Splunk the parser to use
+            "type": "stix2",  # tells Splunk the parser to use
             "collection": coll_name,
             "weight": str(weight),
             "output_mode": "json",
@@ -366,6 +358,7 @@ class SplunkThreatIntelCommands:
 
         # Post the STIX JSON directly as the body with metadata as query params
         import urllib.parse as _up
+
         url_with_params = f"{url}?{_up.urlencode(data)}"
 
         try:
@@ -430,15 +423,17 @@ class SplunkThreatIntelCommands:
         results = []
         for entry in response.get("entry", []):
             content = entry.get("content", {})
-            results.append({
-                "name": entry.get("name"),
-                "type": content.get("type"),
-                "collection": content.get("collection"),
-                "weight": content.get("weight"),
-                "disabled": content.get("disabled"),
-                "status": content.get("status"),
-                "last_updated": content.get("last_successful_execution"),
-            })
+            results.append(
+                {
+                    "name": entry.get("name"),
+                    "type": content.get("type"),
+                    "collection": content.get("collection"),
+                    "weight": content.get("weight"),
+                    "disabled": content.get("disabled"),
+                    "status": content.get("status"),
+                    "last_updated": content.get("last_successful_execution"),
+                }
+            )
         return results
 
     def enable_intel_source(self, source_name: str) -> dict:

@@ -160,14 +160,10 @@ class FeedConnectorFactory:
         The generated class name is derived from the section name in
         CamelCase (e.g. ``"osint_feed_limo"`` → ``"OsintFeedLimo"``).
         """
-        class_name = "".join(
-            part.capitalize() for part in section_name.split("_")
-        )
+        class_name = "".join(part.capitalize() for part in section_name.split("_"))
 
         # Extract only the keys that OsintFeedConnector understands
-        feed_defaults = {
-            k: v for k, v in section_cfg.items() if k in _FEED_INIT_KEYS
-        }
+        feed_defaults = {k: v for k, v in section_cfg.items() if k in _FEED_INIT_KEYS}
         feed_defaults.setdefault("feed_name", section_name)
 
         # Build a subclass that pre-fills config defaults

@@ -142,7 +142,7 @@ class ExportJob(FeedJob):
         interval_seconds: int | None = None,
         cron: str | None = None,
         on_success: Callable[[RunRecord], None] | None = None,
-        on_failure:  Callable[[RunRecord], None] | None = None,
+        on_failure: Callable[[RunRecord], None] | None = None,
         max_history: int = 100,
         overlap_policy: str = "skip",
         enabled: bool = True,
@@ -154,8 +154,8 @@ class ExportJob(FeedJob):
         # override execute() to call the pipeline instead.
         super().__init__(
             job_id=job_id,
-            reader_factory=lambda ctx: None,   # never called
-            mapper_factory=lambda ctx: None,   # never called
+            reader_factory=lambda ctx: None,  # never called
+            mapper_factory=lambda ctx: None,  # never called
             interval_seconds=interval_seconds,
             cron=cron,
             client=None,
@@ -212,25 +212,22 @@ class ExportJob(FeedJob):
 
         self.run_count += 1
         started_at = _utcnow()
-        sched_at   = scheduled_at or started_at
+        sched_at = scheduled_at or started_at
 
         ctx = JobRunContext(
-            job_id           = self.job_id,
-            run_number       = self.run_count,
-            scheduled_at     = sched_at,
-            last_success_at  = self.last_success_at,
-            last_success_iso = (
-                self.last_success_at.isoformat()
-                if self.last_success_at else None
-            ),
-            last_result      = self.history[-1].result if self.history else None,
-            custom           = self._custom_state,
+            job_id=self.job_id,
+            run_number=self.run_count,
+            scheduled_at=sched_at,
+            last_success_at=self.last_success_at,
+            last_success_iso=(self.last_success_at.isoformat() if self.last_success_at else None),
+            last_result=self.history[-1].result if self.history else None,
+            custom=self._custom_state,
         )
 
         record = RunRecord(
-            run_number   = self.run_count,
-            scheduled_at = sched_at,
-            started_at   = started_at,
+            run_number=self.run_count,
+            scheduled_at=sched_at,
+            started_at=started_at,
         )
 
         try:
@@ -240,28 +237,28 @@ class ExportJob(FeedJob):
 
             # Bridge ExportResult → IngestResult shape for RunRecord
             ingest_proxy = IngestResult(
-                source_id       = self.job_id,
-                total_records   = export_result.source_objects,
-                mapped_objects  = export_result.filtered_objects,
-                written_objects = (
+                source_id=self.job_id,
+                total_records=export_result.source_objects,
+                mapped_objects=export_result.filtered_objects,
+                written_objects=(
                     export_result.transform_result.object_count
-                    if export_result.transform_result else 0
+                    if export_result.transform_result
+                    else 0
                 ),
-                errors          = list(export_result.errors),
+                errors=list(export_result.errors),
             )
 
-            record.result      = ingest_proxy
+            record.result = ingest_proxy
             record.finished_at = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - record.started_at
-            ).total_seconds()
+            record.duration_seconds = (record.finished_at - record.started_at).total_seconds()
 
             if export_result.success:
-                record.status      = "success"
+                record.status = "success"
                 self.last_success_at = record.finished_at
                 logger.info(
                     "ExportJob %r run #%d: success (%d source → %d delivered) in %.1fs",
-                    self.job_id, self.run_count,
+                    self.job_id,
+                    self.run_count,
                     export_result.source_objects,
                     ingest_proxy.written_objects,
                     record.duration_seconds,
@@ -272,20 +269,20 @@ class ExportJob(FeedJob):
                 record.status = "partial" if ingest_proxy.written_objects > 0 else "failed"
                 logger.warning(
                     "ExportJob %r run #%d: %s — %s",
-                    self.job_id, self.run_count, record.status, export_result.errors,
+                    self.job_id,
+                    self.run_count,
+                    record.status,
+                    export_result.errors,
                 )
                 if self.on_failure:
                     self._safe_callback(self.on_failure, record)
 
         except Exception as exc:  # noqa: BLE001
             record.finished_at = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - record.started_at
-            ).total_seconds()
+            record.duration_seconds = (record.finished_at - record.started_at).total_seconds()
             record.status = "failed"
-            record.error  = str(exc)
-            logger.error("ExportJob %r run #%d: FAILED — %s",
-                         self.job_id, self.run_count, exc)
+            record.error = str(exc)
+            logger.error("ExportJob %r run #%d: FAILED — %s", self.job_id, self.run_count, exc)
             if self.on_failure:
                 self._safe_callback(self.on_failure, record)
         finally:
@@ -296,7 +293,6 @@ class ExportJob(FeedJob):
 
     def __repr__(self) -> str:  # pragma: no cover
         sched = (
-            f"every {self.interval_seconds}s"
-            if self.interval_seconds else f"cron={self.cron!r}"
+            f"every {self.interval_seconds}s" if self.interval_seconds else f"cron={self.cron!r}"
         )
         return f"ExportJob(id={self.job_id!r}, {sched})"

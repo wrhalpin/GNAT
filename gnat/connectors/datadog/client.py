@@ -82,9 +82,9 @@ class DatadogClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":     "security_monitoring/signals",
+        "indicator": "security_monitoring/signals",
         "vulnerability": "posture_management/findings",
-        "report":        "incidents",
+        "report": "incidents",
     }
 
     def __init__(
@@ -170,22 +170,23 @@ class DatadogClient(BaseClient, ConnectorMixin):
             body = {"data": {"type": "incidents", "attributes": payload}}
             resp = self.post("/api/v2/incidents", json=body)
             return resp.get("data", resp) if isinstance(resp, dict) else {}
-        raise GNATClientError(
-            f"Datadog: upsert not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Datadog: upsert not supported for STIX type '{stix_type}'")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Archive a Datadog incident."""
         if stix_type == "report":
             self.patch(
                 f"/api/v2/incidents/{object_id}",
-                json={"data": {"type": "incidents", "id": object_id,
-                               "attributes": {"archived": _now_ts()}}},
+                json={
+                    "data": {
+                        "type": "incidents",
+                        "id": object_id,
+                        "attributes": {"archived": _now_ts()},
+                    }
+                },
             )
             return
-        raise GNATClientError(
-            f"Datadog: delete not supported for STIX type '{stix_type}'"
-        )
+        raise GNATClientError(f"Datadog: delete not supported for STIX type '{stix_type}'")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
 
@@ -251,9 +252,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
     def mute_signal(self, signal_id: str, reason: str = "maintenance") -> dict[str, Any]:
         """Mute a security signal."""
         body = {"data": {"attributes": {"action": "mute", "reason": reason}}}
-        resp = self.patch(
-            f"/api/v2/security_monitoring/signals/{signal_id}/state", json=body
-        )
+        resp = self.patch(f"/api/v2/security_monitoring/signals/{signal_id}/state", json=body)
         return resp if isinstance(resp, dict) else {}
 
     def get_logs(

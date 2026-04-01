@@ -29,8 +29,9 @@ service accounts connecting to Splunk Cloud.
 
 - https://docs.splunk.com/Documentation/Splunk/latest/Security/UseAuthTokens
 - https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTaccess
-  """
+"""
 
+import contextlib
 import json
 import time
 import urllib.parse
@@ -43,6 +44,7 @@ from .exceptions import SplunkAuthError
 # Splunk session keys typically expire after 3600s idle; renew 5 min early.
 
 _SESSION_EXPIRY_BUFFER_SECONDS = 300
+
 
 class SplunkAuthManager:
     """
@@ -163,22 +165,16 @@ class SplunkAuthManager:
                 timeout=self._config.timeout,
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise SplunkAuthError(
-                f"HTTP error during Splunk login: {exc}"
-            ) from exc
+            raise SplunkAuthError(f"HTTP error during Splunk login: {exc}") from exc
 
         if response.status == 401:
-            raise SplunkAuthError(
-                "Splunk login failed: invalid username or password."
-            )
+            raise SplunkAuthError("Splunk login failed: invalid username or password.")
         if response.status == 403:
             raise SplunkAuthError(
                 "Splunk login failed: account disabled or insufficient permissions."
             )
         if response.status not in (200, 201):
-            raise SplunkAuthError(
-                f"Splunk login returned unexpected status {response.status}."
-            )
+            raise SplunkAuthError(f"Splunk login returned unexpected status {response.status}.")
 
         try:
             data = json.loads(response.data.decode("utf-8"))
@@ -196,12 +192,10 @@ class SplunkAuthManager:
     def _post_logout(self, session_key: str) -> None:
         """DELETE the current session from Splunk."""
         endpoint = f"{self._config.base_url}/services/authentication/httpauth-tokens/{session_key}"
-        try:
+        with contextlib.suppress(urllib3.exceptions.HTTPError):
             self._http.request(
                 "DELETE",
                 endpoint,
                 headers={"Authorization": f"Splunk {session_key}"},
                 timeout=self._config.timeout,
             )
-        except urllib3.exceptions.HTTPError:
-            pass  # Best-effort logout; do not raise.

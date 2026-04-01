@@ -104,6 +104,7 @@ class SentinelWatchlistCommands:
             Key/value dict matching watchlist columns.
         """
         import uuid
+
         item_id = str(uuid.uuid4())
         return self._client.put(
             f"watchlists/{alias}/watchlistItems/{item_id}",

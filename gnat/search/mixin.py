@@ -81,26 +81,28 @@ if TYPE_CHECKING:
 
 
 # Fields that are purely structural — never go into text_content.
-_STRUCTURED_FIELDS: frozenset = frozenset({
-    "type",
-    "spec_version",
-    "pattern_type",
-    "confidence",
-    "score",
-    "priority",
-    "severity",
-    "tlp",
-    "traffic_light_protocol",
-    "external_references",
-    "object_marking_refs",
-    "granular_markings",
-    "revoked",
-    "labels",                  # short vocab tokens; index separately if needed
-    "created_by_ref",
-    "relationship_type",
-    "source_ref",
-    "target_ref",
-})
+_STRUCTURED_FIELDS: frozenset = frozenset(
+    {
+        "type",
+        "spec_version",
+        "pattern_type",
+        "confidence",
+        "score",
+        "priority",
+        "severity",
+        "tlp",
+        "traffic_light_protocol",
+        "external_references",
+        "object_marking_refs",
+        "granular_markings",
+        "revoked",
+        "labels",  # short vocab tokens; index separately if needed
+        "created_by_ref",
+        "relationship_type",
+        "source_ref",
+        "target_ref",
+    }
+)
 
 
 class STIXSearchMixin:
@@ -127,8 +129,13 @@ class STIXSearchMixin:
 
     _search_text_fields: list[str] = []
     _search_display_priority: list[str] = [
-        "name", "value", "pattern", "subject",
-        "display_name", "title", "description",
+        "name",
+        "value",
+        "pattern",
+        "subject",
+        "display_name",
+        "title",
+        "description",
     ]
 
     # ------------------------------------------------------------------
@@ -160,13 +167,13 @@ class STIXSearchMixin:
             Flat document ready to POST to ``/solr/<collection>/update``.
         """
         doc: dict[str, Any] = {
-            "id":              self.id,          # type: ignore[attr-defined]
-            "stix_type":       self.stix_type,   # type: ignore[attr-defined]
-            "created":         self.created,     # type: ignore[attr-defined]
-            "modified":        self.modified,    # type: ignore[attr-defined]
+            "id": self.id,  # type: ignore[attr-defined]
+            "stix_type": self.stix_type,  # type: ignore[attr-defined]
+            "created": self.created,  # type: ignore[attr-defined]
+            "modified": self.modified,  # type: ignore[attr-defined]
             "source_platform": source_platform,
-            "display_name":    self._build_display_name(),
-            "text_content":    self._build_text_content(),
+            "display_name": self._build_display_name(),
+            "text_content": self._build_text_content(),
         }
         if extra_fields:
             doc.update(extra_fields)
@@ -202,10 +209,7 @@ class STIXSearchMixin:
         if self._search_text_fields:
             keys = self._search_text_fields
         else:
-            keys = [
-                k for k in props
-                if k not in _STRUCTURED_FIELDS
-            ]
+            keys = [k for k in props if k not in _STRUCTURED_FIELDS]
 
         parts: list[str] = []
         seen: set = set()
@@ -230,9 +234,11 @@ class STIXSearchMixin:
                         # e.g. external_references — shouldn't be here
                         # after _STRUCTURED_FIELDS filter, but be safe
                         import json as _json
+
                         _add(_json.dumps(item, separators=(",", ":")))
             elif isinstance(val, dict):
                 import json as _json
+
                 _add(_json.dumps(val, separators=(",", ":")))
             elif isinstance(val, (int, float)):
                 # Numbers surface in keyword searches ("score:85" etc.)

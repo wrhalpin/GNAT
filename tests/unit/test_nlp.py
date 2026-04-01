@@ -11,17 +11,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gnat.nlp.query_spec import QuerySpec
 from gnat.nlp.builtin import BuiltinParser
 from gnat.nlp.parser import NLPQueryEngine
-
+from gnat.nlp.query_spec import QuerySpec
 
 # ---------------------------------------------------------------------------
 # QuerySpec
 # ---------------------------------------------------------------------------
 
-class TestQuerySpec:
 
+class TestQuerySpec:
     def test_defaults(self):
         spec = QuerySpec()
         assert spec.entities == []
@@ -36,8 +35,13 @@ class TestQuerySpec:
         spec = QuerySpec(entities=["APT28"], limit=50, raw_query="test")
         d = spec.to_dict()
         assert set(d.keys()) == {
-            "entities", "ioc_types", "since", "until",
-            "platforms", "limit", "raw_query",
+            "entities",
+            "ioc_types",
+            "since",
+            "until",
+            "platforms",
+            "limit",
+            "raw_query",
         }
 
     def test_to_dict_since_iso(self):
@@ -55,8 +59,8 @@ class TestQuerySpec:
 # BuiltinParser — time extraction
 # ---------------------------------------------------------------------------
 
-class TestBuiltinParserTime:
 
+class TestBuiltinParserTime:
     def setup_method(self):
         self.p = BuiltinParser()
 
@@ -113,8 +117,8 @@ class TestBuiltinParserTime:
 # BuiltinParser — IOC type extraction
 # ---------------------------------------------------------------------------
 
-class TestBuiltinParserIOCTypes:
 
+class TestBuiltinParserIOCTypes:
     def setup_method(self):
         self.p = BuiltinParser()
 
@@ -156,8 +160,8 @@ class TestBuiltinParserIOCTypes:
 # BuiltinParser — entity extraction
 # ---------------------------------------------------------------------------
 
-class TestBuiltinParserEntities:
 
+class TestBuiltinParserEntities:
     def setup_method(self):
         self.p = BuiltinParser()
 
@@ -192,8 +196,8 @@ class TestBuiltinParserEntities:
 # BuiltinParser — limit extraction
 # ---------------------------------------------------------------------------
 
-class TestBuiltinParserLimit:
 
+class TestBuiltinParserLimit:
     def setup_method(self):
         self.p = BuiltinParser()
 
@@ -218,6 +222,7 @@ class TestBuiltinParserLimit:
 # BuiltinParser — raw_query preserved
 # ---------------------------------------------------------------------------
 
+
 def test_raw_query_preserved():
     q = "Get all IPs for Lazarus Group from the last 7 days"
     spec = BuiltinParser().parse(q)
@@ -228,8 +233,8 @@ def test_raw_query_preserved():
 # NLPQueryEngine — builtin backend
 # ---------------------------------------------------------------------------
 
-class TestNLPQueryEngineBuiltin:
 
+class TestNLPQueryEngineBuiltin:
     def test_default_backend_is_builtin(self):
         engine = NLPQueryEngine()
         assert engine.backend == "builtin"
@@ -268,8 +273,9 @@ class TestNLPQueryEngineBuiltin:
         with patch.object(engine, "parse") as mock_parse:
             spec = QuerySpec(platforms=["threatq"], entities=["APT28"])
             mock_parse.return_value = spec
-            results = engine.query("APT28 from threatq",
-                                   connectors={"threatq": mock_tq, "crowdstrike": mock_cs})
+            results = engine.query(
+                "APT28 from threatq", connectors={"threatq": mock_tq, "crowdstrike": mock_cs}
+            )
 
         mock_tq.list_objects.assert_called_once()
         mock_cs.list_objects.assert_not_called()
@@ -291,28 +297,35 @@ class TestNLPQueryEngineBuiltin:
 # ClaudeParser — mocked API call
 # ---------------------------------------------------------------------------
 
-class TestClaudeParserMocked:
 
+class TestClaudeParserMocked:
     def _make_claude_config(self):
         from gnat.agents.base import AgentConfig
+
         return AgentConfig(
-            api_key="sk-ant-test", model="claude-sonnet-4-6",
-            max_tokens=512, timeout=30, ai_confidence_ceiling=60,
+            api_key="sk-ant-test",
+            model="claude-sonnet-4-6",
+            max_tokens=512,
+            timeout=30,
+            ai_confidence_ceiling=60,
         )
 
     def test_parse_valid_response(self):
         from gnat.nlp.claude_backend import ClaudeParser
+
         cfg = self._make_claude_config()
         parser = ClaudeParser(cfg)
 
-        response_json = json.dumps({
-            "entities":  ["APT28"],
-            "ioc_types": ["ip", "domain"],
-            "since":     "2026-01-01T00:00:00Z",
-            "until":     None,
-            "platforms": ["threatq"],
-            "limit":     50,
-        })
+        response_json = json.dumps(
+            {
+                "entities": ["APT28"],
+                "ioc_types": ["ip", "domain"],
+                "since": "2026-01-01T00:00:00Z",
+                "until": None,
+                "platforms": ["threatq"],
+                "limit": 50,
+            }
+        )
         mock_response = {"content": [{"type": "text", "text": response_json}]}
 
         with patch.object(parser._client, "complete", return_value=mock_response):
@@ -327,6 +340,7 @@ class TestClaudeParserMocked:
 
     def test_parse_falls_back_on_api_error(self):
         from gnat.nlp.claude_backend import ClaudeParser
+
         cfg = self._make_claude_config()
         parser = ClaudeParser(cfg)
 
@@ -338,6 +352,7 @@ class TestClaudeParserMocked:
 
     def test_parse_falls_back_on_bad_json(self):
         from gnat.nlp.claude_backend import ClaudeParser
+
         cfg = self._make_claude_config()
         parser = ClaudeParser(cfg)
 
@@ -349,10 +364,11 @@ class TestClaudeParserMocked:
 
     def test_parse_strips_markdown_fences(self):
         from gnat.nlp.claude_backend import ClaudeParser
+
         cfg = self._make_claude_config()
         parser = ClaudeParser(cfg)
 
-        fenced = "```json\n{\"entities\":[\"Lazarus\"],\"ioc_types\":[],\"since\":null,\"until\":null,\"platforms\":[],\"limit\":100}\n```"
+        fenced = '```json\n{"entities":["Lazarus"],"ioc_types":[],"since":null,"until":null,"platforms":[],"limit":100}\n```'
         mock_response = {"content": [{"type": "text", "text": fenced}]}
 
         with patch.object(parser._client, "complete", return_value=mock_response):
@@ -365,16 +381,18 @@ class TestClaudeParserMocked:
 # GNATClient.natural_language_query()
 # ---------------------------------------------------------------------------
 
-class TestGNATClientNLQ:
 
+class TestGNATClientNLQ:
     def test_returns_list_without_connector(self):
         from gnat.client import GNATClient
+
         cli = GNATClient()
         results = cli.natural_language_query("APT28 domains last 7 days")
         assert isinstance(results, list)
 
     def test_returns_spec_when_no_connector(self):
         from gnat.client import GNATClient
+
         cli = GNATClient()
         results = cli.natural_language_query("APT28 IPs last 14 days")
         assert results[0]["_type"] == "query_spec"
@@ -382,6 +400,7 @@ class TestGNATClientNLQ:
 
     def test_queries_connected_platform(self):
         from gnat.client import GNATClient
+
         cli = GNATClient()
         mock_connector = MagicMock()
         mock_connector.list_objects.return_value = [{"id": "ind-1"}]

@@ -21,8 +21,7 @@ Tests cover:
 from __future__ import annotations
 
 import base64
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -52,11 +51,11 @@ def _make_stix_obj(stix_id: str, stix_type: str = "indicator") -> MagicMock:
     obj.id = stix_id
     obj.stix_type = stix_type
     obj.to_dict.return_value = {
-        "type":          stix_type,
-        "id":            stix_id,
-        "spec_version":  "2.1",
-        "created":       "2024-01-01T00:00:00.000Z",
-        "modified":      "2024-01-02T00:00:00.000Z",
+        "type": stix_type,
+        "id": stix_id,
+        "spec_version": "2.1",
+        "created": "2024-01-01T00:00:00.000Z",
+        "modified": "2024-01-02T00:00:00.000Z",
     }
     return obj
 
@@ -120,8 +119,8 @@ def _authed(client: TestClient, method: str, path: str, **kwargs):
 # 1. _encode_cursor / _decode_cursor round-trip
 # ---------------------------------------------------------------------------
 
-class TestCursorEncoding:
 
+class TestCursorEncoding:
     def test_encode_decode_zero(self):
         assert _decode_cursor(_encode_cursor(0)) == 0
 
@@ -141,8 +140,8 @@ class TestCursorEncoding:
 # 2. Discovery (no auth)
 # ---------------------------------------------------------------------------
 
-class TestDiscovery:
 
+class TestDiscovery:
     def test_discovery_no_auth_required(self):
         c = _client()
         r = c.get("/taxii2/")
@@ -179,8 +178,8 @@ class TestDiscovery:
 # 3. API Root info (no auth)
 # ---------------------------------------------------------------------------
 
-class TestAPIRootInfo:
 
+class TestAPIRootInfo:
     def test_api_root_no_auth_required(self):
         c = _client()
         r = c.get("/taxii2/roots/gnat/")
@@ -198,8 +197,8 @@ class TestAPIRootInfo:
 # 4. Auth guard
 # ---------------------------------------------------------------------------
 
-class TestAuth:
 
+class TestAuth:
     def test_missing_key_returns_401(self):
         c = _client()
         r = c.get("/taxii2/roots/gnat/collections/")
@@ -231,8 +230,8 @@ class TestAuth:
 # 5. Collections list
 # ---------------------------------------------------------------------------
 
-class TestCollectionsList:
 
+class TestCollectionsList:
     def test_empty_manager(self):
         c = _client()
         r = _authed(c, "get", "/taxii2/roots/gnat/collections/")
@@ -277,8 +276,8 @@ class TestCollectionsList:
 # 6. Collection detail
 # ---------------------------------------------------------------------------
 
-class TestCollectionDetail:
 
+class TestCollectionDetail:
     def test_found(self):
         manager = _make_manager({"myws": []})
         c = _client(manager)
@@ -296,8 +295,8 @@ class TestCollectionDetail:
 # 7. Objects GET
 # ---------------------------------------------------------------------------
 
-class TestObjectsGet:
 
+class TestObjectsGet:
     def _setup(self, n: int = 3):
         objs = [_make_stix_obj(f"indicator--{i:03d}") for i in range(n)]
         manager = _make_manager({"col": objs})
@@ -324,7 +323,8 @@ class TestObjectsGet:
         r1 = _authed(c, "get", "/taxii2/roots/gnat/collections/col/objects/?limit=2")
         cursor = r1.json()["next"]
         r2 = _authed(
-            c, "get",
+            c,
+            "get",
             f"/taxii2/roots/gnat/collections/col/objects/?limit=2&next={cursor}",
         )
         body2 = r2.json()
@@ -344,7 +344,8 @@ class TestObjectsGet:
         manager = _make_manager({"col": objs})
         c = _client(manager)
         r = _authed(
-            c, "get",
+            c,
+            "get",
             "/taxii2/roots/gnat/collections/col/objects/",
             params={"match[type]": "indicator"},
         )
@@ -362,7 +363,8 @@ class TestObjectsGet:
         manager = _make_manager({"col": objs})
         c = _client(manager)
         r = _authed(
-            c, "get",
+            c,
+            "get",
             "/taxii2/roots/gnat/collections/col/objects/",
             params={"added_after": "2023-01-01T00:00:00.000Z"},
         )
@@ -386,8 +388,8 @@ class TestObjectsGet:
 # 8. Objects POST
 # ---------------------------------------------------------------------------
 
-class TestObjectsPost:
 
+class TestObjectsPost:
     def _bundle(self, *obj_dicts) -> dict:
         return {
             "type": "bundle",
@@ -414,7 +416,8 @@ class TestObjectsPost:
         c = _client(manager)
         bundle = self._bundle(self._raw_indicator())
         r = _authed(
-            c, "post",
+            c,
+            "post",
             "/taxii2/roots/gnat/collections/col/objects/",
             json=bundle,
         )
@@ -425,7 +428,8 @@ class TestObjectsPost:
         c = _client(manager)
         bundle = self._bundle(self._raw_indicator())
         body = _authed(
-            c, "post",
+            c,
+            "post",
             "/taxii2/roots/gnat/collections/col/objects/",
             json=bundle,
         ).json()
@@ -437,7 +441,8 @@ class TestObjectsPost:
         manager = _make_manager({"col": []})
         c = _client(manager)
         r = _authed(
-            c, "post",
+            c,
+            "post",
             "/taxii2/roots/gnat/collections/col/objects/",
             json={"type": "indicator", "id": "indicator--x"},
         )
@@ -459,7 +464,8 @@ class TestObjectsPost:
         c = _client(manager)
         bundle = self._bundle(self._raw_indicator())
         r = _authed(
-            c, "post",
+            c,
+            "post",
             "/taxii2/roots/gnat/collections/newcol/objects/",
             json=bundle,
         )
@@ -471,8 +477,8 @@ class TestObjectsPost:
 # 9. Manifest
 # ---------------------------------------------------------------------------
 
-class TestManifest:
 
+class TestManifest:
     def test_basic_manifest(self):
         objs = [_make_stix_obj(f"indicator--{i:03d}") for i in range(3)]
         manager = _make_manager({"col": objs})
@@ -513,8 +519,8 @@ class TestManifest:
 # 10. Single object GET
 # ---------------------------------------------------------------------------
 
-class TestSingleObject:
 
+class TestSingleObject:
     def test_found_returns_bundle(self):
         obj = _make_stix_obj("indicator--abc")
         manager = _make_manager({"col": [obj]})
@@ -542,14 +548,15 @@ class TestSingleObject:
 # 11. Object versions
 # ---------------------------------------------------------------------------
 
-class TestObjectVersions:
 
+class TestObjectVersions:
     def test_found_returns_versions(self):
         obj = _make_stix_obj("indicator--v1")
         manager = _make_manager({"col": [obj]})
         c = _client(manager)
         r = _authed(
-            c, "get",
+            c,
+            "get",
             "/taxii2/roots/gnat/collections/col/objects/indicator--v1/versions/",
         )
         assert r.status_code == 200
@@ -561,7 +568,8 @@ class TestObjectVersions:
         manager = _make_manager({"col": []})
         c = _client(manager)
         r = _authed(
-            c, "get",
+            c,
+            "get",
             "/taxii2/roots/gnat/collections/col/objects/indicator--missing/versions/",
         )
         assert r.status_code == 404
@@ -569,7 +577,8 @@ class TestObjectVersions:
     def test_unknown_collection_returns_404(self):
         c = _client(_make_manager())
         r = _authed(
-            c, "get",
+            c,
+            "get",
             "/taxii2/roots/gnat/collections/noexist/objects/indicator--x/versions/",
         )
         assert r.status_code == 404

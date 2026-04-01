@@ -107,12 +107,13 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         if stix_type == "incident":
             # incidentId filter
             resp = self.get(
-                "/phoenix/rest/pub/incident",
-                params={"incidentId": [object_id], "size": 1}
+                "/phoenix/rest/pub/incident", params={"incidentId": [object_id], "size": 1}
             )
             incidents = resp.get("response", []) if isinstance(resp, dict) else []
             return incidents[0] if incidents else {}
-        raise GNATClientError(f"get_object not fully implemented for STIX type {stix_type} in FortiSIEM")
+        raise GNATClientError(
+            f"get_object not fully implemented for STIX type {stix_type} in FortiSIEM"
+        )
 
     def list_objects(
         self,
@@ -136,14 +137,19 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
                 "size": page_size,
                 "timeFrom": filters.get("timeFrom"),
                 "timeTo": filters.get("timeTo"),
-                **{k: v for k, v in filters.items() if k in ("status", "incidentId")}
+                **{k: v for k, v in filters.items() if k in ("status", "incidentId")},
             }
-            resp = self.get("/phoenix/rest/pub/incident", params={k: v for k, v in params.items() if v is not None})
+            resp = self.get(
+                "/phoenix/rest/pub/incident",
+                params={k: v for k, v in params.items() if v is not None},
+            )
             return resp.get("response", []) if isinstance(resp, dict) else []
 
         if stix_type == "observed-data":
             # Event query — adapt as needed (some paths are XML; extend with domain helper)
-            raise GNATClientError("Event querying via observed-data needs specific query payload; use domain helper.")
+            raise GNATClientError(
+                "Event querying via observed-data needs specific query payload; use domain helper."
+            )
 
         # CMDB fallback example
         return self.get("/phoenix/rest/deviceInfo/monitoredDevices", params={"size": page_size})
@@ -157,7 +163,9 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"upsert_object limited support for {stix_type} in FortiSIEM")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise GNATClientError("FortiSIEM connector does not support deletion via public Integration API.")
+        raise GNATClientError(
+            "FortiSIEM connector does not support deletion via public Integration API."
+        )
 
     # ── Domain-specific helpers ───────────────────────────────────────────
 
@@ -226,6 +234,6 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
                 "status": inc.get("incidentStatus"),
                 "severity": inc.get("eventSeverity"),
                 "detail": inc.get("incidentDetail"),
-                **{k: v for k, v in inc.items() if k.startswith("incident")}
+                **{k: v for k, v in inc.items() if k.startswith("incident")},
             },
         }

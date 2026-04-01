@@ -32,6 +32,7 @@ try:
     from gvm.connections import TLSConnection
     from gvm.protocols.gmp import Gmp
     from gvm.transforms import EtreeTransform
+
     _HAS_GVM = True
 except ImportError:
     _HAS_GVM = False
@@ -40,6 +41,7 @@ from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("b3c4d5e6-f7a8-9b0c-1d2e-3f4a5b6c7d8e")
+
 
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
@@ -64,10 +66,17 @@ class GreenboneClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "results",
-        "report":        "reports",
+        "report": "reports",
     }
 
-    def __init__(self, host: str = "localhost", port: int = 9390, username: str = "", password: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 9390,
+        username: str = "",
+        password: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
         self._port = port
         self._username = username
@@ -79,7 +88,9 @@ class GreenboneClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Connect via GMP (TLS or Unix socket)."""
         if not _HAS_GVM:
-            raise GNATClientError("python-gvm library is required for Greenbone connector. Install with: pip install python-gvm")
+            raise GNATClientError(
+                "python-gvm library is required for Greenbone connector. Install with: pip install python-gvm"
+            )
 
         connection = TLSConnection(hostname=self.host, port=self._port)
         transform = EtreeTransform()

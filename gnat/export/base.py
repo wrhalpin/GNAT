@@ -82,6 +82,7 @@ def _utcnow() -> datetime:
 # ExportFilter — which objects to include
 # ---------------------------------------------------------------------------
 
+
 class ExportFilter(ABC):
     """
     Abstract base for export filters.
@@ -127,6 +128,7 @@ class PassthroughFilter(ExportFilter):
 # ---------------------------------------------------------------------------
 # ExportTransform — render objects into a target format
 # ---------------------------------------------------------------------------
+
 
 class ExportTransform(ABC):
     """
@@ -183,9 +185,9 @@ class TransformResult:
         Arbitrary metadata about the transform (counts, warnings, etc.).
     """
 
-    payloads:     dict[str, Any]   = field(default_factory=dict)
-    object_count: int              = 0
-    metadata:     dict[str, Any]   = field(default_factory=dict)
+    payloads: dict[str, Any] = field(default_factory=dict)
+    object_count: int = 0
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def payload_names(self) -> list[str]:
         return list(self.payloads.keys())
@@ -203,6 +205,7 @@ class TransformResult:
 # ---------------------------------------------------------------------------
 # ExportDelivery — push the payload to a destination
 # ---------------------------------------------------------------------------
+
 
 class ExportDelivery(ABC):
     """
@@ -251,11 +254,11 @@ class DeliveryResult:
         Delivery-specific metadata (URLs, response codes, file paths, etc.).
     """
 
-    success:   bool           = True
-    delivered: list[str]      = field(default_factory=list)
-    failed:    list[str]      = field(default_factory=list)
-    errors:    list[str]      = field(default_factory=list)
-    metadata:  dict[str, Any] = field(default_factory=dict)
+    success: bool = True
+    delivered: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __str__(self) -> str:  # pragma: no cover
         if self.success:
@@ -269,6 +272,7 @@ class DeliveryResult:
 # ---------------------------------------------------------------------------
 # ExportResult — summary of a complete pipeline run
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExportResult:
@@ -297,22 +301,19 @@ class ExportResult:
         Wall-clock time for the run.
     """
 
-    pipeline_id:      str
-    started_at:       datetime
-    finished_at:      datetime | None    = None
-    source_objects:   int                  = 0
-    filtered_objects: int                  = 0
+    pipeline_id: str
+    started_at: datetime
+    finished_at: datetime | None = None
+    source_objects: int = 0
+    filtered_objects: int = 0
     transform_result: TransformResult | None = None
-    delivery_result:  DeliveryResult | None  = None
-    errors:           list[str]            = field(default_factory=list)
-    duration_seconds: float                = 0.0
+    delivery_result: DeliveryResult | None = None
+    errors: list[str] = field(default_factory=list)
+    duration_seconds: float = 0.0
 
     @property
     def success(self) -> bool:
-        return (
-            not self.errors
-            and (self.delivery_result is None or self.delivery_result.success)
-        )
+        return not self.errors and (self.delivery_result is None or self.delivery_result.success)
 
     def __str__(self) -> str:  # pragma: no cover
         status = "OK" if self.success else "FAILED"
@@ -327,6 +328,7 @@ class ExportResult:
 # ---------------------------------------------------------------------------
 # ExportPipeline — orchestrates filter → transform → deliver
 # ---------------------------------------------------------------------------
+
 
 class ExportPipeline:
     """
@@ -353,12 +355,12 @@ class ExportPipeline:
     """
 
     def __init__(self, pipeline_id: str = "export"):
-        self.pipeline_id  = pipeline_id
-        self._workspace:  Workspace | None      = None
-        self._objects:    list[STIXBase] | None = None
-        self._filters:    list[ExportFilter]          = []
-        self._transform:  ExportTransform | None   = None
-        self._delivery:   ExportDelivery | None    = None
+        self.pipeline_id = pipeline_id
+        self._workspace: Workspace | None = None
+        self._objects: list[STIXBase] | None = None
+        self._filters: list[ExportFilter] = []
+        self._transform: ExportTransform | None = None
+        self._delivery: ExportDelivery | None = None
 
     # ── Builder API ────────────────────────────────────────────────────────
 
@@ -382,6 +384,7 @@ class ExportPipeline:
             ``self`` for chaining.
         """
         from gnat.context.workspace import Workspace
+
         if isinstance(source, Workspace):
             self._workspace = source
         else:
@@ -442,7 +445,7 @@ class ExportPipeline:
         ExportResult
             Summary of the run.
         """
-        t0     = time.perf_counter()
+        t0 = time.perf_counter()
         result = ExportResult(pipeline_id=self.pipeline_id, started_at=_utcnow())
 
         try:
@@ -458,9 +461,10 @@ class ExportPipeline:
                 logger.info(
                     "ExportPipeline %r: 0 objects after filtering "
                     "(source had %d) — skipping transform/deliver",
-                    self.pipeline_id, result.source_objects,
+                    self.pipeline_id,
+                    result.source_objects,
                 )
-                result.finished_at      = _utcnow()
+                result.finished_at = _utcnow()
                 result.duration_seconds = time.perf_counter() - t0
                 return result
 
@@ -476,11 +480,13 @@ class ExportPipeline:
             result.transform_result = tr
 
             logger.info(
-                "ExportPipeline %r: %d → %d filtered → %d in transform "
-                "(%s payloads, %d bytes)",
-                self.pipeline_id, result.source_objects,
-                result.filtered_objects, tr.object_count,
-                len(tr.payloads), tr.total_bytes(),
+                "ExportPipeline %r: %d → %d filtered → %d in transform (%s payloads, %d bytes)",
+                self.pipeline_id,
+                result.source_objects,
+                result.filtered_objects,
+                tr.object_count,
+                len(tr.payloads),
+                tr.total_bytes(),
             )
 
             # 4. Deliver
@@ -495,21 +501,24 @@ class ExportPipeline:
             result.errors.append(str(exc))
             logger.error(
                 "ExportPipeline %r: unhandled error — %s",
-                self.pipeline_id, exc,
+                self.pipeline_id,
+                exc,
             )
 
-        result.finished_at      = _utcnow()
+        result.finished_at = _utcnow()
         result.duration_seconds = time.perf_counter() - t0
 
         if result.success:
             logger.info(
                 "ExportPipeline %r: complete in %.2fs",
-                self.pipeline_id, result.duration_seconds,
+                self.pipeline_id,
+                result.duration_seconds,
             )
         else:
             logger.warning(
                 "ExportPipeline %r: finished with errors: %s",
-                self.pipeline_id, result.errors,
+                self.pipeline_id,
+                result.errors,
             )
 
         return result
@@ -528,9 +537,9 @@ class ExportPipeline:
         ExportResult
             Same as :meth:`run` but ``delivery_result`` is always ``None``.
         """
-        saved   = self._delivery
+        saved = self._delivery
         self._delivery = None
-        result  = self.run()
+        result = self.run()
         self._delivery = saved
         return result
 
@@ -550,7 +559,7 @@ class ExportPipeline:
         list of STIXBase
         """
         all_objects = self._collect_source()
-        filtered    = self._apply_filters(all_objects)
+        filtered = self._apply_filters(all_objects)
         return filtered[:n]
 
     # ── Internal ────────────────────────────────────────────────────────────

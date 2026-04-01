@@ -50,11 +50,13 @@ class QRadarError(Exception):
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
+
 class QRadarConfigError(QRadarError):
     """Raised when [qradar] INI section is missing or invalid."""
 
 
 # ── Authentication ────────────────────────────────────────────────────────────
+
 
 class QRadarAuthError(QRadarError):
     """
@@ -66,6 +68,7 @@ class QRadarAuthError(QRadarError):
 
 
 # ── API ───────────────────────────────────────────────────────────────────────
+
 
 class QRadarAPIError(QRadarError):
     """
@@ -127,6 +130,7 @@ class QRadarConflictError(QRadarAPIError):
 
 # ── Ariel ─────────────────────────────────────────────────────────────────────
 
+
 class QRadarArielError(QRadarError):
     """
     Raised on Ariel search job failures.
@@ -165,6 +169,7 @@ class QRadarArielError(QRadarError):
 
 
 # ── STIX ─────────────────────────────────────────────────────────────────────
+
 
 class QRadarSTIXError(QRadarError):
     """

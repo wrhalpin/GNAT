@@ -23,11 +23,11 @@ from textual.widgets import Button, DataTable, Footer, Header, Label
 class ReportsScreen(Screen):
     """Report list browser — view and open generated reports."""
 
-    TITLE   = "GNAT — Reports"
+    TITLE = "GNAT — Reports"
     BINDINGS = [
-        Binding("escape", "app.pop_screen",  "Back",    show=True),
-        Binding("ctrl+r", "refresh",         "Refresh", show=True),
-        Binding("ctrl+o", "open_selected",   "Open",    show=True),
+        Binding("escape", "app.pop_screen", "Back", show=True),
+        Binding("ctrl+r", "refresh", "Refresh", show=True),
+        Binding("ctrl+o", "open_selected", "Open", show=True),
     ]
 
     CSS = """
@@ -67,9 +67,7 @@ class ReportsScreen(Screen):
                 yield Button("Refresh", id="refresh-btn")
                 yield Button("Open in Browser", id="open-btn", variant="primary")
             yield Label("", id="status-label")
-            yield DataTable(
-                id="reports-table", zebra_stripes=True, cursor_type="row"
-            )
+            yield DataTable(id="reports-table", zebra_stripes=True, cursor_type="row")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -89,10 +87,10 @@ class ReportsScreen(Screen):
     def action_open_selected(self) -> None:
         """Open the selected report's HTML file in the system browser."""
         status = self.query_one("#status-label", Label)
-        table  = self.query_one("#reports-table", DataTable)
+        table = self.query_one("#reports-table", DataTable)
         try:
             row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
-            path_str   = str(table.get_cell(row_key, "path"))
+            path_str = str(table.get_cell(row_key, "path"))
         except Exception:
             status.update("[yellow]Select a report row first.[/yellow]")
             return
@@ -119,15 +117,15 @@ class ReportsScreen(Screen):
 
     def _setup_table(self) -> None:
         table: DataTable = self.query_one("#reports-table", DataTable)
-        table.add_column("Name",     key="name",    width=30)
-        table.add_column("Type",     key="rtype",   width=14)
-        table.add_column("Format",   key="fmt",     width=10)
-        table.add_column("Created",  key="created", width=20)
-        table.add_column("Size",     key="size",    width=10)
-        table.add_column("Path",     key="path",    width=50)
+        table.add_column("Name", key="name", width=30)
+        table.add_column("Type", key="rtype", width=14)
+        table.add_column("Format", key="fmt", width=10)
+        table.add_column("Created", key="created", width=20)
+        table.add_column("Size", key="size", width=10)
+        table.add_column("Path", key="path", width=50)
 
     def _load_reports(self) -> None:
-        table  = self.query_one("#reports-table", DataTable)
+        table = self.query_one("#reports-table", DataTable)
         status = self.query_one("#status-label", Label)
         table.clear()
         self._entries = []
@@ -163,6 +161,7 @@ class ReportsScreen(Screen):
         if self._config_path:
             try:
                 import configparser
+
                 cfg = configparser.ConfigParser()
                 cfg.read(self._config_path)
                 for section in cfg.sections():
@@ -186,23 +185,27 @@ class ReportsScreen(Screen):
             stat = f.stat()
             size_kb = stat.st_size // 1024
             import datetime
-            created = datetime.datetime.fromtimestamp(
-                stat.st_mtime
-            ).strftime("%Y-%m-%d %H:%M")
+
+            created = datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
             # Infer report type from filename / path
             name_lower = f.name.lower()
             rtype = (
-                "executive" if "executive" in name_lower else
-                "trends"    if "trend"     in name_lower else
-                "yearly"    if "annual"    in name_lower or "yearly" in name_lower else
-                "report"
+                "executive"
+                if "executive" in name_lower
+                else "trends"
+                if "trend" in name_lower
+                else "yearly"
+                if "annual" in name_lower or "yearly" in name_lower
+                else "report"
             )
-            entries.append({
-                "name":    f.stem[:28],
-                "rtype":   rtype,
-                "fmt":     f.suffix.lstrip("."),
-                "created": created,
-                "size":    f"{size_kb} KB",
-                "path":    str(f),
-            })
+            entries.append(
+                {
+                    "name": f.stem[:28],
+                    "rtype": rtype,
+                    "fmt": f.suffix.lstrip("."),
+                    "created": created,
+                    "size": f"{size_kb} KB",
+                    "path": str(f),
+                }
+            )
         return entries

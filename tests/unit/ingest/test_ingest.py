@@ -42,6 +42,17 @@ from gnat.ingest.base import (
     RecordMapper,
     SourceReader,
 )
+from gnat.ingest.mappers.mappers import (
+    CEFMapper,
+    EmailIOCMapper,
+    FlatIOCMapper,
+    MISPAttributeMapper,
+    NVDCVEMapper,
+    OpenIOCMapper,
+    RSSEntryMapper,
+    SQLRowMapper,
+    STIXPassthroughMapper,
+)
 from gnat.ingest.pipeline.pipeline import IngestPipeline
 from gnat.ingest.sources.readers import (
     CSVReader,
@@ -54,25 +65,14 @@ from gnat.ingest.sources.readers import (
     STIXBundleReader,
     SyslogReader,
 )
-from gnat.ingest.mappers.mappers import (
-    CEFMapper,
-    EmailIOCMapper,
-    FlatIOCMapper,
-    MISPAttributeMapper,
-    NVDCVEMapper,
-    OpenIOCMapper,
-    RSSEntryMapper,
-    SQLRowMapper,
-    STIXPassthroughMapper,
-)
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
 from gnat.orm.vulnerability import Vulnerability
 
-
 # ===========================================================================
 # Helpers
 # ===========================================================================
+
 
 def _records(reader: SourceReader):
     """Collect all records from a reader without context manager."""
@@ -91,17 +91,20 @@ def _map(mapper: RecordMapper, record: RawRecord):
 # Base classes
 # ===========================================================================
 
-class TestSourceReaderBase:
 
+class TestSourceReaderBase:
     def test_context_manager_calls_open_close(self):
         class DummyReader(SourceReader):
             events = []
+
             def open(self):
                 super().open()
                 self.events.append("open")
+
             def close(self):
                 self.events.append("close")
                 super().close()
+
             def _iter_records(self):
                 yield {"x": 1}
 
@@ -122,12 +125,13 @@ class TestSourceReaderBase:
 
     def test_repr_contains_class_name(self):
         class MyReader(SourceReader):
-            def _iter_records(self): return iter([])
+            def _iter_records(self):
+                return iter([])
+
         assert "MyReader" in repr(MyReader())
 
 
 class TestDeduplicationCache:
-
     def _make_indicator(self, stix_id: str) -> Indicator:
         ind = Indicator()
         ind.id = stix_id
@@ -154,7 +158,7 @@ class TestDeduplicationCache:
     def test_custom_key_fields(self):
         cache = DeduplicationCache(key_fields=["name"])
         ind1 = Indicator(name="evil.com")
-        ind2 = Indicator(name="evil.com")   # same name, different auto-uuid
+        ind2 = Indicator(name="evil.com")  # same name, different auto-uuid
         assert cache.is_duplicate(ind1) is False
         assert cache.is_duplicate(ind2) is True
 
@@ -176,24 +180,29 @@ class TestDeduplicationCache:
 # IngestPipeline
 # ===========================================================================
 
-class TestIngestPipeline:
 
+class TestIngestPipeline:
     def _simple_reader(self, records):
         class R(SourceReader):
             def __init__(self, recs):
                 super().__init__(source_id="test")
                 self._recs = recs
+
             def _iter_records(self):
                 yield from self._recs
+
         return R(records)
 
     def _simple_mapper(self):
         class M(RecordMapper):
             def map(self, record):
                 if record.get("value"):
-                    yield Indicator(name=record["value"],
-                                    pattern=f"[ipv4-addr:value = '{record['value']}']",
-                                    pattern_type="stix")
+                    yield Indicator(
+                        name=record["value"],
+                        pattern=f"[ipv4-addr:value = '{record['value']}']",
+                        pattern_type="stix",
+                    )
+
         return M()
 
     def test_raises_without_reader(self):
@@ -240,9 +249,11 @@ class TestIngestPipeline:
 
     def test_transform_modifies_objects(self):
         records = [{"value": "3.3.3.3"}]
+
         def add_tag(obj):
             obj.x_tagged = True
             return obj
+
         objs = list(
             IngestPipeline()
             .read_from(self._simple_reader(records))
@@ -271,9 +282,12 @@ class TestIngestPipeline:
 
         class SaveMapper(RecordMapper):
             def map(self, record):
-                ind = Indicator(client=mock_client, name=record["value"],
-                                pattern="[ipv4-addr:value = '9.9.9.9']",
-                                pattern_type="stix")
+                ind = Indicator(
+                    client=mock_client,
+                    name=record["value"],
+                    pattern="[ipv4-addr:value = '9.9.9.9']",
+                    pattern_type="stix",
+                )
                 ind.save = MagicMock()
                 yield ind
 
@@ -306,8 +320,8 @@ class TestIngestPipeline:
 # PlainTextReader
 # ===========================================================================
 
-class TestPlainTextReader:
 
+class TestPlainTextReader:
     def test_classifies_ipv4(self):
         recs = _records(PlainTextReader("192.168.1.1", from_string=True))
         assert len(recs) == 1
@@ -378,8 +392,8 @@ class TestPlainTextReader:
 # CSVReader
 # ===========================================================================
 
-class TestCSVReader:
 
+class TestCSVReader:
     def test_basic_csv(self, tmp_path):
         f = tmp_path / "iocs.csv"
         f.write_text("value,type,confidence\n1.2.3.4,ip,90\nevil.com,domain,70\n")
@@ -391,8 +405,9 @@ class TestCSVReader:
     def test_field_map_renames_columns(self, tmp_path):
         f = tmp_path / "iocs.csv"
         f.write_text("indicator,confidence_score\n5.5.5.5,85\n")
-        recs = _records(CSVReader(str(f), value_col="indicator",
-                                  field_map={"confidence_score": "confidence"}))
+        recs = _records(
+            CSVReader(str(f), value_col="indicator", field_map={"confidence_score": "confidence"})
+        )
         assert "confidence" in recs[0]
         assert recs[0]["confidence"] == "85"
 
@@ -419,8 +434,8 @@ class TestCSVReader:
 # JSONReader
 # ===========================================================================
 
-class TestJSONReader:
 
+class TestJSONReader:
     def test_array_of_objects(self, tmp_path):
         data = [{"value": "1.1.1.1"}, {"value": "2.2.2.2"}]
         f = tmp_path / "data.json"
@@ -459,8 +474,8 @@ class TestJSONReader:
 # JSONLReader
 # ===========================================================================
 
-class TestJSONLReader:
 
+class TestJSONLReader:
     def test_valid_jsonl(self, tmp_path):
         f = tmp_path / "data.jsonl"
         f.write_text('{"a": 1}\n{"a": 2}\n{"a": 3}\n')
@@ -491,29 +506,35 @@ class TestJSONLReader:
 # STIXBundleReader
 # ===========================================================================
 
-class TestSTIXBundleReader:
 
+class TestSTIXBundleReader:
     def _bundle(self, objects):
-        return json.dumps({
-            "type": "bundle",
-            "id": "bundle--test",
-            "spec_version": "2.1",
-            "objects": objects,
-        })
+        return json.dumps(
+            {
+                "type": "bundle",
+                "id": "bundle--test",
+                "spec_version": "2.1",
+                "objects": objects,
+            }
+        )
 
     def test_yields_all_objects(self):
-        raw = self._bundle([
-            {"type": "indicator", "id": "indicator--1"},
-            {"type": "malware",   "id": "malware--1"},
-        ])
+        raw = self._bundle(
+            [
+                {"type": "indicator", "id": "indicator--1"},
+                {"type": "malware", "id": "malware--1"},
+            ]
+        )
         recs = _records(STIXBundleReader(raw, from_string=True))
         assert len(recs) == 2
 
     def test_type_filter(self):
-        raw = self._bundle([
-            {"type": "indicator", "id": "indicator--1"},
-            {"type": "malware",   "id": "malware--1"},
-        ])
+        raw = self._bundle(
+            [
+                {"type": "indicator", "id": "indicator--1"},
+                {"type": "malware", "id": "malware--1"},
+            ]
+        )
         recs = _records(STIXBundleReader(raw, from_string=True, stix_types=["indicator"]))
         assert len(recs) == 1
         assert recs[0]["type"] == "indicator"
@@ -535,15 +556,18 @@ class TestSTIXBundleReader:
 # SQLReader
 # ===========================================================================
 
-class TestSQLReader:
 
+class TestSQLReader:
     def test_basic_sqlite(self):
         conn = sqlite3.connect(":memory:")
         conn.execute("CREATE TABLE iocs (value TEXT, type TEXT, confidence INT)")
-        conn.executemany("INSERT INTO iocs VALUES (?,?,?)", [
-            ("1.1.1.1", "ip", 90),
-            ("evil.com", "domain", 70),
-        ])
+        conn.executemany(
+            "INSERT INTO iocs VALUES (?,?,?)",
+            [
+                ("1.1.1.1", "ip", 90),
+                ("evil.com", "domain", 70),
+            ],
+        )
         conn.commit()
 
         recs = _records(SQLReader(conn, "SELECT value, type, confidence FROM iocs"))
@@ -557,8 +581,11 @@ class TestSQLReader:
         conn.execute("INSERT INTO t VALUES ('5.5.5.5', 80)")
         conn.commit()
 
-        recs = _records(SQLReader(conn, "SELECT ioc, score FROM t",
-                                  column_map={"ioc": "value", "score": "confidence"}))
+        recs = _records(
+            SQLReader(
+                conn, "SELECT ioc, score FROM t", column_map={"ioc": "value", "score": "confidence"}
+            )
+        )
         assert recs[0]["value"] == "5.5.5.5"
         assert recs[0]["confidence"] == 80
 
@@ -587,45 +614,83 @@ class TestSQLReader:
 # MISPReader
 # ===========================================================================
 
-class TestMISPReader:
 
+class TestMISPReader:
     def _event(self, attributes):
-        return [{
-            "Event": {
-                "id": "123",
-                "uuid": "evt-uuid",
-                "info": "Test Event",
-                "threat_level_id": "2",
-                "Attribute": attributes,
-                "Tag": [{"Tag": {"name": "tlp:amber"}}],
-                "Orgc": {"name": "TestOrg"},
+        return [
+            {
+                "Event": {
+                    "id": "123",
+                    "uuid": "evt-uuid",
+                    "info": "Test Event",
+                    "threat_level_id": "2",
+                    "Attribute": attributes,
+                    "Tag": [{"Tag": {"name": "tlp:amber"}}],
+                    "Orgc": {"name": "TestOrg"},
+                }
             }
-        }]
+        ]
 
     def test_yields_attributes(self):
-        events = self._event([
-            {"type": "ip-dst", "value": "8.8.8.8", "uuid": "a1", "to_ids": True,
-             "comment": "", "Tag": [], "category": "Network"},
-        ])
+        events = self._event(
+            [
+                {
+                    "type": "ip-dst",
+                    "value": "8.8.8.8",
+                    "uuid": "a1",
+                    "to_ids": True,
+                    "comment": "",
+                    "Tag": [],
+                    "category": "Network",
+                },
+            ]
+        )
         reader = MISPReader(events)
         recs = _records(reader)
         assert len(recs) == 1
         assert recs[0]["value"] == "8.8.8.8"
 
     def test_event_meta_propagated(self):
-        events = self._event([
-            {"type": "domain", "value": "evil.com", "uuid": "a2", "to_ids": False,
-             "comment": "noted", "Tag": [], "category": "Network"},
-        ])
+        events = self._event(
+            [
+                {
+                    "type": "domain",
+                    "value": "evil.com",
+                    "uuid": "a2",
+                    "to_ids": False,
+                    "comment": "noted",
+                    "Tag": [],
+                    "category": "Network",
+                },
+            ]
+        )
         recs = _records(MISPReader(events))
         assert recs[0]["event_id"] == "123"
         assert recs[0]["org"] == "TestOrg"
 
     def test_attribute_type_filter(self):
-        events = self._event([
-            {"type": "ip-dst",  "value": "1.1.1.1", "uuid": "a", "to_ids": True, "comment": "", "Tag": [], "category": "N"},
-            {"type": "md5",     "value": "d41d8cd98f00b204e9800998ecf8427e", "uuid": "b", "to_ids": True, "comment": "", "Tag": [], "category": "N"},
-        ])
+        events = self._event(
+            [
+                {
+                    "type": "ip-dst",
+                    "value": "1.1.1.1",
+                    "uuid": "a",
+                    "to_ids": True,
+                    "comment": "",
+                    "Tag": [],
+                    "category": "N",
+                },
+                {
+                    "type": "md5",
+                    "value": "d41d8cd98f00b204e9800998ecf8427e",
+                    "uuid": "b",
+                    "to_ids": True,
+                    "comment": "",
+                    "Tag": [],
+                    "category": "N",
+                },
+            ]
+        )
         recs = _records(MISPReader(events, attribute_types=["ip-dst"]))
         assert len(recs) == 1
         assert recs[0]["type"] == "ip-dst"
@@ -635,8 +700,8 @@ class TestMISPReader:
 # SyslogReader
 # ===========================================================================
 
-class TestSyslogReader:
 
+class TestSyslogReader:
     def test_syslog_parse(self, tmp_path):
         f = tmp_path / "syslog.log"
         f.write_text("Mar 15 12:00:00 myhost sshd[1234]: Failed password for root\n")
@@ -672,8 +737,8 @@ class TestSyslogReader:
 # OpenIOCReader
 # ===========================================================================
 
-class TestOpenIOCReader:
 
+class TestOpenIOCReader:
     def _write_ioc(self, tmp_path, search, content):
         xml = textwrap.dedent(f"""<?xml version="1.0" encoding="utf-8"?>
         <ioc id="test-ioc-id" xmlns="http://schemas.mandiant.com/2010/ioc">
@@ -712,8 +777,8 @@ class TestOpenIOCReader:
 # FlatIOCMapper
 # ===========================================================================
 
-class TestFlatIOCMapper:
 
+class TestFlatIOCMapper:
     def test_maps_ip(self):
         objs = _map(FlatIOCMapper(), {"value": "1.2.3.4", "type": "ip"})
         assert len(objs) == 1
@@ -747,13 +812,14 @@ class TestFlatIOCMapper:
         assert objs[0].confidence == 80
 
     def test_custom_value_field(self):
-        objs = _map(FlatIOCMapper(value_field="ioc"),
-                    {"ioc": "5.5.5.5", "type": "ip"})
+        objs = _map(FlatIOCMapper(value_field="ioc"), {"ioc": "5.5.5.5", "type": "ip"})
         assert objs[0].name == "5.5.5.5"
 
     def test_extra_stix_fields_applied(self):
-        objs = _map(FlatIOCMapper(extra_stix_fields={"x_source": "test"}),
-                    {"value": "1.1.1.1", "type": "ip"})
+        objs = _map(
+            FlatIOCMapper(extra_stix_fields={"x_source": "test"}),
+            {"value": "1.1.1.1", "type": "ip"},
+        )
         assert objs[0].x_source == "test"
 
     def test_carries_through_tags(self):
@@ -765,32 +831,56 @@ class TestFlatIOCMapper:
 # STIXPassthroughMapper
 # ===========================================================================
 
-class TestSTIXPassthroughMapper:
 
+class TestSTIXPassthroughMapper:
     def test_maps_indicator(self):
-        rec = {"type": "indicator", "id": "indicator--abc",
-               "name": "Test", "pattern": "[ipv4-addr:value = '1.2.3.4']",
-               "pattern_type": "stix", "spec_version": "2.1",
-               "created": "2024-01-01T00:00:00Z", "modified": "2024-01-01T00:00:00Z"}
+        rec = {
+            "type": "indicator",
+            "id": "indicator--abc",
+            "name": "Test",
+            "pattern": "[ipv4-addr:value = '1.2.3.4']",
+            "pattern_type": "stix",
+            "spec_version": "2.1",
+            "created": "2024-01-01T00:00:00Z",
+            "modified": "2024-01-01T00:00:00Z",
+        }
         objs = _map(STIXPassthroughMapper(), rec)
         assert isinstance(objs[0], Indicator)
         assert objs[0].id == "indicator--abc"
 
     def test_maps_malware(self):
-        rec = {"type": "malware", "id": "malware--xyz", "spec_version": "2.1",
-               "created": "", "modified": "", "name": "BadMalware"}
+        rec = {
+            "type": "malware",
+            "id": "malware--xyz",
+            "spec_version": "2.1",
+            "created": "",
+            "modified": "",
+            "name": "BadMalware",
+        }
         objs = _map(STIXPassthroughMapper(), rec)
         assert isinstance(objs[0], Malware)
 
     def test_type_filter_drops_others(self):
-        rec = {"type": "malware", "id": "malware--xyz", "spec_version": "2.1",
-               "created": "", "modified": ""}
+        rec = {
+            "type": "malware",
+            "id": "malware--xyz",
+            "spec_version": "2.1",
+            "created": "",
+            "modified": "",
+        }
         assert _map(STIXPassthroughMapper(type_filter=["indicator"]), rec) == []
 
     def test_tlp_injected(self):
-        rec = {"type": "indicator", "id": "indicator--1", "spec_version": "2.1",
-               "created": "", "modified": "", "name": "x",
-               "pattern": "[ipv4-addr:value='1.1.1.1']", "pattern_type": "stix"}
+        rec = {
+            "type": "indicator",
+            "id": "indicator--1",
+            "spec_version": "2.1",
+            "created": "",
+            "modified": "",
+            "name": "x",
+            "pattern": "[ipv4-addr:value='1.1.1.1']",
+            "pattern_type": "stix",
+        }
         objs = _map(STIXPassthroughMapper(tlp_marking="green"), rec)
         assert objs[0].x_tlp == "green"
 
@@ -799,35 +889,70 @@ class TestSTIXPassthroughMapper:
 # MISPAttributeMapper
 # ===========================================================================
 
-class TestMISPAttributeMapper:
 
+class TestMISPAttributeMapper:
     def test_maps_ip_dst(self):
-        rec = {"type": "ip-dst", "value": "10.0.0.1", "uuid": "u1",
-               "to_ids": True, "comment": "", "tags": [], "category": "Network"}
+        rec = {
+            "type": "ip-dst",
+            "value": "10.0.0.1",
+            "uuid": "u1",
+            "to_ids": True,
+            "comment": "",
+            "tags": [],
+            "category": "Network",
+        }
         objs = _map(MISPAttributeMapper(), rec)
         assert isinstance(objs[0], Indicator)
         assert "ipv4-addr" in objs[0].pattern
 
     def test_maps_vulnerability(self):
-        rec = {"type": "vulnerability", "value": "CVE-2024-1234", "uuid": "u2",
-               "to_ids": False, "comment": "", "tags": [], "category": "External"}
+        rec = {
+            "type": "vulnerability",
+            "value": "CVE-2024-1234",
+            "uuid": "u2",
+            "to_ids": False,
+            "comment": "",
+            "tags": [],
+            "category": "External",
+        }
         objs = _map(MISPAttributeMapper(), rec)
         assert isinstance(objs[0], Vulnerability)
         assert objs[0].name == "CVE-2024-1234"
 
     def test_require_to_ids_filters(self):
-        rec = {"type": "ip-dst", "value": "10.0.0.2", "uuid": "u3",
-               "to_ids": False, "comment": "", "tags": [], "category": "N"}
+        rec = {
+            "type": "ip-dst",
+            "value": "10.0.0.2",
+            "uuid": "u3",
+            "to_ids": False,
+            "comment": "",
+            "tags": [],
+            "category": "N",
+        }
         assert _map(MISPAttributeMapper(require_to_ids=True), rec) == []
 
     def test_unknown_type_skipped(self):
-        rec = {"type": "stix2-pattern", "value": "whatever", "uuid": "u4",
-               "to_ids": True, "comment": "", "tags": [], "category": "N"}
+        rec = {
+            "type": "stix2-pattern",
+            "value": "whatever",
+            "uuid": "u4",
+            "to_ids": True,
+            "comment": "",
+            "tags": [],
+            "category": "N",
+        }
         assert _map(MISPAttributeMapper(), rec) == []
 
     def test_composite_value_split(self):
-        rec = {"type": "ip-dst|port", "value": "192.168.1.1|443", "uuid": "u5",
-               "to_ids": True, "comment": "", "tags": [], "category": "N"}
+        rec = {
+            "type": "ip-dst|port",
+            "value": "192.168.1.1|443",
+            "uuid": "u5",
+            "to_ids": True,
+            "comment": "",
+            "tags": [],
+            "category": "N",
+        }
         objs = _map(MISPAttributeMapper(), rec)
         assert "192.168.1.1" in objs[0].pattern
         assert "443" not in objs[0].pattern
@@ -837,17 +962,27 @@ class TestMISPAttributeMapper:
 # CEFMapper
 # ===========================================================================
 
-class TestCEFMapper:
 
+class TestCEFMapper:
     def test_extracts_src(self):
-        rec = {"src": "1.2.3.4", "n": "Test", "severity": "5",
-               "device_product": "FW", "_format": "cef"}
+        rec = {
+            "src": "1.2.3.4",
+            "n": "Test",
+            "severity": "5",
+            "device_product": "FW",
+            "_format": "cef",
+        }
         objs = _map(CEFMapper(), rec)
         assert any("1.2.3.4" in o.pattern for o in objs)
 
     def test_extracts_requesturl(self):
-        rec = {"requestUrl": "https://evil.com/", "n": "", "severity": "",
-               "device_product": "", "_format": "cef"}
+        rec = {
+            "requestUrl": "https://evil.com/",
+            "n": "",
+            "severity": "",
+            "device_product": "",
+            "_format": "cef",
+        }
         objs = _map(CEFMapper(), rec)
         assert any("url" in o.pattern for o in objs)
 
@@ -860,12 +995,13 @@ class TestCEFMapper:
 # SQLRowMapper
 # ===========================================================================
 
-class TestSQLRowMapper:
 
+class TestSQLRowMapper:
     def test_maps_to_indicator(self):
         rec = {"ioc": "4.4.4.4", "ioc_type": "ip", "notes": "bad IP"}
-        objs = _map(SQLRowMapper(value_col="ioc", type_col="ioc_type",
-                                 description_col="notes"), rec)
+        objs = _map(
+            SQLRowMapper(value_col="ioc", type_col="ioc_type", description_col="notes"), rec
+        )
         assert isinstance(objs[0], Indicator)
         assert "4.4.4.4" in objs[0].pattern
 
@@ -882,31 +1018,51 @@ class TestSQLRowMapper:
 # RSSEntryMapper
 # ===========================================================================
 
-class TestRSSEntryMapper:
 
+class TestRSSEntryMapper:
     def test_extracts_cve(self):
-        rec = {"title": "CVE-2024-99999 Vulnerability", "summary": "",
-               "link": "https://example.com", "published": "", "_feed_title": "NVD"}
+        rec = {
+            "title": "CVE-2024-99999 Vulnerability",
+            "summary": "",
+            "link": "https://example.com",
+            "published": "",
+            "_feed_title": "NVD",
+        }
         objs = _map(RSSEntryMapper(), rec)
         vulns = [o for o in objs if isinstance(o, Vulnerability)]
         assert any("CVE-2024-99999" in v.name for v in vulns)
 
     def test_extracts_ip_from_summary(self):
-        rec = {"title": "Alert", "summary": "Observed traffic from 1.2.3.4",
-               "link": "", "published": "", "_feed_title": ""}
+        rec = {
+            "title": "Alert",
+            "summary": "Observed traffic from 1.2.3.4",
+            "link": "",
+            "published": "",
+            "_feed_title": "",
+        }
         objs = _map(RSSEntryMapper(), rec)
         inds = [o for o in objs if isinstance(o, Indicator)]
         assert any("1.2.3.4" in i.pattern for i in inds)
 
     def test_extracts_url(self):
-        rec = {"title": "", "summary": "Download: https://malware.example.com/payload",
-               "link": "", "published": "", "_feed_title": ""}
+        rec = {
+            "title": "",
+            "summary": "Download: https://malware.example.com/payload",
+            "link": "",
+            "published": "",
+            "_feed_title": "",
+        }
         objs = _map(RSSEntryMapper(), rec)
         assert any("url" in o.pattern for o in objs if isinstance(o, Indicator))
 
     def test_no_extract_when_disabled(self):
-        rec = {"title": "1.2.3.4", "summary": "https://evil.com",
-               "link": "", "published": "", "_feed_title": ""}
+        rec = {
+            "title": "1.2.3.4",
+            "summary": "https://evil.com",
+            "link": "",
+            "published": "",
+            "_feed_title": "",
+        }
         objs = _map(RSSEntryMapper(extract_iocs=False), rec)
         assert all(isinstance(o, Vulnerability) for o in objs)  # only CVEs
 
@@ -915,8 +1071,8 @@ class TestRSSEntryMapper:
 # EmailIOCMapper
 # ===========================================================================
 
-class TestEmailIOCMapper:
 
+class TestEmailIOCMapper:
     def _email_record(self):
         return {
             "subject": "Phish",
@@ -960,38 +1116,60 @@ class TestEmailIOCMapper:
 # OpenIOCMapper
 # ===========================================================================
 
-class TestOpenIOCMapper:
 
+class TestOpenIOCMapper:
     def test_maps_md5(self):
-        rec = {"ioc_name": "Test", "ioc_id": "id1", "item_id": "i1",
-               "condition": "is", "context_document": "FileItem",
-               "context_search": "FileItem/Md5sum",
-               "content_type": "string",
-               "content": "d41d8cd98f00b204e9800998ecf8427e"}
+        rec = {
+            "ioc_name": "Test",
+            "ioc_id": "id1",
+            "item_id": "i1",
+            "condition": "is",
+            "context_document": "FileItem",
+            "context_search": "FileItem/Md5sum",
+            "content_type": "string",
+            "content": "d41d8cd98f00b204e9800998ecf8427e",
+        }
         objs = _map(OpenIOCMapper(), rec)
         assert "MD5" in objs[0].pattern
 
     def test_maps_dns(self):
-        rec = {"ioc_name": "DNS", "ioc_id": "id2", "item_id": "i2",
-               "condition": "is", "context_document": "Network",
-               "context_search": "Network/DNS",
-               "content_type": "string",
-               "content": "evil.com"}
+        rec = {
+            "ioc_name": "DNS",
+            "ioc_id": "id2",
+            "item_id": "i2",
+            "condition": "is",
+            "context_document": "Network",
+            "context_search": "Network/DNS",
+            "content_type": "string",
+            "content": "evil.com",
+        }
         objs = _map(OpenIOCMapper(), rec)
         assert "domain-name" in objs[0].pattern
 
     def test_unknown_search_yields_nothing(self):
-        rec = {"ioc_name": "Unknown", "ioc_id": "id3", "item_id": "i3",
-               "condition": "is", "context_document": "Custom",
-               "context_search": "Custom/Field",
-               "content_type": "string", "content": "somevalue"}
+        rec = {
+            "ioc_name": "Unknown",
+            "ioc_id": "id3",
+            "item_id": "i3",
+            "condition": "is",
+            "context_document": "Custom",
+            "context_search": "Custom/Field",
+            "content_type": "string",
+            "content": "somevalue",
+        }
         assert _map(OpenIOCMapper(), rec) == []
 
     def test_empty_content_yields_nothing(self):
-        rec = {"ioc_name": "N", "ioc_id": "id4", "item_id": "i4",
-               "condition": "is", "context_document": "FileItem",
-               "context_search": "FileItem/Md5sum",
-               "content_type": "string", "content": ""}
+        rec = {
+            "ioc_name": "N",
+            "ioc_id": "id4",
+            "item_id": "i4",
+            "condition": "is",
+            "context_document": "FileItem",
+            "context_search": "FileItem/Md5sum",
+            "content_type": "string",
+            "content": "",
+        }
         assert _map(OpenIOCMapper(), rec) == []
 
 
@@ -999,21 +1177,17 @@ class TestOpenIOCMapper:
 # NVDCVEMapper
 # ===========================================================================
 
-class TestNVDCVEMapper:
 
+class TestNVDCVEMapper:
     def _nvd1_record(self, cve_id, score):
         return {
             "cve": {
                 "CVE_data_meta": {"ID": cve_id},
-                "description": {"description_data": [
-                    {"lang": "en", "value": "A test vulnerability."}
-                ]},
+                "description": {
+                    "description_data": [{"lang": "en", "value": "A test vulnerability."}]
+                },
             },
-            "impact": {
-                "baseMetricV3": {
-                    "cvssV3": {"baseScore": score}
-                }
-            },
+            "impact": {"baseMetricV3": {"cvssV3": {"baseScore": score}}},
             "publishedDate": "2024-01-15T00:00Z",
         }
 
@@ -1022,9 +1196,7 @@ class TestNVDCVEMapper:
             "cve": {
                 "id": cve_id,
                 "descriptions": [{"lang": "en", "value": "A test vuln."}],
-                "metrics": {
-                    "cvssMetricV31": [{"cvssData": {"baseScore": score}}]
-                },
+                "metrics": {"cvssMetricV31": [{"cvssData": {"baseScore": score}}]},
                 "published": "2024-01-15T00:00:00",
             }
         }

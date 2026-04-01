@@ -22,11 +22,11 @@ class STIXTable(DataTable):
     """
 
     DEFAULT_COLUMNS = [
-        ("type",    "Type",     12),
-        ("name",    "Name / Value", 35),
-        ("created", "Created",  20),
-        ("conf",    "Conf",      6),
-        ("source",  "Source",   16),
+        ("type", "Type", 12),
+        ("name", "Name / Value", 35),
+        ("created", "Created", 20),
+        ("conf", "Conf", 6),
+        ("source", "Source", 16),
     ]
 
     def __init__(self, show_columns: list[str] | None = None, **kwargs: Any) -> None:

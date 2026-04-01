@@ -87,10 +87,10 @@ class GlobalContext:
         priority: int = 10,
         description: str = "",
     ):
-        self.name        = name
-        self.client      = client
-        self.read_only   = read_only
-        self.priority    = priority
+        self.name = name
+        self.client = client
+        self.read_only = read_only
+        self.priority = priority
         self.description = description
 
     @property
@@ -134,19 +134,15 @@ class GlobalContext:
             If this global context is marked ``read_only``.
         """
         if self.read_only:
-            raise PermissionError(
-                f"GlobalContext {self.name!r} is read-only — write rejected."
-            )
+            raise PermissionError(f"GlobalContext {self.name!r} is read-only — write rejected.")
         payload = self.client.client.from_stix(stix_dict)
-        result  = self.client.client.upsert_object(stix_dict["type"], payload)
+        result = self.client.client.upsert_object(stix_dict["type"], payload)
         return self.client.client.to_stix(result)
 
     def delete_object(self, stix_type: str, stix_id: str) -> None:
         """Delete a STIX object from this platform."""
         if self.read_only:
-            raise PermissionError(
-                f"GlobalContext {self.name!r} is read-only — delete rejected."
-            )
+            raise PermissionError(f"GlobalContext {self.name!r} is read-only — delete rejected.")
         self.client.client.delete_object(stix_type, stix_id)
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -160,6 +156,7 @@ class GlobalContext:
 # ---------------------------------------------------------------------------
 # GlobalContextRegistry
 # ---------------------------------------------------------------------------
+
 
 class GlobalContextRegistry:
     """
@@ -230,11 +227,11 @@ class GlobalContextRegistry:
         for section in cfg.sections:
             if not section.startswith("global."):
                 continue
-            name = section[len("global."):]
+            name = section[len("global.") :]
             section_cfg = cfg.get(section)
             target = section_cfg.pop("target", "")
             read_only = section_cfg.pop("read_only", "false").lower() == "true"
-            priority  = int(section_cfg.pop("priority", "10"))
+            priority = int(section_cfg.pop("priority", "10"))
             description = section_cfg.pop("description", "")
 
             if not target:
@@ -245,8 +242,10 @@ class GlobalContextRegistry:
                 cli = GNATClient(config_path=config_path)
                 cli.connect(target=target, **section_cfg)
                 gc = GlobalContext(
-                    name=name, client=cli,
-                    read_only=read_only, priority=priority,
+                    name=name,
+                    client=cli,
+                    read_only=read_only,
+                    priority=priority,
                     description=description,
                 )
                 registry.register(gc)
@@ -297,7 +296,8 @@ class GlobalContextRegistry:
         ro_set = set(read_only or [])
         for i, (name, client) in enumerate(clients.items()):
             gc = GlobalContext(
-                name=name, client=client,
+                name=name,
+                client=client,
                 read_only=name in ro_set,
                 priority=i,
             )
@@ -336,8 +336,7 @@ class GlobalContextRegistry:
         """Return a global context by name."""
         if name not in self._contexts:
             raise KeyError(
-                f"No global context named {name!r}. "
-                f"Available: {sorted(self._contexts.keys())}"
+                f"No global context named {name!r}. Available: {sorted(self._contexts.keys())}"
             )
         return self._contexts[name]
 
@@ -389,7 +388,5 @@ class GlobalContextRegistry:
     def __repr__(self) -> str:  # pragma: no cover
         default = self._default_name or "(none)"
         return (
-            f"GlobalContextRegistry("
-            f"contexts={sorted(self._contexts.keys())}, "
-            f"default={default!r})"
+            f"GlobalContextRegistry(contexts={sorted(self._contexts.keys())}, default={default!r})"
         )

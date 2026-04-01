@@ -14,10 +14,10 @@ Uses urllib3 via BaseClient (no openai SDK dependency).
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from gnat.clients.base import BaseClient, GNATClientError
 from gnat.agents.base import LLMProvider
+from gnat.clients.base import BaseClient, GNATClientError
 
 
 class OpenAICompatibleProvider(LLMProvider, BaseClient):
@@ -44,7 +44,7 @@ class OpenAICompatibleProvider(LLMProvider, BaseClient):
 
     def __init__(
         self,
-        provider: str = "openai",   # "openai" or "grok"
+        provider: str = "openai",  # "openai" or "grok"
         api_key: str = "",
         model: str = "",
         host: str = "",
@@ -76,17 +76,17 @@ class OpenAICompatibleProvider(LLMProvider, BaseClient):
 
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform chat completion using OpenAI-compatible /chat/completions endpoint.
         """
         self.authenticate()
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
@@ -108,9 +108,9 @@ class OpenAICompatibleProvider(LLMProvider, BaseClient):
     def structured(
         self,
         prompt: str,
-        output_schema: Dict[str, Any],
+        output_schema: dict[str, Any],
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Structured output using JSON mode (native on OpenAI and Grok).
         """
@@ -127,7 +127,7 @@ class OpenAICompatibleProvider(LLMProvider, BaseClient):
             {"role": "user", "content": prompt},
         ]
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
             "temperature": kwargs.get("temperature", 0.0),  # lower temp for structured

@@ -78,11 +78,12 @@ class ReportSynthesizer:
         research_library=None,
     ):
         self._config = config
-        self._acfg   = agent_config
-        self._lib    = research_library
-        self._calls  = 0
+        self._acfg = agent_config
+        self._lib = research_library
+        self._calls = 0
         # Import here to avoid circular at module level
         from gnat.agents.base import ClaudeClient
+
         self._client = ClaudeClient(agent_config)
 
     @property
@@ -125,9 +126,7 @@ class ReportSynthesizer:
 
     # ── Daily synthesis ────────────────────────────────────────────────────
 
-    def _synthesize_daily(
-        self, agg: ReportAggregates
-    ) -> list[ReportSection]:
+    def _synthesize_daily(self, agg: ReportAggregates) -> list[ReportSection]:
         from gnat.reports.base import ReportSection
 
         sections = []
@@ -138,15 +137,19 @@ class ReportSynthesizer:
             system=self._system_prompt("daily analyst"),
             user=self._daily_summary_prompt(agg),
         )
-        sections.append(ReportSection(
-            title="Executive Summary",
-            data={"total_new": agg.new_objects,
-                  "total_updated": agg.updated_objects,
-                  "period": f"{agg.window_days}d"},
-            narrative=summary,
-            section_type="summary",
-            order=1,
-        ))
+        sections.append(
+            ReportSection(
+                title="Executive Summary",
+                data={
+                    "total_new": agg.new_objects,
+                    "total_updated": agg.updated_objects,
+                    "period": f"{agg.window_days}d",
+                },
+                narrative=summary,
+                section_type="summary",
+                order=1,
+            )
+        )
 
         # Threat highlights — only if there's something notable
         if agg.critical_vulns or agg.exploited_vulns or agg.top_actors:
@@ -155,17 +158,19 @@ class ReportSynthesizer:
                 system=self._system_prompt("daily analyst"),
                 user=self._threat_highlights_prompt(agg),
             )
-            sections.append(ReportSection(
-                title="Threat Highlights",
-                data={
-                    "critical_vulns": agg.critical_vulns[:5],
-                    "exploited_vulns": agg.exploited_vulns[:5],
-                    "top_actors": agg.top_actors[:5],
-                },
-                narrative=highlights,
-                section_type="narrative",
-                order=2,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Threat Highlights",
+                    data={
+                        "critical_vulns": agg.critical_vulns[:5],
+                        "exploited_vulns": agg.exploited_vulns[:5],
+                        "top_actors": agg.top_actors[:5],
+                    },
+                    narrative=highlights,
+                    section_type="narrative",
+                    order=2,
+                )
+            )
 
         # Recommended actions — full mode only
         if self._config.ai_mode.value == "full":
@@ -174,22 +179,23 @@ class ReportSynthesizer:
                 system=self._system_prompt("daily analyst"),
                 user=self._recommendations_prompt(agg, report_type="daily"),
             )
-            sections.append(ReportSection(
-                title="Recommended Actions",
-                data={},
-                narrative=actions,
-                section_type="narrative",
-                order=9,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Recommended Actions",
+                    data={},
+                    narrative=actions,
+                    section_type="narrative",
+                    order=9,
+                )
+            )
 
         return sections
 
     # ── Trends synthesis ───────────────────────────────────────────────────
 
-    def _synthesize_trends(
-        self, agg: ReportAggregates
-    ) -> list[ReportSection]:
+    def _synthesize_trends(self, agg: ReportAggregates) -> list[ReportSection]:
         from gnat.reports.base import ReportSection
+
         sections = []
 
         # Executive summary
@@ -198,14 +204,15 @@ class ReportSynthesizer:
             system=self._system_prompt("trends analyst"),
             user=self._trends_summary_prompt(agg),
         )
-        sections.append(ReportSection(
-            title="Trends Summary",
-            data={"period_over_period": agg.period_over_period,
-                  "window_days": agg.window_days},
-            narrative=summary,
-            section_type="summary",
-            order=1,
-        ))
+        sections.append(
+            ReportSection(
+                title="Trends Summary",
+                data={"period_over_period": agg.period_over_period, "window_days": agg.window_days},
+                narrative=summary,
+                section_type="summary",
+                order=1,
+            )
+        )
 
         # Threat actor trends
         if agg.actor_count > 0:
@@ -215,14 +222,15 @@ class ReportSynthesizer:
                 system=self._system_prompt("trends analyst"),
                 user=self._actor_trends_prompt(agg, lib_ctx),
             )
-            sections.append(ReportSection(
-                title="Threat Actor Activity",
-                data={"top_actors": agg.top_actors[:10],
-                      "motivations": agg.actor_motivations},
-                narrative=actor_trends,
-                section_type="narrative",
-                order=3,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Threat Actor Activity",
+                    data={"top_actors": agg.top_actors[:10], "motivations": agg.actor_motivations},
+                    narrative=actor_trends,
+                    section_type="narrative",
+                    order=3,
+                )
+            )
 
         # Vulnerability trends
         if agg.vuln_count > 0:
@@ -231,16 +239,20 @@ class ReportSynthesizer:
                 system=self._system_prompt("trends analyst"),
                 user=self._vuln_trends_prompt(agg),
             )
-            sections.append(ReportSection(
-                title="Vulnerability Landscape",
-                data={"critical_count": len(agg.critical_vulns),
-                      "exploited_count": len(agg.exploited_vulns),
-                      "critical_vulns": agg.critical_vulns[:10],
-                      "cvss_distribution": agg.cvss_distribution},
-                narrative=vuln_trends,
-                section_type="narrative",
-                order=4,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Vulnerability Landscape",
+                    data={
+                        "critical_count": len(agg.critical_vulns),
+                        "exploited_count": len(agg.exploited_vulns),
+                        "critical_vulns": agg.critical_vulns[:10],
+                        "cvss_distribution": agg.cvss_distribution,
+                    },
+                    narrative=vuln_trends,
+                    section_type="narrative",
+                    order=4,
+                )
+            )
 
         # Sector targeting
         if agg.sector_distribution:
@@ -249,14 +261,18 @@ class ReportSynthesizer:
                 system=self._system_prompt("trends analyst"),
                 user=self._sector_trends_prompt(agg),
             )
-            sections.append(ReportSection(
-                title="Sector Targeting",
-                data={"sector_distribution": agg.sector_distribution,
-                      "opportunistic_count": agg.opportunistic_count},
-                narrative=sector_analysis,
-                section_type="narrative",
-                order=5,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Sector Targeting",
+                    data={
+                        "sector_distribution": agg.sector_distribution,
+                        "opportunistic_count": agg.opportunistic_count,
+                    },
+                    narrative=sector_analysis,
+                    section_type="narrative",
+                    order=5,
+                )
+            )
 
         # Recommendations
         recommendations = self._call(
@@ -264,22 +280,23 @@ class ReportSynthesizer:
             system=self._system_prompt("trends analyst"),
             user=self._recommendations_prompt(agg, report_type="trends"),
         )
-        sections.append(ReportSection(
-            title="Recommendations",
-            data={},
-            narrative=recommendations,
-            section_type="narrative",
-            order=9,
-        ))
+        sections.append(
+            ReportSection(
+                title="Recommendations",
+                data={},
+                narrative=recommendations,
+                section_type="narrative",
+                order=9,
+            )
+        )
 
         return sections
 
     # ── Yearly synthesis ───────────────────────────────────────────────────
 
-    def _synthesize_yearly(
-        self, agg: ReportAggregates
-    ) -> list[ReportSection]:
+    def _synthesize_yearly(self, agg: ReportAggregates) -> list[ReportSection]:
         from gnat.reports.base import ReportSection
+
         sections = []
 
         # Year in review — top-level narrative
@@ -288,15 +305,19 @@ class ReportSynthesizer:
             system=self._system_prompt("strategic executive"),
             user=self._year_in_review_prompt(agg),
         )
-        sections.append(ReportSection(
-            title="Year in Review",
-            data={"total_objects": agg.total_objects,
-                  "by_type": agg.by_type,
-                  "monthly_counts": agg.monthly_counts},
-            narrative=year_review,
-            section_type="summary",
-            order=1,
-        ))
+        sections.append(
+            ReportSection(
+                title="Year in Review",
+                data={
+                    "total_objects": agg.total_objects,
+                    "by_type": agg.by_type,
+                    "monthly_counts": agg.monthly_counts,
+                },
+                narrative=year_review,
+                section_type="summary",
+                order=1,
+            )
+        )
 
         # Threat landscape
         lib_ctx = self._library_context(agg.top_actors[:8])
@@ -305,15 +326,19 @@ class ReportSynthesizer:
             system=self._system_prompt("strategic executive"),
             user=self._threat_landscape_prompt(agg, lib_ctx),
         )
-        sections.append(ReportSection(
-            title="Threat Landscape",
-            data={"top_actors": agg.top_actors[:10],
-                  "top_ttps": agg.top_ttps[:10],
-                  "tactic_distribution": agg.tactic_distribution},
-            narrative=threat_landscape,
-            section_type="narrative",
-            order=2,
-        ))
+        sections.append(
+            ReportSection(
+                title="Threat Landscape",
+                data={
+                    "top_actors": agg.top_actors[:10],
+                    "top_ttps": agg.top_ttps[:10],
+                    "tactic_distribution": agg.tactic_distribution,
+                },
+                narrative=threat_landscape,
+                section_type="narrative",
+                order=2,
+            )
+        )
 
         # Vulnerability year
         if agg.vuln_count > 0:
@@ -322,17 +347,21 @@ class ReportSynthesizer:
                 system=self._system_prompt("strategic executive"),
                 user=self._vuln_year_prompt(agg),
             )
-            sections.append(ReportSection(
-                title="Vulnerability Year in Review",
-                data={"total_vulns": agg.vuln_count,
-                      "critical_count": len(agg.critical_vulns),
-                      "exploited_count": len(agg.exploited_vulns),
-                      "cvss_distribution": agg.cvss_distribution,
-                      "exploited_vulns": agg.exploited_vulns[:15]},
-                narrative=vuln_year,
-                section_type="narrative",
-                order=3,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Vulnerability Year in Review",
+                    data={
+                        "total_vulns": agg.vuln_count,
+                        "critical_count": len(agg.critical_vulns),
+                        "exploited_count": len(agg.exploited_vulns),
+                        "cvss_distribution": agg.cvss_distribution,
+                        "exploited_vulns": agg.exploited_vulns[:15],
+                    },
+                    narrative=vuln_year,
+                    section_type="narrative",
+                    order=3,
+                )
+            )
 
         # Sector analysis
         if agg.sector_distribution:
@@ -341,14 +370,18 @@ class ReportSynthesizer:
                 system=self._system_prompt("strategic executive"),
                 user=self._sector_year_prompt(agg),
             )
-            sections.append(ReportSection(
-                title="Sector Targeting Analysis",
-                data={"sector_distribution": agg.sector_distribution,
-                      "opportunistic_count": agg.opportunistic_count},
-                narrative=sector_year,
-                section_type="narrative",
-                order=4,
-            ))
+            sections.append(
+                ReportSection(
+                    title="Sector Targeting Analysis",
+                    data={
+                        "sector_distribution": agg.sector_distribution,
+                        "opportunistic_count": agg.opportunistic_count,
+                    },
+                    narrative=sector_year,
+                    section_type="narrative",
+                    order=4,
+                )
+            )
 
         # Intelligence programme performance
         programme = self._call(
@@ -356,17 +389,21 @@ class ReportSynthesizer:
             system=self._system_prompt("strategic executive"),
             user=self._programme_performance_prompt(agg),
         )
-        sections.append(ReportSection(
-            title="Intelligence Programme Performance",
-            data={"source_breakdown": agg.source_breakdown,
-                  "ai_extracted_count": agg.ai_extracted_count,
-                  "avg_confidence": round(agg.avg_confidence, 1),
-                  "confidence_distribution": agg.confidence_distribution,
-                  "library_entries": agg.library_entries_count},
-            narrative=programme,
-            section_type="narrative",
-            order=5,
-        ))
+        sections.append(
+            ReportSection(
+                title="Intelligence Programme Performance",
+                data={
+                    "source_breakdown": agg.source_breakdown,
+                    "ai_extracted_count": agg.ai_extracted_count,
+                    "avg_confidence": round(agg.avg_confidence, 1),
+                    "confidence_distribution": agg.confidence_distribution,
+                    "library_entries": agg.library_entries_count,
+                },
+                narrative=programme,
+                section_type="narrative",
+                order=5,
+            )
+        )
 
         # Strategic recommendations
         strategic_rec = self._call(
@@ -374,13 +411,15 @@ class ReportSynthesizer:
             system=self._system_prompt("strategic executive"),
             user=self._recommendations_prompt(agg, report_type="yearly"),
         )
-        sections.append(ReportSection(
-            title="Strategic Recommendations",
-            data={},
-            narrative=strategic_rec,
-            section_type="narrative",
-            order=9,
-        ))
+        sections.append(
+            ReportSection(
+                title="Strategic Recommendations",
+                data={},
+                narrative=strategic_rec,
+                section_type="narrative",
+                order=9,
+            )
+        )
 
         return sections
 
@@ -405,14 +444,13 @@ class ReportSynthesizer:
             )
             self._calls += 1
             text = self._client.text_from(response)
-            logger.debug(
-                "ReportSynthesizer: section %r — %d chars", section_title, len(text)
-            )
+            logger.debug("ReportSynthesizer: section %r — %d chars", section_title, len(text))
             return text.strip()
         except RuntimeError as exc:
             logger.error(
                 "ReportSynthesizer: API error for section %r — %s",
-                section_title, exc,
+                section_title,
+                exc,
             )
             return ""
 
@@ -458,19 +496,19 @@ class ReportSynthesizer:
         )
 
     def _threat_highlights_prompt(self, agg: ReportAggregates) -> str:
-        parts = ["Write 1-2 paragraphs highlighting the most significant "
-                 "threats identified in this reporting period.\n"]
+        parts = [
+            "Write 1-2 paragraphs highlighting the most significant "
+            "threats identified in this reporting period.\n"
+        ]
         if agg.exploited_vulns:
             parts.append(
                 "Actively exploited vulnerabilities: "
-                + ", ".join(v.get("cve_id") or v.get("name", "")
-                             for v in agg.exploited_vulns[:5])
+                + ", ".join(v.get("cve_id") or v.get("name", "") for v in agg.exploited_vulns[:5])
             )
         if agg.critical_vulns:
             parts.append(
                 "Critical CVEs (CVSS 9+): "
-                + ", ".join(v.get("cve_id") or v.get("name", "")
-                             for v in agg.critical_vulns[:5])
+                + ", ".join(v.get("cve_id") or v.get("name", "") for v in agg.critical_vulns[:5])
             )
         if agg.top_actors:
             parts.append(
@@ -505,9 +543,7 @@ class ReportSynthesizer:
         )
         return "\n".join(lines)
 
-    def _actor_trends_prompt(
-        self, agg: ReportAggregates, lib_ctx: str
-    ) -> str:
+    def _actor_trends_prompt(self, agg: ReportAggregates, lib_ctx: str) -> str:
         actor_names = [a["name"] for a in agg.top_actors[:8]]
         motivations = _fmt_dict(agg.actor_motivations, top=5)
         prompt = (
@@ -532,10 +568,7 @@ class ReportSynthesizer:
             f"CVSS distribution: {_fmt_dict(agg.cvss_distribution)}\n"
             f"Actively exploited: {len(agg.exploited_vulns)}\n"
             f"Notable exploited CVEs: "
-            + ", ".join(
-                v.get("cve_id") or v.get("name", "")
-                for v in agg.exploited_vulns[:8]
-            )
+            + ", ".join(v.get("cve_id") or v.get("name", "") for v in agg.exploited_vulns[:8])
             + "\n\nFocus on patching priorities and exploitation velocity."
         )
 
@@ -557,20 +590,19 @@ class ReportSynthesizer:
             f"Total intelligence objects collected: {agg.total_objects}\n"
             f"Object type breakdown: {_fmt_dict(agg.by_type)}\n"
             f"Monthly collection trend: "
-            + (", ".join(
-                f"{m['month']}: {m['count']}"
-                for m in agg.monthly_counts[-6:]
-            ) if agg.monthly_counts else "insufficient data")
+            + (
+                ", ".join(f"{m['month']}: {m['count']}" for m in agg.monthly_counts[-6:])
+                if agg.monthly_counts
+                else "insufficient data"
+            )
             + "\n\nWrite for a senior management or board audience. "
             "Frame the year's activity in terms of threat environment "
             "evolution, programme maturity, and overall risk posture."
         )
 
-    def _threat_landscape_prompt(
-        self, agg: ReportAggregates, lib_ctx: str
-    ) -> str:
+    def _threat_landscape_prompt(self, agg: ReportAggregates, lib_ctx: str) -> str:
         actor_names = [a["name"] for a in agg.top_actors[:8]]
-        top_ttps    = [t["name"] for t in agg.top_ttps[:6]]
+        top_ttps = [t["name"] for t in agg.top_ttps[:6]]
         prompt = (
             "Write 3-4 paragraphs describing the threat landscape "
             "observed over the past year.\n\n"
@@ -595,10 +627,7 @@ class ReportSynthesizer:
             f"Actively exploited: {len(agg.exploited_vulns)}\n"
             f"CVSS distribution: {_fmt_dict(agg.cvss_distribution)}\n"
             f"Key exploited CVEs: "
-            + ", ".join(
-                v.get("cve_id") or v.get("name", "")
-                for v in agg.exploited_vulns[:10]
-            )
+            + ", ".join(v.get("cve_id") or v.get("name", "") for v in agg.exploited_vulns[:10])
             + "\n\nFocus on exploitation velocity, patching discipline, "
             "and which vulnerability classes dominated the year."
         )
@@ -631,11 +660,9 @@ class ReportSynthesizer:
             "the diversity of sources, and any gaps or areas for improvement."
         )
 
-    def _recommendations_prompt(
-        self, agg: ReportAggregates, report_type: str
-    ) -> str:
+    def _recommendations_prompt(self, agg: ReportAggregates, report_type: str) -> str:
         timeframe = {
-            "daily":  "immediate (next 24-48 hours)",
+            "daily": "immediate (next 24-48 hours)",
             "trends": "near-term (next 30 days)",
             "yearly": "strategic (next 12 months)",
         }.get(report_type, "near-term")
@@ -698,9 +725,7 @@ class ReportSynthesizer:
                     for entry in results[:2]:
                         if entry.topic not in seen_topics and entry.note:
                             seen_topics.add(entry.topic)
-                            context_parts.append(
-                                f"[{entry.topic}]: {entry.note[:200]}"
-                            )
+                            context_parts.append(f"[{entry.topic}]: {entry.note[:200]}")
             except Exception:
                 pass
 

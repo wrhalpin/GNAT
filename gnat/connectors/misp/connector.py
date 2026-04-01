@@ -108,9 +108,7 @@ class MISPConnector(BaseClient, ConnectorMixin):
         results = []
         for raw in events:
             norm = self._events.normalise_event(raw)
-            results.append(
-                self._mapper.event_to_stix_bundle(norm, norm.get("attributes", []))
-            )
+            results.append(self._mapper.event_to_stix_bundle(norm, norm.get("attributes", [])))
         return results
 
     def upsert_object(self, stix_type: str, payload: dict, **kwargs) -> dict:

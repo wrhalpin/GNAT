@@ -70,23 +70,23 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator":      "iocFeed",
-        "threat-actor":   "ttpFeed",
-        "malware":        "ttpFeed",
+        "indicator": "iocFeed",
+        "threat-actor": "ttpFeed",
+        "malware": "ttpFeed",
         "attack-pattern": "ttpFeed",
-        "vulnerability":  "cvesFeed",
+        "vulnerability": "cvesFeed",
     }
 
     # Feedly entity type → STIX pattern
     _IOC_PATTERN: dict[str, str] = {
-        "ip-src":  "[ipv4-addr:value = '{v}']",
-        "ip-dst":  "[ipv4-addr:value = '{v}']",
-        "url":     "[url:value = '{v}']",
-        "domain":  "[domain-name:value = '{v}']",
-        "md5":     "[file:hashes.MD5 = '{v}']",
-        "sha1":    "[file:hashes.SHA-1 = '{v}']",
-        "sha256":  "[file:hashes.SHA-256 = '{v}']",
-        "email":   "[email-addr:value = '{v}']",
+        "ip-src": "[ipv4-addr:value = '{v}']",
+        "ip-dst": "[ipv4-addr:value = '{v}']",
+        "url": "[url:value = '{v}']",
+        "domain": "[domain-name:value = '{v}']",
+        "md5": "[file:hashes.MD5 = '{v}']",
+        "sha1": "[file:hashes.SHA-1 = '{v}']",
+        "sha256": "[file:hashes.SHA-256 = '{v}']",
+        "email": "[email-addr:value = '{v}']",
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
@@ -137,7 +137,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
             * ``streamId``   — Feedly stream/board id for article streams
         """
         filters = dict(filters or {})
-        count   = filters.pop("count", page_size)
+        count = filters.pop("count", page_size)
 
         if stix_type in ("indicator",):
             return self.get_ioc_feed(
@@ -157,14 +157,10 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"Feedly: unsupported STIX type '{stix_type}'")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        raise GNATClientError(
-            "Feedly is read-only — object creation is not supported."
-        )
+        raise GNATClientError("Feedly is read-only — object creation is not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise GNATClientError(
-            "Feedly is read-only — object deletion is not supported."
-        )
+        raise GNATClientError("Feedly is read-only — object deletion is not supported.")
 
     # ── Domain-specific operations ────────────────────────────────────────
 
@@ -270,8 +266,9 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         if newer_than:
             params["newerThan"] = newer_than
         import urllib.parse
+
         encoded = urllib.parse.quote(stream_id, safe="")
-        resp    = self.get(f"/v3/streams/{encoded}/contents", params=params)
+        resp = self.get(f"/v3/streams/{encoded}/contents", params=params)
         return resp.get("items", []) if isinstance(resp, dict) else []
 
     def search_feeds(self, query: str, count: int = 20) -> list[dict[str, Any]]:
@@ -310,31 +307,29 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         # CVE entry
         if "cve_id" in data:
             return {
-                "type":            "vulnerability",
-                "id":              f"vulnerability--{data.get('id', data.get('cve_id', ''))}",
-                "name":            data.get("cve_id", ""),
-                "description":     data.get("description", ""),
-                "created":         self._ms_to_iso(data.get("first_seen")),
-                "modified":        self._ms_to_iso(data.get("last_seen")),
-                "x_cvss_score":    data.get("cvss_score"),
+                "type": "vulnerability",
+                "id": f"vulnerability--{data.get('id', data.get('cve_id', ''))}",
+                "name": data.get("cve_id", ""),
+                "description": data.get("description", ""),
+                "created": self._ms_to_iso(data.get("first_seen")),
+                "modified": self._ms_to_iso(data.get("last_seen")),
+                "x_cvss_score": data.get("cvss_score"),
                 "x_feedly_sources": [s.get("title", "") for s in data.get("sources", [])],
             }
 
         # TTP entry
-        if "mitre_id" in data or data.get("type") in (
-            "attack-pattern", "threat-actor", "malware"
-        ):
+        if "mitre_id" in data or data.get("type") in ("attack-pattern", "threat-actor", "malware"):
             stix_type = data.get("type", "attack-pattern")
             ttp: dict[str, Any] = {
-                "type":         stix_type,
-                "id":           f"{stix_type}--{data.get('id', '')}",
-                "name":         data.get("name", ""),
-                "description":  data.get("description", ""),
-                "created":      self._ms_to_iso(data.get("first_seen")),
-                "modified":     self._ms_to_iso(data.get("last_seen")),
-                "x_mitre_id":   data.get("mitre_id", ""),
+                "type": stix_type,
+                "id": f"{stix_type}--{data.get('id', '')}",
+                "name": data.get("name", ""),
+                "description": data.get("description", ""),
+                "created": self._ms_to_iso(data.get("first_seen")),
+                "modified": self._ms_to_iso(data.get("last_seen")),
+                "x_mitre_id": data.get("mitre_id", ""),
                 "x_feedly_sources": [s.get("title", "") for s in data.get("sources", [])],
-                "confidence":   data.get("confidence", 50),
+                "confidence": data.get("confidence", 50),
             }
             # Feedly Enterprise threat-intel entities carry a `sectors` list
             # of industry vertical strings on threat-actor and attack-pattern
@@ -346,26 +341,22 @@ class FeedlyClient(BaseClient, ConnectorMixin):
 
         # IOC entry (default)
         ioc_type = data.get("type", "")
-        value    = data.get("value", "")
-        pattern_tmpl = self._IOC_PATTERN.get(
-            ioc_type, "[unknown:value = '{v}']"
-        )
+        value = data.get("value", "")
+        pattern_tmpl = self._IOC_PATTERN.get(ioc_type, "[unknown:value = '{v}']")
         pattern = pattern_tmpl.format(v=value.replace("'", "\\'"))
 
         return {
-            "type":            "indicator",
-            "id":              f"indicator--{data.get('id', '')}",
-            "name":            value,
-            "pattern":         pattern,
-            "pattern_type":    "stix",
-            "created":         self._ms_to_iso(data.get("first_seen")),
-            "modified":        self._ms_to_iso(data.get("last_seen")),
+            "type": "indicator",
+            "id": f"indicator--{data.get('id', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": self._ms_to_iso(data.get("first_seen")),
+            "modified": self._ms_to_iso(data.get("last_seen")),
             "indicator_types": ["malicious-activity"],
-            "confidence":      data.get("confidence", 50),
-            "x_feedly_type":   ioc_type,
-            "x_feedly_sources": [
-                s.get("title", "") for s in data.get("sources", [])
-            ],
+            "confidence": data.get("confidence", 50),
+            "x_feedly_type": ioc_type,
+            "x_feedly_sources": [s.get("title", "") for s in data.get("sources", [])],
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
@@ -383,4 +374,5 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         if not ms:
             return ""
         from datetime import datetime, timezone
+
         return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()

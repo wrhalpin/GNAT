@@ -72,7 +72,7 @@ class SophosClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "indicator": "blocked-items",
-        "malware":   "detections",
+        "malware": "detections",
     }
 
     def __init__(
@@ -100,10 +100,10 @@ class SophosClient(BaseClient, ConnectorMixin):
         resp = self.post(
             "/api/v2/oauth2/token",
             data={
-                "grant_type":    "client_credentials",
-                "client_id":     self._client_id,
+                "grant_type": "client_credentials",
+                "client_id": self._client_id,
                 "client_secret": self._client_secret,
-                "scope":         "token",
+                "scope": "token",
             },
         )
         token = resp.get("access_token") if isinstance(resp, dict) else None
@@ -226,9 +226,9 @@ class SophosClient(BaseClient, ConnectorMixin):
         else:
             item_type = "path"
         return {
-            "type":     item_type,
-            "value":    value,
-            "comment":  stix_dict.get("description", "Imported via GNAT"),
+            "type": item_type,
+            "value": value,
+            "comment": stix_dict.get("description", "Imported via GNAT"),
         }
 
     def _blocked_item_to_stix(self, item: dict[str, Any]) -> dict[str, Any]:
@@ -236,40 +236,44 @@ class SophosClient(BaseClient, ConnectorMixin):
         item_id = item.get("id", "")
         value = item.get("sha256", item.get("value", ""))
         item_type = item.get("type", "sha256")
-        type_map = {"sha256": "file:hashes.'SHA-256'", "md5": "file:hashes.MD5",
-                    "ip": "ipv4-addr:value", "path": "file:name"}
+        type_map = {
+            "sha256": "file:hashes.'SHA-256'",
+            "md5": "file:hashes.MD5",
+            "ip": "ipv4-addr:value",
+            "path": "file:name",
+        }
         stix_prop = type_map.get(item_type, "file:name")
         return {
-            "type":            "indicator",
-            "id":              f"indicator--{_uuid.uuid5(_STIX_NS, f'sophos:{item_id}')}",
-            "spec_version":    "2.1",
-            "created":         item.get("created_at", now),
-            "modified":        item.get("updated_at", now),
-            "name":            value,
-            "description":     item.get("comment", "Sophos blocked item"),
-            "pattern":         f"[{stix_prop} = '{value}']",
-            "pattern_type":    "stix",
+            "type": "indicator",
+            "id": f"indicator--{_uuid.uuid5(_STIX_NS, f'sophos:{item_id}')}",
+            "spec_version": "2.1",
+            "created": item.get("created_at", now),
+            "modified": item.get("updated_at", now),
+            "name": value,
+            "description": item.get("comment", "Sophos blocked item"),
+            "pattern": f"[{stix_prop} = '{value}']",
+            "pattern_type": "stix",
             "indicator_types": ["malicious-activity"],
-            "x_sophos_type":   item_type,
+            "x_sophos_type": item_type,
         }
 
     def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         det_id = detection.get("id", "")
         return {
-            "type":          "malware",
-            "id":            f"malware--{_uuid.uuid5(_STIX_NS, f'sophos:{det_id}')}",
-            "spec_version":  "2.1",
-            "created":       detection.get("detected_at", now),
-            "modified":      detection.get("detected_at", now),
-            "name":          detection.get("name", "Unknown Sophos Detection"),
-            "description":   detection.get("description", ""),
+            "type": "malware",
+            "id": f"malware--{_uuid.uuid5(_STIX_NS, f'sophos:{det_id}')}",
+            "spec_version": "2.1",
+            "created": detection.get("detected_at", now),
+            "modified": detection.get("detected_at", now),
+            "name": detection.get("name", "Unknown Sophos Detection"),
+            "description": detection.get("description", ""),
             "malware_types": [detection.get("category", "unknown")],
-            "is_family":     False,
+            "is_family": False,
             "x_sophos": {
                 "detection_id": det_id,
-                "endpoint_id":  detection.get("endpoint_id"),
+                "endpoint_id": detection.get("endpoint_id"),
                 "endpoint_name": detection.get("endpoint_name"),
-                "severity":     detection.get("severity"),
+                "severity": detection.get("severity"),
             },
         }

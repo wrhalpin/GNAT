@@ -49,6 +49,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("e6f7a8b9-c0d1-2e3f-4a5b-6c7d8e9f0a1b")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -70,10 +71,16 @@ class TenableOneClient(BaseClient, ConnectorMixin):
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilities",
-        "report":        "exposure-view",  # cards + attack paths
+        "report": "exposure-view",  # cards + attack paths
     }
 
-    def __init__(self, host: str = "https://cloud.tenable.com", access_key: str = "", secret_key: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "https://cloud.tenable.com",
+        access_key: str = "",
+        secret_key: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
         self._access_key = access_key
         self._secret_key = secret_key
@@ -82,7 +89,9 @@ class TenableOneClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """Set X-ApiKeys header with accessKey/secretKey pair."""
-        self._auth_headers["X-ApiKeys"] = f"accessKey={self._access_key};secretKey={self._secret_key}"
+        self._auth_headers["X-ApiKeys"] = (
+            f"accessKey={self._access_key};secretKey={self._secret_key}"
+        )
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
 

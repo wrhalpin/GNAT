@@ -24,21 +24,21 @@ Coverage:
 
 from __future__ import annotations
 
-import time
 import threading
+import time
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from gnat.ingest.base import IngestResult
 from gnat.schedule import FeedJob, FeedScheduler, JobRunContext, RunRecord
 from gnat.schedule.job import _utcnow
-from gnat.ingest.base import IngestResult
-
 
 # ===========================================================================
 # Fixtures
 # ===========================================================================
+
 
 def _mock_result(total=5, written=5, errors=None):
     return IngestResult(
@@ -48,6 +48,7 @@ def _mock_result(total=5, written=5, errors=None):
         errors=errors or [],
     )
 
+
 def _mock_reader(ctx):
     r = MagicMock()
     r.__enter__ = lambda s: s
@@ -55,10 +56,12 @@ def _mock_reader(ctx):
     r.__iter__ = MagicMock(return_value=iter([]))
     return r
 
+
 def _mock_mapper(ctx):
     m = MagicMock()
     m.map.return_value = iter([])
     return m
+
 
 def _simple_job(job_id="test", interval=60, **kwargs):
     return FeedJob(
@@ -69,6 +72,7 @@ def _simple_job(job_id="test", interval=60, **kwargs):
         **kwargs,
     )
 
+
 PATCH_RUN = "gnat.ingest.pipeline.pipeline.IngestPipeline.run"
 
 
@@ -76,12 +80,10 @@ PATCH_RUN = "gnat.ingest.pipeline.pipeline.IngestPipeline.run"
 # JobRunContext
 # ===========================================================================
 
-class TestJobRunContext:
 
+class TestJobRunContext:
     def test_defaults(self):
-        ctx = JobRunContext(
-            job_id="j", run_number=1, scheduled_at=_utcnow()
-        )
+        ctx = JobRunContext(job_id="j", run_number=1, scheduled_at=_utcnow())
         assert ctx.last_success_at is None
         assert ctx.last_success_iso is None
         assert ctx.last_result is None
@@ -90,8 +92,11 @@ class TestJobRunContext:
     def test_all_fields(self):
         now = _utcnow()
         ctx = JobRunContext(
-            job_id="j", run_number=3, scheduled_at=now,
-            last_success_at=now, last_success_iso=now.isoformat(),
+            job_id="j",
+            run_number=3,
+            scheduled_at=now,
+            last_success_at=now,
+            last_success_iso=now.isoformat(),
             custom={"cursor": "abc"},
         )
         assert ctx.run_number == 3
@@ -102,15 +107,19 @@ class TestJobRunContext:
 # RunRecord
 # ===========================================================================
 
-class TestRunRecord:
 
+class TestRunRecord:
     def test_as_dict_success(self):
         now = _utcnow()
         result = _mock_result(total=10, written=10)
         rec = RunRecord(
-            run_number=1, scheduled_at=now, started_at=now,
-            finished_at=now, status="success",
-            result=result, duration_seconds=1.5,
+            run_number=1,
+            scheduled_at=now,
+            started_at=now,
+            finished_at=now,
+            status="success",
+            result=result,
+            duration_seconds=1.5,
         )
         d = rec.as_dict()
         assert d["status"] == "success"
@@ -122,8 +131,12 @@ class TestRunRecord:
     def test_as_dict_failed(self):
         now = _utcnow()
         rec = RunRecord(
-            run_number=1, scheduled_at=now, started_at=now,
-            status="failed", error="boom", duration_seconds=0.1,
+            run_number=1,
+            scheduled_at=now,
+            started_at=now,
+            status="failed",
+            error="boom",
+            duration_seconds=0.1,
         )
         d = rec.as_dict()
         assert d["status"] == "failed"
@@ -135,21 +148,19 @@ class TestRunRecord:
 # FeedJob — construction
 # ===========================================================================
 
-class TestFeedJobConstruction:
 
+class TestFeedJobConstruction:
     def test_requires_schedule(self):
         with pytest.raises(ValueError, match="interval_seconds or cron"):
             FeedJob("x", _mock_reader, _mock_mapper)
 
     def test_mutually_exclusive(self):
         with pytest.raises(ValueError, match="mutually exclusive"):
-            FeedJob("x", _mock_reader, _mock_mapper,
-                    interval_seconds=60, cron="* * * * *")
+            FeedJob("x", _mock_reader, _mock_mapper, interval_seconds=60, cron="* * * * *")
 
     def test_invalid_overlap_policy(self):
         with pytest.raises(ValueError, match="overlap_policy"):
-            FeedJob("x", _mock_reader, _mock_mapper,
-                    interval_seconds=60, overlap_policy="invalid")
+            FeedJob("x", _mock_reader, _mock_mapper, interval_seconds=60, overlap_policy="invalid")
 
     def test_valid_interval(self):
         job = _simple_job()
@@ -168,8 +179,8 @@ class TestFeedJobConstruction:
 # FeedJob — execute()
 # ===========================================================================
 
-class TestFeedJobExecute:
 
+class TestFeedJobExecute:
     def test_success_updates_state(self):
         job = _simple_job()
         with patch(PATCH_RUN, return_value=_mock_result()):
@@ -183,9 +194,11 @@ class TestFeedJobExecute:
 
     def test_first_run_has_null_last_success(self):
         seen = []
+
         def capturing_reader(ctx):
             seen.append(ctx.last_success_iso)
             return _mock_reader(ctx)
+
         job = FeedJob("j", capturing_reader, _mock_mapper, interval_seconds=60)
         with patch(PATCH_RUN, return_value=_mock_result()):
             job.execute()
@@ -193,9 +206,11 @@ class TestFeedJobExecute:
 
     def test_second_run_receives_last_success_iso(self):
         seen = []
+
         def capturing_reader(ctx):
             seen.append(ctx.last_success_iso)
             return _mock_reader(ctx)
+
         job = FeedJob("j", capturing_reader, _mock_mapper, interval_seconds=60)
         with patch(PATCH_RUN, return_value=_mock_result()):
             job.execute()
@@ -204,9 +219,12 @@ class TestFeedJobExecute:
         assert seen[1] is not None
 
     def test_failure_sets_status(self):
-        job = FeedJob("f",
-                      lambda ctx: (_ for _ in ()).throw(RuntimeError("boom")),
-                      _mock_mapper, interval_seconds=60)
+        job = FeedJob(
+            "f",
+            lambda ctx: (_ for _ in ()).throw(RuntimeError("boom")),
+            _mock_mapper,
+            interval_seconds=60,
+        )
         rec = job.execute()
         assert rec.status == "failed"
         assert "boom" in rec.error
@@ -248,10 +266,13 @@ class TestFeedJobExecute:
 
     def test_on_failure_callback(self):
         fired = []
-        job = FeedJob("f",
-                      lambda ctx: (_ for _ in ()).throw(RuntimeError("x")),
-                      _mock_mapper, interval_seconds=60,
-                      on_failure=lambda rec: fired.append(rec.status))
+        job = FeedJob(
+            "f",
+            lambda ctx: (_ for _ in ()).throw(RuntimeError("x")),
+            _mock_mapper,
+            interval_seconds=60,
+            on_failure=lambda rec: fired.append(rec.status),
+        )
         job.execute()
         assert fired == ["failed"]
 
@@ -306,12 +327,15 @@ class TestFeedJobExecute:
 # FeedJob — state properties
 # ===========================================================================
 
-class TestFeedJobState:
 
+class TestFeedJobState:
     def test_consecutive_failures_counts_correctly(self):
-        job = FeedJob("f",
-                      lambda ctx: (_ for _ in ()).throw(RuntimeError("x")),
-                      _mock_mapper, interval_seconds=60)
+        job = FeedJob(
+            "f",
+            lambda ctx: (_ for _ in ()).throw(RuntimeError("x")),
+            _mock_mapper,
+            interval_seconds=60,
+        )
         job.execute()
         job.execute()
         assert job.consecutive_failures == 2
@@ -385,8 +409,8 @@ class TestFeedJobState:
 # FeedScheduler — management
 # ===========================================================================
 
-class TestFeedSchedulerManagement:
 
+class TestFeedSchedulerManagement:
     def test_add_job(self):
         s = FeedScheduler()
         s.add(_simple_job("j1"))
@@ -456,8 +480,8 @@ class TestFeedSchedulerManagement:
 # FeedScheduler — execution
 # ===========================================================================
 
-class TestFeedSchedulerExecution:
 
+class TestFeedSchedulerExecution:
     def test_run_now(self):
         s = FeedScheduler()
         s.add(_simple_job("j"))
@@ -515,15 +539,18 @@ class TestFeedSchedulerExecution:
     def test_healthy_and_failing_jobs(self):
         s = FeedScheduler()
         ok_job = _simple_job("ok")
-        bad_job = FeedJob("bad",
-                          lambda ctx: (_ for _ in ()).throw(RuntimeError("x")),
-                          _mock_mapper, interval_seconds=60)
+        bad_job = FeedJob(
+            "bad",
+            lambda ctx: (_ for _ in ()).throw(RuntimeError("x")),
+            _mock_mapper,
+            interval_seconds=60,
+        )
         s.add(ok_job)
         s.add(bad_job)
         with patch(PATCH_RUN, return_value=_mock_result()):
             s.run_now("ok")
         s.run_now("bad")
-        assert ok_job  in s.healthy_jobs()
+        assert ok_job in s.healthy_jobs()
         assert bad_job in s.failing_jobs()
 
 
@@ -531,8 +558,8 @@ class TestFeedSchedulerExecution:
 # FeedScheduler — lifecycle
 # ===========================================================================
 
-class TestFeedSchedulerLifecycle:
 
+class TestFeedSchedulerLifecycle:
     def test_start_stop(self):
         s = FeedScheduler()
         s.add(_simple_job("j", interval=3600))
@@ -608,12 +635,12 @@ class TestFeedSchedulerLifecycle:
 # FeedScheduler — adapters
 # ===========================================================================
 
-class TestFeedSchedulerAdapters:
 
+class TestFeedSchedulerAdapters:
     def test_to_cron_lines_interval(self):
         s = FeedScheduler()
         s.add(FeedJob("hourly", lambda c: None, lambda c: None, interval_seconds=3600))
-        s.add(FeedJob("daily",  lambda c: None, lambda c: None, interval_seconds=86400))
+        s.add(FeedJob("daily", lambda c: None, lambda c: None, interval_seconds=86400))
         lines = s.to_cron_lines()
         assert "hourly" in lines
         assert "daily" in lines
@@ -621,8 +648,7 @@ class TestFeedSchedulerAdapters:
 
     def test_to_cron_lines_skips_disabled(self):
         s = FeedScheduler()
-        s.add(FeedJob("off", lambda c: None, lambda c: None,
-                      interval_seconds=60, enabled=False))
+        s.add(FeedJob("off", lambda c: None, lambda c: None, interval_seconds=60, enabled=False))
         lines = s.to_cron_lines()
         assert "off" not in lines
 
@@ -638,6 +664,7 @@ class TestFeedSchedulerAdapters:
         s.add(_simple_job("j"))
         try:
             import apscheduler  # noqa: F401
+
             aps = s.to_apscheduler()
             assert aps is not None
         except ImportError:

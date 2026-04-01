@@ -19,8 +19,8 @@ Run::
 from __future__ import annotations
 
 import json
-import urllib.request
 import urllib.error
+import urllib.request
 
 import pytest
 
@@ -265,18 +265,20 @@ class TestPagination:
         objects = []
         for i in range(count):
             hex_i = format(i, "04x")
-            objects.append({
-                "type": "indicator",
-                "spec_version": "2.1",
-                "id": f"indicator--00000000-0000-0000-0000-{hex_i:>012}",
-                "name": f"IOC-{i}",
-                "pattern": f"[ipv4-addr:value = '10.0.{i // 256}.{i % 256}']",
-                "pattern_type": "stix",
-                "valid_from": "2024-01-01T00:00:00Z",
-                "indicator_types": ["malicious-activity"],
-                "created": "2024-01-01T00:00:00Z",
-                "modified": "2024-01-01T00:00:00Z",
-            })
+            objects.append(
+                {
+                    "type": "indicator",
+                    "spec_version": "2.1",
+                    "id": f"indicator--00000000-0000-0000-0000-{hex_i:>012}",
+                    "name": f"IOC-{i}",
+                    "pattern": f"[ipv4-addr:value = '10.0.{i // 256}.{i % 256}']",
+                    "pattern_type": "stix",
+                    "valid_from": "2024-01-01T00:00:00Z",
+                    "indicator_types": ["malicious-activity"],
+                    "created": "2024-01-01T00:00:00Z",
+                    "modified": "2024-01-01T00:00:00Z",
+                }
+            )
         return {
             "type": "bundle",
             "id": "bundle--11111111-1111-1111-1111-111111111111",

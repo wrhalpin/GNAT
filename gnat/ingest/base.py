@@ -230,14 +230,13 @@ class RecordMapper(ABC):
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "%s: failed to map record %r — %s",
-                    type(self).__name__, record, exc,
+                    type(self).__name__,
+                    record,
+                    exc,
                 )
 
     def __repr__(self) -> str:  # pragma: no cover
-        return (
-            f"{type(self).__name__}("
-            f"tlp={self.tlp_marking!r}, confidence={self.confidence})"
-        )
+        return f"{type(self).__name__}(tlp={self.tlp_marking!r}, confidence={self.confidence})"
 
 
 # ---------------------------------------------------------------------------

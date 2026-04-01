@@ -12,14 +12,13 @@ Unit tests for the Grafana Solr search sidecar integration:
 from __future__ import annotations
 
 import json
-import types
 import unittest
-from unittest.mock import MagicMock, patch, call
-
+from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_search_index(
     ping_result: bool = True,
@@ -44,9 +43,12 @@ def _make_search_index(
 
     idx._total = total
     idx._search_docs = search_docs or [
-        {"id": "indicator--aabbccdd-1234-5678-abcd-000000000001",
-         "stix_type": "indicator", "source_platform": "threatq",
-         "display_name": "Malicious IP"},
+        {
+            "id": "indicator--aabbccdd-1234-5678-abcd-000000000001",
+            "stix_type": "indicator",
+            "source_platform": "threatq",
+            "display_name": "Malicious IP",
+        },
     ]
     idx._date_facet = date_facet or [
         ("2024-01-01T00:00:00Z", 5),
@@ -58,7 +60,9 @@ def _make_search_index(
 def _make_router_app(search_index):
     """Build a TestClient-ready starlette app with just the /solr/ router."""
     from fastapi import FastAPI
+
     from gnat.viz.grafana.search_endpoints import build_search_router
+
     app = FastAPI()
 
     # Patch _solr_get to avoid real HTTP
@@ -71,18 +75,22 @@ def _make_router_app(search_index):
 # Tests: _solr_get helper
 # ---------------------------------------------------------------------------
 
+
 class TestSolrGetHelper(unittest.TestCase):
     def test_returns_none_on_error(self):
         from gnat.viz.grafana.search_endpoints import _solr_get
+
         # Point at a non-existent server
-        result = _solr_get("http://127.0.0.1:19999/solr/gnat", "select",
-                           {"q": "*:*", "rows": 0, "wt": "json"})
+        result = _solr_get(
+            "http://127.0.0.1:19999/solr/gnat", "select", {"q": "*:*", "rows": 0, "wt": "json"}
+        )
         self.assertIsNone(result)
 
 
 # ---------------------------------------------------------------------------
 # Tests: build_search_router — via TestClient
 # ---------------------------------------------------------------------------
+
 
 class TestSolrHealthEndpoint(unittest.TestCase):
     def setUp(self):
@@ -93,6 +101,7 @@ class TestSolrHealthEndpoint(unittest.TestCase):
             pytest.skip("fastapi not installed")
 
         from fastapi.testclient import TestClient
+
         idx = _make_search_index(ping_result=True)
         app = _make_router_app(idx)
         self.client = TestClient(app)
@@ -107,7 +116,9 @@ class TestSolrHealthEndpoint(unittest.TestCase):
     def test_health_degraded_when_ping_fails(self):
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
+
         idx = _make_search_index(ping_result=False)
         app = FastAPI()
         app.include_router(build_search_router(idx))
@@ -123,10 +134,13 @@ class TestSolrSearchTargets(unittest.TestCase):
         try:
             from fastapi.testclient import TestClient  # noqa: F401
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
 
-        from fastapi.testclient import TestClient
+            pytest.skip("fastapi not installed")
+
         from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
 
         idx = _make_search_index()
@@ -145,9 +159,9 @@ class TestSolrSearchTargets(unittest.TestCase):
     def _fake_solr_get(self, base_url, path, params):
         field = params.get("facet.field", "")
         if field == "stix_type":
-            return {"facet_counts": {"facet_fields": {
-                "stix_type": ["indicator", 20, "malware", 5]
-            }}}
+            return {
+                "facet_counts": {"facet_fields": {"stix_type": ["indicator", 20, "malware", 5]}}
+            }
         return {"response": {"numFound": 0, "docs": []}}
 
     def tearDown(self):
@@ -176,10 +190,13 @@ class TestSolrQueryEndpoint(unittest.TestCase):
         try:
             from fastapi.testclient import TestClient  # noqa: F401
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
 
-        from fastapi.testclient import TestClient
+            pytest.skip("fastapi not installed")
+
         from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
 
         self.idx = _make_search_index()
@@ -198,34 +215,50 @@ class TestSolrQueryEndpoint(unittest.TestCase):
         range_field = params.get("facet.range", "")
 
         if field == "stix_type":
-            return {"facet_counts": {"facet_fields": {
-                "stix_type": ["indicator", 20, "malware", 10]
-            }}}
+            return {
+                "facet_counts": {"facet_fields": {"stix_type": ["indicator", 20, "malware", 10]}}
+            }
         if field == "source_platform":
-            return {"facet_counts": {"facet_fields": {
-                "source_platform": ["threatq", 15, "crowdstrike", 8]
-            }}}
+            return {
+                "facet_counts": {
+                    "facet_fields": {"source_platform": ["threatq", 15, "crowdstrike", 8]}
+                }
+            }
         if range_field == "date_indexed":
-            return {"facet_counts": {"facet_ranges": {
-                "date_indexed": {"counts": [
-                    "2024-01-01T00:00:00Z", 5,
-                    "2024-01-02T00:00:00Z", 8,
-                ]}
-            }}}
+            return {
+                "facet_counts": {
+                    "facet_ranges": {
+                        "date_indexed": {
+                            "counts": [
+                                "2024-01-01T00:00:00Z",
+                                5,
+                                "2024-01-02T00:00:00Z",
+                                8,
+                            ]
+                        }
+                    }
+                }
+            }
         # Default: total docs or search
-        return {"response": {"numFound": 42, "docs": [
-            {"id": "indicator--aabbccdd-1234-5678-abcd-000000000001",
-             "stix_type": "indicator", "source_platform": "threatq",
-             "display_name": "Test IOC"},
-        ]}}
+        return {
+            "response": {
+                "numFound": 42,
+                "docs": [
+                    {
+                        "id": "indicator--aabbccdd-1234-5678-abcd-000000000001",
+                        "stix_type": "indicator",
+                        "source_platform": "threatq",
+                        "display_name": "Test IOC",
+                    },
+                ],
+            }
+        }
 
     def tearDown(self):
         self._patch.stop()
 
     def _query(self, target):
-        return self.client.post("/solr/query", json={
-            "targets": [{"target": target, "refId": "A"}]
-        })
+        return self.client.post("/solr/query", json={"targets": [{"target": target, "refId": "A"}]})
 
     def test_stats_total(self):
         resp = self._query("stats/total")
@@ -286,12 +319,15 @@ class TestSolrQueryEndpoint(unittest.TestCase):
         self.assertIn("indicator--", rows[0][0])
 
     def test_multiple_targets(self):
-        resp = self.client.post("/solr/query", json={
-            "targets": [
-                {"target": "stats/total", "refId": "A"},
-                {"target": "stats/type_counts", "refId": "B"},
-            ]
-        })
+        resp = self.client.post(
+            "/solr/query",
+            json={
+                "targets": [
+                    {"target": "stats/total", "refId": "A"},
+                    {"target": "stats/type_counts", "refId": "B"},
+                ]
+            },
+        )
         results = resp.json()
         self.assertEqual(len(results), 2)
 
@@ -300,9 +336,9 @@ class TestSolrQueryEndpoint(unittest.TestCase):
         self.assertEqual(resp.json(), [])
 
     def test_unknown_target_ignored(self):
-        resp = self.client.post("/solr/query", json={
-            "targets": [{"target": "bogus/target", "refId": "A"}]
-        })
+        resp = self.client.post(
+            "/solr/query", json={"targets": [{"target": "bogus/target", "refId": "A"}]}
+        )
         # Should return empty list — unknown targets are silently skipped
         self.assertEqual(resp.json(), [])
 
@@ -312,18 +348,25 @@ class TestSolrTagEndpoints(unittest.TestCase):
         try:
             from fastapi.testclient import TestClient  # noqa: F401
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
 
-        from fastapi.testclient import TestClient
+            pytest.skip("fastapi not installed")
+
         from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
         from gnat.viz.grafana.search_endpoints import build_search_router
 
         self._patch = patch(
             "gnat.viz.grafana.search_endpoints._solr_get",
-            return_value={"facet_counts": {"facet_fields": {
-                "stix_type": ["indicator", 20, "malware", 5],
-                "source_platform": ["threatq", 10],
-            }}}
+            return_value={
+                "facet_counts": {
+                    "facet_fields": {
+                        "stix_type": ["indicator", 20, "malware", 5],
+                        "source_platform": ["threatq", 10],
+                    }
+                }
+            },
         )
         self._patch.start()
 
@@ -356,12 +399,15 @@ class TestSolrTagEndpoints(unittest.TestCase):
 # Tests: GrafanaServer with search_index
 # ---------------------------------------------------------------------------
 
+
 class TestGrafanaServerWithSearchIndex(unittest.TestCase):
     def test_build_app_without_search_index(self):
         try:
             from gnat.viz.grafana.server import build_app
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -374,7 +420,9 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         try:
             from gnat.viz.grafana.server import build_app
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -390,7 +438,9 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         try:
             from gnat.viz.grafana.server import GrafanaServer
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -402,7 +452,9 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         try:
             from gnat.viz.grafana.server import GrafanaServer
         except ImportError:
-            import pytest; pytest.skip("fastapi not installed")
+            import pytest
+
+            pytest.skip("fastapi not installed")
 
         manager = MagicMock()
         manager.list.return_value = []
@@ -414,9 +466,11 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
 # Tests: solr_dashboard() JSON structure
 # ---------------------------------------------------------------------------
 
+
 class TestSolrDashboardStructure(unittest.TestCase):
     def setUp(self):
         from gnat.viz.export import solr_dashboard
+
         self.dash = solr_dashboard()
 
     def test_top_level_fields(self):
@@ -431,6 +485,7 @@ class TestSolrDashboardStructure(unittest.TestCase):
 
     def test_title_custom(self):
         from gnat.viz.export import solr_dashboard
+
         dash = solr_dashboard(title="My Custom Title")
         self.assertEqual(dash["title"], "My Custom Title")
 
@@ -474,11 +529,9 @@ class TestSolrDashboardStructure(unittest.TestCase):
 
     def test_datasource_name_custom(self):
         from gnat.viz.export import solr_dashboard
+
         dash = solr_dashboard(datasource_name="MyDS")
-        ds_uids = [
-            p.get("datasource", {}).get("uid")
-            for p in dash["panels"]
-        ]
+        ds_uids = [p.get("datasource", {}).get("uid") for p in dash["panels"]]
         self.assertTrue(all(uid == "MyDS" for uid in ds_uids if uid))
 
     def test_panels_have_grid_pos(self):
@@ -493,8 +546,12 @@ class TestSolrDashboardStructure(unittest.TestCase):
 
 class TestSaveSolrDashboard(unittest.TestCase):
     def test_writes_valid_json(self):
-        import tempfile, os, json
+        import json
+        import os
+        import tempfile
+
         from gnat.viz.export import save_solr_dashboard
+
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
         try:
@@ -506,8 +563,12 @@ class TestSaveSolrDashboard(unittest.TestCase):
             os.unlink(path)
 
     def test_custom_title_written(self):
-        import tempfile, os, json
+        import json
+        import os
+        import tempfile
+
         from gnat.viz.export import save_solr_dashboard
+
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
         try:
@@ -523,10 +584,14 @@ class TestSaveSolrDashboard(unittest.TestCase):
 # Tests: CLI — gnat viz solr-dashboard
 # ---------------------------------------------------------------------------
 
+
 class TestCLISolrDashboard(unittest.TestCase):
     def _run(self, args: list[str]):
-        import sys, io
+        import io
+        import sys
+
         from gnat.cli.main import main
+
         old_argv = sys.argv
         old_stdout = sys.stdout
         sys.argv = ["gnat"] + args
@@ -543,7 +608,9 @@ class TestCLISolrDashboard(unittest.TestCase):
         return rc, out
 
     def test_solr_dashboard_cli(self):
-        import tempfile, os
+        import os
+        import tempfile
+
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
         os.unlink(path)
@@ -559,17 +626,25 @@ class TestCLISolrDashboard(unittest.TestCase):
                 os.unlink(path)
 
     def test_solr_dashboard_custom_title(self):
-        import tempfile, os
+        import os
+        import tempfile
+
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = f.name
         os.unlink(path)
         try:
-            rc, out = self._run([
-                "viz", "solr-dashboard",
-                "--file", path,
-                "--title", "Custom Title",
-                "--datasource", "CustomDS",
-            ])
+            rc, out = self._run(
+                [
+                    "viz",
+                    "solr-dashboard",
+                    "--file",
+                    path,
+                    "--title",
+                    "Custom Title",
+                    "--datasource",
+                    "CustomDS",
+                ]
+            )
             self.assertEqual(rc, 0)
             with open(path) as fh:
                 dash = json.load(fh)
@@ -583,23 +658,29 @@ class TestCLISolrDashboard(unittest.TestCase):
 # Tests: CLI — gnat viz serve --with-solr
 # ---------------------------------------------------------------------------
 
+
 class TestCLIVizServeWithSolr(unittest.TestCase):
     def test_serve_with_solr_builds_server(self):
         """Verify --with-solr arg is registered and parsed without error."""
-        import argparse
         # If the parser doesn't know --with-solr this will raise SystemExit
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
-        args = parser.parse_args([
-            "viz", "serve",
-            "--port", "13579",
-            "--with-solr",
-        ])
+        args = parser.parse_args(
+            [
+                "viz",
+                "serve",
+                "--port",
+                "13579",
+                "--with-solr",
+            ]
+        )
         self.assertTrue(args.with_solr)
         self.assertEqual(args.port, 13579)
 
     def test_serve_without_with_solr_defaults_false(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["viz", "serve", "--port", "3001"])
         self.assertFalse(args.with_solr)
@@ -609,11 +690,11 @@ class TestCLIVizServeWithSolr(unittest.TestCase):
 # Tests: Facet parsing helper
 # ---------------------------------------------------------------------------
 
+
 class TestFacetCounts(unittest.TestCase):
     """Test the flat Solr facet list parsing inside the router."""
 
     def test_flat_list_parsed_correctly(self):
-        from gnat.viz.grafana.search_endpoints import _solr_get
         # _solr_get is tested indirectly; verify the parsing logic inline
         # Solr flat format: [value, count, value, count, ...]
         flat = ["indicator", 20, "malware", 10, "threat-actor", 5]

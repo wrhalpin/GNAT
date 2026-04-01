@@ -27,10 +27,10 @@ _V4 = "/v4"
 
 # Map STIX types → Mandiant collection names
 _STIX_TO_ENDPOINT: dict[str, str] = {
-    "indicator":    "indicator",
+    "indicator": "indicator",
     "threat-actor": "actor",
-    "malware":      "malware",
-    "report":       "report",
+    "malware": "malware",
+    "report": "report",
     "vulnerability": "vulnerability",
 }
 
@@ -59,7 +59,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._api_key    = api_key
+        self._api_key = api_key
         self._api_secret = api_secret
 
     # ------------------------------------------------------------------
@@ -73,13 +73,11 @@ class MandiantClient(BaseClient, ConnectorMixin):
         Credentials are sent as HTTP Basic auth
         (``Authorization: Basic base64(api_key:api_secret)``).
         """
-        creds   = base64.b64encode(
-            f"{self._api_key}:{self._api_secret}".encode()
-        ).decode()
+        creds = base64.b64encode(f"{self._api_key}:{self._api_secret}".encode()).decode()
         # Temporarily set Basic auth header for the token request
-        saved   = dict(self._auth_headers)
+        saved = dict(self._auth_headers)
         self._auth_headers["Authorization"] = f"Basic {creds}"
-        self._auth_headers["X-App-Name"]    = "gnat"
+        self._auth_headers["X-App-Name"] = "gnat"
         try:
             resp = self.post(
                 _TOKEN_PATH,
@@ -93,17 +91,15 @@ class MandiantClient(BaseClient, ConnectorMixin):
         if not token:
             raise GNATClientError("Mandiant: failed to obtain access token")
         self._auth_headers["Authorization"] = f"Bearer {token}"
-        self._auth_headers["X-App-Name"]    = "gnat"
-        self._auth_headers["Accept"]        = "application/json"
+        self._auth_headers["X-App-Name"] = "gnat"
+        self._auth_headers["Accept"] = "application/json"
 
     def health_check(self) -> bool:
         """Check API reachability via a lightweight indicator query."""
         resp = self.get(f"{_V4}/indicator", params={"limit": 1})
         return isinstance(resp, dict)
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve a single Mandiant object by type and ID/value."""
         collection = _STIX_TO_ENDPOINT.get(stix_type, "indicator")
         resp = self.get(f"{_V4}/{collection}/{object_id}")
@@ -127,7 +123,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         """
         collection = _STIX_TO_ENDPOINT.get(stix_type, "indicator")
         params: dict[str, Any] = {
-            "limit":  min(page_size, 1000),
+            "limit": min(page_size, 1000),
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -140,9 +136,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         items = resp.get(collection, resp.get("indicators", resp.get("objects", [])))
         return items if isinstance(items, list) else []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Mandiant Advantage API is read-only for most tiers.
 
@@ -155,9 +149,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise GNATClientError(
-            "Mandiant Advantage API is read-only — delete not supported."
-        )
+        raise GNATClientError("Mandiant Advantage API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
     # STIX translation
@@ -181,6 +173,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Return a Mandiant-compatible query dict derived from a STIX object."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_dict.get("name", "")
@@ -191,65 +184,66 @@ class MandiantClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
-        value   = native.get("value", native.get("name", ""))
+        value = native.get("value", native.get("name", ""))
         mi_type = native.get("type", "")
         pattern = self._make_pattern(mi_type, value)
-        mscore  = native.get("mscore", 0)
+        mscore = native.get("mscore", 0)
         return {
-            "type":              "indicator",
-            "id":                f"indicator--mti-{native.get('id', '')}",
-            "name":              value,
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("first_seen", ""),
-            "modified":          native.get("last_seen", ""),
-            "confidence":        mscore,
-            "indicator_types":   ["malicious-activity"] if mscore >= 50 else ["unknown"],
+            "type": "indicator",
+            "id": f"indicator--mti-{native.get('id', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("first_seen", ""),
+            "modified": native.get("last_seen", ""),
+            "confidence": mscore,
+            "indicator_types": ["malicious-activity"] if mscore >= 50 else ["unknown"],
             "x_source_platform": "mandiant",
-            "x_mandiant_id":     native.get("id", ""),
-            "x_mandiant_type":   mi_type,
+            "x_mandiant_id": native.get("id", ""),
+            "x_mandiant_type": mi_type,
             "x_mandiant_mscore": mscore,
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "threat-actor",
-            "id":                f"threat-actor--mti-{native.get('id', '')}",
-            "name":              native.get("name", ""),
-            "description":       native.get("description", "")[:500],
-            "aliases":           [a.get("name", "") for a in native.get("aliases", [])],
-            "created":           native.get("last_updated", ""),
-            "modified":          native.get("last_updated", ""),
+            "type": "threat-actor",
+            "id": f"threat-actor--mti-{native.get('id', '')}",
+            "name": native.get("name", ""),
+            "description": native.get("description", "")[:500],
+            "aliases": [a.get("name", "") for a in native.get("aliases", [])],
+            "created": native.get("last_updated", ""),
+            "modified": native.get("last_updated", ""),
             "x_source_platform": "mandiant",
-            "x_mandiant_id":     native.get("id", ""),
+            "x_mandiant_id": native.get("id", ""),
         }
 
     def _malware_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "malware",
-            "id":                f"malware--mti-{native.get('id', '')}",
-            "name":              native.get("name", ""),
-            "description":       native.get("description", "")[:500],
-            "is_family":         True,
-            "aliases":           [a.get("name", "") for a in native.get("aliases", [])],
-            "created":           native.get("last_updated", ""),
-            "modified":          native.get("last_updated", ""),
+            "type": "malware",
+            "id": f"malware--mti-{native.get('id', '')}",
+            "name": native.get("name", ""),
+            "description": native.get("description", "")[:500],
+            "is_family": True,
+            "aliases": [a.get("name", "") for a in native.get("aliases", [])],
+            "created": native.get("last_updated", ""),
+            "modified": native.get("last_updated", ""),
             "x_source_platform": "mandiant",
-            "x_mandiant_id":     native.get("id", ""),
+            "x_mandiant_id": native.get("id", ""),
         }
 
     def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "vulnerability",
-            "id":                f"vulnerability--mti-{native.get('id', '')}",
-            "name":              native.get("cve_id", native.get("name", "")),
-            "description":       native.get("description", "")[:500],
-            "created":           native.get("publish_date", ""),
-            "modified":          native.get("last_update_date", ""),
+            "type": "vulnerability",
+            "id": f"vulnerability--mti-{native.get('id', '')}",
+            "name": native.get("cve_id", native.get("name", "")),
+            "description": native.get("description", "")[:500],
+            "created": native.get("publish_date", ""),
+            "modified": native.get("last_update_date", ""),
             "x_source_platform": "mandiant",
-            "x_mandiant_id":     native.get("id", ""),
-            "x_cvss_score":      native.get("common_vulnerability_scores", {}).get(
-                                     "v3.1", {}).get("base_score", 0),
+            "x_mandiant_id": native.get("id", ""),
+            "x_cvss_score": native.get("common_vulnerability_scores", {})
+            .get("v3.1", {})
+            .get("base_score", 0),
         }
 
     @staticmethod

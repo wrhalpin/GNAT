@@ -93,9 +93,7 @@ class STIXBase:
         try:
             return self._properties[name]
         except KeyError:
-            raise AttributeError(
-                f"{type(self).__name__!r} has no attribute {name!r}"
-            ) from None
+            raise AttributeError(f"{type(self).__name__!r} has no attribute {name!r}") from None
 
     def __setattr__(self, name: str, value: Any) -> None:
         _core = {"_client", "_properties", "id", "spec_version", "created", "modified"}

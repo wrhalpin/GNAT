@@ -44,6 +44,7 @@ from typing import Any
 
 try:
     import yaml  # PyYAML is optional; json specs work without it
+
     _HAS_YAML = True
 except ImportError:
     _HAS_YAML = False
@@ -105,9 +106,9 @@ def generate_connector(
     connector_dir.mkdir(parents=True, exist_ok=True)
 
     endpoints = _extract_endpoints(spec)
-    schemas   = _extract_schemas(spec)
-    host      = _extract_server(spec)
-    type_map  = _build_type_map(schemas)
+    schemas = _extract_schemas(spec)
+    host = _extract_server(spec)
+    type_map = _build_type_map(schemas)
 
     client_code = _render_client(
         name=name,
@@ -169,9 +170,9 @@ def _extract_server(spec: dict[str, Any]) -> str:
     if servers:
         return servers[0].get("url", "https://api.example.com")
     # Swagger 2.x
-    host   = spec.get("host", "api.example.com")
+    host = spec.get("host", "api.example.com")
     scheme = (spec.get("schemes") or ["https"])[0]
-    base   = spec.get("basePath", "")
+    base = spec.get("basePath", "")
     return f"{scheme}://{host}{base}"
 
 
@@ -190,7 +191,8 @@ def _extract_endpoints(spec: dict[str, Any]) -> list[dict[str, Any]]:
                     "summary": detail.get("summary", ""),
                     "tags": detail.get("tags", []),
                     "params": [
-                        p.get("name", "") for p in detail.get("parameters", [])
+                        p.get("name", "")
+                        for p in detail.get("parameters", [])
                         if p.get("in") == "path"
                     ],
                 }
@@ -200,8 +202,8 @@ def _extract_endpoints(spec: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _extract_schemas(spec: dict[str, Any]) -> dict[str, Any]:
     return (
-        spec.get("components", {}).get("schemas", {})      # OAS 3
-        or spec.get("definitions", {})                      # Swagger 2
+        spec.get("components", {}).get("schemas", {})  # OAS 3
+        or spec.get("definitions", {})  # Swagger 2
     )
 
 
@@ -209,13 +211,13 @@ def _build_type_map(schemas: dict[str, Any]) -> dict[str, str]:
     """Heuristically map schema names to STIX types."""
     stix_keywords = {
         "indicator": "indicator",
-        "malware":   "malware",
-        "threat":    "threat-actor",
-        "actor":     "threat-actor",
-        "vuln":      "vulnerability",
-        "cve":       "vulnerability",
-        "attack":    "attack-pattern",
-        "ttps":      "attack-pattern",
+        "malware": "malware",
+        "threat": "threat-actor",
+        "actor": "threat-actor",
+        "vuln": "vulnerability",
+        "cve": "vulnerability",
+        "attack": "attack-pattern",
+        "ttps": "attack-pattern",
     }
     result: dict[str, str] = {}
     for schema_name in schemas:
@@ -246,8 +248,7 @@ def _render_client(
     auth_snippet = _auth_snippet(auth_type)
     type_map_repr = repr(type_map)
     endpoint_summary = "\n".join(
-        f"    # {e['method']:6s} {e['path']}  — {e['summary']}"
-        for e in endpoints[:30]
+        f"    # {e['method']:6s} {e['path']}  — {e['summary']}" for e in endpoints[:30]
     )
     schema_fields = _schema_field_comments(schemas)
 
@@ -341,7 +342,8 @@ def _render_client(
 
 def _auth_snippet(auth_type: str) -> str:
     if auth_type == "oauth2":
-        return textwrap.indent(textwrap.dedent('''\
+        return textwrap.indent(
+            textwrap.dedent('''\
             def __init__(self, host: str, client_id: str = "",
                          client_secret: str = "", **kwargs: Any):
                 super().__init__(host=host, **kwargs)
@@ -359,9 +361,12 @@ def _auth_snippet(auth_type: str) -> str:
                 if not token:
                     raise GNATClientError("Failed to obtain access token")
                 self._auth_headers["Authorization"] = f"Bearer {token}"
-            '''), "    ")
+            '''),
+            "    ",
+        )
     if auth_type == "api_key":
-        return textwrap.indent(textwrap.dedent('''\
+        return textwrap.indent(
+            textwrap.dedent('''\
             def __init__(self, host: str, api_key: str = "", **kwargs: Any):
                 super().__init__(host=host, **kwargs)
                 self._api_key = api_key
@@ -369,9 +374,12 @@ def _auth_snippet(auth_type: str) -> str:
             def authenticate(self) -> None:
                 """Inject API key header."""
                 self._auth_headers["X-Api-Key"] = self._api_key
-            '''), "    ")
+            '''),
+            "    ",
+        )
     # basic
-    return textwrap.indent(textwrap.dedent('''\
+    return textwrap.indent(
+        textwrap.dedent('''\
         def __init__(self, host: str, username: str = "",
                      password: str = "", **kwargs: Any):
             import base64
@@ -382,7 +390,9 @@ def _auth_snippet(auth_type: str) -> str:
         def authenticate(self) -> None:
             """Inject HTTP Basic credentials."""
             self._auth_headers["Authorization"] = f"Basic {self._basic}"
-        '''), "    ")
+        '''),
+        "    ",
+    )
 
 
 def _schema_field_comments(schemas: dict[str, Any]) -> str:
@@ -502,21 +512,22 @@ def _render_tests(name: str, class_name: str) -> str:
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+
 def _main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Generate a GNAT connector from an OpenAPI spec."
+    parser = argparse.ArgumentParser(description="Generate a GNAT connector from an OpenAPI spec.")
+    parser.add_argument("--spec", required=True, help="Path to OpenAPI spec (JSON/YAML)")
+    parser.add_argument("--name", required=True, help="Connector name (snake_case)")
+    parser.add_argument(
+        "--auth",
+        default="oauth2",
+        choices=["oauth2", "api_key", "basic"],
+        help="Authentication type (default: oauth2)",
     )
-    parser.add_argument("--spec",      required=True, help="Path to OpenAPI spec (JSON/YAML)")
-    parser.add_argument("--name",      required=True, help="Connector name (snake_case)")
-    parser.add_argument("--auth",      default="oauth2",
-                        choices=["oauth2", "api_key", "basic"],
-                        help="Authentication type (default: oauth2)")
-    parser.add_argument("--out-dir",   default="./gnat/connectors",
-                        help="Connector output directory")
-    parser.add_argument("--test-dir",  default="./tests/unit/connectors",
-                        help="Test output directory")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Overwrite existing connector")
+    parser.add_argument("--out-dir", default="./gnat/connectors", help="Connector output directory")
+    parser.add_argument(
+        "--test-dir", default="./tests/unit/connectors", help="Test output directory"
+    )
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing connector")
     args = parser.parse_args()
 
     try:

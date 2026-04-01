@@ -48,6 +48,7 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 _STIX_NS = _uuid.UUID("d5e6f7a8-b9c0-1d2e-3f4a-5b6c7d8e9f0a")
 
+
 def _now_ts() -> str:
     """ISO 8601 timestamp with millisecond precision."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -66,7 +67,7 @@ class ArmisClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "report":        "devices",
+        "report": "devices",
         "vulnerability": "cves",
     }
 

@@ -60,16 +60,16 @@ class GNATApp(App):
         Platform key to query when running an NLP search.
     """
 
-    TITLE    = f"GNAT — Cybersecurity Threat Management  v{_VERSION}"
+    TITLE = f"GNAT — Cybersecurity Threat Management  v{_VERSION}"
     CSS_PATH = None  # inline CSS only
 
     BINDINGS = [
-        Binding("f1",     "switch_tab('query')",     "Query",     show=True),
-        Binding("f2",     "switch_tab('library')",   "Library",   show=True),
-        Binding("f3",     "switch_tab('scheduler')", "Scheduler", show=True),
-        Binding("f4",     "switch_tab('reports')",   "Reports",   show=True),
-        Binding("q",      "quit",                    "Quit",      show=True),
-        Binding("ctrl+c", "quit",                    "Quit",      show=False),
+        Binding("f1", "switch_tab('query')", "Query", show=True),
+        Binding("f2", "switch_tab('library')", "Library", show=True),
+        Binding("f3", "switch_tab('scheduler')", "Scheduler", show=True),
+        Binding("f4", "switch_tab('reports')", "Reports", show=True),
+        Binding("q", "quit", "Quit", show=True),
+        Binding("ctrl+c", "quit", "Quit", show=False),
     ]
 
     CSS = """
@@ -83,20 +83,20 @@ class GNATApp(App):
 
     def __init__(
         self,
-        config_path:   str | None = None,
-        initial_tab:   str = "query",
+        config_path: str | None = None,
+        initial_tab: str = "query",
         scheduler=None,
-        reports_dir:   str | None = None,
-        nlp_backend:   str | None = None,
-        nlp_platform:  str | None = None,
+        reports_dir: str | None = None,
+        nlp_backend: str | None = None,
+        nlp_platform: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        self._config_path  = config_path
-        self._initial_tab  = initial_tab
-        self._scheduler    = scheduler
-        self._reports_dir  = reports_dir
-        self._nlp_backend  = nlp_backend
+        self._config_path = config_path
+        self._initial_tab = initial_tab
+        self._scheduler = scheduler
+        self._reports_dir = reports_dir
+        self._nlp_backend = nlp_backend
         self._nlp_platform = nlp_platform
 
     def compose(self) -> ComposeResult:
@@ -129,11 +129,11 @@ class GNATApp(App):
 
 
 def run(
-    config_path:  str | None = None,
-    initial_tab:  str = "query",
+    config_path: str | None = None,
+    initial_tab: str = "query",
     scheduler=None,
-    reports_dir:  str | None = None,
-    nlp_backend:  str | None = None,
+    reports_dir: str | None = None,
+    nlp_backend: str | None = None,
     nlp_platform: str | None = None,
 ) -> None:
     """

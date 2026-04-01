@@ -85,6 +85,7 @@ _UPSTREAM_REPO = "wrhalpin/GNAT"
 # Config
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ContributeConfig:
     """
@@ -107,29 +108,30 @@ class ContributeConfig:
         Always ``True`` — not overridable.
     """
 
-    enabled:         bool  = False
-    github_token:    str   = ""
-    fork_remote:     str   = "origin"
-    upstream_remote: str   = "upstream"
-    upstream_repo:   str   = _UPSTREAM_REPO
-    draft_pr:        bool  = True   # immutable; PR always draft
+    enabled: bool = False
+    github_token: str = ""
+    fork_remote: str = "origin"
+    upstream_remote: str = "upstream"
+    upstream_repo: str = _UPSTREAM_REPO
+    draft_pr: bool = True  # immutable; PR always draft
 
     @classmethod
     def from_ini(cls, config_path: str) -> ContributeConfig:
         """Read ``[contribute]`` from an INI config file."""
         import configparser
+
         cp = configparser.ConfigParser()
         cp.read(config_path)
         if "contribute" not in cp:
             return cls()
         sec = cp["contribute"]
         return cls(
-            enabled         = sec.getboolean("enabled", fallback=False),
-            github_token    = sec.get("github_token", fallback="") or "",
-            fork_remote     = sec.get("fork_remote", fallback="origin"),
-            upstream_remote = sec.get("upstream_remote", fallback="upstream"),
-            upstream_repo   = sec.get("upstream_repo", fallback=_UPSTREAM_REPO),
-            draft_pr        = True,  # always True regardless of INI
+            enabled=sec.getboolean("enabled", fallback=False),
+            github_token=sec.get("github_token", fallback="") or "",
+            fork_remote=sec.get("fork_remote", fallback="origin"),
+            upstream_remote=sec.get("upstream_remote", fallback="upstream"),
+            upstream_repo=sec.get("upstream_repo", fallback=_UPSTREAM_REPO),
+            draft_pr=True,  # always True regardless of INI
         )
 
 
@@ -137,11 +139,12 @@ class ContributeConfig:
 # Compliance matrix
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class MethodStatus:
-    name:        str
+    name: str
     implemented: bool
-    note:        str = ""
+    note: str = ""
 
 
 @dataclass
@@ -157,17 +160,14 @@ class ComplianceResult:
     passed : bool
     """
 
-    connector:        str
-    method_statuses:  list[MethodStatus] = field(default_factory=list)
-    has_tests:        bool               = False
+    connector: str
+    method_statuses: list[MethodStatus] = field(default_factory=list)
+    has_tests: bool = False
 
     @property
     def passed(self) -> bool:
         """``True`` when every required method is implemented and a test file exists."""
-        return (
-            all(s.implemented for s in self.method_statuses)
-            and self.has_tests
-        )
+        return all(s.implemented for s in self.method_statuses) and self.has_tests
 
     def report(self) -> str:
         """Human-readable compliance report."""
@@ -268,6 +268,7 @@ class ComplianceMatrix:
 # Subprocess runner (injectable for testing)
 # ---------------------------------------------------------------------------
 
+
 class SubprocessRunner:
     """
     Thin wrapper around :func:`subprocess.run`.
@@ -297,6 +298,7 @@ class SubprocessRunner:
 # Contribution result
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ContributionResult:
     """
@@ -315,16 +317,17 @@ class ContributionResult:
         Names of steps that completed successfully.
     """
 
-    success:         bool      = False
-    branch:          str       = ""
-    pr_url:          str       = ""
-    error:           str       = ""
+    success: bool = False
+    branch: str = ""
+    pr_url: str = ""
+    error: str = ""
     steps_completed: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
 # Pipeline
 # ---------------------------------------------------------------------------
+
 
 class ContributionPipeline:
     """
@@ -346,9 +349,9 @@ class ContributionPipeline:
         repo_root: str | None = None,
         http_client: urllib3.PoolManager | None = None,
     ) -> None:
-        self._runner      = runner or SubprocessRunner()
-        self._root        = repo_root or str(Path.cwd())
-        self._http        = http_client or urllib3.PoolManager(
+        self._runner = runner or SubprocessRunner()
+        self._root = repo_root or str(Path.cwd())
+        self._http = http_client or urllib3.PoolManager(
             timeout=urllib3.Timeout(connect=10, read=30)
         )
 
@@ -392,6 +395,7 @@ class ContributionPipeline:
 
         # Step 1: connector exists
         from gnat.clients import CLIENT_REGISTRY
+
         if connector_name not in CLIENT_REGISTRY:
             result.error = (
                 f"Unknown connector {connector_name!r}.  "
@@ -403,8 +407,7 @@ class ContributionPipeline:
         compliance = ComplianceMatrix.check(connector_name, self._root)
         if not compliance.passed:
             result.error = (
-                f"Compliance check failed for {connector_name!r}.\n\n"
-                + compliance.report()
+                f"Compliance check failed for {connector_name!r}.\n\n" + compliance.report()
             )
             return result
         result.steps_completed.append("compliance")
@@ -412,9 +415,7 @@ class ContributionPipeline:
         # Step 3: run tests
         test_ok, test_output = self._run_tests()
         if not test_ok:
-            result.error = (
-                f"Unit tests failed — fix before contributing.\n\n{test_output}"
-            )
+            result.error = f"Unit tests failed — fix before contributing.\n\n{test_output}"
             return result
         result.steps_completed.append("tests")
 
@@ -452,11 +453,11 @@ class ContributionPipeline:
         if create_pr and config.github_token:
             fork_owner = self._get_remote_owner(config.fork_remote)
             pr_url, err = self._create_github_pr(
-                branch       = branch,
-                message      = message,
-                connector    = connector_name,
-                config       = config,
-                fork_owner   = fork_owner,
+                branch=branch,
+                message=message,
+                connector=connector_name,
+                config=config,
+                fork_owner=fork_owner,
             )
             if pr_url:
                 result.pr_url = pr_url
@@ -475,13 +476,9 @@ class ContributionPipeline:
 
     def _git_create_branch(self, branch: str) -> tuple:
         """Create and check out *branch*.  Refuse if it's a protected name."""
-        if branch in _PROTECTED_BRANCHES or any(
-            branch == p for p in _PROTECTED_BRANCHES
-        ):
+        if branch in _PROTECTED_BRANCHES or any(branch == p for p in _PROTECTED_BRANCHES):
             return False, f"Refused to create protected branch {branch!r}"
-        proc = self._runner.run(
-            ["git", "checkout", "-b", branch], cwd=self._root, capture=True
-        )
+        proc = self._runner.run(["git", "checkout", "-b", branch], cwd=self._root, capture=True)
         if proc.returncode != 0:
             return False, proc.stderr.strip()
         return True, ""
@@ -502,34 +499,29 @@ class ContributionPipeline:
                 # Check if file is modified (git status --porcelain)
                 check = self._runner.run(
                     ["git", "status", "--porcelain", candidate],
-                    cwd=self._root, capture=True,
+                    cwd=self._root,
+                    capture=True,
                 )
                 if check.returncode == 0 and check.stdout.strip():
                     paths_to_stage.append(candidate)
 
-        proc = self._runner.run(
-            ["git", "add"] + paths_to_stage, cwd=self._root, capture=True
-        )
+        proc = self._runner.run(["git", "add"] + paths_to_stage, cwd=self._root, capture=True)
         if proc.returncode != 0:
             return False, proc.stderr.strip()
         return True, ""
 
     def _git_commit(self, message: str) -> tuple:
-        proc = self._runner.run(
-            ["git", "commit", "-m", message], cwd=self._root, capture=True
-        )
+        proc = self._runner.run(["git", "commit", "-m", message], cwd=self._root, capture=True)
         if proc.returncode != 0:
             return False, proc.stderr.strip()
         return True, ""
 
     def _git_push(self, branch: str, remote: str) -> tuple:
         """Push *branch* to *remote*.  Refuses if branch is main/master."""
-        base = branch.split("/")[-1]   # e.g. "myplatform-20260101-120000"
+        base = branch.split("/")[-1]  # e.g. "myplatform-20260101-120000"
         if branch in _PROTECTED_BRANCHES or base in _PROTECTED_BRANCHES:
             return False, f"Safety: refused to push protected branch {branch!r}"
-        proc = self._runner.run(
-            ["git", "push", "-u", remote, branch], cwd=self._root, capture=True
-        )
+        proc = self._runner.run(["git", "push", "-u", remote, branch], cwd=self._root, capture=True)
         if proc.returncode != 0:
             return False, proc.stderr.strip()
         return True, ""
@@ -550,9 +542,7 @@ class ContributionPipeline:
         Handles both HTTPS (``https://github.com/owner/repo.git``) and
         SSH (``git@github.com:owner/repo.git``) formats.
         """
-        proc = self._runner.run(
-            ["git", "remote", "get-url", remote], cwd=self._root, capture=True
-        )
+        proc = self._runner.run(["git", "remote", "get-url", remote], cwd=self._root, capture=True)
         if proc.returncode != 0:
             return "unknown"
         url = proc.stdout.strip()
@@ -590,9 +580,9 @@ class ContributionPipeline:
         )
         payload = {
             "title": message,
-            "body":  body,
-            "head":  f"{fork_owner}:{branch}",
-            "base":  "main",
+            "body": body,
+            "head": f"{fork_owner}:{branch}",
+            "base": "main",
             "draft": True,  # always draft — safety rule
         }
         try:
@@ -602,8 +592,8 @@ class ContributionPipeline:
                 body=json.dumps(payload).encode("utf-8"),
                 headers={
                     "Authorization": f"Bearer {config.github_token}",
-                    "Accept":        "application/vnd.github+json",
-                    "Content-Type":  "application/json",
+                    "Accept": "application/vnd.github+json",
+                    "Content-Type": "application/json",
                     "X-GitHub-Api-Version": "2022-11-28",
                 },
             )

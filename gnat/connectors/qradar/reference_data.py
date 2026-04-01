@@ -223,9 +223,7 @@ class QRadarReferenceDataCommands:
         dict
             Updated reference set metadata.
         """
-        return self._client.delete(
-            f"reference_data/sets/{name}/{value}"
-        )
+        return self._client.delete(f"reference_data/sets/{name}/{value}")
 
     def ensure_set_exists(
         self,
@@ -257,8 +255,10 @@ class QRadarReferenceDataCommands:
             return self._client.get(f"reference_data/sets/{name}")
         except QRadarNotFoundError:
             return self.create_set(
-                name, element_type=element_type,
-                timeout_type=timeout_type, time_to_live=time_to_live,
+                name,
+                element_type=element_type,
+                timeout_type=timeout_type,
+                time_to_live=time_to_live,
             )
 
     # ── Reference Maps ─────────────────────────────────────────────────────

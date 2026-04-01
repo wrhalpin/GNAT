@@ -9,7 +9,11 @@ from pathlib import Path
 
 import urllib3
 
-from gnat.agents.repo_maintenance.models import ExecutionResult, RepoMaintenancePlan, VerificationResult
+from gnat.agents.repo_maintenance.models import (
+    ExecutionResult,
+    RepoMaintenancePlan,
+    VerificationResult,
+)
 
 _PROTECTED_BRANCHES = {"main", "master", "develop", "dev"}
 
@@ -52,7 +56,9 @@ class MaintenanceExecutor:
 
         plan_path = self.repo_root / ".gnat" / "maintenance-plan.json"
         plan_path.parent.mkdir(parents=True, exist_ok=True)
-        plan_path.write_text(json.dumps(_serialize_plan(plan, verification), indent=2), encoding="utf-8")
+        plan_path.write_text(
+            json.dumps(_serialize_plan(plan, verification), indent=2), encoding="utf-8"
+        )
         result.steps_completed.append("plan")
 
         ok, err = self._git_stage([str(plan_path)])

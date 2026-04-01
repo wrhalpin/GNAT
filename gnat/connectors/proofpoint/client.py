@@ -24,12 +24,11 @@ class ProofpointClient(BaseClient, ConnectorMixin):
     """HTTP client for the Proofpoint TAP v2 REST API."""
 
     stix_type_map: dict[str, str] = {
-        "indicator":  "threat",
-        "malware":    "malware",
+        "indicator": "threat",
+        "malware": "malware",
     }
 
-    def __init__(self, host: str, service_principal: str = "",
-                 secret: str = "", **kwargs: Any):
+    def __init__(self, host: str, service_principal: str = "", secret: str = "", **kwargs: Any):
         super().__init__(host=host, **kwargs)
         self._sp = service_principal
         self._secret = secret
@@ -48,8 +47,13 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         resp = self.get("/v2/forensics", params={"threatId": object_id})
         return resp if isinstance(resp, dict) else {}
 
-    def list_objects(self, stix_type: str, filters: Optional[dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         params: dict[str, Any] = {"format": "json", "sinceSeconds": 3600}
         if filters:
             params.update(filters)

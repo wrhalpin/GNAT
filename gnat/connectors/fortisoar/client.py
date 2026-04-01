@@ -66,14 +66,13 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "incident":      "incidents",
+        "incident": "incidents",
         "observed-data": "alerts",
-        "indicator":     "indicators",
-        "report":        "assets",
+        "indicator": "indicators",
+        "report": "assets",
     }
 
-    def __init__(self, host: str, username: str = "", password: str = "",
-                 **kwargs: Any) -> None:
+    def __init__(self, host: str, username: str = "", password: str = "", **kwargs: Any) -> None:
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
@@ -97,9 +96,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
                     self._username, self._password
                 )
         except Exception:
-            self._auth_headers["Authorization"] = self._basic_auth(
-                self._username, self._password
-            )
+            self._auth_headers["Authorization"] = self._basic_auth(self._username, self._password)
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
 
@@ -136,8 +133,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("hydra:member", resp.get("data", []))
 
-    def upsert_object(self, stix_type: str,
-                      payload: dict[str, Any]) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update a FortiSOAR module record."""
         module = self.stix_type_map.get(stix_type, stix_type)
         record_id = payload.get("@id", payload.get("id", ""))
@@ -167,24 +163,28 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         if severity:
             params["severity"] = severity
         resp = self.get("/api/3/alerts", params=params)
-        return (resp.get("hydra:member", []) if isinstance(resp, dict) else [])
+        return resp.get("hydra:member", []) if isinstance(resp, dict) else []
 
-    def escalate_to_incident(self, alert_id: str,
-                              name: str) -> dict[str, Any]:
+    def escalate_to_incident(self, alert_id: str, name: str) -> dict[str, Any]:
         """Create an incident linked to an existing alert."""
-        resp = self.post("/api/3/incidents", json={
-            "name": name,
-            "alerts": [f"/api/3/alerts/{alert_id}"],
-        })
+        resp = self.post(
+            "/api/3/incidents",
+            json={
+                "name": name,
+                "alerts": [f"/api/3/alerts/{alert_id}"],
+            },
+        )
         return resp if isinstance(resp, dict) else {}
 
-    def trigger_playbook(self, playbook_iri: str,
-                         record_iri: str) -> dict[str, Any]:
+    def trigger_playbook(self, playbook_iri: str, record_iri: str) -> dict[str, Any]:
         """Manually trigger a FortiSOAR playbook against a record."""
-        resp = self.post("/api/3/triggers/1/notifyTrigger", json={
-            "playbookIRI": playbook_iri,
-            "recordIRI": record_iri,
-        })
+        resp = self.post(
+            "/api/3/triggers/1/notifyTrigger",
+            json={
+                "playbookIRI": playbook_iri,
+                "recordIRI": record_iri,
+            },
+        )
         return resp if isinstance(resp, dict) else {}
 
     def get_indicators(
@@ -197,7 +197,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         if ioc_type:
             params["typeofindicator"] = ioc_type
         resp = self.get("/api/3/indicators", params=params)
-        return (resp.get("hydra:member", []) if isinstance(resp, dict) else [])
+        return resp.get("hydra:member", []) if isinstance(resp, dict) else []
 
     # ── STIX translation ───────────────────────────────────────────────────
 
@@ -215,13 +215,18 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         alert_id = str(alert.get("id", alert.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
-        sev = str(alert.get("severity", {}).get("itemValue", "low")
-                  if isinstance(alert.get("severity"), dict)
-                  else alert.get("severity", "low")).lower()
+        sev = str(
+            alert.get("severity", {}).get("itemValue", "low")
+            if isinstance(alert.get("severity"), dict)
+            else alert.get("severity", "low")
+        ).lower()
         ts = alert.get("createDate", alert.get("modifyDate", _now_ts()))
         src_ip = alert.get("sourceIp", "")
-        pattern = (f"[ipv4-addr:value = '{src_ip}']"
-                   if src_ip else f"[file:name = 'fortisoar-alert-{alert_id[:32]}']")
+        pattern = (
+            f"[ipv4-addr:value = '{src_ip}']"
+            if src_ip
+            else f"[file:name = 'fortisoar-alert-{alert_id[:32]}']"
+        )
         return {
             "type": "indicator",
             "id": f"indicator--{uid}",
@@ -238,9 +243,11 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
                 "record_id": alert_id,
                 "module": "alerts",
                 "severity": sev,
-                "status": (alert.get("status", {}).get("itemValue", "")
-                           if isinstance(alert.get("status"), dict)
-                           else alert.get("status", "")),
+                "status": (
+                    alert.get("status", {}).get("itemValue", "")
+                    if isinstance(alert.get("status"), dict)
+                    else alert.get("status", "")
+                ),
                 "source_ip": src_ip,
             },
         }
@@ -261,12 +268,16 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
             "x_fortisoar": {
                 "record_id": inc_id,
                 "module": "incidents",
-                "severity": (incident.get("severity", {}).get("itemValue", "")
-                             if isinstance(incident.get("severity"), dict)
-                             else incident.get("severity", "")),
-                "status": (incident.get("status", {}).get("itemValue", "")
-                           if isinstance(incident.get("status"), dict)
-                           else incident.get("status", "")),
+                "severity": (
+                    incident.get("severity", {}).get("itemValue", "")
+                    if isinstance(incident.get("severity"), dict)
+                    else incident.get("severity", "")
+                ),
+                "status": (
+                    incident.get("status", {}).get("itemValue", "")
+                    if isinstance(incident.get("status"), dict)
+                    else incident.get("status", "")
+                ),
             },
         }
 
@@ -274,9 +285,11 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         ioc_id = str(indicator.get("id", indicator.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-ioc-{ioc_id}"))
         value = indicator.get("indicatorValue", "")
-        ioc_type = str(indicator.get("typeofindicator", {}).get("itemValue", "")
-                       if isinstance(indicator.get("typeofindicator"), dict)
-                       else indicator.get("typeofindicator", "")).lower()
+        ioc_type = str(
+            indicator.get("typeofindicator", {}).get("itemValue", "")
+            if isinstance(indicator.get("typeofindicator"), dict)
+            else indicator.get("typeofindicator", "")
+        ).lower()
         ts = indicator.get("createDate", _now_ts())
         if "ip" in ioc_type:
             pattern = f"[ipv4-addr:value = '{value}']"
@@ -300,9 +313,11 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
                 "record_id": ioc_id,
                 "module": "indicators",
                 "ioc_type": ioc_type,
-                "reputation": (indicator.get("reputation", {}).get("itemValue", "")
-                               if isinstance(indicator.get("reputation"), dict)
-                               else indicator.get("reputation", "")),
+                "reputation": (
+                    indicator.get("reputation", {}).get("itemValue", "")
+                    if isinstance(indicator.get("reputation"), dict)
+                    else indicator.get("reputation", "")
+                ),
                 "confidence": indicator.get("confidence", 0),
             },
         }

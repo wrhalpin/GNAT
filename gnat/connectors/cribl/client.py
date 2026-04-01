@@ -263,9 +263,7 @@ class CriblClient(BaseClient, ConnectorMixin):
             if obj_id:
                 return self.update_lookup(obj_id, payload, **kwargs)
             return self.create_lookup(payload, **kwargs)
-        raise GNATClientError(
-            f"Unsupported stix_type for CriblClient.upsert_object: {stix_type!r}"
-        )
+        raise GNATClientError(f"Unsupported stix_type for CriblClient.upsert_object: {stix_type!r}")
 
     def delete_object(self, stix_type: str, object_id: str, **kwargs: Any) -> None:
         """
@@ -289,9 +287,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         if stix_type == "indicator":
             self.delete_lookup(object_id, **kwargs)
             return
-        raise GNATClientError(
-            f"Unsupported stix_type for CriblClient.delete_object: {stix_type!r}"
-        )
+        raise GNATClientError(f"Unsupported stix_type for CriblClient.delete_object: {stix_type!r}")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
@@ -403,9 +399,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/m/{self._group(group)}/pipelines/{pipeline_id}")
 
-    def create_pipeline(
-        self, config: dict[str, Any], group: str | None = None
-    ) -> dict[str, Any]:
+    def create_pipeline(self, config: dict[str, Any], group: str | None = None) -> dict[str, Any]:
         """
         Create a new pipeline.
 
@@ -433,9 +427,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         group : str, optional
             Worker group name.
         """
-        return self.patch(
-            f"/api/v1/m/{self._group(group)}/pipelines/{pipeline_id}", json=config
-        )
+        return self.patch(f"/api/v1/m/{self._group(group)}/pipelines/{pipeline_id}", json=config)
 
     def delete_pipeline(self, pipeline_id: str, group: str | None = None) -> None:
         """
@@ -533,9 +525,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/m/{self._group(group)}/inputs/{input_id}")
 
-    def create_input(
-        self, config: dict[str, Any], group: str | None = None
-    ) -> dict[str, Any]:
+    def create_input(self, config: dict[str, Any], group: str | None = None) -> dict[str, Any]:
         """
         Create a new input source.
 
@@ -563,9 +553,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         group : str, optional
             Worker group name.
         """
-        return self.patch(
-            f"/api/v1/m/{self._group(group)}/inputs/{input_id}", json=config
-        )
+        return self.patch(f"/api/v1/m/{self._group(group)}/inputs/{input_id}", json=config)
 
     def delete_input(self, input_id: str, group: str | None = None) -> None:
         """
@@ -613,9 +601,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/m/{self._group(group)}/outputs/{output_id}")
 
-    def create_output(
-        self, config: dict[str, Any], group: str | None = None
-    ) -> dict[str, Any]:
+    def create_output(self, config: dict[str, Any], group: str | None = None) -> dict[str, Any]:
         """
         Create a new output destination.
 
@@ -643,9 +629,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         group : str, optional
             Worker group name.
         """
-        return self.patch(
-            f"/api/v1/m/{self._group(group)}/outputs/{output_id}", json=config
-        )
+        return self.patch(f"/api/v1/m/{self._group(group)}/outputs/{output_id}", json=config)
 
     def delete_output(self, output_id: str, group: str | None = None) -> None:
         """
@@ -693,9 +677,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/m/{self._group(group)}/packs/{pack_id}")
 
-    def install_pack(
-        self, pack_id: str, source: str, group: str | None = None
-    ) -> dict[str, Any]:
+    def install_pack(self, pack_id: str, source: str, group: str | None = None) -> dict[str, Any]:
         """
         Install a pack from a source URL.
 
@@ -726,9 +708,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         self.delete(f"/api/v1/m/{self._group(group)}/packs/{pack_id}")
 
-    def upgrade_pack(
-        self, pack_id: str, source: str, group: str | None = None
-    ) -> dict[str, Any]:
+    def upgrade_pack(self, pack_id: str, source: str, group: str | None = None) -> dict[str, Any]:
         """
         Upgrade an installed pack from a new source.
 
@@ -778,9 +758,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         """
         return self.get(f"/api/v1/m/{self._group(group)}/lookups/{lookup_id}")
 
-    def create_lookup(
-        self, config: dict[str, Any], group: str | None = None
-    ) -> dict[str, Any]:
+    def create_lookup(self, config: dict[str, Any], group: str | None = None) -> dict[str, Any]:
         """
         Create a new lookup table.
 
@@ -808,9 +786,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         group : str, optional
             Worker group name.
         """
-        return self.patch(
-            f"/api/v1/m/{self._group(group)}/lookups/{lookup_id}", json=config
-        )
+        return self.patch(f"/api/v1/m/{self._group(group)}/lookups/{lookup_id}", json=config)
 
     def delete_lookup(self, lookup_id: str, group: str | None = None) -> None:
         """

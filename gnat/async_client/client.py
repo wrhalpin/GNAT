@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 # Async connector registry (mirrors the sync CLIENT_REGISTRY)
 # ---------------------------------------------------------------------------
 
+
 def _build_async_registry() -> dict:
     """
     Build the async connector registry lazily.
@@ -61,22 +62,23 @@ def _build_async_registry() -> dict:
         AsyncWhisticClient,
         AsyncXSOARClient,
     )
+
     return {
-        "threatq":       AsyncThreatQClient,
-        "crowdstrike":   AsyncCrowdStrikeClient,
-        "proofpoint":    AsyncProofpointClient,
-        "netskope":      AsyncNetskopeClient,
-        "xsoar":         AsyncXSOARClient,
+        "threatq": AsyncThreatQClient,
+        "crowdstrike": AsyncCrowdStrikeClient,
+        "proofpoint": AsyncProofpointClient,
+        "netskope": AsyncNetskopeClient,
+        "xsoar": AsyncXSOARClient,
         "recordedfuture": AsyncRecordedFutureClient,
-        "greymatter":     AsyncGreyMatterClient,
-        "whistic":        AsyncWhisticClient,
-        "riskrecon":      AsyncRiskReconClient,
-        "feedly":         AsyncFeedlyClient,
-        "splunk":         AsyncSplunkClient,
+        "greymatter": AsyncGreyMatterClient,
+        "whistic": AsyncWhisticClient,
+        "riskrecon": AsyncRiskReconClient,
+        "feedly": AsyncFeedlyClient,
+        "splunk": AsyncSplunkClient,
     }
 
 
-ASYNC_CLIENT_REGISTRY: dict = {}   # populated on first use
+ASYNC_CLIENT_REGISTRY: dict = {}  # populated on first use
 
 
 class AsyncGNATClient:
@@ -195,9 +197,7 @@ class AsyncGNATClient:
                 cfg.update(self._config.get(target))
         cfg.update({k: v for k, v in overrides.items() if v is not None})
         if not cfg.get("host"):
-            raise GNATClientError(
-                f"No 'host' found for async target {target!r}."
-            )
+            raise GNATClientError(f"No 'host' found for async target {target!r}.")
         return cfg
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -207,6 +207,7 @@ class AsyncGNATClient:
 # ---------------------------------------------------------------------------
 # Async ORM base
 # ---------------------------------------------------------------------------
+
 
 class AsyncSTIXBase:
     """
@@ -231,7 +232,7 @@ class AsyncSTIXBase:
         await ind.delete()
     """
 
-    _sync_cls: type[Any] | None = None   # set by concrete subclasses
+    _sync_cls: type[Any] | None = None  # set by concrete subclasses
 
     def __init__(self, client: AsyncGNATClient | None = None, **kwargs: Any):
         self._async_client = client
@@ -266,9 +267,7 @@ class AsyncSTIXBase:
     async def select(self) -> AsyncSTIXBase:
         """Async fetch this object from the platform by id."""
         self._require_client()
-        data = await self._async_client.client.get_object(
-            self._obj.stix_type, self._obj.id
-        )
+        data = await self._async_client.client.get_object(self._obj.stix_type, self._obj.id)
         translated = await asyncio.get_event_loop().run_in_executor(
             None, self._async_client.client.to_stix, data
         )
@@ -279,9 +278,7 @@ class AsyncSTIXBase:
         """Async create or update this object on the platform."""
         self._require_client()
         payload = self._async_client.client.from_stix(self._obj.to_dict())
-        result = await self._async_client.client.upsert_object(
-            self._obj.stix_type, payload
-        )
+        result = await self._async_client.client.upsert_object(self._obj.stix_type, payload)
         translated = self._async_client.client.to_stix(result)
         self._obj._merge(translated)
         return self
@@ -289,9 +286,7 @@ class AsyncSTIXBase:
     async def delete(self) -> None:
         """Async delete this object from the platform."""
         self._require_client()
-        await self._async_client.client.delete_object(
-            self._obj.stix_type, self._obj.id
-        )
+        await self._async_client.client.delete_object(self._obj.stix_type, self._obj.id)
 
     async def refresh(self) -> AsyncSTIXBase:
         """Re-fetch and update from the platform."""
