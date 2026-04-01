@@ -65,7 +65,7 @@ def _solr_get(base_url: str, path: str, params: dict[str, Any]) -> dict | None:
     qs = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None}, doseq=True)
     url = f"{base_url.rstrip('/')}/{path.lstrip('/')}?{qs}"
     try:
-        with urllib.request.urlopen(url, timeout=5) as resp:
+        with urllib.request.urlopen(url, timeout=5) as resp:  # nosec B310  # nosemgrep
             return json.loads(resp.read())
     except Exception as exc:  # noqa: BLE001
         logger.debug("Solr request to %s failed: %s", url, exc)

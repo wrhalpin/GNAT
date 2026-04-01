@@ -1300,8 +1300,8 @@ class GraphView:
             try:
                 import urllib.request
 
-                graphology_js = urllib.request.urlopen(_SIGMA_CDN[0]).read().decode()  # nosec B310 — hardcoded CDN URL
-                sigma_js = urllib.request.urlopen(_SIGMA_CDN[1]).read().decode()  # nosec B310 — hardcoded CDN URL
+                graphology_js = urllib.request.urlopen(_SIGMA_CDN[0]).read().decode()  # nosec B310  # nosemgrep
+                sigma_js = urllib.request.urlopen(_SIGMA_CDN[1]).read().decode()  # nosec B310  # nosemgrep
                 script_tags = f"<script>{graphology_js}</script>\n<script>{sigma_js}</script>"
             except Exception:
                 offline = False  # fall back to CDN

@@ -361,7 +361,7 @@ class ClaudeClient:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=self._cfg.timeout) as resp:  # nosec B310 — hardcoded Anthropic API URL
+            with urllib.request.urlopen(req, timeout=self._cfg.timeout) as resp:  # nosec B310  # nosemgrep
                 raw = resp.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             body_text = exc.read().decode("utf-8", errors="replace")

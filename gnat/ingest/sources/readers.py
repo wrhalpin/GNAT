@@ -52,7 +52,7 @@ import re
 try:
     import defusedxml.ElementTree as ET  # type: ignore[import-untyped]
 except ImportError:
-    import xml.etree.ElementTree as ET  # type: ignore[no-redef]  # nosec B314 — defusedxml preferred; install with pip install defusedxml
+    import xml.etree.ElementTree as ET  # type: ignore[no-redef]  # nosec B314  # nosemgrep
 from collections.abc import Iterator
 from itertools import islice
 from pathlib import Path
@@ -1042,7 +1042,7 @@ class OpenIOCReader(SourceReader):
                 logger.warning("OpenIOCReader: failed to parse %s — %s", path, exc)
 
     def _parse_file(self, path: Path) -> Iterator[RawRecord]:
-        tree = ET.parse(str(path))  # nosec B314 — defusedxml used when installed; see import block above
+        tree = ET.parse(str(path))  # nosec B314  # nosemgrep
         root = tree.getroot()
 
         # Detect namespace

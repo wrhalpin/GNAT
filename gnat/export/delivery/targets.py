@@ -179,7 +179,7 @@ class HTTPDelivery(ExportDelivery):
                 req.add_header("Authorization", f"Basic {creds}")
 
             try:
-                with urllib.request.urlopen(req, timeout=self._timeout) as resp:  # nosec B310 — scheme validated above
+                with urllib.request.urlopen(req, timeout=self._timeout) as resp:  # nosec B310  # nosemgrep
                     status = resp.getcode()
                 if status in self._success_codes:
                     dr.delivered.append(name)

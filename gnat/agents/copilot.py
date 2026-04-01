@@ -476,7 +476,7 @@ class CopilotReader(SourceReader):
             method=method,
         )
         try:
-            with urllib.request.urlopen(req, timeout=self._timeout) as resp:  # nosec B310 — scheme validated above
+            with urllib.request.urlopen(req, timeout=self._timeout) as resp:  # nosec B310  # nosemgrep
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")

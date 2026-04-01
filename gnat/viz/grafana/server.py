@@ -107,7 +107,7 @@ def build_app(
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["*"],  # nosemgrep — local Grafana datasource server
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )

@@ -344,9 +344,9 @@ class ReportDocument:
 
     title: str
     report_type: str
-    generated_at: datetime
     period_start: datetime
     period_end: datetime
+    generated_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
     sections: list[ReportSection] = field(default_factory=list)
     config: ReportConfig | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
