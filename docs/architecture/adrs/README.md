@@ -62,7 +62,7 @@ CLIENT_REGISTRY["myplatform"] = MyplatformClient
 
 # 5. Add INI section to config/config.ini.example
 
-# 6. Add [global.myplatform] block to ARCHITECTURE_DECISIONS.md §13
+# 6. Add [global.myplatform] block to ADR-0013 (0013-configuration.md)
 
 # 7. Run tests
 pytest tests/unit/connectors/ -v
