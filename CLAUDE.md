@@ -421,7 +421,7 @@ The Claude model defaults to `claude-sonnet-4-6`. When modifying AI agent code, 
 | `docs/reference/` | API reference documentation |
 | `docs/tutorials/` | Step-by-step tutorials |
 | `EXAMPLES.md` | Code snippets for all major features |
-| `PENDING_ITEMS.md` | Tracked outstanding tasks and TODOs |
+| `docs/source/` | Sphinx RST docs (build with `make docs`) |
 
 ---
 

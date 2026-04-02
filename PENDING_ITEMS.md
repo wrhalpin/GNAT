@@ -1,5 +1,13 @@
 # GNAT Pending Items
 
+> **⚠️ DEPRECATED** — This file is no longer maintained.
+> Outstanding tasks, release notes, and architectural decisions are now
+> tracked in:
+> - [`CHANGELOG.md`](CHANGELOG.md) — version history and unreleased changes
+> - [`docs/releases/`](docs/releases/) — detailed per-version release notes
+> - [`docs/explanation/architecture/adrs/`](docs/explanation/architecture/adrs/) — Architecture Decision Records
+> - [`docs/explanation/architecture/implementation-plan.md`](docs/explanation/architecture/implementation-plan.md) — project roadmap and layer design
+
 Tracked outstanding implementation tasks, normalization work, and
 known gaps. Update this file as items are completed or new ones are
 identified.
