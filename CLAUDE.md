@@ -7,16 +7,16 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 95 security/threat intelligence platforms
+- A unified client interface for 99 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
-- AI agent integration (Claude API)
-- A fully featured CLI
+- AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
+- A fully featured CLI and TUI
 
 **Package name on PyPI:** `gnat`
 **Import root:** `gnat`
 **Version:** 0.1.0
-**Python support:** 3.9, 3.10, 3.11, 3.12
+**Python support:** 3.9, 3.10, 3.11, 3.12, 3.13
 **License:** Apache-2.0
 
 ---
@@ -29,19 +29,23 @@ gnat/                        # Main Python package
 ├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based configuration management
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
+├── stix/                    # STIX pattern validation (stix2-patterns integration)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 95 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 99 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
-├── cli/                     # CLI entry point (gnat/cli/main.py — 27 KB)
+├── cli/                     # CLI entry point (gnat/cli/main.py)
+├── tui/                     # Terminal UI (Textual-based interactive interface)
 ├── schedule/                # Feed scheduling (FeedJob, FeedScheduler, croniter)
-├── reports/                 # Report generation (PDF via ReportLab, AI-assisted)
+├── reports/                 # Report generation (PDF + DOCX via ReportLab/python-docx, AI-assisted)
 ├── research/                # Research library (ResearchLibrary, CurationJob)
-├── agents/                  # AI agent integration (Claude API via CopilotReader)
+├── agents/                  # AI agent integration (LLMClient: Claude, OpenAI, Grok)
+├── nlp/                     # NLP/IOC extraction (builtin + Claude backend)
 ├── context/                 # Global context + workspace persistence
 ├── viz/                     # Visualization (Tabular, Graph, Grafana, Power BI)
 ├── codegen/                 # OpenAPI → connector scaffolding
 ├── async_client/            # Async variant (httpx)
+├── serve/                   # FastAPI HTTP server + TAXII endpoint
 ├── search/                  # Solr full-text search sidecar (SearchMixin, indexer, ORM integration)
 └── utils/                   # Misc helpers (stix_helpers.py)
 
@@ -50,10 +54,12 @@ tests/
 ├── unit/                    # Unit tests mirroring gnat/ layout
 └── integration/             # Live API tests (opt-in)
 
-docs/source/                 # Sphinx RST documentation
+docs/                        # Documentation (explanation, how-to, reference, tutorials)
 config/config.ini.example    # Configuration template
-Makefile                     # Dev targets (test, lint, build, docs)
+Makefile                     # Dev targets (test, lint, build, docs, docker, rust)
 pyproject.toml               # Build config, deps, tool configs
+rust_core/                   # Optional Rust extension (gnat._core accelerator)
+docker-compose.yml           # Docker services (core, search sidecar, Grafana)
 ```
 
 ---
@@ -80,7 +86,15 @@ make install        # pip install -e ".[dev]" + httpx
 | `make check` | lint + typecheck | Full static analysis |
 | `make docs` | sphinx-build | Build HTML docs |
 | `make build` | setuptools | Build sdist + wheel |
-| `make clean` | | Remove build artifacts |
+| `make clean` | | Remove all build artifacts |
+| `make build-rust` | maturin build --release | Build + install Rust native extension |
+| `make build-rust-dev` | maturin develop | Build Rust extension in dev mode |
+| `make docker-build` | docker compose build | Build all Docker service images |
+| `make docker-up` | docker compose up -d | Start core services (detached) |
+| `make docker-search` | docker compose --profile search | Start core + Solr search sidecar |
+| `make docker-full` | docker compose --profile full | Start all services including Grafana |
+| `make docker-down` | docker compose down | Stop all services |
+| `make test-docker` | docker integration suite | Run Docker integration tests |
 
 ### Running Tests
 
@@ -88,9 +102,15 @@ make install        # pip install -e ".[dev]" + httpx
 pytest tests/unit/ -v --tb=short          # All unit tests
 pytest tests/unit/connectors/ -v          # Connector tests only
 pytest tests/integration/ --run-integration -v  # Integration (needs live creds)
+pytest tests/integration/ --run-docker -v       # Docker-based integration tests
 ```
 
 **Minimum coverage requirement:** 70% (enforced by `fail_under = 70` in pyproject.toml)
+
+**Test markers:**
+- `@pytest.mark.integration` — requires live credentials, opt-in with `--run-integration`
+- `@pytest.mark.docker` — requires Docker daemon, opt-in with `--run-docker`
+- `@pytest.mark.slow` — tests taking >5s, can be excluded
 
 ### Configuration
 
@@ -176,6 +196,7 @@ See `docs/architecture/adrs/` for the full rationale (individual ADR files). Key
 | Config | INI (configparser) | Zero dependencies, simple |
 | Packaging | Extras groups | Pay-for-what-you-use dependency model |
 | CLI | argparse subcommands | No framework dependency |
+| Performance | Optional Rust extension (`gnat._core`) | Accelerates IOC classify/defang/refang/extract; install via `gnat-core` wheel |
 
 ---
 
@@ -218,6 +239,7 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Censys Internet Intelligence / ASM | `gnat/connectors/censys/` | API ID + secret |
 | OpenAI ChatGPT | `gnat/connectors/chatgpt/` | API key |
 | CISA KEV Catalog | `gnat/connectors/cisa/` | None (public) |
+| Cisco Umbrella (Investigate / Enforcement / Management) | `gnat/connectors/cisco_umbrella/` | Multiple API keys (Investigate, Enforcement, Management) |
 | Claroty Platform (OT/IoT) | `gnat/connectors/claroty/` | Username/password |
 | CloudSEK Digital Risk Protection | `gnat/connectors/cloudsek/` | Bearer |
 | Microsoft Copilot for Security | `gnat/connectors/copilot/` | DirectLine / Bearer |
@@ -231,6 +253,7 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Datadog Cloud SIEM | `gnat/connectors/datadog/` | API key + App key |
 | DefectDojo Vulnerability Management | `gnat/connectors/defectdojo/` | API token |
 | Microsoft Defender Threat Intelligence | `gnat/connectors/defenderti/` | OAuth2 (Azure AD) |
+| Discord | `gnat/connectors/discord/` | Bot token |
 | Dragos Platform (OT/ICS) | `gnat/connectors/dragos/` | Basic (API key + secret) |
 | Elastic SIEM | `gnat/connectors/elastic/` | API key/Basic |
 | ExtraHop Reveal(x) NDR | `gnat/connectors/extrahop/` | API key / OAuth2 |
@@ -252,6 +275,7 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Hudson Rock Breach Intelligence | `gnat/connectors/hudsonrock/` | API key |
 | Intel 471 Cybercrime Intelligence | `gnat/connectors/intel471/` | Bearer |
 | Atlassian Jira | `gnat/connectors/jira/` | Basic / Bearer |
+| JupiterOne (CAASM / Cyber Asset Graph) | `gnat/connectors/jupiterone/` | Bearer (API key) |
 | Lansweeper IT Asset Management | `gnat/connectors/lansweeper/` | OAuth2 / Bearer |
 | LogRhythm NextGen SIEM | `gnat/connectors/logrhythm/` | Bearer / OAuth2 |
 | Mandiant Advantage | `gnat/connectors/mandiant/` | OAuth2 |
@@ -260,6 +284,7 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Nozomi Networks Guardian / Vantage (OT/IoT) | `gnat/connectors/nozomi/` | API token / Basic |
 | Nucleus Security | `gnat/connectors/nucleus/` | API key |
 | OpenCTI | `gnat/connectors/opencti/` | API key |
+| Generic OSINT Feed (TAXII / STIX-JSON) | `gnat/connectors/osint_feed/` | None / Basic / API key / Bearer / OAuth2 |
 | Orca Security (Agentless CNAPP) | `gnat/connectors/orca/` | Bearer |
 | OSSIM | `gnat/connectors/ossim/` | Basic auth |
 | Palo Alto Prisma Cloud (CSPM/CNAPP) | `gnat/connectors/prisma_cloud/` | Access key + secret (JWT) |
@@ -348,13 +373,18 @@ Install only what you need:
 pip install gnat                        # Core only (urllib3)
 pip install "gnat[yaml]"               # YAML support (pyyaml)
 pip install "gnat[taxii]"              # TAXII reading (taxii2-client)
+pip install "gnat[rss]"                # RSS feed reading (feedparser)
 pip install "gnat[ingest]"             # TAXII + RSS (taxii2-client + feedparser)
 pip install "gnat[async]"              # Async client (httpx)
 pip install "gnat[persist]"            # DB persistence (sqlalchemy)
 pip install "gnat[schedule]"           # Cron scheduling (croniter)
-pip install "gnat[reports]"            # PDF reports (reportlab)
+pip install "gnat[reports]"            # PDF + DOCX reports (reportlab + python-docx)
 pip install "gnat[viz]"               # Visualization (plotly, networkx, openpyxl)
 pip install "gnat[serve]"              # HTTP server (fastapi, uvicorn)
+pip install "gnat[tui]"               # Terminal UI (textual)
+pip install "gnat[nlp]"               # NLP/IOC extraction (builtin; claude backend reuses agents)
+pip install "gnat[stix-validate]"      # Full STIX pattern validation (stix2-patterns ANTLR grammar)
+pip install "gnat[fast]"              # Rust native extension (install gnat-core wheel separately)
 pip install "gnat[all]"               # Everything
 pip install "gnat[dev]"               # All + dev tools
 ```
@@ -363,10 +393,16 @@ pip install "gnat[dev]"               # All + dev tools
 
 ## AI Agent Integration
 
-The `gnat/agents/` package integrates with Claude API for automated threat intelligence workflows:
-- **CopilotReader** (`gnat/agents/copilot.py`) — Claude API calls
-- **ResearchAgent** (`gnat/agents/research.py`) — AI-assisted research analysis
-- Config via `[claude]` section in INI: `api_key`, `model`, `ai_confidence_ceiling`
+The `gnat/agents/` package provides a unified multi-LLM framework for automated threat intelligence workflows:
+- **LLMClient** (`gnat/agents/llm.py`) — unified facade supporting Claude, OpenAI, Grok (xAI), and Gemini backends with automatic fallback
+- **ClaudeProvider** (`gnat/agents/claude.py`) — Anthropic Claude Messages API (urllib3-based, no requests)
+- **ResearchAgent** (`gnat/agents/research.py`) — AI-assisted threat intelligence research; integrates as a `SourceReader`
+- **ParsingAgent** — extracts structured STIX from unstructured text; integrates as a `RecordMapper`
+- **quality/** — fixture coverage, normalization regression, and contract verification agents
+- **repo_maintenance/** — automated connector discovery, repair, and registry maintenance
+- **security/** — secrets hygiene and security scanning sub-agents
+
+Config via `[claude]` section in INI: `api_key`, `model`, `ai_confidence_ceiling`. All providers can also be configured with their own INI sections.
 
 The Claude model defaults to `claude-sonnet-4-6`. When modifying AI agent code, prefer the latest Claude models. See `EXAMPLES.md` for usage patterns.
 
@@ -379,11 +415,13 @@ The Claude model defaults to `claude-sonnet-4-6`. When modifying AI agent code, 
 | `README.md` | Feature overview, quickstart, platform table |
 | `CHANGELOG.md` | Version history — update `[Unreleased]` for every change |
 | `CONTRIBUTING.md` | Contributor guide, PR checklist |
-| `docs/architecture/adrs/` | 29 individual Architecture Decision Records with full rationale |
-| `docs/architecture/implementation-plan.md` | Project plan, layer diagram, roadmap |
+| `docs/architecture.md` | Architecture overview |
+| `docs/explanation/` | Concept explanations and design rationale |
+| `docs/how-to/` | Task-oriented guides |
+| `docs/reference/` | API reference documentation |
+| `docs/tutorials/` | Step-by-step tutorials |
 | `EXAMPLES.md` | Code snippets for all major features |
 | `PENDING_ITEMS.md` | Tracked outstanding tasks and TODOs |
-| `docs/source/` | Sphinx RST docs (build with `make docs`) |
 
 ---
 
