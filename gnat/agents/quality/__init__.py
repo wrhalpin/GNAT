@@ -1,17 +1,22 @@
-"""Quality-focused agents for connector correctness and regression control."""
+"""Quality agents for GNAT connector assurance."""
 
-from gnat.agents.quality.normalization_regression import (
-    ComparisonResult,
-    GoldenFixture,
+from .normalization_regression import (
     NormalizationRegressionAgent,
+    RegressionFixture,
     RegressionPolicy,
-    RegressionRun,
+    RegressionResult,
 )
+from .contract import ContractAgent, ContractCheckResult, ConnectorContractProfile
+from .fixture_coverage import FixtureCoverageAgent, FixtureCoverageResult
 
 __all__ = [
-    "ComparisonResult",
-    "GoldenFixture",
     "NormalizationRegressionAgent",
+    "RegressionFixture",
     "RegressionPolicy",
-    "RegressionRun",
+    "RegressionResult",
+    "ContractAgent",
+    "ContractCheckResult",
+    "ConnectorContractProfile",
+    "FixtureCoverageAgent",
+    "FixtureCoverageResult",
 ]

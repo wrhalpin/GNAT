@@ -1,0 +1,9 @@
+{
+  "cribl": [
+    "tests/unit/agents/data/cribl_*fixture*.json",
+    "tests/**/cribl/*fixture*.json"
+  ],
+  "alienvault": [
+    "tests/**/alienvault/*fixture*.json"
+  ]
+}
