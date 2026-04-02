@@ -1,7 +1,7 @@
 # GNAT Implementation and Architecture Plan
 
-**GNAT** — Universal Cyber Threat Management Library 
-Version 1.0.0 | Architecture as of March 2026
+**GNAT** — Universal Cyber Threat Management Library  
+Version 1.0.0 | Architecture as of April 2026
 
 ---
 
@@ -40,9 +40,8 @@ with one library, one configuration file, and one operational model.
 │  STIX 2.1 ORM · ConnectorMixin · BaseClient                      │
 ├─────────────────────────────────────────────────────────────────┤
 │  Connector Layer                                                 │
-│  ThreatQ · CrowdStrike · Splunk · Netskope · XSOAR ·             │
-│  RecordedFuture · VirusTotal · ShadowServer · Rapid7 · Nucleus · │
-│  GreyMatter · Whistic · RiskRecon · Feedly · Proofpoint          │
+│  99 platform connectors across SIEM, TIP, EDR, ASM, VM,         │
+│  SOAR, IDS/IPS, OSINT, and AI assistant categories              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -63,7 +62,7 @@ by changing one string in the config file.
 gnat/
 ├── orm/                    STIX 2.1 ORM (Indicator, ThreatActor, Vulnerability, ...)
 ├── clients/                BaseClient (urllib3), CLIENT_REGISTRY
-├── connectors/             95 platform connectors
+├── connectors/             99 platform connectors
 ├── ingest/                 SourceReaders (14), RecordMappers (12), IngestPipeline
 ├── export/                 ExportFilters, Transforms (EDL, Netskope), Delivery, ExportJob
 ├── schedule/               FeedJob, FeedScheduler, APScheduler/Celery adapters
@@ -89,71 +88,111 @@ gnat/
 
 ## Connector Map
 
-| Platform            | Module            | Auth          | Read | Write | Status  |
-|---------------------|-------------------|---------------|------|-------|---------|
-| ThreatQ             | threatq           | OAuth2        | ✓    | ✓     | Stable  |
-| CrowdStrike         | crowdstrike       | OAuth2        | ✓    | ✓     | Stable  |
-| Splunk              | splunk            | Token/Basic   | ✓    | ✓     | Stable  |
-| Netskope            | netskope          | API key       | ✓    | ✓     | Stable  |
-| XSOAR               | xsoar             | API key       | ✓    | ✓     | Stable  |
-| Recorded Future     | recordedfuture    | API token     | ✓    | —     | Stable  |
-| GreyMatter          | greymatter        | OAuth2        | ✓    | ✓     | Stable  |
-| Whistic             | whistic           | API key       | ✓    | —     | Stable  |
-| RiskRecon           | riskrecon         | OAuth2        | ✓    | —     | Stable  |
-| Feedly              | feedly            | Bearer/API key| ✓    | —     | Stable  |
-| Proofpoint TAP      | proofpoint        | Basic auth    | ✓    | —     | Stable  |
-| VirusTotal          | virustotal        | API key       | ✓    | —     | Stable  |
-| ShadowServer        | shadowserver      | HMAC          | ✓    | —     | Stable  |
-| Rapid7              | rapid7            | API key       | ✓    | Partial| Stable |
-| Nucleus             | nucleus           | API key       | ✓    | ✓     | Stable  |
-| ControlUp DEX       | controlup         | Bearer        | ✓    | —     | Stable  |
-| AlienVault OTX      | alienvault        | API key       | ✓    | —     | Stable  |
-| Elastic SIEM        | elastic           | API key/Basic | ✓    | ✓     | Stable  |
-| Graylog             | graylog           | Basic auth    | ✓    | —     | Stable  |
-| MISP                | misp              | API key       | ✓    | ✓     | Stable  |
-| OpenCTI             | opencti           | API key       | ✓    | ✓     | Stable  |
-| OSSIM               | ossim             | API key       | ✓    | —     | Stable  |
-| IBM QRadar          | qradar            | API token     | ✓    | —     | Stable  |
-| Security Onion      | security_onion    | Bearer        | ✓    | —     | Stable  |
-| MS Sentinel         | sentinel          | OAuth2/AAD    | ✓    | ✓     | Stable  |
-| Snort IDS           | snort             | File/Syslog   | ✓    | —     | Stable  |
-| Suricata            | suricata          | File/EVE JSON | ✓    | —     | Stable  |
-| Wazuh               | wazuh             | API key/Basic | ✓    | —     | Stable  |
-| Zeek                | zeek              | File/TSV-JSON | ✓    | —     | Stable  |
-| ServiceNow          | servicenow        | Basic/Bearer  | ✓    | ✓     | Stable  |
-| Jira                | jira              | Basic/Bearer  | ✓    | ✓     | Stable  |
-| ThreatConnect       | threatconnect     | API key       | ✓    | ✓     | Stable  |
-| Mandiant            | mandiant          | API key       | ✓    | —     | Stable  |
-| Defender TI         | defenderti        | OAuth2/AAD    | ✓    | —     | Stable  |
-| TheHive             | thehive           | API key       | ✓    | ✓     | Stable  |
-| ThreatStream        | threatstream      | API key       | ✓    | ✓     | Stable  |
-| SOCRadar            | socradar          | API key       | ✓    | —     | Stable  |
-| Pulsedive           | pulsedive         | API key       | ✓    | —     | Stable  |
-| Flare               | flare             | API key       | ✓    | —     | Stable  |
-| Stellar Cyber       | stellarcyber      | API key       | ✓    | —     | Stable  |
-| YETI                | yeti              | API key       | ✓    | ✓     | Stable  |
-| CloudSEK            | cloudsek          | API key       | ✓    | —     | Stable  |
-| Grok AI             | grok              | API key       | ✓    | —     | LLM     |
-| Google Gemini       | gemini            | API key       | ✓    | —     | LLM     |
-| MS Copilot Security | copilot           | DirectLine    | ✓    | —     | LLM     |
-| OpenAI ChatGPT      | chatgpt           | API key       | ✓    | —     | LLM     |
-| Cyble Vision        | cyble_vision      | API key       | ✓    | —     | Stable  |
-| Armis               | armis             | Secret key    | ✓    | —     | Stable  |
-| Axonius             | axonius           | API key+Secret| ✓    | —     | Stable  |
-| Cortex Xpanse       | cortex_xpanse     | API key       | ✓    | —     | Stable  |
-| CyCognito           | cycognito         | Bearer        | ✓    | —     | Stable  |
-| DefectDojo          | defectdojo        | API token     | ✓    | ✓     | Stable  |
-| Greenbone/OpenVAS   | greenbone         | GMP user/pass | ✓    | —     | Stable  |
-| Group-IB            | group_ib          | API token     | ✓    | —     | Stable  |
-| Orca Security       | orca              | Bearer        | ✓    | —     | Stable  |
-| Qualys VMDR         | qualys            | Basic auth    | ✓    | —     | Stable  |
-| SentinelOne         | sentinelone       | API token     | ✓    | —     | Stable  |
-| Tenable One         | tenable_one       | X-ApiKeys     | ✓    | —     | Stable  |
-| Wiz CNAPP           | wiz               | OAuth2        | ✓    | —     | Stable  |
-| ZeroFox             | zerofox           | Bearer        | ✓    | —     | Stable  |
+| Platform                        | Module                | Auth                  | Read | Write   | Status  |
+|---------------------------------|-----------------------|-----------------------|------|---------|---------|
+| AlienVault OTX                  | alienvault            | API key               | ✓    | —       | Stable  |
+| Armis Centrix                   | armis                 | Secret key            | ✓    | —       | Stable  |
+| AWS Security Hub / GuardDuty    | aws_security          | AWS SigV4             | ✓    | —       | Stable  |
+| Axonius                         | axonius               | API key + secret      | ✓    | —       | Stable  |
+| BitSight Security Ratings       | bitsight              | API token             | ✓    | —       | Stable  |
+| VMware Carbon Black Cloud       | carbon_black          | API key (composite)   | ✓    | —       | Stable  |
+| Censys Internet Intelligence    | censys                | API ID + secret       | ✓    | —       | Stable  |
+| OpenAI ChatGPT                  | chatgpt               | API key               | ✓    | —       | LLM     |
+| CISA KEV Catalog                | CISA                  | None (public)         | ✓    | —       | Stable  |
+| Cisco Umbrella                  | cisco_umbrella        | Bearer / API key      | ✓    | —       | Stable  |
+| Claroty Platform (OT/IoT)       | claroty               | API token             | ✓    | —       | Stable  |
+| CloudSEK Digital Risk           | cloudsek              | API key               | ✓    | —       | Stable  |
+| MS Copilot for Security         | copilot               | DirectLine / Bearer   | ✓    | —       | LLM     |
+| Palo Alto Cortex XDR / XSIAM   | cortex_xdr            | HMAC API key pair     | ✓    | —       | Stable  |
+| Cortex Xpanse (External ASM)    | cortex_xpanse         | API key               | ✓    | —       | Stable  |
+| Cribl Stream                    | cribl                 | Bearer                | ✓    | —       | Stable  |
+| CrowdStrike Falcon              | crowdstrike           | OAuth2                | ✓    | ✓       | Stable  |
+| Cyble Vision                    | cyble_vision          | API key               | ✓    | —       | Stable  |
+| CyCognito ASM                   | cycognito             | Bearer                | ✓    | —       | Stable  |
+| Darktrace Enterprise            | darktrace             | HMAC public/private   | ✓    | —       | Stable  |
+| Datadog Cloud SIEM              | datadog               | API key + App key     | ✓    | —       | Stable  |
+| DefectDojo                      | defectdojo            | API token             | ✓    | ✓       | Stable  |
+| MS Defender Threat Intelligence | defenderti            | OAuth2 (Azure AD)     | ✓    | —       | Stable  |
+| Discord                         | discord               | Bot token             | ✓    | ✓       | Beta    |
+| Dragos Platform (OT/ICS)        | dragos                | Basic (key+secret)    | ✓    | —       | Stable  |
+| Elastic SIEM                    | elastic               | API key / Basic       | ✓    | ✓       | Stable  |
+| ExtraHop Reveal(x) NDR          | extrahop              | API key / OAuth2      | ✓    | —       | Stable  |
+| Feedly Threat Intelligence      | feedly                | OAuth2 / API key      | ✓    | —       | Stable  |
+| Flare (Darknet/Threat Exposure) | flare                 | Bearer                | ✓    | —       | Stable  |
+| Flashpoint Underground          | flashpoint            | Bearer                | ✓    | —       | Stable  |
+| Fortinet FortiEDR               | fortiedr              | Basic                 | ✓    | —       | Stable  |
+| Fortinet FortiSIEM              | fortisiem             | Basic                 | ✓    | —       | Stable  |
+| Fortinet FortiSOAR              | fortisoar             | JWT / Basic           | ✓    | ✓       | Stable  |
+| Google Gemini                   | gemini                | API key               | ✓    | —       | LLM     |
+| Google Chronicle (SecOps SIEM)  | google_chronicle      | OAuth2 / Svc account  | ✓    | —       | Stable  |
+| Graylog                         | graylog               | API key / Basic       | ✓    | —       | Stable  |
+| Greenbone / OpenVAS             | greenbone             | GMP username/password | ✓    | —       | Stable  |
+| GreyMatter                      | greymatter            | API key               | ✓    | ✓       | Stable  |
+| GreyNoise                       | greynoise             | API key               | ✓    | —       | Stable  |
+| Grok AI                         | grok                  | API key               | ✓    | —       | LLM     |
+| Group-IB Threat Intelligence    | group_ib              | API token             | ✓    | —       | Stable  |
+| Have I Been Pwned (HIBP)        | hibp                  | API key               | ✓    | —       | Stable  |
+| Hudson Rock Breach Intelligence | hudsonrock            | API key               | ✓    | —       | Stable  |
+| Intel 471 Cybercrime Intel      | intel471              | Bearer                | ✓    | —       | Stable  |
+| Atlassian Jira                  | jira                  | Basic / Bearer        | ✓    | ✓       | Stable  |
+| JupiterOne (CAASM)              | jupiterone            | Bearer                | ✓    | —       | Stable  |
+| Lansweeper IT Asset Management  | lansweeper            | OAuth2 / API key      | ✓    | —       | Stable  |
+| LogRhythm NextGen SIEM          | logrhythm             | Bearer                | ✓    | —       | Stable  |
+| Mandiant Advantage              | mandiant              | OAuth2                | ✓    | —       | Stable  |
+| MISP Threat Sharing             | misp                  | API key               | ✓    | ✓       | Stable  |
+| Netskope SASE / SSE             | netskope              | API token             | ✓    | ✓       | Stable  |
+| Nozomi Networks Guardian        | nozomi                | API token             | ✓    | —       | Stable  |
+| Nucleus Security                | nucleus               | API key               | ✓    | ✓       | Stable  |
+| OpenCTI                         | opencti               | API key               | ✓    | ✓       | Stable  |
+| Orca Security (CNAPP)           | orca                  | Bearer                | ✓    | —       | Stable  |
+| OSINT Feed (TAXII / STIX-JSON)  | osint_feed            | Various               | ✓    | —       | Stable  |
+| OSSIM                           | ossim                 | Basic auth            | ✓    | —       | Stable  |
+| Palo Alto Prisma Cloud          | prisma_cloud          | JWT (access key)      | ✓    | —       | Stable  |
+| Proofpoint TAP                  | proofpoint            | Basic auth            | ✓    | —       | Stable  |
+| PulseDive                       | pulsedive             | API key               | ✓    | —       | Stable  |
+| IBM QRadar                      | qradar                | API token             | ✓    | —       | Stable  |
+| Qualys VMDR                     | qualys                | Basic                 | ✓    | —       | Stable  |
+| Rapid7 InsightVM / IDR          | rapid7                | API key               | ✓    | Partial | Stable  |
+| Recorded Future                 | recordedfuture        | API token             | ✓    | —       | Stable  |
+| RiskRecon                       | riskrecon             | OAuth2                | ✓    | —       | Stable  |
+| Security Onion                  | security_onion        | Bearer                | ✓    | —       | Stable  |
+| SecurityScorecard               | securityscorecard     | API token             | ✓    | —       | Stable  |
+| Microsoft Sentinel              | sentinel              | OAuth2 (Azure AD)     | ✓    | ✓       | Stable  |
+| SentinelOne Singularity XDR     | sentinelone           | API token             | ✓    | —       | Stable  |
+| ServiceNow ITSM                 | servicenow            | Basic / Bearer        | ✓    | ✓       | Stable  |
+| ServiceNow SecOps (SIR/VR)      | servicenow_secops     | Basic / Bearer        | ✓    | ✓       | Stable  |
+| Shadowserver Foundation         | shadowserver          | HMAC                  | ✓    | —       | Stable  |
+| Shodan                          | shodan                | API key               | ✓    | —       | Stable  |
+| Snort IDS                       | snort                 | File / Syslog         | ✓    | —       | Stable  |
+| SOCRadar Extended TI            | socradar              | API key               | ✓    | —       | Stable  |
+| Sophos Central                  | sophos                | OAuth2                | ✓    | —       | Stable  |
+| Splunk                          | splunk                | Basic / token         | ✓    | ✓       | Stable  |
+| Stellar Cyber Open XDR          | stellarcyber          | API key               | ✓    | —       | Stable  |
+| Suricata IDS/IPS                | suricata              | File / EVE JSON       | ✓    | —       | Stable  |
+| Vertex Project Synapse          | synapse               | API key / Bearer      | ✓    | —       | Stable  |
+| Tanium Endpoint Management      | tanium                | API token / session   | ✓    | —       | Stable  |
+| Tenable One Exposure Mgmt       | tenable_one           | X-ApiKeys             | ✓    | —       | Stable  |
+| TheHive Security IR             | thehive               | API key               | ✓    | ✓       | Stable  |
+| ThreatConnect                   | threatconnect         | OAuth2 / API token    | ✓    | ✓       | Stable  |
+| ThreatQ                         | threatq               | OAuth2                | ✓    | ✓       | Stable  |
+| Anomali ThreatStream (OPTIC)    | threatstream          | API key + username    | ✓    | ✓       | Stable  |
+| Trellix XDR / ePO               | trellix               | OAuth2                | ✓    | —       | Stable  |
+| Trend Micro Vision One XDR      | trendmicro_visionone  | Bearer                | ✓    | —       | Stable  |
+| UpGuard Vendor Risk / CAASM     | upguard               | API key               | ✓    | —       | Stable  |
+| Vectra AI NDR                   | vectra                | Bearer                | ✓    | —       | Stable  |
+| VirusTotal                      | virustotal            | API key               | ✓    | —       | Stable  |
+| Wazuh SIEM/XDR                  | wazuh                 | API key / Basic       | ✓    | —       | Stable  |
+| Whistic (Vendor Risk)           | whistic               | API key               | ✓    | —       | Stable  |
+| Wiz CNAPP                       | wiz                   | OAuth2                | ✓    | —       | Stable  |
+| Palo Alto XSOAR                 | xsoar                 | API key               | ✓    | ✓       | Stable  |
+| YETI (Everyday Threat Intel)    | yeti                  | API key               | ✓    | ✓       | Stable  |
+| Zeek Network Monitor            | zeek                  | File / TSV-JSON       | ✓    | —       | Stable  |
+| ZeroFox Digital Risk Protection | zerofox               | Bearer                | ✓    | —       | Stable  |
+| ControlUp DEX                   | controlup             | Bearer                | ✓    | —       | Stable  |
 
 *Status legend:* **Stable** = full ConnectorMixin interface implemented and tested.
 **LLM** = LLM assistant connector; wraps an AI API rather than a security platform; read-only, no STIX write-back.
+**Beta** = connector scaffolded but not yet fully integrated.
 
 ---
 
@@ -356,7 +395,7 @@ ThreatQ API response
 
 ## Testing
 
-Test suite: 784 unit tests across 25 test files.
+Test suite: 3,071+ unit tests across 44 test files (plus connector-embedded tests).
 
 ```bash
 # Run all tests
@@ -392,18 +431,21 @@ New connectors follow the pattern in `tests/unit/connectors/test_connectors.py`.
 ### Optional extras
 
 ```bash
-pip install "gnat[async]"      # httpx — AsyncGNATClient
-pip install "gnat[taxii]"      # taxii2-client — TAXIICollectionReader
-pip install "gnat[ingest]"     # taxii2-client + feedparser — full ingest pipeline
-pip install "gnat[persist]"    # sqlalchemy — WorkspaceStore (SQLite/PostgreSQL)
-pip install "gnat[viz]"        # plotly, networkx, openpyxl — GraphView, TabularView
-pip install "gnat[schedule]"   # croniter — cron expression scheduling
-pip install "gnat[reports]"    # reportlab + python-docx — PDF and DOCX rendering
-pip install "gnat[serve]"      # fastapi, uvicorn — Web dashboard + TAXII server
-pip install "gnat[tui]"        # textual — Terminal UI
-pip install "gnat[nlp]"        # NLP query interface (builtin backend; zero extra deps)
-pip install "gnat[all]"        # All of the above
-pip install "gnat[dev]"        # All + dev tools (ruff, mypy, pytest, bandit)
+pip install "gnat[async]"           # httpx — AsyncGNATClient
+pip install "gnat[taxii]"           # taxii2-client — TAXIICollectionReader
+pip install "gnat[rss]"             # feedparser — RSS feed reader
+pip install "gnat[ingest]"          # taxii2-client + feedparser — full ingest pipeline
+pip install "gnat[persist]"         # sqlalchemy — WorkspaceStore (SQLite/PostgreSQL)
+pip install "gnat[viz]"             # plotly, networkx, openpyxl — GraphView, TabularView
+pip install "gnat[schedule]"        # croniter — cron expression scheduling
+pip install "gnat[reports]"         # reportlab + python-docx — PDF and DOCX rendering
+pip install "gnat[serve]"           # fastapi, uvicorn — Web dashboard + TAXII server
+pip install "gnat[tui]"             # textual — Terminal UI
+pip install "gnat[nlp]"             # NLP query interface (builtin backend; zero extra deps)
+pip install "gnat[stix-validate]"   # stix2-patterns — full ANTLR STIX pattern validation
+pip install "gnat[fast]"            # gnat-core Rust wheel — accelerated IOC classify/defang
+pip install "gnat[all]"             # All of the above (except fast/stix-validate)
+pip install "gnat[dev]"             # All + dev tools (ruff, mypy, pytest, bandit)
 ```
 
 ### Full install
@@ -440,6 +482,7 @@ All near-term and medium-term roadmap items have shipped:
 | Solr/Grafana observability (`gnat/viz/grafana/`) | ✅ Done |
 | Multi-tenant workspace isolation (`gnat/context/tenant.py`) | ✅ Done |
 | Rust native extension (`rust_core/`, `gnat[fast]`) | ✅ Done |
+| Expanded connector coverage (99 connectors) | ✅ Done |
 
 ### In progress / Near term
 - All near-term items have shipped. See completed list above.
@@ -448,6 +491,7 @@ All near-term and medium-term roadmap items have shipped:
 - STIX 2.1 full object-level validation against official spec
 - Analyst workflow UI — structured review/approval queue before promoting
   AI-extracted intel to production workspaces
+- Discord connector full integration (currently Beta)
 
 ### Long term
 - Federated multi-GNAT deployments with cross-instance workspace sync

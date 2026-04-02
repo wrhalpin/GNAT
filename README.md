@@ -1099,4 +1099,4 @@ Apache 2.0 — see [LICENSE](LICENSE).
 
 ---
 
-*See also: [EXAMPLES.md](EXAMPLES.md) · [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) · [Architecture Decision Records](docs/architecture/adrs/README.md) · [CHANGELOG.md](CHANGELOG.md)*
+*See also: [EXAMPLES.md](EXAMPLES.md) · [Implementation Plan](docs/architecture/implementation-plan.md) · [Architecture Decision Records](docs/architecture/adrs/README.md) · [CHANGELOG.md](CHANGELOG.md)*
