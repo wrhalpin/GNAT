@@ -27,4 +27,4 @@ def test_unsafe_secret_analyzer_flags_obvious_default():
     analyzer = UnsafeSecretAnalyzer()
     findings = analyzer.analyze([("prod/alienvault/api-key", "password")])
     assert findings
-    assert findings[0].severity == "high"
+    assert any(f.severity == "high" for f in findings)

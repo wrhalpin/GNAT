@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import Dict, List
 
 from ..exceptions import SecretNotFoundError, SecretProviderError
 from ..models import SecretGetRequest, SecretPutRequest, SecretRecord, SecretRef
@@ -13,7 +12,7 @@ class InMemorySecretsProvider(BaseSecretsProvider):
     provider_name = "memory"
 
     def __init__(self) -> None:
-        self._records: Dict[str, SecretRecord] = {}
+        self._records: dict[str, SecretRecord] = {}
 
     def _key(self, ref: SecretRef) -> str:
         return f"{ref.vault}:{ref.name}:{ref.version or 'latest'}"
@@ -52,7 +51,7 @@ class InMemorySecretsProvider(BaseSecretsProvider):
         self._records[f"{latest_ref.vault}:{latest_ref.name}:latest"].ref = latest_ref
         return deepcopy(record)
 
-    def list_secret_refs(self, prefix: str | None = None) -> List[SecretRef]:
+    def list_secret_refs(self, prefix: str | None = None) -> list[SecretRef]:
         refs = []
         seen = set()
         for record in self._records.values():

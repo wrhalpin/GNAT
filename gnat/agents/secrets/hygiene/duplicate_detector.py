@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
-from typing import Dict, Iterable, List, Tuple
+from collections.abc import Iterable
 
 from ..models import DuplicateSecretFinding
 
@@ -11,8 +11,8 @@ class DuplicateSecretDetector:
     def fingerprint(self, value: str) -> str:
         return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
-    def find_duplicates(self, secrets: Iterable[Tuple[str, str]]) -> List[DuplicateSecretFinding]:
-        buckets: Dict[str, List[str]] = defaultdict(list)
+    def find_duplicates(self, secrets: Iterable[tuple[str, str]]) -> list[DuplicateSecretFinding]:
+        buckets: dict[str, list[str]] = defaultdict(list)
         for location, value in secrets:
             if not value:
                 continue

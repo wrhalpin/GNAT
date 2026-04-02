@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 from ..exceptions import SecretNotFoundError, SecretProviderError
 from ..models import SecretGetRequest, SecretPutRequest, SecretRecord, SecretRef
 from .base import BaseSecretsProvider
@@ -105,9 +103,9 @@ class AzureKeyVaultProvider(BaseSecretsProvider):
             },
         )
 
-    def list_secret_refs(self, prefix: str | None = None) -> List[SecretRef]:
+    def list_secret_refs(self, prefix: str | None = None) -> list[SecretRef]:
         client = self._get_client()
-        refs: List[SecretRef] = []
+        refs: list[SecretRef] = []
         try:
             for properties in client.list_properties_of_secrets():
                 path_name = self._to_path_name(properties.name)

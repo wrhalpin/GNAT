@@ -5,7 +5,7 @@ secret-hygiene helpers for leak scanning and duplicate detection.
 """
 
 from .broker import SecretsBroker
-from .models import SecretRef, SecretRecord, SecretPutRequest, SecretGetRequest
+from .models import SecretGetRequest, SecretPutRequest, SecretRecord, SecretRef
 
 __all__ = [
     "SecretsBroker",

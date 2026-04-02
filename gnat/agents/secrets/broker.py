@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional
-
 from .models import SecretGetRequest, SecretPutRequest, SecretRecord, SecretRef
 from .policy import SecretsPolicy
 from .providers.base import BaseSecretsProvider
@@ -10,7 +8,7 @@ from .providers.base import BaseSecretsProvider
 class SecretsBroker:
     """Policy-enforcing front door for all secret storage operations."""
 
-    def __init__(self, providers: Dict[str, BaseSecretsProvider], policy: Optional[SecretsPolicy] = None):
+    def __init__(self, providers: dict[str, BaseSecretsProvider], policy: SecretsPolicy | None = None):
         self.providers = providers
         self.policy = policy or SecretsPolicy.default()
 
@@ -42,7 +40,7 @@ class SecretsBroker:
         provider = self._provider_for(request.ref.provider)
         return provider.put_secret(request)
 
-    def list_secret_refs(self, provider_name: str, prefix: str | None = None) -> List[SecretRef]:
+    def list_secret_refs(self, provider_name: str, prefix: str | None = None) -> list[SecretRef]:
         provider = self._provider_for(provider_name)
         return provider.list_secret_refs(prefix=prefix)
 
