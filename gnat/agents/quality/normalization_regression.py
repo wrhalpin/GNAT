@@ -79,7 +79,7 @@ class RegressionDifference:
     def __contains__(self, item: object) -> bool:
         """Allow ``"substring" in diff`` checks against the path and reason."""
         if not isinstance(item, str):
-            return NotImplemented  # type: ignore[return-value]
+            return False
         return item in self.path or item in self.reason or item in str(self.expected) or item in str(self.actual)
 
 
@@ -102,7 +102,7 @@ class GoldenFixture:
     connector: str
     mapper: str
     method: str
-    input: Any  # noqa: A003
+    input: Any  # noqa: A003 - matches JSON fixture key and test API
     expected: Any
     policy: RegressionPolicy = field(default_factory=RegressionPolicy)
 
