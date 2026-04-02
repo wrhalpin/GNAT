@@ -739,7 +739,7 @@ class SyslogReader(SourceReader):
         self,
         source: str | Path,
         fmt: str = "auto",
-        format: str | None = None,  # noqa: A002 - alias for fmt
+        format: str | None = None,  # noqa: A002 - alias for fmt  # pylint: disable=redefined-builtin
         encoding: str = "utf-8",
         **kwargs: Any,
     ):

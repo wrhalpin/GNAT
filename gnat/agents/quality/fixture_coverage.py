@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Sequence
 
 
 @dataclass(slots=True)
@@ -11,7 +11,7 @@ class FixtureCoverageResult:
     fixture_count: int
     has_error_fixture: bool
     has_backward_fixture: bool
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def score(self) -> int:
@@ -30,7 +30,7 @@ class FixtureCoverageAgent:
         self.repo_root = Path(repo_root)
 
     def evaluate_connector(self, connector_name: str, fixture_globs: Sequence[str]) -> FixtureCoverageResult:
-        matched: List[Path] = []
+        matched: list[Path] = []
         for pattern in fixture_globs:
             matched.extend(self.repo_root.glob(pattern))
 
@@ -40,7 +40,7 @@ class FixtureCoverageAgent:
         has_error_fixture = any("error" in name or "failure" in name for name in names)
         has_backward_fixture = any("legacy" in name or "backward" in name or "v1" in name for name in names)
 
-        warnings: List[str] = []
+        warnings: list[str] = []
         if not unique_paths:
             warnings.append("no fixtures found")
         if len(unique_paths) < 2:
@@ -58,5 +58,5 @@ class FixtureCoverageAgent:
             warnings=warnings,
         )
 
-    def evaluate_many(self, registry: Dict[str, Sequence[str]]) -> List[FixtureCoverageResult]:
+    def evaluate_many(self, registry: dict[str, Sequence[str]]) -> list[FixtureCoverageResult]:
         return [self.evaluate_connector(connector_name, globs) for connector_name, globs in registry.items()]
