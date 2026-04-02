@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, List, Sequence
 
 
 @dataclass(slots=True)
@@ -19,8 +19,8 @@ class ConnectorContractProfile:
 class ContractCheckResult:
     connector_name: str
     passed: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def summary(self) -> str:
@@ -36,8 +36,8 @@ class ContractAgent:
 
     def evaluate(self, profile: ConnectorContractProfile) -> ContractCheckResult:
         connector_dir = self.repo_root / profile.connector_path
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not connector_dir.exists():
             errors.append(f"connector path missing: {connector_dir}")
@@ -67,11 +67,11 @@ class ContractAgent:
             warnings=warnings,
         )
 
-    def evaluate_many(self, profiles: Iterable[ConnectorContractProfile]) -> List[ContractCheckResult]:
+    def evaluate_many(self, profiles: Iterable[ConnectorContractProfile]) -> list[ContractCheckResult]:
         return [self.evaluate(profile) for profile in profiles]
 
     def _concat_python_sources(self, connector_dir: Path) -> str:
-        buffer: List[str] = []
+        buffer: list[str] = []
         for path in sorted(connector_dir.rglob("*.py")):
             try:
                 buffer.append(path.read_text(encoding="utf-8"))

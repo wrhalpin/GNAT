@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .contract import ContractAgent, ConnectorContractProfile
+from .contract import ConnectorContractProfile, ContractAgent
 from .fixture_coverage import FixtureCoverageAgent
 
 

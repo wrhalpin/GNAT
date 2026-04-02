@@ -50,5 +50,5 @@ class SecretLeakScanner:
                     if file_path.is_file():
                         findings.extend(self.scan_text(file_path.read_text(errors="ignore"), str(file_path)))
             elif path.is_file():
-                findings.extend(self.scan_text(path.read_text(errors="ignore"), str(path)))
+                findings.extend(self.scan_text(path.read_text(encoding="utf-8", errors="ignore"), str(path)))
         return findings

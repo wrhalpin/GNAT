@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from gnat.agents.quality.contract import ContractAgent, ConnectorContractProfile
+from gnat.agents.quality.contract import ConnectorContractProfile, ContractAgent
 
 
 def test_contract_agent_flags_missing_required_file(tmp_path: Path) -> None:
