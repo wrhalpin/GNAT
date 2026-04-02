@@ -5,8 +5,7 @@ from gnat.agents.secrets.hygiene.unsafe_secrets import UnsafeSecretAnalyzer
 
 def test_leak_scanner_finds_hardcoded_secret_assignment():
     scanner = SecretLeakScanner()
-    findings = scanner.scan_text('api_key = "abc123456789XYZ"
-print("ok")', path="example.py")
+    findings = scanner.scan_text('api_key = "abc123456789XYZ"\nprint("ok")', path="example.py")
     assert len(findings) == 1
     assert findings[0].rule_id == "generic_assignment"
 
