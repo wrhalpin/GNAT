@@ -1723,7 +1723,7 @@ pres.author = "wrhalpin@gmail.com";
     x: 0.35, y: 5.29, w: 9.3, h: 0.22,
     fill: { color: C.teal }, line: { width: 0 }
   });
-  sl.addText("Reference: EXAMPLES.md  \u00b7  IMPLEMENTATION_PLAN.md  \u00b7  ARCHITECTURE_DECISIONS.md  \u00b7  CHANGELOG.md  \u00b7  PENDING_ITEMS.md", {
+  sl.addText("Reference: EXAMPLES.md  \u00b7  IMPLEMENTATION_PLAN.md  \u00b7  ARCHITECTURE_DECISIONS.md  \u00b7  CHANGELOG.md", {
     x: 0.47, y: 5.31, w: 9.16, h: 0.18,
     fontSize: 8, fontFace: "Calibri", bold: true, color: C.white, align: "center", margin: 0
   });
