@@ -1,6 +1,6 @@
 from gnat.agents.secrets.broker import SecretsBroker
 from gnat.agents.secrets.exceptions import SecretPolicyError
-from gnat.agents.secrets.models import SecretGetRequest, SecretPutRequest, SecretPurpose, SecretRef
+from gnat.agents.secrets.models import SecretGetRequest, SecretPurpose, SecretPutRequest, SecretRef
 from gnat.agents.secrets.policy import SecretsPolicy
 from gnat.agents.secrets.providers.memory import InMemorySecretsProvider
 
