@@ -376,7 +376,7 @@ The canonical field for sector data across all GNAT objects is
 `x_target_sectors` — a list of strings on any STIX object.
 
 **Status:** Placeholder in ThreatQ connector. Connector needs updating
-once ThreatQ field names are verified (see `PENDING_ITEMS.md`).
+once ThreatQ field names are verified (see `CHANGELOG.md` for completed work).
 
 **Architecture:**
 

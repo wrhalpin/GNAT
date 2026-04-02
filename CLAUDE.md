@@ -382,7 +382,6 @@ The Claude model defaults to `claude-sonnet-4-6`. When modifying AI agent code, 
 | `docs/architecture/adrs/` | 29 individual Architecture Decision Records with full rationale |
 | `docs/architecture/implementation-plan.md` | Project plan, layer diagram, roadmap |
 | `EXAMPLES.md` | Code snippets for all major features |
-| `PENDING_ITEMS.md` | Tracked outstanding tasks and TODOs |
 | `docs/source/` | Sphinx RST docs (build with `make docs`) |
 
 ---
