@@ -1,4 +1,6 @@
-from typing import Iterable
+from collections.abc import Iterable
+
+
 def redact_text(text: str, secrets: Iterable[str]) -> str:
     for secret in secrets:
         if secret:

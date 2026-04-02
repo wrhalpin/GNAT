@@ -1,5 +1,5 @@
 """
-tests/integration/conftest_docker.py
+tests/integration/conftest.py
 ======================================
 
 Session-scoped fixtures for the Docker integration test harness.
@@ -55,6 +55,12 @@ def pytest_addoption(parser):
         default=False,
         help="Run Docker-based integration tests (requires Docker and docker compose).",
     )
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests against live APIs.",
+    )
 
 
 def pytest_configure(config):
@@ -62,14 +68,19 @@ def pytest_configure(config):
         "markers",
         "docker: Docker-based integration tests — require running Docker daemon",
     )
+    config.addinivalue_line("markers", "integration: live API integration tests")
 
 
 def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--run-docker"):
-        skip = pytest.mark.skip(reason="Pass --run-docker to run Docker integration tests")
-        for item in items:
-            if "docker" in item.keywords:
-                item.add_marker(skip)
+    run_docker = config.getoption("--run-docker")
+    run_integration = config.getoption("--run-integration") or run_docker
+    skip_docker = pytest.mark.skip(reason="Pass --run-docker to run Docker integration tests")
+    skip_integration = pytest.mark.skip(reason="Pass --run-integration to run live tests")
+    for item in items:
+        if "docker" in item.keywords and not run_docker:
+            item.add_marker(skip_docker)
+        if "integration" in item.keywords and not run_integration:
+            item.add_marker(skip_integration)
 
 
 # ---------------------------------------------------------------------------

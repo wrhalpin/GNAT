@@ -30,32 +30,6 @@ from gnat.client import GNATClient
 from gnat.orm.indicator import Indicator
 
 # ---------------------------------------------------------------------------
-# Pytest config
-# ---------------------------------------------------------------------------
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--run-integration",
-        action="store_true",
-        default=False,
-        help="Run integration tests against live APIs.",
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "integration: live API integration tests")
-
-
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--run-integration"):
-        skip = pytest.mark.skip(reason="Pass --run-integration to run live tests")
-        for item in items:
-            if "integration" in item.keywords:
-                item.add_marker(skip)
-
-
-# ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
