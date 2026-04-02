@@ -54,7 +54,7 @@ tests/
 ├── unit/                    # Unit tests mirroring gnat/ layout
 └── integration/             # Live API tests (opt-in)
 
-docs/                        # Documentation (explanation, how-to, reference, tutorials)
+docs/                        # Documentation (explanation, how-to, reference, tutorials; Sphinx HTML → docs/sphinx-html/)
 config/config.ini.example    # Configuration template
 Makefile                     # Dev targets (test, lint, build, docs, docker, rust)
 pyproject.toml               # Build config, deps, tool configs
@@ -84,7 +84,7 @@ make install        # pip install -e ".[dev]" + httpx
 | `make fmt` | ruff format | Auto-format code |
 | `make typecheck` | mypy | Type-check public APIs |
 | `make check` | lint + typecheck | Full static analysis |
-| `make docs` | sphinx-build | Build HTML docs |
+| `make docs` | sphinx-build | Build HTML docs (output: `docs/sphinx-html/`) |
 | `make build` | setuptools | Build sdist + wheel |
 | `make clean` | | Remove all build artifacts |
 | `make build-rust` | maturin build --release | Build + install Rust native extension |
@@ -186,7 +186,7 @@ All ORM objects inherit from `STIXBase` (`gnat/orm/base.py`):
 
 ## Key Architecture Decisions
 
-See `docs/architecture/adrs/` for the full rationale (individual ADR files). Key choices:
+See `docs/explanation/architecture/adrs/` for the full rationale (individual ADR files). Key choices:
 
 | Decision | Choice | Reason |
 |----------|--------|--------|
