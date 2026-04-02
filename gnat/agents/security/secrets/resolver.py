@@ -1,11 +1,17 @@
 from __future__ import annotations
-from typing import Any, Dict
+
+from typing import Any
+
 from .broker import SecretsBroker
+
 
 class ConnectorConfigResolver:
     def __init__(self, broker: SecretsBroker) -> None:
         self.broker = broker
-    def resolve_credentials(self, config: Dict[str, Any], *, caller: str = "runtime") -> Dict[str, Any]:
+
+    def resolve_credentials(
+        self, config: dict[str, Any], *, caller: str = "runtime"
+    ) -> dict[str, Any]:
         resolved = dict(config)
         creds = dict(resolved.get("credentials", {}))
         for k, v in list(creds.items()):

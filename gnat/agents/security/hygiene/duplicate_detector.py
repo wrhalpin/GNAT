@@ -1,8 +1,10 @@
 from collections import defaultdict
-from typing import Dict, Iterable, List
+from collections.abc import Iterable
+
 
 class DuplicateDetector:
-    def find_duplicates(self, values: Iterable[str]) -> Dict[str, List[str]]:
+    def find_duplicates(self, values: Iterable[str]) -> dict[str, list[str]]:
         index = defaultdict(list)
-        for value in values: index[value].append(value)
+        for value in values:
+            index[value].append(value)
         return {k: v for k, v in index.items() if len(v) > 1}
