@@ -71,9 +71,13 @@ import json
 import logging
 from collections.abc import Iterator
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from gnat.agents.base import ClaudeClient
 from gnat.ingest.base import RawRecord, SourceReader
+
+if TYPE_CHECKING:
+    from gnat.agents.base import AgentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -108,15 +112,12 @@ class ResearchAgent(SourceReader):
 
     def __init__(
         self,
-        config: Any,
+        config: AgentConfig,
         topics: list[str] | None = None,
         monitored_sources: list[dict[str, Any]] | None = None,
         newer_than: str | None = None,
         max_calls_per_run: int | None = None,
     ) -> None:
-        # Import here to avoid circular imports
-        from gnat.agents.base import ClaudeClient
-
         if topics and monitored_sources:
             raise ValueError(
                 "Provide topics or monitored_sources, not both."
