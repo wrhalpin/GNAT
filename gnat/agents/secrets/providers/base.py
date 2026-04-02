@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Iterable, List
 
 from ..models import SecretGetRequest, SecretPutRequest, SecretRecord, SecretRef
 
@@ -18,5 +17,5 @@ class BaseSecretsProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_secret_refs(self, prefix: str | None = None) -> List[SecretRef]:
+    def list_secret_refs(self, prefix: str | None = None) -> list[SecretRef]:
         raise NotImplementedError

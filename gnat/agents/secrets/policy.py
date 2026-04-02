@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
-from typing import Dict, Iterable, List, Optional
 
 from .exceptions import SecretPolicyError
 from .models import SecretPurpose, SecretRef
@@ -12,8 +12,8 @@ from .models import SecretPurpose, SecretRef
 class SecretAccessRule:
     action: str
     pattern: str
-    allowed_purposes: List[SecretPurpose] = field(default_factory=list)
-    allowed_requestors: List[str] = field(default_factory=list)
+    allowed_purposes: list[SecretPurpose] = field(default_factory=list)
+    allowed_requestors: list[str] = field(default_factory=list)
     require_explicit_overwrite: bool = True
 
     def matches(self, action: str, ref: SecretRef) -> bool:
@@ -27,17 +27,17 @@ class SecretsPolicy:
     on a big screen and safe to extend later.
     """
 
-    def __init__(self, rules: Optional[Iterable[SecretAccessRule]] = None):
+    def __init__(self, rules: Iterable[SecretAccessRule] | None = None):
         self.rules = list(rules or [])
 
     @classmethod
-    def default(cls) -> "SecretsPolicy":
+    def default(cls) -> SecretsPolicy:
         return cls(
             rules=[
                 SecretAccessRule(
                     action="get",
                     pattern="dev/*",
-                    allowed_purposes=[p for p in SecretPurpose],
+                    allowed_purposes=list(SecretPurpose),
                     allowed_requestors=["system", "ci", "developer", "runtime"],
                 ),
                 SecretAccessRule(

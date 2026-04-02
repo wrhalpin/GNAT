@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from collections.abc import Iterable
 
 
 def redact_text(text: str, secrets: Iterable[str]) -> str:
@@ -14,7 +14,7 @@ def redact_text(text: str, secrets: Iterable[str]) -> str:
 
 
 COMMON_SECRET_PATTERNS = [
-    re.compile(r"(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*['"]?([A-Za-z0-9_\-\./+=]{8,})"),
+    re.compile(r"""(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*['"]?([A-Za-z0-9_\-\./+=]{8,})"""),
 ]
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Tuple
+from collections.abc import Iterable
 
 from ..models import UnsafeSecretFinding
 
@@ -13,8 +13,8 @@ class UnsafeSecretAnalyzer:
     connector-specific rules should land later.
     """
 
-    def analyze(self, named_values: Iterable[Tuple[str, str]]) -> List[UnsafeSecretFinding]:
-        findings: List[UnsafeSecretFinding] = []
+    def analyze(self, named_values: Iterable[tuple[str, str]]) -> list[UnsafeSecretFinding]:
+        findings: list[UnsafeSecretFinding] = []
         for name, value in named_values:
             if not value:
                 findings.append(UnsafeSecretFinding(secret_name=name, reason="empty secret", severity="high"))

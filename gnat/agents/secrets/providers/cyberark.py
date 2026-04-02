@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 from ..exceptions import SecretProviderError
 from ..models import SecretGetRequest, SecretPutRequest, SecretRecord, SecretRef
 from .base import BaseSecretsProvider
@@ -28,5 +26,5 @@ class CyberArkProvider(BaseSecretsProvider):
     def put_secret(self, request: SecretPutRequest) -> SecretRecord:
         raise SecretProviderError("CyberArk provider scaffold only: implementation pending")
 
-    def list_secret_refs(self, prefix: str | None = None) -> List[SecretRef]:
+    def list_secret_refs(self, prefix: str | None = None) -> list[SecretRef]:
         raise SecretProviderError("CyberArk provider scaffold only: implementation pending")

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class SecretPurpose(str, Enum):
@@ -19,7 +19,7 @@ class SecretRef:
     provider: str
     vault: str
     name: str
-    version: Optional[str] = None
+    version: str | None = None
 
     def to_uri(self) -> str:
         version_suffix = f"?version={self.version}" if self.version else ""
@@ -30,8 +30,8 @@ class SecretRef:
 class SecretPutRequest:
     ref: SecretRef
     value: str
-    tags: Dict[str, str] = field(default_factory=dict)
-    content_type: Optional[str] = None
+    tags: dict[str, str] = field(default_factory=dict)
+    content_type: str | None = None
     enabled: bool = True
     overwrite: bool = False
     requested_by: str = "system"
@@ -49,15 +49,15 @@ class SecretGetRequest:
 @dataclass
 class SecretRecord:
     ref: SecretRef
-    value: Optional[str] = None
-    content_type: Optional[str] = None
+    value: str | None = None
+    content_type: str | None = None
     enabled: bool = True
-    tags: Dict[str, str] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    provider_metadata: Dict[str, Any] = field(default_factory=dict)
+    provider_metadata: dict[str, Any] = field(default_factory=dict)
 
-    def redacted_dict(self) -> Dict[str, Any]:
+    def redacted_dict(self) -> dict[str, Any]:
         return {
             "ref": self.ref.to_uri(),
             "has_value": self.value is not None,

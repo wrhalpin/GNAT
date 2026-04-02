@@ -11,7 +11,6 @@ from gnat.agents.quality.normalization_regression import (
     render_regression_report,
 )
 
-
 DATA_DIR = Path(__file__).parent / "data"
 
 

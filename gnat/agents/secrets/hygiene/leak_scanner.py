@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 from ..models import LeakFinding
 
-
 DEFAULT_RULES = {
     "generic_assignment": re.compile(
-        r"(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*['"]?([A-Za-z0-9_\-\./+=]{8,})"
+        r"""(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*['"]?([A-Za-z0-9_\-\./+=]{8,})"""
     ),
     "azure_connection_string": re.compile(r"(?i)DefaultEndpointsProtocol=.*AccountKey=.*"),
     "private_key_header": re.compile(r"-----BEGIN (RSA |EC )?PRIVATE KEY-----"),
@@ -21,8 +20,8 @@ class SecretLeakScanner:
         self.rules = rules or DEFAULT_RULES
         self.ignore_paths = list(ignore_paths or [])
 
-    def scan_text(self, text: str, path: str = "<memory>") -> List[LeakFinding]:
-        findings: List[LeakFinding] = []
+    def scan_text(self, text: str, path: str = "<memory>") -> list[LeakFinding]:
+        findings: list[LeakFinding] = []
         for line_number, line in enumerate(text.splitlines(), start=1):
             for rule_id, pattern in self.rules.items():
                 match = pattern.search(line)
@@ -40,8 +39,8 @@ class SecretLeakScanner:
                 )
         return findings
 
-    def scan_paths(self, paths: Iterable[str]) -> List[LeakFinding]:
-        findings: List[LeakFinding] = []
+    def scan_paths(self, paths: Iterable[str]) -> list[LeakFinding]:
+        findings: list[LeakFinding] = []
         for path_str in paths:
             path = Path(path_str)
             if any(part in self.ignore_paths for part in path.parts):

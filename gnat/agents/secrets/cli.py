@@ -4,7 +4,7 @@ import argparse
 import json
 
 from .broker import SecretsBroker
-from .models import SecretGetRequest, SecretPutRequest, SecretRef, SecretPurpose
+from .models import SecretGetRequest, SecretPurpose, SecretPutRequest, SecretRef
 from .policy import SecretsPolicy
 from .providers.memory import InMemorySecretsProvider
 

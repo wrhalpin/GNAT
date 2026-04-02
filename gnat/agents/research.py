@@ -6,8 +6,6 @@ gnat.agents.research
 uses the Claude API (with web search enabled) to gather threat intelligence
 on specific topics or from monitored sources.
 
-**Now uses the unified LLMClient for multi-LLM support (Claude, OpenAI, Grok, etc.).**
-
 Two operating modes
 -------------------
 
@@ -70,11 +68,16 @@ calls per ``_iter_records`` invocation to prevent runaway cost.
 from __future__ import annotations
 
 import json
+import logging
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from typing import Any
 
-from gnat.agents.llm import LLMClient
-from gnat.clients.base import GNATClientError
+from gnat.ingest.base import RawRecord, SourceReader
+
+logger = logging.getLogger(__name__)
+
+_FEED_BATCH_SIZE = 10
 
 
 def _now_ts() -> str:
@@ -82,50 +85,178 @@ def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-class ResearchAgent:
+class ResearchAgent(SourceReader):
     """
     AI-powered research agent for threat intelligence.
 
-    Supports topic-driven synthesis and feed-driven monitoring.
-    Uses unified LLMClient for multi-provider support (Claude, OpenAI, Grok).
+    Supports topic-driven synthesis and feed-driven monitoring via the
+    Claude API (``ClaudeClient``).
 
-    Configuration via [llm] and provider-specific sections ([claude], [openai], [grok]).
+    Parameters
+    ----------
+    config : AgentConfig
+        Agent configuration (API key, model, ceiling, etc.).
+    topics : list[str], optional
+        Threat topics to research (topic-driven mode).
+    monitored_sources : list[dict], optional
+        Feed sources to monitor (feed-driven mode).
+    newer_than : str, optional
+        ISO 8601 timestamp; only return items published after this time.
+    max_calls_per_run : int, optional
+        Cap on the number of API calls per iteration.  ``None`` means unlimited.
     """
 
     def __init__(
         self,
-        config: dict[str, Any],
-        llm_backend: str | None = None,
+        config: Any,
+        topics: list[str] | None = None,
+        monitored_sources: list[dict[str, Any]] | None = None,
+        newer_than: str | None = None,
+        max_calls_per_run: int | None = None,
     ) -> None:
-        """
-        Parameters
-        ----------
-        config : dict
-            Full GNAT configuration dictionary (from GNATConfig).
-        llm_backend : str, optional
-            Override default backend (claude | openai | grok). Falls back to [llm].default_backend.
-        """
-        self.config = config
-        self.ai_confidence_ceiling = config.get("llm", {}).get("ai_confidence_ceiling", 70)
+        # Import here to avoid circular imports
+        from gnat.agents.base import ClaudeClient
 
-        backend = llm_backend or config.get("llm", {}).get("default_backend", "claude")
+        if topics and monitored_sources:
+            raise ValueError(
+                "Provide topics or monitored_sources, not both."
+            )
+        if not topics and not monitored_sources:
+            raise ValueError(
+                "Provide topics or monitored_sources (at least one is required)."
+            )
 
-        # Pass relevant provider config to LLMClient
-        provider_config = {}
-        if backend == "claude":
-            provider_config = config.get("claude", {})
-        elif backend == "openai":
-            provider_config = config.get("openai", {})
-        elif backend == "grok":
-            provider_config = config.get("grok", {})
+        super().__init__(source_id="ResearchAgent")
+        self._cfg = config
+        self._client = ClaudeClient(config)
+        self._topics: list[str] = list(topics or [])
+        self._monitored_sources: list[dict[str, Any]] = list(monitored_sources or [])
+        self._newer_than = newer_than
+        self._max_calls = max_calls_per_run
 
-        self.llm = LLMClient(backend=backend, **provider_config)
+    # ── SourceReader protocol ─────────────────────────────────────────────
 
-        # Topic list and other settings (existing behavior preserved)
-        self.topics = config.get("research", {}).get("topics", [])
-        self.confidence_ceiling = self.ai_confidence_ceiling
+    def _iter_records(self) -> Iterator[RawRecord]:
+        if self._topics:
+            yield from self._iter_topic_records()
+        else:
+            yield from self._iter_feed_records()
 
-    # ── Core research methods ─────────────────────────────────────────────
+    # ── Topic-driven iteration ────────────────────────────────────────────
+
+    def _iter_topic_records(self) -> Iterator[RawRecord]:
+        calls = 0
+        for topic in self._topics:
+            if self._max_calls is not None and calls >= self._max_calls:
+                break
+            user_prompt = self._build_topic_prompt(topic)
+            try:
+                response = self._client.complete(user_prompt)
+                calls += 1
+            except Exception as exc:
+                logger.warning("ResearchAgent: topic %r failed: %s", topic, exc)
+                continue
+
+            parsed = self._client.json_from(response)
+            if parsed is None:
+                # Prose fallback — yield raw text
+                text = self._client.text_from(response)
+                yield {"topic": topic, "text": text, "metadata": {"mode": "topic"}}
+            else:
+                yield {
+                    "topic": topic,
+                    "text": self._flatten_result(parsed),
+                    "metadata": {
+                        "mode": "topic",
+                        "confidence": parsed.get("confidence"),
+                        "iocs_mentioned": parsed.get("iocs_mentioned", []),
+                        "search_queries_used": parsed.get("search_queries_used", []),
+                    },
+                }
+
+    def _build_topic_prompt(self, topic: str) -> str:
+        date_hint = (
+            f"\nOnly include information published after {self._newer_than}."
+            if self._newer_than
+            else ""
+        )
+        return (
+            f"You are a cyber threat intelligence analyst.\n"
+            f"Research the following topic and return a JSON object with keys: "
+            f"title, summary, key_findings, source_urls, iocs_mentioned, "
+            f"ttps_mentioned, actors_mentioned, cves_mentioned, confidence (0-100), "
+            f"search_queries_used.\n"
+            f"Topic: {topic}{date_hint}"
+        )
+
+    # ── Feed-driven iteration ─────────────────────────────────────────────
+
+    def _iter_feed_records(self) -> Iterator[RawRecord]:
+        sources = self._monitored_sources
+        for i in range(0, len(sources), _FEED_BATCH_SIZE):
+            batch = sources[i : i + _FEED_BATCH_SIZE]
+            user_prompt = self._build_feed_prompt(batch)
+            try:
+                response = self._client.complete(user_prompt)
+            except Exception as exc:
+                logger.warning("ResearchAgent: feed batch failed: %s", exc)
+                continue
+
+            items = self._client.json_from(response) or []
+            if not isinstance(items, list):
+                items = []
+            for item in items:
+                yield {
+                    "text": item.get("text", item.get("title", "")),
+                    "url": item.get("url", ""),
+                    "title": item.get("title", ""),
+                    "metadata": {"mode": "feed", **item},
+                }
+
+    def _build_feed_prompt(self, sources: list[dict[str, Any]]) -> str:
+        source_lines = "\n".join(
+            f"- {s.get('label', s.get('url', ''))}: {s.get('url', '')}"
+            for s in sources
+        )
+        date_hint = (
+            f"\nOnly include items published after {self._newer_than}."
+            if self._newer_than
+            else ""
+        )
+        return (
+            f"You are a cyber threat intelligence analyst monitoring threat feeds.\n"
+            f"Check the following sources for new threat-relevant content and return a "
+            f"JSON array of objects, each with keys: url, title, text, published_at.\n"
+            f"Return an empty array [] if no relevant content is found.{date_hint}\n\n"
+            f"Sources:\n{source_lines}"
+        )
+
+    # ── Helpers ────────────────────────────────────────────────────────────
+
+    def _flatten_result(self, result: dict[str, Any]) -> str:
+        """Convert a structured research result dict to a plain-text string."""
+        parts: list[str] = []
+        if result.get("summary"):
+            parts.append(str(result["summary"]))
+        for finding in result.get("key_findings", []):
+            parts.append(str(finding))
+        for ioc in result.get("iocs_mentioned", []):
+            if ioc.get("value"):
+                parts.append(str(ioc["value"]))
+        for ttp in result.get("ttps_mentioned", []):
+            if ttp.get("technique_id"):
+                parts.append(str(ttp["technique_id"]))
+            if ttp.get("name"):
+                parts.append(str(ttp["name"]))
+        for actor in result.get("actors_mentioned", []):
+            if actor.get("name"):
+                parts.append(str(actor["name"]))
+        for cve in result.get("cves_mentioned", []):
+            if cve.get("cve_id"):
+                parts.append(str(cve["cve_id"]))
+        return " ".join(parts)
+
+    # ── Legacy helpers (preserved for backward compatibility) ─────────────
 
     def research_topic(self, topic: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
@@ -133,123 +264,44 @@ class ResearchAgent:
 
         Returns structured output with threat summary, indicators, TTPs, etc.
         """
-        system_prompt = (
-            "You are an expert cyber threat intelligence analyst. "
-            "Provide a detailed, accurate, and actionable analysis."
+        user_prompt = (
+            f"Research the following threat intelligence topic: {topic}\n\n"
+            f"Additional context:\n{json.dumps(context or {}, indent=2)}\n\n"
+            "Focus on: threat actors, technical indicators (IOCs), TTPs (MITRE ATT&CK), "
+            "targeted sectors, mitigation recommendations, and confidence assessment.\n"
+            "Return a JSON object."
         )
-
-        user_prompt = f"""
-        Research the following threat intelligence topic: {topic}
-
-        Additional context:
-        {json.dumps(context or {}, indent=2)}
-
-        Focus on:
-        - Threat actors and campaigns
-        - Technical indicators (IOCs)
-        - TTPs (MITRE ATT&CK)
-        - Targeted sectors / victims
-        - Mitigation recommendations
-        - Confidence assessment
-        """
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
-
         try:
-            response = self.llm.chat(messages, temperature=0.5, max_tokens=4096)
-
-            # Extract content depending on provider response format
-            if self.llm.backend == "claude":
-                content = response.get("content", [{}])[0].get("text", "")
-            else:  # OpenAI / Grok style
-                content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
-
-            # Attempt structured parsing
-            structured = self._parse_research_output(content)
-
+            response = self._client.complete(user_prompt)
+            content = self._client.text_from(response)
+            structured = self._client.json_from(response) or {"summary": content[:800]}
             return {
                 "topic": topic,
                 "summary": structured.get("summary", content[:1000]),
                 "indicators": structured.get("indicators", []),
                 "ttps": structured.get("ttps", []),
-                "confidence": min(structured.get("confidence", 70), self.confidence_ceiling),
-                "model_used": self.llm.get_model_name(),
+                "confidence": structured.get("confidence", 60),
                 "timestamp": _now_ts(),
                 "raw_response": content,
             }
-        except Exception as e:
-            raise GNATClientError(f"Research on topic '{topic}' failed: {e}") from e
-
-    def analyze_feed_item(self, feed_item: dict[str, Any]) -> dict[str, Any]:
-        """
-        Analyze a single feed item (e.g., from ingested threat intel) for relevance and enrichment.
-        """
-        prompt = f"""
-        Analyze this threat intelligence feed item and extract key insights:
-
-        {json.dumps(feed_item, indent=2)}
-
-        Return structured analysis including:
-        - Relevance to current threats
-        - Extracted IOCs
-        - Suggested TTPs
-        - Recommended actions
-        """
-
-        schema = {
-            "type": "object",
-            "properties": {
-                "relevance_score": {"type": "integer", "minimum": 0, "maximum": 100},
-                "extracted_iocs": {"type": "array", "items": {"type": "string"}},
-                "ttps": {"type": "array", "items": {"type": "string"}},
-                "summary": {"type": "string"},
-                "recommended_action": {"type": "string"},
-            },
-            "required": ["relevance_score", "summary"],
-        }
-
-        try:
-            result = self.llm.structured(prompt, schema, temperature=0.3)
-            result["model_used"] = self.llm.get_model_name()
-            result["timestamp"] = _now_ts()
-            return result
-        except Exception as e:
-            raise GNATClientError(f"Feed item analysis failed: {e}") from e
-
-    # ── Private helpers ────────────────────────────────────────────────────
-
-    def _parse_research_output(self, text: str) -> dict[str, Any]:
-        """Attempt to extract structured fields from free-form LLM output."""
-        # Simple heuristic parsing -- improve with better prompting or structured calls
-        result: dict[str, Any] = {
-            "summary": text[:800],
-            "indicators": [],
-            "ttps": [],
-            "confidence": 60,
-        }
-
-        # Basic keyword extraction (extend with regex or LLM-based parsing if needed)
-        if "IOC" in text or "indicator" in text.lower():
-            result["indicators"] = ["extracted-ioc-placeholder"]  # replace with real parsing
-
-        if any(ttp in text.upper() for ttp in ["T", "TA", "ATT&CK"]):
-            result["ttps"] = ["Txxxx.xxx"]  # placeholder
-
-        return result
-
-    # ── Feed-driven monitoring (existing pattern preserved) ───────────────
+        except Exception as exc:
+            raise RuntimeError(f"Research on topic '{topic}' failed: {exc}") from exc
 
     def monitor_feeds(self, feeds: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Analyze multiple feed items and return enriched results."""
         results = []
         for item in feeds:
             try:
-                analysis = self.analyze_feed_item(item)
+                prompt = (
+                    f"Analyze this threat intelligence feed item:\n"
+                    f"{json.dumps(item, indent=2)}\n\n"
+                    "Return a JSON object with keys: relevance_score, summary, "
+                    "extracted_iocs, ttps, recommended_action."
+                )
+                response = self._client.complete(prompt)
+                analysis = self._client.json_from(response) or {}
+                analysis["timestamp"] = _now_ts()
                 results.append({"feed_item": item, "analysis": analysis})
             except Exception:
-                # Log and continue (non-blocking)
                 pass
         return results
