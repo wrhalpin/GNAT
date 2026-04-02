@@ -234,7 +234,7 @@ pip install "gnat[tui]"                # Interactive terminal UI (textual)
 pip install "gnat[nlp]"                # NLP query engine (zero deps for builtin; Claude backend requires [agents])
 pip install "gnat[stix-validate]"      # Tier-2 STIX pattern validation (stix2-patterns / ANTLR)
 pip install "gnat[fast]"               # Rust IOC hot-path extension (maturin wheel)
-pip install "gnat[all]"                # Everything above
+pip install "gnat[all]"                # Core extras (yaml, taxii, ingest, async, persist, schedule, reports, viz, serve)
 pip install "gnat[dev]"                # All + ruff, mypy, pytest, httpx, sqlalchemy
 ```
 
@@ -881,7 +881,18 @@ gnat contribute --connector myplatform --dry-run   # compliance check only
 
 ### Continuous Integration
 
-Every push runs the **pylint** workflow across a Python 3.8 / 3.9 / 3.10 matrix:
+| Workflow | Trigger | Python versions | Purpose |
+|----------|---------|----------------|---------|
+| **pylint** | every push | 3.9, 3.10, 3.11, 3.12 | Style and logic analysis |
+| **python-tests** | push to `main`, pull requests | 3.11, 3.12, 3.13 | Unit test suite |
+| **python-typecheck** | push / PR | — | mypy static type checking |
+| **python-lint-fast** | push / PR | — | Ruff lint + format check |
+| **codeql** | push / PR | — | GitHub CodeQL security analysis |
+| **bandit** | push / PR | — | Python security linting |
+| **dependency-review** | pull requests | — | Dependency vulnerability review |
+| **secrets-hygiene** | PR (secrets paths) | 3.11 | Secrets agent tests |
+
+Example — pylint workflow (abbreviated):
 
 ```yaml
 # .github/workflows/pylint.yml
@@ -890,10 +901,14 @@ jobs:
   build:
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - run: pip install pylint && pylint gnat
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install pylint && pip install -e ".[dev]" || pip install -e .
+      - run: pylint gnat
 ```
 
 ### Linting & Type Checking
