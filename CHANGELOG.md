@@ -4,560 +4,98 @@ All notable changes to GNAT are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Detailed per-version release notes are available in [`docs/releases/`](docs/releases/).
+
 ---
-## [v1.3.0] — 2026-
 
-### Added
-- **9 new platform connectors** registered in `CLIENT_REGISTRY`:
-  - `AWSSecurityClient` (`gnat/connectors/aws_security/`) — AWS Security Hub + GuardDuty; AWS Signature Version 4 (SigV4) auth via access key + secret; aggregated Security Hub findings and GuardDuty threat intelligence ingestion.
-  - `CriblClient` (`gnat/connectors/cribl/`) — Cribl Stream / Edge REST API v1; username/password login or direct Bearer token auth; pipeline, lookup table, and search job management with STIX course-of-action and observed-data mapping.
-  - `DatadogClient` (`gnat/connectors/datadog/`) — Datadog Security / Cloud SIEM; dual API key + Application key header auth; security signal (SIEM detection), Cloud Security Management, and Application Security Management ingestion.
-  - `DragosClient` (`gnat/connectors/dragos/`) — Dragos Platform OT/ICS cybersecurity; API key + secret Basic auth; threat-actor Activity Group and IOC ingestion for industrial control systems and critical infrastructure.
-  - `HIBPClient` (`gnat/connectors/hibp/`) — Have I Been Pwned (HIBP) v3; `hibp-api-key` header auth; read-only breach and paste intelligence with vulnerability and identity STIX mapping.
-  - `SecurityScorecardClient` (`gnat/connectors/securityscorecard/`) — SecurityScorecard continuous security ratings; `Token` header auth; read-only company scorecards, vendor risk findings, and portfolio management.
-  - `SynapseClient` (`gnat/connectors/synapse/`) — Vertex Project Synapse Cortex HTTP API; Bearer token or username/password session auth; Storm query language support for full graph traversal and IOC enrichment.
-  - `TaniumClient` (`gnat/connectors/tanium/`) — Tanium Platform endpoint management; API token or username/password session auth; real-time endpoint visibility, threat hunting, vulnerability management, and incident response via REST API v2.
-  - `TrendMicroVisionOneClient` (`gnat/connectors/trendmicro_visionone/`) — Trend Micro Vision One (XDR) v3; Bearer token auth; cross-layer detection and response across endpoint, email, network, and cloud with IOC and malware STIX mapping.
+## [v1.3.0] — Unreleased
 
-- **Multi-LLM support** (`gnat/agents/llm.py`): unified `LLMClient` with Claude, OpenAI, and Grok backends. Automatic fallback, structured output, and config-driven selection. Refactored `ClaudeProvider` for the new interface. Backwards-compatible with existing `[claude]` section.
- 
+9 new platform connectors (AWS Security Hub/GuardDuty, Cribl Stream, Datadog, Dragos, HIBP, SecurityScorecard, Synapse, Tanium, Trend Micro Vision One). Unified multi-LLM client (`LLMClient`) with Claude, OpenAI, and Grok backends and automatic fallback.
+
+→ [Full release notes](docs/releases/v1.3.0.md)
+
+---
+
 ## [v1.2.0] — 2026-03-30
 
-### Added
-- `CISAClient` (`gnat/connectors/CISA/`) registered in `CLIENT_REGISTRY` under key `"cisa"` — CISA Known Exploited Vulnerabilities (KEV) Catalog connector; no authentication required (public feed); read-only vulnerability ingestion with `x_cisa_kev` STIX extension.
-- `config/config.ini.example` updated with `[cisa]` section.
-- `README.md` updated to include `cisa` in the Supported Platforms table.
-- **89 new unit tests** covering all 6 previously untested connectors: `CISAClient` (18), `FortiEDRClient` (12), `FortiSIEMClient` (13), `GoogleChronicleClient` (12), `GreyNoiseClient` (17), `ShodanClient` (17).
+25 new platform connectors across three batches (Censys, ServiceNow SecOps, Darktrace, ExtraHop, Lansweeper, Vectra, Sophos, Trellix, BitSight, Flashpoint, HudsonRock, Intel 471, UpGuard, Carbon Black, CortexXDR, Dragos, FortiEDR, FortiSIEM, FortiSOAR, Google Chronicle, GreyNoise, LogRhythm, Nozomi, Prisma Cloud, Shodan). CISA KEV connector. 89 new unit tests for previously untested connectors. Mass lint cleanup (4,647 auto-fixed issues + 141 manual fixes).
 
-### Fixed
-- Auto-fixed 4,647 ruff linting issues (unsorted imports, f-strings without placeholders, trailing whitespace, missing newlines, unnecessary dict/set constructions, C420 dict comprehensions).
-- Fixed 141 remaining ruff errors manually:
-  - **E702/E701**: Split ~127 multi-statement semicolon/colon lines across `gnat/async_client/connectors.py`, `gnat/cli/main.py`, `gnat/connectors/alienvault/`, `gnat/connectors/elastic/stix_mapper.py`, `gnat/connectors/graylog/`, `gnat/connectors/greymatter/client.py`, `gnat/connectors/misp/`, `gnat/connectors/ossim/`, `gnat/connectors/security_onion/`, `gnat/connectors/sentinel/`, `gnat/connectors/shadowserver/client.py`, `gnat/connectors/snort/`, `gnat/connectors/suricata/`, `gnat/connectors/wazuh/alerts.py`, `gnat/connectors/zeek/`, `gnat/export/delivery/targets.py`, `gnat/reports/aggregator.py`, `gnat/viz/graph.py`.
-  - **F821**: Added missing imports for `STIXBase` (`gnat/agents/parsing.py`), `ReportAggregates` (`gnat/reports/`), `RunRecord` (`gnat/schedule/`), `RGBColor` and `Pt` (`gnat/reports/renderers.py`).
-  - **E741**: Renamed ambiguous variable `l` → `lbl` in `gnat/connectors/sentinel/incidents.py`.
-  - **B007**: Renamed unused loop variable `nid` → `_nid` in `gnat/viz/graph.py`.
-  - **B017**: Changed bare `assert Exception` to specific exception class in MISP tests.
-  - **E402**: Moved module-level imports to top of file in `gnat/connectors/security_onion/__init__.py`.
-
-
-  - `CortexXDRClient` (`gnat/connectors/cortex_xdr/`) — Palo Alto Cortex XDR / XSIAM; HMAC-signed API key pair auth; alert & incident search, endpoint isolation, IOC management.
-  - `PrismaCloudClient` (`gnat/connectors/prisma_cloud/`) — Palo Alto Prisma Cloud CSPM/CWP/CNAPP; JWT (access key + secret); alert, vulnerability, and compliance posture ingestion with RQL query support.
-  - `NozomiClient` (`gnat/connectors/nozomi/`) — Nozomi Networks Guardian / Vantage OT/IoT; API token or Basic auth; OT alert, CVE, and asset inventory for industrial control systems.
-  - `CarbonBlackClient` (`gnat/connectors/carbon_black/`) — VMware Carbon Black Cloud; composite X-Auth-Token; alert search, device management, process threat hunting, watchlist management, and device quarantine.
-  - `LogRhythmClient` (`gnat/connectors/logrhythm/`) — LogRhythm NextGen SIEM; Bearer token or OAuth2 (Axon); alarm management, case creation, log search, and list management.
-  - `ClarotyClient` (`gnat/connectors/claroty/`) — Claroty Platform OT/IoT; username/password; asset inventory and vulnerability ingestion (was missing from registry).
-  - `FortiEDRClient` (`gnat/connectors/fortiedr/`) — Fortinet FortiEDR; username/password; event, device, and collector management (was missing from registry).
-  - `FortiSIEMClient` (`gnat/connectors/fortisiem/`) — Fortinet FortiSIEM; username/password; incident and event query (was missing from registry).
-  - `FortiSOARClient` (`gnat/connectors/fortisoar/`) — Fortinet FortiSOAR; JWT or Basic auth; full CRUD on alerts, incidents, indicators, and playbook triggering. Fixed truncated `client.py`.
-  - `GoogleChronicleClient` (`gnat/connectors/google_chronicle/`) — Google Chronicle SecOps SIEM; service account / API key; UDM event search and IOC ingestion (was missing from registry).
-  - `GreyNoiseClient` (`gnat/connectors/greynoise/`) — GreyNoise; API key; IP context enrichment and GNQL queries (was missing from registry).
-  - `ShodanClient` (`gnat/connectors/shodan/`) — Shodan; API key; host search and CVE exposure (was missing from registry).
-
-- Fixed truncated `gnat/connectors/fortisoar/client.py` — rewritten with complete `ConnectorMixin` implementation including all CRUD methods, platform helpers, and STIX translation.
-- All 12 connectors registered in `gnat/clients/__init__.py` `CLIENT_REGISTRY` and `__all__`.
-- `config/config.ini.example` updated with credential sections for all 12 new connectors.
-- `README.md` Supported Platforms tables updated; platform count updated to 95+.
-- 190+ new unit tests across all 5 new connectors + `FortiSOARClient` regression tests.
-
-
-  - `BitSightClient` (`gnat/connectors/bitsight/`) — BitSight Security Ratings & Vendor Risk Management; API Token auth; read-only company ratings, findings, breach insights, and portfolio management.
-  - `FlashpointClient` (`gnat/connectors/flashpoint/`) — Flashpoint Underground / Dark Web CTI; Bearer token auth; read-only alerts, IOCs, threat-actor profiles, forum posts, and ransomware intelligence. Fixed timestamp format bug in `_now_ts`.
-  - `HudsonRockClient` (`gnat/connectors/hudsonrock/`) — Hudson Rock Breach Intelligence & Credential Exposure; API key auth; read-only breaches, compromised credentials, IOCs, and victim intelligence.
-  - `Intel471Client` (`gnat/connectors/intel471/`) — Intel 471 Cybercrime-Focused Threat Intelligence; Bearer token auth; read-only actor profiles, malware campaigns, ransomware intelligence, IOCs, and alerts.
-  - `UpGuardClient` (`gnat/connectors/upguard/`) — UpGuard Vendor Risk + CAASM + DRP; API key auth; read-only vendors, breaches, questionnaires, VIP management, and content library.
-- Added `__init__.py` package initializers to 5 connector directories that were missing them: `bitsight`, `flashpoint`, `hudsonrock`, `intel471`, `upguard`.
-- Completed truncated `gnat/connectors/flashpoint/client.py` and `gnat/connectors/intel471/client.py` with full `ConnectorMixin` implementations including domain-specific helpers and STIX translation.
-- `README.md` Supported Platforms tables updated to include all 5 new connectors; platform count updated to 75+.
-- `config/config.ini.example` updated with credential sections for all 5 new connectors.
-
-- **8 new platform connectors** (70+ total) registered in `CLIENT_REGISTRY`:
-  - `TrellixClient` (`gnat/connectors/trellix/`) — Trellix XDR / ePolicy Orchestrator; OAuth2 client-credentials; IOC, detection, and vulnerability ingestion.
-  - `SophosClient` (`gnat/connectors/sophos/`) — Sophos Central endpoint protection; OAuth2; blocked-item management and SIEM alert ingestion.
-  - `VectraClient` (`gnat/connectors/vectra/`) — Vectra AI Network Detection & Response; API token; read-only detection and host-entity scoring.
-  - `ExtraHopClient` (`gnat/connectors/extrahop/`) — ExtraHop Reveal(x) NDR; API key or OAuth2; read-only detection and record search.
-  - `DarktraceClient` (`gnat/connectors/darktrace/`) — Darktrace Enterprise Immune System; HMAC public/private key; model breach alerts and custom intel feed.
-  - `LansweeperClient` (`gnat/connectors/lansweeper/`) — Lansweeper IT Asset Management; OAuth2 / Bearer; read-only asset and software inventory with GraphQL support.
-  - `CensysClient` (`gnat/connectors/censys/`) — Censys Internet Intelligence / ASM; Basic auth (API ID + secret); read-only host search, certificate search, and CVE exposure annotation.
-  - `ServiceNowSecOpsClient` (`gnat/connectors/servicenow_secops/`) — ServiceNow Security Operations full module suite (SIR + Vulnerability Response + TIARA); Basic / Bearer; full CRUD across `sn_si_incident`, `sn_vr_vulnerable_item`, `sn_ti_observable`, and `sn_si_task` tables.
-- 94 unit tests for all 8 new connectors added to `tests/unit/connectors/test_connectors.py`.
-- `README.md` Supported Platforms tables updated to include all 8 new connectors; platform count updated to 70+.
-- `pyproject.toml` keywords expanded with new platform names.
+→ [Full release notes](docs/releases/v1.2.0.md)
 
 ---
 
-## [1.1.0] — 2026-03-30
+## [v1.1.0] — 2026-03-30
 
-### Added
-- **13 new platform connectors** registered in `CLIENT_REGISTRY` and documented:
-  - `ArmisClient` (`gnat/connectors/armis/`) — Armis Centrix Cyber Exposure Management (IT/OT/IoT); API Secret Key auth.
-  - `AxoniusClient` (`gnat/connectors/axonius/`) — Axonius Cybersecurity Asset Management; API Key + Secret via Basic Auth.
-  - `CortexXpanseClient` (`gnat/connectors/cortex_xpanse/`) — Cortex Xpanse External Attack Surface Management; Cortex API Key auth.
-  - `CyCognitoClient` (`gnat/connectors/cycognito/`) — CyCognito Attack Surface Management; Bearer token auth.
-  - `DefectDojoClient` (`gnat/connectors/defectdojo/`) — DefectDojo Open Source Vulnerability Management; API Token auth.
-  - `GreenboneClient` (`gnat/connectors/greenbone/`) — Greenbone / OpenVAS Vulnerability Management; GMP username/password auth.
-  - `GroupIBClient` (`gnat/connectors/group_ib/`) — Group-IB Threat Intelligence; API token auth.
-  - `OrcaClient` (`gnat/connectors/orca/`) — Orca Security Agentless Cloud CNAPP; Bearer token auth.
-  - `QualysVMDRClient` (`gnat/connectors/qualys/`) — Qualys VMDR Vulnerability Management; Basic Auth.
-  - `SentinelOneClient` (`gnat/connectors/sentinelone/`) — SentinelOne Singularity XDR; ApiToken auth.
-  - `TenableOneClient` (`gnat/connectors/tenable_one/`) — Tenable One Exposure Management; X-ApiKeys header auth.
-  - `WizClient` (`gnat/connectors/wiz/`) — Wiz CNAPP Cloud Native Application Protection; OAuth2 client credentials.
-  - `ZeroFoxClient` (`gnat/connectors/zerofox/`) — ZeroFox Digital Risk Protection; Bearer token auth.
-- Added `__init__.py` package initializers to 15 connector directories that were missing them: `armis`, `axonius`, `cortex_xpanse`, `cycognito`, `cyble_vision`, `defectdojo`, `gemini`, `greenbone`, `group_ib`, `orca`, `qualys`, `sentinelone`, `tenable_one`, `wiz`, `zerofox`.
-- Fixed syntax error in `gnat/clients/__init__.py` (missing colon in `"chatgpt"` registry entry) and removed leftover merge-artifact code block.
-- `README.md` Supported Platforms table expanded from 29 to 60 entries to cover all registered connectors.
-- **Upstream contribution pipeline** (`gnat/codegen/contribute.py`): opt-in workflow that validates, tests, and packages a connector as a draft GitHub PR. `ContributionPipeline.run()` enforces a 7-step gate: enabled guard → connector exists in registry → compliance matrix (all 8 `ConnectorMixin` methods + test file presence) → full test suite (aborts on failure) → branch creation (`contribute/{platform}-{timestamp}`) → commit + push → draft PR via GitHub REST API. `ContributeConfig` reads `[contribute]` INI section; `draft_pr` is hardcoded to `True` and cannot be overridden. `_PROTECTED_BRANCHES` prevents pushing to `main`/`master`. `SubprocessRunner` is injectable for testing. `gnat contribute` CLI subcommand with `--connector`, `--message`, `--no-pr`, `--dry-run`, and `--config` flags. 47 unit tests in `tests/unit/test_contribute.py`.
-- **Web dashboard** (`gnat/serve/`): FastAPI-based browser UI for server deployments, accessible via `gnat serve`. Secured by `X-Api-Key` header; binds to `127.0.0.1` by default; rate-limited to 100 req/min per key. Three API routers:
-  - `GET/POST /api/library` — search, fetch, promote, and reject Research Library entries
-  - `GET /api/reports` — list reports; serve HTML reports inline; return metadata for PDF/DOCX
-  - `GET/POST /api/scheduler/jobs` — list registered feed jobs; trigger any job in a background thread
-  - `GET /health` — unauthenticated liveness check
-  - `GET /` — embedded single-page dashboard (vanilla JS, no build step, dark theme)
-- **Connector health monitor** (`gnat/agents/health_monitor.py`): `ConnectorHealthJob` — a `FeedJob` subclass for periodic connector health checking and API schema drift detection. Each run calls `health_check()` on all configured connectors, optionally samples a schema fingerprint via `list_objects(limit=1)`, compares it against a stored JSON baseline (`SchemaSnapshot`), and reports drift (`DriftReport`) when changed fields exceed `drift_threshold` (default 20%). Slack webhook alerts via `_post_slack_webhook()`. `gnat health check` and `gnat health baseline` CLI subcommands. `ConnectorHealthJob.from_config()` factory auto-discovers connectors from INI. 74 unit tests in `tests/unit/test_health_monitor.py`.
-- `WebUIConfig` (`gnat/serve/config.py`): reads `[webui]` INI section (`enabled`, `bind`, `port`, `api_key`, `reports_dir`); falls back to safe defaults.
-- `APIKeyAuth` (`gnat/serve/auth.py`): `hmac.compare_digest` constant-time key validation as a FastAPI callable dependency.
-- `RateLimiter` (`gnat/serve/rate_limit.py`): sliding-window in-memory rate limiter (thread-safe) as a FastAPI callable dependency.
-- `gnat serve` CLI subcommand: `--host`, `--port`, `--api-key` (auto-generated with warning if omitted), `--reports-dir` flags. Auto-prints the generated key to stderr on first launch.
-- 54 unit tests in `tests/unit/test_serve.py` covering config, auth, rate limiting, all three routers (including path traversal guard, 503 when backend not configured, size formatting), health endpoint, dashboard HTML, and CLI registration.
-- `CopilotReader`: DirectLine token exchange and auto-refresh (`use_token_exchange = true` in `[copilot]` INI section). Exchanges secret for short-lived token via `POST /tokens/generate`; refreshes automatically before expiry via `POST /tokens/refresh`. Falls back to secret on failure. 20 unit tests.
-- `ReportGenerator._extract_email_body_html()`: auto-populates the `body_html` argument of `EmailDelivery` — reads the rendered `.html` file when available; falls back to an HTML snippet of the first 2 000 characters of the Executive Summary section for PDF/DOCX-only deliveries. 4 unit tests in `TestEmailBodyHTML`.
-- `ReportJob` yearly scheduling: defaults to cron `"0 6 1 1 *"` (06:00 UTC Jan 1) instead of a 365-day interval, preventing drift after server restarts. `config/config.ini.example` documents recommended cron expressions for daily (`0 6 * * *`), weekly trends (`0 6 * * 1`), and yearly (`0 6 1 1 *`) report types. 3 unit tests.
-- `ThreatQClient` sector/industry extraction: `get_object()` and `list_objects()` now include `?with=attributes`; new `_extract_sectors()` helper matches `attributes[].name` case-insensitively against known variants (`"Targeted Industry"`, `"Target Industry"`, `"Targeted Sector"`, `"Targets"`, `"Victim Industry"`, etc.) and writes matched values to `x_target_sectors`; new `get_attribute_types()` method calls `GET /api/attribute_types` to discover deployment-specific attribute names. 11 unit tests.
-- `RecordedFutureClient.to_stix()`: extracts `relatedEntities[type=Industry].entity.name` into `x_target_sectors`; `get_object()` now requests `relatedEntities` field. 3 unit tests.
-- `CrowdStrikeClient.to_stix()`: maps `target_industries[]` (present on adversary profile objects) to `x_target_sectors`. 3 unit tests.
-- `pyproject.toml` item #14: confirmed no new pip dependencies required for VirusTotal, ShadowServer, Rapid7, or Nucleus connectors — all use stdlib + urllib3 only.
-- `RiskReconClient.to_stix()`: company objects now also write `x_rr_industries` to `x_target_sectors`. 2 unit tests.
-- `WhisticClient.to_stix()`: vendor `categories` (industry classifications) now also written to `x_target_sectors`. 2 unit tests.
-- `FeedlyClient.to_stix()`: threat-actor/attack-pattern TTP entries now extract `sectors` field into `x_target_sectors`. 2 unit tests.
-- Sector normalization complete across all 10 implemented connectors with sector data (ThreatQ, RecordedFuture, CrowdStrike, VirusTotal, ShadowServer, Nucleus, RiskRecon, Whistic, Feedly, plus CrowdStrike adversary profiles).
-- `AlienVaultClient` (`gnat/connectors/alienvault/client.py`): new `BaseClient + ConnectorMixin` wrapper for AlienVault OTX REST API; `authenticate()` injects `X-OTX-API-KEY`; `list_objects()` dispatches to pulse feed or indicator export by STIX type; `to_stix()` maps OTX pulses → STIX reports and OTX indicators → STIX indicator SDOs with correct patterns. 9 unit tests.
-- `GraylogClient` (`gnat/connectors/graylog/client.py`): new `BaseClient + ConnectorMixin` wrapper for Graylog SIEM REST API; HTTP Basic auth; `list_objects()` uses relative-range search; `to_stix()` maps Graylog messages → STIX `observed-data` with `x_graylog_message` extension; `from_stix()` builds Lucene query from STIX fields. 6 unit tests.
-- `OSSIMClient` (`gnat/connectors/ossim/client.py`): new `BaseClient + ConnectorMixin` wrapper for AlienVault OSSIM 5.x REST API; `X-USM-API-KEY` auth; `to_stix()` maps OSSIM alarms → STIX `observed-data` with IP SCOs, network-traffic SCO, and `x_ossim_alarm` extension. 5 unit tests.
-- `SecurityOnionClient` (`gnat/connectors/security_onion/client.py`): new `BaseClient + ConnectorMixin` wrapper for Security Onion so-api; Bearer token auth via `POST /api/login`; `list_objects()` dispatches to ES DSL alert search or case listing; `to_stix()` maps SO alerts → STIX `lobserved-data` with `x_security_onion_alert` extension. 7 unit tests.
-- `SnortClient` (`gnat/connectors/snort/client.py`): new file-based `BaseClient + ConnectorMixin` for Snort alert logs; supports both Snort 3 JSON and Snort 2 fast-alert text formats; `list_objects()` reads from the configured log file; `to_stix()` maps Snort alerts → STIX `observed-data` with `x_snort_alert` extension. 7 unit tests.
-- `SuricataClient` (`gnat/connectors/suricata/client.py`): new file-based `BaseClient + ConnectorMixin` for Suricata EVE JSON logs; `list_objects()` reads alert events from EVE log with optional event_type filter; `to_stix()` maps Suricata alerts → STIX `observed-data` with `x_suricata_alert` extension. 6 unit tests.
-- `ZeekClient` (`gnat/connectors/zeek/client.py`): new file-based `BaseClient + ConnectorMixin` for Zeek log files; supports both TSV (default) and JSON formats; `list_objects()` reads from notice.log by default; `to_stix()` maps Zeek notice records → STIX `observed-data` with `x_zeek_notice` extension; `iter_stix_connections()` maps conn.log → `x_zeek_conn`. 7 unit tests.
-- `OpenCTIClient` (`gnat/connectors/opencti/client.py`): new `BaseClient + ConnectorMixin` wrapper for OpenCTI GraphQL API; Bearer token auth; `list_objects()` and `get_object()` use GraphQL queries; `to_stix()` maps OpenCTI entity types to STIX SDOs.
-- `CLIENT_REGISTRY` updated: all 29 supported platforms now registered — added `alienvault`, `alienvault_otx`, `graylog`, `ossim`, `security_onion`, `snort`, `suricata`, `zeek`, `elastic`, `misp`, `opencti`, `qradar`, `sentinel`, `wazuh` (total: 30 entries including `alienvault_otx` alias).
-- **Optional Rust native extension** (`rust_core/`): new `gnat-core` Rust crate (PyO3 + maturin) that accelerates the hot-path IOC classification and defanging functions used on every ingested line:
-  - `classify_ioc(value)` — regex-classify an IOC string (sha256/sha1/md5/ip/ipv6/url/email/domain/unknown)
-  - `classify_ioc_batch(values)` — bulk classify without Python loop overhead
-  - `defang(value)` — reverse `[.]`, `hxxp://`, `hxxps://` substitutions
-  - `refang(value)` — apply defanging for safe display
-  - `extract_pattern_value(pattern)` — extract quoted value from STIX pattern strings
-- `gnat/ingest/_ioc_classifier.py`: new Python shim that imports from the Rust `_core` extension when installed and falls back transparently to pure-Python equivalents; exposes `RUST_AVAILABLE` flag.
-- `gnat/ingest/sources/readers.py` (`PlainTextReader`): `_classify()` and `_iter_records()` now use `_fast_classify` / `_fast_defang` from `_ioc_classifier` shim — Rust-accelerated when available.
-- `gnat/export/transforms/edl.py` (`EDLTransform`): `_refang()` and `_extract_value()` now delegate to `_ioc_classifier` shim — Rust-accelerated when available.
-- `gnat/_core.pyi`: type stubs for the Rust extension (IDE/mypy support).
-- `Makefile`: new `build-rust` target (`maturin build --release` + pip install wheel) and `build-rust-dev` target (`maturin develop`) for local development.
-- `pyproject.toml`: new `[fast]` optional-dependency group documenting the `gnat-core` native extension.
-- `tests/unit/test_rust_core.py`: 88 parity tests verifying pure-Python and Rust implementations produce identical output for all 5 functions across all IOC types; Rust-specific tests auto-skip when the wheel is not installed.
-- **Jira connector (#17):** `JiraClient` (`gnat/connectors/jira/client.py`) — `BaseClient + ConnectorMixin` for Jira REST API v3 (Cloud and Server/Data Center). Basic auth (email + API token) or Bearer token. `list_objects()` uses JQL via `POST /rest/api/3/issue/search`; `upsert_object()` creates or updates issues; `to_stix()` maps Jira issues to `note` or `course-of-action`; `from_stix()` builds a JQL query from STIX fields. `annotate_ticket(issue_key, stix_obj)` posts an ADF-formatted comment. `search_by_label(label)` helper. `[jira]` section added to `config/config.ini.example`; registered in `CLIENT_REGISTRY`. 15 unit tests.
-- **Docker containerization (#22):** Production-ready Docker deployment for GNAT's three operational services. `docker/scheduler/Dockerfile`, `docker/edl/Dockerfile`, `docker/monitor/Dockerfile` — each a slim Python 3.11 image with only the required extras installed. `docker-compose.yml` orchestrates all three services with named `gnat-workspace` volume, health-checks, and `restart: unless-stopped`. `.env.example` documents `GNAT_CONFIG_DIR`, `EDL_PORT`, `MONITOR_PORT`. `.dockerignore` prevents secrets, test artifacts, and build products from entering images. `.devcontainer/devcontainer.json` configures VS Code / Codespaces dev container with Rust toolchain, Docker-in-Docker, and Ruff. Makefile gains `docker-build`, `docker-up`, `docker-down`, `docker-logs` targets.
-- **XSOAR Content Pack Generator (#21):**
-  - `gnat.codegen.xsoar_generator.generate_xsoar_pack(connector_name, output_dir, version, auth_type, overwrite)`: introspects any registered connector via `capabilities()` and writes a valid XSOAR 6 content pack zip. Pack layout: `pack_metadata.json`, `Integrations/<Name>/<Name>.yml` (command manifest), `Integrations/<Name>/<Name>.py` (delegating Python script), `ReleaseNotes/1_0_0.md`. Write methods are flagged `dangerous: true` in the YAML; auth methods are omitted from command list and handled at integration level. Auth type is auto-detected from constructor signature (oauth2/basic/api_key) or can be overridden.
-  - `gnat codegen xsoar --connector <name> --output ./packs/ [--version X.Y.Z] [--auth oauth2|api_key|basic] [--overwrite]`
-  - `gnat codegen openapi` (existing functionality now under `openapi` subcommand; old flat `gnat codegen --spec ...` replaced by `gnat codegen openapi --spec ...`)
-  - Platform-specific helpers (`link_incident`, `link_investigation`, `annotate_incident`) automatically surface as named XSOAR commands.
-  - 40 unit tests in `tests/unit/test_xsoar_generator.py`.
-- **Client capability reflection (#19):**
-  - `ConnectorMixin.capabilities()`: returns a structured dict of all available connector operations — standard 7-method interface plus platform-specific extras. Each entry includes `signature`, `doc` (first docstring line), `type` (`auth` | `read` | `write` | `helper`), and `platform_specific` flag. Private, HTTP-plumbing, and meta methods are excluded via MRO walk.
-  - `ConnectorMixin.call(method_name, *args, allow_write=False, **kwargs)`: safe whitelist-based dynamic dispatch; only methods in `capabilities()` are reachable; write-classified methods require `allow_write=True`.
-  - CLI: `gnat client capabilities --platform <name>` prints a colour-coded capability table with optional `--type` and `--platform-specific` filters; `--format json` emits raw JSON. `gnat client call --platform <name> --method <method> --args KEY=VALUE ...` dispatches with `--allow-write` guard.
-  - 31 unit tests in `tests/unit/test_capabilities.py`.
-- **Incident linking (#16):**
-  - `XSOARClient.link_incident(incident_id, stix_obj)`: new helper — calls `POST /incident/{id}/linkedIncidents` to associate a STIX indicator with an XSOAR incident. `upsert_object()` now accepts an `incident_id` kwarg; when provided it automatically calls `link_incident()` after the upsert. 4 unit tests.
-  - `ServiceNowClient` (`gnat/connectors/servicenow/client.py`): new `BaseClient + ConnectorMixin` for the ServiceNow Table API (`sn_si_incident`). Supports Basic auth (username + password) and Bearer token. `annotate_incident(incident_sys_id, stix_obj)` appends a structured GNAT work note to the incident via `PUT /api/now/table/sn_si_incident/{sys_id}`. `to_stix()` maps SI records to STIX `observed-data`. 13 unit tests.
-  - `GreyMatterClient.link_investigation(case_id, stix_obj)`: new helper — calls `POST /v1/incidents/{case_id}/linked_observables`; infers GreyMatter observable type from the STIX pattern. `upsert_object()` now accepts a `linked_cases` list kwarg that is merged into the request payload. 4 unit tests.
-  - `servicenow` registered in `CLIENT_REGISTRY`; `[servicenow]` section added to `config/config.ini.example`.
-- **Textual TUI (#23a):** Interactive terminal UI for GNAT, built with Textual 8.x.  Zero browser required — works over SSH and on any terminal.
-  - `GNATApp` — root `textual.App` with a `TabbedContent` layout (F1–F4 tab switching, `q` quit).
-  - **Query screen** (`gnat/tui/screens/query.py`) — NLP query bar + scrollable STIX results table; delegates to `NLPQueryEngine`; gracefully degrades to builtin parser when Claude is unconfigured.
-  - **Library screen** (`gnat/tui/screens/library.py`) — curated library and staging queue browser; search, promote (Ctrl+P), reject (Ctrl+X), refresh (Ctrl+R).
-  - **Scheduler screen** (`gnat/tui/screens/scheduler.py`) — live job status table; manual trigger (Ctrl+T) dispatches selected job in a background thread; toggle enable/disable.
-  - **Reports screen** (`gnat/tui/screens/reports.py`) — scans configured `output_dir` for PDF/HTML/DOCX; opens selected file in system browser via `webbrowser.open()` (Ctrl+O).
-  - `STIXTable` widget — `DataTable` subclass with standard STIX columns (type, name, created, confidence, source).
-  - `JobTable` widget — `DataTable` subclass for `FeedJob.status_dict()` rows with `selected_job_id()` helper.
-  - CLI: `gnat tui [query|library|scheduler|reports] [--backend builtin|claude] [--platform NAME] [--reports-dir DIR]`
-  - `pyproject.toml`: `[tui]` extras group already declared (`textual>=0.60`).
-  - 38 unit tests covering imports, widget logic, screen helpers (report scanning, path resolution, data shaping), app construction, Textual lifecycle (`run_test`), and CLI subcommand.
-- **Stellar Cyber connector (#20.9):** `StellarCyberClient` (`gnat/connectors/stellarcyber/client.py`) — Stellar Cyber Starlight Open XDR API. JWT token auth via API-key exchange (`POST /connect/api/v1/access_token`); `list_objects()` dispatches to `alerts` or `threat_intel` by STIX type; `to_stix()` distinguishes alerts (→ `observed-data` with src/dst IP) from TI records (→ `indicator`); full CRUD for TI records. 9 unit tests.
-- **Yeti connector (#20.10):** `YetiClient` (`gnat/connectors/yeti/client.py`) — Yeti FOSS TI platform REST API v2. `X-Yeti-API-Key` header auth; `list_objects()` uses `POST /{resource}/search` with JSON filter body; `add_tag(id, stix_type, tag)` helper; `to_stix()` handles observables, ThreatActors, Malware, and Campaigns (STIX-native data model); full CRUD. 12 unit tests.
-- **CloudSEK connector (#20.11):** `CloudSEKClient` (`gnat/connectors/cloudsek/client.py`) — CloudSEK XVigil ASM + digital risk API. Bearer token auth with optional `X-Org-Id` header; `list_objects()` supports category/severity/status/date/keyword filters; `update_alert_status(alert_id, status, comment)` triage helper; read-only guard on `upsert_object`; `to_stix()` maps credential leaks, brand abuse, domain exposure, and threat actors; `from_stix()` maps pattern types to XVigil categories. 12 unit tests.
-- **SOCRadar connector (#20.6):** `SOCRadarClient` (`gnat/connectors/socradar/client.py`) — SOCRadar CTI + attack-surface API. API key header auth; `list_objects()` supports `ioc_type`, `severity`, and date-range filters; read-only (`upsert_object` raises); `to_stix()` handles IOCs, threat actors, and malware; severity → confidence mapping (`critical=95`, `high=75`, `medium=50`, `low=25`). 10 unit tests.
-- **PulseDive connector (#20.7):** `PulseDiveClient` (`gnat/connectors/pulsedive/client.py`) — PulseDive community TI API v1. Key-as-query-parameter auth; `enrich(value)` single-IOC enrichment helper; `list_objects()` dispatches to indicators or threats; risk → confidence mapping; `to_stix()` handles indicators and threats. 11 unit tests.
-- **Flare connector (#20.8):** `FlareClient` (`gnat/connectors/flare/client.py`) — Flare Systems threat-exposure intelligence (dark web, paste sites, GitHub). Bearer token auth; `list_objects()` supports keyword/source/severity/date filters; `search_leaks(query)` convenience helper; read-only; `to_stix()` handles credential leaks, domain/URL/hash exposures, and threat actors. 10 unit tests.
-- **TheHive connector (#20.4):** `TheHiveClient` (`gnat/connectors/thehive/client.py`) — TheHive 5.x SOAR/case-management API. Bearer token auth; optional `X-Organisation` header for multi-tenant deployments. `list_objects()` uses `POST /api/v1/query` with JSON filter body; `upsert_object()` creates via `POST` or updates via `PATCH`; `add_observable(case_id, stix_obj)` posts IOCs directly to cases; `to_stix()` handles cases, alerts, and observables; `from_stix()` builds a case payload from any STIX object. 13 unit tests.
-- **ThreatStream connector (#20.5):** `ThreatStreamClient` (`gnat/connectors/threatstream/client.py`) — Anomali ThreatStream OPTIC API v2. Credential injection as query parameters (`username` + `api_key`); `list_objects()` supports OPTIC filter params (`type`, `status`, `confidence__gte`, `modified_ts__gte`); `upsert_object()` wraps in `{"objects": [...]}` envelope on create; `to_stix()` maps all IOC types; `from_stix()` produces import payload. 11 unit tests.
-- **ThreatConnect connector (#20.1):** `ThreatConnectClient` (`gnat/connectors/threatconnect/client.py`) — TC Exchange API v3. Supports TC-Token (`auth_type = token`) and per-request HMAC-SHA256 (`auth_type = hmac`) auth. `list_objects()` supports TQL filter expressions; `upsert_object()` creates or updates indicators/groups; `to_stix()` maps TC indicators → STIX with `ipv4/domain/url/hash` pattern dispatch; `from_stix()` generates a TC payload. 12 unit tests.
-- **Mandiant connector (#20.2):** `MandiantClient` (`gnat/connectors/mandiant/client.py`) — Mandiant Advantage TI API v4. OAuth2 `client_credentials` via HTTP Basic (API key + secret); `list_objects()` supports `start_epoch`/`end_epoch`/`gte_mscore` filters; `to_stix()` handles indicators, threat actors, malware families, and vulnerabilities; read-only (`upsert_object` raises `GNATClientError`). 10 unit tests.
-- **MS Defender TI connector (#20.3):** `DefenderTIClient` (`gnat/connectors/defenderti/client.py`) — Microsoft Graph Security `tiIndicators` API. Azure AD OAuth2 token via `login.microsoftonline.com`; full CRUD (create via `POST`, update via `PATCH`, delete); `to_stix()` maps all Graph TI indicator field types (IPv4/IPv6/domain/URL/hash/email); `from_stix()` generates the correct Graph field (`networkIPv4`, `domainName`, etc.). 10 unit tests.
-- **Multi-tenant workspace isolation** (`gnat/context/tenant.py`): complete tenant namespace layer for MSP deployments.
-  - `Tenant` dataclass: `tenant_id` (validated `[a-z0-9][a-z0-9_-]{0,62}`), `display_name`, `description`, `config_path` (per-tenant INI), `created_at`.
-  - `TenantRegistry`: JSON-backed registry at `~/.gnat/tenants.json`; `register()`, `get()`, `list()` (sorted), `update()`, `delete()` with persistence.
-  - `TenantWorkspaceManager`: drop-in `WorkspaceManager` scoped to one tenant via `{tenant_id}::` name prefix; `create`, `open`, `get_or_create`, `list` (prefix filtered + stripped), `delete`, `purge` (bulk delete), `workspace_names()`; `TenantWorkspaceManager.default(tenant_id)` named constructor; complete isolation — two tenants with the same workspace name never collide.
-  - `WorkspaceManager.for_tenant(tenant_id)` — convenience factory that returns a `TenantWorkspaceManager` bound to the caller's store.
-  - `gnat context` exports updated: `Tenant`, `TenantRegistry`, `TenantWorkspaceManager` added to `__all__`.
-  - `gnat tenant` CLI subcommand: `list`, `create <id>` (with `--display-name`, `--description`, `--config`), `delete <id>` (with `--yes` skip-confirm), `info <id>`, `workspaces <id>`; all commands accept `--registry PATH`.
-  - 63 unit tests in `tests/unit/test_tenant.py` covering all registry CRUD, name scoping, create/open/list/delete/purge/isolation/workspace_names, `for_tenant()`, invalid IDs, and all CLI subcommands.
-- **STIX 2.1 pattern validator** (`gnat/stix/`): two-tier pattern validation for STIX 2.1 Indicator pattern expressions.
-  - **Tier 1 (pure Python, always available):** regex tokenizer + recursive descent parser covering outer bracket structure, all STIX 2.1 SCO/SDO object types, valid comparison operators (`=`, `!=`, `<`, `>`, `<=`, `>=`, `LIKE`, `MATCHES`, `IN`, `ISSUBSET`, `ISSUPERSET`), property dot/index/quoted-component paths, string/int/float/bool/null/list values, intra-observation `AND`/`OR`, inter-observation `AND`/`OR`/`FOLLOWEDBY`, `WITHIN`/`REPEATEDWITHIN` qualifiers, `START…STOP` qualifiers, parenthesised sub-expressions, `x-*` extension type warnings.
-  - **Tier 2 (optional):** `stix2-patterns` ANTLR grammar when `pip install "gnat[stix-validate]"` is present; auto-used in `strict=True` mode; falls back to tier-1 if not installed.
-  - `validate_pattern(pattern, strict=False, raise_on_error=False)` — convenience function returning `ValidationResult(valid, errors, warnings, strict)`.
-  - `PatternValidator(raise_on_error, strict, allow_custom_types)` — configurable class.
-  - `PatternValidationError` — raised by `raise_on_error=True`; has `pattern` and `errors` attributes.
-  - `Indicator.__init__` gains optional `validate=True` kwarg: validates the pattern at construction time and logs a warning if invalid (non-breaking; default `False`).
-  - `gnat validate pattern "<expr>"` — validate a single STIX pattern from the CLI.
-  - `gnat validate bundle <file.json>` — validate all indicator patterns in a STIX bundle file; `--fail-fast` flag; exit 0 on all-valid, 1 on any invalid.
-  - `pyproject.toml`: new `[stix-validate]` extra (`stix2-patterns>=1.3`).
-  - 87 unit tests in `tests/unit/test_stix_validator.py`.
-- **Solr/Grafana observability integration** (`gnat/viz/grafana/`, `docker/grafana/`): wires the GNAT Solr search sidecar into Grafana for live index dashboards.
-  - `gnat/viz/grafana/search_endpoints.py` — new FastAPI `APIRouter` (prefix `/solr/`) that exposes Solr index data as a Grafana SimpleJSON datasource: `GET /solr/` (health/ping), `POST /solr/search` (available metric names), `POST /solr/query` (table/time-series for `stats/total`, `stats/type_counts`, `stats/platform_counts`, `timeseries/ingest`, `facet/<field>`, `search/<query>`), `POST /solr/tag-keys`, `POST /solr/tag-values`. All Solr HTTP calls use stdlib `urllib.request` — no new deps.
-  - `GrafanaServer` (`gnat/viz/grafana/server.py`) — `__init__` gains optional `search_index` parameter; `build_app` mounts the `/solr/` router when `search_index` is provided.
-  - `solr_dashboard()` / `save_solr_dashboard()` (`gnat/viz/export.py`) — generate a purpose-built 7-panel Grafana dashboard JSON for the Solr sidecar: total-docs stat, type/platform bar charts, ingest-rate time-series, breakdown tables, and a search-results table.
-  - `gnat viz serve --with-solr` — loads the configured `SearchIndex` and mounts it on the running Grafana server; prints both the workspace URL and the `/solr/` sub-URL.
-  - `gnat viz solr-dashboard --file <path> [--datasource GNAT-Solr] [--title ...]` — exports the Solr dashboard JSON to disk.
-  - `docker/grafana/provisioning/datasources/gnat.yaml` — auto-provisions `GNAT` (workspace data) and `GNAT-Solr` (Solr index) datasources via Grafana's provisioning API.
-  - `docker/grafana/provisioning/dashboards/provider.yaml` — file-based dashboard provider pointing at `/var/lib/grafana/dashboards`.
-  - `docker/grafana/provisioning/dashboards/gnat_solr.json` — pre-built Solr dashboard bundled in the container image.
-  - `docker/grafana/provisioning/dashboards/gnat_workspace.json` — pre-built workspace overview dashboard.
-  - `docker-compose.yml` — `solr` service (profile `search` / `full`) and `grafana` service (profile `monitoring` / `full`) with auto-provisioned datasources; `make docker-search` and `make docker-full` Makefile targets; `SOLR_PORT`, `GRAFANA_PORT`, `GRAFANA_ADMIN_PASSWORD`, `GNAT_GRAFANA_HOST`, `GNAT_VIZ_PORT` in `.env.example`.
-  - 44 unit tests in `tests/unit/test_grafana_search.py` covering health, search targets, all 7 query target types, tag endpoints, `GrafanaServer` with/without `search_index`, `solr_dashboard` structure, `save_solr_dashboard`, and CLI.
-- **Docker integration test harness** (`docker/test/`, `tests/integration/`): isolated, self-contained Docker-based test suite for external service connectors and GNAT's own HTTP services.
-  - `docker/test/docker-compose.test.yml` — test-only compose file with Elasticsearch 8.13.4 (single-node, security disabled, 512 MB heap, port 19200) and Solr 9.6 with a pre-created `gnat` core (port 18983). Separate `gnat-test-network`; no shared state with production compose.
-  - `docker/test/gnat.test.ini` — minimal GNAT config pointing at the test containers; used by fixture-level setup only.
-  - `tests/integration/conftest_docker.py` — session-scoped pytest fixtures managed via stdlib `subprocess` (no `testcontainers` or `pytest-docker`): `docker_services` (compose up/down lifecycle), `elasticsearch_url` + `solr_url` (health-poll helpers), `gnat_taxii_server` (spawns a GNAT TAXII subprocess on a free port; gracefully terminated at session end). `--run-docker` pytest flag; `@pytest.mark.docker` marker.
-  - `tests/integration/test_docker_taxii.py` — 20 TAXII 2.1 round-trip tests covering discovery, auth guard, collection CRUD, objects POST/GET, single-object fetch, manifest, versions, pagination (cursor traversal + next-page detection), non-bundle 422, and invalid-JSON 400/422.
-  - `tests/integration/test_docker_elastic.py` — 14 tests covering ES cluster health, index/document CRUD, bulk indexing (100 docs), and the live `ElasticConnector` (health_check, upsert, get, list, delete).
-  - `tests/integration/test_docker_solr.py` — 14 tests covering Solr core health, raw document add/query/delete, and the live `GNATIndexer` (index, search, batch-index, delete).
-  - `Makefile`: `test-docker-up`, `test-docker-down`, and `test-docker` targets (up → run suite → down).
-  - `pyproject.toml`: `docker` pytest marker registered.
-- **TAXII 2.1 server** (`gnat/serve/taxii/`): FastAPI application implementing the full TAXII 2.1 protocol, exposing GNAT workspaces as TAXII collections.
-  - `build_taxii_app(manager, api_key, title, contact)` — returns a FastAPI app with all 9 mandatory TAXII 2.1 endpoints: discovery (unauthenticated), API root info (unauthenticated), collections list/detail, objects GET (bundle, paginated, filterable by `match[type]`, `match[id]`, `added_after`), objects POST (bundle ingest → workspace upsert), manifest, single-object GET, and object versions.
-  - `run_taxii_server(manager, host, port, api_key, title, contact)` — wraps `build_taxii_app` and starts uvicorn.
-  - `_TaxiiAPIKeyAuth` — `hmac.compare_digest` constant-time key validation as a FastAPI callable dependency.
-  - Pagination via opaque base64 cursor tokens (`?next=<token>&limit=<n>`); TAXII 2.1 media type (`application/taxii+json;version=2.1`) enforced on all responses.
-  - `gnat taxii` CLI subcommand: `--host`, `--port`, `--api-key` (auto-generated with warning if omitted), `--title`, `--contact`, `--config` flags.
-  - 44 unit tests in `tests/unit/test_taxii_server.py` covering cursor encoding, discovery, API root, auth guard, collections, objects GET/POST, manifest, single-object, and versions endpoints.
-- **NLP query interface (#18):** New `gnat/nlp/` package with two interchangeable backends and a unified `QuerySpec` dataclass:
-  - `QuerySpec` — dataclass with `entities`, `ioc_types`, `since`, `until`, `platforms`, `limit`, `raw_query`; `to_dict()` serialises datetimes as ISO-8601.
-  - `BuiltinParser` — zero-dependency regex-based parser; extracts threat-actor entities (APT/TA/FIN/G patterns, CVE IDs, malware families), IOC types (ip/domain/hash/url/email keywords), relative/absolute time ranges (`last N days/weeks/months`, ISO dates, month names, `yesterday`, `today`), platform filters, and result limits.
-  - `ClaudeParser` — sends the query to Claude API with a structured JSON-schema prompt; falls back to `BuiltinParser` on any API or JSON parse error.
-  - `NLPQueryEngine` — facade with `from_config()` factory (reads `[nlp]` INI section for `backend`/`default_limit`); `parse()` returns a `QuerySpec`; `query()` dispatches to named connectors, tags results with `_source`, and returns the serialised spec when no live connectors are provided.
-  - `GNATClient.natural_language_query(query, extra_connectors)` — convenience method that auto-includes the connected client and delegates to `NLPQueryEngine`.
-  - CLI: `gnat nlq "<query>" [--platform <key>] [--backend builtin|claude] [--parse-only] [--limit N]` — parses the query, optionally connects a platform, and prints results as JSON.
-  - `pyproject.toml`: new `[nlp]` optional-dependency group (zero new deps for builtin backend; Claude backend reuses existing `[agents]` client).
-  - 46 unit tests covering `QuerySpec`, `BuiltinParser` (time/IOC/entity/limit extraction), `NLPQueryEngine` (connector dispatch, platform filtering, error handling), `ClaudeParser` (mocked API, fallback paths, markdown fence stripping), and `GNATClient.natural_language_query()`.
+13 new connectors (Armis, Axonius, Cortex Xpanse, CyCognito, DefectDojo, Greenbone, Group-IB, Orca, Qualys, SentinelOne, Tenable One, Wiz, ZeroFox). Optional Rust-accelerated IOC processing (`gnat-core`). Web dashboard, Textual TUI, TAXII 2.1 server, NLP query engine, STIX pattern validator, multi-tenant workspace isolation, XSOAR content pack generator, upstream contribution pipeline, connector health monitor, Solr/Grafana observability, Docker integration test harness, Jira connector, and numerous connector additions and fixes.
 
-### Fixed
-- `BaseClient.__init__`: cast `timeout` to `float` so INI string values work with `urllib3.Timeout`
-- `AgeFilter._get()`: reads `_properties` exclusively so auto-defaulted ORM `created`/`modified` core attributes do not shadow explicitly-set timestamps
-- `AgeFilter._timestamp()`: ensure timezone-awareness for naive ISO datetimes
-- `LogDelivery.deliver()`: catch `TypeError` from non-JSON-serializable payloads, fall back to `str()`
-- `Workspace.commit()`: fix `list & set` `TypeError` in deletion handling
-- `_TOPIC_KEYWORDS` ordering: check `threat_actor` before `campaign` so "Volt Typhoon campaign" → `threat_actor`
-- `FeedJob.next_run_at()`: return `_utcnow()` when no history (job is immediately due)
-- `FeedScheduler.run_all_now()`: include disabled jobs as `status="skipped"` entries in result dict
-- `RunRecord`: add `run_count` field; `CurationJob.execute()` now populates it
-- `ParsingAgent._common_fields()`: apply `ai_confidence_ceiling` so STIX objects inherit the cap
-- `GraphView._render_intent()`: intent methods always use sigma.js for consistent `GRAPH_DATA` output
-- `GraphView._timeline_layout()`: `_parse_ts` reads only `_properties` so auto-set ORM core timestamps are not treated as explicit values
-- `SplunkClient`: refactored to `BaseClient + ConnectorMixin`; accepts `host`, `api_token`, `username`, `password` keyword args; adds `authenticate()`, `to_stix()`, `from_stix()`
-
-### Planned
-*(all previously planned items now complete)*
+→ [Full release notes](docs/releases/v1.1.0.md)
 
 ---
 
-## [1.0.0] — 2026-03-28
+## [v1.0.0] — 2026-03-28
 
-### Added
+First stable release. 29 platform connectors including SIEM/IDS/IPS platforms (Elastic, Graylog, MISP, OpenCTI, OSSIM, QRadar, Security Onion, Sentinel, Snort, Suricata, Wazuh, Zeek, ControlUp DEX, AlienVault OTX). Solr search sidecar. Report generation pipeline (PDF, HTML, DOCX, Markdown) with AI narration. AI agents (ResearchAgent, ParsingAgent, CopilotReader). Research Library with curation workflow.
 
-#### 29 Platform Connectors
-- **AlienVault OTX** — API key, pulse/IOC queries, STIX `Indicator` mapping
-- **Elastic SIEM** — API key/Basic, ECS document queries, Kibana alert/rule/case management
-- **Graylog** — API key/Basic, stream alerts and search, STIX `Indicator` mapping
-- **MISP** — API key, full event/attribute/feed/galaxy/sighting/tag CRUD, STIX ↔ MISP translation
-- **OpenCTI** — API key, GraphQL-based connector scaffold
-- **OSSIM** — Basic auth, AlienVault SIEM event queries, STIX mapping
-- **IBM QRadar** — API token, Ariel search, offenses, assets, reference data, rules
-- **Security Onion** — API key, alert/hunt queries, STIX `Indicator` mapping
-- **Microsoft Sentinel** — OAuth2/Azure AD, incidents, alerts, analytic rules, watchlists, hunting
-- **Snort IDS** — File/Syslog, rule parsing, alert log reading, STIX mapping
-- **Suricata IDS/IPS** — File/Syslog, EVE JSON log consumption, STIX mapping
-- **Wazuh SIEM/XDR** — API key/Basic, agents, alerts, rules, syscheck, active response, vuln data
-- **Zeek Network Monitor** — File/Syslog, conn/dns/http/ssl log parsing, STIX mapping
-- **ControlUp DEX** — Bearer token, device/session/alert/vulnerability STIX translation
-
-#### Search Sidecar (`gnat/search/`)
-- `GNATIndexer` — Solr 9.x document indexing, querying, and batch management
-- `SearchMixin` — drop-in connector mixin that auto-indexes on `upsert_object()`
-- ORM integration helpers (`orm_with_mixin.py`) — mixin-enhanced STIX objects
-- Ingest pipeline patch (`pipeline_patch.py`) — routes records through Solr post-map
-- ResearchLibrary patch (`library_patch.py`) — search-backed cross-source lookups
-- `solr_schema_gnat.xml` — Solr 9.x schema for GNAT threat intel fields
-- Configure via `[search]` section: `solr_url`, `enabled`, `batch_size`
-
-#### Reports (`gnat/reports/`)
-- `ReportGenerator` — pluggable pipeline: aggregate → AI narrate → render → deliver
-- `DataAggregator` — volume, IOC breakdown, threat actors, CVEs, sectors, sources,
-  confidence distribution, time series, period-over-period delta
-- Four renderers: `MarkdownRenderer`, `HTMLRenderer`, `PDFRenderer` (reportlab),
-  `DOCXRenderer` (python-docx, pure Python — no Node.js required)
-- `ReportJob` — scheduled report via `FeedScheduler`; configurable via INI `[report.*]`
-- `AIMode` — `DISABLED` / `ASSISTED` / `FULL` per-report AI involvement
-- Email delivery (`EmailDelivery`) and SharePoint delivery (`SharePointDelivery`)
-- `SectorFilter` moved to `gnat/export/filters.py` — available in both export
-  and report layers; re-exported from `gnat/reports/base.py` for backwards compatibility
-
-#### CLI additions
-- `gnat report list` — list configured `[report.*]` profiles from ini
-- `gnat report run --config <name>` — generate a report on demand;
-  supports `--formats`, `--output-dir`, `--no-ai` overrides
-
-#### AI Agents (`gnat/agents/`)
-- `ResearchAgent` — topic-driven and feed-driven AI threat research via Claude API
-- `ParsingAgent` — extract structured STIX from unstructured text (IOCs, TTPs, CVEs)
-- `CopilotReader` — Microsoft Copilot via DirectLine for M365/SharePoint content
-- Config via `[claude]` INI section: `api_key`, `model`, `ai_confidence_ceiling`
-
-#### Research Library (`gnat/research/`)
-- `ResearchLibrary` — three-tier knowledge base: personal workspaces → staging → library
-- `CurationJob` — scheduled promotion from staging to library with TTL enforcement
-- `ResearchEntry` — typed entry with category, freshness, confidence, and source tracking
-- `WorkspaceManager.default()` — zero-config factory (SQLite or FlatFileStore fallback)
-
-### Changed
-- `DOCXRenderer` replaced Node.js/npm subprocess implementation with pure-Python
-  `python-docx`; `python-docx>=1.1` added to `[reports]` and `[all]` extras
-- `SectorFilter` canonical location moved to `gnat.export.filters`; `gnat.reports.base`
-  re-exports it for backwards compatibility
+→ [Full release notes](docs/releases/v1.0.0.md)
 
 ---
 
-## [0.9.0] — 2025-09-15
+## [v0.9.0] — 2025-09-15
 
-### Added
+Research Library three-tier knowledge base (personal / staging / library workspaces) with TTL-based curation and INI configuration.
 
-#### Research Library (`gnat/research/`)
-- `ResearchLibrary` three-tier knowledge base (personal / staging / library workspaces)
-- `ResearchEntry` — typed entry: category, status, TTL, confidence, source, narrative
-- `CurationJob` — scheduled promotion, TTL expiry, staged→library gating
-- `ResearchLibrary.default()` / `from_manager()` factory methods
-- INI configuration: `[research]` section with `staging_name`, `library_name`,
-  TTL overrides per category (`ttl_threat_actor`, `ttl_vulnerability`, etc.)
+→ [Full release notes](docs/releases/v0.9.0.md)
 
 ---
 
-## [0.8.0] — 2025-07-01
+## [v0.8.0] — 2025-07-01
 
-### Added
+AI agent integration: ResearchAgent (Claude-powered threat synthesis), ParsingAgent (unstructured text → STIX), and CopilotReader (Microsoft Copilot DirectLine). Config via `[claude]` INI section.
 
-#### AI Agents (`gnat/agents/`)
-- `ResearchAgent` — topic-driven synthesis and feed-driven monitoring via Claude API
-  (`web_search` tool, configurable topic list, confidence ceiling)
-- `ParsingAgent` — unstructured text → STIX objects (IOCs, TTPs, actors, CVEs)
-  with `x_source_type = "ai_extracted"` and confidence ≤ `ai_confidence_ceiling`
-- `CopilotReader` — Microsoft Copilot DirectLine source reader; polls
-  SharePoint, mailboxes, and Teams channels for threat content
-- `ClaudeClient` — thin wrapper around Claude API with retry and token tracking
-- Config: `[claude]` INI section — `api_key`, `model` (default `claude-sonnet-4-6`),
-  `ai_confidence_ceiling` (default 60)
+→ [Full release notes](docs/releases/v0.8.0.md)
 
 ---
 
-## [0.7.0] — 2025-05-15
+## [v0.7.0] — 2025-05-15
 
-### Added
+Export pipeline with fluent builder API. 11 filter types (TypeFilter, ConfidenceFilter, TLPFilter, SectorFilter, etc.), EDL and Netskope CE transforms, and multiple delivery targets including EDLServer (FastAPI).
 
-#### Export pipeline (`gnat/export/`)
-- `ExportPipeline` — fluent builder: `.read_from()`, `.filter_with()`,
-  `.transform_with()`, `.deliver_to()`, `.run()`
-- `ExportJob` — scheduled export via `FeedScheduler`; `pipeline_factory` pattern
-- `ExportResult`, `TransformResult`, `DeliveryResult` — typed outcome dataclasses
-- **Filters:** `TypeFilter`, `ConfidenceFilter`, `TLPFilter`, `TagFilter`,
-  `AgeFilter`, `PatternFilter`, `IOCTypeFilter`, `LimitFilter`,
-  `DeduplicateFilter`, `FunctionFilter`, `SectorFilter`
-- **Transforms:** `EDLTransform` (plaintext IOC lists), `NetskopeCETransform`
-  (Netskope CE API payload format)
-- **Delivery targets:** `FileDelivery`, `HTTPDelivery`, `EDLServer` (FastAPI,
-  per-type endpoint, poll-based firewall integration), `PlatformDelivery`,
-  `EmailDelivery`
+→ [Full release notes](docs/releases/v0.7.0.md)
 
 ---
 
-## [0.6.0] — 2025-04-01
+## [v0.6.0] — 2025-04-01
 
-### Added
+Feed scheduling layer: `FeedScheduler`, `FeedJob`, `IngestJob`, cron expression support via croniter, and `gnat schedule` CLI subcommands.
 
-#### Feed scheduling (`gnat/schedule/`)
-- `FeedScheduler` — APScheduler/Celery-compatible job runner;
-  `add()`, `remove()`, `start()`, `stop()`, `statuses()`, context manager
-- `FeedJob` — typed job: `job_id`, `pipeline_factory`, `interval_seconds`,
-  `cron_expr`, `max_retries`, `on_success`/`on_error` callbacks
-- `IngestJob` — convenience subclass that wires `IngestPipeline` into scheduler
-- CLI: `gnat schedule list`, `gnat schedule run [--job JOB_ID]`,
-  `gnat schedule crontab`
-- New optional extra: `pip install "gnat[schedule]"` (installs croniter)
+→ [Full release notes](docs/releases/v0.6.0.md)
 
 ---
 
-## [0.1.0] — 2025-03-19
+## [v0.3.0] — 2025-03-20
 
-### Added
+Async client (`AsyncGNATClient` on httpx). Full CLI (`gnat ping`, `query`, `list`, `ingest`, `codegen`, `config`). Visualization layer (TabularView, GraphView with sigma.js WebGL for 1000+ nodes, GrafanaServer, PowerBIExporter). Context system (GlobalContext, Workspace, WorkspaceManager, FlatFileStore/WorkspaceStore). Sphinx documentation. GitHub Actions CI/CD.
 
-#### Core client layer
-- `GNATClient` top-level facade with `connect()`, `disconnect()`, `ping()`
-- `GNATConfig` INI-file loader with env-var and default-path fallback
-- `BaseClient` — urllib3 `PoolManager` with retry/back-off, auth header injection,
-  JSON encoding, and structured `GNATClientError`
-- `CLIENT_REGISTRY` mapping target names to connector classes
-
-#### ORM layer (STIX 2.1)
-- `STIXBase` — abstract base with `to_dict()`, `from_dict()`, `to_stix_bundle()`,
-  `select()`, `save()`, `delete()`, `refresh()`, and `__getattr__`/`__setattr__`
-  property bag
-- Domain objects: `Indicator`, `ThreatActor`, `Malware`, `Vulnerability`,
-  `AttackPattern`, `Relationship`
-- Cyber Observables: `Observable`, `IPv4Address`, `DomainName`, `URL`,
-  `FileObject`, `EmailAddress`
-
-#### Connectors
-- **ThreatQ** — OAuth2 client-credentials, full CRUD, STIX ↔ ThreatQ translation
-- **CrowdStrike** — OAuth2, IOC CRUD via Falcon API
-- **Proofpoint** — HTTP Basic, TAP v2 read-only
-- **Netskope** — API token, URL list CRUD
-- **XSOAR 6** — API key (+ MSSP auth-id), indicator search/edit/delete
-- **Recorded Future** — API token, read-only Connect API
-- `ConnectorMixin` abstract contract: `to_stix()`, `from_stix()`, `get_object()`,
-  `list_objects()`, `upsert_object()`, `delete_object()`, `health_check()`
-
-#### Ingestion framework
-- `SourceReader` / `RecordMapper` abstract base classes with context-manager support
-- `IngestPipeline` — fluent builder: `.read_from()`, `.map_with()`, `.write_to()`,
-  `.deduplicate()`, `.filter()`, `.transform()`, `.run()` / `.iter_objects()`
-- `IngestResult` summary dataclass; `DeduplicationCache` with configurable key fields
-
-**Source readers (14):**
-`PlainTextReader`, `CSVReader`, `JSONReader`, `JSONLReader`,
-`STIXBundleReader`, `TAXIICollectionReader`, `SQLReader`,
-`MISPReader`, `SyslogReader` (syslog/CEF/LEEF), `RSSReader`,
-`EmailReader`, `OpenIOCReader`, `SplunkReader`, `ElasticReader`
-
-**Mappers (12):**
-`FlatIOCMapper`, `STIXPassthroughMapper`, `MISPAttributeMapper`,
-`CEFMapper`, `SQLRowMapper`, `CSVIndicatorMapper`, `RSSEntryMapper`,
-`EmailIOCMapper`, `OpenIOCMapper`, `SplunkResultMapper`,
-`ElasticResultMapper`, `NVDCVEMapper`
-
-#### Code generation
-- `openapi_generator.py` — CLI (`gnat-codegen`) and Python API
-- Parses OpenAPI 3.x / Swagger 2.x specs (JSON or YAML)
-- Generates connector package, `__init__.py`, and full pytest scaffold
-- Detects CRUD endpoints, schema fields, auth type; scaffolds `to_stix` / `from_stix`
-
-#### Utilities
-- `stix_helpers`: `make_bundle()`, `extract_objects()`, `filter_by_type()`,
-  `validate_stix_id()`
-
-#### Tests
-- `tests/unit/test_orm.py` — 40+ assertions: all ORM types, serialisation, CRUD guards
-- `tests/unit/test_client.py` — `GNATConfig`, `GNATClient` (all 6 targets), `BaseClient`
-  HTTP layer
-- `tests/unit/connectors/test_connectors.py` — auth, CRUD, translation for all 6 connectors
-- `tests/unit/ingest/test_ingest.py` — 300+ assertions: all readers, mappers, pipeline
-  features, edge cases, error handling
-- `tests/integration/test_integration.py` — live API scaffold (opt-in)
-- Shared `conftest.py` with minimal INI config fixture
-
-#### Configuration
-- `config/config.ini.example` — annotated template for all six platforms
-
-#### Packaging
-- `pyproject.toml` with optional extras: `yaml`, `taxii`, `rss`, `ingest`, `dev`, `all`
-- `MANIFEST.in`, `LICENSE` (Apache-2.0), `py.typed` marker (PEP 561)
-- `Makefile` with `test`, `lint`, `typecheck`, `build`, `clean` targets
-- `.gitignore` tuned for Python + security tooling
-
-[Unreleased]: https://github.com/your-org/gnat/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-org/gnat/releases/tag/v0.1.0
+→ [Full release notes](docs/releases/v0.3.0.md)
 
 ---
 
-## [0.3.0] — 2025-03-20
+## [v0.1.0] — 2025-03-19
 
-### Added
+Initial release. Core client layer (`GNATClient`, `BaseClient`, `CLIENT_REGISTRY`). STIX 2.1 ORM (`STIXBase` + 12 domain/observable types). 6 platform connectors (ThreatQ, CrowdStrike, Proofpoint, Netskope, XSOAR, Recorded Future). Ingestion framework with 14 source readers and 12 record mappers. OpenAPI code generator. Full unit and integration test scaffold.
 
-#### Async client (`gnat/async_client/`)
-- `AsyncBaseClient` on `httpx` with retry transport, async context manager
-- `AsyncGNATClient` — async mirror of `GNATClient` supporting `async with` and `asyncio.gather` concurrent multi-platform queries
-- `AsyncSTIXBase` — awaitable `select()`, `save()`, `delete()`, `refresh()`
-- Async connectors for all six platforms: `AsyncThreatQClient`, `AsyncCrowdStrikeClient`, `AsyncProofpointClient`, `AsyncNetskopeClient`, `AsyncXSOARClient`, `AsyncRecordedFutureClient`
-- New optional extra: `pip install "gnat[async]"` (installs httpx)
+→ [Full release notes](docs/releases/v0.1.0.md)
 
-#### CLI (`gnat/cli/`, entry point `gnat`)
-- `gnat ping` — connectivity check
-- `gnat query` — fetch single object by id with `--output json|table|stix`
-- `gnat list` — paginated object listing with `--filter KEY=VALUE`
-- `gnat ingest` — file-to-platform with 8 format options, `--dry-run`, `--tlp`, `--confidence`, `--deduplicate`
-- `gnat codegen` — wraps the OpenAPI generator
-- `gnat config --show|--validate|--init` — config management
-- ANSI color output with `--no-color` fallback; `--debug` flag for trace logging
+---
 
-#### Sphinx documentation (`docs/`)
-- `furo` theme with dark/light mode
-- `autodoc`, `napoleon` (NumPy docstrings), `viewcode`, `intersphinx`, `sphinx-copybutton`
-- Full `index.rst` TOC, API autosummary stubs for all modules
-- `docs/requirements.txt`, `docs/Makefile`; `make docs` target in root `Makefile`
-
-#### GitHub Actions (`.github/workflows/`)
-- `ci.yml`: lint → test matrix (Python 3.9–3.12 × Linux + macOS + Windows on 3.12) → coverage → async tests → build check → Sphinx build → Bandit SAST
-- `release.yml`: PyPI publish via OIDC trusted publishing on version tags
-
-
-
-#### Graph visualization — performance rewrite for 1000+ nodes
-
-**Layout algorithms** (pure Python, no numpy/scipy):
-
-| Algorithm | Complexity | Trigger |
-|---|---|---|
-| Fruchterman-Reingold (networkx) | O(n²) | ≤ 200 nodes |
-| Barnes-Hut ForceAtlas2 | O(n log n) | 200–1000 nodes |
-| Type-cluster (Fibonacci spiral) | O(n) | > 1000 nodes |
-
-Barnes-Hut uses a custom pure-Python quad-tree with centre-of-mass approximation (theta=0.8).  Measured: n=2000 in 2.2s, n=5000 in 4.4s.  Type-cluster layout: n=3000 in 0.003s.
-
-**Rendering** — tiered by graph size:
-- ≤ 300 nodes: **Plotly 3D** (unchanged, Jupyter-native)
-- > 300 nodes: **sigma.js WebGL** via unpkg CDN — handles 100K nodes; self-contained HTML with search, type filter, edge toggle, hover tooltips, zoom/pan, dark theme
-- sigma.js HTML: ~200KB for 400 nodes, loads in < 0.2s
-
-**New methods**: `to_graph_json()` (sigma.js data format for Grafana graph panel); `to_html(renderer=sigma|plotly3d)` explicit renderer selection; `show(max_nodes=N)` caps by degree centrality; `show(cluster_threshold=N)` override per-call
-
-**Grafana graph panel integration**: `GrafanaServer` now exposes `/graph-json/<workspace>` endpoint returning sigma.js-compatible node/edge data for live dashboard graphs
-#### Visualization layer (`gnat/viz/`)
-- **`TabularView`** — filterable tables: rich terminal (ANSI color), Jupyter inline, self-contained sortable dark-theme HTML, CSV, Excel/Power BI (openpyxl, freeze-panes, auto-widths, alternating rows)
-- **`GraphView`** — 3D force-directed STIX relationship graph via Plotly; spring layout (networkx, ≤800 nodes) with Fibonacci sphere fallback; nodes colored + sized by confidence/risk score; edges grouped by relationship type; `to_html()`, `to_json()`, `to_networkx()`, `summary()`
-- **`GrafanaServer`** — FastAPI SimpleJSON datasource server; endpoints: `/search`, `/query` (table + timeseries), `/annotations` (enrichment events), `/tag-keys`, `/tag-values`; `run_in_background()` for notebooks
-- **`PowerBIExporter`** — multi-sheet Excel workbook with Relationships + EnrichmentLog + Summary sheets; `to_model_json()` Power BI data model descriptor with auto-generated table relationships
-- **`grafana_dashboard` / `save_grafana_dashboard`** — pre-built Grafana dashboard JSON: object-type bar chart, RF risk-score timeline, CVSS timeline, confidence gauge, indicator table, relationship table, enrichment annotations
-- New CLI subcommand tree: `gnat viz table`, `graph`, `serve`, `dashboard`, `powerbi`
-- New optional extras: `pip install gnat[viz]` (plotly + networkx + openpyxl), `gnat[serve]` (fastapi + uvicorn)
-#### Context system (`gnat/context/`)
-- **`GlobalContext`** — wraps a `GNATClient`, adds read-only flag and priority
-- **`GlobalContextRegistry`** — manages multiple global contexts; `from_config()` and `from_clients()` factories; default write target, `writable()` / `read_only_contexts()` helpers
-- **`Workspace`** — analyst working set with:
-  - `load(stix_type, filters, source)` — pull from global context
-  - `add(obj)` / `remove(stix_id)` — direct object management
-  - `enrich(sources, strategy)` / `aenrich(...)` — concurrent async fan-out enrichment
-  - Three enrichment strategies: `create_relationships` (default), `merge_extensions`, `tag_only`
-  - `diff()` — shows added/modified/deleted since last load or commit
-  - `commit(target, dry_run)` — write dirty objects back to any writable global
-  - `export_bundle()` — full STIX 2.1 bundle export
-  - Immediate persistence on every mutation
-- **`WorkspaceManager`** — factory: `create()`, `open()`, `get_or_create()`, `list()`, `delete()`; `from_clients()` for programmatic setup
-- **`CommitResult`** — typed summary with `written`, `deleted`, `errors`, `would_write`, `success`
-- **`WorkspaceStore`** (SQLAlchemy) — SQLite (WAL mode) or PostgreSQL; schema: `workspaces`, `workspace_objects` (with dirty tracking + soft delete), `enrichment_log`, `context_globals`
-- **`FlatFileStore`** — zero-dependency JSON flat-file fallback; one file per object, JSONL enrichment log, STIX bundle export; auto-selected when SQLAlchemy is not installed
-- Transparent backend switching: `WorkspaceStore` preferred, falls back to `FlatFileStore`
-- New optional extra: `pip install "gnat[persist]"` (installs sqlalchemy)
+[Unreleased]: https://github.com/your-org/gnat/compare/v1.2.0...HEAD
+[v1.3.0]: https://github.com/your-org/gnat/compare/v1.2.0...v1.3.0
+[v1.2.0]: https://github.com/your-org/gnat/compare/v1.1.0...v1.2.0
+[v1.1.0]: https://github.com/your-org/gnat/compare/v1.0.0...v1.1.0
+[v1.0.0]: https://github.com/your-org/gnat/compare/v0.9.0...v1.0.0
+[v0.9.0]: https://github.com/your-org/gnat/compare/v0.8.0...v0.9.0
+[v0.8.0]: https://github.com/your-org/gnat/compare/v0.7.0...v0.8.0
+[v0.7.0]: https://github.com/your-org/gnat/compare/v0.6.0...v0.7.0
+[v0.6.0]: https://github.com/your-org/gnat/compare/v0.3.0...v0.6.0
+[v0.3.0]: https://github.com/your-org/gnat/compare/v0.1.0...v0.3.0
+[v0.1.0]: https://github.com/your-org/gnat/releases/tag/v0.1.0
