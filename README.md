@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 95 security platforms.
+**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 99 security platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -11,10 +11,10 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 95 security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 99 security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
-[ 95 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
+[ 99 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
 ```
 
 ---
@@ -52,12 +52,12 @@ GNAT provides a single, consistent abstraction layer over 95 security platforms 
 
 | Layer | What it does |
 |-------|-------------|
-| **95 Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
+| **99 Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
 | **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
 | **Ingest Pipelines** | 14 source readers × 12 mappers; pull from any platform, file, feed, or database |
 | **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
 | **FeedScheduler** | Drift-corrected cron scheduling for all job types; APScheduler/Celery adapters |
-| **AI Agents** | ResearchAgent (Claude), ParsingAgent (STIX extraction from text), CopilotReader (M365) |
+| **AI Agents** | ResearchAgent (Claude), ParsingAgent (STIX extraction from text), CopilotReader (M365); quality/, security/, and repo_maintenance/ sub-agent packages |
 | **NLP Queries** | Natural-language query engine — built-in rule-based or Claude-backed structured extraction |
 | **Research Library** | Team knowledge base with staging/curation workflow, TTL management, and deduplication |
 | **Automated Reports** | PDF, HTML, DOCX, Markdown; daily/weekly/annual; AI-assisted synthesis; email + SharePoint delivery |
@@ -110,6 +110,7 @@ GNAT provides a single, consistent abstraction layer over 95 security platforms 
 | `opencti` | OpenCTI | API key |
 | `hibp` | Have I Been Pwned (HIBP) | API key |
 | `synapse` | Vertex Project Synapse | API key / Bearer |
+| `osint_feed` | Generic OSINT Feed (TAXII 2.x / STIX-JSON) | None / Basic / API key / Bearer / OAuth2 |
 
 ### SIEMs & Log Analytics
 
@@ -152,6 +153,7 @@ GNAT provides a single, consistent abstraction layer over 95 security platforms 
 | `darktrace` | Darktrace Enterprise Immune System | HMAC public/private key |
 | `nozomi` | Nozomi Networks Guardian / Vantage (OT/IoT) | API token / Basic |
 | `dragos` | Dragos Platform (OT/ICS Threat Intelligence) | Basic (API key + secret) |
+| `cisco_umbrella` | Cisco Umbrella (Investigate / Enforcement / Management) | Multiple API keys (Investigate, Enforcement, Management) |
 
 ### Vulnerability Management
 
@@ -180,6 +182,7 @@ GNAT provides a single, consistent abstraction layer over 95 security platforms 
 | `upguard` | UpGuard Vendor Risk + CAASM + DRP | API key |
 | `aws_security` | AWS Security Hub / GuardDuty | AWS SigV4 (access key + secret) |
 | `securityscorecard` | SecurityScorecard Security Ratings | API token |
+| `jupiterone` | JupiterOne (CAASM / Cyber Asset Graph) | Bearer (API key) |
 
 ### Asset & Endpoint Management
 
@@ -206,7 +209,7 @@ GNAT provides a single, consistent abstraction layer over 95 security platforms 
 | `tanium` | Tanium Endpoint Management & Security | API token / session |
 | `trendmicro_visionone` | Trend Micro Vision One XDR | Bearer token |
 
-### AI Assistants
+### AI Assistants & Collaboration
 
 | Key | Platform | Auth |
 |-----|----------|------|
@@ -214,6 +217,7 @@ GNAT provides a single, consistent abstraction layer over 95 security platforms 
 | `chatgpt` | OpenAI ChatGPT | API key |
 | `gemini` | Google Gemini | API key |
 | `grok` | Grok AI | API key |
+| `discord` | Discord (IOC extraction / CTI notifications) | Bot token |
 
 ---
 
@@ -536,13 +540,15 @@ APScheduler and Celery adapters for existing infrastructure.
 
 ## AI Agents & Research Library
 
-### AI Agents
+### Core AI Agents
 
 | Agent | Role | Backend |
 |-------|------|---------|
 | `ResearchAgent` | Topic-driven synthesis; feed-driven monitoring | Claude API (`web_search` tool) |
 | `ParsingAgent` | Extract STIX objects from unstructured text | Claude API |
 | `CopilotReader` | Query M365 content (SharePoint, Teams, mail) via DirectLine | Microsoft Bot Framework |
+| `ConnectorHealthJob` | Periodic connector health checks + schema drift detection | Built-in |
+| `LLMClient` | Unified LLM facade — Claude, OpenAI, Grok, Gemini with automatic fallback | Multiple |
 
 All AI-extracted objects are capped at `confidence_ceiling = 60` (configurable) and tagged
 `x_source_type = "ai_extracted"`. Default export pipelines use `ConfidenceFilter(min=70)`,
@@ -554,6 +560,59 @@ api_key            = sk-...
 model              = claude-sonnet-4-6
 ai_confidence_ceiling = 60
 ```
+
+### Quality Agents (`gnat/agents/quality/`)
+
+Automated connector assurance pipeline — runs during CI and on-demand:
+
+| Agent | Role |
+|-------|------|
+| `FixtureCoverageAgent` | Identifies connectors missing test fixtures; generates coverage gap reports |
+| `NormalizationRegressionAgent` | Runs golden-fixture regression tests to detect STIX normalization drift |
+| `ContractAgent` | Verifies all 8 required `ConnectorMixin` methods are present and correctly typed |
+
+```python
+from gnat.agents.quality import NormalizationRegressionAgent, ContractAgent
+
+agent = NormalizationRegressionAgent(policy=RegressionPolicy(fail_on_drift=True))
+result = agent.run_all()   # compare against golden fixtures
+
+contract = ContractAgent()
+profile = contract.check("crowdstrike")  # ContractCheckResult
+```
+
+### Security Agents (`gnat/agents/security/`)
+
+Two sub-packages for runtime secrets management and code hygiene:
+
+**Hygiene** (`gnat/agents/security/hygiene/`):
+
+| Module | Role |
+|--------|------|
+| `leak_scanner` | Scans connector output for accidental credential/PII leakage |
+| `unsafe_patterns` | Detects unsafe coding patterns (hardcoded secrets, bare `except`, etc.) |
+| `duplicate_detector` | Flags duplicate connector registrations and conflicting key aliases |
+
+**Secrets Management** (`gnat/agents/security/secrets/`):
+
+| Component | Role |
+|-----------|------|
+| `SecretsBroker` | Central resolver — dispatches to configured provider (vault, env, INI) |
+| `providers/` | Pluggable backends: `AzureKeyVaultProvider`, `CyberArkProvider`, `MemoryProvider` |
+| `SecretResolver` | Resolves `${secret:key}` interpolation tokens inside INI config values |
+| `SecretsAuditLog` | Immutable append-only log of every secret access for compliance |
+
+### Repository Maintenance Agents (`gnat/agents/repo_maintenance/`)
+
+Automated connector lifecycle management:
+
+| Component | Role |
+|-----------|------|
+| `DiscoveryEngine` | Scans the connector directory; detects new, modified, or stale connectors |
+| `RepairPlanner` | Generates `RepairPlan` (diff-based) for connectors that have drifted from the `ConnectorMixin` contract |
+| `VerificationEngine` | Runs post-repair verification checks and produces `VerificationResult` |
+| `MaintenanceExecutor` | Orchestrates discovery → repair → verify → PR creation end-to-end |
+| `ConnectorRegistry` | Queryable in-memory registry of all `ConnectorSpec` entries with metadata |
 
 ### Research Library
 
@@ -969,10 +1028,10 @@ gnat/
 ├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based config (GNAT_CONFIG → ~/.gnat/config.ini → ./gnat.ini)
 ├── clients/
-│   ├── __init__.py          # CLIENT_REGISTRY (95 connectors)
+│   ├── __init__.py          # CLIENT_REGISTRY (99 connectors)
 │   └── base.py              # urllib3 BaseClient + GNATClientError
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types + observables)
-├── connectors/              # 95 platform connectors — each: BaseClient + ConnectorMixin
+├── connectors/              # 99 platform connectors — each: BaseClient + ConnectorMixin
 │   └── base_connector.py    # ConnectorMixin (8-method contract + capabilities() + call())
 ├── ingest/                  # SourceReaders (14), RecordMappers (12), IngestPipeline
 │   └── _ioc_classifier.py   # RUST_AVAILABLE shim for optional Rust hot-path
@@ -981,9 +1040,23 @@ gnat/
 ├── context/                 # Workspace, WorkspaceManager, GlobalContextRegistry
 │   └── tenant.py            # TenantRegistry + TenantWorkspaceManager (multi-tenant isolation)
 ├── agents/                  # AI agent layer
+│   ├── llm.py               # LLMClient — unified Claude/OpenAI/Grok/Gemini facade
 │   ├── copilot.py           # CopilotReader (M365 DirectLine, token refresh)
 │   ├── research.py          # ResearchAgent + ParsingAgent
-│   └── health_monitor.py    # ConnectorHealthJob — health + schema drift detection
+│   ├── health_monitor.py    # ConnectorHealthJob — health + schema drift detection
+│   ├── quality/             # Connector quality assurance agents
+│   │   ├── fixture_coverage.py       # FixtureCoverageAgent — test fixture gap detection
+│   │   ├── normalization_regression.py # NormalizationRegressionAgent — golden-fixture regression
+│   │   └── contract.py               # ContractAgent — ConnectorMixin contract verification
+│   ├── security/            # Security hygiene + secrets management agents
+│   │   ├── hygiene/         # leak_scanner, unsafe_patterns, duplicate_detector
+│   │   └── secrets/         # SecretsBroker, SecretResolver, SecretsAuditLog, providers/
+│   └── repo_maintenance/    # Connector lifecycle automation
+│       ├── discovery.py     # DiscoveryEngine — detect new/stale connectors
+│       ├── repair.py        # RepairPlanner — generate diff-based repair plans
+│       ├── verifier.py      # VerificationEngine — post-repair contract checks
+│       ├── executor.py      # MaintenanceExecutor — end-to-end orchestration
+│       └── registry.py      # ConnectorRegistry — in-memory ConnectorSpec store
 ├── research/                # ResearchLibrary, ResearchEntry, CurationJob
 ├── reports/                 # ReportGenerator, ReportJob, 4 renderers, email + SharePoint delivery
 ├── viz/                     # TabularView, GraphView, GrafanaServer, sigma.js export
@@ -1075,7 +1148,7 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
-                        │     CONNECTOR LAYER (95 platforms)      │
+                        │     CONNECTOR LAYER (99 platforms)      │
                         │  BaseClient + ConnectorMixin            │
                         │  authenticate · health_check            │
                         │  get/list/upsert/delete · to/from_stix  │
