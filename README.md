@@ -217,7 +217,7 @@ GNAT provides a single, consistent abstraction layer over 99 security platforms 
 | `chatgpt` | OpenAI ChatGPT | API key |
 | `gemini` | Google Gemini | API key |
 | `grok` | Grok AI | API key |
-| `discord` | Discord (IOC extraction / CTI notifications) | Bot token |
+| `discord` | Discord (IOC extraction / CTI notifications/ GNAT command channel) | Bot token |
 
 ---
 
