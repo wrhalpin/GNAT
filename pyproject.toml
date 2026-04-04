@@ -3,9 +3,9 @@ requires      = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name        = "gnat"
-version     = "0.1.0"
-description = "Cybersecurity Threat Management Swiss Army Knife — universal STIX ORM and multi-platform security client"
+name        = "security-gnat"
+version     = "1.3.1"
+description = "A Universal Cybersecurity Threat Management Toolkit
 readme      = "README.md"
 license     = { file = "LICENSE" }
 authors     = [{ name = "GNAT Contributors" }]
