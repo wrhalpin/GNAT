@@ -36,15 +36,26 @@ GreyMatter exposes a REST API under ``/v1``.  Key resources:
 
 * ``/v1/observables``       — observable values (IPs, domains, hashes, URLs)
 * ``/v1/indicators``        — compound indicators with patterns
-* ``/v1/incidents``         — security incidents
+* ``/v1/incidents``         — security investigations / cases (``observed-data``)
 * ``/v1/threat-actors``     — threat actor entities
 * ``/v1/malware``           — malware families / samples
 * ``/v1/vulnerabilities``   — CVE / vulnerability records
+
+Investigation CRUD
+------------------
+Pass ``stix_type="observed-data"`` to the standard CRUD methods to interact
+with GreyMatter investigations (cases)::
+
+    client.list_objects("observed-data")
+    client.get_object("observed-data", case_uuid)
+    client.upsert_object("observed-data", {"title": "APT28 Campaign"})
+
+Use :meth:`link_investigation` to link a STIX observable to an existing case.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -66,16 +77,17 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         Verify TLS.  Default ``True``.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator":      "observables",
         "threat-actor":   "threat-actors",
         "malware":        "malware",
         "vulnerability":  "vulnerabilities",
         "attack-pattern": "attack-patterns",
+        "observed-data":  "incidents",
     }
 
     # GreyMatter observable type → STIX pattern template
-    _OBS_PATTERN: Dict[str, str] = {
+    _OBS_PATTERN: dict[str, str] = {
         "ipv4":   "[ipv4-addr:value = '{v}']",
         "ipv6":   "[ipv6-addr:value = '{v}']",
         "domain": "[domain-name:value = '{v}']",
@@ -128,7 +140,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         self.get("/v1/health")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single GreyMatter object by id.
 
@@ -146,10 +158,10 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List GreyMatter objects of a given STIX type.
 
@@ -159,7 +171,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             GreyMatter query filters (e.g. ``{"type": "ipv4", "tag": "apt28"}``).
         """
         resource = self._resolve(stix_type)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "limit":  page_size,
             "offset": (page - 1) * page_size,
         }
@@ -168,9 +180,9 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/v1/{resource}", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any],
-                      linked_cases: Optional[List[str]] = None,
-                      **kwargs: Any) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any],
+                      linked_cases: list[str] | None = None,
+                      **kwargs: Any) -> dict[str, Any]:
         """
         Create or update a GreyMatter object.
 
@@ -199,13 +211,23 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
-        Translate a GreyMatter observable/entity dict to STIX 2.1.
+        Translate a GreyMatter observable/entity or incident dict to STIX 2.1.
 
-        Handles both observable-value records and full entity records.
+        Dispatches to :meth:`_incident_to_stix` when the native record looks
+        like an investigation/case (detected by ``case_number`` or
+        ``assigned_to`` fields), otherwise maps to a STIX Indicator.
+
+        Parameters
+        ----------
+        native : dict
+            Raw GreyMatter API response.
         """
-        data     = native.get("data", native)
+        data = native.get("data", native)
+        # Investigations/cases have case_number or assigned_to; observables have type+value
+        if "case_number" in data or "assigned_to" in data:
+            return self._incident_to_stix(data)
         gm_type  = data.get("type", "")
         value    = data.get("value", data.get("name", ""))
         pattern  = self._OBS_PATTERN.get(
@@ -229,7 +251,39 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             "x_tlp":           data.get("tlp", "white"),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    @staticmethod
+    def _incident_to_stix(data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Map a GreyMatter investigation/case record to STIX ``observed-data``.
+
+        Parameters
+        ----------
+        data : dict
+            GreyMatter incident/case record (with ``case_number``,
+            ``assigned_to``, ``status``, ``severity`` etc.).
+        """
+        created  = data.get("created_at", "")
+        modified = data.get("updated_at", created)
+        return {
+            "type":              "observed-data",
+            "id":                f"observed-data--{data.get('id', '')}",
+            "created":           created,
+            "modified":          modified,
+            "first_observed":    created,
+            "last_observed":     modified,
+            "number_observed":   1,
+            "object_refs":       [],
+            "name":              data.get("title", data.get("name", "")),
+            "description":       data.get("description", ""),
+            "x_gm_case_number":  data.get("case_number", ""),
+            "x_gm_status":       data.get("status", ""),
+            "x_gm_severity":     data.get("severity", ""),
+            "x_gm_assigned_to":  data.get("assigned_to", ""),
+            "x_gm_tags":         data.get("tags", []),
+            "x_tlp":             data.get("tlp", "white"),
+        }
+
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX Indicator dict to a GreyMatter observable payload.
         """
@@ -250,8 +304,8 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     def link_investigation(
         self,
         case_id: str,
-        stix_obj: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        stix_obj: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Link a STIX object to an existing GreyMatter investigation (case).
 
@@ -308,14 +362,22 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     @staticmethod
     def _infer_gm_type(pattern: str) -> str:
         pattern = pattern.lower()
-        if "ipv4-addr"   in pattern: return "ipv4"
-        if "ipv6-addr"   in pattern: return "ipv6"
-        if "domain-name" in pattern: return "domain"
-        if "url:"        in pattern: return "url"
-        if "sha-256"     in pattern: return "sha256"
-        if "sha-1"       in pattern: return "sha1"
-        if "md5"         in pattern: return "md5"
-        if "email-addr"  in pattern: return "email"
+        if "ipv4-addr"   in pattern:
+            return "ipv4"
+        if "ipv6-addr"   in pattern:
+            return "ipv6"
+        if "domain-name" in pattern:
+            return "domain"
+        if "url:"        in pattern:
+            return "url"
+        if "sha-256"     in pattern:
+            return "sha256"
+        if "sha-1"       in pattern:
+            return "sha1"
+        if "md5"         in pattern:
+            return "md5"
+        if "email-addr"  in pattern:
+            return "email"
         return "unknown"
 
     @staticmethod
