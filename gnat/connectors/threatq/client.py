@@ -400,6 +400,73 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         return self.post(f"/api/events/{tq_id}/indicators", json=payload)
 
     # ------------------------------------------------------------------
+    # Evidence expansion
+    # ------------------------------------------------------------------
+
+    def get_event_indicators(self, event_id: str) -> list[dict[str, Any]]:
+        """
+        Return all indicators linked to a ThreatQ Event.
+
+        Calls ``GET /api/events/{event_id}/indicators``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID (or STIX id — the numeric portion is
+            extracted automatically).
+
+        Returns
+        -------
+        list of dict
+            Raw ThreatQ indicator records.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        resp  = self.get(f"/api/events/{tq_id}/indicators", params={"with": "attributes"})
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_event_adversaries(self, event_id: str) -> list[dict[str, Any]]:
+        """
+        Return all adversaries (threat actors) linked to a ThreatQ Event.
+
+        Calls ``GET /api/events/{event_id}/adversaries``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID (or STIX id).
+
+        Returns
+        -------
+        list of dict
+            Raw ThreatQ adversary records.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        resp  = self.get(f"/api/events/{tq_id}/adversaries")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def search_indicators_by_value(self, value: str) -> list[dict[str, Any]]:
+        """
+        Search ThreatQ indicators by value.
+
+        Calls ``GET /api/indicators?search={value}&with=attributes``.
+
+        Parameters
+        ----------
+        value : str
+            Indicator value to search for (IP, domain, hash, URL, …).
+
+        Returns
+        -------
+        list of dict
+            Raw ThreatQ indicator records (includes attributes array).
+        """
+        resp = self.get(
+            "/api/indicators",
+            params={"search": value, "with": "attributes", "limit": 50},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 

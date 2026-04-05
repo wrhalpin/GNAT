@@ -343,6 +343,65 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         }
         return self.post(f"/v1/incidents/{case_id}/linked_observables", json=payload)
 
+    # ── Evidence expansion ────────────────────────────────────────────────
+
+    def get_investigation_observables(self, case_id: str) -> list[dict[str, Any]]:
+        """
+        Return all observables linked to a GreyMatter investigation/case.
+
+        Calls ``GET /v1/incidents/{case_id}/linked_observables``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter investigation / case UUID.
+
+        Returns
+        -------
+        list of dict
+            Raw GreyMatter observable records.
+        """
+        resp = self.get(f"/v1/incidents/{self._to_gm_id(case_id)}/linked_observables")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_investigation_tasks(self, case_id: str) -> list[dict[str, Any]]:
+        """
+        Return tasks associated with a GreyMatter investigation/case.
+
+        Calls ``GET /v1/incidents/{case_id}/tasks``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter investigation / case UUID.
+
+        Returns
+        -------
+        list of dict
+            Raw GreyMatter task records.
+        """
+        resp = self.get(f"/v1/incidents/{self._to_gm_id(case_id)}/tasks")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def search_observables_by_value(self, value: str) -> list[dict[str, Any]]:
+        """
+        Search GreyMatter observables by value (IP, domain, hash, email, …).
+
+        Calls ``GET /v1/observables?value={value}``.
+
+        Parameters
+        ----------
+        value : str
+            Observable value to search for.
+
+        Returns
+        -------
+        list of dict
+            Raw GreyMatter observable records.
+        """
+        resp = self.get("/v1/observables", params={"value": value, "limit": 50})
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
     # ── Helpers ────────────────────────────────────────────────────────────
 
     def _resolve(self, stix_type: str) -> str:

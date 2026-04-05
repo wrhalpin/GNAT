@@ -312,6 +312,97 @@ class XSOARClient(BaseClient, ConnectorMixin):
         }
         return self.post(f"/incident/{incident_id}/linkedIncidents", json=payload)
 
+    # ── Evidence expansion ────────────────────────────────────────────────
+
+    def get_incident_alerts(self, incident_id: str) -> list[dict[str, Any]]:
+        """
+        Return alerts linked to an XSOAR incident.
+
+        Calls ``POST /alerts/search`` with ``incidentId`` filter.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID (numeric string).
+
+        Returns
+        -------
+        list of dict
+            Raw XSOAR alert records.
+        """
+        resp = self.post("/alerts/search", json={
+            "filter": {"incidentId": incident_id},
+            "size":   100,
+        })
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_incident_tasks(self, incident_id: str) -> list[dict[str, Any]]:
+        """
+        Return tasks associated with an XSOAR incident.
+
+        Calls ``GET /tasks`` with ``incidentId`` query parameter.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID.
+
+        Returns
+        -------
+        list of dict
+            Raw XSOAR task records.
+        """
+        resp = self.get("/tasks", params={"incidentId": incident_id, "size": 100})
+        # Response shape varies; handle both list and dict-with-data
+        if isinstance(resp, list):
+            return resp
+        if isinstance(resp, dict):
+            return resp.get("data", resp.get("tasks", []))
+        return []
+
+    def get_incident_timeline(self, incident_id: str) -> list[dict[str, Any]]:
+        """
+        Return timeline entries (war-room entries) for an XSOAR incident.
+
+        Calls ``POST /entry/search`` filtered by incident ID.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID.
+
+        Returns
+        -------
+        list of dict
+            Raw XSOAR war-room entry records.
+        """
+        resp = self.post("/entry/search", json={
+            "filter": {"id": incident_id},
+            "size":   200,
+        })
+        if isinstance(resp, list):
+            return resp
+        if isinstance(resp, dict):
+            return resp.get("data", resp.get("entries", []))
+        return []
+
+    def search_indicators_by_value(self, value: str) -> list[dict[str, Any]]:
+        """
+        Search XSOAR indicators by exact or partial value.
+
+        Parameters
+        ----------
+        value : str
+            Indicator value to search for (IP, domain, hash, …).
+
+        Returns
+        -------
+        list of dict
+            Raw XSOAR indicator (iocObject) records.
+        """
+        resp = self.post("/indicators/search", json={"query": f'value:"{value}"', "size": 50})
+        return resp.get("iocObjects", []) if isinstance(resp, dict) else []
+
     # ── Private helpers ────────────────────────────────────────────────────
 
     def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
