@@ -1,0 +1,33 @@
+{
+  "name": "cribl_event_to_observed_data",
+  "connector": "cribl",
+  "mapper": "gnat.connectors.cribl.stix_mapper:CriblSTIXMapper",
+  "method": "event_to_observed_data",
+  "input": {
+    "_raw": "1.2.3.4 connected to evil.example",
+    "_time": 1704067200,
+    "cribl_pipe": "default/main",
+    "ip": "1.2.3.4",
+    "domain": "evil.example",
+    "url": "https://evil.example/login"
+  },
+  "expected": {
+    "type": "observed-data",
+    "number_observed": 1,
+    "x_cribl_raw": "1.2.3.4 connected to evil.example",
+    "x_cribl_source": "default/main"
+  },
+  "policy": {
+    "ignore_fields": [
+      "id",
+      "created",
+      "modified",
+      "first_observed",
+      "last_observed",
+      "object_refs"
+    ],
+    "allow_additional_fields": true,
+    "require_exact_list_length": true
+  },
+  "notes": "Initial golden fixture for Cribl event normalization. Intended as the seed format for other connectors."
+}

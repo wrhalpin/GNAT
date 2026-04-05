@@ -6,8 +6,6 @@ Reusable DataTable widget for displaying FeedScheduler job status.
 Columns: job_id, enabled, last_run, next_run, run_count, status.
 """
 
-from typing import List
-
 from textual.widgets import DataTable
 
 
@@ -16,16 +14,16 @@ class JobTable(DataTable):
 
     def on_mount(self) -> None:
         """Add job status column headers."""
-        self.add_column("Job ID",     key="job_id",    width=25)
-        self.add_column("On",         key="enabled",   width=4)
-        self.add_column("Last Run",   key="last_run",  width=20)
-        self.add_column("Next Run",   key="next_run",  width=20)
-        self.add_column("Runs",       key="run_count", width=5)
-        self.add_column("Status",     key="status",    width=12)
+        self.add_column("Job ID", key="job_id", width=25)
+        self.add_column("On", key="enabled", width=4)
+        self.add_column("Last Run", key="last_run", width=20)
+        self.add_column("Next Run", key="next_run", width=20)
+        self.add_column("Runs", key="run_count", width=5)
+        self.add_column("Status", key="status", width=12)
         self.cursor_type = "row"
         self.zebra_stripes = True
 
-    def load_jobs(self, jobs: List[dict]) -> None:
+    def load_jobs(self, jobs: list[dict]) -> None:
         """
         Clear and populate the table from a list of job status dicts.
 
@@ -37,12 +35,12 @@ class JobTable(DataTable):
         self.clear()
         for job in jobs:
             last = (job.get("last_run") or "")[:19]
-            nxt  = (job.get("next_run") or "")[:19]
+            nxt = (job.get("next_run") or "")[:19]
             self.add_row(
                 job.get("job_id", ""),
                 "✓" if job.get("enabled") else "✗",
                 last or "—",
-                nxt  or "—",
+                nxt or "—",
                 str(job.get("run_count", 0)),
                 job.get("status", ""),
             )

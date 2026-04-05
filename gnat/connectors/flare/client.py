@@ -19,14 +19,14 @@ References
 https://docs.flare.io/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 _API_V2 = "/api/v2"
-_LEAKS   = f"{_API_V2}/leaks"
-_EVENTS  = f"{_API_V2}/events"
+_LEAKS = f"{_API_V2}/leaks"
+_EVENTS = f"{_API_V2}/events"
 _SOURCES = f"{_API_V2}/sources"
 
 
@@ -44,11 +44,11 @@ class FlareClient(BaseClient, ConnectorMixin):
         Flare tenant ID for multi-tenant deployments.
     """
 
-    stix_type_map: Dict[str, str] = {
-        "indicator":    "leaks",
+    stix_type_map: dict[str, str] = {
+        "indicator": "leaks",
         "observed-data": "events",
         "threat-actor": "actors",
-        "malware":      "malware",
+        "malware": "malware",
     }
 
     def __init__(
@@ -59,7 +59,7 @@ class FlareClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         super().__init__(host=host, **kwargs)
-        self._api_key  = api_key
+        self._api_key = api_key
         self._tenant_id = tenant_id
 
     # ------------------------------------------------------------------
@@ -69,16 +69,14 @@ class FlareClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set the Flare API Bearer token header."""
         self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
-        self._auth_headers["Content-Type"]  = "application/json"
+        self._auth_headers["Content-Type"] = "application/json"
 
     def health_check(self) -> bool:
         """Check API connectivity by requesting sources."""
         resp = self.get(_SOURCES, params={"size": 1})
         return isinstance(resp, dict)
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Retrieve a Flare leak/event by ID."""
         resource = self.stix_type_map.get(stix_type, "leaks")
         resp = self.get(f"{_API_V2}/{resource}/{object_id}")
@@ -87,10 +85,10 @@ class FlareClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List Flare exposure events or leaks.
 
@@ -103,7 +101,7 @@ class FlareClient(BaseClient, ConnectorMixin):
         * ``severity``: ``"low"``, ``"medium"``, ``"high"``, ``"critical"``
         """
         resource = self.stix_type_map.get(stix_type, "leaks")
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "size": min(page_size, 500),
             "from": (page - 1) * page_size,
         }
@@ -118,13 +116,9 @@ class FlareClient(BaseClient, ConnectorMixin):
         # Flare returns {"items": [...]} or {"hits": [...]}
         return resp.get("items", resp.get("hits", []))
 
-    def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Flare API is read-only — raises :class:`GNATClientError`."""
-        raise GNATClientError(
-            "Flare Systems API is read-only. Exposure data is sourced passively."
-        )
+        raise GNATClientError("Flare Systems API is read-only. Exposure data is sourced passively.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Flare Systems API is read-only — delete not supported.")
@@ -133,9 +127,7 @@ class FlareClient(BaseClient, ConnectorMixin):
     # Extra helpers
     # ------------------------------------------------------------------
 
-    def search_leaks(
-        self, query: str, source: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    def search_leaks(self, query: str, source: Optional[str] = None) -> list[dict[str, Any]]:
         """
         Full-text search across Flare's indexed exposure data.
 
@@ -146,7 +138,7 @@ class FlareClient(BaseClient, ConnectorMixin):
         source : str, optional
             Restrict to a data source: ``"darkweb"``, ``"paste"``, ``"github"``.
         """
-        params: Dict[str, Any] = {"query": query, "size": 100}
+        params: dict[str, Any] = {"query": query, "size": 100}
         if source:
             params["source"] = source
         if self._tenant_id:
@@ -158,17 +150,18 @@ class FlareClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Flare leak/event record to a STIX Indicator or ObservedData."""
         event_type = native.get("type", native.get("event_type", ""))
         if event_type in ("actor", "threat_actor"):
             return self._actor_to_stix(native)
         return self._leak_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a Flare search query dict from a STIX dict."""
         name = stix_dict.get("name", "")
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else name
@@ -178,48 +171,48 @@ class FlareClient(BaseClient, ConnectorMixin):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _leak_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _leak_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         leak_type = native.get("type", "")
-        value     = (
+        value = (
             native.get("email")
             or native.get("domain")
             or native.get("url")
             or native.get("hash")
             or native.get("title", "")
         )
-        pattern   = self._make_pattern(leak_type, value)
-        severity  = native.get("severity", "medium")
+        pattern = self._make_pattern(leak_type, value)
+        severity = native.get("severity", "medium")
         conf = {"critical": 90, "high": 70, "medium": 50, "low": 25}.get(
             severity.lower() if isinstance(severity, str) else "medium", 50
         )
         return {
-            "type":              "indicator",
-            "id":                f"indicator--flare-{native.get('id', '')}",
-            "name":              value or f"Flare event {native.get('id', '')}",
-            "description":       native.get("description", native.get("title", ""))[:500],
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("created_at", native.get("date", "")),
-            "modified":          native.get("updated_at", ""),
-            "confidence":        conf,
-            "indicator_types":   ["malicious-activity"],
+            "type": "indicator",
+            "id": f"indicator--flare-{native.get('id', '')}",
+            "name": value or f"Flare event {native.get('id', '')}",
+            "description": native.get("description", native.get("title", ""))[:500],
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("created_at", native.get("date", "")),
+            "modified": native.get("updated_at", ""),
+            "confidence": conf,
+            "indicator_types": ["malicious-activity"],
             "x_source_platform": "flare",
-            "x_flare_id":        native.get("id", ""),
-            "x_flare_type":      leak_type,
-            "x_flare_source":    native.get("source", native.get("bucket", "")),
-            "x_flare_severity":  severity,
+            "x_flare_id": native.get("id", ""),
+            "x_flare_type": leak_type,
+            "x_flare_source": native.get("source", native.get("bucket", "")),
+            "x_flare_severity": severity,
         }
 
-    def _actor_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "threat-actor",
-            "id":                f"threat-actor--flare-{native.get('id', '')}",
-            "name":              native.get("name", native.get("alias", "")),
-            "description":       native.get("description", "")[:500],
-            "created":           native.get("created_at", ""),
-            "modified":          native.get("updated_at", ""),
+            "type": "threat-actor",
+            "id": f"threat-actor--flare-{native.get('id', '')}",
+            "name": native.get("name", native.get("alias", "")),
+            "description": native.get("description", "")[:500],
+            "created": native.get("created_at", ""),
+            "modified": native.get("updated_at", ""),
             "x_source_platform": "flare",
-            "x_flare_id":        native.get("id", ""),
+            "x_flare_id": native.get("id", ""),
         }
 
     @staticmethod

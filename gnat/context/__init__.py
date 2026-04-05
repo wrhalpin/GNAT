@@ -31,20 +31,21 @@ Quick start::
 """
 
 from gnat.context.global_context import GlobalContext, GlobalContextRegistry
-from gnat.context.workspace import (
-    Workspace,
-    WorkspaceManager,
-    CommitResult,
-)
 from gnat.context.store import FlatFileStore
 from gnat.context.tenant import (
     Tenant,
     TenantRegistry,
     TenantWorkspaceManager,
 )
+from gnat.context.workspace import (
+    CommitResult,
+    Workspace,
+    WorkspaceManager,
+)
 
 try:
     from gnat.context.store import WorkspaceStore
+
     _HAS_SQLALCHEMY = True
 except Exception:
     _HAS_SQLALCHEMY = False

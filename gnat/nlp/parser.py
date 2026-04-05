@@ -24,7 +24,7 @@ Config::
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.nlp.query_spec import QuerySpec
 
@@ -60,10 +60,10 @@ class NLPQueryEngine:
     def __init__(
         self,
         backend: str = "builtin",
-        claude_config: Optional[Any] = None,
+        claude_config: Any | None = None,
         default_limit: int = 100,
     ) -> None:
-        self._backend_name  = backend
+        self._backend_name = backend
         self._default_limit = default_limit
         self._parser = self._build_parser(backend, claude_config)
 
@@ -72,7 +72,7 @@ class NLPQueryEngine:
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_config(cls, config: Any) -> "NLPQueryEngine":
+    def from_config(cls, config: Any) -> NLPQueryEngine:
         """
         Instantiate from a :class:`~gnat.config.GNATConfig` object.
 
@@ -99,11 +99,13 @@ class NLPQueryEngine:
         if backend == "claude":
             try:
                 from gnat.agents.base import AgentConfig
+
                 claude_config = AgentConfig.from_config(config._parser)
             except Exception as exc:
                 logger.warning(
                     "NLPQueryEngine: could not load Claude config (%s); "
-                    "falling back to builtin backend", exc
+                    "falling back to builtin backend",
+                    exc,
                 )
                 backend = "builtin"
 
@@ -131,8 +133,8 @@ class NLPQueryEngine:
     def query(
         self,
         query: str,
-        connectors: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        connectors: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Parse *query* and dispatch to all matching connectors.
 
@@ -153,8 +155,8 @@ class NLPQueryEngine:
             dict has a ``"_source"`` key indicating which connector produced
             it.
         """
-        spec      = self.parse(query)
-        results: List[Dict[str, Any]] = []
+        spec = self.parse(query)
+        results: list[dict[str, Any]] = []
 
         if not connectors:
             # Return the spec serialised so callers can inspect it
@@ -190,14 +192,14 @@ class NLPQueryEngine:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _build_parser(backend: str, claude_config: Optional[Any]) -> Any:
+    def _build_parser(backend: str, claude_config: Any | None) -> Any:
         if backend == "claude":
             if claude_config is None:
-                raise ValueError(
-                    "NLPQueryEngine: backend='claude' requires claude_config"
-                )
+                raise ValueError("NLPQueryEngine: backend='claude' requires claude_config")
             from gnat.nlp.claude_backend import ClaudeParser
+
             return ClaudeParser(claude_config)
 
         from gnat.nlp.builtin import BuiltinParser
+
         return BuiltinParser()

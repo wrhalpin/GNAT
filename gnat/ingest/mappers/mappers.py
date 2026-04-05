@@ -40,16 +40,17 @@ from __future__ import annotations
 import logging
 import re
 import uuid
-from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 from gnat.ingest.base import RawRecord, RecordMapper
+from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.base import STIXBase
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
-from gnat.orm.vulnerability import Vulnerability
-from gnat.orm.threat_actor import ThreatActor
-from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.relationship import Relationship
-from gnat.orm.base import STIXBase
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.vulnerability import Vulnerability
 
 if TYPE_CHECKING:
     pass
@@ -61,60 +62,62 @@ logger = logging.getLogger(__name__)
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_id(stix_type: str) -> str:
     return f"{stix_type}--{uuid.uuid4()}"
 
 
 def _utcnow() -> str:
     from gnat.orm.base import _utcnow as _base_utcnow
+
     return _base_utcnow()
 
 
 # MISP type → (STIX type, pattern template)
-_MISP_TYPE_MAP: Dict[str, tuple] = {
-    "ip-dst":          ("ipv4-addr",    "ipv4-addr:value = '{v}'"),
-    "ip-src":          ("ipv4-addr",    "ipv4-addr:value = '{v}'"),
-    "ip-dst|port":     ("ipv4-addr",    "ipv4-addr:value = '{v}'"),
-    "ip-src|port":     ("ipv4-addr",    "ipv4-addr:value = '{v}'"),
-    "domain":          ("domain-name",  "domain-name:value = '{v}'"),
-    "hostname":        ("domain-name",  "domain-name:value = '{v}'"),
-    "url":             ("url",          "url:value = '{v}'"),
-    "md5":             ("file",         "file:hashes.MD5 = '{v}'"),
-    "sha1":            ("file",         "file:hashes.SHA-1 = '{v}'"),
-    "sha256":          ("file",         "file:hashes.SHA-256 = '{v}'"),
-    "filename":        ("file",         "file:name = '{v}'"),
-    "email-src":       ("email-addr",   "email-addr:value = '{v}'"),
-    "email-dst":       ("email-addr",   "email-addr:value = '{v}'"),
-    "email-subject":   ("email-message","email-message:subject = '{v}'"),
-    "regkey":          ("windows-registry-key", "windows-registry-key:key = '{v}'"),
-    "mutex":           ("mutex",        "mutex:name = '{v}'"),
-    "vulnerability":   ("vulnerability",""),
-    "malware-sample":  ("malware",      ""),
+_MISP_TYPE_MAP: dict[str, tuple] = {
+    "ip-dst": ("ipv4-addr", "ipv4-addr:value = '{v}'"),
+    "ip-src": ("ipv4-addr", "ipv4-addr:value = '{v}'"),
+    "ip-dst|port": ("ipv4-addr", "ipv4-addr:value = '{v}'"),
+    "ip-src|port": ("ipv4-addr", "ipv4-addr:value = '{v}'"),
+    "domain": ("domain-name", "domain-name:value = '{v}'"),
+    "hostname": ("domain-name", "domain-name:value = '{v}'"),
+    "url": ("url", "url:value = '{v}'"),
+    "md5": ("file", "file:hashes.MD5 = '{v}'"),
+    "sha1": ("file", "file:hashes.SHA-1 = '{v}'"),
+    "sha256": ("file", "file:hashes.SHA-256 = '{v}'"),
+    "filename": ("file", "file:name = '{v}'"),
+    "email-src": ("email-addr", "email-addr:value = '{v}'"),
+    "email-dst": ("email-addr", "email-addr:value = '{v}'"),
+    "email-subject": ("email-message", "email-message:subject = '{v}'"),
+    "regkey": ("windows-registry-key", "windows-registry-key:key = '{v}'"),
+    "mutex": ("mutex", "mutex:name = '{v}'"),
+    "vulnerability": ("vulnerability", ""),
+    "malware-sample": ("malware", ""),
 }
 
 # IOC type string → STIX pattern template
-_IOC_TYPE_PATTERN: Dict[str, str] = {
-    "ip":     "[ipv4-addr:value = '{v}']",
-    "ipv6":   "[ipv6-addr:value = '{v}']",
+_IOC_TYPE_PATTERN: dict[str, str] = {
+    "ip": "[ipv4-addr:value = '{v}']",
+    "ipv6": "[ipv6-addr:value = '{v}']",
     "domain": "[domain-name:value = '{v}']",
-    "url":    "[url:value = '{v}']",
-    "md5":    "[file:hashes.MD5 = '{v}']",
-    "sha1":   "[file:hashes.SHA-1 = '{v}']",
+    "url": "[url:value = '{v}']",
+    "md5": "[file:hashes.MD5 = '{v}']",
+    "sha1": "[file:hashes.SHA-1 = '{v}']",
     "sha256": "[file:hashes.SHA-256 = '{v}']",
-    "email":  "[email-addr:value = '{v}']",
-    "cidr":   "[ipv4-addr:value = '{v}']",
+    "email": "[email-addr:value = '{v}']",
+    "cidr": "[ipv4-addr:value = '{v}']",
 }
 
 # IOC type → STIX indicator_types vocab entry
-_IOC_INDICATOR_TYPE: Dict[str, str] = {
-    "ip":     "malicious-activity",
-    "ipv6":   "malicious-activity",
+_IOC_INDICATOR_TYPE: dict[str, str] = {
+    "ip": "malicious-activity",
+    "ipv6": "malicious-activity",
     "domain": "malicious-activity",
-    "url":    "malicious-activity",
-    "md5":    "malicious-activity",
-    "sha1":   "malicious-activity",
+    "url": "malicious-activity",
+    "md5": "malicious-activity",
+    "sha1": "malicious-activity",
     "sha256": "malicious-activity",
-    "email":  "malicious-activity",
+    "email": "malicious-activity",
 }
 
 
@@ -157,9 +160,9 @@ class FlatIOCMapper(RecordMapper):
         self,
         value_field: str = "value",
         type_field: str = "type",
-        name_field: Optional[str] = None,
-        confidence_field: Optional[str] = None,
-        extra_stix_fields: Optional[Dict[str, Any]] = None,
+        name_field: str | None = None,
+        confidence_field: str | None = None,
+        extra_stix_fields: dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -186,13 +189,13 @@ class FlatIOCMapper(RecordMapper):
         confidence = int(record.get(self._cf, self.confidence)) if self._cf else self.confidence
 
         props = {
-            "name":            str(name),
-            "pattern":         pattern,
-            "pattern_type":    "stix",
+            "name": str(name),
+            "pattern": pattern,
+            "pattern_type": "stix",
             "indicator_types": [_IOC_INDICATOR_TYPE.get(ioc_type, "unknown")],
-            "valid_from":      record.get("valid_from", _utcnow()),
-            "confidence":      confidence,
-            "x_tlp":           self.tlp_marking,
+            "valid_from": record.get("valid_from", _utcnow()),
+            "confidence": confidence,
+            "x_tlp": self.tlp_marking,
             **self._extra,
         }
         # Carry through source fields as x_ extensions
@@ -229,17 +232,17 @@ class STIXPassthroughMapper(RecordMapper):
     """
 
     _TYPE_CLASS = {
-        "indicator":     Indicator,
-        "threat-actor":  ThreatActor,
-        "malware":       Malware,
+        "indicator": Indicator,
+        "threat-actor": ThreatActor,
+        "malware": Malware,
         "vulnerability": Vulnerability,
         "attack-pattern": AttackPattern,
-        "relationship":  Relationship,
+        "relationship": Relationship,
     }
 
     def __init__(
         self,
-        type_filter: Optional[List[str]] = None,
+        type_filter: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -304,12 +307,12 @@ class MISPAttributeMapper(RecordMapper):
         stix_type, pattern_tmpl = _MISP_TYPE_MAP[misp_type]
 
         common = {
-            "client":      self._client,
+            "client": self._client,
             "x_misp_uuid": record.get("uuid", ""),
             "x_misp_event_id": record.get("event_id", ""),
             "x_misp_category": record.get("category", ""),
-            "x_tlp":       self.tlp_marking,
-            "confidence":  self.confidence,
+            "x_tlp": self.tlp_marking,
+            "confidence": self.confidence,
         }
         if record.get("comment"):
             common["description"] = record["comment"]
@@ -331,7 +334,7 @@ class MISPAttributeMapper(RecordMapper):
         if "|" in value:
             value = value.split("|")[0].strip()
 
-        pattern = f"[{pattern_tmpl.format(v=value.replace(chr(39), chr(92)+chr(39)))}]"
+        pattern = f"[{pattern_tmpl.format(v=value.replace(chr(39), chr(92) + chr(39)))}]"
 
         yield Indicator(
             name=value,
@@ -369,22 +372,23 @@ class CEFMapper(RecordMapper):
 
     _DEFAULT_IOC_FIELDS = ["src", "dst", "dhost", "requestUrl", "fileHash", "cs1", "cs2"]
 
-    _FIELD_TYPE_HINTS: Dict[str, str] = {
-        "src":        "ip",
-        "dst":        "ip",
-        "dhost":      "domain",
+    _FIELD_TYPE_HINTS: dict[str, str] = {
+        "src": "ip",
+        "dst": "ip",
+        "dhost": "domain",
         "requestUrl": "url",
-        "fileHash":   "sha256",
+        "fileHash": "sha256",
     }
 
     def __init__(
         self,
-        ioc_fields: Optional[List[str]] = None,
+        ioc_fields: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._ioc_fields = ioc_fields or self._DEFAULT_IOC_FIELDS
         from gnat.ingest.sources.readers import PlainTextReader
+
         self._classifier = PlainTextReader("", from_string=True)
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
@@ -451,21 +455,21 @@ class SQLRowMapper(RecordMapper):
     """
 
     _STIX_CLASS_MAP = {
-        "indicator":     Indicator,
-        "malware":       Malware,
+        "indicator": Indicator,
+        "malware": Malware,
         "vulnerability": Vulnerability,
-        "threat-actor":  ThreatActor,
+        "threat-actor": ThreatActor,
         "attack-pattern": AttackPattern,
     }
 
     def __init__(
         self,
         value_col: str = "value",
-        type_col: Optional[str] = None,
-        name_col: Optional[str] = None,
-        description_col: Optional[str] = None,
-        stix_type: Optional[str] = None,
-        extra_col_map: Optional[Dict[str, str]] = None,
+        type_col: str | None = None,
+        name_col: str | None = None,
+        description_col: str | None = None,
+        stix_type: str | None = None,
+        extra_col_map: dict[str, str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -476,6 +480,7 @@ class SQLRowMapper(RecordMapper):
         self._stix_type = stix_type
         self._extra = extra_col_map or {}
         from gnat.ingest.sources.readers import PlainTextReader
+
         self._classifier = PlainTextReader("", from_string=True)
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
@@ -484,9 +489,7 @@ class SQLRowMapper(RecordMapper):
             return
 
         ioc_type = (
-            str(record.get(self._tc, "")).lower()
-            if self._tc
-            else self._classifier._classify(value)
+            str(record.get(self._tc, "")).lower() if self._tc else self._classifier._classify(value)
         )
 
         resolved_stix_type = self._stix_type or (
@@ -495,9 +498,9 @@ class SQLRowMapper(RecordMapper):
 
         cls = self._STIX_CLASS_MAP.get(resolved_stix_type, Indicator)
 
-        props: Dict[str, Any] = {
-            "client":     self._client,
-            "x_tlp":      self.tlp_marking,
+        props: dict[str, Any] = {
+            "client": self._client,
+            "x_tlp": self.tlp_marking,
             "confidence": self.confidence,
         }
         if self._nc and record.get(self._nc):
@@ -560,20 +563,20 @@ class RSSEntryMapper(RecordMapper):
     """
 
     # Patterns to scan in free text
-    _URL_RE    = re.compile(r"https?://[^\s\"'<>]{8,}")
-    _IP_RE     = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
-    _HASH_RE   = re.compile(r"\b[0-9a-fA-F]{32,64}\b")
-    _CVE_RE    = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
+    _URL_RE = re.compile(r"https?://[^\s\"'<>]{8,}")
+    _IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+    _HASH_RE = re.compile(r"\b[0-9a-fA-F]{32,64}\b")
+    _CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
 
     def __init__(self, extract_iocs: bool = True, **kwargs: Any):
         super().__init__(**kwargs)
         self._extract = extract_iocs
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
-        title   = record.get("title", "")
+        title = record.get("title", "")
         summary = record.get("summary", "")
-        link    = record.get("link", "")
-        text    = f"{title} {summary}"
+        link = record.get("link", "")
+        text = f"{title} {summary}"
 
         # CVEs → Vulnerability
         for cve in set(self._CVE_RE.findall(text)):
@@ -589,6 +592,7 @@ class RSSEntryMapper(RecordMapper):
             return
 
         from gnat.ingest.sources.readers import PlainTextReader
+
         classifier = PlainTextReader("", from_string=True)
 
         # IPs
@@ -611,7 +615,7 @@ class RSSEntryMapper(RecordMapper):
             yield Indicator(
                 client=self._client,
                 name=url[:200],
-                pattern=f"[url:value = '{url.replace(chr(39), chr(92)+chr(39))}']",
+                pattern=f"[url:value = '{url.replace(chr(39), chr(92) + chr(39))}']",
                 pattern_type="stix",
                 indicator_types=["malicious-activity"],
                 valid_from=record.get("published", _utcnow()),
@@ -663,26 +667,26 @@ class EmailIOCMapper(RecordMapper):
 
     def __init__(
         self,
-        ioc_types: Optional[List[str]] = None,
+        ioc_types: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._ioc_types = set(ioc_types or ["ips", "domains", "urls", "hashes"])
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
-        subject    = record.get("subject", "")
-        msg_id     = record.get("message_id", "")
+        subject = record.get("subject", "")
+        msg_id = record.get("message_id", "")
         email_from = record.get("from", "")
-        published  = record.get("date", _utcnow())
+        published = record.get("date", _utcnow())
 
         common = {
-            "client":         self._client,
+            "client": self._client,
             "x_email_subject": subject,
-            "x_email_from":   email_from,
-            "x_message_id":   msg_id,
-            "x_tlp":          self.tlp_marking,
-            "confidence":     self.confidence,
-            "valid_from":     published,
+            "x_email_from": email_from,
+            "x_message_id": msg_id,
+            "x_tlp": self.tlp_marking,
+            "confidence": self.confidence,
+            "valid_from": published,
         }
 
         if "ips" in self._ioc_types:
@@ -746,25 +750,25 @@ class OpenIOCMapper(RecordMapper):
     >>> mapper = OpenIOCMapper(client=cli, tlp_marking="red")
     """
 
-    _SEARCH_PATTERN: Dict[str, str] = {
-        "FileItem/Md5sum":               "file:hashes.MD5 = '{v}'",
-        "FileItem/Sha1sum":              "file:hashes.SHA-1 = '{v}'",
-        "FileItem/Sha256sum":            "file:hashes.SHA-256 = '{v}'",
-        "FileItem/FileName":             "file:name = '{v}'",
-        "Network/DNS":                   "domain-name:value = '{v}'",
-        "PortItem/remoteIP":             "ipv4-addr:value = '{v}'",
-        "PortItem/localIP":              "ipv4-addr:value = '{v}'",
-        "Network/URI":                   "url:value = '{v}'",
-        "RegistryItem/KeyPath":          "windows-registry-key:key = '{v}'",
-        "ProcessItem/name":              "process:name = '{v}'",
-        "EmailMessage/From":             "email-addr:value = '{v}'",
-        "EmailMessage/Subject":          "email-message:subject = '{v}'",
+    _SEARCH_PATTERN: dict[str, str] = {
+        "FileItem/Md5sum": "file:hashes.MD5 = '{v}'",
+        "FileItem/Sha1sum": "file:hashes.SHA-1 = '{v}'",
+        "FileItem/Sha256sum": "file:hashes.SHA-256 = '{v}'",
+        "FileItem/FileName": "file:name = '{v}'",
+        "Network/DNS": "domain-name:value = '{v}'",
+        "PortItem/remoteIP": "ipv4-addr:value = '{v}'",
+        "PortItem/localIP": "ipv4-addr:value = '{v}'",
+        "Network/URI": "url:value = '{v}'",
+        "RegistryItem/KeyPath": "windows-registry-key:key = '{v}'",
+        "ProcessItem/name": "process:name = '{v}'",
+        "EmailMessage/From": "email-addr:value = '{v}'",
+        "EmailMessage/Subject": "email-message:subject = '{v}'",
     }
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
-        search  = record.get("context_search", "")
+        search = record.get("context_search", "")
         content = record.get("content", "").strip()
-        ioc_id  = record.get("ioc_name", record.get("ioc_id", ""))
+        ioc_id = record.get("ioc_name", record.get("ioc_id", ""))
 
         if not content:
             return
@@ -779,7 +783,7 @@ class OpenIOCMapper(RecordMapper):
             logger.debug("OpenIOCMapper: no pattern for search %r", search)
             return
 
-        pattern = f"[{pattern_tmpl.format(v=content.replace(chr(39), chr(92)+chr(39)))}]"
+        pattern = f"[{pattern_tmpl.format(v=content.replace(chr(39), chr(92) + chr(39)))}]"
 
         yield Indicator(
             client=self._client,
@@ -824,6 +828,7 @@ class SplunkResultMapper(FlatIOCMapper):
                     record[self._vf] = record[candidate]
                     if self._tf not in record or not record[self._tf]:
                         from gnat.ingest.sources.readers import PlainTextReader
+
                         c = PlainTextReader("", from_string=True)
                         record[self._tf] = c._classify(str(record[self._vf]))
                     break
@@ -872,19 +877,15 @@ class NVDCVEMapper(RecordMapper):
         # NVD 2.x wraps in {"cve": {...}}
         cve_data = record.get("cve", record)
 
-        cve_id = (
-            cve_data.get("id")
-            or cve_data.get("CVE_data_meta", {}).get("ID", "")
-        )
+        cve_id = cve_data.get("id") or cve_data.get("CVE_data_meta", {}).get("ID", "")
         if not cve_id:
             return
 
         # Description (1.x vs 2.x)
         desc = ""
         desc_nodes = (
-            cve_data.get("descriptions")                          # 2.x
-            or cve_data.get("description", {})
-                        .get("description_data", [])              # 1.x
+            cve_data.get("descriptions")  # 2.x
+            or cve_data.get("description", {}).get("description_data", [])  # 1.x
         )
         for node in desc_nodes:
             if isinstance(node, dict) and node.get("lang") in ("en", "eng"):
@@ -892,13 +893,20 @@ class NVDCVEMapper(RecordMapper):
                 break
 
         # CVSS score
-        cvss_score: Optional[float] = None
+        cvss_score: float | None = None
         metrics = cve_data.get("metrics", cve_data.get("impact", {}))
-        for version_key in ("cvssMetricV31", "cvssMetricV30", "cvssMetricV2",
-                            "baseMetricV3", "baseMetricV2"):
+        for version_key in (
+            "cvssMetricV31",
+            "cvssMetricV30",
+            "cvssMetricV2",
+            "baseMetricV3",
+            "baseMetricV2",
+        ):
             metric_list = metrics.get(version_key, [])
             if isinstance(metric_list, list) and metric_list:
-                cvss_data = metric_list[0].get("cvssData", metric_list[0].get("cvssV3", metric_list[0].get("cvssV2", {})))
+                cvss_data = metric_list[0].get(
+                    "cvssData", metric_list[0].get("cvssV3", metric_list[0].get("cvssV2", {}))
+                )
                 cvss_score = cvss_data.get("baseScore")
                 break
             elif isinstance(metric_list, dict):

@@ -43,7 +43,7 @@ kibana_space      = default
   uses a separate `size` parameter per query (max 10,000 without PIT).
 - `es_index_alerts` and `es_index_ti` are index patterns used as defaults
   in search operations.
-  """
+"""
 
 import base64
 import configparser
@@ -55,21 +55,22 @@ _REQUIRED_WITH_CLOUD = {"api_key_id", "api_key_secret"}
 _REQUIRED_WITHOUT_CLOUD = {"es_host", "api_key_id", "api_key_secret"}
 
 _DEFAULTS: dict = {
-"es_host": "",
-"es_port": "9200",
-"kibana_host": "",
-"kibana_port": "5601",
-"scheme": "https",
-"api_key_id": "",
-"api_key_secret": "",
-"verify_ssl": "true",
-"timeout": "30",
-"max_results": "1000",
-"es_index_alerts": ".alerts-security.*",
-"es_index_ti": "logs-ti_*",
-"kibana_space": "default",
-"cloud_id": "",
+    "es_host": "",
+    "es_port": "9200",
+    "kibana_host": "",
+    "kibana_port": "5601",
+    "scheme": "https",
+    "api_key_id": "",
+    "api_key_secret": "",
+    "verify_ssl": "true",
+    "timeout": "30",
+    "max_results": "1000",
+    "es_index_alerts": ".alerts-security.*",
+    "es_index_ti": "logs-ti_*",
+    "kibana_space": "default",
+    "cloud_id": "",
 }
+
 
 @dataclass
 class ElasticConfig:
@@ -169,9 +170,7 @@ class ElasticConfig:
             self.es_base_url = f"https://{es_fqdn}"
             self.kibana_base_url = f"https://{kb_fqdn}"
         except Exception as exc:
-            raise ElasticConfigError(
-                f"Invalid cloud_id format: {exc}"
-            ) from exc
+            raise ElasticConfigError(f"Invalid cloud_id format: {exc}") from exc
 
     def _validate(self) -> None:
         if not self.api_key_id:
@@ -183,9 +182,7 @@ class ElasticConfig:
                 "Either 'es_host' or 'cloud_id' is required in [elastic] config."
             )
         if self.scheme not in ("http", "https"):
-            raise ElasticConfigError(
-                f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'."
-            )
+            raise ElasticConfigError(f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'.")
         if self.timeout <= 0:
             raise ElasticConfigError("'timeout' must be a positive integer.")
         if self.max_results <= 0:
@@ -230,10 +227,11 @@ class ElasticConfig:
             "Content-Type": "application/json",
         }
 
+
 def load_elastic_config(
     config: configparser.ConfigParser,
     section: str = "elastic",
-    ) -> ElasticConfig:
+) -> ElasticConfig:
     """
     Parse [elastic] section from a gnat.ini ConfigParser instance.
 
@@ -253,9 +251,7 @@ def load_elastic_config(
     ElasticConfigError
     """
     if not config.has_section(section):
-        raise ElasticConfigError(
-            f"Configuration section '[{section}]' not found in gnat.ini."
-        )
+        raise ElasticConfigError(f"Configuration section '[{section}]' not found in gnat.ini.")
 
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))

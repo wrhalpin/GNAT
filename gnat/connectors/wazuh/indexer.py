@@ -22,14 +22,16 @@ provides convenience methods for common alert queries.
 
 - https://documentation.wazuh.com/current/user-manual/wazuh-indexer/index.html
 - https://opensearch.org/docs/latest/api-reference/
-  """
+"""
 
 import base64
 import json
+
 import urllib3
 
 from .config import WazuhConfig
 from .exceptions import WazuhIndexerError
+
 
 class WazuhIndexerCommands:
     """
@@ -52,14 +54,11 @@ class WazuhIndexerCommands:
     def _require_indexer(self) -> None:
         if not self._config.indexer_enabled:
             raise WazuhIndexerError(
-                "Indexer commands require 'indexer_enabled = true' "
-                "in [wazuh] config."
+                "Indexer commands require 'indexer_enabled = true' in [wazuh] config."
             )
 
     def _auth_header(self) -> dict[str, str]:
-        creds = (
-            f"{self._config.indexer_username}:{self._config.indexer_password}"
-        )
+        creds = f"{self._config.indexer_username}:{self._config.indexer_password}"
         encoded = base64.b64encode(creds.encode()).decode()
         return {"Authorization": f"Basic {encoded}"}
 
@@ -84,9 +83,7 @@ class WazuhIndexerCommands:
             raise WazuhIndexerError(f"Indexer HTTP error: {exc}") from exc
 
         if response.status not in (200, 201):
-            raise WazuhIndexerError(
-                f"Indexer returned HTTP {response.status} for {path}."
-            )
+            raise WazuhIndexerError(f"Indexer returned HTTP {response.status} for {path}.")
         try:
             return json.loads(response.data.decode("utf-8"))
         except Exception as exc:

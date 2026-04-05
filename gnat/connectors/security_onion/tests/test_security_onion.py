@@ -1,27 +1,36 @@
 """tests for Security Onion connector"""
-import json, time, unittest
+
+import configparser
+import json
+import time
+import unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.security_onion import (
-    SecurityOnionConfig, SecurityOnionConfigError, SecurityOnionAuthError,
+    SecurityOnionAlertCommands,
+    SecurityOnionAuthError,
+    SecurityOnionCaseCommands,
+    SecurityOnionClient,
+    SecurityOnionConfig,
+    SecurityOnionConfigError,
     SecurityOnionNotFoundError,
-    SecurityOnionClient, SecurityOnionAlertCommands, SecurityOnionCaseCommands,
     SecurityOnionSTIXMapper,
     load_security_onion_config,
 )
-import configparser
 
 
 def _cfg(**kw):
-    d = dict(url="https://so.test", username="admin", password="pass")
+    d = {"url": "https://so.test", "username": "admin", "password": "pass"}
     d.update(kw)
     return SecurityOnionConfig(**d)
+
 
 def _resp(status=200, body=None):
     r = MagicMock()
     r.status = status
     r.data = json.dumps(body if body is not None else {}).encode()
     return r
+
 
 def _make_client():
     cfg = _cfg()
@@ -102,9 +111,11 @@ class TestSecurityOnionClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("gnat.connectors.security_onion.urllib3.PoolManager"):
-            with SecurityOnionClient(cfg) as client:
-                self.assertIsInstance(client, SecurityOnionClient)
+        with (
+            patch("gnat.connectors.security_onion.urllib3.PoolManager"),
+            SecurityOnionClient(cfg) as client,
+        ):
+            self.assertIsInstance(client, SecurityOnionClient)
 
     def test_paginate_stops_when_empty(self):
         c, mock_http = _make_client()
@@ -118,7 +129,8 @@ class TestSecurityOnionClient(unittest.TestCase):
 
 class TestSecurityOnionAlertCommands(unittest.TestCase):
     _ALERT = {
-        "uid": "abc123", "@timestamp": "2024-03-10T12:00:00Z",
+        "uid": "abc123",
+        "@timestamp": "2024-03-10T12:00:00Z",
         "rule": {"name": "ET MALWARE", "uuid": "r1"},
         "event": {"category": "intrusion_detection", "severity": 2},
         "source": {"ip": "1.2.3.4", "port": 49152},
@@ -188,11 +200,17 @@ class TestSecurityOnionSTIXMapper(unittest.TestCase):
     def setUp(self):
         self.mapper = SecurityOnionSTIXMapper()
         self._alert = {
-            "id": "abc123", "timestamp": "2024-03-10T12:00:00Z",
-            "rule_name": "ET MALWARE", "rule_id": "r1",
-            "category": "intrusion_detection", "severity": 3,
-            "src_ip": "1.2.3.4", "dst_ip": "10.0.0.1",
-            "src_port": 49152, "dst_port": 80, "proto": "tcp",
+            "id": "abc123",
+            "timestamp": "2024-03-10T12:00:00Z",
+            "rule_name": "ET MALWARE",
+            "rule_id": "r1",
+            "category": "intrusion_detection",
+            "severity": 3,
+            "src_ip": "1.2.3.4",
+            "dst_ip": "10.0.0.1",
+            "src_port": 49152,
+            "dst_port": 80,
+            "proto": "tcp",
             "sensor": "sensor01",
         }
 

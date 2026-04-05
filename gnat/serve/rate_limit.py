@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Dict, List
 
 from fastapi import HTTPException, Request, status
 
@@ -29,7 +28,7 @@ class RateLimiter:
     def __init__(self, max_requests: int = 100, window_seconds: int = 60) -> None:
         self._max = max_requests
         self._window = window_seconds
-        self._counts: Dict[str, List[float]] = {}
+        self._counts: dict[str, list[float]] = {}
         self._lock = threading.Lock()
 
     def check(self, key: str) -> bool:

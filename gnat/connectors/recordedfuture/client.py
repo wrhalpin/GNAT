@@ -12,7 +12,8 @@ INI config::
     auth_type = token
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
@@ -20,11 +21,11 @@ from gnat.connectors.base_connector import ConnectorMixin
 class RecordedFutureClient(BaseClient, ConnectorMixin):
     """HTTP client for the Recorded Future Connect API v2."""
 
-    stix_type_map: Dict[str, str] = {
-        "indicator":    "ip",
-        "malware":      "malware",
+    stix_type_map: dict[str, str] = {
+        "indicator": "ip",
+        "malware": "malware",
         "threat-actor": "threat-actor",
-        "vulnerability":"vulnerability",
+        "vulnerability": "vulnerability",
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
@@ -39,7 +40,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         self.get("/v2/ip/search", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resource = self.stix_type_map.get(stix_type, stix_type)
         resp = self.get(
             f"/v2/{resource}/{object_id}",
@@ -47,25 +48,30 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         )
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
-    def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         resource = self.stix_type_map.get(stix_type, stix_type)
-        params: Dict[str, Any] = {"limit": page_size, "from": (page - 1) * page_size}
+        params: dict[str, Any] = {"limit": page_size, "from": (page - 1) * page_size}
         if filters:
             params.update(filters)
         resp = self.get(f"/v2/{resource}/search", params=params)
         return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("Recorded Future API is read-only -- upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("Recorded Future API is read-only -- delete not supported.")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         entity = native.get("entity", {})
-        risk   = native.get("risk", {})
-        stix: Dict[str, Any] = {
+        risk = native.get("risk", {})
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{entity.get('id', '')}",
             "name": entity.get("name", ""),
@@ -88,5 +94,5 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = sectors
         return stix
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {"entity": stix_dict.get("name", "")}

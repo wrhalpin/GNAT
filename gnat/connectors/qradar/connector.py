@@ -123,19 +123,19 @@ class QRadarConnector(BaseClient, ConnectorMixin):
             sets = self._refdata.list_sets()
             results = []
             for ref_set in sets[:limit]:
-                results.append({
-                    "type": "indicator",
-                    "id": f"indicator--{ref_set.get('name', '')}",
-                    "name": ref_set.get("name", ""),
-                    "x_qradar_set": ref_set,
-                })
+                results.append(
+                    {
+                        "type": "indicator",
+                        "id": f"indicator--{ref_set.get('name', '')}",
+                        "name": ref_set.get("name", ""),
+                        "x_qradar_set": ref_set,
+                    }
+                )
             return results
         # Default: offenses → observed-data
-        offenses = self._offenses.list_offenses(page_size=limit)
+        offenses = self._offenses.list_offenses(limit=limit)
         return [
-            self._mapper.offense_to_stix_bundle(
-                self._offenses.normalise_offense(o)
-            )
+            self._mapper.offense_to_stix_bundle(self._offenses.normalise_offense(o))
             for o in offenses
         ]
 

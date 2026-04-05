@@ -39,12 +39,12 @@ Tests cover:
 from __future__ import annotations
 
 import subprocess
-from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from gnat.codegen.contribute import (
+    _PROTECTED_BRANCHES,
     REQUIRED_METHODS,
     ComplianceMatrix,
     ComplianceResult,
@@ -52,13 +52,12 @@ from gnat.codegen.contribute import (
     ContributionPipeline,
     MethodStatus,
     SubprocessRunner,
-    _PROTECTED_BRANCHES,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_runner(returncode: int = 0, stdout: str = "", stderr: str = "") -> SubprocessRunner:
     """Return a SubprocessRunner whose .run() always returns a fixed result."""
@@ -72,8 +71,8 @@ def _make_runner(returncode: int = 0, stdout: str = "", stderr: str = "") -> Sub
 
 
 def _make_pipeline(
-    runner: Optional[SubprocessRunner] = None,
-    repo_root: Optional[str] = None,
+    runner: SubprocessRunner | None = None,
+    repo_root: str | None = None,
     http_client=None,
 ) -> ContributionPipeline:
     return ContributionPipeline(
@@ -84,13 +83,13 @@ def _make_pipeline(
 
 
 def _enabled_config(**kwargs) -> ContributeConfig:
-    defaults = dict(
-        enabled=True,
-        github_token="ghp_test",
-        fork_remote="origin",
-        upstream_remote="upstream",
-        upstream_repo="wrhalpin/GNAT",
-    )
+    defaults = {
+        "enabled": True,
+        "github_token": "ghp_test",
+        "fork_remote": "origin",
+        "upstream_remote": "upstream",
+        "upstream_repo": "wrhalpin/GNAT",
+    }
     defaults.update(kwargs)
     return ContributeConfig(**defaults)
 
@@ -99,8 +98,8 @@ def _enabled_config(**kwargs) -> ContributeConfig:
 # ContributeConfig
 # ---------------------------------------------------------------------------
 
-class TestContributeConfig:
 
+class TestContributeConfig:
     def test_defaults(self):
         cfg = ContributeConfig()
         assert cfg.enabled is False
@@ -149,8 +148,8 @@ class TestContributeConfig:
 # ComplianceMatrix
 # ---------------------------------------------------------------------------
 
-class TestComplianceMatrix:
 
+class TestComplianceMatrix:
     def test_known_connector_passes(self):
         """threatq is fully implemented — should pass compliance."""
         result = ComplianceMatrix.check("threatq")
@@ -214,8 +213,8 @@ class TestComplianceMatrix:
 # ContributionPipeline.run() — abort paths
 # ---------------------------------------------------------------------------
 
-class TestContributionPipelineAbortPaths:
 
+class TestContributionPipelineAbortPaths:
     def test_disabled_config_aborts(self):
         pipeline = _make_pipeline()
         cfg = ContributeConfig(enabled=False)
@@ -250,9 +249,7 @@ class TestContributionPipelineAbortPaths:
         cfg = _enabled_config()
         with patch.object(ComplianceMatrix, "check") as mock_check:
             compliance = ComplianceResult("threatq")
-            compliance.method_statuses = [
-                MethodStatus(m, True) for m in REQUIRED_METHODS
-            ]
+            compliance.method_statuses = [MethodStatus(m, True) for m in REQUIRED_METHODS]
             compliance.has_tests = True
             mock_check.return_value = compliance
             result = pipeline.run("threatq", "msg", cfg)
@@ -265,8 +262,8 @@ class TestContributionPipelineAbortPaths:
 # ContributionPipeline.run() — success path
 # ---------------------------------------------------------------------------
 
-class TestContributionPipelineSuccess:
 
+class TestContributionPipelineSuccess:
     def _passing_compliance(self) -> ComplianceResult:
         c = ComplianceResult("threatq")
         c.method_statuses = [MethodStatus(m, True) for m in REQUIRED_METHODS]
@@ -342,8 +339,8 @@ class TestContributionPipelineSuccess:
 # Git safety
 # ---------------------------------------------------------------------------
 
-class TestGitSafety:
 
+class TestGitSafety:
     def test_push_refuses_main(self):
         pipeline = _make_pipeline()
         ok, err = pipeline._git_push("main", "origin")
@@ -372,8 +369,8 @@ class TestGitSafety:
 # _run_tests
 # ---------------------------------------------------------------------------
 
-class TestRunTests:
 
+class TestRunTests:
     def test_returncode_zero_is_passing(self):
         runner = _make_runner(returncode=0, stdout="5 passed")
         pipeline = _make_pipeline(runner=runner)
@@ -393,8 +390,8 @@ class TestRunTests:
 # _get_remote_owner
 # ---------------------------------------------------------------------------
 
-class TestGetRemoteOwner:
 
+class TestGetRemoteOwner:
     def test_https_url(self):
         runner = _make_runner(returncode=0, stdout="https://github.com/alice/GNAT.git\n")
         pipeline = _make_pipeline(runner=runner)
@@ -415,8 +412,8 @@ class TestGetRemoteOwner:
 # _create_github_pr
 # ---------------------------------------------------------------------------
 
-class TestCreateGithubPR:
 
+class TestCreateGithubPR:
     def _http_client(self, status: int, body: str):
         http = MagicMock()
         resp = MagicMock()
@@ -429,7 +426,9 @@ class TestCreateGithubPR:
         http = self._http_client(201, '{"html_url": "https://github.com/wrhalpin/GNAT/pull/1"}')
         pipeline = _make_pipeline(http_client=http)
         cfg = _enabled_config()
-        url, err = pipeline._create_github_pr("contribute/tq-20260101", "msg", "threatq", cfg, "alice")
+        url, err = pipeline._create_github_pr(
+            "contribute/tq-20260101", "msg", "threatq", cfg, "alice"
+        )
         assert url == "https://github.com/wrhalpin/GNAT/pull/1"
         assert err == ""
 
@@ -458,6 +457,7 @@ class TestCreateGithubPR:
         call_kwargs = http.request.call_args
         body = call_kwargs[1].get("body") or call_kwargs[0][2]
         import json
+
         payload = json.loads(body)
         assert payload["draft"] is True
 
@@ -466,8 +466,8 @@ class TestCreateGithubPR:
 # _branch_name
 # ---------------------------------------------------------------------------
 
-class TestBranchName:
 
+class TestBranchName:
     def test_format(self):
         pipeline = _make_pipeline()
         name = pipeline._branch_name("threatq")
@@ -485,16 +485,18 @@ class TestBranchName:
 # CLI subcommand
 # ---------------------------------------------------------------------------
 
-class TestCLIContribute:
 
+class TestCLIContribute:
     def test_help_exits_zero(self):
         from gnat.cli.main import main
+
         with pytest.raises(SystemExit) as exc:
             main(["contribute", "--help"])
         assert exc.value.code == 0
 
     def test_registered_in_parser(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["contribute", "--connector", "threatq"])
         assert args.command == "contribute"
@@ -502,12 +504,14 @@ class TestCLIContribute:
 
     def test_no_pr_flag(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["contribute", "--connector", "threatq", "--no-pr"])
         assert args.no_pr is True
 
     def test_dry_run_flag(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["contribute", "--connector", "threatq", "--dry-run"])
         assert args.dry_run is True
@@ -516,6 +520,7 @@ class TestCLIContribute:
         ini = tmp_path / "gnat.ini"
         ini.write_text("[contribute]\nenabled = false\n")
         from gnat.cli.main import main
+
         result = main(["--config", str(ini), "contribute", "--connector", "threatq"])
         assert result == 1
 
@@ -525,10 +530,17 @@ class TestCLIContribute:
         # threatq is fully implemented — compliance should pass
         with patch.object(ComplianceMatrix, "_has_tests", return_value=True):
             from gnat.cli.main import main
-            result = main([
-                "--config", str(ini),
-                "contribute", "--connector", "threatq", "--dry-run",
-            ])
+
+            result = main(
+                [
+                    "--config",
+                    str(ini),
+                    "contribute",
+                    "--connector",
+                    "threatq",
+                    "--dry-run",
+                ]
+            )
         assert result == 0
 
     def test_dry_run_compliance_fail_exits_1(self, tmp_path):
@@ -536,8 +548,15 @@ class TestCLIContribute:
         ini.write_text("[contribute]\nenabled = true\n")
         with patch.object(ComplianceMatrix, "_has_tests", return_value=False):
             from gnat.cli.main import main
-            result = main([
-                "--config", str(ini),
-                "contribute", "--connector", "threatq", "--dry-run",
-            ])
+
+            result = main(
+                [
+                    "--config",
+                    str(ini),
+                    "contribute",
+                    "--connector",
+                    "threatq",
+                    "--dry-run",
+                ]
+            )
         assert result == 1

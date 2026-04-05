@@ -38,9 +38,10 @@ Notes
 from __future__ import annotations
 
 import base64
+import contextlib
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -70,7 +71,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
         Graylog password.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "observed-data": "search",
     }
 
@@ -89,9 +90,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """Inject HTTP Basic auth header."""
-        creds = base64.b64encode(
-            f"{self._username}:{self._password}".encode()
-        ).decode()
+        creds = base64.b64encode(f"{self._username}:{self._password}".encode()).decode()
         self._auth_headers["Authorization"] = f"Basic {creds}"
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["X-Requested-By"] = "GNAT"
@@ -103,7 +102,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
         self.get("/api/system")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a Graylog message by id.
 
@@ -120,10 +119,10 @@ class GraylogClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search Graylog messages using a relative time range.
 
@@ -137,11 +136,11 @@ class GraylogClient(BaseClient, ConnectorMixin):
             * ``fields`` — comma-separated field list
         """
         filters = dict(filters or {})
-        query  = filters.pop("query", "*")
-        rng    = filters.pop("range", 3600)
+        query = filters.pop("query", "*")
+        rng = filters.pop("range", 3600)
         fields = filters.pop("fields", None)
 
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "query": query,
             "range": rng,
             "limit": page_size,
@@ -155,7 +154,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
             return resp.get("messages", [])
         return []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Create or update a Graylog stream.
 
@@ -181,8 +180,8 @@ class GraylogClient(BaseClient, ConnectorMixin):
         range_seconds: int = 3600,
         limit: int = 100,
         offset: int = 0,
-        fields: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        fields: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search messages using a relative time window.
 
@@ -203,7 +202,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
         -------
         list of dict
         """
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "query": query,
             "range": range_seconds,
             "limit": limit,
@@ -214,18 +213,18 @@ class GraylogClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/search/universal/relative", params=params)
         return resp.get("messages", []) if isinstance(resp, dict) else []
 
-    def list_streams(self) -> List[Dict[str, Any]]:
+    def list_streams(self) -> list[dict[str, Any]]:
         """Return all configured Graylog streams."""
         resp = self.get("/api/streams")
         return resp.get("streams", []) if isinstance(resp, dict) else []
 
-    def get_cluster_health(self) -> Dict[str, Any]:
+    def get_cluster_health(self) -> dict[str, Any]:
         """Return Graylog cluster system info."""
         return self.get("/api/system")
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a Graylog message to a STIX 2.1 observed-data SDO.
 
@@ -241,10 +240,10 @@ class GraylogClient(BaseClient, ConnectorMixin):
         """
         msg = native.get("message", native)
         now = _now_ts()
-        ts  = msg.get("timestamp") or now
+        ts = msg.get("timestamp") or now
 
-        objects: List[Dict[str, Any]] = []
-        refs: List[str] = []
+        objects: list[dict[str, Any]] = []
+        refs: list[str] = []
         seen: set = set()
 
         for ip in (msg.get("src_ip"), msg.get("dst_ip")):
@@ -252,68 +251,66 @@ class GraylogClient(BaseClient, ConnectorMixin):
                 ip_id = f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}"
                 if ip_id not in seen:
                     seen.add(ip_id)
-                    objects.append({
-                        "type": "ipv4-addr",
-                        "id":   ip_id,
-                        "spec_version": "2.1",
-                        "value": ip,
-                    })
+                    objects.append(
+                        {
+                            "type": "ipv4-addr",
+                            "id": ip_id,
+                            "spec_version": "2.1",
+                            "value": ip,
+                        }
+                    )
                 refs.append(ip_id)
 
-        src_ip  = msg.get("src_ip")
-        dst_ip  = msg.get("dst_ip")
-        src_p   = msg.get("src_port")
-        dst_p   = msg.get("dst_port")
+        src_ip = msg.get("src_ip")
+        dst_ip = msg.get("dst_ip")
+        src_p = msg.get("src_port")
+        dst_p = msg.get("dst_port")
         if src_ip and dst_ip and (src_p or dst_p):
             key = f"{src_ip}:{src_p}-{dst_ip}:{dst_p}"
             nid = f"network-traffic--{_det_uuid('network-traffic', key)}"
             if nid not in seen:
                 seen.add(nid)
-                nt: Dict[str, Any] = {
+                nt: dict[str, Any] = {
                     "type": "network-traffic",
-                    "id":   nid,
+                    "id": nid,
                     "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src_ip)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst_ip)}",
                     "protocols": [str(msg.get("protocol", "tcp")).lower()],
                 }
                 if src_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["src_port"] = int(src_p)
-                    except (TypeError, ValueError):
-                        pass
                 if dst_p:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         nt["dst_port"] = int(dst_p)
-                    except (TypeError, ValueError):
-                        pass
                 objects.append(nt)
                 refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        obs: Dict[str, Any] = {
-            "type":           "observed-data",
-            "id":             obs_id,
-            "spec_version":   "2.1",
-            "created":        now,
-            "modified":       now,
+        obs: dict[str, Any] = {
+            "type": "observed-data",
+            "id": obs_id,
+            "spec_version": "2.1",
+            "created": now,
+            "modified": now,
             "first_observed": ts,
-            "last_observed":  ts,
+            "last_observed": ts,
             "number_observed": 1,
-            "object_refs":    refs,
+            "object_refs": refs,
             "x_graylog_message": {
                 "message_id": msg.get("_id"),
-                "source":     msg.get("source"),
-                "level":      msg.get("level"),
-                "facility":   msg.get("facility"),
-                "message":    msg.get("message"),
-                "streams":    msg.get("streams", []),
+                "source": msg.get("source"),
+                "level": msg.get("level"),
+                "facility": msg.get("facility"),
+                "message": msg.get("message"),
+                "streams": msg.get("streams", []),
             },
         }
         objects.append(obs)
         return obs
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX observed-data object to a Graylog search query.
 

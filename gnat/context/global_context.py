@@ -38,8 +38,10 @@ from the ``[global]`` and ``[global.<name>]`` INI sections::
 
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import Any, Dict, Iterator, List, Optional, TYPE_CHECKING
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.client import GNATClient
@@ -80,19 +82,19 @@ class GlobalContext:
     def __init__(
         self,
         name: str,
-        client: "GNATClient",
+        client: GNATClient,
         read_only: bool = False,
         priority: int = 10,
         description: str = "",
     ):
-        self.name        = name
-        self.client      = client
-        self.read_only   = read_only
-        self.priority    = priority
+        self.name = name
+        self.client = client
+        self.read_only = read_only
+        self.priority = priority
         self.description = description
 
     @property
-    def target(self) -> Optional[str]:
+    def target(self) -> str | None:
         """Platform target name (e.g. ``"threatq"``)."""
         return self.client.target
 
@@ -110,10 +112,10 @@ class GlobalContext:
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """List STIX object dicts from this platform."""
         raw_list = self.client.client.list_objects(
             stix_type, filters=filters, page=page, page_size=page_size
@@ -132,19 +134,15 @@ class GlobalContext:
             If this global context is marked ``read_only``.
         """
         if self.read_only:
-            raise PermissionError(
-                f"GlobalContext {self.name!r} is read-only — write rejected."
-            )
+            raise PermissionError(f"GlobalContext {self.name!r} is read-only — write rejected.")
         payload = self.client.client.from_stix(stix_dict)
-        result  = self.client.client.upsert_object(stix_dict["type"], payload)
+        result = self.client.client.upsert_object(stix_dict["type"], payload)
         return self.client.client.to_stix(result)
 
     def delete_object(self, stix_type: str, stix_id: str) -> None:
         """Delete a STIX object from this platform."""
         if self.read_only:
-            raise PermissionError(
-                f"GlobalContext {self.name!r} is read-only — delete rejected."
-            )
+            raise PermissionError(f"GlobalContext {self.name!r} is read-only — delete rejected.")
         self.client.client.delete_object(stix_type, stix_id)
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -158,6 +156,7 @@ class GlobalContext:
 # ---------------------------------------------------------------------------
 # GlobalContextRegistry
 # ---------------------------------------------------------------------------
+
 
 class GlobalContextRegistry:
     """
@@ -183,17 +182,17 @@ class GlobalContextRegistry:
     >>> registry.get("crowdstrike_falcon").list_objects("indicator", page_size=5)
     """
 
-    def __init__(self, default_name: Optional[str] = None):
-        self._contexts: Dict[str, GlobalContext] = {}
-        self._default_name: Optional[str] = default_name
+    def __init__(self, default_name: str | None = None):
+        self._contexts: dict[str, GlobalContext] = {}
+        self._default_name: str | None = default_name
 
     # ── Factory ────────────────────────────────────────────────────────────
 
     @classmethod
     def from_config(
         cls,
-        config_path: Optional[str] = None,
-    ) -> "GlobalContextRegistry":
+        config_path: str | None = None,
+    ) -> GlobalContextRegistry:
         """
         Build a registry from INI configuration.
 
@@ -211,18 +210,16 @@ class GlobalContextRegistry:
         GlobalContextRegistry
             Populated registry, with all clients connected.
         """
-        from gnat.config import GNATConfig
         from gnat.client import GNATClient
+        from gnat.config import GNATConfig
 
         cfg = GNATConfig(config_path)
         registry = cls()
 
         # Read [global] section for defaults
         global_meta: dict = {}
-        try:
+        with contextlib.suppress(KeyError):
             global_meta = cfg.get("global")
-        except KeyError:
-            pass
 
         default_name = global_meta.get("default", "")
 
@@ -230,11 +227,11 @@ class GlobalContextRegistry:
         for section in cfg.sections:
             if not section.startswith("global."):
                 continue
-            name = section[len("global."):]
+            name = section[len("global.") :]
             section_cfg = cfg.get(section)
             target = section_cfg.pop("target", "")
             read_only = section_cfg.pop("read_only", "false").lower() == "true"
-            priority  = int(section_cfg.pop("priority", "10"))
+            priority = int(section_cfg.pop("priority", "10"))
             description = section_cfg.pop("description", "")
 
             if not target:
@@ -245,8 +242,10 @@ class GlobalContextRegistry:
                 cli = GNATClient(config_path=config_path)
                 cli.connect(target=target, **section_cfg)
                 gc = GlobalContext(
-                    name=name, client=cli,
-                    read_only=read_only, priority=priority,
+                    name=name,
+                    client=cli,
+                    read_only=read_only,
+                    priority=priority,
                     description=description,
                 )
                 registry.register(gc)
@@ -267,10 +266,10 @@ class GlobalContextRegistry:
     @classmethod
     def from_clients(
         cls,
-        clients: Dict[str, "GNATClient"],
-        default: Optional[str] = None,
-        read_only: Optional[List[str]] = None,
-    ) -> "GlobalContextRegistry":
+        clients: dict[str, GNATClient],
+        default: str | None = None,
+        read_only: list[str] | None = None,
+    ) -> GlobalContextRegistry:
         """
         Build a registry directly from a dict of connected GNATClients.
 
@@ -297,7 +296,8 @@ class GlobalContextRegistry:
         ro_set = set(read_only or [])
         for i, (name, client) in enumerate(clients.items()):
             gc = GlobalContext(
-                name=name, client=client,
+                name=name,
+                client=client,
                 read_only=name in ro_set,
                 priority=i,
             )
@@ -336,8 +336,7 @@ class GlobalContextRegistry:
         """Return a global context by name."""
         if name not in self._contexts:
             raise KeyError(
-                f"No global context named {name!r}. "
-                f"Available: {sorted(self._contexts.keys())}"
+                f"No global context named {name!r}. Available: {sorted(self._contexts.keys())}"
             )
         return self._contexts[name]
 
@@ -365,15 +364,15 @@ class GlobalContextRegistry:
             )
         return candidates[0]
 
-    def all(self) -> List[GlobalContext]:
+    def all(self) -> list[GlobalContext]:
         """All registered contexts sorted by priority."""
         return sorted(self._contexts.values(), key=lambda g: g.priority)
 
-    def writable(self) -> List[GlobalContext]:
+    def writable(self) -> list[GlobalContext]:
         """All read-write contexts sorted by priority."""
         return [g for g in self.all() if not g.read_only]
 
-    def read_only_contexts(self) -> List[GlobalContext]:
+    def read_only_contexts(self) -> list[GlobalContext]:
         """All read-only contexts (enrichment sources)."""
         return [g for g in self.all() if g.read_only]
 
@@ -389,7 +388,5 @@ class GlobalContextRegistry:
     def __repr__(self) -> str:  # pragma: no cover
         default = self._default_name or "(none)"
         return (
-            f"GlobalContextRegistry("
-            f"contexts={sorted(self._contexts.keys())}, "
-            f"default={default!r})"
+            f"GlobalContextRegistry(contexts={sorted(self._contexts.keys())}, default={default!r})"
         )

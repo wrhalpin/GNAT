@@ -19,7 +19,7 @@ References
 https://pulsedive.com/api/
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -42,10 +42,10 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         PulseDive API key (anonymous requests are rate-limited).
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "indicator",
         "threat-actor": "threat",
-        "malware":   "threat",
+        "malware": "threat",
     }
 
     def __init__(
@@ -64,16 +64,13 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """PulseDive authenticates via ``key=`` query param; no headers needed."""
         # Key is injected into params at request time via _pd_params()
-        pass
 
     def health_check(self) -> bool:
         """Verify API reachability with a simple info lookup."""
         resp = self.get(f"{_API}/info.php", params={**self._pd_params, "pretty": 1})
         return isinstance(resp, dict)
 
-    def get_object(
-        self, stix_type: str, object_id: str
-    ) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Retrieve a PulseDive indicator or threat by ID.
 
@@ -95,10 +92,10 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search PulseDive indicators or threats.
 
@@ -109,11 +106,11 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         * ``risk``: ``"low"``, ``"medium"``, ``"high"``, ``"critical"``
         """
         get_type = "threat" if stix_type in ("threat-actor", "malware") else "indicator"
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             **self._pd_params,
-            "get":   get_type,
+            "get": get_type,
             "limit": min(page_size, 1000),
-            "page":  page,
+            "page": page,
         }
         if filters:
             params.update(filters)
@@ -123,7 +120,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
             return []
         return resp.get("results", [])
 
-    def enrich(self, indicator_value: str) -> Dict[str, Any]:
+    def enrich(self, indicator_value: str) -> dict[str, Any]:
         """
         Enrich a single IOC value via the ``/api/info.php`` endpoint.
 
@@ -136,9 +133,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
-    def upsert_object(
-        self, stix_type: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Submit an indicator for community enrichment.
 
@@ -147,8 +142,10 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         resp = self.post(
             f"{_API}/info.php",
             params=self._pd_params,
-            json={"indicator": payload.get("value", payload.get("indicator", "")),
-                  "type":      payload.get("type", "domain")},
+            json={
+                "indicator": payload.get("value", payload.get("indicator", "")),
+                "type": payload.get("type", "domain"),
+            },
         )
         return resp if isinstance(resp, dict) else {}
 
@@ -159,16 +156,17 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     # STIX translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a PulseDive indicator/threat to a STIX dict."""
         pd_type = native.get("type", "")
         if pd_type == "threat":
             return self._threat_to_stix(native)
         return self._indicator_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Build a PulseDive lookup payload from a STIX dict."""
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         value = m.group(1) if m else stix_dict.get("name", "")
@@ -179,47 +177,47 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     @property
-    def _pd_params(self) -> Dict[str, str]:
+    def _pd_params(self) -> dict[str, str]:
         if self._api_key:
             return {"key": self._api_key}
         return {}
 
-    def _indicator_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
-        pd_type  = native.get("type", "domain")
-        value    = native.get("indicator", "")
-        pattern  = self._make_pattern(pd_type, value)
-        risk     = native.get("risk", "unknown")
-        conf     = _RISK_CONF.get(risk.lower() if isinstance(risk, str) else "unknown", 10)
-        threats  = [t.get("name", "") for t in native.get("threats", []) if t.get("name")]
+    def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        pd_type = native.get("type", "domain")
+        value = native.get("indicator", "")
+        pattern = self._make_pattern(pd_type, value)
+        risk = native.get("risk", "unknown")
+        conf = _RISK_CONF.get(risk.lower() if isinstance(risk, str) else "unknown", 10)
+        threats = [t.get("name", "") for t in native.get("threats", []) if t.get("name")]
         return {
-            "type":              "indicator",
-            "id":                f"indicator--pd-{native.get('iid', '')}",
-            "name":              value,
-            "pattern":           pattern,
-            "pattern_type":      "stix",
-            "created":           native.get("stamp_added", ""),
-            "modified":          native.get("stamp_updated", ""),
-            "confidence":        conf,
-            "indicator_types":   ["malicious-activity"] if conf >= 50 else ["unknown"],
+            "type": "indicator",
+            "id": f"indicator--pd-{native.get('iid', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("stamp_added", ""),
+            "modified": native.get("stamp_updated", ""),
+            "confidence": conf,
+            "indicator_types": ["malicious-activity"] if conf >= 50 else ["unknown"],
             "x_source_platform": "pulsedive",
-            "x_pd_iid":          native.get("iid", ""),
-            "x_pd_risk":         risk,
-            "x_pd_type":         pd_type,
-            "x_pd_threats":      threats,
+            "x_pd_iid": native.get("iid", ""),
+            "x_pd_risk": risk,
+            "x_pd_type": pd_type,
+            "x_pd_threats": threats,
         }
 
-    def _threat_to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def _threat_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         return {
-            "type":              "threat-actor",
-            "id":                f"threat-actor--pd-{native.get('tid', '')}",
-            "name":              native.get("name", ""),
-            "description":       native.get("description", "")[:500],
-            "aliases":           native.get("aliases", []),
-            "created":           native.get("stamp_added", ""),
-            "modified":          native.get("stamp_updated", ""),
+            "type": "threat-actor",
+            "id": f"threat-actor--pd-{native.get('tid', '')}",
+            "name": native.get("name", ""),
+            "description": native.get("description", "")[:500],
+            "aliases": native.get("aliases", []),
+            "created": native.get("stamp_added", ""),
+            "modified": native.get("stamp_updated", ""),
             "x_source_platform": "pulsedive",
-            "x_pd_tid":          native.get("tid", ""),
-            "x_pd_risk":         native.get("risk", ""),
+            "x_pd_tid": native.get("tid", ""),
+            "x_pd_risk": native.get("risk", ""),
         }
 
     @staticmethod

@@ -10,7 +10,7 @@ the screen degrades gracefully to the ``builtin`` regex parser.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -30,7 +30,7 @@ _HELP = (
 class QueryScreen(Screen):
     """Interactive NLP threat-intel query screen."""
 
-    TITLE   = "GNAT — NLP Query"
+    TITLE = "GNAT — NLP Query"
     BINDINGS = [
         Binding("escape", "app.pop_screen", "Back", show=True),
         Binding("ctrl+l", "clear_results", "Clear", show=True),
@@ -68,16 +68,16 @@ class QueryScreen(Screen):
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
-        platform: Optional[str] = None,
-        backend: Optional[str] = None,
+        config_path: str | None = None,
+        platform: str | None = None,
+        backend: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self._config_path = config_path
-        self._platform    = platform
-        self._backend     = backend
-        self._engine      = None
+        self._platform = platform
+        self._backend = backend
+        self._engine = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -114,10 +114,10 @@ class QueryScreen(Screen):
     # ------------------------------------------------------------------
 
     def _run_query(self) -> None:
-        inp    = self.query_one("#query-input", Input)
+        inp = self.query_one("#query-input", Input)
         status = self.query_one("#status-label", Label)
-        table  = self.query_one(STIXTable)
-        query  = inp.value.strip()
+        table = self.query_one(STIXTable)
+        query = inp.value.strip()
         if not query:
             return
 
@@ -130,16 +130,15 @@ class QueryScreen(Screen):
 
         table.load_stix(results)
         n = len(results)
-        status.update(
-            f"[green]{n} result{'s' if n != 1 else ''}[/green] "
-            f"for: {query[:60]}"
-        )
+        status.update(f"[green]{n} result{'s' if n != 1 else ''}[/green] for: {query[:60]}")
 
     def _build_engine(self):
         try:
             from gnat.nlp.parser import NLPQueryEngine
+
             if self._config_path:
                 from gnat.config import GNATConfig
+
                 cfg = GNATConfig(self._config_path)
                 engine = NLPQueryEngine.from_config(cfg)
             else:

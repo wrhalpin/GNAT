@@ -50,19 +50,19 @@ References
 
 import re
 import time
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import QRadarClient
-from .exceptions import QRadarArielError, QRadarAPIError
+from .exceptions import QRadarAPIError, QRadarArielError
 
 # Allowlist pattern for AQL field identifiers.  Permits bare identifiers,
 # AQL built-in functions (DATEFORMAT, QIDNAME, CATEGORYNAME, etc.), and
 # quoted aliases produced by "expr AS alias" forms.
 _AQL_FIELD_RE = re.compile(
-    r"^[A-Za-z_][A-Za-z0-9_]*"   # bare identifier / function name
-    r"(\([^)]*\))?$"              # optional single-level call args
+    r"^[A-Za-z_][A-Za-z0-9_]*"  # bare identifier / function name
+    r"(\([^)]*\))?$"  # optional single-level call args
     r"|^[A-Za-z_][A-Za-z0-9_]*"  # leading identifier …
-    r"(\([^)]*\))?"               # … optional call …
+    r"(\([^)]*\))?"  # … optional call …
     r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*$",  # … AS alias
     re.IGNORECASE,
 )
@@ -85,7 +85,7 @@ def _validate_aql_fields(fields: list) -> None:
 
 # Job poll settings
 _POLL_INTERVAL_SECS = 2.0
-_POLL_MAX_WAIT_SECS = 300.0   # 5 minutes default max wait
+_POLL_MAX_WAIT_SECS = 300.0  # 5 minutes default max wait
 _TERMINAL_STATUSES = {"COMPLETED", "ERROR", "CANCELLED"}
 
 
@@ -442,11 +442,20 @@ class QRadarArielCommands:
         """
         default_fields = [
             "DATEFORMAT(starttime, 'YYYY-MM-dd HH:mm:ss') AS starttime",
-            "logsourceid", "logsourcename(logsourceid) AS logsource",
-            "category", "CATEGORYNAME(category) AS categoryname",
-            "severity", "sourceip", "destinationip", "sourceport",
-            "destinationport", "protocol", "username", "qid",
-            "QIDNAME(qid) AS eventname", "eventcount",
+            "logsourceid",
+            "logsourcename(logsourceid) AS logsource",
+            "category",
+            "CATEGORYNAME(category) AS categoryname",
+            "severity",
+            "sourceip",
+            "destinationip",
+            "sourceport",
+            "destinationport",
+            "protocol",
+            "username",
+            "qid",
+            "QIDNAME(qid) AS eventname",
+            "eventcount",
         ]
         effective_fields = fields or default_fields
         _validate_aql_fields(effective_fields)
@@ -469,9 +478,15 @@ class QRadarArielCommands:
         """Build a simple AQL flow query."""
         default_fields = [
             "DATEFORMAT(starttime, 'YYYY-MM-dd HH:mm:ss') AS starttime",
-            "sourceip", "destinationip", "sourceport", "destinationport",
-            "protocol", "sourcebytes", "destinationbytes",
-            "sourcepayload", "destinationpayload",
+            "sourceip",
+            "destinationip",
+            "sourceport",
+            "destinationport",
+            "protocol",
+            "sourcebytes",
+            "destinationbytes",
+            "sourcepayload",
+            "destinationpayload",
         ]
         effective_fields = fields or default_fields
         _validate_aql_fields(effective_fields)

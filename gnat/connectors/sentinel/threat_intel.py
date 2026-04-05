@@ -26,7 +26,8 @@ References
 - https://learn.microsoft.com/en-us/rest/api/securityinsights/threat-intelligence-indicator
 """
 
-from typing import Iterator
+from collections.abc import Iterator
+
 from .client import SentinelClient
 
 
@@ -38,7 +39,7 @@ class SentinelThreatIntelCommands:
 
     def list_indicators(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         order_by: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
@@ -47,7 +48,7 @@ class SentinelThreatIntelCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             OData $filter expression.
         order_by : str | None
             OData $orderby expression.
@@ -59,14 +60,12 @@ class SentinelThreatIntelCommands:
         list[dict]
         """
         params: dict = {}
-        if filter:
-            params["$filter"] = filter
+        if filter_val:
+            params["$filter"] = filter_val
         if order_by:
             params["$orderby"] = order_by
         items = []
-        for item in self._client.paginate(
-            "threatIntelligence/main/indicators", params=params
-        ):
+        for item in self._client.paginate("threatIntelligence/main/indicators", params=params):
             items.append(item)
             if limit and len(items) >= limit:
                 break
@@ -78,9 +77,7 @@ class SentinelThreatIntelCommands:
 
     def get_indicator(self, indicator_name: str) -> dict:
         """Get a single indicator by its resource name."""
-        return self._client.get(
-            f"threatIntelligence/main/indicators/{indicator_name}"
-        )
+        return self._client.get(f"threatIntelligence/main/indicators/{indicator_name}")
 
     def create_indicator(self, indicator: dict) -> dict:
         """
@@ -123,9 +120,7 @@ class SentinelThreatIntelCommands:
 
     def delete_indicator(self, indicator_name: str) -> dict:
         """Delete a TI indicator."""
-        return self._client.delete(
-            f"threatIntelligence/main/indicators/{indicator_name}"
-        )
+        return self._client.delete(f"threatIntelligence/main/indicators/{indicator_name}")
 
     def bulk_create_indicators(self, indicators: list[dict]) -> list[dict]:
         """

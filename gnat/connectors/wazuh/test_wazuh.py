@@ -32,34 +32,36 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch
 
-from gnat.connectors.wazuh.config import WazuhConfig, load_wazuh_config
-from gnat.connectors.wazuh.exceptions import (
-WazuhAuthError,
-WazuhAPIError,
-WazuhConfigError,
-WazuhNotFoundError,
-WazuhPermissionError,
-WazuhRateLimitError,
-WazuhSTIXError,
-WazuhIndexerError,
-)
-from gnat.connectors.wazuh.auth import WazuhAuthManager
-from gnat.connectors.wazuh.client import WazuhClient
+from gnat.connectors.wazuh.active_response import WazuhActiveResponseCommands
 from gnat.connectors.wazuh.agents import WazuhAgentCommands
 from gnat.connectors.wazuh.alerts import WazuhAlertCommands, _level_to_severity
+from gnat.connectors.wazuh.auth import WazuhAuthManager
+from gnat.connectors.wazuh.client import WazuhClient
+from gnat.connectors.wazuh.config import WazuhConfig, load_wazuh_config
+from gnat.connectors.wazuh.exceptions import (
+    WazuhAPIError,
+    WazuhAuthError,
+    WazuhConfigError,
+    WazuhIndexerError,
+    WazuhNotFoundError,
+    WazuhPermissionError,
+    WazuhRateLimitError,
+    WazuhSTIXError,
+)
+from gnat.connectors.wazuh.indexer import WazuhIndexerCommands
+from gnat.connectors.wazuh.rules import WazuhRulesCommands
+from gnat.connectors.wazuh.stix_mapper import WazuhSTIXMapper
 from gnat.connectors.wazuh.syscheck import WazuhSyscheckCommands
 from gnat.connectors.wazuh.vulnerabilities import WazuhVulnerabilityCommands
-from gnat.connectors.wazuh.rules import WazuhRulesCommands
-from gnat.connectors.wazuh.active_response import WazuhActiveResponseCommands
-from gnat.connectors.wazuh.indexer import WazuhIndexerCommands
-from gnat.connectors.wazuh.stix_mapper import WazuhSTIXMapper
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 def _make_config(**overrides) -> WazuhConfig:
-    defaults = dict(host="wazuh.test.local", username="wazuh", password="Password1!")
+    defaults = {"host": "wazuh.test.local", "username": "wazuh", "password": "Password1!"}
     defaults.update(overrides)
     return WazuhConfig(**defaults)
+
 
 def _make_response(status: int = 200, body=None) -> MagicMock:
     resp = MagicMock()
@@ -68,18 +70,20 @@ def _make_response(status: int = 200, body=None) -> MagicMock:
     resp.data = json.dumps(payload).encode("utf-8")
     return resp
 
+
 def _wazuh_ok(items: list, total: int | None = None) -> dict:
     """Build a standard Wazuh success response envelope."""
     return {
-    "data": {
-    "affected_items": items,
-    "total_affected_items": total if total is not None else len(items),
-    "failed_items": [],
-    "total_failed_items": 0,
-    },
-    "message": "All items were returned",
-    "error": 0,
+        "data": {
+            "affected_items": items,
+            "total_affected_items": total if total is not None else len(items),
+            "failed_items": [],
+            "total_failed_items": 0,
+        },
+        "message": "All items were returned",
+        "error": 0,
     }
+
 
 def _make_client(config: WazuhConfig | None = None) -> tuple[WazuhClient, MagicMock]:
     cfg = config or _make_config()
@@ -100,8 +104,8 @@ def _make_client(config: WazuhConfig | None = None) -> tuple[WazuhClient, MagicM
 
         # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhConfig(unittest.TestCase):
 
+class TestWazuhConfig(unittest.TestCase):
     def test_minimal_config(self):
         cfg = _make_config()
         self.assertEqual(cfg.host, "wazuh.test.local")
@@ -160,16 +164,18 @@ class TestWazuhConfig(unittest.TestCase):
 
     def test_load_from_configparser(self):
         parser = configparser.ConfigParser()
-        parser.read_dict({
-            "wazuh": {
-                "host": "mywazuh.corp",
-                "username": "svc",
-                "password": "pw123",
-                "es_enabled": "true",
-                "verify_ssl": "true",
-                "timeout": "60",
+        parser.read_dict(
+            {
+                "wazuh": {
+                    "host": "mywazuh.corp",
+                    "username": "svc",
+                    "password": "pw123",
+                    "es_enabled": "true",
+                    "verify_ssl": "true",
+                    "timeout": "60",
+                }
             }
-        })
+        )
         cfg = load_wazuh_config(parser)
         self.assertEqual(cfg.host, "mywazuh.corp")
         self.assertTrue(cfg.verify_ssl)
@@ -191,8 +197,8 @@ class TestWazuhConfig(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhAuthManager(unittest.TestCase):
 
+class TestWazuhAuthManager(unittest.TestCase):
     def _make_auth(self, config=None):
         cfg = config or _make_config()
         mock_http = MagicMock()
@@ -230,7 +236,7 @@ class TestWazuhAuthManager(unittest.TestCase):
 
     def test_token_validity_window(self):
         """Token is considered valid until renewal threshold."""
-        auth, mock_http = self._make_auth(_make_config(token_expiry_secs=900))
+        auth, _mock_http = self._make_auth(_make_config(token_expiry_secs=900))
         auth._token = "valid-token"
         auth._token_acquired_at = time.time() - 100  # 100s old
         self.assertTrue(auth._token_is_valid())
@@ -254,9 +260,7 @@ class TestWazuhAuthManager(unittest.TestCase):
     def test_uses_basic_auth_for_login(self):
         """Login request uses Basic Auth header, not Bearer."""
         auth, mock_http = self._make_auth()
-        mock_http.request.return_value = _make_response(
-            200, {"data": {"token": "t"}, "error": 0}
-        )
+        mock_http.request.return_value = _make_response(200, {"data": {"token": "t"}, "error": 0})
         auth.get_auth_headers()
         call_args = mock_http.request.call_args
         headers = call_args[1].get("headers") or call_args[0][3]
@@ -268,8 +272,8 @@ class TestWazuhAuthManager(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhClient(unittest.TestCase):
 
+class TestWazuhClient(unittest.TestCase):
     def test_get_returns_parsed_json(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, _wazuh_ok([]))
@@ -323,15 +327,13 @@ class TestWazuhClient(unittest.TestCase):
     def test_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"):
-            with self.assertRaises(WazuhRateLimitError):
-                client.get("agents")
+        with patch("time.sleep"), self.assertRaises(WazuhRateLimitError):
+            client.get("agents")
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.wazuh.client.urllib3.PoolManager"):
-            with WazuhClient(cfg) as client:
-                self.assertIsInstance(client, WazuhClient)
+        with patch("gnat.connectors.wazuh.client.urllib3.PoolManager"), WazuhClient(cfg) as client:
+            self.assertIsInstance(client, WazuhClient)
 
     def test_paginate_yields_all(self):
         """paginate() stops when offset >= total_affected_items."""
@@ -351,8 +353,8 @@ class TestWazuhClient(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhAgentCommands(unittest.TestCase):
 
+class TestWazuhAgentCommands(unittest.TestCase):
     def _make_agents(self):
         client, mock_http = _make_client()
         return WazuhAgentCommands(client), mock_http
@@ -382,20 +384,27 @@ class TestWazuhAgentCommands(unittest.TestCase):
 
     def test_get_agent_summary(self):
         agents, mock_http = self._make_agents()
-        mock_http.request.return_value = _make_response(200, {
-            "data": {
-                "active": 10, "disconnected": 2,
-                "never_connected": 1, "pending": 0,
-                "total_affected_items": 13,
-            }
-        })
+        mock_http.request.return_value = _make_response(
+            200,
+            {
+                "data": {
+                    "active": 10,
+                    "disconnected": 2,
+                    "never_connected": 1,
+                    "pending": 0,
+                    "total_affected_items": 13,
+                }
+            },
+        )
         summary = agents.get_agent_summary()
         self.assertEqual(summary["active"], 10)
         self.assertEqual(summary["total"], 13)
 
     def test_normalise_agent(self):
         raw = {
-            "id": "001", "name": "host1", "ip": "10.0.0.1",
+            "id": "001",
+            "name": "host1",
+            "ip": "10.0.0.1",
             "status": "active",
             "os": {"platform": "ubuntu", "name": "Ubuntu", "version": "22.04"},
             "version": "Wazuh v4.9.0",
@@ -427,8 +436,8 @@ class TestWazuhAgentCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhAlertCommands(unittest.TestCase):
 
+class TestWazuhAlertCommands(unittest.TestCase):
     def _make_alerts_cmd(self):
         client, mock_http = _make_client()
         return WazuhAlertCommands(client), mock_http
@@ -441,15 +450,14 @@ class TestWazuhAlertCommands(unittest.TestCase):
             "rule": {"id": "5501", "description": "SSH brute force", "level": 10},
             "agent": {"id": "001", "name": "host1"},
         }
-        mock_http.request.return_value = _make_response(
-            200, _wazuh_ok([alert])
-        )
+        mock_http.request.return_value = _make_response(200, _wazuh_ok([alert]))
         results = alerts_cmd.get_alerts(min_rule_level=10)
         self.assertEqual(len(results), 1)
 
     def test_normalise_alert_severity(self):
         alert = {
-            "id": "1", "timestamp": "2024-01-01T00:00:00Z",
+            "id": "1",
+            "timestamp": "2024-01-01T00:00:00Z",
             "rule": {"id": "100", "description": "test", "level": 13, "groups": []},
             "agent": {"id": "001", "name": "h"},
             "data": {"srcip": "1.2.3.4"},
@@ -477,9 +485,7 @@ class TestWazuhAlertCommands(unittest.TestCase):
 
     def test_get_event_stats(self):
         alerts_cmd, mock_http = self._make_alerts_cmd()
-        mock_http.request.return_value = _make_response(
-            200, {"data": {"total_events": 12345}}
-        )
+        mock_http.request.return_value = _make_response(200, {"data": {"total_events": 12345}})
         result = alerts_cmd.get_event_stats()
         self.assertEqual(result.get("total_events"), 12345)
 
@@ -489,8 +495,8 @@ class TestWazuhAlertCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhSyscheckCommands(unittest.TestCase):
 
+class TestWazuhSyscheckCommands(unittest.TestCase):
     def _make_syscheck(self):
         client, mock_http = _make_client()
         return WazuhSyscheckCommands(client), mock_http
@@ -504,9 +510,7 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
             "md5": "abc123",
             "sha256": "def456",
         }
-        mock_http.request.return_value = _make_response(
-            200, _wazuh_ok([fim_event])
-        )
+        mock_http.request.return_value = _make_response(200, _wazuh_ok([fim_event]))
         results = syscheck.get_fim_events("001", event_type="modified")
         self.assertEqual(results[0]["file"], "/etc/passwd")
 
@@ -523,8 +527,12 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
             "file": "/etc/shadow",
             "type": "modified",
             "date": "2024-03-10T12:00:00Z",
-            "md5": "aaa", "sha1": "bbb", "sha256": "ccc",
-            "perm": "600", "uname": "root", "gname": "root",
+            "md5": "aaa",
+            "sha1": "bbb",
+            "sha256": "ccc",
+            "perm": "600",
+            "uname": "root",
+            "gname": "root",
         }
         result = WazuhSyscheckCommands.normalise_fim_event(raw)
         self.assertEqual(result["file"], "/etc/shadow")
@@ -533,9 +541,7 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
 
     def test_run_syscheck_scan(self):
         syscheck, mock_http = self._make_syscheck()
-        mock_http.request.return_value = _make_response(
-            200, _wazuh_ok(["001"])
-        )
+        mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = syscheck.run_syscheck_scan("001")
         self.assertIsNotNone(result)
 
@@ -545,8 +551,8 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhVulnerabilityCommands(unittest.TestCase):
 
+class TestWazuhVulnerabilityCommands(unittest.TestCase):
     def _make_vuln(self):
         client, mock_http = _make_client()
         return WazuhVulnerabilityCommands(client), mock_http
@@ -554,13 +560,18 @@ class TestWazuhVulnerabilityCommands(unittest.TestCase):
     def test_get_vulnerabilities(self):
         vuln_cmd, mock_http = self._make_vuln()
         mock_http.request.return_value = _make_response(
-            200, _wazuh_ok([{
-                "cve": "CVE-2021-44228",
-                "name": "log4j",
-                "version": "2.14.1",
-                "severity": "critical",
-                "cvss3_score": 10.0,
-            }])
+            200,
+            _wazuh_ok(
+                [
+                    {
+                        "cve": "CVE-2021-44228",
+                        "name": "log4j",
+                        "version": "2.14.1",
+                        "severity": "critical",
+                        "cvss3_score": 10.0,
+                    }
+                ]
+            ),
         )
         results = vuln_cmd.get_vulnerabilities("001")
         self.assertEqual(results[0]["cve"], "CVE-2021-44228")
@@ -586,9 +597,7 @@ class TestWazuhVulnerabilityCommands(unittest.TestCase):
             + [{"severity": "high"}] * 5
             + [{"severity": "medium"}] * 10
         )
-        mock_http.request.return_value = _make_response(
-            200, _wazuh_ok(items)
-        )
+        mock_http.request.return_value = _make_response(200, _wazuh_ok(items))
         summary = vuln_cmd.get_vulnerability_summary("001")
         self.assertEqual(summary["critical"], 3)
         self.assertEqual(summary["high"], 5)
@@ -599,8 +608,8 @@ class TestWazuhVulnerabilityCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhRulesCommands(unittest.TestCase):
 
+class TestWazuhRulesCommands(unittest.TestCase):
     def _make_rules(self):
         client, mock_http = _make_client()
         return WazuhRulesCommands(client), mock_http
@@ -608,9 +617,12 @@ class TestWazuhRulesCommands(unittest.TestCase):
     def test_list_rules(self):
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
-            200, _wazuh_ok([
-                {"id": "5501", "description": "SSH brute force", "level": 10},
-            ])
+            200,
+            _wazuh_ok(
+                [
+                    {"id": "5501", "description": "SSH brute force", "level": 10},
+                ]
+            ),
         )
         results = rules_cmd.list_rules(level=10)
         self.assertEqual(results[0]["id"], "5501")
@@ -643,25 +655,21 @@ class TestWazuhRulesCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhActiveResponseCommands(unittest.TestCase):
 
+class TestWazuhActiveResponseCommands(unittest.TestCase):
     def _make_ar(self):
         client, mock_http = _make_client()
         return WazuhActiveResponseCommands(client), mock_http
 
     def test_run_command(self):
         ar, mock_http = self._make_ar()
-        mock_http.request.return_value = _make_response(
-            200, _wazuh_ok(["001"])
-        )
+        mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = ar.run_command("firewall-drop", ["001"])
         self.assertIsNotNone(result)
 
     def test_block_ip(self):
         ar, mock_http = self._make_ar()
-        mock_http.request.return_value = _make_response(
-            200, _wazuh_ok(["001"])
-        )
+        mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = ar.block_ip("1.2.3.4", ["001"])
         self.assertIsNotNone(result)
         # Verify the command and IP are in the PUT body
@@ -673,9 +681,7 @@ class TestWazuhActiveResponseCommands(unittest.TestCase):
 
     def test_disable_user_account(self):
         ar, mock_http = self._make_ar()
-        mock_http.request.return_value = _make_response(
-            200, _wazuh_ok(["001"])
-        )
+        mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = ar.disable_user_account("jdoe", ["001"])
         self.assertIsNotNone(result)
 
@@ -685,8 +691,8 @@ class TestWazuhActiveResponseCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhIndexerCommands(unittest.TestCase):
 
+class TestWazuhIndexerCommands(unittest.TestCase):
     def _make_indexer(self, enabled=True):
         cfg = _make_config(
             indexer_enabled=enabled,
@@ -709,7 +715,7 @@ class TestWazuhIndexerCommands(unittest.TestCase):
                 "hits": [
                     {"_source": {"rule": {"level": 10}}},
                     {"_source": {"rule": {"level": 12}}},
-                ]
+                ],
             }
         }
         mock_http.request.return_value = _make_response(200, hits_response)
@@ -718,9 +724,9 @@ class TestWazuhIndexerCommands(unittest.TestCase):
 
     def test_search_alerts_by_agent(self):
         indexer, mock_http = self._make_indexer()
-        mock_http.request.return_value = _make_response(200, {
-            "hits": {"hits": [{"_source": {"agent": {"id": "001"}}}]}
-        })
+        mock_http.request.return_value = _make_response(
+            200, {"hits": {"hits": [{"_source": {"agent": {"id": "001"}}}]}}
+        )
         results = indexer.search_alerts_by_agent("001")
         self.assertEqual(len(results), 1)
 
@@ -744,8 +750,8 @@ class TestWazuhIndexerCommands(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhSTIXMapper(unittest.TestCase):
 
+class TestWazuhSTIXMapper(unittest.TestCase):
     def setUp(self):
         self.mapper = WazuhSTIXMapper()
 
@@ -753,13 +759,23 @@ class TestWazuhSTIXMapper(unittest.TestCase):
 
     def test_alert_to_stix_bundle_structure(self):
         alert = {
-            "id": "a1", "timestamp": "2024-03-10T12:00:00Z",
-            "rule_id": "5501", "rule_description": "SSH brute force",
-            "rule_level": 10, "rule_groups": ["sshd"], "rule_mitre": {},
-            "severity": 2, "severity_label": "medium",
-            "agent_id": "001", "agent_name": "host1", "agent_ip": "10.0.0.1",
-            "src_ip": "1.2.3.4", "dst_ip": "10.0.0.5",
-            "src_user": "root", "decoder": "sshd", "_raw": {},
+            "id": "a1",
+            "timestamp": "2024-03-10T12:00:00Z",
+            "rule_id": "5501",
+            "rule_description": "SSH brute force",
+            "rule_level": 10,
+            "rule_groups": ["sshd"],
+            "rule_mitre": {},
+            "severity": 2,
+            "severity_label": "medium",
+            "agent_id": "001",
+            "agent_name": "host1",
+            "agent_ip": "10.0.0.1",
+            "src_ip": "1.2.3.4",
+            "dst_ip": "10.0.0.5",
+            "src_user": "root",
+            "decoder": "sshd",
+            "_raw": {},
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
         self.assertEqual(bundle["type"], "bundle")
@@ -770,8 +786,11 @@ class TestWazuhSTIXMapper(unittest.TestCase):
 
     def test_alert_observed_data_has_extension(self):
         alert = {
-            "rule_id": "100", "rule_level": 5, "severity": 1,
-            "agent_id": "001", "_raw": {},
+            "rule_id": "100",
+            "rule_level": 5,
+            "severity": 1,
+            "agent_id": "001",
+            "_raw": {},
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
@@ -781,8 +800,11 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     def test_alert_no_src_ip_no_ipv4_sco(self):
         """Alert with no IPs should not produce ipv4-addr objects."""
         alert = {
-            "rule_id": "100", "rule_level": 5, "severity": 1,
-            "agent_id": "001", "_raw": {},
+            "rule_id": "100",
+            "rule_level": 5,
+            "severity": 1,
+            "agent_id": "001",
+            "_raw": {},
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
         types = [o["type"] for o in bundle["objects"]]
@@ -791,9 +813,13 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     def test_alert_same_src_dst_ip_deduplication(self):
         """Same src and dst IP should produce only one ipv4-addr object."""
         alert = {
-            "rule_id": "100", "rule_level": 5, "severity": 1,
-            "src_ip": "1.2.3.4", "dst_ip": "1.2.3.4",
-            "agent_id": "001", "_raw": {},
+            "rule_id": "100",
+            "rule_level": 5,
+            "severity": 1,
+            "src_ip": "1.2.3.4",
+            "dst_ip": "1.2.3.4",
+            "agent_id": "001",
+            "_raw": {},
         }
         bundle = self.mapper.alert_to_stix_bundle(alert)
         ip_objects = [o for o in bundle["objects"] if o["type"] == "ipv4-addr"]
@@ -802,12 +828,20 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     def test_alerts_bundle_deduplicates_scos(self):
         """Same IP in two alerts appears once in merged bundle."""
         alert1 = {
-            "rule_id": "1", "rule_level": 5, "severity": 1,
-            "src_ip": "1.2.3.4", "agent_id": "001", "_raw": {},
+            "rule_id": "1",
+            "rule_level": 5,
+            "severity": 1,
+            "src_ip": "1.2.3.4",
+            "agent_id": "001",
+            "_raw": {},
         }
         alert2 = {
-            "rule_id": "2", "rule_level": 6, "severity": 1,
-            "src_ip": "1.2.3.4", "agent_id": "001", "_raw": {},
+            "rule_id": "2",
+            "rule_level": 6,
+            "severity": 1,
+            "src_ip": "1.2.3.4",
+            "agent_id": "001",
+            "_raw": {},
         }
         bundle = self.mapper.alerts_to_stix_bundle([alert1, alert2])
         ip_objects = [o for o in bundle["objects"] if o["type"] == "ipv4-addr"]
@@ -821,8 +855,10 @@ class TestWazuhSTIXMapper(unittest.TestCase):
             "file": "/etc/passwd",
             "event_type": "modified",
             "date": "2024-03-10T12:00:00Z",
-            "md5": "abc", "sha256": "def",
-            "owner": "root", "permissions": "644",
+            "md5": "abc",
+            "sha256": "def",
+            "owner": "root",
+            "permissions": "644",
         }
         bundle = self.mapper.fim_event_to_stix_bundle(fim, agent_id="001")
         types = {o["type"] for o in bundle["objects"]}
@@ -830,7 +866,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_fim_observed_data_has_extension(self):
-        fim = {"file": "/tmp/test"  # nosec B108 — test fixture path, "event_type": "added", "sha256": "abc123"}
+        fim = {"file": "/tmp/test", "event_type": "added", "sha256": "abc123"}  # nosec B108
         bundle = self.mapper.fim_event_to_stix_bundle(fim, agent_id="002")
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
         self.assertIn("x_wazuh_fim", obs)
@@ -883,8 +919,11 @@ class TestWazuhSTIXMapper(unittest.TestCase):
 
     def test_agent_to_stix_identity(self):
         agent = {
-            "id": "001", "name": "webserver01", "ip": "10.0.0.5",
-            "status": "active", "os_platform": "ubuntu",
+            "id": "001",
+            "name": "webserver01",
+            "ip": "10.0.0.5",
+            "status": "active",
+            "os_platform": "ubuntu",
             "groups": ["default", "linux"],
         }
         identity = self.mapper.agent_to_stix_identity(agent)
@@ -962,21 +1001,26 @@ class TestWazuhSTIXMapper(unittest.TestCase):
 
     # ═════════════════════════════════════════════════════════════════════════════
 
-class TestWazuhExceptions(unittest.TestCase):
 
+class TestWazuhExceptions(unittest.TestCase):
     def test_all_inherit_from_base(self):
         from gnat.connectors.wazuh.exceptions import WazuhError
+
         for exc_cls in [
-            WazuhConfigError, WazuhAuthError, WazuhAPIError,
-            WazuhNotFoundError, WazuhPermissionError, WazuhRateLimitError,
-            WazuhSTIXError, WazuhIndexerError,
+            WazuhConfigError,
+            WazuhAuthError,
+            WazuhAPIError,
+            WazuhNotFoundError,
+            WazuhPermissionError,
+            WazuhRateLimitError,
+            WazuhSTIXError,
+            WazuhIndexerError,
         ]:
             self.assertTrue(issubclass(exc_cls, WazuhError))
 
     def test_api_error_str_includes_context(self):
         exc = WazuhAPIError(
-            "msg", status_code=403, error_code=4000,
-            title="Permission Denied", endpoint="/agents"
+            "msg", status_code=403, error_code=4000, title="Permission Denied", endpoint="/agents"
         )
         s = str(exc)
         self.assertIn("403", s)

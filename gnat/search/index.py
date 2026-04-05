@@ -83,7 +83,7 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 import urllib3
@@ -100,6 +100,7 @@ logger = logging.getLogger(__name__)
 # Abstract interface — everything outside this module uses this
 # ---------------------------------------------------------------------------
 
+
 class SearchIndex(ABC):
     """
     Abstract interface for all GNAT full-text search backends.
@@ -110,9 +111,9 @@ class SearchIndex(ABC):
     @abstractmethod
     def index(
         self,
-        obj: "STIXBase",
+        obj: STIXBase,
         source_platform: str = "",
-        extra_fields: Optional[Dict[str, Any]] = None,
+        extra_fields: dict[str, Any] | None = None,
     ) -> bool:
         """
         Index a single STIX object.
@@ -138,9 +139,9 @@ class SearchIndex(ABC):
     @abstractmethod
     def index_batch(
         self,
-        objects: List["STIXBase"],
+        objects: list[STIXBase],
         source_platform: str = "",
-        extra_fields: Optional[Dict[str, Any]] = None,
+        extra_fields: dict[str, Any] | None = None,
     ) -> int:
         """
         Index a list of STIX objects in a single batch request.
@@ -163,11 +164,11 @@ class SearchIndex(ABC):
     def search(
         self,
         query: str,
-        stix_types: Optional[List[str]] = None,
-        source_platforms: Optional[List[str]] = None,
+        stix_types: list[str] | None = None,
+        source_platforms: list[str] | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Execute a full-text query against ``text_content``.
 
@@ -203,6 +204,7 @@ class SearchIndex(ABC):
 # Null implementation — safe default when Solr is not configured
 # ---------------------------------------------------------------------------
 
+
 class NullSearchIndex(SearchIndex):
     """
     No-op search index used when ``search_backend = memory`` (the default).
@@ -225,8 +227,9 @@ class NullSearchIndex(SearchIndex):
     def delete(self, stix_id: str) -> bool:
         return True
 
-    def search(self, query, stix_types=None, source_platforms=None,
-               limit=50, offset=0) -> List[str]:
+    def search(
+        self, query, stix_types=None, source_platforms=None, limit=50, offset=0
+    ) -> list[str]:
         return []
 
     def ping(self) -> bool:
@@ -239,6 +242,7 @@ class NullSearchIndex(SearchIndex):
 # ---------------------------------------------------------------------------
 # Solr implementation
 # ---------------------------------------------------------------------------
+
 
 class SolrSearchIndex(SearchIndex):
     """
@@ -284,7 +288,7 @@ class SolrSearchIndex(SearchIndex):
             status_forcelist={429, 500, 502, 503, 504},
             allowed_methods={"GET", "POST"},
         )
-        kwargs: Dict[str, Any] = {
+        kwargs: dict[str, Any] = {
             "retries": retry,
             "timeout": urllib3.Timeout(connect=timeout, read=timeout),
         }
@@ -299,7 +303,7 @@ class SolrSearchIndex(SearchIndex):
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_config(cls, config: "GNATConfig") -> "SolrSearchIndex":
+    def from_config(cls, config: GNATConfig) -> SolrSearchIndex:
         """
         Construct a :class:`SolrSearchIndex` from a ``[search]`` INI section.
 
@@ -348,24 +352,24 @@ class SolrSearchIndex(SearchIndex):
 
     def index(
         self,
-        obj: "STIXBase",
+        obj: STIXBase,
         source_platform: str = "",
-        extra_fields: Optional[Dict[str, Any]] = None,
+        extra_fields: dict[str, Any] | None = None,
     ) -> bool:
         doc = self._to_doc(obj, source_platform, extra_fields)
         return self._post_documents([doc])
 
     def index_batch(
         self,
-        objects: List["STIXBase"],
+        objects: list[STIXBase],
         source_platform: str = "",
-        extra_fields: Optional[Dict[str, Any]] = None,
+        extra_fields: dict[str, Any] | None = None,
     ) -> int:
         if not objects:
             return 0
         submitted = 0
         for chunk_start in range(0, len(objects), self.batch_size):
-            chunk = objects[chunk_start: chunk_start + self.batch_size]
+            chunk = objects[chunk_start : chunk_start + self.batch_size]
             docs = [self._to_doc(o, source_platform, extra_fields) for o in chunk]
             if self._post_documents(docs):
                 submitted += len(docs)
@@ -380,11 +384,11 @@ class SolrSearchIndex(SearchIndex):
     def search(
         self,
         query: str,
-        stix_types: Optional[List[str]] = None,
-        source_platforms: Optional[List[str]] = None,
+        stix_types: list[str] | None = None,
+        source_platforms: list[str] | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Execute an eDisMax full-text query and return matching STIX IDs.
 
@@ -397,17 +401,17 @@ class SolrSearchIndex(SearchIndex):
         * ``fl`` — return ``id`` only; Solr is never the data source
         * ``rows`` / ``start`` — pagination
         """
-        params: Dict[str, Any] = {
-            "q":            query,
-            "defType":      "edismax",
-            "qf":           "text_content",
-            "fl":           "id",
-            "rows":         limit,
-            "start":        offset,
-            "wt":           "json",
+        params: dict[str, Any] = {
+            "q": query,
+            "defType": "edismax",
+            "qf": "text_content",
+            "fl": "id",
+            "rows": limit,
+            "start": offset,
+            "wt": "json",
         }
 
-        fq: List[str] = []
+        fq: list[str] = []
         if stix_types:
             type_clause = " OR ".join(f'"{t}"' for t in stix_types)
             fq.append(f"stix_type:({type_clause})")
@@ -421,9 +425,7 @@ class SolrSearchIndex(SearchIndex):
         try:
             resp = self._http.request("GET", url)
             if resp.status != 200:
-                logger.warning(
-                    "Solr search returned HTTP %s for query %r", resp.status, query
-                )
+                logger.warning("Solr search returned HTTP %s for query %r", resp.status, query)
                 return []
             data = json.loads(resp.data.decode("utf-8"))
             docs = data.get("response", {}).get("docs", [])
@@ -435,9 +437,7 @@ class SolrSearchIndex(SearchIndex):
     def ping(self) -> bool:
         """Check Solr admin ping endpoint."""
         try:
-            resp = self._http.request(
-                "GET", f"{self.base_url}/admin/ping?wt=json"
-            )
+            resp = self._http.request("GET", f"{self.base_url}/admin/ping?wt=json")
             if resp.status == 200:
                 data = json.loads(resp.data.decode("utf-8"))
                 return data.get("status") == "OK"
@@ -451,10 +451,10 @@ class SolrSearchIndex(SearchIndex):
 
     def _to_doc(
         self,
-        obj: "STIXBase",
+        obj: STIXBase,
         source_platform: str,
-        extra_fields: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        extra_fields: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """
         Convert a STIX object to a flat Solr document.
 
@@ -470,25 +470,27 @@ class SolrSearchIndex(SearchIndex):
         # Fallback: minimal doc with best-effort text_content from all
         # string values in to_dict() that aren't structural fields.
         from gnat.search.mixin import _STRUCTURED_FIELDS
+
         raw = obj.to_dict()
         text_parts = [
-            str(v) for k, v in raw.items()
+            str(v)
+            for k, v in raw.items()
             if k not in _STRUCTURED_FIELDS and isinstance(v, str) and v.strip()
         ]
-        doc: Dict[str, Any] = {
-            "id":              obj.id,
-            "stix_type":       obj.stix_type,
-            "created":         obj.created,
-            "modified":        obj.modified,
+        doc: dict[str, Any] = {
+            "id": obj.id,
+            "stix_type": obj.stix_type,
+            "created": obj.created,
+            "modified": obj.modified,
             "source_platform": source_platform,
-            "display_name":    raw.get("name") or raw.get("value") or obj.id,
-            "text_content":    " ".join(text_parts),
+            "display_name": raw.get("name") or raw.get("value") or obj.id,
+            "text_content": " ".join(text_parts),
         }
         if extra_fields:
             doc.update(extra_fields)
         return doc
 
-    def _post_documents(self, docs: List[Dict[str, Any]]) -> bool:
+    def _post_documents(self, docs: list[dict[str, Any]]) -> bool:
         """POST a list of documents to Solr update endpoint with softCommit."""
         url = f"{self.base_url}/update?softCommit=true&wt=json"
         return self._post_json(url, docs)

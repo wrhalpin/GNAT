@@ -368,3 +368,427 @@ host    = https://api.cloudsek.com
 api_key = YOUR_CLOUDSEK_API_KEY
 # org_id = YOUR_ORG_ID    # optional: multi-tenant
 auth_type = token
+
+# =============================================================================
+# Cyble Vision
+# =============================================================================
+[cyble_vision]
+host = https://yourtenant.cyble.ai
+api_token = your_token_here
+
+# =============================================================================
+# Cortex Xpanse
+# =============================================================================
+[cortex_xpanse]
+host = https://api.xpanse.paloaltonetworks.com
+api_key = your_api_key_here
+api_key_id = your_api_key_id_here
+# =============================================================================
+# Cribl Stream
+# =============================================================================
+[cribl]
+host = https://your-cribl-leader.example.com
+username = admin
+password = your_password_here
+# OR use a direct API token instead of username/password:
+# token = your_api_token_here
+worker_group = default
+
+# =============================================================================
+# Synapse (Vertex Project)
+# =============================================================================
+[synapse]
+host = https://your-synapse.example.com
+username = root
+password = your_password_here
+# OR use API key:
+# api_key = your_api_key_here
+# Default view iden (optional):
+# view = <view_iden>
+
+# =============================================================================
+# Trellix XDR / ePolicy Orchestrator (ePO)
+# =============================================================================
+[trellix]
+host          = https://api.manage.trellix.com
+client_id     = your_client_id_here
+client_secret = your_client_secret_here
+# Optional: override IAM URL (defaults to https://iam.mcafee-cloud.com)
+# iam_url = https://iam.mcafee-cloud.com
+
+# =============================================================================
+# Sophos Central
+# =============================================================================
+[sophos]
+host          = https://api.central.sophos.com
+client_id     = your_client_id_here
+client_secret = your_client_secret_here
+# Optional: set tenant ID explicitly (auto-discovered if omitted)
+# tenant_id = your_tenant_id_here
+
+# =============================================================================
+# Vectra AI NDR
+# =============================================================================
+[vectra]
+host    = https://yourorg.vectra.ai
+api_key = your_api_token_here
+
+# =============================================================================
+# ExtraHop Reveal(x)
+# =============================================================================
+[extrahop]
+host    = https://your-extrahop-appliance.example.com
+api_key = your_api_key_here
+# For Reveal(x) 360 cloud, use OAuth2 instead:
+# host          = https://company.api.cloud.extrahop.com
+# client_id     = your_client_id_here
+# client_secret = your_client_secret_here
+
+# =============================================================================
+# Darktrace Enterprise Immune System
+# =============================================================================
+[darktrace]
+host        = https://your-darktrace-instance.example.com
+public_key  = your_public_key_here
+private_key = your_private_key_here
+
+# =============================================================================
+# Lansweeper IT Asset Management
+# =============================================================================
+[lansweeper]
+host          = https://api.lansweeper.com
+client_id     = your_application_client_id_here
+client_secret = your_application_client_secret_here
+site_id       = your_lansweeper_site_id_here
+# Alternative: use personal access token
+# api_key = your_personal_access_token_here
+
+# =============================================================================
+# Censys Internet Intelligence / ASM
+# =============================================================================
+[censys]
+host       = https://search.censys.io
+api_id     = your_api_id_here
+api_secret = your_api_secret_here
+
+# =============================================================================
+# ServiceNow SecOps (SIR + Vulnerability Response + TIARA)
+# =============================================================================
+[servicenow_secops]
+host     = https://instance.service-now.com
+username = admin
+password = your_password_here
+# OR use Bearer token:
+# api_key = your_bearer_token_here
+
+# =============================================================================
+# BitSight Security Ratings & Vendor Risk Management
+# =============================================================================
+[bitsight]
+host  = https://api.bitsighttech.com
+token = your_bitsight_api_token_here
+
+# =============================================================================
+# Flashpoint Underground / Dark Web CTI
+# =============================================================================
+[flashpoint]
+host  = https://api.flashpoint.io
+token = your_flashpoint_api_token_here
+
+# =============================================================================
+# Hudson Rock Breach Intelligence & Credential Exposure
+# =============================================================================
+[hudsonrock]
+host    = https://api.hudsonrock.com
+api_key = your_hudsonrock_api_key_here
+
+# =============================================================================
+# Intel 471 Cybercrime-Focused Threat Intelligence
+# =============================================================================
+[intel471]
+host  = https://api.intel471.com
+token = your_intel471_api_token_here
+
+# =============================================================================
+# UpGuard Vendor Risk + CAASM + Digital Risk Protection
+# =============================================================================
+[upguard]
+host    = https://cyber-risk.upguard.com
+api_key = your_upguard_api_key_here
+
+# =============================================================================
+# Trend Micro Vision One (XDR)
+# =============================================================================
+[trendmicro_visionone]
+host  = https://api.xdr.trendmicro.com
+token = your_vision_one_api_key_here
+
+# =============================================================================
+# Have I Been Pwned (HIBP)
+# =============================================================================
+[hibp]
+host    = https://haveibeenpwned.com
+api_key = your_hibp_api_key_here
+
+# =============================================================================
+# Tanium Endpoint Management & Security
+# =============================================================================
+[tanium]
+host    = https://tanium.corp.example.com
+api_key = your_tanium_api_token_here
+# OR use username/password:
+# username = admin
+# password  = your_password_here
+
+# =============================================================================
+# AWS Security Hub + GuardDuty
+# =============================================================================
+[aws_security]
+host              = https://securityhub.us-east-1.amazonaws.com
+aws_access_key    = AKIAIOSFODNN7EXAMPLE
+aws_secret_key    = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+aws_region        = us-east-1
+aws_session_token =
+
+# =============================================================================
+# SecurityScorecard
+# =============================================================================
+[securityscorecard]
+host    = https://api.securityscorecard.io
+api_key = your_securityscorecard_api_key_here
+
+# =============================================================================
+# Dragos ICS/OT Platform
+# =============================================================================
+[dragos]
+host       = https://portal.dragos.com
+api_key    = your_dragos_api_key_here
+api_secret = your_dragos_api_secret_here
+
+# =============================================================================
+# Datadog Security / Cloud SIEM
+# =============================================================================
+[datadog]
+host    = https://api.datadoghq.com
+api_key = your_datadog_api_key_here
+app_key = your_datadog_application_key_here
+# EU customers: host = https://api.datadoghq.eu
+# =============================================================================
+# LLM Agents config
+# =============================================================================
+[llm]
+default_backend = claude          # claude | openai | grok | gemini | hybrid
+ai_confidence_ceiling = 70
+
+# Claude (existing)
+[claude]
+api_key = ...
+model = claude-sonnet-4-6        # or latest
+
+# OpenAI
+[openai]
+api_key = ...
+model = gpt-4o-mini              # or gpt-4o, o1-mini, etc.
+base_url = https://api.openai.com/v1   # for Azure or local proxies
+
+# Grok / xAI
+[grok]
+api_key = ...
+model = grok-4                   # or grok-beta, etc.
+host = https://api.x.ai
+
+# Gemini
+[gemini]
+api_key = ...
+model = gemini-2.5-flash         # or gemini-2.5-pro
+
+# =============================================================================
+# MS/ Internal Copilot
+# =============================================================================
+[copilot]
+# Base URL for Microsoft Copilot or an internal Copilot-like LLM
+host = https://your-copilot-endpoint
+
+# Authentication mode: "api_key", "azure", or "none"
+auth_type = api_key
+
+# API key for internal deployments (used when auth_type = "api_key")
+api_key = your-api-key-here
+
+# Azure AD token for Microsoft Copilot (used when auth_type = "azure")
+azure_token = your-azure-ad-token-here
+
+# =============================================================================
+# Palo Alto Networks Cortex XDR / XSIAM
+# =============================================================================
+[cortex_xdr]
+host        = https://api-<tenant>.xdr.us.paloaltonetworks.com
+api_key_id  = 1
+api_key     = your_cortex_xdr_api_key_here
+auth_type   = api_key
+
+# =============================================================================
+# Palo Alto Networks Prisma Cloud
+# =============================================================================
+[prisma_cloud]
+host           = https://api.prismacloud.io
+access_key_id  = your_prisma_access_key_id_here
+secret_key     = your_prisma_secret_key_here
+auth_type      = api_key
+# For EU/APAC tenants change host to api.eu.prismacloud.io / api.sg.prismacloud.io
+
+# =============================================================================
+# Nozomi Networks Guardian / Vantage
+# =============================================================================
+[nozomi]
+host      = https://nozomi.example.com
+api_token = your_nozomi_api_token_here
+auth_type = token
+# Basic auth alternative:
+# username = admin
+# password = your_password_here
+
+# =============================================================================
+# VMware Carbon Black Cloud
+# =============================================================================
+[carbon_black]
+host         = https://defense.conferdeploy.net
+org_key      = YOUR_ORG_KEY
+api_key      = your_cbc_api_key_here
+connector_id = your_cbc_connector_id_here
+auth_type    = api_key
+
+# =============================================================================
+# LogRhythm NextGen SIEM
+# =============================================================================
+[logrhythm]
+host      = https://logrhythm.example.com:8501
+api_token = your_logrhythm_bearer_token_here
+auth_type = token
+# LogRhythm Axon (cloud) OAuth2 alternative:
+# client_id     = your_axon_client_id_here
+# client_secret = your_axon_client_secret_here
+
+# =============================================================================
+# Claroty Platform
+# =============================================================================
+[claroty]
+host     = https://claroty.example.com
+username = your_claroty_username_here
+password = your_claroty_password_here
+
+# =============================================================================
+# CISA Known Exploited Vulnerabilities (KEV) Catalog
+# =============================================================================
+[cisa]
+host = https://www.cisa.gov
+# No credentials required — public data source
+
+# =============================================================================
+# Fortinet FortiEDR
+# =============================================================================
+[fortiedr]
+host     = https://fortiedr.example.com
+username = your_fortiedr_username_here
+password = your_fortiedr_password_here
+
+# =============================================================================
+# Fortinet FortiSIEM
+# =============================================================================
+[fortisiem]
+host     = https://fortisiem.example.com
+username = supervisor
+password = your_fortisiem_password_here
+
+# =============================================================================
+# Fortinet FortiSOAR
+# =============================================================================
+[fortisoar]
+host     = https://fortisoar.example.com
+username = admin
+password = your_fortisoar_password_here
+
+# =============================================================================
+# Google Chronicle (SecOps SIEM)
+# =============================================================================
+[google_chronicle]
+host         = https://backstory.googleapis.com
+project_id   = your_gcp_project_id_here
+customer_id  = your_chronicle_customer_id_here
+credentials  = /path/to/service_account.json
+
+# =============================================================================
+# GreyNoise
+# =============================================================================
+[greynoise]
+host    = https://api.greynoise.io
+api_key = your_greynoise_api_key_here
+
+# =============================================================================
+# Shodan
+# =============================================================================
+[shodan]
+host    = https://api.shodan.io
+api_key = your_shodan_api_key_here
+
+# =============================================================================
+# Cisco Umbrella — Investigate + Enforcement + Management APIs
+# =============================================================================
+# The Investigate, Enforcement, and Management APIs each use a separate key.
+# Supply only the keys required for the operations you intend to use.
+[cisco_umbrella]
+host                = https://investigate.api.umbrella.com
+investigate_api_key = YOUR_INVESTIGATE_API_KEY
+# enforcement_api_key = YOUR_ENFORCEMENT_KEY   ; required for push_block_list / upsert_object
+# management_api_key  = YOUR_MANAGEMENT_KEY    ; required for list_allow_list / add_to_allow_list
+# tlp_marking         = white                  ; optional TLP label on produced STIX objects
+
+# =============================================================================
+# Generic OSINT Feed — TAXII 2.x Example (Anomali LIMO, public guest access)
+# =============================================================================
+# Any section with a 'feed_type' key is auto-detected as an OSINT feed.
+# Use FeedConnectorFactory.from_config(config, registry=CLIENT_REGISTRY) to
+# register these sections at startup.
+[osint_feed_limo]
+host             = https://limo.anomali.com
+feed_type        = taxii
+taxii_path       = /api/v1/taxii2/
+auth_type        = basic
+username         = guest
+password         = guest
+collection_title = Phish Tank
+stix_types       = indicator
+
+# =============================================================================
+# Generic OSINT Feed — TAXII 2.x Example (MITRE ATT&CK Enterprise)
+# =============================================================================
+[osint_feed_attck]
+host             = https://cti-taxii.mitre.org
+feed_type        = taxii
+taxii_path       = /taxii/
+auth_type        = none
+collection_title = Enterprise ATT&CK
+stix_types       = attack-pattern,course-of-action,intrusion-set,malware,tool
+
+# =============================================================================
+# Generic OSINT Feed — Direct STIX-JSON HTTP Endpoint
+# =============================================================================
+# Use feed_type = stix_json for any HTTP URL that returns a STIX 2.1 Bundle.
+[osint_feed_circl]
+host      = https://www.circl.lu
+feed_type = stix_json
+feed_path = /doc/misp/feed-osint/
+auth_type = none
+stix_types = indicator,malware
+
+# =============================================================================
+# Generic OSINT Feed — API-key authenticated feed
+# =============================================================================
+[osint_feed_myfeed]
+host             = https://feeds.example.com
+feed_type        = stix_json
+feed_path        = /v1/stix/indicators
+auth_type        = api_key
+api_key          = YOUR_FEED_API_KEY
+api_key_header   = X-Api-Key
+stix_types       = indicator

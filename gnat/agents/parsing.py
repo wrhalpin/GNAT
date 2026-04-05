@@ -59,33 +59,36 @@ Standalone usage
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import uuid
-from typing import Any, Dict, Iterator, Optional
+from collections.abc import Iterator
+from typing import Any
 
-from gnat.ingest.base import RawRecord, RecordMapper
-from gnat.orm.indicator import Indicator
-from gnat.orm.attack_pattern import AttackPattern
-from gnat.orm.threat_actor import ThreatActor
-from gnat.orm.vulnerability import Vulnerability
 from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel
 from gnat.agents.prompts import PARSING_SYSTEM, PARSING_USER
+from gnat.ingest.base import RawRecord, RecordMapper
+from gnat.orm.attack_pattern import AttackPattern
+from gnat.orm.base import STIXBase
+from gnat.orm.indicator import Indicator
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.vulnerability import Vulnerability
 
 logger = logging.getLogger(__name__)
 
 # STIX pattern templates per IOC type
-_STIX_PATTERNS: Dict[str, str] = {
-    "ipv4":      "[ipv4-addr:value = '{v}']",
-    "ipv6":      "[ipv6-addr:value = '{v}']",
-    "domain":    "[domain-name:value = '{v}']",
-    "url":       "[url:value = '{v}']",
-    "md5":       "[file:hashes.MD5 = '{v}']",
-    "sha1":      "[file:hashes.'SHA-1' = '{v}']",
-    "sha256":    "[file:hashes.'SHA-256' = '{v}']",
-    "email":     "[email-addr:value = '{v}']",
-    "filename":  "[file:name = '{v}']",
-    "registry":  "[windows-registry-key:key = '{v}']",
+_STIX_PATTERNS: dict[str, str] = {
+    "ipv4": "[ipv4-addr:value = '{v}']",
+    "ipv6": "[ipv6-addr:value = '{v}']",
+    "domain": "[domain-name:value = '{v}']",
+    "url": "[url:value = '{v}']",
+    "md5": "[file:hashes.MD5 = '{v}']",
+    "sha1": "[file:hashes.'SHA-1' = '{v}']",
+    "sha256": "[file:hashes.'SHA-256' = '{v}']",
+    "email": "[email-addr:value = '{v}']",
+    "filename": "[file:name = '{v}']",
+    "registry": "[windows-registry-key:key = '{v}']",
 }
 
 
@@ -105,8 +108,9 @@ def _refang(value: str) -> str:
     * ``[@]``  → ``@``
     """
     value = value.replace("[.]", ".").replace("[:]", ":").replace("[@]", "@")
-    value = re.sub(r"hxxps?://", lambda m: m.group().replace("xx", "tt"), value,
-                   flags=re.IGNORECASE)
+    value = re.sub(
+        r"hxxps?://", lambda m: m.group().replace("xx", "tt"), value, flags=re.IGNORECASE
+    )
     return value.strip()
 
 
@@ -173,19 +177,19 @@ class ParsingAgent(RecordMapper):
         label: str = "ParsingAgent",
     ):
         super().__init__()
-        self._config          = config
-        self._min_conf        = min_confidence
-        self._max_chars       = max_text_chars
-        self._do_indicators   = extract_indicators
-        self._do_ttps         = extract_ttps
-        self._do_actors       = extract_actors
-        self._do_vulns        = extract_vulnerabilities
-        self._always_summary  = always_yield_summary
-        self._client          = ClaudeClient(config)
+        self._config = config
+        self._min_conf = min_confidence
+        self._max_chars = max_text_chars
+        self._do_indicators = extract_indicators
+        self._do_ttps = extract_ttps
+        self._do_actors = extract_actors
+        self._do_vulns = extract_vulnerabilities
+        self._always_summary = always_yield_summary
+        self._client = ClaudeClient(config)
 
     # ── RecordMapper interface ─────────────────────────────────────────────
 
-    def map(self, record: RawRecord) -> Iterator["STIXBase"]:
+    def map(self, record: RawRecord) -> Iterator[STIXBase]:
         """
         Extract STIX objects from a raw text record.
 
@@ -210,11 +214,12 @@ class ParsingAgent(RecordMapper):
         if len(text) > self._max_chars:
             logger.debug(
                 "ParsingAgent: truncating text from %d to %d chars",
-                len(text), self._max_chars,
+                len(text),
+                self._max_chars,
             )
             text = text[: self._max_chars] + "\n\n[TEXT TRUNCATED]"
 
-        source_url   = record.get("url", "")
+        source_url = record.get("url", "")
         source_topic = record.get("topic", "")
 
         intel = self._extract(text, source_url, source_topic)
@@ -231,9 +236,7 @@ class ParsingAgent(RecordMapper):
 
     # ── Extraction ─────────────────────────────────────────────────────────
 
-    def _extract(
-        self, text: str, source_url: str, source_topic: str
-    ) -> Optional[ParsedIntel]:
+    def _extract(self, text: str, source_url: str, source_topic: str) -> ParsedIntel | None:
         """Call Claude to extract structured intel from text."""
         user_msg = PARSING_USER.format(
             text=text,
@@ -256,11 +259,11 @@ class ParsingAgent(RecordMapper):
             text_fallback = self._client.text_from(response)
             if text_fallback:
                 return ParsedIntel(
-                    summary      = text_fallback[:2000],
-                    confidence   = 20,
-                    source_url   = source_url,
-                    source_topic = source_topic,
-                    model        = self._config.model,
+                    summary=text_fallback[:2000],
+                    confidence=20,
+                    source_url=source_url,
+                    source_topic=source_topic,
+                    model=self._config.model,
                 )
             return None
 
@@ -271,35 +274,35 @@ class ParsingAgent(RecordMapper):
         )
 
         return ParsedIntel(
-            summary           = data.get("summary", ""),
-            indicators        = data.get("indicators", []) if self._do_indicators else [],
-            ttps              = data.get("ttps", []) if self._do_ttps else [],
-            actors            = data.get("actors", []) if self._do_actors else [],
-            vulnerabilities   = data.get("vulnerabilities", []) if self._do_vulns else [],
-            affected_products = data.get("affected_products", []),
-            confidence        = capped_confidence,
-            source_url        = source_url,
-            source_topic      = source_topic,
-            model             = self._config.model,
+            summary=data.get("summary", ""),
+            indicators=data.get("indicators", []) if self._do_indicators else [],
+            ttps=data.get("ttps", []) if self._do_ttps else [],
+            actors=data.get("actors", []) if self._do_actors else [],
+            vulnerabilities=data.get("vulnerabilities", []) if self._do_vulns else [],
+            affected_products=data.get("affected_products", []),
+            confidence=capped_confidence,
+            source_url=source_url,
+            source_topic=source_topic,
+            model=self._config.model,
         )
 
     # ── STIX object construction ────────────────────────────────────────────
 
-    def _to_stix_objects(self, intel: ParsedIntel) -> Iterator["STIXBase"]:
+    def _to_stix_objects(self, intel: ParsedIntel) -> Iterator[STIXBase]:
         """Yield STIX objects for each extracted entity."""
         yield from self._indicators_from(intel)
         yield from self._ttps_from(intel)
         yield from self._actors_from(intel)
         yield from self._vulns_from(intel)
 
-    def _common_fields(self, intel: ParsedIntel) -> Dict[str, Any]:
+    def _common_fields(self, intel: ParsedIntel) -> dict[str, Any]:
         """Fields added to every AI-extracted STIX object."""
         return {
-            "confidence":      min(intel.confidence, self._config.ai_confidence_ceiling),
-            "x_source_type":   "ai_extracted",
-            "x_source_url":    intel.source_url,
-            "x_source_topic":  intel.source_topic,
-            "x_ai_model":      intel.model,
+            "confidence": min(intel.confidence, self._config.ai_confidence_ceiling),
+            "x_source_type": "ai_extracted",
+            "x_source_url": intel.source_url,
+            "x_source_topic": intel.source_topic,
+            "x_ai_model": intel.model,
         }
 
     def _indicators_from(self, intel: ParsedIntel) -> Iterator[Indicator]:
@@ -320,7 +323,8 @@ class ParsingAgent(RecordMapper):
             if pattern_template is None:
                 logger.debug(
                     "ParsingAgent: unknown IOC type %r for value %r, skipping",
-                    ioc_type, value,
+                    ioc_type,
+                    value,
                 )
                 continue
 
@@ -328,11 +332,11 @@ class ParsingAgent(RecordMapper):
             context = ioc.get("context", "")
 
             yield Indicator(
-                name            = value,
-                description     = context[:500] if context else f"AI-extracted {ioc_type}",
-                pattern         = pattern,
-                pattern_type    = "stix",
-                indicator_types = ["malicious-activity"],
+                name=value,
+                description=context[:500] if context else f"AI-extracted {ioc_type}",
+                pattern=pattern,
+                pattern_type="stix",
+                indicator_types=["malicious-activity"],
                 **self._common_fields(intel),
             )
 
@@ -343,7 +347,7 @@ class ParsingAgent(RecordMapper):
             if not name:
                 continue
             tid = ttp.get("technique_id", "").strip()
-            dedup_key = (tid.lower() if tid else name.lower())
+            dedup_key = tid.lower() if tid else name.lower()
             if dedup_key in seen:
                 continue
             seen.add(dedup_key)
@@ -353,9 +357,9 @@ class ParsingAgent(RecordMapper):
                 description = f"Tactic: {ttp['tactic']}. {description}"
 
             yield AttackPattern(
-                name        = f"{tid} {name}".strip() if tid else name,
-                description = description[:500],
-                x_mitre_id  = tid,
+                name=f"{tid} {name}".strip() if tid else name,
+                description=description[:500],
+                x_mitre_id=tid,
                 **self._common_fields(intel),
             )
 
@@ -369,10 +373,10 @@ class ParsingAgent(RecordMapper):
                 continue
             seen.add(name.lower())
 
-            aliases     = actor.get("aliases", [])
-            motivation  = actor.get("motivation", "unknown")
+            aliases = actor.get("aliases", [])
+            motivation = actor.get("motivation", "unknown")
             attribution = actor.get("attribution", "")
-            context     = actor.get("context", "")
+            context = actor.get("context", "")
 
             desc_parts = []
             if attribution:
@@ -380,15 +384,13 @@ class ParsingAgent(RecordMapper):
             if context:
                 desc_parts.append(context)
             if intel.affected_products:
-                desc_parts.append(
-                    "Affected products: " + ", ".join(intel.affected_products[:5])
-                )
+                desc_parts.append("Affected products: " + ", ".join(intel.affected_products[:5]))
 
             yield ThreatActor(
-                name               = name,
-                description        = " ".join(desc_parts)[:500],
-                threat_actor_types = [motivation],
-                aliases            = aliases[:10],
+                name=name,
+                description=" ".join(desc_parts)[:500],
+                threat_actor_types=[motivation],
+                aliases=aliases[:10],
                 **self._common_fields(intel),
             )
 
@@ -396,28 +398,26 @@ class ParsingAgent(RecordMapper):
         seen: set = set()
         for vuln in intel.vulnerabilities:
             cve_id = vuln.get("cve_id", "").strip()
-            name   = cve_id or f"Vulnerability-{uuid.uuid4().hex[:8]}"
+            name = cve_id or f"Vulnerability-{uuid.uuid4().hex[:8]}"
             if name.lower() in seen:
                 continue
             seen.add(name.lower())
 
-            cvss    = vuln.get("cvss_score")
-            desc    = vuln.get("description", "")
+            cvss = vuln.get("cvss_score")
+            desc = vuln.get("description", "")
             exploit = vuln.get("exploited", False)
 
             if exploit:
                 desc = f"[ACTIVELY EXPLOITED] {desc}"
 
             obj = Vulnerability(
-                name        = name,
-                description = desc[:500],
+                name=name,
+                description=desc[:500],
                 **self._common_fields(intel),
             )
             if cvss is not None:
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     obj.x_cvss_score = float(cvss)
-                except (TypeError, ValueError):
-                    pass
             if cve_id:
                 obj.x_cve_id = cve_id
             obj.x_actively_exploited = exploit
@@ -431,17 +431,17 @@ class ParsingAgent(RecordMapper):
         """
         topic = intel.source_topic or "unknown"
         return Indicator(
-            name            = f"AI Research Summary: {topic}",
-            description     = intel.summary[:2000],
-            pattern         = f"[domain-name:value = 'ai-summary.{topic.lower()[:40]}']",
-            pattern_type    = "stix",
-            indicator_types = ["unknown"],
-            confidence      = min(20, self._config.ai_confidence_ceiling),
-            x_source_type   = "ai_extracted",
-            x_source_url    = intel.source_url,
-            x_source_topic  = intel.source_topic,
-            x_ai_model      = intel.model,
-            x_is_summary    = True,
+            name=f"AI Research Summary: {topic}",
+            description=intel.summary[:2000],
+            pattern=f"[domain-name:value = 'ai-summary.{topic.lower()[:40]}']",
+            pattern_type="stix",
+            indicator_types=["unknown"],
+            confidence=min(20, self._config.ai_confidence_ceiling),
+            x_source_type="ai_extracted",
+            x_source_url=intel.source_url,
+            x_source_topic=intel.source_topic,
+            x_ai_model=intel.model,
+            x_is_summary=True,
         )
 
     def __repr__(self) -> str:  # pragma: no cover

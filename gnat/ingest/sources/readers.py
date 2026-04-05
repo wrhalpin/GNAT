@@ -43,20 +43,24 @@ Available readers
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 import logging
 import re
+
 try:
     import defusedxml.ElementTree as ET  # type: ignore[import-untyped]
 except ImportError:
-    import xml.etree.ElementTree as ET  # type: ignore[no-redef]  # nosec B314 — defusedxml preferred; install with pip install defusedxml
+    import xml.etree.ElementTree as ET  # type: ignore[no-redef]  # nosec B314  # nosemgrep
+from collections.abc import Iterator
 from itertools import islice
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any
 
+from gnat.ingest._ioc_classifier import classify_ioc as _fast_classify
+from gnat.ingest._ioc_classifier import defang as _fast_defang
 from gnat.ingest.base import RawRecord, SourceReader
-from gnat.ingest._ioc_classifier import classify_ioc as _fast_classify, defang as _fast_defang
 
 logger = logging.getLogger(__name__)
 
@@ -99,18 +103,18 @@ class PlainTextReader(SourceReader):
     >>> reader = PlainTextReader("1.2.3.4\\nevil.com", from_string=True)
     """
 
-    _PATTERNS: Dict[str, re.Pattern] = {
-        "sha256":  re.compile(r"^[0-9a-fA-F]{64}$"),
-        "sha1":    re.compile(r"^[0-9a-fA-F]{40}$"),
-        "md5":     re.compile(r"^[0-9a-fA-F]{32}$"),
-        "ip":      re.compile(
+    _PATTERNS: dict[str, re.Pattern] = {
+        "sha256": re.compile(r"^[0-9a-fA-F]{64}$"),
+        "sha1": re.compile(r"^[0-9a-fA-F]{40}$"),
+        "md5": re.compile(r"^[0-9a-fA-F]{32}$"),
+        "ip": re.compile(
             r"^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
             r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:/\d{1,2})?$"
         ),
-        "ipv6":    re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
-        "url":     re.compile(r"^https?://", re.IGNORECASE),
-        "email":   re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
-        "domain":  re.compile(
+        "ipv6": re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
+        "url": re.compile(r"^https?://", re.IGNORECASE),
+        "email": re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
+        "domain": re.compile(
             r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+"
             r"[a-zA-Z]{2,}$"
         ),
@@ -118,11 +122,11 @@ class PlainTextReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         from_string: bool = False,
         encoding: str = "utf-8",
         skip_unknown: bool = True,
-        extra_patterns: Optional[Dict[str, re.Pattern]] = None,
+        extra_patterns: dict[str, re.Pattern] | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id=str(source)[:60], **kwargs)
@@ -203,12 +207,12 @@ class CSVReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         value_col: str = "value",
-        type_col: Optional[str] = None,
+        type_col: str | None = None,
         delimiter: str = ",",
         encoding: str = "utf-8-sig",
-        field_map: Optional[Dict[str, str]] = None,
+        field_map: dict[str, str] | None = None,
         skip_rows: int = 0,
         **kwargs: Any,
     ):
@@ -225,7 +229,10 @@ class CSVReader(SourceReader):
     def _iter_records(self) -> Iterator[RawRecord]:
         with self._source.open(encoding=self._encoding, newline="") as fh:
             for _ in range(self._skip_rows):
-                next(fh)
+                try:
+                    next(fh)
+                except StopIteration:
+                    return
             reader = csv.DictReader(fh, delimiter=self._delimiter)
             for rownum, row in enumerate(reader, 1):
                 rec: RawRecord = {}
@@ -277,8 +284,8 @@ class JSONReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
-        records_key: Optional[str] = None,
+        source: str | Path,
+        records_key: str | None = None,
         from_string: bool = False,
         **kwargs: Any,
     ):
@@ -336,7 +343,7 @@ class JSONLReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         encoding: str = "utf-8",
         **kwargs: Any,
     ):
@@ -391,8 +398,8 @@ class STIXBundleReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
-        stix_types: Optional[List[str]] = None,
+        source: str | Path,
+        stix_types: list[str] | None = None,
         from_string: bool = False,
         **kwargs: Any,
     ):
@@ -454,9 +461,9 @@ class TAXIICollectionReader(SourceReader):
     def __init__(
         self,
         collection: Any,
-        added_after: Optional[str] = None,
-        stix_types: Optional[List[str]] = None,
-        limit: Optional[int] = None,
+        added_after: str | None = None,
+        stix_types: list[str] | None = None,
+        limit: int | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id=getattr(collection, "title", "taxii"), **kwargs)
@@ -467,7 +474,7 @@ class TAXIICollectionReader(SourceReader):
 
     def _iter_records(self) -> Iterator[RawRecord]:
         try:
-            kwargs: Dict[str, Any] = {}
+            kwargs: dict[str, Any] = {}
             if self._added_after:
                 kwargs["added_after"] = self._added_after
 
@@ -545,7 +552,7 @@ class SQLReader(SourceReader):
         connection: Any,
         query: str,
         params: Any = None,
-        column_map: Optional[Dict[str, str]] = None,
+        column_map: dict[str, str] | None = None,
         close_connection: bool = False,
         **kwargs: Any,
     ):
@@ -558,10 +565,8 @@ class SQLReader(SourceReader):
 
     def close(self) -> None:
         if self._close_conn:
-            try:
+            with contextlib.suppress(Exception):  # noqa: BLE001
                 self._conn.close()
-            except Exception:  # noqa: BLE001
-                pass
         super().close()
 
     def _iter_records(self) -> Iterator[RawRecord]:
@@ -572,10 +577,7 @@ class SQLReader(SourceReader):
             else:
                 cursor.execute(self._query)
 
-            columns = [
-                self._column_map.get(desc[0], desc[0])
-                for desc in cursor.description
-            ]
+            columns = [self._column_map.get(desc[0], desc[0]) for desc in cursor.description]
 
             while True:
                 rows = cursor.fetchmany(self.batch_size)
@@ -617,9 +619,9 @@ class MISPReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path, list],
+        source: str | Path | list,
         from_string: bool = False,
-        attribute_types: Optional[List[str]] = None,
+        attribute_types: list[str] | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id="misp", **kwargs)
@@ -645,31 +647,25 @@ class MISPReader(SourceReader):
         for event_wrapper in self._load():
             event = event_wrapper.get("Event", event_wrapper)
             event_meta = {
-                "event_id":        event.get("id", ""),
-                "event_uuid":      event.get("uuid", ""),
-                "event_info":      event.get("info", ""),
+                "event_id": event.get("id", ""),
+                "event_uuid": event.get("uuid", ""),
+                "event_info": event.get("info", ""),
                 "threat_level_id": event.get("threat_level_id", ""),
-                "event_tags":      [
-                    t.get("Tag", {}).get("name", "")
-                    for t in event.get("Tag", [])
-                ],
-                "org":             event.get("Orgc", {}).get("name", ""),
-                "distribution":    event.get("distribution", ""),
-                "timestamp":       event.get("timestamp", ""),
+                "event_tags": [t.get("Tag", {}).get("name", "") for t in event.get("Tag", [])],
+                "org": event.get("Orgc", {}).get("name", ""),
+                "distribution": event.get("distribution", ""),
+                "timestamp": event.get("timestamp", ""),
             }
             for attr in event.get("Attribute", []):
                 if self._attr_types and attr.get("type") not in self._attr_types:
                     continue
                 record = {
-                    "value":   attr.get("value", ""),
-                    "type":    attr.get("type", ""),
-                    "uuid":    attr.get("uuid", ""),
+                    "value": attr.get("value", ""),
+                    "type": attr.get("type", ""),
+                    "uuid": attr.get("uuid", ""),
                     "comment": attr.get("comment", ""),
-                    "tags":    [
-                        t.get("Tag", {}).get("name", "")
-                        for t in attr.get("Tag", [])
-                    ],
-                    "to_ids":  attr.get("to_ids", False),
+                    "tags": [t.get("Tag", {}).get("name", "") for t in attr.get("Tag", [])],
+                    "to_ids": attr.get("to_ids", False),
                     "category": attr.get("category", ""),
                 }
                 record.update(event_meta)
@@ -741,14 +737,15 @@ class SyslogReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
-        format: str = "auto",
+        source: str | Path,
+        fmt: str = "auto",
+        format: str | None = None,  # noqa: A002 - alias for fmt  # pylint: disable=redefined-builtin
         encoding: str = "utf-8",
         **kwargs: Any,
     ):
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
-        self._format = format
+        self._format = format if format is not None else fmt
         self._encoding = encoding
 
     def _iter_records(self) -> Iterator[RawRecord]:
@@ -849,7 +846,7 @@ class RSSReader(SourceReader):
         self,
         url: str,
         http_client: Any = None,
-        max_entries: Optional[int] = None,
+        max_entries: int | None = None,
         **kwargs: Any,
     ):
         super().__init__(source_id=url[:80], **kwargs)
@@ -861,9 +858,7 @@ class RSSReader(SourceReader):
         try:
             import feedparser  # type: ignore
         except ImportError:
-            raise ImportError(
-                "feedparser is required for RSSReader: pip install feedparser"
-            )
+            raise ImportError("feedparser is required for RSSReader: pip install feedparser")
 
         if self._http_client:
             raw_content = self._http_client._request("GET", self._url)
@@ -877,15 +872,15 @@ class RSSReader(SourceReader):
 
         for entry in entries:
             yield {
-                "title":      getattr(entry, "title", ""),
-                "link":       getattr(entry, "link", ""),
-                "summary":    getattr(entry, "summary", ""),
-                "published":  getattr(entry, "published", ""),
-                "id":         getattr(entry, "id", ""),
-                "author":     getattr(entry, "author", ""),
-                "tags":       [t.get("term", "") for t in getattr(entry, "tags", [])],
+                "title": getattr(entry, "title", ""),
+                "link": getattr(entry, "link", ""),
+                "summary": getattr(entry, "summary", ""),
+                "published": getattr(entry, "published", ""),
+                "id": getattr(entry, "id", ""),
+                "author": getattr(entry, "author", ""),
+                "tags": [t.get("term", "") for t in getattr(entry, "tags", [])],
                 "_feed_title": feed.feed.get("title", ""),
-                "_feed_url":   self._url,
+                "_feed_url": self._url,
             }
 
 
@@ -921,7 +916,7 @@ class EmailReader(SourceReader):
 
     def __init__(
         self,
-        source: Union[str, Path],
+        source: str | Path,
         recursive: bool = False,
         **kwargs: Any,
     ):
@@ -933,7 +928,7 @@ class EmailReader(SourceReader):
         import email as email_lib
         from email import policy as email_policy
 
-        paths: List[Path] = []
+        paths: list[Path] = []
         if self._source.is_dir():
             glob = "**/*.eml" if self._recursive else "*.eml"
             paths = list(self._source.glob(glob))
@@ -954,17 +949,19 @@ class EmailReader(SourceReader):
     def _extract_record(self, msg: Any, path: str) -> RawRecord:
         body_text = ""
         body_html = ""
-        attachments: List[Dict[str, Any]] = []
+        attachments: list[dict[str, Any]] = []
 
         for part in msg.walk():
             ct = part.get_content_type()
             disp = str(part.get("Content-Disposition", ""))
             if "attachment" in disp:
-                attachments.append({
-                    "filename": part.get_filename(""),
-                    "content_type": ct,
-                    "size": len(part.get_payload(decode=True) or b""),
-                })
+                attachments.append(
+                    {
+                        "filename": part.get_filename(""),
+                        "content_type": ct,
+                        "size": len(part.get_payload(decode=True) or b""),
+                    }
+                )
             elif ct == "text/plain" and not body_text:
                 body_text = part.get_content() or ""
             elif ct == "text/html" and not body_html:
@@ -973,30 +970,34 @@ class EmailReader(SourceReader):
         combined_text = body_text + " " + body_html
         classifier = PlainTextReader("", from_string=True)
 
-        urls     = re.findall(r"https?://[^\s\"'<>]+", combined_text)
-        ips      = [v for v in re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", combined_text)
-                    if classifier._classify(v) == "ip"]
-        domains  = re.findall(
+        urls = re.findall(r"https?://[^\s\"'<>]+", combined_text)
+        ips = [
+            v
+            for v in re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", combined_text)
+            if classifier._classify(v) == "ip"
+        ]
+        domains = re.findall(
             r"(?<![/@])\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+"
-            r"[a-zA-Z]{2,}\b", combined_text
+            r"[a-zA-Z]{2,}\b",
+            combined_text,
         )
-        hashes   = re.findall(r"\b[0-9a-fA-F]{32,64}\b", combined_text)
+        hashes = re.findall(r"\b[0-9a-fA-F]{32,64}\b", combined_text)
 
         return {
-            "subject":    str(msg.get("Subject", "")),
-            "from":       str(msg.get("From", "")),
-            "to":         str(msg.get("To", "")),
-            "date":       str(msg.get("Date", "")),
+            "subject": str(msg.get("Subject", "")),
+            "from": str(msg.get("From", "")),
+            "to": str(msg.get("To", "")),
+            "date": str(msg.get("Date", "")),
             "message_id": str(msg.get("Message-ID", "")),
-            "body_text":  body_text,
-            "body_html":  body_html,
+            "body_text": body_text,
+            "body_html": body_html,
             "attachments": attachments,
-            "headers":    dict(msg.items()),
-            "urls":       list(set(urls)),
-            "ips":        list(set(ips)),
-            "domains":    list(set(domains)),
-            "hashes":     list(set(hashes)),
-            "_path":      path,
+            "headers": dict(msg.items()),
+            "urls": list(set(urls)),
+            "ips": list(set(ips)),
+            "domains": list(set(domains)),
+            "hashes": list(set(hashes)),
+            "_path": path,
         }
 
 
@@ -1025,20 +1026,16 @@ class OpenIOCReader(SourceReader):
     """
 
     _NS = {
-        "ioc":  "http://schemas.mandiant.com/2010/ioc",
+        "ioc": "http://schemas.mandiant.com/2010/ioc",
         "ioc2": "http://openioc.org/schemas/OpenIOC_1.1",
     }
 
-    def __init__(self, source: Union[str, Path], **kwargs: Any):
+    def __init__(self, source: str | Path, **kwargs: Any):
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
 
     def _iter_records(self) -> Iterator[RawRecord]:
-        paths = (
-            list(self._source.glob("*.ioc"))
-            if self._source.is_dir()
-            else [self._source]
-        )
+        paths = list(self._source.glob("*.ioc")) if self._source.is_dir() else [self._source]
         for path in paths:
             try:
                 yield from self._parse_file(path)
@@ -1046,7 +1043,7 @@ class OpenIOCReader(SourceReader):
                 logger.warning("OpenIOCReader: failed to parse %s — %s", path, exc)
 
     def _parse_file(self, path: Path) -> Iterator[RawRecord]:
-        tree = ET.parse(str(path))  # nosec B314 — defusedxml used when installed; see import block above
+        tree = ET.parse(str(path))  # nosec B314  # nosemgrep
         root = tree.getroot()
 
         # Detect namespace
@@ -1055,23 +1052,23 @@ class OpenIOCReader(SourceReader):
         if ns_tag.startswith("{"):
             ns = ns_tag.split("}")[0] + "}"
 
-        ioc_id   = root.get("id", "")
+        ioc_id = root.get("id", "")
         ioc_name_el = root.find(f"{ns}short_description")
         ioc_name = ioc_name_el.text if ioc_name_el is not None else path.stem
 
         for item in root.iter(f"{ns}IndicatorItem"):
-            context  = item.find(f"{ns}Context")
-            content  = item.find(f"{ns}Content")
+            context = item.find(f"{ns}Context")
+            content = item.find(f"{ns}Content")
             yield {
-                "ioc_id":           ioc_id,
-                "ioc_name":         ioc_name,
-                "item_id":          item.get("id", ""),
-                "condition":        item.get("condition", "is"),
+                "ioc_id": ioc_id,
+                "ioc_name": ioc_name,
+                "item_id": item.get("id", ""),
+                "condition": item.get("condition", "is"),
                 "context_document": context.get("document", "") if context is not None else "",
-                "context_search":   context.get("search", "") if context is not None else "",
-                "content_type":     content.get("type", "") if content is not None else "",
-                "content":          content.text or "" if content is not None else "",
-                "_file":            str(path),
+                "context_search": context.get("search", "") if context is not None else "",
+                "content_type": content.get("type", "") if content is not None else "",
+                "content": content.text or "" if content is not None else "",
+                "_file": str(path),
             }
 
 
@@ -1193,8 +1190,8 @@ class ElasticReader(SourceReader):
         self,
         base_client: Any,
         index: str,
-        query: Optional[Dict[str, Any]] = None,
-        source_fields: Optional[List[str]] = None,
+        query: dict[str, Any] | None = None,
+        source_fields: list[str] | None = None,
         scroll_ttl: str = "2m",
         page_size: int = 500,
         **kwargs: Any,
@@ -1207,7 +1204,7 @@ class ElasticReader(SourceReader):
         self._scroll_ttl = scroll_ttl
 
     def _iter_records(self) -> Iterator[RawRecord]:
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "query": self._query,
             "size": self.batch_size,
         }
@@ -1242,7 +1239,5 @@ class ElasticReader(SourceReader):
 
         # Clear scroll context
         if scroll_id:
-            try:
+            with contextlib.suppress(Exception):  # noqa: BLE001
                 self._client.delete(f"/_search/scroll/{scroll_id}")
-            except Exception:  # noqa: BLE001
-                pass

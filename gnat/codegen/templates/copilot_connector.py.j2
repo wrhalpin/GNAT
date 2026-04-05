@@ -1,0 +1,29 @@
+"""Jinja template for generating Copilot-style connectors.
+
+This template mirrors gnat.connectors.copilot.client.CopilotClient but
+can be specialized per-environment if needed.
+"""
+
+from gnat.clients.base import BaseClient, GNATClientError
+from gnat.connectors.base_connector import ConnectorMixin
+
+
+class {{ class_name }}(BaseClient, ConnectorMixin):
+    """Generated Copilot-style connector for {{ platform_name }}."""
+
+    stix_type_map = {"report": "chat"}
+
+    def __init__(self, host: str, api_key: str = "", **kwargs):
+        super().__init__(host=host, **kwargs)
+        self._api_key = api_key
+
+    def authenticate(self) -> None:
+        self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
+        self._auth_headers["Accept"] = "application/json"
+        self._auth_headers["Content-Type"] = "application/json"
+
+    def health_check(self) -> bool:
+        self.get("/v1/models")
+        return True
+
+    # Additional methods can be filled in by the generator as needed.

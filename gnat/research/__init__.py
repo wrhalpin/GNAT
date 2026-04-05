@@ -61,11 +61,14 @@ Scheduled curation (server-side)::
         scheduler.add(job)
 """
 
+from gnat.research.curation import CurationJob
 from gnat.research.entry import (
-    ResearchEntry, DEFAULT_TTLS, categorise_topic, topic_key,
+    DEFAULT_TTLS,
+    ResearchEntry,
+    categorise_topic,
+    topic_key,
 )
 from gnat.research.library import ResearchLibrary
-from gnat.research.curation import CurationJob
 
 __all__ = [
     "ResearchEntry",

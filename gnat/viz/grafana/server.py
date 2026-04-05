@@ -47,9 +47,10 @@ Examples:
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import WorkspaceManager
@@ -71,21 +72,17 @@ def _require_fastapi() -> None:
     """Raise a helpful ImportError when FastAPI / uvicorn are not installed."""
     if not _FASTAPI_AVAILABLE:
         raise ImportError(
-            "FastAPI and uvicorn are required for the Grafana server: "
-            "pip install 'gnat[serve]'"
+            "FastAPI and uvicorn are required for the Grafana server: pip install 'gnat[serve]'"
         )
-    try:
-        import uvicorn  # noqa: F401
-    except ImportError:
-        raise ImportError(
-            "uvicorn is required for the Grafana server: "
-            "pip install 'gnat[serve]'"
-        )
+    import importlib.util
+
+    if importlib.util.find_spec("uvicorn") is None:
+        raise ImportError("uvicorn is required for the Grafana server: pip install 'gnat[serve]'")
 
 
 def build_app(
-    manager: "WorkspaceManager",
-    search_index: "Optional[Any]" = None,
+    manager: WorkspaceManager,
+    search_index: Any | None = None,
 ) -> Any:
     """
     Build and return the FastAPI application.
@@ -110,7 +107,7 @@ def build_app(
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["*"],  # nosemgrep — local Grafana datasource server
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )
@@ -120,12 +117,12 @@ def build_app(
     def _parse_target(target: str) -> tuple:
         """Parse 'workspace/stix_type/field' into components."""
         parts = target.split("/", 2)
-        ws_name   = parts[0] if len(parts) > 0 else ""
+        ws_name = parts[0] if len(parts) > 0 else ""
         stix_type = parts[1] if len(parts) > 1 else "indicator"
-        field     = parts[2] if len(parts) > 2 else None
+        field = parts[2] if len(parts) > 2 else None
         return ws_name, stix_type, field
 
-    def _ts(obj: Any) -> Optional[int]:
+    def _ts(obj: Any) -> int | None:
         """Convert a STIX created/modified timestamp to milliseconds."""
         ts_str = obj._properties.get("created", "")
         if not ts_str:
@@ -136,7 +133,7 @@ def build_app(
         except ValueError:
             return None
 
-    def _obj_to_row(obj: Any, cols: List[str]) -> List[Any]:
+    def _obj_to_row(obj: Any, cols: list[str]) -> list[Any]:
         row = []
         for col in cols:
             if col == "type":
@@ -170,7 +167,7 @@ def build_app(
             targets.append(f"{name}/summary")
             try:
                 ws = manager.open(name)
-                types_seen = set(obj.stix_type for obj in ws)
+                types_seen = {obj.stix_type for obj in ws}
                 for stype in types_seen:
                     targets.append(f"{name}/{stype}")
                     targets.append(f"{name}/{stype}/confidence")
@@ -191,9 +188,9 @@ def build_app(
         table data (for type/summary queries).
         """
         body = await request.json()
-        targets  = body.get("targets", [])
-        range_   = body.get("range", {})
-        results  = []
+        targets = body.get("targets", [])
+        _range = body.get("range", {})
+        results = []
 
         for target_spec in targets:
             target = target_spec.get("target", "")
@@ -208,30 +205,35 @@ def build_app(
 
             # ── Summary: object count by type ─────────────────────────────
             if stix_type == "summary":
-                type_counts: Dict[str, int] = {}
+                type_counts: dict[str, int] = {}
                 for obj in ws:
                     type_counts[obj.stix_type] = type_counts.get(obj.stix_type, 0) + 1
-                results.append({
-                    "columns": [
-                        {"text": "STIX Type", "type": "string"},
-                        {"text": "Count",     "type": "number"},
-                    ],
-                    "rows": [[t, c] for t, c in sorted(type_counts.items())],
-                    "type": "table",
-                })
+                results.append(
+                    {
+                        "columns": [
+                            {"text": "STIX Type", "type": "string"},
+                            {"text": "Count", "type": "number"},
+                        ],
+                        "rows": [[t, c] for t, c in sorted(type_counts.items())],
+                        "type": "table",
+                    }
+                )
                 continue
 
             # ── Table: all objects of a type ──────────────────────────────
             if field is None:
                 from gnat.viz.tabular import _COLUMNS
+
                 cols = _COLUMNS.get(stix_type, _COLUMNS["_default"])
                 columns = [{"text": c, "type": "string"} for c in cols]
                 rows = [_obj_to_row(obj, cols) for obj in objs]
-                results.append({
-                    "columns": columns,
-                    "rows":    rows,
-                    "type":    "table",
-                })
+                results.append(
+                    {
+                        "columns": columns,
+                        "rows": rows,
+                        "type": "table",
+                    }
+                )
                 continue
 
             # ── Time-series: numeric field over created time ───────────────
@@ -243,25 +245,25 @@ def build_app(
                 val = obj._properties.get(field)
                 if val is None and hasattr(obj, field):
                     val = getattr(obj, field)
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     datapoints.append([float(val), ts])
-                except (TypeError, ValueError):
-                    pass
             datapoints.sort(key=lambda p: p[1])
-            results.append({
-                "target":     target,
-                "datapoints": datapoints,
-            })
+            results.append(
+                {
+                    "target": target,
+                    "datapoints": datapoints,
+                }
+            )
 
         return results
 
     @app.post("/annotations")
     async def annotations(request: Request):
         """Return enrichment events as Grafana annotations."""
-        body       = await request.json()
-        ann_query  = body.get("annotation", {})
+        body = await request.json()
+        ann_query = body.get("annotation", {})
         query_text = ann_query.get("query", "")  # format: "<workspace>"
-        ws_name    = query_text.strip() or (manager.list() or [{}])[0].get("name", "")
+        ws_name = query_text.strip() or (manager.list() or [{}])[0].get("name", "")
 
         results = []
         try:
@@ -274,16 +276,17 @@ def build_app(
                     ts = int(dt.timestamp() * 1000)
                 except ValueError:
                     pass
-                results.append({
-                    "annotation": ann_query,
-                    "time":       ts,
-                    "title":      f"Enrichment: {entry['source_platform']}",
-                    "text":       (
-                        f"Object: {entry['stix_id'][:40]}<br>"
-                        f"Strategy: {entry['strategy']}"
-                    ),
-                    "tags":       [entry["source_platform"], entry["strategy"]],
-                })
+                results.append(
+                    {
+                        "annotation": ann_query,
+                        "time": ts,
+                        "title": f"Enrichment: {entry['source_platform']}",
+                        "text": (
+                            f"Object: {entry['stix_id'][:40]}<br>Strategy: {entry['strategy']}"
+                        ),
+                        "tags": [entry["source_platform"], entry["strategy"]],
+                    }
+                )
         except Exception:  # noqa: BLE001
             pass
 
@@ -300,7 +303,7 @@ def build_app(
     @app.post("/tag-values")
     async def tag_values(request: Request):
         body = await request.json()
-        key  = body.get("key", "stix_type")
+        key = body.get("key", "stix_type")
         if key == "stix_type":
             types: set = set()
             for ws_meta in manager.list():
@@ -318,6 +321,7 @@ def build_app(
     if search_index is not None:
         try:
             from gnat.viz.grafana.search_endpoints import build_search_router
+
             app.include_router(build_search_router(search_index))
         except ImportError:
             logger.warning("search_endpoints could not be loaded; /solr/ endpoints disabled")
@@ -351,16 +355,16 @@ class GrafanaServer:
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
+        manager: WorkspaceManager,
         host: str = "0.0.0.0",  # nosec B104 — overridable via --host flag
         port: int = 3001,
-        search_index: "Optional[Any]" = None,
+        search_index: Any | None = None,
     ):
-        self._manager      = manager
-        self._host         = host
-        self._port         = port
+        self._manager = manager
+        self._host = host
+        self._port = port
         self._search_index = search_index
-        self._app          = None
+        self._app = None
 
     @property
     def app(self) -> Any:
@@ -372,6 +376,7 @@ class GrafanaServer:
         """Start the server (blocking)."""
         _require_fastapi()
         import uvicorn
+
         logger.info("Starting GNAT Grafana datasource on %s:%d", self._host, self._port)
         uvicorn.run(
             self.app,
@@ -388,8 +393,10 @@ class GrafanaServer:
         Returns the ``threading.Thread`` object.  Call ``.join()`` to wait.
         """
         import threading
+
         thread = threading.Thread(
-            target=self.run, daemon=True,
+            target=self.run,
+            daemon=True,
             name="gnat-grafana",
         )
         thread.start()

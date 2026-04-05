@@ -1,38 +1,59 @@
 """tests for OSSIM connector"""
-import configparser, json, unittest
+
+import configparser
+import json
+import unittest
 from unittest.mock import MagicMock, patch
 
 from gnat.connectors.ossim import (
-    OSSIMConfig, OSSIMConfigError, OSSIMAuthError, OSSIMNotFoundError,
-    OSSIMClient, OSSIMAlarmCommands, OSSIMAssetCommands,
-    OSSIMSTIXMapper, load_ossim_config,
+    OSSIMAlarmCommands,
+    OSSIMAssetCommands,
+    OSSIMAuthError,
+    OSSIMClient,
+    OSSIMConfig,
+    OSSIMConfigError,
+    OSSIMNotFoundError,
+    OSSIMSTIXMapper,
+    load_ossim_config,
 )
 
 
 def _cfg(**kw):
-    d = dict(url="https://ossim.test", api_key="test-key")
+    d = {"url": "https://ossim.test", "api_key": "test-key"}
     d.update(kw)
     return OSSIMConfig(**d)
 
+
 def _resp(status=200, body=None):
-    r = MagicMock(); r.status = status
+    r = MagicMock()
+    r.status = status
     r.data = json.dumps(body if body is not None else {}).encode()
     return r
+
 
 def _make_client():
     cfg = _cfg()
     with patch("gnat.connectors.ossim.urllib3.PoolManager") as pm:
         mock_http = MagicMock()
         pm.return_value = mock_http
-        c = OSSIMClient(cfg); c._http = mock_http
+        c = OSSIMClient(cfg)
+        c._http = mock_http
     return c, mock_http
 
+
 _ALARM = {
-    "uuid": "alarm-1", "timestamp": "2024-03-10T12:00:00Z",
-    "rule_name": "Brute Force Detected", "priority": 4, "status": "open",
-    "src_ip": "1.2.3.4", "dst_ip": "10.0.0.1",
-    "src_port": "49152", "dst_port": "22", "protocol": "TCP",
-    "sensor": "sensor01", "event_count": 50,
+    "uuid": "alarm-1",
+    "timestamp": "2024-03-10T12:00:00Z",
+    "rule_name": "Brute Force Detected",
+    "priority": 4,
+    "status": "open",
+    "src_ip": "1.2.3.4",
+    "dst_ip": "10.0.0.1",
+    "src_port": "49152",
+    "dst_port": "22",
+    "protocol": "TCP",
+    "sensor": "sensor01",
+    "event_count": 50,
 }
 
 
@@ -91,9 +112,8 @@ class TestOSSIMClient(unittest.TestCase):
 
     def test_context_manager(self):
         cfg = _cfg()
-        with patch("gnat.connectors.ossim.urllib3.PoolManager"):
-            with OSSIMClient(cfg) as client:
-                self.assertIsInstance(client, OSSIMClient)
+        with patch("gnat.connectors.ossim.urllib3.PoolManager"), OSSIMClient(cfg) as client:
+            self.assertIsInstance(client, OSSIMClient)
 
 
 class TestOSSIMAlarmCommands(unittest.TestCase):
@@ -142,9 +162,9 @@ class TestOSSIMAssetCommands(unittest.TestCase):
 
     def test_list_assets(self):
         cmd, mock_http = self._make_assets()
-        mock_http.request.return_value = _resp(200, {
-            "data": [{"id": "a1", "ip": "10.0.0.5"}], "total": 1
-        })
+        mock_http.request.return_value = _resp(
+            200, {"data": [{"id": "a1", "ip": "10.0.0.5"}], "total": 1}
+        )
         results = cmd.list_assets()
         self.assertEqual(len(results), 1)
 

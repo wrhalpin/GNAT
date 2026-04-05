@@ -6,30 +6,34 @@ Unit tests for the GNAT STIX ORM base layer and all domain objects.
 """
 
 import uuid
+
 import pytest
 
+from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.base import STIXBase
 from gnat.orm.indicator import Indicator
-from gnat.orm.threat_actor import ThreatActor
 from gnat.orm.malware import Malware
-from gnat.orm.vulnerability import Vulnerability
-from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.observable import (
-    IPv4Address, DomainName, URL, FileObject, EmailAddress,
+    URL,
+    DomainName,
+    EmailAddress,
+    FileObject,
+    IPv4Address,
 )
 from gnat.orm.relationship import Relationship
-
+from gnat.orm.threat_actor import ThreatActor
+from gnat.orm.vulnerability import Vulnerability
 
 # ---------------------------------------------------------------------------
 # STIXBase
 # ---------------------------------------------------------------------------
 
-class TestSTIXBase:
 
+class TestSTIXBase:
     def test_auto_generates_id(self):
         obj = STIXBase()
         assert obj.id.startswith("stix-object--")
-        uuid.UUID(obj.id.split("--")[1])   # raises if invalid UUID
+        uuid.UUID(obj.id.split("--")[1])  # raises if invalid UUID
 
     def test_explicit_id(self):
         obj = STIXBase(id="indicator--abc")
@@ -106,8 +110,8 @@ class TestSTIXBase:
 # Domain Objects — type strings and defaults
 # ---------------------------------------------------------------------------
 
-class TestIndicator:
 
+class TestIndicator:
     def test_stix_type(self):
         assert Indicator.stix_type == "indicator"
 

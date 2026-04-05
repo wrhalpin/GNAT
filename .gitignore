@@ -35,8 +35,15 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Node (scripts/)
+# Node
+node_modules/
+package-lock.json
 scripts/node_modules/
 scripts/package-lock.json
 *.pyc
 *.db
+
+# Test workspace artifacts
+test_ws_*/
+test_ws_rg/
+

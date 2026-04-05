@@ -23,20 +23,27 @@ Wazuh uses integer rule levels (0-15):
 
 - https://documentation.wazuh.com/current/user-manual/api/reference.html#tag/Events
 - https://documentation.wazuh.com/current/user-manual/ruleset/ruleset-xml-syntax/rules.html
-  """
+"""
 
 from .client import WazuhClient
 
 # ── Severity mapping ──────────────────────────────────────────────────────────
 
+
 def _level_to_severity(level: int) -> int:
-    if level >= 15: return 4
-    if level >= 12: return 3
-    if level >= 8: return 2
-    if level >= 4: return 1
+    if level >= 15:
+        return 4
+    if level >= 12:
+        return 3
+    if level >= 8:
+        return 2
+    if level >= 4:
+        return 1
     return 0
 
+
 _SEVERITY_LABELS = {0: "informational", 1: "low", 2: "medium", 3: "high", 4: "critical"}
+
 
 class WazuhAlertCommands:
     """
@@ -95,9 +102,7 @@ class WazuhAlertCommands:
         list[dict]
             Alert records.
         """
-        params: dict = {
-            "limit": min(limit or self._client.config.max_results, 500)
-        }
+        params: dict = {"limit": min(limit or self._client.config.max_results, 500)}
         if agent_id:
             params["agents_list"] = agent_id
         if rule_id:
@@ -289,10 +294,15 @@ class WazuhAlertCommands:
     ) -> tuple[int, int] | None:
         """Map a severity label or integer to a (min_level, max_level) tuple."""
         _map = {
-            "informational": (0, 3), 0: (0, 3),
-            "low": (4, 7),           1: (4, 7),
-            "medium": (8, 11),       2: (8, 11),
-            "high": (12, 14),        3: (12, 14),
-            "critical": (15, 15),    4: (15, 15),
+            "informational": (0, 3),
+            0: (0, 3),
+            "low": (4, 7),
+            1: (4, 7),
+            "medium": (8, 11),
+            2: (8, 11),
+            "high": (12, 14),
+            3: (12, 14),
+            "critical": (15, 15),
+            4: (15, 15),
         }
         return _map.get(severity)

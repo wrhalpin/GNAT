@@ -33,7 +33,7 @@ CRUD Conventions
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from gnat.client import GNATClient
@@ -82,7 +82,7 @@ class STIXBase:
         self.created: str = kwargs.pop("created", _utcnow())
         self.modified: str = kwargs.pop("modified", _utcnow())
         # Additional fields stored in a generic bag
-        self._properties: Dict[str, Any] = kwargs
+        self._properties: dict[str, Any] = kwargs
 
     # ------------------------------------------------------------------
     # Property access
@@ -93,9 +93,7 @@ class STIXBase:
         try:
             return self._properties[name]
         except KeyError:
-            raise AttributeError(
-                f"{type(self).__name__!r} has no attribute {name!r}"
-            ) from None
+            raise AttributeError(f"{type(self).__name__!r} has no attribute {name!r}") from None
 
     def __setattr__(self, name: str, value: Any) -> None:
         _core = {"_client", "_properties", "id", "spec_version", "created", "modified"}
@@ -108,7 +106,7 @@ class STIXBase:
     # Serialisation
     # ------------------------------------------------------------------
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serialise this object to a STIX 2.1-compatible dictionary.
 
@@ -117,7 +115,7 @@ class STIXBase:
         dict
             STIX object representation suitable for JSON encoding.
         """
-        d: Dict[str, Any] = {
+        d: dict[str, Any] = {
             "type": self.stix_type,
             "spec_version": self.spec_version,
             "id": self.id,
@@ -130,7 +128,7 @@ class STIXBase:
     @classmethod
     def from_dict(
         cls,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         client: Optional["GNATClient"] = None,
     ) -> "STIXBase":
         """
@@ -152,7 +150,7 @@ class STIXBase:
         data.pop("type", None)
         return cls(client=client, **data)
 
-    def to_stix_bundle(self) -> Dict[str, Any]:
+    def to_stix_bundle(self) -> dict[str, Any]:
         """
         Wrap this object in a minimal STIX 2.1 bundle.
 
@@ -242,7 +240,7 @@ class STIXBase:
                 "GNATClient.connect() first."
             )
 
-    def _merge(self, data: Dict[str, Any]) -> None:
+    def _merge(self, data: dict[str, Any]) -> None:
         """Merge a STIX dict into this instance, updating all properties."""
         for key, value in data.items():
             if key in ("type", "spec_version"):

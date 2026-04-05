@@ -33,6 +33,7 @@ References
 """
 
 import json
+
 import urllib3
 
 from .config import QRadarConfig
@@ -101,14 +102,11 @@ class QRadarAuthManager:
                 timeout=self._config.timeout,
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise QRadarAuthError(
-                f"Cannot connect to QRadar at {url}: {exc}"
-            ) from exc
+            raise QRadarAuthError(f"Cannot connect to QRadar at {url}: {exc}") from exc
 
         if response.status == 401:
             raise QRadarAuthError(
-                "QRadar rejected the SEC token (HTTP 401). "
-                "Check 'token' in [qradar] config."
+                "QRadar rejected the SEC token (HTTP 401). Check 'token' in [qradar] config."
             )
         if response.status == 403:
             raise QRadarAuthError(
@@ -116,9 +114,7 @@ class QRadarAuthManager:
                 "Check token capability assignments in Admin → Authorized Services."
             )
         if response.status != 200:
-            raise QRadarAuthError(
-                f"Unexpected response from QRadar: HTTP {response.status}"
-            )
+            raise QRadarAuthError(f"Unexpected response from QRadar: HTTP {response.status}")
 
         try:
             return json.loads(response.data.decode("utf-8"))

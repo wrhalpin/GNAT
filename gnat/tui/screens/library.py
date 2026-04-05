@@ -9,7 +9,7 @@ STIX object details, and promote or reject staging entries.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -23,12 +23,12 @@ _STAGING_HELP = "Staging entries await promotion to the curated library."
 class LibraryScreen(Screen):
     """Research library browser — search, filter, promote/reject staging entries."""
 
-    TITLE   = "GNAT — Research Library"
+    TITLE = "GNAT — Research Library"
     BINDINGS = [
-        Binding("escape", "app.pop_screen", "Back",    show=True),
-        Binding("ctrl+r", "refresh",        "Refresh", show=True),
-        Binding("ctrl+p", "promote_entry",  "Promote", show=True),
-        Binding("ctrl+x", "reject_entry",   "Reject",  show=True),
+        Binding("escape", "app.pop_screen", "Back", show=True),
+        Binding("ctrl+r", "refresh", "Refresh", show=True),
+        Binding("ctrl+p", "promote_entry", "Promote", show=True),
+        Binding("ctrl+x", "reject_entry", "Reject", show=True),
     ]
 
     CSS = """
@@ -65,13 +65,13 @@ class LibraryScreen(Screen):
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
+        config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self._config_path = config_path
-        self._library     = None
-        self._mode        = "library"  # "library" | "staging"
+        self._library = None
+        self._mode = "library"  # "library" | "staging"
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -127,9 +127,11 @@ class LibraryScreen(Screen):
             return
         try:
             # promote() requires a workspace; here we just move by topic key
-            self._library._manager  # ensure connected
+            _ = self._library._manager  # ensure connected
             status = self.query_one("#status-label", Label)
-            status.update(f"[yellow]Promotion requires a workspace — use CLI: gnat research promote {topic}[/yellow]")
+            status.update(
+                f"[yellow]Promotion requires a workspace — use CLI: gnat research promote {topic}[/yellow]"
+            )
         except Exception as exc:
             self.query_one("#status-label", Label).update(f"[red]{exc}[/red]")
 
@@ -143,9 +145,7 @@ class LibraryScreen(Screen):
         try:
             self._library.reject(topic)
             self._load_staging()
-            self.query_one("#status-label", Label).update(
-                f"[green]Rejected '{topic}'[/green]"
-            )
+            self.query_one("#status-label", Label).update(f"[green]Rejected '{topic}'[/green]")
         except Exception as exc:
             self.query_one("#status-label", Label).update(f"[red]{exc}[/red]")
 
@@ -155,22 +155,23 @@ class LibraryScreen(Screen):
 
     def _setup_table(self) -> None:
         table: DataTable = self.query_one("#library-table", DataTable)
-        table.add_column("Topic",      key="topic",      width=28)
-        table.add_column("TLP",        key="tlp",        width=8)
+        table.add_column("Topic", key="topic", width=28)
+        table.add_column("TLP", key="tlp", width=8)
         table.add_column("Researcher", key="researcher", width=20)
-        table.add_column("Date",       key="date",       width=20)
-        table.add_column("Objects",    key="objects",    width=8)
-        table.add_column("Status",     key="status",     width=14)
+        table.add_column("Date", key="date", width=20)
+        table.add_column("Objects", key="objects", width=8)
+        table.add_column("Status", key="status", width=14)
 
     def _build_library(self):
         try:
             from gnat.research.library import ResearchLibrary
+
             return ResearchLibrary.default(config_path=self._config_path)
         except Exception:
             return None
 
     def _load_library(self) -> None:
-        table  = self.query_one("#library-table", DataTable)
+        table = self.query_one("#library-table", DataTable)
         status = self.query_one("#status-label", Label)
         table.clear()
         if self._library is None:
@@ -192,7 +193,7 @@ class LibraryScreen(Screen):
             status.update(f"[red]{exc}[/red]")
 
     def _load_staging(self) -> None:
-        table  = self.query_one("#library-table", DataTable)
+        table = self.query_one("#library-table", DataTable)
         status = self.query_one("#status-label", Label)
         table.clear()
         if self._library is None:
@@ -217,9 +218,9 @@ class LibraryScreen(Screen):
             status.update(f"[red]{exc}[/red]")
 
     def _run_search(self) -> None:
-        query  = self.query_one("#search-input", Input).value.strip()
+        query = self.query_one("#search-input", Input).value.strip()
         status = self.query_one("#status-label", Label)
-        table  = self.query_one("#library-table", DataTable)
+        table = self.query_one("#library-table", DataTable)
         if not query or self._library is None:
             return
         try:
@@ -238,7 +239,7 @@ class LibraryScreen(Screen):
         except Exception as exc:
             status.update(f"[red]{exc}[/red]")
 
-    def _selected_topic(self) -> Optional[str]:
+    def _selected_topic(self) -> str | None:
         table: DataTable = self.query_one("#library-table", DataTable)
         try:
             row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)

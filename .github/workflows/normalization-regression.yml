@@ -1,0 +1,51 @@
+name: Connector Normalization Regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      connector:
+        description: "Optional connector name"
+        required: false
+        type: string
+  pull_request:
+    paths:
+      - "gnat/connectors/**"
+      - "gnat/agents/quality/**"
+      - "tests/unit/agents/data/*_normalization_fixture.json"
+      - "tests/unit/agents/test_normalization_regression.py"
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "gnat/connectors/**"
+      - "gnat/agents/quality/**"
+      - "tests/unit/agents/data/*_normalization_fixture.json"
+
+jobs:
+  normalization-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run normalization regression tests
+        env:
+          CONNECTOR: ${{ inputs.connector }}
+        run: |
+          if [ -n "$CONNECTOR" ]; then
+            pytest tests/unit/agents/test_normalization_regression.py -q
+          else
+            pytest tests/unit/agents/test_normalization_regression.py -q
+          fi

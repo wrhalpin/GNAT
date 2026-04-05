@@ -26,9 +26,9 @@ lastKeepAlive, registerIP, dateAdd, group, manager, node_name
 ## References
 
 - https://documentation.wazuh.com/current/user-manual/api/reference.html#tag/Agents
-  """
+"""
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import WazuhClient
 from .exceptions import WazuhNotFoundError
@@ -36,6 +36,7 @@ from .exceptions import WazuhNotFoundError
 # Valid agent status filter values
 
 AGENT_STATUSES = {"active", "disconnected", "never_connected", "pending"}
+
 
 class WazuhAgentCommands:
     """
@@ -91,16 +92,9 @@ class WazuhAgentCommands:
         list[dict]
             Agent records.
         """
-        params: dict = {
-            "limit": min(
-                limit or self._client.config.max_results,
-                500
-            )
-        }
+        params: dict = {"limit": min(limit or self._client.config.max_results, 500)}
         if status:
-            params["status"] = (
-                ",".join(status) if isinstance(status, list) else status
-            )
+            params["status"] = ",".join(status) if isinstance(status, list) else status
         if os_platform:
             params["os.platform"] = os_platform
         if group:
@@ -145,9 +139,7 @@ class WazuhAgentCommands:
         """
         params: dict = {}
         if status:
-            params["status"] = (
-                ",".join(status) if isinstance(status, list) else status
-            )
+            params["status"] = ",".join(status) if isinstance(status, list) else status
         if os_platform:
             params["os.platform"] = os_platform
         if group:
@@ -248,9 +240,7 @@ class WazuhAgentCommands:
         dict
             Component configuration dict.
         """
-        response = self._client.get(
-            f"agents/{agent_id}/config/{component}/{configuration}"
-        )
+        response = self._client.get(f"agents/{agent_id}/config/{component}/{configuration}")
         return response.get("data", {})
 
     def get_agent_stats(self, agent_id: str, component: str = "logcollector") -> dict:

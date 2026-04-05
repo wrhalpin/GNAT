@@ -33,7 +33,8 @@ https://api.shadowserver.org/
 import hashlib
 import hmac as _hmac
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
@@ -55,15 +56,20 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         Shadowserver API secret for HMAC signing.
     """
 
-    stix_type_map: Dict[str, str] = {
-        "indicator":    "ip",
+    stix_type_map: dict[str, str] = {
+        "indicator": "ip",
         "vulnerability": "cve",
     }
 
-    def __init__(self, host: str = "https://api.shadowserver.org",
-                 api_key: str = "", api_secret: str = "", **kwargs: Any):
+    def __init__(
+        self,
+        host: str = "https://api.shadowserver.org",
+        api_key: str = "",
+        api_secret: str = "",
+        **kwargs: Any,
+    ):
         super().__init__(host=host, **kwargs)
-        self._api_key    = api_key
+        self._api_key = api_key
         self._api_secret = api_secret
 
     def authenticate(self) -> None:
@@ -75,8 +81,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         resp = self._signed_post("/api/test/ping", {})
         return isinstance(resp, dict) and resp.get("pong") == 1
 
-    def get_object(self, stix_type: str,
-                   object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Query Shadowserver for data on a specific IP or CVE.
 
@@ -89,10 +94,13 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
             resp = self._signed_post("/api/ip/query", {"ip": object_id})
         return resp if isinstance(resp, dict) else {}
 
-    def list_objects(self, stix_type: str,
-                     filters: Optional[Dict[str, Any]] = None,
-                     page: int = 1,
-                     page_size: int = 100) -> List[Dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         """
         Retrieve Shadowserver report data.
 
@@ -108,38 +116,36 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         ``botnet_drone``, ``sinkhole``, ``compromised_website``,
         ``malware_url``, ``darknet``
         """
-        report  = (filters or {}).get("report", "sinkhole")
-        date    = (filters or {}).get("date", "")
-        asn     = (filters or {}).get("asn", "")
+        report = (filters or {}).get("report", "sinkhole")
+        date = (filters or {}).get("date", "")
+        asn = (filters or {}).get("asn", "")
         country = (filters or {}).get("country", "")
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "report": report,
-            "limit":  page_size,
+            "limit": page_size,
         }
-        if date:    payload["date"]    = date
-        if asn:     payload["asn"]     = asn
-        if country: payload["country"] = country
+        if date:
+            payload["date"] = date
+        if asn:
+            payload["asn"] = asn
+        if country:
+            payload["country"] = country
 
         resp = self._signed_post("/api/report/query", payload)
         if not isinstance(resp, list):
             return resp.get("results", []) if isinstance(resp, dict) else []
         return resp
 
-    def upsert_object(self, stix_type: str,
-                      payload: Dict[str, Any]) -> Dict[str, Any]:
-        raise GNATClientError(
-            "Shadowserver API is read-only — upsert not supported."
-        )
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        raise GNATClientError("Shadowserver API is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
-        raise GNATClientError(
-            "Shadowserver API is read-only — delete not supported."
-        )
+        raise GNATClientError("Shadowserver API is read-only — delete not supported.")
 
     # ── STIX translation ───────────────────────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a Shadowserver report record to a STIX Indicator.
 
@@ -147,13 +153,13 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         ``ip``, ``port``, ``protocol``, ``timestamp``, ``asn``, ``country``,
         ``sector`` (when available), ``tag`` (vulnerability/threat type).
         """
-        ip        = native.get("ip", "")
+        ip = native.get("ip", "")
         timestamp = native.get("timestamp", "")
-        sector    = native.get("sector", "")
-        tag       = native.get("tag", "")
-        asn       = native.get("asn", "")
-        country   = native.get("country", "")
-        port      = native.get("port", "")
+        sector = native.get("sector", "")
+        tag = native.get("tag", "")
+        asn = native.get("asn", "")
+        country = native.get("country", "")
+        port = native.get("port", "")
 
         name = ip
         if tag:
@@ -166,34 +172,35 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         sectors = [sector] if sector else []
 
         return {
-            "type":             "indicator",
-            "id":               f"indicator--ss-{ip.replace('.', '-')}-{port}",
-            "name":             name,
-            "pattern":          f"[ipv4-addr:value = '{ip}']",
-            "pattern_type":     "stix",
-            "created":          timestamp,
-            "modified":         timestamp,
-            "confidence":       75,    # Shadowserver data is high-quality
-            "indicator_types":  indicator_types,
-            "x_source_platform":"shadowserver",
-            "x_ss_port":        port,
-            "x_ss_protocol":    native.get("protocol", ""),
-            "x_ss_asn":         asn,
-            "x_ss_country":     country,
-            "x_ss_tag":         tag,
-            "x_ss_report":      native.get("report", ""),
+            "type": "indicator",
+            "id": f"indicator--ss-{ip.replace('.', '-')}-{port}",
+            "name": name,
+            "pattern": f"[ipv4-addr:value = '{ip}']",
+            "pattern_type": "stix",
+            "created": timestamp,
+            "modified": timestamp,
+            "confidence": 75,  # Shadowserver data is high-quality
+            "indicator_types": indicator_types,
+            "x_source_platform": "shadowserver",
+            "x_ss_port": port,
+            "x_ss_protocol": native.get("protocol", ""),
+            "x_ss_asn": asn,
+            "x_ss_country": country,
+            "x_ss_tag": tag,
+            "x_ss_report": native.get("report", ""),
             "x_target_sectors": sectors,  # canonical sector field
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         import re
+
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         return {"ip": m.group(1) if m else stix_dict.get("name", "")}
 
     # ── HMAC signing ───────────────────────────────────────────────────────
 
-    def _signed_post(self, path: str, payload: Dict[str, Any]) -> Any:
+    def _signed_post(self, path: str, payload: dict[str, Any]) -> Any:
         """
         POST to the Shadowserver API with HMAC-SHA256 request signing.
 
@@ -203,8 +210,8 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         body = dict(payload)
         body["apikey"] = self._api_key
 
-        body_json  = json.dumps(body, separators=(",", ":"), sort_keys=True)
-        signature  = _hmac.new(
+        body_json = json.dumps(body, separators=(",", ":"), sort_keys=True)
+        signature = _hmac.new(
             self._api_secret.encode(),
             body_json.encode(),
             hashlib.sha256,
@@ -213,4 +220,4 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         signed_body = dict(body)
         signed_body["hmac"] = signature
 
-        return self.post(path, json_body=signed_body)
+        return self.post(path, json=signed_body)

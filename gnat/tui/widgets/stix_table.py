@@ -6,7 +6,7 @@ Reusable DataTable widget for displaying STIX objects.
 Columns shown by default: type, name/ID, created, confidence, source platform.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from textual.widgets import DataTable
 
@@ -22,14 +22,14 @@ class STIXTable(DataTable):
     """
 
     DEFAULT_COLUMNS = [
-        ("type",    "Type",     12),
-        ("name",    "Name / Value", 35),
-        ("created", "Created",  20),
-        ("conf",    "Conf",      6),
-        ("source",  "Source",   16),
+        ("type", "Type", 12),
+        ("name", "Name / Value", 35),
+        ("created", "Created", 20),
+        ("conf", "Conf", 6),
+        ("source", "Source", 16),
     ]
 
-    def __init__(self, show_columns: List[str] | None = None, **kwargs: Any) -> None:
+    def __init__(self, show_columns: list[str] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._show = set(show_columns) if show_columns else {c[0] for c in self.DEFAULT_COLUMNS}
         self.cursor_type = "row"
@@ -41,7 +41,7 @@ class STIXTable(DataTable):
             if key in self._show:
                 self.add_column(label, key=key, width=width)
 
-    def load_stix(self, objects: List[Dict[str, Any]]) -> None:
+    def load_stix(self, objects: list[dict[str, Any]]) -> None:
         """
         Clear the table and populate it with a list of STIX dicts.
 

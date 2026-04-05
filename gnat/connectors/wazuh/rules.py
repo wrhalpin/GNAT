@@ -6,9 +6,10 @@ Rule and decoder management commands for the Wazuh connector.
 ## References
 
 - https://documentation.wazuh.com/current/user-manual/api/reference.html#tag/Rules
-  """
+"""
 
 from .client import WazuhClient
+
 
 class WazuhRulesCommands:
     """
@@ -55,9 +56,7 @@ class WazuhRulesCommands:
         list[dict]
             Rule records.
         """
-        params: dict = {
-            "limit": min(limit or self._client.config.max_results, 500)
-        }
+        params: dict = {"limit": min(limit or self._client.config.max_results, 500)}
         if rule_ids:
             params["rule_ids"] = ",".join(rule_ids)
         if group:
@@ -145,9 +144,7 @@ class WazuhRulesCommands:
         list[dict]
             Decoder records.
         """
-        params: dict = {
-            "limit": min(limit or self._client.config.max_results, 500)
-        }
+        params: dict = {"limit": min(limit or self._client.config.max_results, 500)}
         if filename:
             params["filename"] = filename
         if status:

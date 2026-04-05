@@ -39,23 +39,27 @@ import configparser
 import json
 import time
 import urllib.parse
-import urllib3
-from dataclasses import dataclass, field
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
+
 
 class GraylogError(Exception):
     pass
 
+
 class GraylogConfigError(GraylogError):
     pass
 
+
 class GraylogAuthError(GraylogError):
     pass
+
 
 class GraylogAPIError(GraylogError):
     def __init__(self, message, status_code=None, endpoint=None):
@@ -63,14 +67,17 @@ class GraylogAPIError(GraylogError):
         self.status_code = status_code
         self.endpoint = endpoint
 
+
 class GraylogNotFoundError(GraylogAPIError):
     pass
+
 
 class GraylogSTIXError(GraylogError):
     pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class GraylogConfig:
@@ -116,8 +123,14 @@ def load_graylog_config(
 ) -> GraylogConfig:
     if not config.has_section(section):
         raise GraylogConfigError(f"Section '[{section}]' not found.")
-    raw = {"url": "", "username": "", "password": "",
-           "verify_ssl": "true", "timeout": "30", "max_results": "100"}
+    raw = {
+        "url": "",
+        "username": "",
+        "password": "",
+        "verify_ssl": "true",
+        "timeout": "30",
+        "max_results": "100",
+    }
     raw.update(dict(config.items(section)))
     missing = [k for k in ("url", "username", "password") if not raw[k].strip()]
     if missing:
@@ -134,6 +147,7 @@ def load_graylog_config(
 
 # ── Client ────────────────────────────────────────────────────────────────────
 
+
 class GraylogClient:
     """HTTP client for the Graylog REST API."""
 
@@ -143,9 +157,14 @@ class GraylogClient:
         self.config = config
         self._http = self._build_pool()
 
-    def __enter__(self): return self
-    def __exit__(self, *_): self.close()
-    def close(self): self._http.clear()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def close(self):
+        self._http.clear()
 
     def get(self, path: str, params: dict | None = None) -> dict | list:
         url = self.config.endpoint(path)
@@ -155,20 +174,17 @@ class GraylogClient:
 
     def post(self, path: str, body: dict | None = None) -> dict | list:
         return self._request(
-            "POST", self.config.endpoint(path),
-            body=body, headers=self.config.write_headers
+            "POST", self.config.endpoint(path), body=body, headers=self.config.write_headers
         )
 
     def put(self, path: str, body: dict | None = None) -> dict | list:
         return self._request(
-            "PUT", self.config.endpoint(path),
-            body=body, headers=self.config.write_headers
+            "PUT", self.config.endpoint(path), body=body, headers=self.config.write_headers
         )
 
     def delete(self, path: str) -> dict:
         return self._request(
-            "DELETE", self.config.endpoint(path),
-            headers=self.config.write_headers
+            "DELETE", self.config.endpoint(path), headers=self.config.write_headers
         )
 
     def paginate(
@@ -200,9 +216,12 @@ class GraylogClient:
                 break
 
     def _build_pool(self) -> urllib3.PoolManager:
-        kw = {"num_pools": 4, "maxsize": 10,
-              "timeout": urllib3.Timeout(connect=10.0, read=float(self.config.timeout)),
-              "retries": urllib3.Retry(total=0, raise_on_status=False)}
+        kw = {
+            "num_pools": 4,
+            "maxsize": 10,
+            "timeout": urllib3.Timeout(connect=10.0, read=float(self.config.timeout)),
+            "retries": urllib3.Retry(total=0, raise_on_status=False),
+        }
         if not self.config.verify_ssl:
             kw["cert_reqs"] = "CERT_NONE"
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -211,8 +230,7 @@ class GraylogClient:
         return urllib3.PoolManager(**kw)
 
     def _request(
-        self, method: str, url: str,
-        body: dict | None = None, headers: dict | None = None
+        self, method: str, url: str, body: dict | None = None, headers: dict | None = None
     ) -> dict | list:
         hdrs = headers or self.config.base_headers
         encoded = json.dumps(body).encode() if body else None
@@ -222,7 +240,9 @@ class GraylogClient:
                 resp = self._http.request(method, url, body=encoded, headers=hdrs)
             except urllib3.exceptions.HTTPError as e:
                 if attempt < 3:
-                    time.sleep(delay); delay *= 2; continue
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
                 raise GraylogAPIError(str(e), endpoint=url) from e
             if resp.status in (401, 403):
                 raise GraylogAuthError(
@@ -231,7 +251,9 @@ class GraylogClient:
             if resp.status == 404:
                 raise GraylogNotFoundError(f"Not found: {url}", 404, url)
             if resp.status in self._RETRYABLE and attempt < 3:
-                time.sleep(delay); delay *= 2; continue
+                time.sleep(delay)
+                delay *= 2
+                continue
             if resp.status not in (200, 201, 204):
                 raise GraylogAPIError(f"HTTP {resp.status}", resp.status, url)
             if resp.status == 204 or not resp.data:
@@ -245,6 +267,7 @@ class GraylogClient:
 
 # ── Search Commands ───────────────────────────────────────────────────────────
 
+
 class GraylogSearchCommands:
     """Log message search operations."""
 
@@ -257,7 +280,7 @@ class GraylogSearchCommands:
         time_range: int = 300,
         limit: int | None = None,
         offset: int = 0,
-        filter: str | None = None,
+        filter_val: str | None = None,
         sort: str | None = None,
         fields: str | None = None,
     ) -> dict:
@@ -274,7 +297,7 @@ class GraylogSearchCommands:
             Max messages.
         offset : int
             Pagination offset.
-        filter : str | None
+        filter_val : str | None
             Stream filter, e.g. 'streams:STREAM_ID'.
         sort : str | None
             Sort field:order, e.g. 'timestamp:desc'.
@@ -287,8 +310,8 @@ class GraylogSearchCommands:
             "limit": limit or self._client.config.max_results,
             "offset": offset,
         }
-        if filter:
-            params["filter"] = filter
+        if filter_val:
+            params["filter"] = filter_val
         if sort:
             params["sort"] = sort
         if fields:
@@ -346,8 +369,7 @@ class GraylogSearchCommands:
         offset = 0
         total: int | None = None
         while True:
-            result = self.search(query=query, time_range=time_range,
-                                 limit=limit, offset=offset)
+            result = self.search(query=query, time_range=time_range, limit=limit, offset=offset)
             if total is None:
                 total = result.get("total_results", 0)
             messages = result.get("messages", [])
@@ -359,27 +381,27 @@ class GraylogSearchCommands:
     def field_histogram(
         self,
         query: str,
-        field: str,
+        field_name: str,
         interval: str = "hour",
         time_range: int = 86400,
     ) -> dict:
         """Get a histogram of a field's values over time."""
         return self._client.get(
             "search/universal/relative/histogram",
-            params={"query": query, "field": field, "interval": interval, "range": time_range},
+            params={"query": query, "field": field_name, "interval": interval, "range": time_range},
         )
 
     def field_terms(
         self,
         query: str,
-        field: str,
+        field_name: str,
         size: int = 10,
         time_range: int = 86400,
     ) -> dict:
         """Get top terms for a field."""
         return self._client.get(
             "search/universal/relative/terms",
-            params={"query": query, "field": field, "size": size, "range": time_range},
+            params={"query": query, "field": field_name, "size": size, "range": time_range},
         )
 
     @staticmethod
@@ -405,6 +427,7 @@ class GraylogSearchCommands:
 
 # ── Stream Commands ───────────────────────────────────────────────────────────
 
+
 class GraylogStreamCommands:
     """Stream management operations."""
 
@@ -429,6 +452,7 @@ class GraylogStreamCommands:
 
 
 # ── System Commands ───────────────────────────────────────────────────────────
+
 
 class GraylogSystemCommands:
     """Cluster and system health operations."""
@@ -459,15 +483,14 @@ class GraylogSystemCommands:
 
 # ── Alert Commands ────────────────────────────────────────────────────────────
 
+
 class GraylogAlertCommands:
     """Alert and event notification operations."""
 
     def __init__(self, client: GraylogClient):
         self._client = client
 
-    def list_alerts(
-        self, state: str | None = None, limit: int | None = None
-    ) -> list[dict]:
+    def list_alerts(self, state: str | None = None, limit: int | None = None) -> list[dict]:
         params: dict = {"limit": limit or self._client.config.max_results}
         if state:
             params["state"] = state
@@ -502,37 +525,53 @@ class GraylogSTIXMapper:
 
         for ip in (msg.get("src_ip"), msg.get("dst_ip")):
             if ip:
-                obj = {"type": "ipv4-addr",
-                       "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                       "spec_version": "2.1", "value": ip}
+                obj = {
+                    "type": "ipv4-addr",
+                    "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
+                    "spec_version": "2.1",
+                    "value": ip,
+                }
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         if user := msg.get("username"):
             uid = f"user-account--{_det_uuid('user-account', user)}"
             if uid not in seen:
                 seen.add(uid)
-                objects.append({"type": "user-account", "id": uid,
-                                 "spec_version": "2.1", "user_id": user})
+                objects.append(
+                    {"type": "user-account", "id": uid, "spec_version": "2.1", "user_id": user}
+                )
             refs.append(uid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data", "id": obs_id, "spec_version": "2.1",
-            "created": now, "modified": now,
-            "first_observed": ts, "last_observed": ts, "number_observed": 1,
-            "object_refs": refs,
-            "x_graylog_message": {
-                "message_id": msg.get("id"),
-                "source": msg.get("source"),
-                "message": msg.get("message"),
-                "level": msg.get("level"),
-                "facility": msg.get("facility"),
-            },
-        })
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": 1,
+                "object_refs": refs,
+                "x_graylog_message": {
+                    "message_id": msg.get("id"),
+                    "source": msg.get("source"),
+                    "message": msg.get("message"),
+                    "level": msg.get("level"),
+                    "facility": msg.get("facility"),
+                },
+            }
+        )
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     def messages_to_stix_bundle(self, messages: list[dict]) -> dict:
         all_objects: list[dict] = []
@@ -540,13 +579,19 @@ class GraylogSTIXMapper:
         for m in messages:
             for obj in self.message_to_stix_bundle(m).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": all_objects}
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": all_objects,
+        }
 
 
 def _det_uuid(t: str, v: str) -> str:
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
+
 
 def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

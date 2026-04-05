@@ -3,19 +3,19 @@ requires      = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name        = "gnat"
-version     = "0.1.0"
-description = "Cybersecurity Threat Management Swiss Army Knife — universal STIX ORM and multi-platform security client"
+name        = "security-gnat"
+version     = "1.3.1"
+description = "A production-ready Python library for unified threat intelligence operations across 99 security platforms."
 readme      = "README.md"
 license     = { file = "LICENSE" }
 authors     = [{ name = "GNAT Contributors" }]
-keywords    = ["cybersecurity","threat-intelligence","stix","taxii","ioc","siem","soar"]
+keywords    = ["cybersecurity","threat-intelligence","stix","taxii","ioc","siem","soar","trellix","sophos","vectra","extrahop","darktrace","lansweeper","censys","servicenow"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Information Technology",
     "Intended Audience :: Developers",
     "Topic :: Security",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -48,6 +48,9 @@ dev    = [
     "pyyaml>=6.0", "taxii2-client>=2.3", "feedparser>=6.0",
     "ruff>=0.4", "mypy>=1.9", "httpx>=0.27", "sqlalchemy>=2.0",
     "plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1",
+    "fastapi>=0.111", "uvicorn>=0.30", "textual>=0.60",
+    "reportlab>=4.0", "python-docx>=1.1",
+    "types-PyYAML",
 ]
 all = ["pyyaml>=6.0", "taxii2-client>=2.3", "feedparser>=6.0", "httpx>=0.27", "sqlalchemy>=2.0", "croniter>=2.0", "reportlab>=4.0", "python-docx>=1.1", "plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1", "fastapi>=0.111", "uvicorn>=0.30"]
 
@@ -63,7 +66,18 @@ include = ["gnat*"]
 "gnat" = ["py.typed"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = [
+    "tests",
+    "gnat/connectors/qradar/tests",
+    "gnat/connectors/elastic",
+    "gnat/connectors/misp/tests",
+    "gnat/connectors/sentinel/tests",
+    "gnat/connectors/graylog/tests",
+    "gnat/connectors/ossim/tests",
+    "gnat/connectors/security_onion/tests",
+    "gnat/connectors/suricata/tests",
+    "gnat/connectors/wazuh",
+]
 addopts   = "-v --tb=short -p no:warnings"
 markers   = [
     "integration: live API tests requiring real credentials (opt-in with --run-integration)",
@@ -73,7 +87,7 @@ markers   = [
 
 [tool.coverage.run]
 source = ["gnat"]
-omit   = ["tests/*", "gnat/codegen/*"]
+omit   = ["tests/*", "gnat/codegen/*", "gnat/connectors/*/tests/*", "gnat/connectors/*/test_*.py"]
 branch = true
 
 [tool.coverage.report]

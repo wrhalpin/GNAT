@@ -23,8 +23,7 @@ Tests cover:
 
 from __future__ import annotations
 
-import json
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -35,10 +34,10 @@ from gnat.context.tenant import (
     TenantWorkspaceManager,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _mock_manager(workspaces: dict | None = None) -> MagicMock:
     """Build a mock WorkspaceManager with a fake backing store."""
@@ -47,10 +46,7 @@ def _mock_manager(workspaces: dict | None = None) -> MagicMock:
     manager = MagicMock()
 
     def _list():
-        return [
-            {"name": name, "description": "", "object_count": 0}
-            for name in workspaces
-        ]
+        return [{"name": name, "description": "", "object_count": 0} for name in workspaces]
 
     def _create(name, description=""):
         workspaces[name] = []
@@ -90,8 +86,8 @@ def _mock_manager(workspaces: dict | None = None) -> MagicMock:
 # 1. Tenant dataclass
 # ---------------------------------------------------------------------------
 
-class TestTenant:
 
+class TestTenant:
     def test_basic_construction(self):
         t = Tenant(tenant_id="acme", display_name="Acme Corp")
         assert t.tenant_id == "acme"
@@ -138,8 +134,8 @@ class TestTenant:
 # 2 & 3. TenantRegistry
 # ---------------------------------------------------------------------------
 
-class TestTenantRegistry:
 
+class TestTenantRegistry:
     def test_empty_registry(self, tmp_path):
         r = TenantRegistry(str(tmp_path / "tenants.json"))
         assert r.list() == []
@@ -230,8 +226,8 @@ class TestTenantRegistry:
 # 4. Name scoping helpers
 # ---------------------------------------------------------------------------
 
-class TestNameScoping:
 
+class TestNameScoping:
     def test_scoped(self):
         mgr = _mock_manager()
         twm = TenantWorkspaceManager("acme", mgr)
@@ -255,8 +251,8 @@ class TestNameScoping:
 # 5. create delegates with prefix
 # ---------------------------------------------------------------------------
 
-class TestCreate:
 
+class TestCreate:
     def test_create_uses_scoped_name(self):
         mgr = _mock_manager()
         twm = TenantWorkspaceManager("acme", mgr)
@@ -274,8 +270,8 @@ class TestCreate:
 # 6. open delegates with prefix
 # ---------------------------------------------------------------------------
 
-class TestOpen:
 
+class TestOpen:
     def test_open_uses_scoped_name(self):
         mgr = _mock_manager({"acme::ws1": []})
         twm = TenantWorkspaceManager("acme", mgr)
@@ -293,15 +289,17 @@ class TestOpen:
 # 7. list filters and strips prefix
 # ---------------------------------------------------------------------------
 
-class TestList:
 
+class TestList:
     def test_list_returns_own_workspaces_only(self):
-        mgr = _mock_manager({
-            "acme::ws1": [],
-            "acme::ws2": [],
-            "beta::ws1": [],
-            "other":     [],
-        })
+        mgr = _mock_manager(
+            {
+                "acme::ws1": [],
+                "acme::ws2": [],
+                "beta::ws1": [],
+                "other": [],
+            }
+        )
         acme = TenantWorkspaceManager("acme", mgr)
         names = [ws["name"] for ws in acme.list()]
         assert sorted(names) == ["ws1", "ws2"]
@@ -334,8 +332,8 @@ class TestList:
 # 8. delete scoped
 # ---------------------------------------------------------------------------
 
-class TestDelete:
 
+class TestDelete:
     def test_delete_uses_scoped_name(self):
         mgr = _mock_manager({"acme::ws": []})
         twm = TenantWorkspaceManager("acme", mgr)
@@ -357,21 +355,21 @@ class TestDelete:
 # 9. purge
 # ---------------------------------------------------------------------------
 
-class TestPurge:
 
+class TestPurge:
     def test_purge_deletes_all_tenant_workspaces(self):
-        mgr = _mock_manager({
-            "acme::ws1": [],
-            "acme::ws2": [],
-            "beta::ws1": [],
-        })
+        mgr = _mock_manager(
+            {
+                "acme::ws1": [],
+                "acme::ws2": [],
+                "beta::ws1": [],
+            }
+        )
         acme = TenantWorkspaceManager("acme", mgr)
         count = acme.purge()
         assert count == 2
         # Beta workspace still present
-        assert "beta::ws1" in {
-            name for name in ["beta::ws1"]
-        }
+        assert "beta::ws1" in {"beta::ws1"}
 
     def test_purge_empty_returns_zero(self):
         mgr = _mock_manager()
@@ -383,8 +381,8 @@ class TestPurge:
 # 10. Isolation between tenants
 # ---------------------------------------------------------------------------
 
-class TestIsolation:
 
+class TestIsolation:
     def test_same_name_different_tenants_no_collision(self):
         store: dict = {}
         mgr = _mock_manager(store)
@@ -398,10 +396,12 @@ class TestIsolation:
         assert "beta::apt28" in store
 
     def test_list_does_not_cross_tenant_boundary(self):
-        mgr = _mock_manager({
-            "acme::ws-a": [],
-            "beta::ws-b": [],
-        })
+        mgr = _mock_manager(
+            {
+                "acme::ws-a": [],
+                "beta::ws-b": [],
+            }
+        )
         acme = TenantWorkspaceManager("acme", mgr)
         beta = TenantWorkspaceManager("beta", mgr)
 
@@ -421,8 +421,8 @@ class TestIsolation:
 # 11. workspace_names
 # ---------------------------------------------------------------------------
 
-class TestWorkspaceNames:
 
+class TestWorkspaceNames:
     def test_workspace_names_returns_unscoped(self):
         mgr = _mock_manager({"acme::a": [], "acme::b": [], "beta::c": []})
         acme = TenantWorkspaceManager("acme", mgr)
@@ -434,8 +434,8 @@ class TestWorkspaceNames:
 # 12. Invalid tenant_id
 # ---------------------------------------------------------------------------
 
-class TestInvalidTenantId:
 
+class TestInvalidTenantId:
     def test_uppercase_raises(self):
         mgr = _mock_manager()
         with pytest.raises(ValueError, match="Invalid tenant_id"):
@@ -456,20 +456,23 @@ class TestInvalidTenantId:
 # 13. WorkspaceManager.for_tenant()
 # ---------------------------------------------------------------------------
 
-class TestForTenant:
 
+class TestForTenant:
     def test_for_tenant_returns_tenant_manager(self):
         from gnat.context.workspace import WorkspaceManager
+
         mgr = MagicMock(spec=WorkspaceManager)
         # Patch the import inside for_tenant
-        with patch.object(WorkspaceManager, "for_tenant",
-                          lambda self, tid: TenantWorkspaceManager(tid, self)):
+        with patch.object(
+            WorkspaceManager, "for_tenant", lambda self, tid: TenantWorkspaceManager(tid, self)
+        ):
             twm = WorkspaceManager.for_tenant(mgr, "acme")
             assert isinstance(twm, TenantWorkspaceManager)
             assert twm.tenant_id == "acme"
 
     def test_for_tenant_real_call(self):
         from gnat.context.workspace import WorkspaceManager
+
         mgr = MagicMock(spec=WorkspaceManager)
         mgr.list.return_value = []
         mgr.create.return_value = MagicMock()
@@ -484,22 +487,30 @@ class TestForTenant:
 # 14 & 15. CLI
 # ---------------------------------------------------------------------------
 
-class TestCLITenant:
 
+class TestCLITenant:
     def test_tenant_list_empty(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         ret = main(["tenant", "list", "--registry", reg_path])
         assert ret == 0
 
     def test_tenant_create(self, tmp_path):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
-        ret = main([
-            "tenant", "create", "acme",
-            "--display-name", "Acme Corp",
-            "--registry", reg_path,
-        ])
+        ret = main(
+            [
+                "tenant",
+                "create",
+                "acme",
+                "--display-name",
+                "Acme Corp",
+                "--registry",
+                reg_path,
+            ]
+        )
         assert ret == 0
         # Verify it was persisted
         r = TenantRegistry(reg_path)
@@ -508,12 +519,14 @@ class TestCLITenant:
 
     def test_tenant_create_invalid_id(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         ret = main(["tenant", "create", "INVALID", "--registry", reg_path])
         assert ret == 1
 
     def test_tenant_list_shows_tenants(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         r = TenantRegistry(reg_path)
         r.register("acme", display_name="Acme Corp")
@@ -526,6 +539,7 @@ class TestCLITenant:
 
     def test_tenant_delete_with_yes(self, tmp_path):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         r = TenantRegistry(reg_path)
         r.register("acme")
@@ -535,12 +549,14 @@ class TestCLITenant:
 
     def test_tenant_delete_nonexistent(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         ret = main(["tenant", "delete", "nobody", "--yes", "--registry", reg_path])
         assert ret == 1
 
     def test_tenant_info(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         r = TenantRegistry(reg_path)
         r.register("acme", display_name="Acme Corp", description="Test tenant")
@@ -552,17 +568,20 @@ class TestCLITenant:
 
     def test_tenant_info_nonexistent(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         ret = main(["tenant", "info", "nobody", "--registry", reg_path])
         assert ret == 1
 
     def test_tenant_no_subcommand(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         ret = main(["tenant"])
         assert ret == 0  # prints help
 
     def test_tenant_workspaces_no_workspaces(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         # Works even without registered tenant (just shows empty list)
         with patch("gnat.context.tenant.TenantWorkspaceManager.default") as mock_def:
@@ -574,6 +593,7 @@ class TestCLITenant:
 
     def test_tenant_workspaces_with_workspaces(self, tmp_path, capsys):
         from gnat.cli.main import main
+
         reg_path = str(tmp_path / "tenants.json")
         with patch("gnat.context.tenant.TenantWorkspaceManager.default") as mock_def:
             mock_twm = MagicMock()

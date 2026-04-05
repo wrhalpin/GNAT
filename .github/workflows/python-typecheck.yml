@@ -1,0 +1,37 @@
+name: Python Type Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: python-typecheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mypy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install package and type deps
+        run: |
+          pip install -e ".[dev]" || pip install -r requirements.txt
+          pip install mypy
+
+      - name: Run mypy
+        run: mypy gnat/ || true
+        # Type checking is informational; 780+ pre-existing errors in gnat/ are tracked
+        # separately. This step runs mypy to surface new regressions without blocking CI.

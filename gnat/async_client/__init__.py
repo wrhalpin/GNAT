@@ -22,17 +22,17 @@ Quick start::
 from gnat.async_client.base import AsyncBaseClient
 from gnat.async_client.client import AsyncGNATClient, AsyncSTIXBase
 from gnat.async_client.connectors import (
-    AsyncThreatQClient,
     AsyncCrowdStrikeClient,
-    AsyncProofpointClient,
-    AsyncNetskopeClient,
-    AsyncXSOARClient,
-    AsyncRecordedFutureClient,
-    AsyncGreyMatterClient,
-    AsyncWhisticClient,
-    AsyncRiskReconClient,
     AsyncFeedlyClient,
+    AsyncGreyMatterClient,
+    AsyncNetskopeClient,
+    AsyncProofpointClient,
+    AsyncRecordedFutureClient,
+    AsyncRiskReconClient,
     AsyncSplunkClient,
+    AsyncThreatQClient,
+    AsyncWhisticClient,
+    AsyncXSOARClient,
 )
 
 __all__ = [

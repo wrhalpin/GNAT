@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import uuid as _uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -49,36 +49,36 @@ from gnat.connectors.base_connector import ConnectorMixin
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
 # OTX indicator type → STIX SCO type
-_OTX_TO_STIX: Dict[str, str] = {
-    "IPv4":           "ipv4-addr",
-    "IPv6":           "ipv6-addr",
-    "domain":         "domain-name",
-    "hostname":       "domain-name",
-    "URL":            "url",
-    "URI":            "url",
-    "email":          "email-addr",
-    "FileHash-MD5":   "file",
-    "FileHash-SHA1":  "file",
+_OTX_TO_STIX: dict[str, str] = {
+    "IPv4": "ipv4-addr",
+    "IPv6": "ipv6-addr",
+    "domain": "domain-name",
+    "hostname": "domain-name",
+    "URL": "url",
+    "URI": "url",
+    "email": "email-addr",
+    "FileHash-MD5": "file",
+    "FileHash-SHA1": "file",
     "FileHash-SHA256": "file",
     "FileHash-SHA512": "file",
-    "CVE":            "vulnerability",
+    "CVE": "vulnerability",
 }
 
 # OTX hash type → STIX hash algorithm name
-_HASH_ALGO: Dict[str, str] = {
-    "FileHash-MD5":   "MD5",
-    "FileHash-SHA1":  "SHA-1",
+_HASH_ALGO: dict[str, str] = {
+    "FileHash-MD5": "MD5",
+    "FileHash-SHA1": "SHA-1",
     "FileHash-SHA256": "SHA-256",
     "FileHash-SHA512": "SHA-512",
 }
 
 # STIX pattern templates
-_PATTERNS: Dict[str, str] = {
-    "ipv4-addr":   "[ipv4-addr:value = '{v}']",
-    "ipv6-addr":   "[ipv6-addr:value = '{v}']",
+_PATTERNS: dict[str, str] = {
+    "ipv4-addr": "[ipv4-addr:value = '{v}']",
+    "ipv6-addr": "[ipv6-addr:value = '{v}']",
     "domain-name": "[domain-name:value = '{v}']",
-    "url":         "[url:value = '{v}']",
-    "email-addr":  "[email-addr:value = '{v}']",
+    "url": "[url:value = '{v}']",
+    "email-addr": "[email-addr:value = '{v}']",
 }
 
 
@@ -102,9 +102,9 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         OTX API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "indicator": "indicators",
-        "report":    "pulses",
+        "report": "pulses",
     }
 
     def __init__(self, host: str, api_key: str = "", **kwargs: Any):
@@ -125,7 +125,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         self.get("/api/v1/user/me")
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single OTX pulse by id.
 
@@ -139,10 +139,10 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch subscribed pulses or exported indicators.
 
@@ -171,7 +171,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
             page=page,
         )
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("AlienVault OTX is read-only — object creation is not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -181,10 +181,10 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
 
     def get_subscribed_pulses(
         self,
-        modified_since: Optional[str] = None,
+        modified_since: str | None = None,
         limit: int = 50,
         page: int = 1,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch pulses from the subscription feed.
 
@@ -202,17 +202,17 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         list of dict
             Pulse objects.
         """
-        params: Dict[str, Any] = {"limit": limit, "page": page}
+        params: dict[str, Any] = {"limit": limit, "page": page}
         if modified_since:
             params["modified_since"] = modified_since
         resp = self.get("/api/v1/pulses/subscribed", params=params)
         return resp.get("results", []) if isinstance(resp, dict) else []
 
-    def get_pulse(self, pulse_id: str) -> Dict[str, Any]:
+    def get_pulse(self, pulse_id: str) -> dict[str, Any]:
         """Fetch a single pulse by id."""
         return self.get(f"/api/v1/pulses/{pulse_id}")
 
-    def get_pulse_indicators(self, pulse_id: str) -> List[Dict[str, Any]]:
+    def get_pulse_indicators(self, pulse_id: str) -> list[dict[str, Any]]:
         """
         Fetch indicators for a specific pulse.
 
@@ -226,9 +226,9 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
     def get_indicators(
         self,
         indicator_type: str = "IPv4",
-        modified_since: Optional[str] = None,
+        modified_since: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch a flat indicator export by type.
 
@@ -246,7 +246,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         -------
         list of dict
         """
-        params: Dict[str, Any] = {"limit": limit}
+        params: dict[str, Any] = {"limit": limit}
         if modified_since:
             params["modified_since"] = modified_since
         resp = self.get(
@@ -257,7 +257,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate an OTX pulse or indicator to a STIX 2.1 object.
 
@@ -279,7 +279,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         # Single indicator → STIX indicator
         return self._indicator_to_stix(native)
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """OTX is read-only — from_stix returns an informational dict."""
         return {
             "note": "AlienVault OTX is read-only. No write API available.",
@@ -288,34 +288,34 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    def _pulse_to_stix(self, pulse: Dict[str, Any]) -> Dict[str, Any]:
+    def _pulse_to_stix(self, pulse: dict[str, Any]) -> dict[str, Any]:
         """Convert an OTX pulse to a STIX report SDO."""
         now = _now_ts()
         pulse_id = pulse.get("id", "")
         report_id = f"report--{_det_uuid('report', pulse_id)}"
         return {
-            "type":         "report",
-            "id":           report_id,
+            "type": "report",
+            "id": report_id,
             "spec_version": "2.1",
-            "created":      pulse.get("created") or now,
-            "modified":     pulse.get("modified") or now,
-            "name":         pulse.get("name", "OTX Pulse"),
-            "description":  pulse.get("description", ""),
+            "created": pulse.get("created") or now,
+            "modified": pulse.get("modified") or now,
+            "name": pulse.get("name", "OTX Pulse"),
+            "description": pulse.get("description", ""),
             "report_types": ["threat-report"],
-            "published":    pulse.get("created") or now,
-            "labels":       pulse.get("tags", []),
+            "published": pulse.get("created") or now,
+            "labels": pulse.get("tags", []),
             "x_otx_pulse": {
-                "pulse_id":        pulse_id,
-                "author":          pulse.get("author_name"),
-                "tlp":             pulse.get("tlp"),
-                "adversary":       pulse.get("adversary"),
+                "pulse_id": pulse_id,
+                "author": pulse.get("author_name"),
+                "tlp": pulse.get("tlp"),
+                "adversary": pulse.get("adversary"),
                 "malware_families": pulse.get("malware_families", []),
-                "attack_ids":      pulse.get("attack_ids", []),
+                "attack_ids": pulse.get("attack_ids", []),
                 "targeted_countries": pulse.get("targeted_countries", []),
             },
         }
 
-    def _indicator_to_stix(self, ind: Dict[str, Any]) -> Dict[str, Any]:
+    def _indicator_to_stix(self, ind: dict[str, Any]) -> dict[str, Any]:
         """Convert an OTX indicator to a STIX indicator SDO."""
         now = _now_ts()
         otx_type = ind.get("type", "")
@@ -333,16 +333,16 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
 
         ind_id = f"indicator--{_det_uuid('indicator', value or now)}"
         return {
-            "type":            "indicator",
-            "id":              ind_id,
-            "spec_version":    "2.1",
-            "created":         ind.get("created") or now,
-            "modified":        now,
-            "name":            value,
-            "description":     ind.get("description", ind.get("title", "")),
-            "pattern":         pattern,
-            "pattern_type":    "stix",
-            "valid_from":      ind.get("created") or now,
+            "type": "indicator",
+            "id": ind_id,
+            "spec_version": "2.1",
+            "created": ind.get("created") or now,
+            "modified": now,
+            "name": value,
+            "description": ind.get("description", ind.get("title", "")),
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "valid_from": ind.get("created") or now,
             "indicator_types": ["malicious-activity"],
-            "x_otx_type":      otx_type,
+            "x_otx_type": otx_type,
         }

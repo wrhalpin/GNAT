@@ -3,7 +3,9 @@ gnat.orm.relationship
 ========================
 STIX 2.1 Relationship SRO.
 """
+
 from gnat.orm.base import STIXBase
+
 
 class Relationship(STIXBase):
     """
@@ -18,4 +20,5 @@ class Relationship(STIXBase):
     target_ref : str
         STIX id of the target object.
     """
+
     stix_type = "relationship"

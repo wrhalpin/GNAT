@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from gnat.export.base import ExportTransform, TransformResult
 
@@ -52,21 +52,21 @@ if TYPE_CHECKING:
     from gnat.orm.base import STIXBase
 
 
-_PATTERN_TO_NETSKOPE: Dict[str, str] = {
-    "ipv4-addr":         "ip",
-    "ipv6-addr":         "ipv6",
-    "domain-name":       "domain",
-    "url:":              "url",
-    "email-addr":        "email",
-    "hashes.MD5":        "md5",
-    "hashes.SHA-1":      "sha1",
-    "hashes.SHA-256":    "sha256",
+_PATTERN_TO_NETSKOPE: dict[str, str] = {
+    "ipv4-addr": "ip",
+    "ipv6-addr": "ipv6",
+    "domain-name": "domain",
+    "url:": "url",
+    "email-addr": "email",
+    "hashes.MD5": "md5",
+    "hashes.SHA-1": "sha1",
+    "hashes.SHA-256": "sha256",
 }
 
 _VALUE_RE = re.compile(r"=\s*'([^']+)'")
 
 
-def _extract(pattern: str) -> tuple[Optional[str], Optional[str]]:
+def _extract(pattern: str) -> tuple[str | None, str | None]:
     """Return (netskope_type, value) from a STIX pattern string."""
     ns_type = None
     for stix_kw, ns in _PATTERN_TO_NETSKOPE.items():
@@ -117,16 +117,16 @@ class NetskopeCETransform(ExportTransform):
         default_reputation: int = 50,
         active_only: bool = True,
         category: str = "Malware",
-        ioc_types: Optional[List[str]] = None,
+        ioc_types: list[str] | None = None,
     ):
         super().__init__(label="NetskopeCETransform")
-        self._source    = source_label
+        self._source = source_label
         self._default_r = default_reputation
         self._active_only = active_only
-        self._category  = category
+        self._category = category
         self._ioc_types = set(ioc_types) if ioc_types else None
 
-    def _reputation(self, obj: "STIXBase") -> int:
+    def _reputation(self, obj: STIXBase) -> int:
         for field in ("confidence", "x_rf_risk_score", "x_rr_score"):
             val = obj._properties.get(field)
             if val is not None:
@@ -136,7 +136,7 @@ class NetskopeCETransform(ExportTransform):
                     pass
         return self._default_r
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         indicator_list = []
         skipped = 0
 
@@ -167,24 +167,20 @@ class NetskopeCETransform(ExportTransform):
                 continue
 
             reputation = self._reputation(obj)
-            category   = (
-                obj._properties.get("x_netskope_category")
-                or self._category
-            )
-            name  = getattr(obj, "name", value)
-            comment = (
-                f"Confidence: {reputation} | Source: {self._source} | "
-                f"Name: {name}"
-            )
+            category = obj._properties.get("x_netskope_category") or self._category
+            name = getattr(obj, "name", value)
+            comment = f"Confidence: {reputation} | Source: {self._source} | Name: {name}"
 
-            indicator_list.append({
-                "value":      value,
-                "type":       ns_type or "domain",
-                "reputation": reputation,
-                "comment":    comment,
-                "active":     True,
-                "category":   category,
-            })
+            indicator_list.append(
+                {
+                    "value": value,
+                    "type": ns_type or "domain",
+                    "reputation": reputation,
+                    "comment": comment,
+                    "active": True,
+                    "category": category,
+                }
+            )
 
         payload_body = json.dumps({"indicator_list": indicator_list}, indent=2)
 
@@ -193,19 +189,17 @@ class NetskopeCETransform(ExportTransform):
             object_count=len(indicator_list),
             metadata={
                 "indicator_count": len(indicator_list),
-                "skipped":         skipped,
-                "source_label":    self._source,
+                "skipped": skipped,
+                "source_label": self._source,
             },
         )
 
 
-"""
-gnat.export.transforms.stix_bundle
-========================================
-
-STIX 2.1 Bundle transform — wraps filtered objects in a valid bundle
-for sharing with other TIPs, TAXII servers, or archival.
-"""
+# gnat.export.transforms.stix_bundle
+# ========================================
+#
+# STIX 2.1 Bundle transform — wraps filtered objects in a valid bundle
+# for sharing with other TIPs, TAXII servers, or archival.
 
 
 class STIXBundleTransform(ExportTransform):
@@ -235,10 +229,10 @@ class STIXBundleTransform(ExportTransform):
         self._include_rels = include_relationships
         self._pretty = pretty
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         import uuid as _uuid
 
-        obj_ids = {obj.id for obj in objects}
+        _obj_ids = {obj.id for obj in objects}
         stix_objects = [obj.to_dict() for obj in objects]
 
         # Include relationships that connect objects in the set
@@ -247,10 +241,10 @@ class STIXBundleTransform(ExportTransform):
             pass  # already included if caller passes them
 
         bundle = {
-            "type":         "bundle",
-            "id":           f"bundle--{_uuid.uuid4()}",
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
             "spec_version": "2.1",
-            "objects":      stix_objects,
+            "objects": stix_objects,
         }
 
         body = json.dumps(bundle, indent=2 if self._pretty else None)
@@ -261,12 +255,10 @@ class STIXBundleTransform(ExportTransform):
         )
 
 
-"""
-gnat.export.transforms.csv_transform
-==========================================
-
-CSV transform — flat rows of key fields, ready for Excel or SIEM import.
-"""
+# gnat.export.transforms.csv_transform
+# ==========================================
+#
+# CSV transform — flat rows of key fields, ready for Excel or SIEM import.
 
 
 class CSVTransform(ExportTransform):
@@ -293,22 +285,30 @@ class CSVTransform(ExportTransform):
     """
 
     DEFAULT_FIELDS = [
-        "id", "type", "name", "confidence", "x_rf_risk_score",
-        "x_tlp", "indicator_types", "pattern", "created", "modified",
+        "id",
+        "type",
+        "name",
+        "confidence",
+        "x_rf_risk_score",
+        "x_tlp",
+        "indicator_types",
+        "pattern",
+        "created",
+        "modified",
     ]
 
     def __init__(
         self,
-        fields: Optional[List[str]] = None,
+        fields: list[str] | None = None,
         filename: str = "export.csv",
         include_header: bool = True,
     ):
         super().__init__(label="CSVTransform")
-        self._fields   = fields or self.DEFAULT_FIELDS
+        self._fields = fields or self.DEFAULT_FIELDS
         self._filename = filename
-        self._header   = include_header
+        self._header = include_header
 
-    def _get(self, obj: "STIXBase", field: str) -> str:
+    def _get(self, obj: STIXBase, field: str) -> str:
         if field == "type":
             return obj.stix_type
         val = obj._properties.get(field)
@@ -320,8 +320,9 @@ class CSVTransform(ExportTransform):
             return "|".join(str(v) for v in val)
         return str(val).replace('"', '""')
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         import io
+
         buf = io.StringIO()
         if self._header:
             buf.write(",".join(f'"{c}"' for c in self._fields) + "\n")

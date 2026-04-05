@@ -46,7 +46,7 @@ file.hash.* -> file SCO
 
 - https://www.elastic.co/guide/en/ecs/current/ecs-threat.html
 - https://stix2.readthedocs.io/en/latest/
-  """
+"""
 
 from __future__ import annotations
 
@@ -61,26 +61,27 @@ _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 # STIX confidence integer (0-100) -> ECS label
 
 _CONFIDENCE_LABEL = {
-range(75, 101): "High",
-range(50, 75): "Medium",
-range(25, 50): "Low",
+    range(75, 101): "High",
+    range(50, 75): "Medium",
+    range(25, 50): "Low",
 }
 
 # ECS indicator type -> STIX SCO type
 
 _ECS_TO_STIX_TYPE = {
-"ipv4-addr": "ipv4-addr",
-"ipv6-addr": "ipv6-addr",
-"domain-name": "domain-name",
-"url": "url",
-"file": "file",
-"email-addr": "email-addr",
-"windows-registry-key": "windows-registry-key",
-"x509-certificate": "x509-certificate",
-"autonomous-system": "autonomous-system",
-"user-account": "user-account",
-"process": "process",
+    "ipv4-addr": "ipv4-addr",
+    "ipv6-addr": "ipv6-addr",
+    "domain-name": "domain-name",
+    "url": "url",
+    "file": "file",
+    "email-addr": "email-addr",
+    "windows-registry-key": "windows-registry-key",
+    "x509-certificate": "x509-certificate",
+    "autonomous-system": "autonomous-system",
+    "user-account": "user-account",
+    "process": "process",
 }
+
 
 class ElasticSTIXMapper:
     """
@@ -134,16 +135,18 @@ class ElasticSTIXMapper:
             If the bundle is malformed.
         """
         if bundle.get("type") != "bundle":
-            raise ElasticSTIXError(
-                f"Expected STIX bundle, got type='{bundle.get('type')}'."
-            )
+            raise ElasticSTIXError(f"Expected STIX bundle, got type='{bundle.get('type')}'.")
         docs: list[dict] = []
         for obj in bundle.get("objects", []):
             obj_type = obj.get("type", "")
             try:
                 if obj_type in (
-                    "ipv4-addr", "ipv6-addr", "domain-name",
-                    "url", "file", "email-addr",
+                    "ipv4-addr",
+                    "ipv6-addr",
+                    "domain-name",
+                    "url",
+                    "file",
+                    "email-addr",
                 ):
                     doc = self._sco_to_ecs(obj, provider, feed_name)
                     if doc:
@@ -156,9 +159,7 @@ class ElasticSTIXMapper:
             except ElasticSTIXError:
                 raise
             except Exception as exc:
-                raise ElasticSTIXError(
-                    f"Failed to map STIX object {obj.get('id')}: {exc}"
-                ) from exc
+                raise ElasticSTIXError(f"Failed to map STIX object {obj.get('id')}: {exc}") from exc
         return docs
 
     def stix_object_to_ecs_indicator(
@@ -185,8 +186,7 @@ class ElasticSTIXMapper:
             ECS doc, or None if the type is not mappable.
         """
         obj_type = obj.get("type", "")
-        if obj_type in ("ipv4-addr", "ipv6-addr", "domain-name",
-                        "url", "file", "email-addr"):
+        if obj_type in ("ipv4-addr", "ipv6-addr", "domain-name", "url", "file", "email-addr"):
             return self._sco_to_ecs(obj, provider, feed_name)
         if obj_type == "indicator":
             return self._indicator_sdo_to_ecs(obj, provider, feed_name)
@@ -368,27 +368,29 @@ class ElasticSTIXMapper:
         # Observed-data SDO
         obs_id = f"observed-data--{uuid.uuid4()}"
         rule_name = alert.get("rule_name") or ""
-        objects.append({
-            "type": "observed-data",
-            "id": obs_id,
-            "spec_version": "2.1",
-            "created": now,
-            "modified": now,
-            "first_observed": ts,
-            "last_observed": ts,
-            "number_observed": 1,
-            "object_refs": refs,
-            "x_elastic_alert": {
-                "rule_name": rule_name,
-                "rule_id": alert.get("rule_id"),
-                "severity": alert.get("severity"),
-                "severity_label": alert.get("severity_label"),
-                "severity_score": alert.get("severity_score"),
-                "status": alert.get("status"),
-                "reason": alert.get("reason"),
-                "host_name": alert.get("host_name"),
-            },
-        })
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": 1,
+                "object_refs": refs,
+                "x_elastic_alert": {
+                    "rule_name": rule_name,
+                    "rule_id": alert.get("rule_id"),
+                    "severity": alert.get("severity"),
+                    "severity_label": alert.get("severity_label"),
+                    "severity_score": alert.get("severity_score"),
+                    "status": alert.get("status"),
+                    "reason": alert.get("reason"),
+                    "host_name": alert.get("host_name"),
+                },
+            }
+        )
         return _make_bundle(objects)
 
     def alerts_to_stix_bundle(self, alerts: list[dict]) -> dict:
@@ -461,6 +463,7 @@ class ElasticSTIXMapper:
             # Try to extract domain from URL
             try:
                 from urllib.parse import urlparse
+
                 parsed = urlparse(value)
                 if parsed.netloc:
                     ti["url"]["domain"] = parsed.netloc
@@ -524,6 +527,7 @@ class ElasticSTIXMapper:
 
         # Extract value from simple pattern
         import re
+
         value_match = re.search(r"=\s*'([^']+)'", pattern)
         value = value_match.group(1) if value_match else ""
 
@@ -595,62 +599,73 @@ class ElasticSTIXMapper:
 
     # ── STIX object factory helpers ───────────────────────────────────────────────
 
+
 def _ipv4(value: str) -> dict:
     return {
-    "type": "ipv4-addr",
-    "id": f"ipv4-addr-{_det_uuid('ipv4-addr', value)}",
-    "spec_version": "2.1",
-    "value": value,
+        "type": "ipv4-addr",
+        "id": f"ipv4-addr-{_det_uuid('ipv4-addr', value)}",
+        "spec_version": "2.1",
+        "value": value,
     }
+
 
 def _domain(value: str) -> dict:
     return {
-    "type": "domain-name",
-    "id": f"domain-name-{_det_uuid('domain-name', value)}",
-    "spec_version": "2.1",
-    "value": value,
+        "type": "domain-name",
+        "id": f"domain-name-{_det_uuid('domain-name', value)}",
+        "spec_version": "2.1",
+        "value": value,
     }
+
 
 def _url(value: str) -> dict:
     return {
-    "type": "url",
-    "id": f"url-{_det_uuid('url', value)}",
-    "spec_version": "2.1",
-    "value": value,
+        "type": "url",
+        "id": f"url-{_det_uuid('url', value)}",
+        "spec_version": "2.1",
+        "value": value,
     }
+
 
 def _user_account(user_id: str) -> dict:
     return {
-    "type": "user-account",
-    "id": f"user-account-{_det_uuid('user-account', user_id)}",
-    "spec_version": "2.1",
-    "user_id": user_id,
+        "type": "user-account",
+        "id": f"user-account-{_det_uuid('user-account', user_id)}",
+        "spec_version": "2.1",
+        "user_id": user_id,
     }
+
 
 def _process(name: str) -> dict:
     return {
-    "type": "process",
-    "id": f"process-{_det_uuid('process', name)}",
-    "spec_version": "2.1",
-    "name": name,
+        "type": "process",
+        "id": f"process-{_det_uuid('process', name)}",
+        "spec_version": "2.1",
+        "name": name,
     }
+
 
 def _make_bundle(objects: list[dict]) -> dict:
     return {
-    "type": "bundle",
-    "id": f"bundle-{uuid.uuid4()}",
-    "spec_version": "2.1",
-    "objects": objects,
+        "type": "bundle",
+        "id": f"bundle-{uuid.uuid4()}",
+        "spec_version": "2.1",
+        "objects": objects,
     }
+
 
 def _det_uuid(stix_type: str, value: str) -> str:
     return str(uuid.uuid5(_STIX_NS, f"{stix_type}:{value}"))
 
+
 def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
+
 def _listify(val: Any) -> list:
     """Normalise a value that might be str, list, or None to a list."""
-    if val is None: return []
-    if isinstance(val, list): return val
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
     return [val]

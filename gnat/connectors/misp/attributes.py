@@ -40,18 +40,27 @@ References
 - https://www.misp-project.org/openapi/#tag/Attributes
 """
 
-from typing import Iterator
+from collections.abc import Iterator
+
 from .client import MISPClient
 
 # Attribute type → STIX SCO type hint
 ATTR_TYPE_TO_STIX = {
-    "ip-src": "ipv4-addr", "ip-dst": "ipv4-addr",
-    "ip-src|port": "ipv4-addr", "ip-dst|port": "ipv4-addr",
-    "domain": "domain-name", "hostname": "domain-name",
+    "ip-src": "ipv4-addr",
+    "ip-dst": "ipv4-addr",
+    "ip-src|port": "ipv4-addr",
+    "ip-dst|port": "ipv4-addr",
+    "domain": "domain-name",
+    "hostname": "domain-name",
     "url": "url",
-    "md5": "file", "sha1": "file", "sha256": "file", "sha512": "file",
-    "filename": "file", "filename|md5": "file",
-    "email-src": "email-addr", "email-dst": "email-addr",
+    "md5": "file",
+    "sha1": "file",
+    "sha256": "file",
+    "sha512": "file",
+    "filename": "file",
+    "filename|md5": "file",
+    "email-src": "email-addr",
+    "email-dst": "email-addr",
     "email-subject": "email-message",
     "regkey": "windows-registry-key",
     "vulnerability": "vulnerability",
@@ -140,10 +149,9 @@ class MISPAttributeCommands:
             base["to_ids"] = 1 if to_ids else 0
         if event_id:
             base["eventid"] = str(event_id)
-        for item in self._client.paginate(
+        yield from self._client.paginate(
             "attributes/restSearch", body=base, response_key="Attribute"
-        ):
-            yield item
+        )
 
     # ── CRUD ───────────────────────────────────────────────────────────────
 
@@ -196,12 +204,10 @@ class MISPAttributeCommands:
             "to_ids": to_ids,
             "comment": comment,
             "distribution": distribution
-                if distribution is not None
-                else self._client.config.default_distribution,
+            if distribution is not None
+            else self._client.config.default_distribution,
         }
-        response = self._client.post_json(
-            f"attributes/add/{event_id}", body={"Attribute": attr}
-        )
+        response = self._client.post_json(f"attributes/add/{event_id}", body={"Attribute": attr})
         if isinstance(response, dict):
             return response.get("Attribute", response)
         return response
@@ -299,8 +305,7 @@ class MISPAttributeCommands:
         list[dict]
         """
         attrs = [
-            {"type": attr_type, "value": ip, "to_ids": to_ids, "comment": comment}
-            for ip in ips
+            {"type": attr_type, "value": ip, "to_ids": to_ids, "comment": comment} for ip in ips
         ]
         return self.add_attributes_bulk(event_id, attrs)
 
@@ -331,11 +336,15 @@ class MISPAttributeCommands:
         for hash_type, value in hashes.items():
             misp_type = type_map.get(hash_type.lower())
             if misp_type and value:
-                attrs.append({
-                    "type": misp_type, "value": value,
-                    "category": "Payload delivery",
-                    "to_ids": to_ids, "comment": comment,
-                })
+                attrs.append(
+                    {
+                        "type": misp_type,
+                        "value": value,
+                        "category": "Payload delivery",
+                        "to_ids": to_ids,
+                        "comment": comment,
+                    }
+                )
         return self.add_attributes_bulk(event_id, attrs) if attrs else []
 
     # ── Normalisation ──────────────────────────────────────────────────────

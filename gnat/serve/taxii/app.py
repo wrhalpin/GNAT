@@ -32,12 +32,10 @@ upserts each object into the target workspace.
 from __future__ import annotations
 
 import base64
-import hashlib
-import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import WorkspaceManager
@@ -53,6 +51,7 @@ _API_ROOT_ID = "gnat"
 try:
     from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
     from fastapi.responses import JSONResponse
+
     _FASTAPI_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _FASTAPI_AVAILABLE = False
@@ -61,22 +60,19 @@ except ImportError:  # pragma: no cover
 def _require_fastapi() -> None:
     """Raise ImportError when FastAPI / uvicorn are not installed."""
     if not _FASTAPI_AVAILABLE:
-        raise ImportError(
-            "FastAPI and uvicorn are required: pip install 'gnat[serve]'"
-        )
-    try:
-        import uvicorn  # noqa: F401
-    except ImportError:
-        raise ImportError(
-            "uvicorn is required: pip install 'gnat[serve]'"
-        )
+        raise ImportError("FastAPI and uvicorn are required: pip install 'gnat[serve]'")
+    import importlib.util
+
+    if importlib.util.find_spec("uvicorn") is None:
+        raise ImportError("uvicorn is required: pip install 'gnat[serve]'")
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _taxii_response(content: Any, status_code: int = 200) -> "JSONResponse":
+
+def _taxii_response(content: Any, status_code: int = 200) -> JSONResponse:
     """Return a JSONResponse with the TAXII 2.1 media type header."""
     return JSONResponse(
         content=content,
@@ -94,11 +90,11 @@ def _workspace_to_collection(ws_meta: dict) -> dict:
     name = ws_meta.get("name", "")
     desc = ws_meta.get("description", "")
     return {
-        "id":          name,
-        "title":       name,
+        "id": name,
+        "title": name,
         "description": desc,
-        "can_read":    True,
-        "can_write":   True,
+        "can_read": True,
+        "can_write": True,
         "media_types": ["application/stix+json;version=2.1"],
     }
 
@@ -120,13 +116,15 @@ def _decode_cursor(token: str) -> int:
 # Auth dependency (reuses gnat.serve.auth pattern)
 # ---------------------------------------------------------------------------
 
+
 class _TaxiiAPIKeyAuth:
     """FastAPI callable dependency — validates ``X-Api-Key`` header."""
 
     def __init__(self, api_key: str) -> None:
         import hmac as _hmac
-        self._key    = api_key.encode("utf-8")
-        self._hmac   = _hmac
+
+        self._key = api_key.encode("utf-8")
+        self._hmac = _hmac
 
     def __call__(
         self,
@@ -149,8 +147,9 @@ class _TaxiiAPIKeyAuth:
 # App factory
 # ---------------------------------------------------------------------------
 
+
 def build_taxii_app(
-    manager: "WorkspaceManager",
+    manager: WorkspaceManager,
     api_key: str = "",
     title: str = "GNAT TAXII 2.1 Server",
     contact: str = "",
@@ -175,7 +174,7 @@ def build_taxii_app(
     """
     _require_fastapi()
 
-    auth     = _TaxiiAPIKeyAuth(api_key) if api_key else None
+    auth = _TaxiiAPIKeyAuth(api_key) if api_key else None
     auth_dep = [Depends(auth)] if auth else []
 
     app = FastAPI(
@@ -187,14 +186,14 @@ def build_taxii_app(
 
     # ── Discovery (unauthenticated — spec §4.1) ────────────────────────────
     @app.get("/taxii2/", include_in_schema=False)
-    def discovery() -> "JSONResponse":
+    def discovery() -> JSONResponse:
         """TAXII 2.1 discovery endpoint — returns server metadata."""
         body: dict = {
-            "title":       title,
+            "title": title,
             "description": "GNAT threat intelligence workspaces",
-            "contact":     contact,
-            "default":     f"/taxii2/roots/{_API_ROOT_ID}/",
-            "api_roots":   [f"/taxii2/roots/{_API_ROOT_ID}/"],
+            "contact": contact,
+            "default": f"/taxii2/roots/{_API_ROOT_ID}/",
+            "api_roots": [f"/taxii2/roots/{_API_ROOT_ID}/"],
         }
         return _taxii_response(body)
 
@@ -203,12 +202,12 @@ def build_taxii_app(
         f"/taxii2/roots/{_API_ROOT_ID}/",
         include_in_schema=False,
     )
-    def api_root_info() -> "JSONResponse":
+    def api_root_info() -> JSONResponse:
         """TAXII 2.1 API root information."""
         body = {
-            "title":            "GNAT workspaces",
-            "description":      "All GNAT analyst workspaces",
-            "versions":         ["application/taxii+json;version=2.1"],
+            "title": "GNAT workspaces",
+            "description": "All GNAT analyst workspaces",
+            "versions": ["application/taxii+json;version=2.1"],
             "max_content_length": 10_485_760,  # 10 MB
         }
         return _taxii_response(body)
@@ -219,16 +218,14 @@ def build_taxii_app(
         include_in_schema=False,
         dependencies=auth_dep,
     )
-    def list_collections() -> "JSONResponse":
+    def list_collections() -> JSONResponse:
         """Return all workspaces as TAXII collections."""
         try:
             workspaces = manager.list()
         except Exception as exc:  # noqa: BLE001
             logger.error("TAXII list_collections error: %s", exc)
             workspaces = []
-        return _taxii_response(
-            {"collections": [_workspace_to_collection(w) for w in workspaces]}
-        )
+        return _taxii_response({"collections": [_workspace_to_collection(w) for w in workspaces]})
 
     # ── Collection detail ───────────────────────────────────────────────────
     @app.get(
@@ -236,7 +233,7 @@ def build_taxii_app(
         include_in_schema=False,
         dependencies=auth_dep,
     )
-    def collection_detail(collection_id: str) -> "JSONResponse":
+    def collection_detail(collection_id: str) -> JSONResponse:
         """Return metadata for a single TAXII collection (workspace)."""
         workspaces = manager.list()
         for ws_meta in workspaces:
@@ -254,12 +251,12 @@ def build_taxii_app(
         collection_id: str,
         request: Request,
         limit: int = 100,
-        next: Optional[str] = None,          # noqa: A002 — spec-required name
-        added_after: Optional[str] = None,
-        match_id: Optional[str] = None,
-        match_type: Optional[str] = None,
-        match_spec_version: Optional[str] = None,
-    ) -> "JSONResponse":
+        next_page: str | None = None,
+        added_after: str | None = None,
+        match_id: str | None = None,
+        match_type: str | None = None,
+        match_spec_version: str | None = None,
+    ) -> JSONResponse:
         """
         Return STIX objects from a workspace as a TAXII 2.1 envelope.
 
@@ -281,7 +278,7 @@ def build_taxii_app(
             raise HTTPException(status_code=404, detail=f"Collection {collection_id!r} not found")
 
         # Collect all objects from workspace
-        all_objects: List[dict] = []
+        all_objects: list[dict] = []
         for obj in ws:
             d = obj.to_dict()
             # added_after filter
@@ -298,22 +295,22 @@ def build_taxii_app(
             all_objects.append(d)
 
         # Pagination
-        offset = _decode_cursor(next) if next else 0
-        page   = all_objects[offset : offset + limit]
-        more   = (offset + limit) < len(all_objects)
+        offset = _decode_cursor(next_page) if next_page else 0
+        page = all_objects[offset : offset + limit]
+        more = (offset + limit) < len(all_objects)
 
         envelope: dict = {
-            "type":         "bundle",
-            "id":           f"bundle--{uuid.uuid4()}",
+            "type": "bundle",
+            "id": f"bundle--{uuid.uuid4()}",
             "spec_version": "2.1",
-            "objects":      page,
+            "objects": page,
         }
         if more:
             envelope["next"] = _encode_cursor(offset + limit)
 
         headers = {
             "X-TAXII-Date-Added-First": page[0].get("created", "") if page else "",
-            "X-TAXII-Date-Added-Last":  page[-1].get("created", "") if page else "",
+            "X-TAXII-Date-Added-Last": page[-1].get("created", "") if page else "",
         }
         return JSONResponse(
             content=envelope,
@@ -331,7 +328,7 @@ def build_taxii_app(
     async def add_objects(
         collection_id: str,
         request: Request,
-    ) -> "JSONResponse":
+    ) -> JSONResponse:
         """
         Add STIX objects to a workspace from a TAXII 2.1 envelope.
 
@@ -352,9 +349,9 @@ def build_taxii_app(
         if body.get("type") != "bundle":
             raise HTTPException(status_code=422, detail="Body must be a STIX bundle")
 
-        objects_in  = body.get("objects") or []
-        successes: List[str] = []
-        failures:  List[dict] = []
+        objects_in = body.get("objects") or []
+        successes: list[str] = []
+        failures: list[dict] = []
 
         from gnat.orm.base import STIXBase
 
@@ -373,16 +370,16 @@ def build_taxii_app(
             logger.warning("TAXII add_objects commit error: %s", exc)
 
         status_resource = {
-            "id":              str(uuid.uuid4()),
-            "status":          "complete" if not failures else "pending",
+            "id": str(uuid.uuid4()),
+            "status": "complete" if not failures else "pending",
             "request_timestamp": _utcnow_iso(),
-            "total_count":     len(objects_in),
-            "success_count":   len(successes),
-            "failure_count":   len(failures),
-            "pending_count":   0,
-            "successes":       [{"id": s, "version": _utcnow_iso()} for s in successes],
-            "failures":        failures,
-            "pendings":        [],
+            "total_count": len(objects_in),
+            "success_count": len(successes),
+            "failure_count": len(failures),
+            "pending_count": 0,
+            "successes": [{"id": s, "version": _utcnow_iso()} for s in successes],
+            "failures": failures,
+            "pendings": [],
         }
         return _taxii_response(status_resource, status_code=202)
 
@@ -395,10 +392,10 @@ def build_taxii_app(
     def get_manifest(
         collection_id: str,
         limit: int = 100,
-        next: Optional[str] = None,          # noqa: A002
-        added_after: Optional[str] = None,
-        match_type: Optional[str] = None,
-    ) -> "JSONResponse":
+        next_page: str | None = None,
+        added_after: str | None = None,
+        match_type: str | None = None,
+    ) -> JSONResponse:
         """
         Return the object manifest for a collection.
 
@@ -410,7 +407,7 @@ def build_taxii_app(
         except KeyError:
             raise HTTPException(status_code=404, detail=f"Collection {collection_id!r} not found")
 
-        entries: List[dict] = []
+        entries: list[dict] = []
         for obj in ws:
             d = obj.to_dict()
             if added_after:
@@ -419,16 +416,18 @@ def build_taxii_app(
                     continue
             if match_type and d.get("type") != match_type:
                 continue
-            entries.append({
-                "id":         d.get("id", ""),
-                "date_added": d.get("created", _utcnow_iso()),
-                "version":    d.get("modified") or d.get("created") or _utcnow_iso(),
-                "media_type": "application/stix+json;version=2.1",
-            })
+            entries.append(
+                {
+                    "id": d.get("id", ""),
+                    "date_added": d.get("created", _utcnow_iso()),
+                    "version": d.get("modified") or d.get("created") or _utcnow_iso(),
+                    "media_type": "application/stix+json;version=2.1",
+                }
+            )
 
-        offset = _decode_cursor(next) if next else 0
-        page   = entries[offset : offset + limit]
-        more   = (offset + limit) < len(entries)
+        offset = _decode_cursor(next_page) if next_page else 0
+        page = entries[offset : offset + limit]
+        more = (offset + limit) < len(entries)
 
         body: dict = {"objects": page}
         if more:
@@ -445,7 +444,7 @@ def build_taxii_app(
     def get_object(
         collection_id: str,
         object_id: str,
-    ) -> "JSONResponse":
+    ) -> JSONResponse:
         """Return a single STIX object by ID as a one-item TAXII bundle."""
         try:
             ws = manager.open(collection_id)
@@ -457,10 +456,10 @@ def build_taxii_app(
             raise HTTPException(status_code=404, detail=f"Object {object_id!r} not found")
 
         bundle = {
-            "type":         "bundle",
-            "id":           f"bundle--{uuid.uuid4()}",
+            "type": "bundle",
+            "id": f"bundle--{uuid.uuid4()}",
             "spec_version": "2.1",
-            "objects":      [obj.to_dict()],
+            "objects": [obj.to_dict()],
         }
         return _taxii_response(bundle)
 
@@ -473,7 +472,7 @@ def build_taxii_app(
     def get_object_versions(
         collection_id: str,
         object_id: str,
-    ) -> "JSONResponse":
+    ) -> JSONResponse:
         """Return available versions for a single STIX object."""
         try:
             ws = manager.open(collection_id)
@@ -484,7 +483,7 @@ def build_taxii_app(
         if obj is None:
             raise HTTPException(status_code=404, detail=f"Object {object_id!r} not found")
 
-        d       = obj.to_dict()
+        d = obj.to_dict()
         version = d.get("modified") or d.get("created") or _utcnow_iso()
         return _taxii_response({"versions": [version]})
 
@@ -495,8 +494,9 @@ def build_taxii_app(
 # Convenience runner
 # ---------------------------------------------------------------------------
 
+
 def run_taxii_server(
-    manager: "WorkspaceManager",
+    manager: WorkspaceManager,
     host: str = "127.0.0.1",
     port: int = 8090,
     api_key: str = "",
@@ -524,6 +524,7 @@ def run_taxii_server(
     _require_fastapi()
     import secrets
     import sys
+
     import uvicorn  # type: ignore[import]
 
     if not api_key:

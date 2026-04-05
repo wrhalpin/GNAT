@@ -32,7 +32,7 @@ indexer_password  =
 - `max_results` caps are applied to list operations that use Wazuh's
   `limit` parameter. Wazuh hard-caps at 500 per request; for larger
   result sets use the paginate helpers which handle offset iteration.
-  """
+"""
 
 import configparser
 from dataclasses import dataclass, field
@@ -42,22 +42,23 @@ from .exceptions import WazuhConfigError
 _REQUIRED = {"host", "username", "password"}
 
 _DEFAULTS: dict = {
-"port": "55000",
-"scheme": "https",
-"verify_ssl": "false",
-"timeout": "30",
-"max_results": "500",
-"token_expiry_secs": "900",
-"indexer_enabled": "false",
-"indexer_host": "",
-"indexer_port": "9200",
-"indexer_username": "admin",
-"indexer_password": "",
+    "port": "55000",
+    "scheme": "https",
+    "verify_ssl": "false",
+    "timeout": "30",
+    "max_results": "500",
+    "token_expiry_secs": "900",
+    "indexer_enabled": "false",
+    "indexer_host": "",
+    "indexer_port": "9200",
+    "indexer_username": "admin",
+    "indexer_password": "",
 }
 
 # Wazuh hard-caps list results at 500 per request
 
 WAZUH_MAX_LIMIT = 500
+
 
 @dataclass
 class WazuhConfig:
@@ -124,8 +125,7 @@ class WazuhConfig:
         _idx_host = self.indexer_host or self.host
         self.indexer_url = f"{self.scheme}://{_idx_host}:{self.indexer_port}"
         # Cap max_results at Wazuh's hard limit
-        if self.max_results > WAZUH_MAX_LIMIT:
-            self.max_results = WAZUH_MAX_LIMIT
+        self.max_results = min(self.max_results, WAZUH_MAX_LIMIT)
         self._validate()
 
     def _validate(self) -> None:
@@ -136,19 +136,15 @@ class WazuhConfig:
         if not self.password:
             raise WazuhConfigError("'password' is required in [wazuh] config.")
         if self.scheme not in ("http", "https"):
-            raise WazuhConfigError(
-                f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'."
-            )
-        if not (1 <= self.port <= 65535):
+            raise WazuhConfigError(f"Invalid scheme '{self.scheme}'. Must be 'http' or 'https'.")
+        if not 1 <= self.port <= 65535:
             raise WazuhConfigError(f"Invalid port {self.port}.")
         if self.timeout <= 0:
             raise WazuhConfigError("'timeout' must be a positive integer.")
         if self.token_expiry_secs <= 0:
             raise WazuhConfigError("'token_expiry_secs' must be a positive integer.")
         if self.indexer_enabled and not (self.indexer_host or self.host):
-            raise WazuhConfigError(
-                "'indexer_host' is required when 'indexer_enabled = true'."
-            )
+            raise WazuhConfigError("'indexer_host' is required when 'indexer_enabled = true'.")
 
     def endpoint(self, path: str) -> str:
         """Build a full Manager API URL."""
@@ -166,10 +162,11 @@ class WazuhConfig:
         """
         return max(self.token_expiry_secs * 0.20, 60.0)
 
+
 def load_wazuh_config(
     config: configparser.ConfigParser,
     section: str = "wazuh",
-    ) -> WazuhConfig:
+) -> WazuhConfig:
     """
     Parse [wazuh] section from a gnat.ini ConfigParser instance.
 
@@ -190,9 +187,7 @@ def load_wazuh_config(
         If the section is missing or required keys are absent.
     """
     if not config.has_section(section):
-        raise WazuhConfigError(
-            f"Configuration section '[{section}]' not found in gnat.ini."
-        )
+        raise WazuhConfigError(f"Configuration section '[{section}]' not found in gnat.ini.")
 
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))

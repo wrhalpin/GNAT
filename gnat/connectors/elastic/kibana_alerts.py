@@ -33,12 +33,13 @@ process.name                      -- process context
 
 - https://www.elastic.co/guide/en/security/current/alerts-api.html
 - https://www.elastic.co/guide/en/kibana/current/get-alerts-api.html
-  """
+"""
 
 from .client import ElasticClient
 
 _ALERTS_BASE = "api/detection_engine/signals"
 _KIBANA_ALERTS_BASE = "internal/rac/alerts"
+
 
 class KibanaAlertsCommands:
     """
@@ -103,9 +104,7 @@ class KibanaAlertsCommands:
 
         query = {"bool": {"must": must}} if must else {"match_all": {}}
         body = {"query": query, "size": size, "sort": [{"@timestamp": {"order": "desc"}}]}
-        response = self._client.kibana_post(
-            f"{_ALERTS_BASE}/search", body=body
-        )
+        response = self._client.kibana_post(f"{_ALERTS_BASE}/search", body=body)
         hits = response.get("hits", {}).get("hits", [])
         return [h.get("_source", {}) for h in hits]
 
@@ -127,9 +126,7 @@ class KibanaAlertsCommands:
             "query": {"term": {"_id": alert_id}},
             "size": 1,
         }
-        response = self._client.kibana_post(
-            f"{_ALERTS_BASE}/search", body=body
-        )
+        response = self._client.kibana_post(f"{_ALERTS_BASE}/search", body=body)
         hits = response.get("hits", {}).get("hits", [])
         return hits[0].get("_source") if hits else None
 
@@ -151,16 +148,10 @@ class KibanaAlertsCommands:
                         "size": 10,
                     }
                 }
-            }
+            },
         }
-        response = self._client.kibana_post(
-            f"{_ALERTS_BASE}/search", body=body
-        )
-        buckets = (
-            response.get("aggregations", {})
-            .get("by_status", {})
-            .get("buckets", [])
-        )
+        response = self._client.kibana_post(f"{_ALERTS_BASE}/search", body=body)
+        buckets = response.get("aggregations", {}).get("by_status", {}).get("buckets", [])
         return {b["key"]: b["doc_count"] for b in buckets}
 
     # ── Status management ──────────────────────────────────────────────────
@@ -187,16 +178,13 @@ class KibanaAlertsCommands:
         """
         if status not in ("open", "acknowledged", "closed"):
             raise ValueError(
-                f"Invalid status '{status}'. "
-                "Must be 'open', 'acknowledged', or 'closed'."
+                f"Invalid status '{status}'. Must be 'open', 'acknowledged', or 'closed'."
             )
         body = {
             "signal_ids": alert_ids,
             "status": status,
         }
-        return self._client.kibana_post(
-            f"{_ALERTS_BASE}/status", body=body
-        )
+        return self._client.kibana_post(f"{_ALERTS_BASE}/status", body=body)
 
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict:
         """Acknowledge a list of alerts."""
@@ -231,9 +219,7 @@ class KibanaAlertsCommands:
             Update result.
         """
         body = {"query": query, "status": status}
-        return self._client.kibana_post(
-            f"{_ALERTS_BASE}/status", body=body
-        )
+        return self._client.kibana_post(f"{_ALERTS_BASE}/status", body=body)
 
     # ── Normalisation helper ───────────────────────────────────────────────
 

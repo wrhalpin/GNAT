@@ -75,15 +75,17 @@ from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
 # Attribute name variants recognised as sector/industry — case-insensitive.
-_SECTOR_ATTR_NAMES: frozenset = frozenset({
-    "targeted industry",
-    "target industry",
-    "targeted sector",
-    "target sector",
-    "sector",
-    "targets",
-    "victim industry",
-})
+_SECTOR_ATTR_NAMES: frozenset = frozenset(
+    {
+        "targeted industry",
+        "target industry",
+        "targeted sector",
+        "target sector",
+        "sector",
+        "targets",
+        "victim industry",
+    }
+)
 
 
 class ThreatQClient(BaseClient, ConnectorMixin):

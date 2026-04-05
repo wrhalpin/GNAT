@@ -35,26 +35,29 @@ import json
 import re
 import time
 import urllib.parse
+from typing import Any, Optional
+
 import urllib3
-from typing import Any, Dict, List, Optional
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+
 from .auth import SplunkAuthManager
 from .config import SplunkConfig
 from .exceptions import (
-SplunkAPIError,
-SplunkAuthError,
-SplunkNotFoundError,
-SplunkRateLimitError,
+    SplunkAPIError,
+    SplunkAuthError,
+    SplunkNotFoundError,
+    SplunkRateLimitError,
 )
 
 # ── Retry configuration ───────────────────────────────────────────────────────
 
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 _MAX_RETRIES = 3
-_RETRY_BASE_DELAY = 1.0   # seconds
-_RETRY_BACKOFF = 2.0      # multiplier
+_RETRY_BASE_DELAY = 1.0  # seconds
+_RETRY_BACKOFF = 2.0  # multiplier
+
 
 class SplunkClient(BaseClient, ConnectorMixin):
     """
@@ -97,6 +100,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
             # Bypass validation — we allow no-credential construction for
             # testing; authenticate() will raise if no credentials present.
             import urllib.parse as _up
+
             parsed = _up.urlparse(host) if host else None
             config.host = (parsed.hostname or host) if parsed else host
             config.port = parsed.port or 8089 if parsed else 8089
@@ -138,22 +142,29 @@ class SplunkClient(BaseClient, ConnectorMixin):
         elif self.config.username and self.config.password:
             resp = self.post(
                 "/services/auth/login",
-                data={"username": self.config.username, "password": self.config.password,
-                      "output_mode": "json"},
+                data={
+                    "username": self.config.username,
+                    "password": self.config.password,
+                    "output_mode": "json",
+                },
             )
             session_key = (resp or {}).get("sessionKey", "")
             self._auth_headers["Authorization"] = f"Splunk {session_key}"
             self._authenticated = True
         else:
-            raise GNATClientError("SplunkClient: no credentials provided (no token or username/password).")
+            raise GNATClientError(
+                "SplunkClient: no credentials provided (no token or username/password)."
+            )
 
-    def post_raw(self, url: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def post_raw(self, url: str, data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """POST form-encoded data to an absolute URL and return parsed JSON."""
-        import urllib3
+        import urllib3 as _urllib3
+
         encoded = urllib.parse.urlencode(data or {}).encode("utf-8")
-        pool = urllib3.PoolManager()
+        pool = _urllib3.PoolManager()
         resp = pool.request(
-            "POST", url,
+            "POST",
+            url,
             body=encoded,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -170,7 +181,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         except Exception:
             return False
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a single Splunk object by ID and return as a STIX dict.
 
@@ -191,16 +202,19 @@ class SplunkClient(BaseClient, ConnectorMixin):
                 )
             return self.to_stix(entries[0].get("content", entries[0]))
         # observed-data: search for notable event by ID
-        spl = f"search index=notable event_id=\"{object_id}\" | head 1"
+        spl = f'search index=notable event_id="{object_id}" | head 1'
         rows = self._run_oneshot_search(spl)
         if not rows:
-            raise GNATClientError(
-                f"Splunk notable event {object_id!r} not found.", status=404
-            )
+            raise GNATClientError(f"Splunk notable event {object_id!r} not found.", status=404)
         return self.to_stix(rows[0])
 
-    def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         """
         Return a list of STIX objects from Splunk.
 
@@ -221,7 +235,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         rows = self._run_oneshot_search(spl)
         return [self.to_stix(row) for row in rows]
 
-    def _run_oneshot_search(self, spl: str) -> List[Dict[str, Any]]:
+    def _run_oneshot_search(self, spl: str) -> list[dict[str, Any]]:
         """
         Execute a blocking Splunk one-shot search and return result rows.
 
@@ -235,23 +249,28 @@ class SplunkClient(BaseClient, ConnectorMixin):
         )
         return (resp or {}).get("results", [])
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError("SplunkClient: upsert not supported via generic interface.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         raise GNATClientError("SplunkClient: delete not supported via generic interface.")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert a Splunk event row to a minimal STIX dict."""
         import uuid
+
         # Notable event (rule_name present)
         if "rule_name" in native:
-            uid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(native.get("event_id", native.get("rule_name", "")))))
+            uid = str(
+                uuid.uuid5(
+                    uuid.NAMESPACE_DNS, str(native.get("event_id", native.get("rule_name", "")))
+                )
+            )
             return {
                 "type": "indicator",
                 "id": f"indicator--{uid}",
                 "name": native.get("rule_name", ""),
-                "pattern": f"[network-traffic:dst_ref.type = 'ipv4-addr']",
+                "pattern": "[network-traffic:dst_ref.type = 'ipv4-addr']",
                 "pattern_type": "stix",
                 "created": native.get("_time", ""),
                 "modified": native.get("_time", ""),
@@ -279,7 +298,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
             "modified": native.get("_time", ""),
         }
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """Convert a STIX indicator dict to a Splunk threat-intel row."""
         pattern = stix_dict.get("pattern", "")
         ioc_type = "unknown"
@@ -580,8 +599,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
                         headers.update(extra_headers)
                     continue
                 raise SplunkAuthError(
-                    "Splunk returned 401 after token refresh. "
-                    "Check credentials or token expiry."
+                    "Splunk returned 401 after token refresh. Check credentials or token expiry."
                 )
 
             # ── Rate limit ─────────────────────────────────────────────
@@ -612,14 +630,13 @@ class SplunkClient(BaseClient, ConnectorMixin):
 
             if response.status == 403:
                 raise SplunkAuthError(
-                    f"Permission denied: {url} (HTTP 403). "
-                    "Check the token's capability set."
+                    f"Permission denied: {url} (HTTP 403). Check the token's capability set."
                 )
 
             if response.status not in (200, 201):
                 messages = self._extract_error_messages(response.data)
                 raise SplunkAPIError(
-                    f"Unexpected response from Splunk.",
+                    "Unexpected response from Splunk.",
                     status_code=response.status,
                     endpoint=url,
                     messages=messages,
@@ -654,6 +671,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         except Exception:
             return []
 
+
 @staticmethod
 def _parse_json(data: bytes, url: str) -> dict:
     try:
@@ -663,6 +681,7 @@ def _parse_json(data: bytes, url: str) -> dict:
             f"Failed to parse JSON response from {url}: {exc}",
             endpoint=url,
         ) from exc
+
 
 @staticmethod
 def _extract_error_messages(data: bytes) -> list[str]:

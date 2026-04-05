@@ -22,7 +22,7 @@ Configure via ``[nlp]`` in ``config.ini``::
     model   = claude-sonnet-4-6
 """
 
-from gnat.nlp.query_spec import QuerySpec
 from gnat.nlp.parser import NLPQueryEngine
+from gnat.nlp.query_spec import QuerySpec
 
 __all__ = ["QuerySpec", "NLPQueryEngine"]

@@ -35,26 +35,31 @@ Configuration (gnat.ini):
 """
 
 import configparser
+import contextlib
 import json
 import time
 import urllib.parse
-import urllib3
-from dataclasses import dataclass, field
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+import urllib3
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
+
 
 class OSSIMError(Exception):
     pass
 
+
 class OSSIMConfigError(OSSIMError):
     pass
 
+
 class OSSIMAuthError(OSSIMError):
     pass
+
 
 class OSSIMAPIError(OSSIMError):
     def __init__(self, message, status_code=None, endpoint=None):
@@ -62,14 +67,17 @@ class OSSIMAPIError(OSSIMError):
         self.status_code = status_code
         self.endpoint = endpoint
 
+
 class OSSIMNotFoundError(OSSIMAPIError):
     pass
+
 
 class OSSIMSTIXError(OSSIMError):
     pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class OSSIMConfig:
@@ -99,13 +107,10 @@ class OSSIMConfig:
         }
 
 
-def load_ossim_config(
-    config: configparser.ConfigParser, section: str = "ossim"
-) -> OSSIMConfig:
+def load_ossim_config(config: configparser.ConfigParser, section: str = "ossim") -> OSSIMConfig:
     if not config.has_section(section):
         raise OSSIMConfigError(f"Section '[{section}]' not found.")
-    raw = {"url": "", "api_key": "", "verify_ssl": "false",
-           "timeout": "30", "max_results": "50"}
+    raw = {"url": "", "api_key": "", "verify_ssl": "false", "timeout": "30", "max_results": "50"}
     raw.update(dict(config.items(section)))
     missing = [k for k in ("url", "api_key") if not raw[k].strip()]
     if missing:
@@ -121,6 +126,7 @@ def load_ossim_config(
 
 # ── Client ────────────────────────────────────────────────────────────────────
 
+
 class OSSIMClient:
     """HTTP client for the OSSIM REST API."""
 
@@ -130,9 +136,14 @@ class OSSIMClient:
         self.config = config
         self._http = self._build_pool()
 
-    def __enter__(self): return self
-    def __exit__(self, *_): self.close()
-    def close(self): self._http.clear()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def close(self):
+        self._http.clear()
 
     def get(self, path: str, params: dict | None = None) -> dict | list:
         url = self.config.endpoint(path)
@@ -178,9 +189,12 @@ class OSSIMClient:
                 break
 
     def _build_pool(self) -> urllib3.PoolManager:
-        kw = {"num_pools": 4, "maxsize": 10,
-              "timeout": urllib3.Timeout(connect=10.0, read=float(self.config.timeout)),
-              "retries": urllib3.Retry(total=0, raise_on_status=False)}
+        kw = {
+            "num_pools": 4,
+            "maxsize": 10,
+            "timeout": urllib3.Timeout(connect=10.0, read=float(self.config.timeout)),
+            "retries": urllib3.Retry(total=0, raise_on_status=False),
+        }
         if not self.config.verify_ssl:
             kw["cert_reqs"] = "CERT_NONE"
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -197,16 +211,18 @@ class OSSIMClient:
                 resp = self._http.request(method, url, body=encoded, headers=headers)
             except urllib3.exceptions.HTTPError as e:
                 if attempt < 3:
-                    time.sleep(delay); delay *= 2; continue
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
                 raise OSSIMAPIError(str(e), endpoint=url) from e
             if resp.status in (401, 403):
-                raise OSSIMAuthError(
-                    f"Authentication failed (HTTP {resp.status}). Check api_key."
-                )
+                raise OSSIMAuthError(f"Authentication failed (HTTP {resp.status}). Check api_key.")
             if resp.status == 404:
                 raise OSSIMNotFoundError(f"Not found: {url}", 404, url)
             if resp.status in self._RETRYABLE and attempt < 3:
-                time.sleep(delay); delay *= 2; continue
+                time.sleep(delay)
+                delay *= 2
+                continue
             if resp.status not in (200, 201, 204):
                 raise OSSIMAPIError(f"HTTP {resp.status}", resp.status, url)
             if resp.status == 204 or not resp.data:
@@ -219,6 +235,7 @@ class OSSIMClient:
 
 
 # ── Alarm Commands ────────────────────────────────────────────────────────────
+
 
 class OSSIMAlarmCommands:
     """Alarm management operations — OSSIM's primary security object."""
@@ -252,9 +269,7 @@ class OSSIMAlarmCommands:
         result = self._client.get("alarms", params=params)
         return result.get("data", [])
 
-    def iter_all_alarms(
-        self, status: str | None = None
-    ) -> Iterator[dict]:
+    def iter_all_alarms(self, status: str | None = None) -> Iterator[dict]:
         """Generator yielding all alarms."""
         params: dict = {}
         if status:
@@ -303,6 +318,7 @@ class OSSIMAlarmCommands:
 
 # ── Event Commands ────────────────────────────────────────────────────────────
 
+
 class OSSIMEventCommands:
     """Raw security event operations."""
 
@@ -329,6 +345,7 @@ class OSSIMEventCommands:
 
 # ── Asset Commands ────────────────────────────────────────────────────────────
 
+
 class OSSIMAssetCommands:
     """Asset / host inventory operations."""
 
@@ -353,6 +370,7 @@ class OSSIMAssetCommands:
 
 
 # ── Sensor Commands ───────────────────────────────────────────────────────────
+
 
 class OSSIMSensorCommands:
     """Sensor node inventory."""
@@ -386,11 +404,15 @@ class OSSIMSTIXMapper:
 
         for ip in (alarm.get("src_ip"), alarm.get("dst_ip")):
             if ip:
-                obj = {"type": "ipv4-addr",
-                       "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                       "spec_version": "2.1", "value": ip}
+                obj = {
+                    "type": "ipv4-addr",
+                    "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
+                    "spec_version": "2.1",
+                    "value": ip,
+                }
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         src_p = alarm.get("src_port")
@@ -401,37 +423,50 @@ class OSSIMSTIXMapper:
             if nid not in seen:
                 seen.add(nid)
                 nt: dict = {
-                    "type": "network-traffic", "id": nid, "spec_version": "2.1",
+                    "type": "network-traffic",
+                    "id": nid,
+                    "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alarm['src_ip'])}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alarm['dst_ip'])}",
                     "protocols": [str(alarm.get("protocol", "tcp")).lower()],
                 }
                 if src_p:
-                    try: nt["src_port"] = int(src_p)
-                    except (ValueError, TypeError): pass
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["src_port"] = int(src_p)
                 if dst_p:
-                    try: nt["dst_port"] = int(dst_p)
-                    except (ValueError, TypeError): pass
-                objects.append(nt); refs.append(nid)
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["dst_port"] = int(dst_p)
+                objects.append(nt)
+                refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data", "id": obs_id, "spec_version": "2.1",
-            "created": now, "modified": now,
-            "first_observed": ts, "last_observed": ts,
-            "number_observed": max(1, alarm.get("event_count", 1)),
-            "object_refs": refs,
-            "x_ossim_alarm": {
-                "alarm_id": alarm.get("id"),
-                "name": alarm.get("name"),
-                "priority": alarm.get("priority"),
-                "severity": alarm.get("severity"),
-                "status": alarm.get("status"),
-                "sensor": alarm.get("sensor"),
-            },
-        })
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": max(1, alarm.get("event_count", 1)),
+                "object_refs": refs,
+                "x_ossim_alarm": {
+                    "alarm_id": alarm.get("id"),
+                    "name": alarm.get("name"),
+                    "priority": alarm.get("priority"),
+                    "severity": alarm.get("severity"),
+                    "status": alarm.get("status"),
+                    "sensor": alarm.get("sensor"),
+                },
+            }
+        )
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     def alarms_to_stix_bundle(self, alarms: list[dict]) -> dict:
         all_objects: list[dict] = []
@@ -439,13 +474,19 @@ class OSSIMSTIXMapper:
         for a in alarms:
             for obj in self.alarm_to_stix_bundle(a).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": all_objects}
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": all_objects,
+        }
 
 
 def _det_uuid(t: str, v: str) -> str:
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
+
 
 def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

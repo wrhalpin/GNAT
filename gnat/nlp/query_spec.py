@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional
 
 
 @dataclass
@@ -41,22 +40,22 @@ class QuerySpec:
         The original query string, preserved for logging / debugging.
     """
 
-    entities:   List[str]       = field(default_factory=list)
-    ioc_types:  List[str]       = field(default_factory=list)
-    since:      Optional[datetime] = None
-    until:      Optional[datetime] = None
-    platforms:  List[str]       = field(default_factory=list)
-    limit:      int             = 100
-    raw_query:  str             = ""
+    entities: list[str] = field(default_factory=list)
+    ioc_types: list[str] = field(default_factory=list)
+    since: datetime | None = None
+    until: datetime | None = None
+    platforms: list[str] = field(default_factory=list)
+    limit: int = 100
+    raw_query: str = ""
 
     def to_dict(self) -> dict:
         """Serialise to a plain dict (for logging and CLI output)."""
         return {
-            "entities":  self.entities,
+            "entities": self.entities,
             "ioc_types": self.ioc_types,
-            "since":     self.since.isoformat() if self.since else None,
-            "until":     self.until.isoformat() if self.until else None,
+            "since": self.since.isoformat() if self.since else None,
+            "until": self.until.isoformat() if self.until else None,
             "platforms": self.platforms,
-            "limit":     self.limit,
+            "limit": self.limit,
             "raw_query": self.raw_query,
         }

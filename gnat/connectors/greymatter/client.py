@@ -91,11 +91,11 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         "ipv4":   "[ipv4-addr:value = '{v}']",
         "ipv6":   "[ipv6-addr:value = '{v}']",
         "domain": "[domain-name:value = '{v}']",
-        "url":    "[url:value = '{v}']",
-        "md5":    "[file:hashes.MD5 = '{v}']",
-        "sha1":   "[file:hashes.SHA-1 = '{v}']",
+        "url": "[url:value = '{v}']",
+        "md5": "[file:hashes.MD5 = '{v}']",
+        "sha1": "[file:hashes.SHA-1 = '{v}']",
         "sha256": "[file:hashes.SHA-256 = '{v}']",
-        "email":  "[email-addr:value = '{v}']",
+        "email": "[email-addr:value = '{v}']",
     }
 
     def __init__(
@@ -106,7 +106,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ):
         super().__init__(host=host, **kwargs)
-        self._client_id     = client_id
+        self._client_id = client_id
         self._client_secret = client_secret
 
     # ── Authentication ─────────────────────────────────────────────────────
@@ -123,8 +123,8 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         resp = self.post(
             "/v1/auth/token",
             data={
-                "grant_type":    "client_credentials",
-                "client_id":     self._client_id,
+                "grant_type": "client_credentials",
+                "client_id": self._client_id,
                 "client_secret": self._client_secret,
             },
         )
@@ -152,7 +152,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             GreyMatter entity UUID (or STIX id — the UUID portion is extracted).
         """
         resource = self._resolve(stix_type)
-        gm_id    = self._to_gm_id(object_id)
+        gm_id = self._to_gm_id(object_id)
         return self.get(f"/v1/{resource}/{gm_id}")
 
     def list_objects(
@@ -197,7 +197,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             ``linked_cases`` is merged into *payload* before the request.
         """
         resource = self._resolve(stix_type)
-        gm_id    = payload.pop("id", None)
+        gm_id = payload.pop("id", None)
         if linked_cases:
             payload["linked_cases"] = linked_cases
         if gm_id:
@@ -235,20 +235,20 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         ).format(v=value.replace("'", "\\'"))
 
         return {
-            "type":            "indicator",
-            "id":              f"indicator--{data.get('id', '')}",
-            "name":            value,
-            "description":     data.get("description", ""),
-            "pattern":         pattern,
-            "pattern_type":    "stix",
-            "created":         data.get("created_at", ""),
-            "modified":        data.get("updated_at", ""),
+            "type": "indicator",
+            "id": f"indicator--{data.get('id', '')}",
+            "name": value,
+            "description": data.get("description", ""),
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": data.get("created_at", ""),
+            "modified": data.get("updated_at", ""),
             "indicator_types": [data.get("classification", "unknown")],
-            "confidence":      data.get("confidence", 50),
-            "x_gm_type":       gm_type,
-            "x_gm_tags":       data.get("tags", []),
-            "x_gm_severity":   data.get("severity", ""),
-            "x_tlp":           data.get("tlp", "white"),
+            "confidence": data.get("confidence", 50),
+            "x_gm_type": gm_type,
+            "x_gm_tags": data.get("tags", []),
+            "x_gm_severity": data.get("severity", ""),
+            "x_tlp": data.get("tlp", "white"),
         }
 
     @staticmethod
@@ -289,14 +289,14 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         """
         pattern = stix_dict.get("pattern", "")
         gm_type = self._infer_gm_type(pattern)
-        value   = self._extract_value(pattern)
+        value = self._extract_value(pattern)
         return {
-            "type":        gm_type,
-            "value":       value or stix_dict.get("name", ""),
+            "type": gm_type,
+            "value": value or stix_dict.get("name", ""),
             "description": stix_dict.get("description", ""),
-            "confidence":  stix_dict.get("confidence", 50),
-            "tlp":         stix_dict.get("x_tlp", "white"),
-            "tags":        stix_dict.get("x_gm_tags", []),
+            "confidence": stix_dict.get("confidence", 50),
+            "tlp": stix_dict.get("x_tlp", "white"),
+            "tags": stix_dict.get("x_gm_tags", []),
         }
 
     # ── Investigation linking ─────────────────────────────────────────────
@@ -330,15 +330,15 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         GNATClientError
             If the link request fails.
         """
-        gm_type  = self._infer_gm_type(stix_obj.get("pattern", ""))
-        value    = self._extract_value(stix_obj.get("pattern", ""))
+        gm_type = self._infer_gm_type(stix_obj.get("pattern", ""))
+        value = self._extract_value(stix_obj.get("pattern", ""))
         if not value:
             value = stix_obj.get("name", "")
         payload = {
-            "case_id":     case_id,
-            "type":        gm_type,
-            "value":       value,
-            "stix_id":     stix_obj.get("id", ""),
+            "case_id": case_id,
+            "type": gm_type,
+            "value": value,
+            "stix_id": stix_obj.get("id", ""),
             "description": stix_obj.get("description", ""),
         }
         return self.post(f"/v1/incidents/{case_id}/linked_observables", json=payload)
@@ -384,5 +384,6 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     def _extract_value(pattern: str) -> str:
         """Pull the quoted value out of a simple STIX pattern."""
         import re
+
         m = re.search(r"=\s*'([^']+)'", pattern)
         return m.group(1) if m else ""

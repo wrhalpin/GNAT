@@ -144,7 +144,7 @@ class TestPyRefang:
 
 class TestPyExtractPatternValue:
     @pytest.mark.parametrize("pattern,expected", EXTRACT_CASES)
-    def test_extract(self, pattern: str, expected: "str | None") -> None:
+    def test_extract(self, pattern: str, expected: str | None) -> None:
         assert _py_extract_pattern_value(pattern) == expected
 
 
@@ -236,7 +236,7 @@ class TestRustParityRefang:
 @rust_only
 class TestRustParityExtract:
     @pytest.mark.parametrize("pattern,_expected", EXTRACT_CASES)
-    def test_parity(self, pattern: str, _expected: "str | None") -> None:
+    def test_parity(self, pattern: str, _expected: str | None) -> None:
         assert extract_pattern_value(pattern) == _py_extract_pattern_value(pattern)
 
 

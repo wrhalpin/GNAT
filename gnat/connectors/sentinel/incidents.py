@@ -30,9 +30,9 @@ References
 - https://learn.microsoft.com/en-us/rest/api/securityinsights/incidents
 """
 
-from typing import Iterator
-from .client import SentinelClient
+from collections.abc import Iterator
 
+from .client import SentinelClient
 
 _SEVERITY_MAP = {"High": 4, "Medium": 3, "Low": 2, "Informational": 1}
 
@@ -47,7 +47,7 @@ class SentinelIncidentCommands:
         self,
         status: str | None = None,
         severity: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
         order_by: str = "properties/createdTimeUtc desc",
         limit: int | None = None,
     ) -> list[dict]:
@@ -60,7 +60,7 @@ class SentinelIncidentCommands:
             'New', 'Active', or 'Closed'.
         severity : str | None
             'High', 'Medium', 'Low', or 'Informational'.
-        filter : str | None
+        filter_val : str | None
             OData $filter expression (appended to status/severity filters).
         order_by : str
             OData $orderby expression.
@@ -76,8 +76,8 @@ class SentinelIncidentCommands:
             odata_parts.append(f"properties/status eq '{status}'")
         if severity:
             odata_parts.append(f"properties/severity eq '{severity}'")
-        if filter:
-            odata_parts.append(filter)
+        if filter_val:
+            odata_parts.append(filter_val)
 
         params: dict = {"$orderby": order_by}
         if odata_parts:
@@ -85,7 +85,8 @@ class SentinelIncidentCommands:
 
         items = []
         for item in self._client.paginate(
-            "incidents", params=params,
+            "incidents",
+            params=params,
             page_size=min(limit or self._client.config.max_results, 100),
         ):
             items.append(item)
@@ -143,6 +144,7 @@ class SentinelIncidentCommands:
             Created incident resource.
         """
         import uuid
+
         incident_id = str(uuid.uuid4())
         props: dict = {
             "title": title,
@@ -151,7 +153,7 @@ class SentinelIncidentCommands:
             "description": description,
         }
         if labels:
-            props["labels"] = [{"labelName": l} for l in labels]
+            props["labels"] = [{"labelName": lbl} for lbl in labels]
         if owner_upn:
             props["owner"] = {"assignedTo": owner_upn}
         return self._client.put(
@@ -177,7 +179,7 @@ class SentinelIncidentCommands:
         current = self._client.get(f"incidents/{incident_id}")
         etag = current.get("etag", "")
         body = {**current, "properties": {**current.get("properties", {}), **updates}}
-        headers_extra = {"If-Match": etag} if etag else {}
+        _headers_extra = {"If-Match": etag} if etag else {}
         # Use put for Sentinel incidents (patch not always supported)
         return self._client.put(f"incidents/{incident_id}", body=body)
 
@@ -212,6 +214,7 @@ class SentinelIncidentCommands:
     def add_comment(self, incident_id: str, message: str) -> dict:
         """Add a comment to an incident."""
         import uuid
+
         comment_id = str(uuid.uuid4())
         return self._client.put(
             f"incidents/{incident_id}/comments/{comment_id}",
@@ -255,7 +258,7 @@ class SentinelIncidentCommands:
             "modified": props.get("lastModifiedTimeUtc"),
             "first_activity": props.get("firstActivityTimeUtc"),
             "last_activity": props.get("lastActivityTimeUtc"),
-            "labels": [l.get("labelName", "") for l in props.get("labels", [])],
+            "labels": [lbl.get("labelName", "") for lbl in props.get("labels", [])],
             "alert_count": props.get("additionalData", {}).get("alertsCount", 0),
             "_raw": incident,
         }

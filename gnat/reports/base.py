@@ -61,7 +61,7 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.orm.base import STIXBase
@@ -70,6 +70,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # AIMode
 # ---------------------------------------------------------------------------
+
 
 class AIMode(enum.Enum):
     """
@@ -90,14 +91,15 @@ class AIMode(enum.Enum):
         more than raw data density.
     """
 
-    NONE      = "none"
-    ASSISTED  = "assisted"
-    FULL      = "full"
+    NONE = "none"
+    ASSISTED = "assisted"
+    FULL = "full"
 
 
 # ---------------------------------------------------------------------------
 # ReportConfig
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ReportConfig:
@@ -154,36 +156,35 @@ class ReportConfig:
         INI section name this config was loaded from.
     """
 
-    report_type:          str
-    workspaces:           List[str]            = field(default_factory=lambda: ["_ctmsak_library"])
-    ai_mode:              AIMode               = AIMode.ASSISTED
-    sectors:              List[str]            = field(default_factory=list)
-    sector_match:         str                  = "any"
-    sector_strict:        bool                 = False
-    formats:              List[str]            = field(default_factory=lambda: ["pdf", "html"])
-    delivery:             List[str]            = field(default_factory=lambda: ["file"])
-    email_to:             List[str]            = field(default_factory=list)
-    email_subject:        str                  = "{report_type} Threat Intelligence Report — {date}"
-    sharepoint_url:       str                  = ""
-    output_dir:           str                  = "./reports"
-    schedule:             str                  = ""
-    window_days:          Optional[int]        = None
-    use_research_library: bool                 = True
-    title:                str                  = ""
-    org_name:             str                  = ""
-    config_name:          str                  = ""
+    report_type: str
+    workspaces: list[str] = field(default_factory=lambda: ["_ctmsak_library"])
+    ai_mode: AIMode = AIMode.ASSISTED
+    sectors: list[str] = field(default_factory=list)
+    sector_match: str = "any"
+    sector_strict: bool = False
+    formats: list[str] = field(default_factory=lambda: ["pdf", "html"])
+    delivery: list[str] = field(default_factory=lambda: ["file"])
+    email_to: list[str] = field(default_factory=list)
+    email_subject: str = "{report_type} Threat Intelligence Report — {date}"
+    sharepoint_url: str = ""
+    output_dir: str = "./reports"
+    schedule: str = ""
+    window_days: int | None = None
+    use_research_library: bool = True
+    title: str = ""
+    org_name: str = ""
+    config_name: str = ""
 
     def __post_init__(self) -> None:
         if self.window_days is None:
             self.window_days = {
-                "daily":  1,
+                "daily": 1,
                 "trends": 30,
                 "yearly": 365,
             }.get(self.report_type, 30)
 
     @classmethod
-    def from_ini(cls, section_name: str,
-                 config_path: Optional[str] = None) -> "ReportConfig":
+    def from_ini(cls, section_name: str, config_path: str | None = None) -> ReportConfig:
         """
         Load a ``ReportConfig`` from a ``[report.<name>]`` INI section.
 
@@ -195,6 +196,7 @@ class ReportConfig:
             Explicit path to config.ini.
         """
         from gnat.config import GNATConfig
+
         cfg = GNATConfig(config_path)
         try:
             s = cfg.get(section_name)
@@ -204,7 +206,7 @@ class ReportConfig:
                 "Add a [report.<name>] section — see module docstring for format."
             )
 
-        def _list(key: str, sep: str = ",") -> List[str]:
+        def _list(key: str, sep: str = ",") -> list[str]:
             raw = s.get(key, "")
             return [v.strip() for v in raw.split(sep) if v.strip()] if raw else []
 
@@ -216,25 +218,26 @@ class ReportConfig:
         }.get(ai_raw, AIMode.ASSISTED)
 
         return cls(
-            report_type          = s.get("report_type", "daily"),
-            workspaces           = _list("workspaces") or ["_ctmsak_library"],
-            ai_mode              = ai_mode,
-            sectors              = _list("sectors"),
-            sector_match         = s.get("sector_match", "any").lower(),
-            sector_strict        = s.get("sector_strict", "false").lower() == "true",
-            formats              = _list("formats") or ["pdf", "html"],
-            delivery             = _list("delivery") or ["file"],
-            email_to             = _list("email_to"),
-            email_subject        = s.get("email_subject",
-                                         "{report_type} Threat Intelligence Report — {date}"),
-            sharepoint_url       = s.get("sharepoint_url", ""),
-            output_dir           = s.get("output_dir", "./reports"),
-            schedule             = s.get("schedule", ""),
-            window_days          = int(s.get("window_days", 0)) or None,
-            use_research_library = s.get("use_research_library", "true").lower() == "true",
-            title                = s.get("title", ""),
-            org_name             = s.get("org_name", ""),
-            config_name          = section_name,
+            report_type=s.get("report_type", "daily"),
+            workspaces=_list("workspaces") or ["_ctmsak_library"],
+            ai_mode=ai_mode,
+            sectors=_list("sectors"),
+            sector_match=s.get("sector_match", "any").lower(),
+            sector_strict=s.get("sector_strict", "false").lower() == "true",
+            formats=_list("formats") or ["pdf", "html"],
+            delivery=_list("delivery") or ["file"],
+            email_to=_list("email_to"),
+            email_subject=s.get(
+                "email_subject", "{report_type} Threat Intelligence Report — {date}"
+            ),
+            sharepoint_url=s.get("sharepoint_url", ""),
+            output_dir=s.get("output_dir", "./reports"),
+            schedule=s.get("schedule", ""),
+            window_days=int(s.get("window_days", 0)) or None,
+            use_research_library=s.get("use_research_library", "true").lower() == "true",
+            title=s.get("title", ""),
+            org_name=s.get("org_name", ""),
+            config_name=section_name,
         )
 
 
@@ -242,7 +245,7 @@ class ReportConfig:
 # SectorFilter — canonical location is gnat.export.filters; re-exported here
 # ---------------------------------------------------------------------------
 
-from gnat.export.filters import SectorFilter as _SectorFilter
+from gnat.export.filters import SectorFilter as _SectorFilter  # noqa: E402
 
 
 class SectorFilter(_SectorFilter):
@@ -257,13 +260,12 @@ class SectorFilter(_SectorFilter):
     that are specific to the report layer.
     """
 
-    def apply(self, objects: List["STIXBase"]) -> List["STIXBase"]:
+    def apply(self, objects: list[STIXBase]) -> list[STIXBase]:
         """Return objects that pass the sector filter (list interface)."""
         return list(self(iter(objects)))
 
     @classmethod
-    def from_config(cls, config: "ReportConfig",
-                    ini_config_path: Optional[str] = None) -> "SectorFilter":
+    def from_config(cls, config: ReportConfig, ini_config_path: str | None = None) -> SectorFilter:
         """Construct from a ``ReportConfig``, loading aliases from INI."""
         return cls.from_ini(
             ini_config_path=ini_config_path,
@@ -276,6 +278,7 @@ class SectorFilter(_SectorFilter):
 # ---------------------------------------------------------------------------
 # Report document structure
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ReportSection:
@@ -299,11 +302,11 @@ class ReportSection:
         Rendering order within the document.
     """
 
-    title:        str
-    data:         Dict[str, Any]   = field(default_factory=dict)
-    narrative:    str              = ""
-    section_type: str              = "narrative"
-    order:        int              = 0
+    title: str
+    data: dict[str, Any] = field(default_factory=dict)
+    narrative: str = ""
+    section_type: str = "narrative"
+    order: int = 0
 
     @property
     def has_narrative(self) -> bool:
@@ -339,20 +342,20 @@ class ReportDocument:
         Additional context: total_objects, sector_filter, etc.
     """
 
-    title:        str
-    report_type:  str
-    generated_at: datetime
+    title: str
+    report_type: str
     period_start: datetime
-    period_end:   datetime
-    sections:     List[ReportSection]  = field(default_factory=list)
-    config:       Optional[ReportConfig] = None
-    metadata:     Dict[str, Any]       = field(default_factory=dict)
+    period_end: datetime
+    generated_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    sections: list[ReportSection] = field(default_factory=list)
+    config: ReportConfig | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_section(self, section: ReportSection) -> None:
         self.sections.append(section)
         self.sections.sort(key=lambda s: s.order)
 
-    def get_section(self, title: str) -> Optional[ReportSection]:
+    def get_section(self, title: str) -> ReportSection | None:
         for s in self.sections:
             if s.title.lower() == title.lower():
                 return s
@@ -366,6 +369,7 @@ class ReportDocument:
 # ---------------------------------------------------------------------------
 # ReportResult
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ReportResult:
@@ -392,17 +396,17 @@ class ReportResult:
     duration_seconds : float
     """
 
-    report_type:        str
-    title:              str
-    generated_at:       datetime
-    objects_analysed:   int        = 0
-    sections_generated: int        = 0
-    ai_calls_made:      int        = 0
-    formats_rendered:   List[str]  = field(default_factory=list)
-    files_written:      List[str]  = field(default_factory=list)
-    deliveries_sent:    List[str]  = field(default_factory=list)
-    errors:             List[str]  = field(default_factory=list)
-    duration_seconds:   float      = 0.0
+    report_type: str
+    title: str
+    generated_at: datetime
+    objects_analysed: int = 0
+    sections_generated: int = 0
+    ai_calls_made: int = 0
+    formats_rendered: list[str] = field(default_factory=list)
+    files_written: list[str] = field(default_factory=list)
+    deliveries_sent: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    duration_seconds: float = 0.0
 
     @property
     def success(self) -> bool:

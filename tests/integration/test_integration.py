@@ -23,40 +23,16 @@ Prerequisites (per target):
 """
 
 import os
+
 import pytest
 
 from gnat.client import GNATClient
 from gnat.orm.indicator import Indicator
 
-
-# ---------------------------------------------------------------------------
-# Pytest config
-# ---------------------------------------------------------------------------
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--run-integration",
-        action="store_true",
-        default=False,
-        help="Run integration tests against live APIs.",
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "integration: live API integration tests")
-
-
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--run-integration"):
-        skip = pytest.mark.skip(reason="Pass --run-integration to run live tests")
-        for item in items:
-            if "integration" in item.keywords:
-                item.add_marker(skip)
-
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="module")
 def cli():
@@ -69,9 +45,9 @@ def cli():
 # ThreatQ Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestThreatQIntegration:
-
     def test_ping(self, cli):
         cli.connect("threatq")
         assert cli.ping() is True
@@ -100,9 +76,9 @@ class TestThreatQIntegration:
 # CrowdStrike Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestCrowdStrikeIntegration:
-
     def test_ping(self, cli):
         cli.connect("crowdstrike")
         assert cli.ping() is True
@@ -117,9 +93,9 @@ class TestCrowdStrikeIntegration:
 # Proofpoint Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestProofpointIntegration:
-
     def test_ping(self, cli):
         cli.connect("proofpoint")
         assert cli.ping() is True
@@ -134,9 +110,9 @@ class TestProofpointIntegration:
 # Netskope Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestNetskopeIntegration:
-
     def test_ping(self, cli):
         cli.connect("netskope")
         assert cli.ping() is True
@@ -151,9 +127,9 @@ class TestNetskopeIntegration:
 # XSOAR Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestXSOARIntegration:
-
     def test_ping(self, cli):
         cli.connect("xsoar")
         assert cli.ping() is True
@@ -168,9 +144,9 @@ class TestXSOARIntegration:
 # Recorded Future Integration
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 class TestRecordedFutureIntegration:
-
     def test_ping(self, cli):
         cli.connect("recordedfuture")
         assert cli.ping() is True

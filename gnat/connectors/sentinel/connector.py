@@ -156,15 +156,13 @@ class SentinelConnector(BaseClient, ConnectorMixin):
             Maximum results. Default 100.
         """
         if stix_type == "observed-data":
-            incidents = self._incidents.list_incidents(top=limit)
+            incidents = self._incidents.list_incidents(limit=limit)
             return [
-                self._mapper.incident_to_stix_bundle(
-                    self._incidents.normalise_incident(inc)
-                )
+                self._mapper.incident_to_stix_bundle(self._incidents.normalise_incident(inc))
                 for inc in incidents
             ]
         # Default: TI indicators
-        indicators = self._ti.list_indicators(top=limit)
+        indicators = self._ti.list_indicators(limit=limit)
         return [
             self._mapper.ti_indicator_to_stix(self._ti.normalise_indicator(ind))
             for ind in indicators
@@ -192,9 +190,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
     def delete_object(self, stix_type: str, object_id: str, **kwargs) -> None:
         """Delete a Sentinel TI indicator by resource name."""
         if stix_type == "observed-data":
-            raise GNATClientError(
-                "Sentinel incidents cannot be deleted via this interface."
-            )
+            raise GNATClientError("Sentinel incidents cannot be deleted via this interface.")
         self._ti.delete_indicator(object_id)
 
     def to_stix(self, native_object: dict) -> dict:

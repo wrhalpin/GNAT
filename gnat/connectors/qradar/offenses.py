@@ -56,33 +56,43 @@ References
 - https://www.ibm.com/docs/en/qradar-siem/7.5?topic=api-siem-offenses
 """
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from .client import QRadarClient
 from .exceptions import QRadarNotFoundError
 
-
 # Offense type code → human-readable label
 OFFENSE_TYPE_LABELS = {
-    0: "Source IP", 1: "Destination IP", 2: "Event Name",
-    3: "Username", 4: "MAC Address", 5: "Log Source",
-    6: "Hostname", 7: "Port", 8: "Rule Group",
-    9: "MAC/Hostname", 10: "Log Source Type", 11: "Post NAT Source IP",
-    12: "Post NAT Destination IP", 13: "GTI Address",
+    0: "Source IP",
+    1: "Destination IP",
+    2: "Event Name",
+    3: "Username",
+    4: "MAC Address",
+    5: "Log Source",
+    6: "Hostname",
+    7: "Port",
+    8: "Rule Group",
+    9: "MAC/Hostname",
+    10: "Log Source Type",
+    11: "Post NAT Source IP",
+    12: "Post NAT Destination IP",
+    13: "GTI Address",
     14: "Username/Source IP",
 }
+
 
 # Magnitude → GNAT severity (0–4)
 def _magnitude_to_severity(magnitude: int) -> int:
     if magnitude >= 9:
-        return 4   # critical
+        return 4  # critical
     if magnitude >= 7:
-        return 3   # high
+        return 3  # high
     if magnitude >= 5:
-        return 2   # medium
+        return 2  # medium
     if magnitude >= 3:
-        return 1   # low
-    return 0       # informational
+        return 1  # low
+    return 0  # informational
+
 
 _SEVERITY_LABELS = {0: "informational", 1: "low", 2: "medium", 3: "high", 4: "critical"}
 
@@ -105,7 +115,7 @@ class QRadarOffenseCommands:
     def list_offenses(
         self,
         status: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
         sort: str | None = None,
         limit: int | None = None,
@@ -117,7 +127,7 @@ class QRadarOffenseCommands:
         ----------
         status : str | None
             'OPEN', 'HIDDEN', or 'CLOSED'. Defaults to config.offense_status.
-        filter : str | None
+        filter_val : str | None
             QRadar filter expression, e.g. ``"magnitude>5 and status=OPEN"``.
         fields : str | None
             Comma-separated field names to return (reduces response size).
@@ -135,12 +145,12 @@ class QRadarOffenseCommands:
         effective_status = status or self._client.config.offense_status
         if effective_status:
             params["filter"] = f"status={effective_status}"
-        if filter:
+        if filter_val:
             # Merge with status filter if both provided
             if "filter" in params:
-                params["filter"] = f"({params['filter']}) and ({filter})"
+                params["filter"] = f"({params['filter']}) and ({filter_val})"
             else:
-                params["filter"] = filter
+                params["filter"] = filter_val
         if fields:
             params["fields"] = fields
         if sort:
@@ -148,9 +158,7 @@ class QRadarOffenseCommands:
 
         page_size = min(limit or self._client.config.max_results, 500)
         items = []
-        for item in self._client.paginate(
-            "siem/offenses", params=params, page_size=page_size
-        ):
+        for item in self._client.paginate("siem/offenses", params=params, page_size=page_size):
             items.append(item)
             if limit and len(items) >= limit:
                 break
@@ -159,7 +167,7 @@ class QRadarOffenseCommands:
     def iter_all_offenses(
         self,
         status: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
     ) -> Iterator[dict]:
         """
@@ -169,7 +177,7 @@ class QRadarOffenseCommands:
         ----------
         status : str | None
             Offense status filter.
-        filter : str | None
+        filter_val : str | None
             Additional QRadar filter expression.
         fields : str | None
             Fields to return.
@@ -183,11 +191,11 @@ class QRadarOffenseCommands:
         effective_status = status or self._client.config.offense_status
         if effective_status:
             params["filter"] = f"status={effective_status}"
-        if filter:
+        if filter_val:
             if "filter" in params:
-                params["filter"] = f"({params['filter']}) and ({filter})"
+                params["filter"] = f"({params['filter']}) and ({filter_val})"
             else:
-                params["filter"] = filter
+                params["filter"] = filter_val
         if fields:
             params["fields"] = fields
 
@@ -223,7 +231,7 @@ class QRadarOffenseCommands:
     def get_offense_count(
         self,
         status: str | None = None,
-        filter: str | None = None,
+        filter_val: str | None = None,
     ) -> int:
         """
         Return the total count of offenses matching the given filters.
@@ -232,7 +240,7 @@ class QRadarOffenseCommands:
         ----------
         status : str | None
             Status filter.
-        filter : str | None
+        filter_val : str | None
             Additional filter expression.
 
         Returns
@@ -244,11 +252,11 @@ class QRadarOffenseCommands:
         effective_status = status or self._client.config.offense_status
         if effective_status:
             params["filter"] = f"status={effective_status}"
-        if filter:
+        if filter_val:
             if "filter" in params:
-                params["filter"] = f"({params['filter']}) and ({filter})"
+                params["filter"] = f"({params['filter']}) and ({filter_val})"
             else:
-                params["filter"] = filter
+                params["filter"] = filter_val
         return self._client.get_total_count("siem/offenses", params=params)
 
     # ── Status management ──────────────────────────────────────────────────
@@ -350,9 +358,7 @@ class QRadarOffenseCommands:
         list[dict]
             Note records with id, note_text, create_time, username.
         """
-        return list(
-            self._client.paginate(f"siem/offenses/{offense_id}/notes")
-        )
+        return list(self._client.paginate(f"siem/offenses/{offense_id}/notes"))
 
     def add_note(self, offense_id: int, note_text: str) -> dict:
         """
@@ -470,6 +476,10 @@ def _epoch_ms_to_iso(epoch_ms: int | None) -> str | None:
     if not epoch_ms:
         return None
     from datetime import datetime, timezone
-    return datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%S.%f"
-    )[:-3] + "Z"
+
+    return (
+        datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[
+            :-3
+        ]
+        + "Z"
+    )

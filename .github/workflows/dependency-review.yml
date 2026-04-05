@@ -1,0 +1,19 @@
+name: Dependency Review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run pip-audit
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: "."

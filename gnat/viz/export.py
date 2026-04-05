@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace
@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Power BI export
 # ---------------------------------------------------------------------------
+
 
 class PowerBIExporter:
     """
@@ -63,7 +64,7 @@ class PowerBIExporter:
         exporter.to_model_json("model.json")
     """
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         self._ws = workspace
 
     def to_xlsx(self, path: str) -> None:
@@ -78,30 +79,28 @@ class PowerBIExporter:
 
         Requires ``openpyxl``.
         """
-        from gnat.viz.tabular import _COLUMNS, _get_field, _coerce
+        from gnat.viz.tabular import _COLUMNS, _coerce, _get_field
 
         try:
             import openpyxl
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Alignment, Font, PatternFill
             from openpyxl.utils import get_column_letter
         except ImportError:
-            raise ImportError(
-                "openpyxl is required for Power BI export: pip install 'gnat[viz]'"
-            )
+            raise ImportError("openpyxl is required for Power BI export: pip install 'gnat[viz]'")
 
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
 
         header_fill = PatternFill("solid", fgColor="1a73e8")
         header_font = Font(bold=True, color="FFFFFF")
-        alt_fill    = PatternFill("solid", fgColor="EEF4FF")
+        alt_fill = PatternFill("solid", fgColor="EEF4FF")
 
-        def _write_sheet(sheet_name: str, columns: List[str], rows: List[List[Any]]) -> None:
+        def _write_sheet(sheet_name: str, columns: list[str], rows: list[list[Any]]) -> None:
             ws = wb.create_sheet(sheet_name[:31])
             ws.append(columns)
             for cell in ws[1]:
-                cell.font  = header_font
-                cell.fill  = header_fill
+                cell.font = header_font
+                cell.fill = header_fill
                 cell.alignment = Alignment(horizontal="center")
             for i, row in enumerate(rows, start=2):
                 ws.append(row)
@@ -112,12 +111,10 @@ class PowerBIExporter:
             for col_idx, col_name in enumerate(columns, start=1):
                 col_letter = get_column_letter(col_idx)
                 max_len = max((len(str(r[col_idx - 1])) for r in rows if r), default=0)
-                ws.column_dimensions[col_letter].width = min(
-                    max(len(col_name), max_len) + 4, 60
-                )
+                ws.column_dimensions[col_letter].width = min(max(len(col_name), max_len) + 4, 60)
 
         # ── Object sheets ──────────────────────────────────────────────────
-        by_type: Dict[str, list] = {}
+        by_type: dict[str, list] = {}
         for obj in self._ws.objects.values():
             by_type.setdefault(obj.stix_type, []).append(obj)
 
@@ -129,51 +126,67 @@ class PowerBIExporter:
             _write_sheet(stype.replace("-", " ").title(), cols, rows)
 
         # ── Relationships sheet (Power BI graph data model) ────────────────
-        rel_cols = ["id", "relationship_type", "source_ref", "source_name",
-                    "target_ref", "target_name", "x_enrichment_source",
-                    "x_enrichment_strategy", "created"]
+        rel_cols = [
+            "id",
+            "relationship_type",
+            "source_ref",
+            "source_name",
+            "target_ref",
+            "target_name",
+            "x_enrichment_source",
+            "x_enrichment_strategy",
+            "created",
+        ]
         rel_rows = []
         for obj in self._ws.objects.values():
             if obj.stix_type != "relationship":
                 continue
-            src_id   = obj._properties.get("source_ref", "")
-            tgt_id   = obj._properties.get("target_ref", "")
-            src_obj  = self._ws.objects.get(src_id)
-            tgt_obj  = self._ws.objects.get(tgt_id)
+            src_id = obj._properties.get("source_ref", "")
+            tgt_id = obj._properties.get("target_ref", "")
+            src_obj = self._ws.objects.get(src_id)
+            tgt_obj = self._ws.objects.get(tgt_id)
             src_name = getattr(src_obj, "name", src_id[:40]) if src_obj else src_id[:40]
             tgt_name = getattr(tgt_obj, "name", tgt_id[:40]) if tgt_obj else tgt_id[:40]
-            rel_rows.append([
-                obj.id,
-                obj._properties.get("relationship_type", ""),
-                src_id, src_name,
-                tgt_id, tgt_name,
-                obj._properties.get("x_enrichment_source", ""),
-                obj._properties.get("x_enrichment_strategy", ""),
-                obj._properties.get("created", ""),
-            ])
+            rel_rows.append(
+                [
+                    obj.id,
+                    obj._properties.get("relationship_type", ""),
+                    src_id,
+                    src_name,
+                    tgt_id,
+                    tgt_name,
+                    obj._properties.get("x_enrichment_source", ""),
+                    obj._properties.get("x_enrichment_strategy", ""),
+                    obj._properties.get("created", ""),
+                ]
+            )
         _write_sheet("Relationships", rel_cols, rel_rows)
 
         # ── Enrichment log sheet ───────────────────────────────────────────
         enrich_hist = self._ws.get_enrichment_history()
         if enrich_hist:
             enr_cols = ["stix_id", "source_platform", "strategy", "created_at"]
-            enr_rows = [[
-                e.get("stix_id", ""),
-                e.get("source_platform", ""),
-                e.get("strategy", ""),
-                e.get("created_at", ""),
-            ] for e in enrich_hist]
+            enr_rows = [
+                [
+                    e.get("stix_id", ""),
+                    e.get("source_platform", ""),
+                    e.get("strategy", ""),
+                    e.get("created_at", ""),
+                ]
+                for e in enrich_hist
+            ]
             _write_sheet("EnrichmentLog", enr_cols, enr_rows)
 
         # ── Summary sheet ──────────────────────────────────────────────────
         from datetime import datetime, timezone
+
         summary_ws = wb.create_sheet("Summary")
         summary_ws["A1"] = "GNAT Workspace Export"
         summary_ws["A1"].font = Font(bold=True, size=14)
         summary_data = [
-            ("Workspace",    self._ws.name),
-            ("Description",  getattr(self._ws, "description", "")),
-            ("Exported",     datetime.now(timezone.utc).isoformat()),
+            ("Workspace", self._ws.name),
+            ("Description", getattr(self._ws, "description", "")),
+            ("Exported", datetime.now(timezone.utc).isoformat()),
             ("Total Objects", len(self._ws)),
         ]
         for stype, objs in sorted(by_type.items()):
@@ -187,7 +200,7 @@ class PowerBIExporter:
         wb.save(path)
         logger.info("PowerBIExporter: Excel written to %s", path)
 
-    def to_model_json(self, path: Optional[str] = None) -> dict:
+    def to_model_json(self, path: str | None = None) -> dict:
         """
         Generate a Power BI data model descriptor JSON.
 
@@ -201,61 +214,66 @@ class PowerBIExporter:
         """
         from gnat.viz.tabular import _COLUMNS
 
-        by_type: Dict[str, list] = {}
+        by_type: dict[str, list] = {}
         for obj in self._ws.objects.values():
             by_type.setdefault(obj.stix_type, []).append(obj)
 
         tables = []
-        for stype, objs in sorted(by_type.items()):
+        for stype, _objs in sorted(by_type.items()):
             if stype == "relationship":
                 continue
             cols = _COLUMNS.get(stype, _COLUMNS["_default"])
-            tables.append({
-                "name":    stype.replace("-", " ").title(),
-                "columns": [
-                    {
-                        "name":     c,
-                        "dataType": "decimal" if c in (
-                            "confidence", "x_cvss_score", "x_rf_risk_score"
-                        ) else "text",
-                    }
-                    for c in cols
-                ],
-            })
+            tables.append(
+                {
+                    "name": stype.replace("-", " ").title(),
+                    "columns": [
+                        {
+                            "name": c,
+                            "dataType": "decimal"
+                            if c in ("confidence", "x_cvss_score", "x_rf_risk_score")
+                            else "text",
+                        }
+                        for c in cols
+                    ],
+                }
+            )
 
         # Relationships table
-        tables.append({
-            "name":    "Relationships",
-            "columns": [
-                {"name": "id",                     "dataType": "text"},
-                {"name": "relationship_type",       "dataType": "text"},
-                {"name": "source_ref",              "dataType": "text"},
-                {"name": "source_name",             "dataType": "text"},
-                {"name": "target_ref",              "dataType": "text"},
-                {"name": "target_name",             "dataType": "text"},
-                {"name": "x_enrichment_source",     "dataType": "text"},
-                {"name": "x_enrichment_strategy",   "dataType": "text"},
-                {"name": "created",                 "dataType": "dateTime"},
-            ],
-        })
+        tables.append(
+            {
+                "name": "Relationships",
+                "columns": [
+                    {"name": "id", "dataType": "text"},
+                    {"name": "relationship_type", "dataType": "text"},
+                    {"name": "source_ref", "dataType": "text"},
+                    {"name": "source_name", "dataType": "text"},
+                    {"name": "target_ref", "dataType": "text"},
+                    {"name": "target_name", "dataType": "text"},
+                    {"name": "x_enrichment_source", "dataType": "text"},
+                    {"name": "x_enrichment_strategy", "dataType": "text"},
+                    {"name": "created", "dataType": "dateTime"},
+                ],
+            }
+        )
 
         model = {
-            "name":   f"GNAT_{self._ws.name}",
+            "name": f"GNAT_{self._ws.name}",
             "tables": tables,
             "relationships": [
                 {
-                    "name":        "Relationships_to_Source",
-                    "fromTable":   "Relationships",
-                    "fromColumn":  "source_ref",
-                    "toTable":     t["name"],
-                    "toColumn":    "id",
+                    "name": "Relationships_to_Source",
+                    "fromTable": "Relationships",
+                    "fromColumn": "source_ref",
+                    "toTable": t["name"],
+                    "toColumn": "id",
                     "crossFilteringBehavior": "oneDirection",
                 }
-                for t in tables if t["name"] != "Relationships"
+                for t in tables
+                if t["name"] != "Relationships"
             ],
         }
         if path:
-            Path(path).write_text(json.dumps(model, indent=2))
+            Path(path).write_text(json.dumps(model, indent=2), encoding="utf-8")
             logger.info("PowerBIExporter: model JSON written to %s", path)
         return model
 
@@ -264,10 +282,11 @@ class PowerBIExporter:
 # Pre-built Grafana dashboard templates
 # ---------------------------------------------------------------------------
 
+
 def grafana_dashboard(
     workspace_name: str,
     datasource_name: str = "GNAT",
-    title: Optional[str] = None,
+    title: str | None = None,
 ) -> dict:
     """
     Generate a pre-built Grafana dashboard JSON for a GNAT workspace.
@@ -315,7 +334,8 @@ def grafana_dashboard(
     panels = [
         # ── 1. Object count by type ────────────────────────────────────────
         {
-            "id": 1, "title": "Object Count by Type",
+            "id": 1,
+            "title": "Object Count by Type",
             "type": "barchart",
             "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
             "datasource": ds,
@@ -328,7 +348,8 @@ def grafana_dashboard(
         },
         # ── 2. Indicator Risk Score timeline ──────────────────────────────
         {
-            "id": 2, "title": "Indicator RF Risk Scores",
+            "id": 2,
+            "title": "Indicator RF Risk Scores",
             "type": "timeseries",
             "gridPos": {"x": 8, "y": 0, "w": 16, "h": 8},
             "datasource": ds,
@@ -338,19 +359,21 @@ def grafana_dashboard(
                     "color": {"mode": "thresholds"},
                     "thresholds": {
                         "steps": [
-                            {"color": "green",  "value": None},
+                            {"color": "green", "value": None},
                             {"color": "yellow", "value": 25},
                             {"color": "orange", "value": 65},
-                            {"color": "red",    "value": 90},
+                            {"color": "red", "value": 90},
                         ]
                     },
-                    "min": 0, "max": 100,
+                    "min": 0,
+                    "max": 100,
                 }
             },
         },
         # ── 3. Vulnerability CVSS scores ──────────────────────────────────
         {
-            "id": 3, "title": "Vulnerability CVSS Scores",
+            "id": 3,
+            "title": "Vulnerability CVSS Scores",
             "type": "timeseries",
             "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
             "datasource": ds,
@@ -360,19 +383,21 @@ def grafana_dashboard(
                     "color": {"mode": "thresholds"},
                     "thresholds": {
                         "steps": [
-                            {"color": "green",  "value": None},
+                            {"color": "green", "value": None},
                             {"color": "yellow", "value": 4.0},
                             {"color": "orange", "value": 7.0},
-                            {"color": "red",    "value": 9.0},
+                            {"color": "red", "value": 9.0},
                         ]
                     },
-                    "min": 0, "max": 10,
+                    "min": 0,
+                    "max": 10,
                 }
             },
         },
         # ── 4. Indicator confidence ────────────────────────────────────────
         {
-            "id": 4, "title": "Indicator Confidence",
+            "id": 4,
+            "title": "Indicator Confidence",
             "type": "gauge",
             "gridPos": {"x": 12, "y": 8, "w": 4, "h": 8},
             "datasource": ds,
@@ -380,12 +405,13 @@ def grafana_dashboard(
             "options": {"reduceOptions": {"calcs": ["mean"]}},
             "fieldConfig": {
                 "defaults": {
-                    "min": 0, "max": 100,
+                    "min": 0,
+                    "max": 100,
                     "thresholds": {
                         "steps": [
-                            {"color": "red",    "value": None},
+                            {"color": "red", "value": None},
                             {"color": "yellow", "value": 40},
-                            {"color": "green",  "value": 70},
+                            {"color": "green", "value": 70},
                         ]
                     },
                 }
@@ -393,7 +419,8 @@ def grafana_dashboard(
         },
         # ── 5. Indicator table ─────────────────────────────────────────────
         {
-            "id": 5, "title": "Indicators",
+            "id": 5,
+            "title": "Indicators",
             "type": "table",
             "gridPos": {"x": 0, "y": 16, "w": 24, "h": 10},
             "datasource": ds,
@@ -405,7 +432,8 @@ def grafana_dashboard(
         },
         # ── 6. Relationships table ─────────────────────────────────────────
         {
-            "id": 6, "title": "Relationships",
+            "id": 6,
+            "title": "Relationships",
             "type": "table",
             "gridPos": {"x": 0, "y": 26, "w": 24, "h": 8},
             "datasource": ds,
@@ -416,33 +444,33 @@ def grafana_dashboard(
     return {
         "__inputs": [
             {
-                "name":        datasource_name,
-                "label":       "GNAT Datasource",
+                "name": datasource_name,
+                "label": "GNAT Datasource",
                 "description": "SimpleJSON datasource pointing at gnat viz serve",
-                "type":        "datasource",
-                "pluginId":    "simplejson",
-                "pluginName":  "SimpleJSON",
+                "type": "datasource",
+                "pluginId": "simplejson",
+                "pluginName": "SimpleJSON",
             }
         ],
         "annotations": {
             "list": [
                 {
                     "datasource": ds,
-                    "enable":     True,
-                    "name":       "Enrichment Events",
-                    "query":      workspace_name,
-                    "iconColor":  "blue",
+                    "enable": True,
+                    "name": "Enrichment Events",
+                    "query": workspace_name,
+                    "iconColor": "blue",
                 }
             ]
         },
-        "title":         title,
-        "uid":           f"ctmsak-{workspace_name}",
+        "title": title,
+        "uid": f"ctmsak-{workspace_name}",
         "schemaVersion": 38,
-        "version":       1,
-        "refresh":       "30s",
-        "time":          {"from": "now-30d", "to": "now"},
-        "panels":        panels,
-        "tags":          ["gnat", "threat-intelligence", workspace_name],
+        "version": 1,
+        "refresh": "30s",
+        "time": {"from": "now-30d", "to": "now"},
+        "panels": panels,
+        "tags": ["gnat", "threat-intelligence", workspace_name],
     }
 
 
@@ -450,7 +478,7 @@ def save_grafana_dashboard(
     workspace_name: str,
     path: str,
     datasource_name: str = "GNAT",
-    title: Optional[str] = None,
+    title: str | None = None,
 ) -> None:
     """
     Write a pre-built Grafana dashboard JSON file to disk.
@@ -463,7 +491,7 @@ def save_grafana_dashboard(
         Output ``.json`` file path.
     """
     dashboard = grafana_dashboard(workspace_name, datasource_name, title)
-    Path(path).write_text(json.dumps(dashboard, indent=2))
+    Path(path).write_text(json.dumps(dashboard, indent=2), encoding="utf-8")
     logger.info("Grafana dashboard JSON written to %s", path)
     print(f"Dashboard saved: {path}")
     print("To import: Grafana → Dashboards → Import → Upload JSON file")
@@ -533,15 +561,18 @@ def solr_dashboard(
                 "graphMode": "none",
             },
             "fieldConfig": {
-                "defaults": {"color": {"mode": "thresholds"},
-                              "thresholds": {"steps": [
-                                  {"color": "green", "value": 0},
-                                  {"color": "yellow", "value": 1000},
-                                  {"color": "red",   "value": 100000},
-                              ]}},
+                "defaults": {
+                    "color": {"mode": "thresholds"},
+                    "thresholds": {
+                        "steps": [
+                            {"color": "green", "value": 0},
+                            {"color": "yellow", "value": 1000},
+                            {"color": "red", "value": 100000},
+                        ]
+                    },
+                },
             },
         },
-
         # ── 2. Objects by STIX Type (bar chart) ──────────────────────────
         {
             "id": 2,
@@ -555,7 +586,6 @@ def solr_dashboard(
             },
             "options": {"xField": "STIX Type"},
         },
-
         # ── 3. Objects by Source Platform (bar chart) ─────────────────────
         {
             "id": 3,
@@ -569,7 +599,6 @@ def solr_dashboard(
             },
             "options": {"xField": "source_platform"},
         },
-
         # ── 4. Ingest rate (time-series docs/day) ─────────────────────────
         {
             "id": 4,
@@ -586,7 +615,6 @@ def solr_dashboard(
             },
             "options": {"tooltip": {"mode": "single"}},
         },
-
         # ── 5. Type × platform breakdown (table) ─────────────────────────
         {
             "id": 5,
@@ -597,7 +625,6 @@ def solr_dashboard(
             "targets": [_tbl("stats/type_counts", "A"), _tbl("stats/platform_counts", "B")],
             "options": {"sortBy": [{"displayName": "Doc Count", "desc": True}]},
         },
-
         # ── 6. Platform counts table ──────────────────────────────────────
         {
             "id": 6,
@@ -608,7 +635,6 @@ def solr_dashboard(
             "targets": [_tbl("stats/platform_counts")],
             "options": {"sortBy": [{"displayName": "Doc Count", "desc": True}]},
         },
-
         # ── 7. Search result table (variable-driven) ───────────────────────
         {
             "id": 7,
@@ -624,16 +650,16 @@ def solr_dashboard(
     ]
 
     return {
-        "uid":           "gnat-solr-index",
-        "title":         title,
+        "uid": "gnat-solr-index",
+        "title": title,
         "schemaVersion": 38,
-        "version":       1,
-        "refresh":       "1m",
-        "time":          {"from": "now-30d", "to": "now"},
-        "panels":        panels,
-        "tags":          ["gnat", "solr", "search", "threat-intelligence"],
-        "templating":    {"list": []},
-        "annotations":   {"list": []},
+        "version": 1,
+        "refresh": "1m",
+        "time": {"from": "now-30d", "to": "now"},
+        "panels": panels,
+        "tags": ["gnat", "solr", "search", "threat-intelligence"],
+        "templating": {"list": []},
+        "annotations": {"list": []},
     }
 
 
@@ -655,8 +681,8 @@ def save_solr_dashboard(
         Dashboard title.
     """
     dashboard = solr_dashboard(datasource_name=datasource_name, title=title)
-    Path(path).write_text(json.dumps(dashboard, indent=2))
+    Path(path).write_text(json.dumps(dashboard, indent=2), encoding="utf-8")
     logger.info("Solr dashboard JSON written to %s", path)
     print(f"Solr dashboard saved: {path}")
     print("To import: Grafana → Dashboards → Import → Upload JSON file")
-    print(f"Configure datasource: SimpleJSON → http://localhost:3001")
+    print("Configure datasource: SimpleJSON → http://localhost:3001")

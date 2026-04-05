@@ -47,16 +47,17 @@ with WazuhClient(cfg) as client:
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import WazuhAuthManager
 from .config import WazuhConfig
 from .exceptions import (
-WazuhAPIError,
-WazuhAuthError,
-WazuhNotFoundError,
-WazuhPermissionError,
-WazuhRateLimitError,
+    WazuhAPIError,
+    WazuhAuthError,
+    WazuhNotFoundError,
+    WazuhPermissionError,
+    WazuhRateLimitError,
 )
 
 _RETRYABLE_STATUS = {500, 502, 503, 504}
@@ -70,6 +71,7 @@ _WAZUH_ERR_TOKEN_EXPIRED = 4009
 _WAZUH_ERR_PERMISSION = 4000
 _WAZUH_ERR_AUTH = 4001
 _WAZUH_NOT_FOUND_CODES = {1002, 6001, 6061, 1750, 1802}
+
 
 class WazuhClient:
     """
@@ -224,6 +226,7 @@ class WazuhClient:
             Individual item dicts from affected_items.
         """
         from .config import WAZUH_MAX_LIMIT
+
         limit = min(page_size, WAZUH_MAX_LIMIT)
         base_params = dict(params or {})
         base_params["limit"] = limit

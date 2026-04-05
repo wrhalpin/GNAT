@@ -48,7 +48,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import urllib3
 
@@ -60,6 +60,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Null reader / mapper stubs (satisfy FeedJob.__init__ without being called)
 # ---------------------------------------------------------------------------
+
 
 class _NullReader:
     def read(self):
@@ -74,6 +75,7 @@ class _NullMapper:
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DriftReport:
@@ -98,13 +100,13 @@ class DriftReport:
         ISO 8601 timestamp when the baseline snapshot was captured.
     """
 
-    connector:            str
-    detected_at:          str
-    added_fields:         List[str]
-    removed_fields:       List[str]
-    type_changes:         Dict[str, Tuple[str, str]]
-    drift_ratio:          float
-    baseline_captured_at: Optional[str] = None
+    connector: str
+    detected_at: str
+    added_fields: list[str]
+    removed_fields: list[str]
+    type_changes: dict[str, tuple[str, str]]
+    drift_ratio: float
+    baseline_captured_at: str | None = None
 
     @property
     def is_significant(self) -> bool:
@@ -140,21 +142,21 @@ class SchemaSnapshot:
         Number of objects sampled to build the fingerprint.
     """
 
-    connector:    str
-    captured_at:  str
-    fields:       Dict[str, str]
+    connector: str
+    captured_at: str
+    fields: dict[str, str]
     sample_count: int = 1
 
     def to_dict(self) -> dict:
         return {
-            "connector":    self.connector,
-            "captured_at":  self.captured_at,
-            "fields":       self.fields,
+            "connector": self.connector,
+            "captured_at": self.captured_at,
+            "fields": self.fields,
             "sample_count": self.sample_count,
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "SchemaSnapshot":
+    def from_dict(cls, d: dict) -> SchemaSnapshot:
         return cls(
             connector=d["connector"],
             captured_at=d["captured_at"],
@@ -182,12 +184,12 @@ class HealthCheckResult:
         Whether a schema sample was obtained this run.
     """
 
-    connector:     str
-    reachable:     bool
-    response_ms:   float
-    error:         Optional[str]       = None
-    drift:         Optional[DriftReport] = None
-    schema_sampled: bool               = False
+    connector: str
+    reachable: bool
+    response_ms: float
+    error: str | None = None
+    drift: DriftReport | None = None
+    schema_sampled: bool = False
 
     @property
     def status(self) -> str:
@@ -213,9 +215,9 @@ class HealthRun:
         Number of webhook alerts successfully delivered.
     """
 
-    run_at:       str
-    checks:       List[HealthCheckResult] = field(default_factory=list)
-    alerts_sent:  int                     = 0
+    run_at: str
+    checks: list[HealthCheckResult] = field(default_factory=list)
+    alerts_sent: int = 0
 
     @property
     def healthy_count(self) -> int:
@@ -230,15 +232,13 @@ class HealthRun:
     @property
     def drift_count(self) -> int:
         """Number of connectors with significant schema drift this run."""
-        return sum(
-            1 for c in self.checks
-            if c.drift and c.drift.is_significant
-        )
+        return sum(1 for c in self.checks if c.drift and c.drift.is_significant)
 
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class HealthMonitorConfig:
@@ -248,33 +248,34 @@ class HealthMonitorConfig:
     Read from the ``[health_monitor]`` INI section via :meth:`from_ini`.
     """
 
-    enabled:          bool            = True
-    interval_minutes: int             = 60
-    alert_webhook:    Optional[str]   = None
-    drift_threshold:  float           = 0.2
-    snapshot_dir:     Optional[str]   = None
-    platforms:        Optional[List[str]] = None  # None = all configured
+    enabled: bool = True
+    interval_minutes: int = 60
+    alert_webhook: str | None = None
+    drift_threshold: float = 0.2
+    snapshot_dir: str | None = None
+    platforms: list[str] | None = None  # None = all configured
 
     @classmethod
-    def from_ini(cls, config_path: str) -> "HealthMonitorConfig":
+    def from_ini(cls, config_path: str) -> HealthMonitorConfig:
         """Read ``[health_monitor]`` from an INI file."""
         import configparser
+
         cp = configparser.ConfigParser()
         cp.read(config_path)
         if "health_monitor" not in cp:
             return cls()
         sec = cp["health_monitor"]
         platforms_raw = (sec.get("platforms", fallback="") or "").strip()
-        platforms: Optional[List[str]] = None
+        platforms: list[str] | None = None
         if platforms_raw and platforms_raw != "*":
             platforms = [p.strip() for p in platforms_raw.split(",") if p.strip()]
         return cls(
-            enabled          = sec.getboolean("enabled", fallback=True),
-            interval_minutes = sec.getint("interval_minutes", fallback=60),
-            alert_webhook    = sec.get("alert_webhook", fallback=None) or None,
-            drift_threshold  = float(sec.get("drift_threshold", fallback="0.2")),
-            snapshot_dir     = sec.get("snapshot_dir", fallback=None) or None,
-            platforms        = platforms,
+            enabled=sec.getboolean("enabled", fallback=True),
+            interval_minutes=sec.getint("interval_minutes", fallback=60),
+            alert_webhook=sec.get("alert_webhook", fallback=None) or None,
+            drift_threshold=float(sec.get("drift_threshold", fallback="0.2")),
+            snapshot_dir=sec.get("snapshot_dir", fallback=None) or None,
+            platforms=platforms,
         )
 
 
@@ -282,11 +283,12 @@ class HealthMonitorConfig:
 # Schema helpers
 # ---------------------------------------------------------------------------
 
+
 def _fingerprint_dict(
     obj: Any,
     prefix: str = "",
     max_depth: int = 4,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Flatten a nested dict to ``{dotted.path: python_type_name}``.
 
@@ -306,7 +308,7 @@ def _fingerprint_dict(
     """
     if not isinstance(obj, dict) or max_depth == 0:
         return {prefix: type(obj).__name__} if prefix else {}
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     for k, v in obj.items():
         key = f"{prefix}.{k}" if prefix else str(k)
         if isinstance(v, dict):
@@ -323,7 +325,7 @@ def _fingerprint_dict(
 def _compute_drift(
     connector: str,
     baseline: SchemaSnapshot,
-    current_fields: Dict[str, str],
+    current_fields: dict[str, str],
 ) -> DriftReport:
     """
     Compare *current_fields* against the stored *baseline* snapshot.
@@ -341,27 +343,27 @@ def _compute_drift(
     """
     old = set(baseline.fields.keys())
     new = set(current_fields.keys())
-    added   = sorted(new - old)
+    added = sorted(new - old)
     removed = sorted(old - new)
-    type_changes: Dict[str, Tuple[str, str]] = {
+    type_changes: dict[str, tuple[str, str]] = {
         k: (baseline.fields[k], current_fields[k])
         for k in (old & new)
         if baseline.fields[k] != current_fields[k]
     }
-    total     = max(len(old), 1)
+    total = max(len(old), 1)
     drift_ratio = (len(added) + len(removed) + len(type_changes)) / total
     return DriftReport(
-        connector            = connector,
-        detected_at          = _utcnow().isoformat(),
-        added_fields         = added,
-        removed_fields       = removed,
-        type_changes         = type_changes,
-        drift_ratio          = drift_ratio,
-        baseline_captured_at = baseline.captured_at,
+        connector=connector,
+        detected_at=_utcnow().isoformat(),
+        added_fields=added,
+        removed_fields=removed,
+        type_changes=type_changes,
+        drift_ratio=drift_ratio,
+        baseline_captured_at=baseline.captured_at,
     )
 
 
-def _try_sample_schema(connector: Any) -> Optional[Dict[str, str]]:
+def _try_sample_schema(connector: Any) -> dict[str, str] | None:
     """
     Attempt to obtain a schema fingerprint by calling ``list_objects()``
     with ``limit=1`` on common STIX types.
@@ -393,36 +395,35 @@ def _try_sample_schema(connector: Any) -> Optional[Dict[str, str]]:
 # Snapshot persistence
 # ---------------------------------------------------------------------------
 
+
 def _default_snapshot_dir() -> Path:
     return Path.home() / ".gnat" / "snapshots"
 
 
 def load_snapshot(
     connector: str,
-    snapshot_dir: Optional[str] = None,
-) -> Optional[SchemaSnapshot]:
+    snapshot_dir: str | None = None,
+) -> SchemaSnapshot | None:
     """
     Load a stored schema snapshot for *connector*.
 
     Returns ``None`` if no baseline exists yet or the file cannot be read.
     """
-    d    = Path(snapshot_dir) if snapshot_dir else _default_snapshot_dir()
+    d = Path(snapshot_dir) if snapshot_dir else _default_snapshot_dir()
     path = d / f"{connector}.json"
     if not path.exists():
         return None
     try:
         return SchemaSnapshot.from_dict(json.loads(path.read_text(encoding="utf-8")))
     except (json.JSONDecodeError, KeyError, OSError) as exc:
-        logger.warning(
-            "health_monitor: could not load snapshot for %r: %s", connector, exc
-        )
+        logger.warning("health_monitor: could not load snapshot for %r: %s", connector, exc)
         return None
 
 
 def save_snapshot(
     connector: str,
-    fields: Dict[str, str],
-    snapshot_dir: Optional[str] = None,
+    fields: dict[str, str],
+    snapshot_dir: str | None = None,
 ) -> None:
     """
     Persist a schema snapshot for *connector*.
@@ -432,9 +433,9 @@ def save_snapshot(
     d = Path(snapshot_dir) if snapshot_dir else _default_snapshot_dir()
     d.mkdir(parents=True, exist_ok=True)
     snapshot = SchemaSnapshot(
-        connector   = connector,
-        captured_at = _utcnow().isoformat(),
-        fields      = fields,
+        connector=connector,
+        captured_at=_utcnow().isoformat(),
+        fields=fields,
     )
     path = d / f"{connector}.json"
     path.write_text(json.dumps(snapshot.to_dict(), indent=2), encoding="utf-8")
@@ -443,6 +444,7 @@ def save_snapshot(
 # ---------------------------------------------------------------------------
 # Alert delivery
 # ---------------------------------------------------------------------------
+
 
 def _post_slack_webhook(
     webhook_url: str,
@@ -493,9 +495,7 @@ def _format_alert(run: HealthRun, drift_threshold: float = 0.0) -> str:
                 msg += f" — {c.error}"
             lines.append(msg)
         elif c.drift and c.drift.drift_ratio >= drift_threshold and c.drift.is_significant:
-            lines.append(
-                f"  :warning: *{c.connector}* schema drift — {c.drift.summary()}"
-            )
+            lines.append(f"  :warning: *{c.connector}* schema drift — {c.drift.summary()}")
     if len(lines) == 1:
         lines.append("  All connectors healthy.")
     return "\n".join(lines)
@@ -504,6 +504,7 @@ def _format_alert(run: HealthRun, drift_threshold: float = 0.0) -> str:
 # ---------------------------------------------------------------------------
 # ConnectorHealthJob
 # ---------------------------------------------------------------------------
+
 
 class ConnectorHealthJob(FeedJob):
     """
@@ -535,45 +536,45 @@ class ConnectorHealthJob(FeedJob):
 
     def __init__(
         self,
-        connectors: Dict[str, Any],
+        connectors: dict[str, Any],
         interval_minutes: int = 60,
-        cron: Optional[str] = None,
-        alert_webhook: Optional[str] = None,
+        cron: str | None = None,
+        alert_webhook: str | None = None,
         drift_threshold: float = 0.2,
-        snapshot_dir: Optional[str] = None,
+        snapshot_dir: str | None = None,
         sample_schema: bool = True,
         job_id: str = "connector-health",
         enabled: bool = True,
     ) -> None:
-        _stub_reader = lambda ctx: _NullReader()   # noqa: E731
-        _stub_mapper = lambda ctx: _NullMapper()   # noqa: E731
+        _stub_reader = lambda ctx: _NullReader()  # noqa: E731
+        _stub_mapper = lambda ctx: _NullMapper()  # noqa: E731
 
         if cron:
             super().__init__(
-                job_id         = job_id,
-                reader_factory = _stub_reader,
-                mapper_factory = _stub_mapper,
-                cron           = cron,
-                enabled        = enabled,
+                job_id=job_id,
+                reader_factory=_stub_reader,
+                mapper_factory=_stub_mapper,
+                cron=cron,
+                enabled=enabled,
             )
         else:
             super().__init__(
-                job_id           = job_id,
-                reader_factory   = _stub_reader,
-                mapper_factory   = _stub_mapper,
-                interval_seconds = interval_minutes * 60,
-                enabled          = enabled,
+                job_id=job_id,
+                reader_factory=_stub_reader,
+                mapper_factory=_stub_mapper,
+                interval_seconds=interval_minutes * 60,
+                enabled=enabled,
             )
 
-        self._connectors      = dict(connectors)
-        self._alert_webhook   = alert_webhook
+        self._connectors = dict(connectors)
+        self._alert_webhook = alert_webhook
         self._drift_threshold = drift_threshold
-        self._snapshot_dir    = snapshot_dir
-        self._sample_schema   = sample_schema
+        self._snapshot_dir = snapshot_dir
+        self._sample_schema = sample_schema
 
     # ── execute() override ─────────────────────────────────────────────────
 
-    def execute(self, scheduled_at: Optional[datetime] = None) -> RunRecord:
+    def execute(self, scheduled_at: datetime | None = None) -> RunRecord:
         """
         Execute one health-check run synchronously.
 
@@ -586,11 +587,11 @@ class ConnectorHealthJob(FeedJob):
         """
         if not self.enabled:
             return RunRecord(
-                run_number   = self.run_count,
-                scheduled_at = scheduled_at or _utcnow(),
-                started_at   = _utcnow(),
-                finished_at  = _utcnow(),
-                status       = "skipped",
+                run_number=self.run_count,
+                scheduled_at=scheduled_at or _utcnow(),
+                started_at=_utcnow(),
+                finished_at=_utcnow(),
+                status="skipped",
             )
 
         acquired = self._running_lock.acquire(blocking=False)
@@ -600,43 +601,44 @@ class ConnectorHealthJob(FeedJob):
                 self.job_id,
             )
             return RunRecord(
-                run_number   = self.run_count,
-                scheduled_at = scheduled_at or _utcnow(),
-                started_at   = _utcnow(),
-                finished_at  = _utcnow(),
-                status       = "skipped",
-                error        = "skipped: previous run still active",
+                run_number=self.run_count,
+                scheduled_at=scheduled_at or _utcnow(),
+                started_at=_utcnow(),
+                finished_at=_utcnow(),
+                status="skipped",
+                error="skipped: previous run still active",
             )
 
         self.run_count += 1
         started_at = _utcnow()
         record = RunRecord(
-            run_number   = self.run_count,
-            scheduled_at = scheduled_at or started_at,
-            started_at   = started_at,
+            run_number=self.run_count,
+            scheduled_at=scheduled_at or started_at,
+            started_at=started_at,
         )
 
         try:
             run = self._run_health_checks()
-            record.result           = run  # type: ignore[assignment]
-            record.finished_at      = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - started_at
-            ).total_seconds()
+            record.result = run  # type: ignore[assignment]
+            record.finished_at = _utcnow()
+            record.duration_seconds = (record.finished_at - started_at).total_seconds()
 
             problems = run.unhealthy_count + run.drift_count
             if problems == 0:
-                record.status        = "success"
+                record.status = "success"
                 self.last_success_at = record.finished_at
                 logger.info(
                     "ConnectorHealthJob %r: all %d connector(s) healthy",
-                    self.job_id, len(self._connectors),
+                    self.job_id,
+                    len(self._connectors),
                 )
             else:
                 record.status = "partial"
                 logger.warning(
                     "ConnectorHealthJob %r: %d unreachable, %d schema drift(s)",
-                    self.job_id, run.unhealthy_count, run.drift_count,
+                    self.job_id,
+                    run.unhealthy_count,
+                    run.drift_count,
                 )
 
             if problems and self._alert_webhook:
@@ -645,15 +647,11 @@ class ConnectorHealthJob(FeedJob):
                 run.alerts_sent = 1 if sent else 0
 
         except Exception as exc:  # noqa: BLE001
-            record.finished_at      = _utcnow()
-            record.duration_seconds = (
-                record.finished_at - started_at
-            ).total_seconds()
+            record.finished_at = _utcnow()
+            record.duration_seconds = (record.finished_at - started_at).total_seconds()
             record.status = "failed"
-            record.error  = str(exc)
-            logger.error(
-                "ConnectorHealthJob %r: FAILED — %s", self.job_id, exc
-            )
+            record.error = str(exc)
+            logger.error("ConnectorHealthJob %r: FAILED — %s", self.job_id, exc)
 
         finally:
             self._running_lock.release()
@@ -668,20 +666,18 @@ class ConnectorHealthJob(FeedJob):
         run = HealthRun(run_at=_utcnow().isoformat())
 
         for name, connector in self._connectors.items():
-            t0        = time.monotonic()
+            t0 = time.monotonic()
             reachable = False
-            err: Optional[str] = None
+            err: str | None = None
 
             try:
                 reachable = bool(connector.health_check())
             except Exception as exc:
                 err = str(exc)
-                logger.debug(
-                    "ConnectorHealthJob: %r health_check() raised: %s", name, exc
-                )
+                logger.debug("ConnectorHealthJob: %r health_check() raised: %s", name, exc)
             elapsed_ms = (time.monotonic() - t0) * 1000.0
 
-            drift: Optional[DriftReport] = None
+            drift: DriftReport | None = None
             schema_sampled = False
 
             if reachable and self._sample_schema:
@@ -707,17 +703,19 @@ class ConnectorHealthJob(FeedJob):
                             )
 
             result = HealthCheckResult(
-                connector      = name,
-                reachable      = reachable,
-                response_ms    = round(elapsed_ms, 1),
-                error          = err,
-                drift          = drift,
-                schema_sampled = schema_sampled,
+                connector=name,
+                reachable=reachable,
+                response_ms=round(elapsed_ms, 1),
+                error=err,
+                drift=drift,
+                schema_sampled=schema_sampled,
             )
             run.checks.append(result)
             logger.debug(
                 "ConnectorHealthJob: %r — %s (%.0f ms)",
-                name, result.status, elapsed_ms,
+                name,
+                result.status,
+                elapsed_ms,
             )
 
         return run
@@ -728,9 +726,9 @@ class ConnectorHealthJob(FeedJob):
     def from_config(
         cls,
         config_path: str,
-        platforms: Optional[List[str]] = None,
+        platforms: list[str] | None = None,
         **kwargs: Any,
-    ) -> "ConnectorHealthJob":
+    ) -> ConnectorHealthJob:
         """
         Build a :class:`ConnectorHealthJob` from a GNAT config file.
 
@@ -751,16 +749,16 @@ class ConnectorHealthJob(FeedJob):
         -------
         ConnectorHealthJob
         """
-        from gnat.clients import CLIENT_REGISTRY
         from gnat.client import GNATClient
+        from gnat.clients import CLIENT_REGISTRY
         from gnat.config import GNATConfig
 
-        cfg_obj  = GNATConfig(config_path)
-        hm_cfg   = HealthMonitorConfig.from_ini(config_path)
+        cfg_obj = GNATConfig(config_path)
+        hm_cfg = HealthMonitorConfig.from_ini(config_path)
 
         platform_filter = set(platforms or hm_cfg.platforms or [])
 
-        connectors: Dict[str, Any] = {}
+        connectors: dict[str, Any] = {}
         for section in cfg_obj.sections:
             name = section.lower()
             if name not in CLIENT_REGISTRY:
@@ -771,25 +769,21 @@ class ConnectorHealthJob(FeedJob):
                 sak = GNATClient(config_path=config_path).connect(name)
                 connectors[name] = sak.client
             except Exception as exc:
-                logger.debug(
-                    "ConnectorHealthJob.from_config: skipping %r — %s", name, exc
-                )
+                logger.debug("ConnectorHealthJob.from_config: skipping %r — %s", name, exc)
 
-        merged: Dict[str, Any] = dict(
-            interval_minutes = hm_cfg.interval_minutes,
-            alert_webhook    = hm_cfg.alert_webhook,
-            drift_threshold  = hm_cfg.drift_threshold,
-            snapshot_dir     = hm_cfg.snapshot_dir,
-        )
+        merged: dict[str, Any] = {
+            "interval_minutes": hm_cfg.interval_minutes,
+            "alert_webhook": hm_cfg.alert_webhook,
+            "drift_threshold": hm_cfg.drift_threshold,
+            "snapshot_dir": hm_cfg.snapshot_dir,
+        }
         merged.update(kwargs)
 
         return cls(connectors=connectors, **merged)
 
     def __repr__(self) -> str:  # pragma: no cover
         sched = (
-            f"every {self.interval_seconds}s"
-            if self.interval_seconds
-            else f"cron={self.cron!r}"
+            f"every {self.interval_seconds}s" if self.interval_seconds else f"cron={self.cron!r}"
         )
         return (
             f"ConnectorHealthJob(id={self.job_id!r}, {sched}, "

@@ -34,22 +34,43 @@ WazuhError
 └── WazuhIndexerError
 """
 
+
 class WazuhError(Exception):
     """Base exception for all Wazuh connector errors."""
 
     # ── Configuration ─────────────────────────────────────────────────────────────
+
 
 class WazuhConfigError(WazuhError):
     """Raised when [wazuh] INI section is missing or invalid."""
 
     # ── Authentication ────────────────────────────────────────────────────────────
 
+
 class WazuhAuthError(WazuhError):
     """
     Raised on authentication failures.
     - Bad username/password (HTTP 401, error code 4001)
     - Account locked or disabled
+
+    Attributes
+    ----------
+    status_code : int | None
+        HTTP status code (typically 401).
+    endpoint : str | None
+        The URL endpoint that returned the error.
     """
+
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        endpoint: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.endpoint = endpoint
+
 
 class WazuhTokenExpiredError(WazuhAuthError):
     """
@@ -59,6 +80,7 @@ class WazuhTokenExpiredError(WazuhAuthError):
     """
 
     # ── API / HTTP ────────────────────────────────────────────────────────────────
+
 
 class WazuhAPIError(WazuhError):
     """
@@ -112,8 +134,10 @@ class WazuhAPIError(WazuhError):
             parts.append(f"endpoint={self.endpoint}")
         return " | ".join(parts)
 
+
 class WazuhNotFoundError(WazuhAPIError):
     """Raised on HTTP 404 or Wazuh 'not found' error codes."""
+
 
 class WazuhPermissionError(WazuhAPIError):
     """
@@ -121,10 +145,12 @@ class WazuhPermissionError(WazuhAPIError):
     (HTTP 403, Wazuh error code 4000).
     """
 
+
 class WazuhRateLimitError(WazuhAPIError):
     """Raised on HTTP 429. Wazuh rate-limits the authentication endpoint."""
 
     # ── STIX ─────────────────────────────────────────────────────────────────────
+
 
 class WazuhSTIXError(WazuhError):
     """
@@ -134,6 +160,7 @@ class WazuhSTIXError(WazuhError):
     """
 
     # ── Indexer ───────────────────────────────────────────────────────────────────
+
 
 class WazuhIndexerError(WazuhError):
     """

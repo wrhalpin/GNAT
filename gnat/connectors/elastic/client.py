@@ -45,19 +45,20 @@ with ElasticClient(cfg) as client:
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import ElasticAuthManager
 from .config import ElasticConfig
 from .exceptions import (
-ElasticAPIError,
-ElasticAuthError,
-ElasticConflictError,
-ElasticKibanaError,
-ElasticKibanaNotFoundError,
-ElasticKibanaValidationError,
-ElasticNotFoundError,
-ElasticRateLimitError,
+    ElasticAPIError,
+    ElasticAuthError,
+    ElasticConflictError,
+    ElasticKibanaError,
+    ElasticKibanaNotFoundError,
+    ElasticKibanaValidationError,
+    ElasticNotFoundError,
+    ElasticRateLimitError,
 )
 
 _RETRYABLE_STATUS = {500, 502, 503, 504}
@@ -68,6 +69,7 @@ _RETRY_BACKOFF = 2.0
 # Elasticsearch hard limit for from+size without PIT
 
 ES_MAX_RESULT_WINDOW = 10_000
+
 
 class ElasticClient:
     """
@@ -233,9 +235,7 @@ class ElasticClient:
         list[dict]
             List of ``_source`` dicts from matching documents.
         """
-        response = self.es_search(
-            index, query=query, size=size, sort=sort, source=source
-        )
+        response = self.es_search(index, query=query, size=size, sort=sort, source=source)
         return [hit.get("_source", {}) for hit in response.get("hits", {}).get("hits", [])]
 
     def es_count(self, index: str, query: dict | None = None) -> int:
@@ -481,7 +481,8 @@ class ElasticClient:
         for attempt in range(_MAX_RETRIES + 1):
             try:
                 response = self._http.request(
-                    method, url,
+                    method,
+                    url,
                     body=encoded,
                     headers=headers,
                 )
@@ -491,9 +492,7 @@ class ElasticClient:
                     time.sleep(delay)
                     delay *= _RETRY_BACKOFF
                     continue
-                raise ElasticAPIError(
-                    f"Connection error: {exc}", endpoint=url
-                ) from exc
+                raise ElasticAPIError(f"Connection error: {exc}", endpoint=url) from exc
 
             if response.status in (401, 403):
                 raise ElasticAuthError(
@@ -578,7 +577,8 @@ class ElasticClient:
         for attempt in range(_MAX_RETRIES + 1):
             try:
                 response = self._http.request(
-                    method, url,
+                    method,
+                    url,
                     body=encoded,
                     headers=headers,
                 )
@@ -588,9 +588,7 @@ class ElasticClient:
                     time.sleep(delay)
                     delay *= _RETRY_BACKOFF
                     continue
-                raise ElasticKibanaError(
-                    f"Kibana connection error: {exc}", endpoint=url
-                ) from exc
+                raise ElasticKibanaError(f"Kibana connection error: {exc}", endpoint=url) from exc
 
             if response.status in (401, 403):
                 raise ElasticAuthError(

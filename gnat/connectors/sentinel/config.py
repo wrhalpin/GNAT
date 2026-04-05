@@ -36,15 +36,25 @@ from dataclasses import dataclass, field
 from .exceptions import SentinelConfigError
 
 _REQUIRED = {
-    "tenant_id", "client_id", "client_secret",
-    "subscription_id", "resource_group", "workspace_name",
+    "tenant_id",
+    "client_id",
+    "client_secret",
+    "subscription_id",
+    "resource_group",
+    "workspace_name",
 }
 
 _DEFAULTS: dict = {
-    "tenant_id": "", "client_id": "", "client_secret": "",
-    "subscription_id": "", "resource_group": "", "workspace_name": "",
+    "tenant_id": "",
+    "client_id": "",
+    "client_secret": "",
+    "subscription_id": "",
+    "resource_group": "",
+    "workspace_name": "",
     "workspace_id": "",
-    "verify_ssl": "true", "timeout": "30", "max_results": "100",
+    "verify_ssl": "true",
+    "timeout": "30",
+    "max_results": "100",
     "api_version": "2023-11-01",
 }
 
@@ -103,6 +113,7 @@ class SentinelConfig:
     def token_request_body(self) -> bytes:
         """Return URL-encoded body for the OAuth2 token request."""
         import urllib.parse
+
         params = {
             "grant_type": "client_credentials",
             "client_id": self.client_id,
@@ -128,9 +139,7 @@ def load_sentinel_config(
 ) -> SentinelConfig:
     """Parse [sentinel] section from gnat.ini."""
     if not config.has_section(section):
-        raise SentinelConfigError(
-            f"Configuration section '[{section}]' not found in gnat.ini."
-        )
+        raise SentinelConfigError(f"Configuration section '[{section}]' not found in gnat.ini.")
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))
 

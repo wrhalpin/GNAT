@@ -38,22 +38,33 @@ References
 """
 
 from __future__ import annotations
+
 import re
 import uuid
 from datetime import datetime, timezone
+
 from .exceptions import MISPSTIXError
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
 # MISP attribute type → STIX SCO type
 _ATTR_TO_STIX: dict[str, str] = {
-    "ip-src": "ipv4-addr", "ip-dst": "ipv4-addr",
-    "ip-src|port": "ipv4-addr", "ip-dst|port": "ipv4-addr",
-    "domain": "domain-name", "hostname": "domain-name",
+    "ip-src": "ipv4-addr",
+    "ip-dst": "ipv4-addr",
+    "ip-src|port": "ipv4-addr",
+    "ip-dst|port": "ipv4-addr",
+    "domain": "domain-name",
+    "hostname": "domain-name",
     "url": "url",
-    "md5": "file", "sha1": "file", "sha256": "file", "sha512": "file",
-    "filename": "file", "filename|md5": "file", "filename|sha256": "file",
-    "email-src": "email-addr", "email-dst": "email-addr",
+    "md5": "file",
+    "sha1": "file",
+    "sha256": "file",
+    "sha512": "file",
+    "filename": "file",
+    "filename|md5": "file",
+    "filename|sha256": "file",
+    "email-src": "email-addr",
+    "email-dst": "email-addr",
     "vulnerability": "vulnerability",
     "AS": "autonomous-system",
     "regkey": "windows-registry-key",
@@ -112,8 +123,7 @@ class MISPSTIXMapper:
 
         # Resolve attributes
         raw_attrs = attributes or [
-            self._normalise_attr_stub(a)
-            for a in event.get("_raw", {}).get("Attribute", [])
+            self._normalise_attr_stub(a) for a in event.get("_raw", {}).get("Attribute", [])
         ]
 
         for attr in raw_attrs:
@@ -227,14 +237,10 @@ class MISPSTIXMapper:
         MISPSTIXError
         """
         if bundle.get("type") != "bundle":
-            raise MISPSTIXError(
-                f"Expected STIX bundle, got type='{bundle.get('type')}'."
-            )
+            raise MISPSTIXError(f"Expected STIX bundle, got type='{bundle.get('type')}'.")
 
         objects = bundle.get("objects", [])
-        report = next(
-            (o for o in objects if o.get("type") == "report"), None
-        )
+        report = next((o for o in objects if o.get("type") == "report"), None)
 
         event_info = report.get("name", "STIX Import") if report else "STIX Import"
         event: dict = {
@@ -249,7 +255,7 @@ class MISPSTIXMapper:
         seen_values: set[str] = set()
 
         for obj in objects:
-            obj_type = obj.get("type", "")
+            _obj_type = obj.get("type", "")
             attrs = self._stix_object_to_misp_attributes(obj)
             for attr in attrs:
                 key = f"{attr['type']}:{attr['value']}"
@@ -321,10 +327,13 @@ class MISPSTIXMapper:
                 "created": _now_ts(),
                 "modified": _now_ts(),
                 "name": value,
-                "external_references": [{
-                    "source_name": "cve", "external_id": value,
-                    "url": f"https://nvd.nist.gov/vuln/detail/{value}",
-                }],
+                "external_references": [
+                    {
+                        "source_name": "cve",
+                        "external_id": value,
+                        "url": f"https://nvd.nist.gov/vuln/detail/{value}",
+                    }
+                ],
             }
         if stix_type == "autonomous-system":
             try:
@@ -384,53 +393,87 @@ class MISPSTIXMapper:
         attrs: list[dict] = []
 
         if obj_type in ("ipv4-addr", "ipv6-addr"):
-            attrs.append({
-                "type": "ip-src", "value": obj.get("value", ""),
-                "category": "Network activity", "to_ids": True,
-            })
+            attrs.append(
+                {
+                    "type": "ip-src",
+                    "value": obj.get("value", ""),
+                    "category": "Network activity",
+                    "to_ids": True,
+                }
+            )
         elif obj_type == "domain-name":
-            attrs.append({
-                "type": "domain", "value": obj.get("value", ""),
-                "category": "Network activity", "to_ids": True,
-            })
+            attrs.append(
+                {
+                    "type": "domain",
+                    "value": obj.get("value", ""),
+                    "category": "Network activity",
+                    "to_ids": True,
+                }
+            )
         elif obj_type == "url":
-            attrs.append({
-                "type": "url", "value": obj.get("value", ""),
-                "category": "Network activity", "to_ids": True,
-            })
+            attrs.append(
+                {
+                    "type": "url",
+                    "value": obj.get("value", ""),
+                    "category": "Network activity",
+                    "to_ids": True,
+                }
+            )
         elif obj_type == "email-addr":
-            attrs.append({
-                "type": "email-src", "value": obj.get("value", ""),
-                "category": "Payload delivery", "to_ids": True,
-            })
+            attrs.append(
+                {
+                    "type": "email-src",
+                    "value": obj.get("value", ""),
+                    "category": "Payload delivery",
+                    "to_ids": True,
+                }
+            )
         elif obj_type == "file":
             hashes = obj.get("hashes", {})
             hash_map = {"MD5": "md5", "SHA-1": "sha1", "SHA-256": "sha256"}
             for stix_algo, misp_type in hash_map.items():
                 if v := hashes.get(stix_algo):
-                    attrs.append({
-                        "type": misp_type, "value": v,
-                        "category": "Payload delivery", "to_ids": True,
-                    })
+                    attrs.append(
+                        {
+                            "type": misp_type,
+                            "value": v,
+                            "category": "Payload delivery",
+                            "to_ids": True,
+                        }
+                    )
             if name := obj.get("name"):
-                attrs.append({
-                    "type": "filename", "value": name,
-                    "category": "Payload delivery", "to_ids": False,
-                })
+                attrs.append(
+                    {
+                        "type": "filename",
+                        "value": name,
+                        "category": "Payload delivery",
+                        "to_ids": False,
+                    }
+                )
         elif obj_type == "indicator":
             # Extract value from simple pattern
             pattern = obj.get("pattern", "")
             m = re.search(r"=\s*'([^']+)'", pattern)
             if m:
                 value = m.group(1)
-                type_hint = "ip-src" if "ipv4-addr" in pattern else \
-                            "domain" if "domain-name" in pattern else \
-                            "url" if "url:" in pattern else "comment"
-                attrs.append({
-                    "type": type_hint, "value": value,
-                    "category": "Network activity", "to_ids": True,
-                    "comment": obj.get("description", ""),
-                })
+                type_hint = (
+                    "ip-src"
+                    if "ipv4-addr" in pattern
+                    else "domain"
+                    if "domain-name" in pattern
+                    else "url"
+                    if "url:" in pattern
+                    else "comment"
+                )
+                attrs.append(
+                    {
+                        "type": type_hint,
+                        "value": value,
+                        "category": "Network activity",
+                        "to_ids": True,
+                        "comment": obj.get("description", ""),
+                    }
+                )
         return attrs
 
     @staticmethod

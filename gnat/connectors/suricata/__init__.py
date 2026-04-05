@@ -51,35 +51,40 @@ Configuration (gnat.ini):
 """
 
 import configparser
+import contextlib
 import json
 import os
 import socket as _socket
-
-from dataclasses import dataclass
-from typing import Iterator
 import uuid as _uuid
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
-
 # ── Exceptions ────────────────────────────────────────────────────────────────
+
 
 class SuricataError(Exception):
     pass
 
+
 class SuricataConfigError(SuricataError):
     pass
+
 
 class SuricataLogError(SuricataError):
     pass
 
+
 class SuricataSocketError(SuricataError):
     pass
+
 
 class SuricataSTIXError(SuricataError):
     pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class SuricataConfig:
@@ -114,6 +119,7 @@ def load_suricata_config(
 
 
 # ── EVE Log Reader ────────────────────────────────────────────────────────────
+
 
 class SuricataEVEReader:
     """
@@ -162,7 +168,7 @@ class SuricataEVEReader:
         """
         log_path = path or self.config.eve_log_path
         try:
-            with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            with open(log_path, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -176,13 +182,11 @@ class SuricataEVEReader:
                     yield event
         except FileNotFoundError:
             raise SuricataLogError(
-                f"EVE log not found: {log_path}. "
-                "Ensure Suricata is running and eve-log is enabled."
+                f"EVE log not found: {log_path}. Ensure Suricata is running and eve-log is enabled."
             )
         except PermissionError:
             raise SuricataLogError(
-                f"Permission denied reading {log_path}. "
-                "Run GNAT with appropriate file permissions."
+                f"Permission denied reading {log_path}. Run GNAT with appropriate file permissions."
             )
 
     def iter_events_from(
@@ -216,7 +220,7 @@ class SuricataEVEReader:
 
         def _gen():
             try:
-                with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                with open(log_path, encoding="utf-8", errors="replace") as f:
                     f.seek(offset)
                     for line in f:
                         line = line.strip()
@@ -299,6 +303,7 @@ class SuricataEVEReader:
 
 # ── Unix Socket Commands ──────────────────────────────────────────────────────
 
+
 class SuricataSocketCommands:
     """
     Runtime control via Suricata Unix socket (suricatasc protocol).
@@ -348,9 +353,7 @@ class SuricataSocketCommands:
                 "Is Suricata running with unix-command enabled?"
             )
         except ConnectionRefusedError:
-            raise SuricataSocketError(
-                "Cannot connect to Suricata socket. Is Suricata running?"
-            )
+            raise SuricataSocketError("Cannot connect to Suricata socket. Is Suricata running?")
         except (_socket.timeout, OSError) as e:
             raise SuricataSocketError(f"Socket error: {e}") from e
 
@@ -424,10 +427,12 @@ class SuricataSTIXMapper:
                 obj = {
                     "type": "ipv4-addr",
                     "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                    "spec_version": "2.1", "value": ip,
+                    "spec_version": "2.1",
+                    "value": ip,
                 }
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); objects.append(obj)
+                    seen.add(obj["id"])
+                    objects.append(obj)
                 refs.append(obj["id"])
 
         src_p = alert.get("src_port")
@@ -438,39 +443,53 @@ class SuricataSTIXMapper:
             if nid not in seen:
                 seen.add(nid)
                 nt: dict = {
-                    "type": "network-traffic", "id": nid, "spec_version": "2.1",
+                    "type": "network-traffic",
+                    "id": nid,
+                    "spec_version": "2.1",
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alert['src_ip'])}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alert['dst_ip'])}",
                     "protocols": [str(alert.get("proto", "tcp")).lower()],
                 }
                 if src_p:
-                    try: nt["src_port"] = int(src_p)
-                    except (ValueError, TypeError): pass
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["src_port"] = int(src_p)
                 if dst_p:
-                    try: nt["dst_port"] = int(dst_p)
-                    except (ValueError, TypeError): pass
-                objects.append(nt); refs.append(nid)
+                    with contextlib.suppress(ValueError, TypeError):
+                        nt["dst_port"] = int(dst_p)
+                objects.append(nt)
+                refs.append(nid)
 
         obs_id = f"observed-data--{_uuid.uuid4()}"
-        objects.append({
-            "type": "observed-data", "id": obs_id, "spec_version": "2.1",
-            "created": now, "modified": now,
-            "first_observed": ts, "last_observed": ts, "number_observed": 1,
-            "object_refs": refs,
-            "x_suricata_alert": {
-                "signature": alert.get("signature"),
-                "signature_id": alert.get("signature_id"),
-                "category": alert.get("category"),
-                "severity": alert.get("severity"),
-                "severity_raw": alert.get("severity_raw"),
-                "action": alert.get("action"),
-                "rev": alert.get("rev"),
-                "in_iface": alert.get("in_iface"),
-                "flow_id": alert.get("flow_id"),
-            },
-        })
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": objects}
+        objects.append(
+            {
+                "type": "observed-data",
+                "id": obs_id,
+                "spec_version": "2.1",
+                "created": now,
+                "modified": now,
+                "first_observed": ts,
+                "last_observed": ts,
+                "number_observed": 1,
+                "object_refs": refs,
+                "x_suricata_alert": {
+                    "signature": alert.get("signature"),
+                    "signature_id": alert.get("signature_id"),
+                    "category": alert.get("category"),
+                    "severity": alert.get("severity"),
+                    "severity_raw": alert.get("severity_raw"),
+                    "action": alert.get("action"),
+                    "rev": alert.get("rev"),
+                    "in_iface": alert.get("in_iface"),
+                    "flow_id": alert.get("flow_id"),
+                },
+            }
+        )
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects,
+        }
 
     def alerts_to_stix_bundle(self, alerts: list[dict]) -> dict:
         """Convert multiple alerts to a single deduplicated bundle."""
@@ -479,13 +498,19 @@ class SuricataSTIXMapper:
         for a in alerts:
             for obj in self.alert_to_stix_bundle(a).get("objects", []):
                 if obj["id"] not in seen:
-                    seen.add(obj["id"]); all_objects.append(obj)
-        return {"type": "bundle", "id": f"bundle--{_uuid.uuid4()}",
-                "spec_version": "2.1", "objects": all_objects}
+                    seen.add(obj["id"])
+                    all_objects.append(obj)
+        return {
+            "type": "bundle",
+            "id": f"bundle--{_uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": all_objects,
+        }
 
 
 def _det_uuid(t: str, v: str) -> str:
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
+
 
 def _now_ts() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

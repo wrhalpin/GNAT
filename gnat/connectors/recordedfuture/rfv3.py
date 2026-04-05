@@ -24,15 +24,16 @@ api_version = v3        ; default
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from gnat.connectors.recordedfuture.base import RecordedFutureBase
+from gnat.connectors.recordedfuture.client import RecordedFutureClient as RecordedFutureBase
+
 
 class RecordedFutureClientV3(RecordedFutureBase):
     """Recorded Future Connect API v3 client."""
 
     API_VERSION = "v3"
-    API_PREFIX  = "/v3"
+    API_PREFIX = "/v3"
 
     # ------------------------------------------------------------------
     # Alert API v3  (cursor-paginated; overrides v2 offset behaviour)
@@ -40,9 +41,9 @@ class RecordedFutureClientV3(RecordedFutureBase):
 
     def list_alerts(
         self,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch alerts via the v3 Alert API with ``nextPageToken`` pagination.
 
@@ -62,11 +63,11 @@ class RecordedFutureClientV3(RecordedFutureBase):
         TODO: confirm ``data.nextPageToken`` path -- may be top-level or
               under ``data.pagination.nextPageToken``.
         """
-        params: Dict[str, Any] = {"limit": min(limit, 100)}
+        params: dict[str, Any] = {"limit": min(limit, 100)}
         if filters:
             params.update(filters)
 
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         while True:
             resp = self.get("/v3/alerts", params=params)
             if not isinstance(resp, dict):
@@ -79,7 +80,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
                 break
 
             # TODO: verify exact token key path (see docstring above)
-            token: Optional[str] = resp.get("data", {}).get("nextPageToken")
+            token: str | None = resp.get("data", {}).get("nextPageToken")
             if not token:
                 break
 
@@ -90,7 +91,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
 
         return results[:limit]
 
-    def get_alert(self, alert_id: str) -> Dict[str, Any]:
+    def get_alert(self, alert_id: str) -> dict[str, Any]:
         """Fetch a single alert by ID."""
         resp = self.get(f"/v3/alerts/{alert_id}")
         return resp.get("data", {}) if isinstance(resp, dict) else {}
@@ -103,20 +104,20 @@ class RecordedFutureClientV3(RecordedFutureBase):
 
     def list_playbook_alerts(
         self,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch Playbook Alerts with ``nextPageToken`` pagination.
 
         TODO: confirm endpoint path and response envelope against RF v3
         docs -- assumed identical shape to Alert API v3.
         """
-        params: Dict[str, Any] = {"limit": min(limit, 100)}
+        params: dict[str, Any] = {"limit": min(limit, 100)}
         if filters:
             params.update(filters)
 
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         while True:
             resp = self.get(self._PLAYBOOK_BASE, params=params)
             if not isinstance(resp, dict):
@@ -128,7 +129,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
             if len(results) >= limit:
                 break
 
-            token: Optional[str] = resp.get("data", {}).get("nextPageToken")
+            token: str | None = resp.get("data", {}).get("nextPageToken")
             if not token:
                 break
 
@@ -139,7 +140,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
 
         return results[:limit]
 
-    def get_playbook_alert(self, alert_id: str) -> Dict[str, Any]:
+    def get_playbook_alert(self, alert_id: str) -> dict[str, Any]:
         """Fetch a single Playbook Alert by ID."""
         resp = self.get(f"{self._PLAYBOOK_BASE}/{alert_id}")
         return resp.get("data", {}) if isinstance(resp, dict) else {}
@@ -147,8 +148,8 @@ class RecordedFutureClientV3(RecordedFutureBase):
     def update_playbook_alert(
         self,
         alert_id: str,
-        payload: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Update a Playbook Alert (e.g. status, priority, assignee).
 
@@ -157,13 +158,10 @@ class RecordedFutureClientV3(RecordedFutureBase):
         resp = self.patch(f"{self._PLAYBOOK_BASE}/{alert_id}", json=payload)
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
-    def list_playbook_alert_categories(self) -> List[Dict[str, Any]]:
+    def list_playbook_alert_categories(self) -> list[dict[str, Any]]:
         """Return available Playbook Alert category definitions."""
         resp = self.get(f"{self._PLAYBOOK_BASE}/categories")
-        return (
-            resp.get("data", {}).get("results", [])
-            if isinstance(resp, dict) else []
-        )
+        return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     # ------------------------------------------------------------------
     # Fusion Files  (v3 only)
@@ -173,8 +171,8 @@ class RecordedFutureClientV3(RecordedFutureBase):
 
     def list_fusion_files(
         self,
-        path: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        path: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         List available Fusion files.
 
@@ -184,14 +182,11 @@ class RecordedFutureClientV3(RecordedFutureBase):
         TODO: confirm query param name for path filtering against RF v3
         docs.
         """
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         if path:
             params["path"] = path
         resp = self.get(self._FUSION_BASE, params=params)
-        return (
-            resp.get("data", {}).get("results", [])
-            if isinstance(resp, dict) else []
-        )
+        return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     def get_fusion_file(self, file_path: str) -> bytes:
         """
@@ -214,7 +209,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
     # v3 risk evidence key override
     # ------------------------------------------------------------------
 
-    def get_risk_evidence(self, native: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_risk_evidence(self, native: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Return the risk evidence list from a native RF object.
 

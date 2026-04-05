@@ -22,7 +22,6 @@ Usage
 from __future__ import annotations
 
 import re
-from typing import List
 
 # ---------------------------------------------------------------------------
 # Attempt to import the Rust native extension
@@ -33,11 +32,20 @@ try:
     # The wheel places functions at _core.classify_ioc etc.
     from _core import (  # type: ignore[import]
         classify_ioc as _rust_classify,
+    )
+    from _core import (
         classify_ioc_batch as _rust_classify_batch,
+    )
+    from _core import (
         defang as _rust_defang,
+    )
+    from _core import (
         extract_pattern_value as _rust_extract_pattern_value,
+    )
+    from _core import (
         refang as _rust_refang,
     )
+
     RUST_AVAILABLE: bool = True
 except ImportError:
     RUST_AVAILABLE = False
@@ -49,15 +57,15 @@ except ImportError:
 
 _PATTERNS = {
     "sha256": re.compile(r"^[0-9a-fA-F]{64}$"),
-    "sha1":   re.compile(r"^[0-9a-fA-F]{40}$"),
-    "md5":    re.compile(r"^[0-9a-fA-F]{32}$"),
-    "ip":     re.compile(
+    "sha1": re.compile(r"^[0-9a-fA-F]{40}$"),
+    "md5": re.compile(r"^[0-9a-fA-F]{32}$"),
+    "ip": re.compile(
         r"^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
         r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:/\d{1,2})?$"
     ),
-    "ipv6":   re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
-    "url":    re.compile(r"^https?://", re.IGNORECASE),
-    "email":  re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
+    "ipv6": re.compile(r"^[0-9a-fA-F:]{2,39}(?:/\d{1,3})?$"),
+    "url": re.compile(r"^https?://", re.IGNORECASE),
+    "email": re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"),
     "domain": re.compile(
         r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+"
         r"[a-zA-Z]{2,}$"
@@ -65,9 +73,9 @@ _PATTERNS = {
 }
 
 _DEFANG_RE = [
-    (re.compile(r'\[\.?\]'), '.'),
-    (re.compile(r'(?i)hxxps://'), 'https://'),
-    (re.compile(r'(?i)hxxp://'), 'http://'),
+    (re.compile(r"\[\.?\]"), "."),
+    (re.compile(r"(?i)hxxps://"), "https://"),
+    (re.compile(r"(?i)hxxp://"), "http://"),
 ]
 
 _VALUE_RE = re.compile(r"=\s*'([^']+)'")
@@ -91,18 +99,19 @@ def _py_refang(value: str) -> str:
     return value.replace(".", "[.]")
 
 
-def _py_extract_pattern_value(pattern: str) -> "str | None":
+def _py_extract_pattern_value(pattern: str) -> str | None:
     m = _VALUE_RE.search(pattern)
     return m.group(1) if m else None
 
 
-def _py_classify_ioc_batch(values: List[str]) -> List[str]:
+def _py_classify_ioc_batch(values: list[str]) -> list[str]:
     return [_py_classify_ioc(v) for v in values]
 
 
 # ---------------------------------------------------------------------------
 # Public interface — dispatches to Rust or pure Python
 # ---------------------------------------------------------------------------
+
 
 def classify_ioc(value: str) -> str:
     """
@@ -140,7 +149,7 @@ def refang(value: str) -> str:
     return _py_refang(value)
 
 
-def extract_pattern_value(pattern: str) -> "str | None":
+def extract_pattern_value(pattern: str) -> str | None:
     """
     Extract the quoted value from a STIX pattern string.
 
@@ -151,7 +160,7 @@ def extract_pattern_value(pattern: str) -> "str | None":
     return _py_extract_pattern_value(pattern)
 
 
-def classify_ioc_batch(values: List[str]) -> List[str]:
+def classify_ioc_batch(values: list[str]) -> list[str]:
     """
     Classify a list of IOC strings in bulk.
 

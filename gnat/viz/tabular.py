@@ -41,7 +41,7 @@ import csv
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace
@@ -51,37 +51,56 @@ logger = logging.getLogger(__name__)
 
 # ── STIX type → display columns ────────────────────────────────────────────
 
-_COLUMNS: Dict[str, List[str]] = {
-    "indicator":     ["id", "name", "indicator_types", "pattern", "confidence",
-                      "x_tlp", "x_rf_risk_score", "created"],
-    "malware":       ["id", "name", "malware_types", "is_family", "confidence",
-                      "x_tlp", "created"],
-    "vulnerability": ["id", "name", "description", "x_cvss_score",
-                      "x_published", "confidence", "created"],
-    "threat-actor":  ["id", "name", "threat_actor_types", "confidence",
-                      "x_tlp", "created"],
+_COLUMNS: dict[str, list[str]] = {
+    "indicator": [
+        "id",
+        "name",
+        "indicator_types",
+        "pattern",
+        "confidence",
+        "x_tlp",
+        "x_rf_risk_score",
+        "created",
+    ],
+    "malware": ["id", "name", "malware_types", "is_family", "confidence", "x_tlp", "created"],
+    "vulnerability": [
+        "id",
+        "name",
+        "description",
+        "x_cvss_score",
+        "x_published",
+        "confidence",
+        "created",
+    ],
+    "threat-actor": ["id", "name", "threat_actor_types", "confidence", "x_tlp", "created"],
     "attack-pattern": ["id", "name", "description", "confidence", "created"],
-    "relationship":  ["id", "relationship_type", "source_ref", "target_ref",
-                      "x_enrichment_source", "created"],
-    "_default":      ["id", "type", "name", "confidence", "created"],
+    "relationship": [
+        "id",
+        "relationship_type",
+        "source_ref",
+        "target_ref",
+        "x_enrichment_source",
+        "created",
+    ],
+    "_default": ["id", "type", "name", "confidence", "created"],
 }
 
 # ── STIX type → terminal color ─────────────────────────────────────────────
 
-_TYPE_COLORS: Dict[str, str] = {
-    "indicator":      "cyan",
-    "malware":        "red",
-    "vulnerability":  "yellow",
-    "threat-actor":   "magenta",
+_TYPE_COLORS: dict[str, str] = {
+    "indicator": "cyan",
+    "malware": "red",
+    "vulnerability": "yellow",
+    "threat-actor": "magenta",
     "attack-pattern": "blue",
-    "relationship":   "green",
+    "relationship": "green",
 }
 
-_TLP_COLORS: Dict[str, str] = {
+_TLP_COLORS: dict[str, str] = {
     "white": "white",
     "green": "green",
     "amber": "yellow",
-    "red":   "red",
+    "red": "red",
 }
 
 
@@ -98,7 +117,7 @@ def _coerce(val: Any) -> str:
     return str(val)
 
 
-def _get_field(obj: "STIXBase", field: str) -> Any:
+def _get_field(obj: STIXBase, field: str) -> Any:
     """Safely retrieve a field from a STIXBase object."""
     if field == "type":
         return obj.stix_type
@@ -107,9 +126,8 @@ def _get_field(obj: "STIXBase", field: str) -> Any:
     return obj._properties.get(field)
 
 
-def _to_rows(objects: List["STIXBase"], columns: List[str]) -> List[Dict[str, str]]:
-    return [{col: _coerce(_get_field(obj, col)) for col in columns}
-            for obj in objects]
+def _to_rows(objects: list[STIXBase], columns: list[str]) -> list[dict[str, str]]:
+    return [{col: _coerce(_get_field(obj, col)) for col in columns} for obj in objects]
 
 
 class TabularView:
@@ -131,18 +149,18 @@ class TabularView:
     >>> view.to_excel("analysis.xlsx")
     """
 
-    def __init__(self, workspace: "Workspace", default_top: int = 100):
-        self._ws       = workspace
-        self._top      = default_top
+    def __init__(self, workspace: Workspace, default_top: int = 100):
+        self._ws = workspace
+        self._top = default_top
 
     # ── Public API ──────────────────────────────────────────────────────────
 
     def show(
         self,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
-        top: Optional[int] = None,
-        fields: Optional[List[str]] = None,
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
+        top: int | None = None,
+        fields: list[str] | None = None,
     ) -> None:
         """
         Print a formatted table to the terminal.
@@ -171,8 +189,8 @@ class TabularView:
 
     def display(
         self,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
         top: int = 200,
     ) -> None:
         """
@@ -181,7 +199,8 @@ class TabularView:
         Falls back to :meth:`show` outside of Jupyter.
         """
         try:
-            from IPython.display import display, HTML  # type: ignore
+            from IPython.display import HTML, display  # type: ignore
+
             html = self._build_html(self._group_objects(stix_type), sort_by, top)
             display(HTML(html))
         except ImportError:
@@ -189,9 +208,9 @@ class TabularView:
 
     def to_html(
         self,
-        path: Optional[str] = None,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
+        path: str | None = None,
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
         top: int = 5000,
     ) -> str:
         """
@@ -219,8 +238,8 @@ class TabularView:
     def to_csv(
         self,
         path: str,
-        stix_type: Optional[str] = None,
-        sort_by: Optional[str] = "created",
+        stix_type: str | None = None,
+        sort_by: str | None = "created",
         top: int = 100_000,
     ) -> None:
         """
@@ -234,8 +253,8 @@ class TabularView:
             If omitted all objects are written; ``type`` is included as a column.
         """
         groups = self._group_objects(stix_type)
-        rows: List[Dict[str, str]] = []
-        all_cols: List[str] = []
+        rows: list[dict[str, str]] = []
+        all_cols: list[str] = []
 
         for stype, objs in groups.items():
             cols = _COLUMNS.get(stype, _COLUMNS["_default"])
@@ -261,7 +280,7 @@ class TabularView:
     def to_excel(
         self,
         path: str,
-        sort_by: Optional[str] = "created",
+        sort_by: str | None = "created",
         top: int = 100_000,
     ) -> None:
         """
@@ -279,12 +298,10 @@ class TabularView:
         """
         try:
             import openpyxl
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Alignment, Font, PatternFill
             from openpyxl.utils import get_column_letter
         except ImportError:
-            raise ImportError(
-                "openpyxl is required for Excel export: pip install 'gnat[viz]'"
-            )
+            raise ImportError("openpyxl is required for Excel export: pip install 'gnat[viz]'")
 
         wb = openpyxl.Workbook()
         wb.remove(wb.active)  # remove default empty sheet
@@ -298,9 +315,9 @@ class TabularView:
         ws_summary["A1"].font = Font(bold=True, size=14)
 
         # ── One sheet per STIX type ────────────────────────────────────────
-        header_fill  = PatternFill("solid", fgColor="1a73e8")
-        header_font  = Font(bold=True, color="FFFFFF")
-        alt_fill     = PatternFill("solid", fgColor="EEF2FF")
+        header_fill = PatternFill("solid", fgColor="1a73e8")
+        header_font = Font(bold=True, color="FFFFFF")
+        alt_fill = PatternFill("solid", fgColor="EEF2FF")
 
         for stype, objs in self._group_objects().items():
             if not objs:
@@ -316,8 +333,8 @@ class TabularView:
             # Header row
             ws.append(cols)
             for cell in ws[1]:
-                cell.font  = header_font
-                cell.fill  = header_fill
+                cell.font = header_font
+                cell.fill = header_fill
                 cell.alignment = Alignment(horizontal="center")
 
             # Data rows with alternating fill
@@ -331,18 +348,13 @@ class TabularView:
             ws.freeze_panes = "A2"
             for col_idx, col_name in enumerate(cols, start=1):
                 col_letter = get_column_letter(col_idx)
-                max_len    = max(
-                    (len(str(r.get(col_name, ""))) for r in rows),
-                    default=0
-                )
-                ws.column_dimensions[col_letter].width = min(
-                    max(len(col_name), max_len) + 4, 60
-                )
+                max_len = max((len(str(r.get(col_name, ""))) for r in rows), default=0)
+                ws.column_dimensions[col_letter].width = min(max(len(col_name), max_len) + 4, 60)
 
         wb.save(path)
         logger.info("TabularView: Excel written to %s", path)
 
-    def to_dataframe(self, stix_type: Optional[str] = None):
+    def to_dataframe(self, stix_type: str | None = None):
         """
         Return a ``pandas.DataFrame`` of workspace objects.
 
@@ -369,11 +381,9 @@ class TabularView:
 
     # ── Internals ────────────────────────────────────────────────────────────
 
-    def _group_objects(
-        self, stix_type: Optional[str] = None
-    ) -> Dict[str, List["STIXBase"]]:
+    def _group_objects(self, stix_type: str | None = None) -> dict[str, list[STIXBase]]:
         """Group workspace objects by stix_type."""
-        result: Dict[str, List["STIXBase"]] = {}
+        result: dict[str, list[STIXBase]] = {}
         for obj in self._ws.objects.values():
             if stix_type and obj.stix_type != stix_type:
                 continue
@@ -381,9 +391,10 @@ class TabularView:
         return dict(sorted(result.items()))
 
     @staticmethod
-    def _sort(objs: List["STIXBase"], sort_by: Optional[str]) -> List["STIXBase"]:
+    def _sort(objs: list[STIXBase], sort_by: str | None) -> list[STIXBase]:
         if not sort_by:
             return objs
+
         def _key(obj):
             v = _get_field(obj, sort_by)
             if v is None:
@@ -391,19 +402,22 @@ class TabularView:
             if isinstance(v, (int, float)):
                 return -v  # descending for numbers
             return str(v)
+
         return sorted(objs, key=_key)
 
     def _show_rich(self, groups, sort_by, limit, fields) -> None:
+        from rich import box as rich_box
         from rich.console import Console
         from rich.table import Table
-        from rich import box as rich_box
 
         console = Console()
-        console.print(f"\n[bold]Workspace:[/bold] [cyan]{self._ws.name}[/cyan]  "
-                      f"[dim]{len(self._ws)} objects[/dim]\n")
+        console.print(
+            f"\n[bold]Workspace:[/bold] [cyan]{self._ws.name}[/cyan]  "
+            f"[dim]{len(self._ws)} objects[/dim]\n"
+        )
 
         for stype, objs in groups.items():
-            cols  = fields or _COLUMNS.get(stype, _COLUMNS["_default"])
+            cols = fields or _COLUMNS.get(stype, _COLUMNS["_default"])
             color = _TYPE_COLORS.get(stype, "white")
             table = Table(
                 title=f"[{color}]{stype}[/{color}]  ({len(objs)} objects)",
@@ -413,8 +427,9 @@ class TabularView:
                 row_styles=["", "dim"],
             )
             for col in cols:
-                table.add_column(col, overflow="fold",
-                                 max_width=60 if col in ("pattern", "description") else 40)
+                table.add_column(
+                    col, overflow="fold", max_width=60 if col in ("pattern", "description") else 40
+                )
             for obj in self._sort(objs, sort_by)[:limit]:
                 row = [_coerce(_get_field(obj, c)) for c in cols]
                 table.add_row(*row)
@@ -426,8 +441,7 @@ class TabularView:
             cols = fields or _COLUMNS.get(stype, _COLUMNS["_default"])
             sorted_objs = self._sort(objs, sort_by)[:limit]
             rows = _to_rows(sorted_objs, cols)
-            widths = {c: max(len(c), max((len(r[c]) for r in rows), default=0))
-                      for c in cols}
+            widths = {c: max(len(c), max((len(r[c]) for r in rows), default=0)) for c in cols}
             print(f"\n── {stype} ({len(objs)}) " + "─" * 40)
             print("  ".join(c.ljust(widths[c]) for c in cols))
             print("  ".join("─" * widths[c] for c in cols))
@@ -439,15 +453,16 @@ class TabularView:
         sections = []
         for stype, objs in groups.items():
             cols = _COLUMNS.get(stype, _COLUMNS["_default"])
-            color = {"indicator": "#1a73e8", "malware": "#d93025",
-                     "vulnerability": "#f29900", "threat-actor": "#9334e6",
-                     "relationship": "#0f9d58"}.get(stype, "#5f6368")
+            color = {
+                "indicator": "#1a73e8",
+                "malware": "#d93025",
+                "vulnerability": "#f29900",
+                "threat-actor": "#9334e6",
+                "relationship": "#0f9d58",
+            }.get(stype, "#5f6368")
             rows_html = ""
             for obj in self._sort(objs, sort_by)[:top]:
-                cells = "".join(
-                    f"<td>{_coerce(_get_field(obj, c))[:200]}</td>"
-                    for c in cols
-                )
+                cells = "".join(f"<td>{_coerce(_get_field(obj, c))[:200]}</td>" for c in cols)
                 rows_html += f"<tr>{cells}</tr>\n"
             headers = "".join(f"<th onclick='sortTable(this)'>{c} ⇅</th>" for c in cols)
             sections.append(f"""
@@ -499,7 +514,7 @@ class TabularView:
 <body>
   <h1>GNAT: {self._ws.name}</h1>
   <p class="meta">Generated {ts} &nbsp;|&nbsp; {len(self._ws)} total objects</p>
-  {''.join(sections)}
+  {"".join(sections)}
   <script>
     function filterTable(input) {{
       const filter = input.value.toLowerCase();

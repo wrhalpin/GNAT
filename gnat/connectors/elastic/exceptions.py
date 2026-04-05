@@ -43,24 +43,37 @@ ElasticError
 └── ElasticSTIXError
 """
 
+
 class ElasticError(Exception):
     """Base exception for all Elastic Security connector errors."""
 
     # ── Configuration ─────────────────────────────────────────────────────────────
+
 
 class ElasticConfigError(ElasticError):
     """Raised when [elastic] INI section is missing or invalid."""
 
     # ── Authentication ────────────────────────────────────────────────────────────
 
+
 class ElasticAuthError(ElasticError):
     """
     Raised on authentication failures.
     - Missing or invalid API key (HTTP 401)
     - API key lacks required cluster/index privileges (HTTP 403)
+
+    Attributes
+    ----------
+    status_code : int | None
+        HTTP status code (401 or 403).
     """
 
+    def __init__(self, message: str, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
     # ── Elasticsearch API ─────────────────────────────────────────────────────────
+
 
 class ElasticAPIError(ElasticError):
     """
@@ -104,11 +117,14 @@ class ElasticAPIError(ElasticError):
             parts.append(f"endpoint={self.endpoint}")
         return " | ".join(parts)
 
+
 class ElasticNotFoundError(ElasticAPIError):
     """Raised on HTTP 404 from the Elasticsearch API."""
 
+
 class ElasticRateLimitError(ElasticAPIError):
     """Raised on HTTP 429 from Elasticsearch."""
+
 
 class ElasticConflictError(ElasticAPIError):
     """
@@ -117,6 +133,7 @@ class ElasticConflictError(ElasticAPIError):
     """
 
     # ── Kibana API ────────────────────────────────────────────────────────────────
+
 
 class ElasticKibanaError(ElasticError):
     """
@@ -154,13 +171,16 @@ class ElasticKibanaError(ElasticError):
             parts.append(f"endpoint={self.endpoint}")
         return " | ".join(parts)
 
+
 class ElasticKibanaNotFoundError(ElasticKibanaError):
     """Raised on HTTP 404 from the Kibana API."""
+
 
 class ElasticKibanaValidationError(ElasticKibanaError):
     """Raised on HTTP 400 from the Kibana API (validation failure)."""
 
     # ── STIX ─────────────────────────────────────────────────────────────────────
+
 
 class ElasticSTIXError(ElasticError):
     """

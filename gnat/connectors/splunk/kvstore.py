@@ -33,13 +33,14 @@ Splunk KV Store queries use MongoDB-style JSON filter objects:
 ## References
 
 - https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTkvstore
-  """
+"""
 
 import json
 import urllib.parse
 
 from .client import SplunkClient
 from .exceptions import SplunkNotFoundError
+
 
 class SplunkKVStoreCommands:
     """
@@ -69,10 +70,7 @@ class SplunkKVStoreCommands:
             "storage/collections/config",
             namespaced=True,
         )
-        return [
-            entry.get("name", "")
-            for entry in response.get("entry", [])
-        ]
+        return [entry.get("name", "") for entry in response.get("entry", [])]
 
     def create_collection(
         self,
@@ -361,7 +359,7 @@ class SplunkKVStoreCommands:
         )
         responses = []
         for i in range(0, len(records), batch_size):
-            batch = records[i:i + batch_size]
+            batch = records[i : i + batch_size]
             resp = self._client.post(
                 url,
                 raw_body=json.dumps(batch).encode("utf-8"),

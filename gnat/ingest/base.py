@@ -44,12 +44,13 @@ from __future__ import annotations
 import hashlib
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Iterator, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from gnat.orm.base import STIXBase
     from gnat.client import GNATClient
+    from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: A raw record is just a plain dict produced by a SourceReader.
-RawRecord = Dict[str, Any]
+RawRecord = dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +108,7 @@ class SourceReader(ABC):
     # Context manager
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> "SourceReader":
+    def __enter__(self) -> SourceReader:
         self.open()
         return self
 
@@ -151,7 +152,7 @@ class SourceReader(ABC):
             self.open()
         yield from self._iter_records()
 
-    def read_all(self) -> List[RawRecord]:
+    def read_all(self) -> list[RawRecord]:
         """Materialise all records into a list.  Convenient for small sources."""
         return list(self)
 
@@ -196,7 +197,7 @@ class RecordMapper(ABC):
 
     def __init__(
         self,
-        client: Optional["GNATClient"] = None,
+        client: GNATClient | None = None,
         tlp_marking: str = "white",
         confidence: int = 50,
     ):
@@ -205,7 +206,7 @@ class RecordMapper(ABC):
         self.confidence = confidence
 
     @abstractmethod
-    def map(self, record: RawRecord) -> Iterator["STIXBase"]:
+    def map(self, record: RawRecord) -> Iterator[STIXBase]:
         """
         Convert one raw record into zero or more STIX objects.
 
@@ -221,7 +222,7 @@ class RecordMapper(ABC):
             or filtered records.
         """
 
-    def map_many(self, records: Iterable[RawRecord]) -> Iterator["STIXBase"]:
+    def map_many(self, records: Iterable[RawRecord]) -> Iterator[STIXBase]:
         """Map an iterable of records, flattening all results."""
         for record in records:
             try:
@@ -229,14 +230,13 @@ class RecordMapper(ABC):
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "%s: failed to map record %r — %s",
-                    type(self).__name__, record, exc,
+                    type(self).__name__,
+                    record,
+                    exc,
                 )
 
     def __repr__(self) -> str:  # pragma: no cover
-        return (
-            f"{type(self).__name__}("
-            f"tlp={self.tlp_marking!r}, confidence={self.confidence})"
-        )
+        return f"{type(self).__name__}(tlp={self.tlp_marking!r}, confidence={self.confidence})"
 
 
 # ---------------------------------------------------------------------------
@@ -269,7 +269,7 @@ class IngestResult:
     total_records: int = 0
     mapped_objects: int = 0
     written_objects: int = 0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     skipped_duplicates: int = 0
 
     @property
@@ -308,11 +308,11 @@ class DeduplicationCache:
         Which fields to use as the uniqueness key.  Defaults to ``["id"]``.
     """
 
-    def __init__(self, key_fields: Optional[List[str]] = None):
+    def __init__(self, key_fields: list[str] | None = None):
         self._fields = key_fields or ["id"]
         self._seen: set = set()
 
-    def is_duplicate(self, stix_obj: "STIXBase") -> bool:
+    def is_duplicate(self, stix_obj: STIXBase) -> bool:
         """Return True if this object has been seen before."""
         fingerprint = self._fingerprint(stix_obj)
         if fingerprint in self._seen:
@@ -320,13 +320,13 @@ class DeduplicationCache:
         self._seen.add(fingerprint)
         return False
 
-    def _fingerprint(self, obj: "STIXBase") -> str:
+    def _fingerprint(self, obj: STIXBase) -> str:
         parts = []
-        for field in self._fields:
-            if field == "id":
+        for fld in self._fields:
+            if fld == "id":
                 parts.append(obj.id)
             else:
-                parts.append(str(obj._properties.get(field, "")))
+                parts.append(str(obj._properties.get(fld, "")))
         raw = "|".join(parts).encode()
         return hashlib.sha256(raw).hexdigest()
 

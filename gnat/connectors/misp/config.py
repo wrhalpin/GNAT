@@ -44,8 +44,11 @@ from .exceptions import MISPConfigError
 
 _REQUIRED = {"url", "api_key"}
 _DEFAULTS: dict = {
-    "url": "", "api_key": "",
-    "verify_ssl": "true", "timeout": "30", "max_results": "100",
+    "url": "",
+    "api_key": "",
+    "verify_ssl": "true",
+    "timeout": "30",
+    "max_results": "100",
     "default_distribution": "0",
     "default_threat_level": "2",
     "default_analysis": "0",
@@ -75,7 +78,7 @@ class MISPConfig:
         if not self.api_key:
             raise MISPConfigError("'api_key' is required in [misp] config.")
         if not self.url.startswith(("http://", "https://")):
-            raise MISPConfigError(f"'url' must start with http:// or https://.")
+            raise MISPConfigError("'url' must start with http:// or https://.")
 
     def endpoint(self, path: str) -> str:
         """Build a full MISP API URL."""
@@ -97,17 +100,13 @@ def load_misp_config(
 ) -> MISPConfig:
     """Parse [misp] section from gnat.ini."""
     if not config.has_section(section):
-        raise MISPConfigError(
-            f"Configuration section '[{section}]' not found in gnat.ini."
-        )
+        raise MISPConfigError(f"Configuration section '[{section}]' not found in gnat.ini.")
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))
 
     missing = {k for k in _REQUIRED if not raw.get(k, "").strip()}
     if missing:
-        raise MISPConfigError(
-            f"Missing required [misp] config keys: {', '.join(sorted(missing))}"
-        )
+        raise MISPConfigError(f"Missing required [misp] config keys: {', '.join(sorted(missing))}")
 
     def _bool(v: str) -> bool:
         return v.strip().lower() in ("true", "1", "yes")

@@ -79,10 +79,13 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gnat.research.entry import (
-    ResearchEntry, DEFAULT_TTLS, categorise_topic, topic_key,
+    DEFAULT_TTLS,
+    ResearchEntry,
+    categorise_topic,
+    topic_key,
 )
 
 if TYPE_CHECKING:
@@ -138,13 +141,13 @@ class ResearchLibrary:
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
-        ttls: Optional[Dict[str, int]] = None,
+        manager: WorkspaceManager,
+        ttls: dict[str, int] | None = None,
         staging_name: str = _STAGING_NAME,
         library_name: str = _LIBRARY_NAME,
     ):
-        self._manager      = manager
-        self._ttls         = {**DEFAULT_TTLS, **(ttls or {})}
+        self._manager = manager
+        self._ttls = {**DEFAULT_TTLS, **(ttls or {})}
         self._staging_name = staging_name
         self._library_name = library_name
         self._ensure_workspaces()
@@ -154,9 +157,9 @@ class ResearchLibrary:
     @classmethod
     def default(
         cls,
-        config_path: Optional[str] = None,
-        db_url: Optional[str] = None,
-    ) -> "ResearchLibrary":
+        config_path: str | None = None,
+        db_url: str | None = None,
+    ) -> ResearchLibrary:
         """
         Construct with auto-configured WorkspaceManager and INI-driven TTLs.
 
@@ -168,18 +171,18 @@ class ResearchLibrary:
             SQLAlchemy URL for the workspace store.  Defaults to SQLite.
         """
         from gnat.context.workspace import WorkspaceManager
+
         manager = WorkspaceManager.default(config_path=config_path, db_url=db_url)
         ttls = cls._load_ttls(config_path)
         staging, library = cls._load_names(config_path)
-        return cls(manager=manager, ttls=ttls,
-                   staging_name=staging, library_name=library)
+        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library)
 
     @classmethod
     def from_manager(
         cls,
-        manager: "WorkspaceManager",
-        config_path: Optional[str] = None,
-    ) -> "ResearchLibrary":
+        manager: WorkspaceManager,
+        config_path: str | None = None,
+    ) -> ResearchLibrary:
         """
         Construct from an existing WorkspaceManager.
 
@@ -187,19 +190,18 @@ class ResearchLibrary:
         """
         ttls = cls._load_ttls(config_path)
         staging, library = cls._load_names(config_path)
-        return cls(manager=manager, ttls=ttls,
-                   staging_name=staging, library_name=library)
+        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library)
 
     # ── Promotion (personal → staging) ─────────────────────────────────────
 
     def promote(
         self,
-        workspace: "Workspace",
+        workspace: Workspace,
         topic: str,
         researcher: str,
         note: str = "",
-        stix_ids: Optional[List[str]] = None,
-    ) -> "ResearchEntry":
+        stix_ids: list[str] | None = None,
+    ) -> ResearchEntry:
         """
         Promote research from a personal workspace into staging.
 
@@ -243,12 +245,12 @@ class ResearchLibrary:
         """
         # Collect objects to promote
         if stix_ids:
-            objects = [ws_obj for sid, ws_obj in workspace.objects.items()
-                       if sid in set(stix_ids)]
+            objects = [ws_obj for sid, ws_obj in workspace.objects.items() if sid in set(stix_ids)]
         else:
             # Prefer AI-extracted objects; fall back to all objects
             ai_objects = [
-                obj for obj in workspace.objects.values()
+                obj
+                for obj in workspace.objects.values()
                 if obj._properties.get("x_source_type") == "ai_extracted"
             ]
             objects = ai_objects if ai_objects else list(workspace.objects.values())
@@ -265,21 +267,22 @@ class ResearchLibrary:
         ttl_hours = self._ttls.get(category, DEFAULT_TTLS["other"])
 
         entry = ResearchEntry(
-            topic            = topic,
-            stix_objects     = stix_dicts,
-            researcher       = researcher,
-            promoted_at      = _utcnow(),
-            note             = note,
-            source_workspace = workspace.name,
-            category         = category,
+            topic=topic,
+            stix_objects=stix_dicts,
+            researcher=researcher,
+            promoted_at=_utcnow(),
+            note=note,
+            source_workspace=workspace.name,
+            category=category,
         )
         entry.set_ttl(ttl_hours)
 
         self._write_entry_to_staging(entry)
         logger.info(
-            "ResearchLibrary: promoted %d objects for topic %r "
-            "by %r (note: %s)",
-            len(stix_dicts), topic, researcher,
+            "ResearchLibrary: promoted %d objects for topic %r by %r (note: %s)",
+            len(stix_dicts),
+            topic,
+            researcher,
             repr(note[:60]) if note else "(none)",
         )
         return entry
@@ -303,7 +306,7 @@ class ResearchLibrary:
         entry = self.get(topic)
         return entry is not None and entry.is_fresh
 
-    def get(self, topic: str) -> Optional[ResearchEntry]:
+    def get(self, topic: str) -> ResearchEntry | None:
         """
         Return the most recent curated entry for a topic, or ``None``.
 
@@ -315,15 +318,13 @@ class ResearchLibrary:
         topic : str
             Research topic.
         """
-        return self._find_entry(topic, workspace_name=self._library_name,
-                                status="curated")
+        return self._find_entry(topic, workspace_name=self._library_name, status="curated")
 
-    def get_staging(self, topic: str) -> Optional[ResearchEntry]:
+    def get_staging(self, topic: str) -> ResearchEntry | None:
         """
         Return the most recent pending staging entry for a topic, or ``None``.
         """
-        return self._find_entry(topic, workspace_name=self._staging_name,
-                                status="pending")
+        return self._find_entry(topic, workspace_name=self._staging_name, status="pending")
 
     def search(
         self,
@@ -331,7 +332,7 @@ class ResearchLibrary:
         include_stale: bool = False,
         include_staging: bool = False,
         limit: int = 50,
-    ) -> List[ResearchEntry]:
+    ) -> list[ResearchEntry]:
         """
         Search the library for entries matching a query string.
 
@@ -373,10 +374,15 @@ class ResearchLibrary:
         for entry in entries:
             if not include_stale and not entry.is_fresh:
                 continue
-            searchable = " ".join([
-                entry.topic, entry.note, entry.researcher,
-                entry.category, entry.source_workspace,
-            ]).lower()
+            searchable = " ".join(
+                [
+                    entry.topic,
+                    entry.note,
+                    entry.researcher,
+                    entry.category,
+                    entry.source_workspace,
+                ]
+            ).lower()
             if q in searchable:
                 matched.append(entry)
 
@@ -387,8 +393,8 @@ class ResearchLibrary:
     def list_entries(
         self,
         include_stale: bool = False,
-        category: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        category: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         List all curated library entries as lightweight summary dicts.
 
@@ -415,16 +421,15 @@ class ResearchLibrary:
             result.append(entry.summary())
         return result
 
-    def list_staging(self) -> List[Dict[str, Any]]:
+    def list_staging(self) -> list[dict[str, Any]]:
         """List all pending staging entries as summary dicts, newest first."""
         entries = self._load_all_entries(self._staging_name, status="pending")
-        return [e.summary()
-                for e in sorted(entries, key=lambda e: e.promoted_at, reverse=True)]
+        return [e.summary() for e in sorted(entries, key=lambda e: e.promoted_at, reverse=True)]
 
     def load_into_workspace(
         self,
         topic: str,
-        workspace: "Workspace",
+        workspace: Workspace,
         mark_dirty: bool = False,
     ) -> int:
         """
@@ -464,7 +469,9 @@ class ResearchLibrary:
 
         logger.info(
             "ResearchLibrary: loaded %d objects for topic %r into workspace %r",
-            count, topic, workspace.name,
+            count,
+            topic,
+            workspace.name,
         )
         return count
 
@@ -496,12 +503,13 @@ class ResearchLibrary:
                     self._save_entry(entry, ws_name)
                     logger.info(
                         "ResearchLibrary: archived entry %r (topic=%r)",
-                        entry_id, entry.topic,
+                        entry_id,
+                        entry.topic,
                     )
                     return True
         return False
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """
         Return summary statistics for the library and staging area.
 
@@ -515,7 +523,7 @@ class ResearchLibrary:
         lib_entries = self._load_all_entries(self._library_name, status="curated")
         stg_entries = self._load_all_entries(self._staging_name, status="pending")
 
-        by_cat: Dict[str, int] = {}
+        by_cat: dict[str, int] = {}
         for e in lib_entries:
             by_cat[e.category] = by_cat.get(e.category, 0) + 1
 
@@ -525,11 +533,11 @@ class ResearchLibrary:
         ages = [e.age_hours for e in lib_entries]
 
         return {
-            "library_total":    len(lib_entries),
-            "library_fresh":    len(fresh),
-            "library_stale":    len(stale),
-            "staging_pending":  len(stg_entries),
-            "by_category":      by_cat,
+            "library_total": len(lib_entries),
+            "library_fresh": len(fresh),
+            "library_stale": len(stale),
+            "staging_pending": len(stg_entries),
+            "by_category": by_cat,
             "oldest_entry_hours": round(max(ages), 1) if ages else 0,
             "newest_entry_hours": round(min(ages), 1) if ages else 0,
         }
@@ -559,7 +567,7 @@ class ResearchLibrary:
 
     def _save_entry(self, entry: ResearchEntry, workspace_name: str) -> None:
         """Persist a ResearchEntry into the named workspace's store."""
-        ws = self._manager.open(workspace_name)
+        _ws = self._manager.open(workspace_name)
         store = self._manager._store
 
         from gnat.context.store import WorkspaceStore
@@ -571,23 +579,22 @@ class ResearchLibrary:
             # Store entry as a JSON blob using a synthetic STIX-like dict
             # with a well-known id prefix so we can query it back
             synthetic_stix = {
-                "type":       "x-research-entry",
-                "id":         f"x-research-entry--{entry.entry_id}",
-                "name":       entry.topic,
-                "created":    entry.promoted_at.isoformat(),
-                "modified":   (entry.curated_at or entry.promoted_at).isoformat(),
+                "type": "x-research-entry",
+                "id": f"x-research-entry--{entry.entry_id}",
+                "name": entry.topic,
+                "created": entry.promoted_at.isoformat(),
+                "modified": (entry.curated_at or entry.promoted_at).isoformat(),
                 **entry.to_dict(),
             }
             store.upsert_object(
-                ws_model.id, synthetic_stix,
+                ws_model.id,
+                synthetic_stix,
                 source_platform="research_library",
                 is_dirty=False,
             )
         else:
             # FlatFileStore — write one JSON file per entry
-            entry_dir = (
-                Path(store._base) / workspace_name / "research_entries"
-            )
+            entry_dir = Path(store._base) / workspace_name / "research_entries"
             entry_dir.mkdir(parents=True, exist_ok=True)
             fp = entry_dir / f"{entry.entry_id}.json"
             fp.write_text(json.dumps(entry.to_dict(), indent=2))
@@ -595,14 +602,14 @@ class ResearchLibrary:
     def _load_all_entries(
         self,
         workspace_name: str,
-        status: Optional[str] = None,
-    ) -> List[ResearchEntry]:
+        status: str | None = None,
+    ) -> list[ResearchEntry]:
         """Load all ResearchEntry objects from a workspace's store."""
         store = self._manager._store
 
         from gnat.context.store import WorkspaceStore
 
-        raw_entries: List[Dict[str, Any]] = []
+        raw_entries: list[dict[str, Any]] = []
 
         if isinstance(store, WorkspaceStore):
             ws_model = store.get_workspace(workspace_name)
@@ -611,9 +618,7 @@ class ResearchLibrary:
             objects = store.get_objects(ws_model.id, stix_type="x-research-entry")
             raw_entries = objects
         else:
-            entry_dir = (
-                Path(store._base) / workspace_name / "research_entries"
-            )
+            entry_dir = Path(store._base) / workspace_name / "research_entries"
             if not entry_dir.exists():
                 return []
             for fp in sorted(entry_dir.glob("*.json")):
@@ -637,12 +642,13 @@ class ResearchLibrary:
         self,
         topic: str,
         workspace_name: str,
-        status: Optional[str] = None,
-    ) -> Optional[ResearchEntry]:
+        status: str | None = None,
+    ) -> ResearchEntry | None:
         """Return the most recent entry matching a topic key."""
         tkey = topic_key(topic)
         entries = [
-            e for e in self._load_all_entries(workspace_name, status=status)
+            e
+            for e in self._load_all_entries(workspace_name, status=status)
             if topic_key(e.topic) == tkey
         ]
         if not entries:

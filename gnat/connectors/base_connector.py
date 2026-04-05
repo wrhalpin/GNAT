@@ -20,31 +20,39 @@ Connector clients should inherit from BOTH
 """
 
 import inspect
-from typing import Any, Callable, Dict, List, Optional
-
+from typing import Any, Callable, Optional
 
 # Standard interface methods and their read/write classification
-_STANDARD_METHODS: Dict[str, str] = {
-    "authenticate":   "auth",
-    "health_check":   "read",
-    "get_object":     "read",
-    "list_objects":   "read",
-    "to_stix":        "read",
-    "from_stix":      "read",
-    "upsert_object":  "write",
-    "delete_object":  "write",
+_STANDARD_METHODS: dict[str, str] = {
+    "authenticate": "auth",
+    "health_check": "read",
+    "get_object": "read",
+    "list_objects": "read",
+    "to_stix": "read",
+    "from_stix": "read",
+    "upsert_object": "write",
+    "delete_object": "write",
 }
 
 # Prefixes / names that are never exposed via capabilities()
 _PRIVATE_PREFIXES = ("_", "__")
-_EXCLUDED_NAMES = frozenset({
-    # Python object protocol
-    "mro", "subclasshook",
-    # BaseClient plumbing — not connector capabilities
-    "request", "get", "post", "put", "delete", "patch",
-    # ConnectorMixin meta methods themselves
-    "capabilities", "call",
-})
+_EXCLUDED_NAMES = frozenset(
+    {
+        # Python object protocol
+        "mro",
+        "subclasshook",
+        # BaseClient plumbing — not connector capabilities
+        "request",
+        "get",
+        "post",
+        "put",
+        "delete",
+        "patch",
+        # ConnectorMixin meta methods themselves
+        "capabilities",
+        "call",
+    }
+)
 
 
 class ConnectorMixin:
@@ -61,13 +69,13 @@ class ConnectorMixin:
         codes.  Connectors should populate this at class level.
     """
 
-    stix_type_map: Dict[str, str] = {}
+    stix_type_map: dict[str, str] = {}
 
     # ------------------------------------------------------------------
     # Translation
     # ------------------------------------------------------------------
 
-    def to_stix(self, native_object: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native_object: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a platform-native object dict to STIX 2.1 format.
 
@@ -83,7 +91,7 @@ class ConnectorMixin:
         """
         raise NotImplementedError(f"{type(self).__name__}.to_stix() not implemented")
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a STIX 2.1 dict to the platform-native request payload.
 
@@ -103,21 +111,21 @@ class ConnectorMixin:
     # CRUD
     # ------------------------------------------------------------------
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single object from the platform by type and id."""
         raise NotImplementedError(f"{type(self).__name__}.get_object() not implemented")
 
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return a list of platform objects of the given STIX type."""
         raise NotImplementedError(f"{type(self).__name__}.list_objects() not implemented")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Create or update an object on the platform."""
         raise NotImplementedError(f"{type(self).__name__}.upsert_object() not implemented")
 
@@ -133,7 +141,7 @@ class ConnectorMixin:
     # Capability reflection
     # ------------------------------------------------------------------
 
-    def capabilities(self) -> Dict[str, Dict[str, Any]]:
+    def capabilities(self) -> dict[str, dict[str, Any]]:
         """
         Return a structured inventory of all available connector operations.
 
@@ -162,7 +170,7 @@ class ConnectorMixin:
         >>> caps["link_incident"]["platform_specific"]
         True
         """
-        result: Dict[str, Dict[str, Any]] = {}
+        result: dict[str, dict[str, Any]] = {}
         seen: set = set()
 
         # Walk the MRO so subclass methods shadow base-class stubs
@@ -195,9 +203,9 @@ class ConnectorMixin:
                     doc = first_line
 
                 result[name] = {
-                    "signature":         sig_str,
-                    "doc":               doc,
-                    "type":              method_type,
+                    "signature": sig_str,
+                    "doc": doc,
+                    "type": method_type,
                     "platform_specific": platform_specific,
                 }
 
@@ -255,91 +263,7 @@ class ConnectorMixin:
         meta = caps[method_name]
         if meta["type"] == "write" and not allow_write:
             raise ValueError(
-                f"'{method_name}' is a write operation.  "
-                f"Pass allow_write=True to permit it."
+                f"'{method_name}' is a write operation.  Pass allow_write=True to permit it."
             )
         method: Callable[..., Any] = getattr(self, method_name)
         return method(*args, **kwargs)
-
-    """
-    Contract mixin for STIX ↔ native schema translation and CRUD dispatch.
-
-    All methods raise :class:`NotImplementedError` by default and must be
-    overridden in concrete connector subclasses.
-
-    Attributes
-    ----------
-    stix_type_map : dict
-        Maps STIX type strings to platform-native resource paths or type
-        codes.  Connectors should populate this at class level.
-    """
-
-    stix_type_map: Dict[str, str] = {}
-
-    # ------------------------------------------------------------------
-    # Translation
-    # ------------------------------------------------------------------
-
-    def to_stix(self, native_object: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Convert a platform-native object dict to STIX 2.1 format.
-
-        Parameters
-        ----------
-        native_object : dict
-            Raw API response from the target platform.
-
-        Returns
-        -------
-        dict
-            STIX 2.1 representation of the object.
-        """
-        raise NotImplementedError(f"{type(self).__name__}.to_stix() not implemented")
-
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Convert a STIX 2.1 dict to the platform-native request payload.
-
-        Parameters
-        ----------
-        stix_dict : dict
-            STIX object dict from ``STIXBase.to_dict()``.
-
-        Returns
-        -------
-        dict
-            Platform-native payload ready for the API.
-        """
-        raise NotImplementedError(f"{type(self).__name__}.from_stix() not implemented")
-
-    # ------------------------------------------------------------------
-    # CRUD
-    # ------------------------------------------------------------------
-
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
-        """Fetch a single object from the platform by type and id."""
-        raise NotImplementedError(f"{type(self).__name__}.get_object() not implemented")
-
-    def list_objects(
-        self,
-        stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
-        page: int = 1,
-        page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
-        """Return a list of platform objects of the given STIX type."""
-        raise NotImplementedError(f"{type(self).__name__}.list_objects() not implemented")
-
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Create or update an object on the platform."""
-        raise NotImplementedError(f"{type(self).__name__}.upsert_object() not implemented")
-
-    def delete_object(self, stix_type: str, object_id: str) -> None:
-        """Delete an object from the platform."""
-        raise NotImplementedError(f"{type(self).__name__}.delete_object() not implemented")
-
-    def health_check(self) -> bool:
-        """Return True if the platform API is reachable."""
-        raise NotImplementedError(f"{type(self).__name__}.health_check() not implemented")
-
-

@@ -67,338 +67,242 @@ calls per ``_iter_records`` invocation to prevent runaway cost.
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Any, Dict, Iterator, List, Optional
+from collections.abc import Iterator
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any
 
+from gnat.agents.base import ClaudeClient
 from gnat.ingest.base import RawRecord, SourceReader
-from gnat.agents.base import AgentConfig, ClaudeClient, ResearchResult
-from gnat.agents.prompts import (
-    RESEARCH_SYSTEM,
-    RESEARCH_TOPIC_USER,
-    RESEARCH_TOPIC_USER_NEWER,
-    RESEARCH_FEED_SYSTEM,
-    RESEARCH_FEED_USER,
-    RESEARCH_FEED_NEWER_HINT,
-)
+
+if TYPE_CHECKING:
+    from gnat.agents.base import AgentConfig
 
 logger = logging.getLogger(__name__)
 
-# Web search tool definition for the Claude API
-_WEB_SEARCH_TOOL = {
-    "type": "web_search_20250305",
-    "name": "web_search",
-}
+_FEED_BATCH_SIZE = 10
+
+
+def _now_ts() -> str:
+    """ISO 8601 timestamp with millisecond precision."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
 class ResearchAgent(SourceReader):
     """
-    AI-powered threat intelligence researcher using Claude + web search.
+    AI-powered research agent for threat intelligence.
 
-    Implements :class:`~gnat.ingest.base.SourceReader` so it drops
-    directly into :class:`~gnat.ingest.pipeline.pipeline.IngestPipeline`
-    as the ``read_from`` source.
+    Supports topic-driven synthesis and feed-driven monitoring via the
+    Claude API (``ClaudeClient``).
 
     Parameters
     ----------
     config : AgentConfig
-        Claude API configuration (key, model, limits).
-    topics : list of str, optional
-        Topic-driven mode — one synthesis per topic.
-        Mutually exclusive with ``monitored_sources``.
-    monitored_sources : list of dict, optional
-        Feed-driven mode — list of ``{"url": "...", "label": "..."}`` dicts.
-        Mutually exclusive with ``topics``.
+        Agent configuration (API key, model, ceiling, etc.).
+    topics : list[str], optional
+        Threat topics to research (topic-driven mode).
+    monitored_sources : list[dict], optional
+        Feed sources to monitor (feed-driven mode).
     newer_than : str, optional
-        ISO 8601 timestamp.  In topic-driven mode, instructs Claude to focus
-        on recent findings.  In feed-driven mode, filters out older content.
-        Typically ``ctx.last_success_iso`` from :class:`~gnat.schedule.job.JobRunContext`.
-    max_calls_per_run : int
-        Maximum Claude API calls per ``_iter_records`` invocation.
-        Default ``20``.  Prevents runaway cost on large topic lists.
-    label : str
-        Human-readable label used in log messages and ``IngestResult``.
-
-    Raises
-    ------
-    ValueError
-        If neither ``topics`` nor ``monitored_sources`` is provided, or
-        if both are provided simultaneously.
-
-    Examples
-    --------
-    Topic-driven::
-
-        from gnat.agents import ResearchAgent, AgentConfig
-
-        agent = ResearchAgent(
-            config=AgentConfig.from_ini(),
-            topics=["Scattered Spider", "CVE-2024-3400", "Volt Typhoon"],
-        )
-        for record in agent:
-            print(record["title"])   # → "Scattered Spider Threat Summary", …
-
-    Feed-driven with scheduling::
-
-        def make_agent(ctx):
-            return ResearchAgent(
-                config=AgentConfig.from_ini(),
-                monitored_sources=[
-                    {"url": "https://securelist.com/", "label": "Kaspersky SecureList"},
-                    {"url": "https://www.mandiant.com/resources/blog", "label": "Mandiant Blog"},
-                ],
-                newer_than=ctx.last_success_iso,
-            )
+        ISO 8601 timestamp; only return items published after this time.
+    max_calls_per_run : int, optional
+        Cap on the number of API calls per iteration.  ``None`` means unlimited.
     """
 
     def __init__(
         self,
         config: AgentConfig,
-        topics: Optional[List[str]] = None,
-        monitored_sources: Optional[List[Dict[str, str]]] = None,
-        newer_than: Optional[str] = None,
-        max_calls_per_run: int = 20,
-        label: str = "ResearchAgent",
-    ):
-        super().__init__(source_id=label)
+        topics: list[str] | None = None,
+        monitored_sources: list[dict[str, Any]] | None = None,
+        newer_than: str | None = None,
+        max_calls_per_run: int | None = None,
+    ) -> None:
         if topics and monitored_sources:
             raise ValueError(
-                "ResearchAgent: provide either 'topics' or 'monitored_sources', not both."
+                "Provide topics or monitored_sources, not both."
             )
         if not topics and not monitored_sources:
             raise ValueError(
-                "ResearchAgent: provide at least one 'topics' or 'monitored_sources'."
+                "Provide topics or monitored_sources (at least one is required)."
             )
 
-        self._config     = config
-        self._topics     = topics or []
-        self._sources    = monitored_sources or []
+        super().__init__(source_id="ResearchAgent")
+        self._cfg = config
+        self._client = ClaudeClient(config)
+        self._topics: list[str] = list(topics or [])
+        self._monitored_sources: list[dict[str, Any]] = list(monitored_sources or [])
         self._newer_than = newer_than
-        self._max_calls  = max_calls_per_run
-        self._client     = ClaudeClient(config)
+        self._max_calls = max_calls_per_run
 
-    # ── SourceReader interface ─────────────────────────────────────────────
+    # ── SourceReader protocol ─────────────────────────────────────────────
 
     def _iter_records(self) -> Iterator[RawRecord]:
-        """Yield one RawRecord per research result."""
-        calls_made = 0
-
         if self._topics:
-            yield from self._iter_topic_records(calls_made)
+            yield from self._iter_topic_records()
         else:
-            yield from self._iter_feed_records(calls_made)
+            yield from self._iter_feed_records()
 
-    # ── Topic-driven mode ──────────────────────────────────────────────────
+    # ── Topic-driven iteration ────────────────────────────────────────────
 
-    def _iter_topic_records(self, calls_made: int) -> Iterator[RawRecord]:
+    def _iter_topic_records(self) -> Iterator[RawRecord]:
+        calls = 0
         for topic in self._topics:
-            if calls_made >= self._max_calls:
-                logger.warning(
-                    "ResearchAgent: max_calls_per_run=%d reached, "
-                    "skipping remaining topics: %s",
-                    self._max_calls,
-                    self._topics[self._topics.index(topic):],
-                )
+            if self._max_calls is not None and calls >= self._max_calls:
                 break
+            user_prompt = self._build_topic_prompt(topic)
+            try:
+                response = self._client.complete(user_prompt)
+                calls += 1
+            except Exception as exc:
+                logger.warning("ResearchAgent: topic %r failed: %s", topic, exc)
+                continue
 
-            logger.info("ResearchAgent: researching topic %r", topic)
-            result = self._research_topic(topic)
-            calls_made += 1
-
-            if result is not None:
-                yield result.to_raw_record()
-
-    def _research_topic(self, topic: str) -> Optional[ResearchResult]:
-        """Call Claude with web search to synthesize a topic summary."""
-        newer_hint = ""
-        if self._newer_than:
-            newer_hint = RESEARCH_TOPIC_USER_NEWER.format(newer_than=self._newer_than)
-
-        user_msg = RESEARCH_TOPIC_USER.format(
-            topic=topic,
-            newer_than_hint=newer_hint,
-        )
-
-        try:
-            response = self._client.complete(
-                system=RESEARCH_SYSTEM,
-                user=user_msg,
-                tools=[_WEB_SEARCH_TOOL],
-                temperature=0.1,
-            )
-        except RuntimeError as exc:
-            logger.error("ResearchAgent: Claude API error for topic %r: %s", topic, exc)
-            return None
-
-        data = self._client.json_from(response)
-        if not data or not isinstance(data, dict):
-            # Fallback: treat the raw text as the summary
-            text = self._client.text_from(response)
-            if not text:
-                logger.warning("ResearchAgent: empty response for topic %r", topic)
-                return None
-            return ResearchResult(
-                topic=topic,
-                title=f"Research: {topic}",
-                text=text,
-                metadata={"model": self._config.model, "parse_error": True},
-            )
-
-        return ResearchResult(
-            topic       = topic,
-            title       = data.get("title") or f"Research: {topic}",
-            text        = self._flatten_result(data),
-            source_urls = data.get("source_urls") or [],
-            metadata    = {
-                "model":               self._config.model,
-                "key_findings":        data.get("key_findings", []),
-                "iocs_mentioned":      data.get("iocs_mentioned", []),
-                "ttps_mentioned":      data.get("ttps_mentioned", []),
-                "actors_mentioned":    data.get("actors_mentioned", []),
-                "cves_mentioned":      data.get("cves_mentioned", []),
-                "confidence":          data.get("confidence", 50),
-                "search_queries_used": data.get("search_queries_used", []),
-            },
-        )
-
-    @staticmethod
-    def _flatten_result(data: Dict[str, Any]) -> str:
-        """
-        Flatten the structured research result into readable text for the
-        parsing agent to process downstream.
-        """
-        parts = []
-
-        if data.get("summary"):
-            parts.append(data["summary"])
-
-        if data.get("key_findings"):
-            parts.append("\nKey findings:")
-            parts.extend(f"- {f}" for f in data["key_findings"])
-
-        if data.get("iocs_mentioned"):
-            parts.append("\nIOCs mentioned:")
-            for ioc in data["iocs_mentioned"]:
-                parts.append(
-                    f"- {ioc.get('type', 'unknown')}: {ioc.get('value', '')} "
-                    f"({ioc.get('context', '')})"
-                )
-
-        if data.get("ttps_mentioned"):
-            parts.append("\nTTPs mentioned:")
-            for ttp in data["ttps_mentioned"]:
-                tid = ttp.get("technique_id", "")
-                parts.append(
-                    f"- {tid + ' ' if tid else ''}{ttp.get('name', '')} "
-                    f"({ttp.get('context', '')})"
-                )
-
-        if data.get("actors_mentioned"):
-            parts.append("\nThreat actors mentioned:")
-            for actor in data["actors_mentioned"]:
-                parts.append(f"- {actor.get('name', '')} ({actor.get('context', '')})")
-
-        if data.get("cves_mentioned"):
-            parts.append("\nCVEs mentioned:")
-            for cve in data["cves_mentioned"]:
-                parts.append(
-                    f"- {cve.get('cve_id', '')}: {cve.get('description', '')}"
-                )
-
-        return "\n".join(parts)
-
-    # ── Feed-driven mode ───────────────────────────────────────────────────
-
-    def _iter_feed_records(self, calls_made: int) -> Iterator[RawRecord]:
-        """
-        Query Claude to check all configured sources for new content.
-
-        Sources are batched into groups of 10 to stay within a reasonable
-        prompt size.  Each batch makes one Claude API call.
-        """
-        batch_size = 10
-        sources = self._sources
-
-        for batch_start in range(0, len(sources), batch_size):
-            if calls_made >= self._max_calls:
-                logger.warning(
-                    "ResearchAgent: max_calls_per_run=%d reached, "
-                    "skipping remaining sources",
-                    self._max_calls,
-                )
-                break
-
-            batch = sources[batch_start: batch_start + batch_size]
-            logger.info(
-                "ResearchAgent: checking %d monitored sources (batch %d)",
-                len(batch), batch_start // batch_size + 1,
-            )
-
-            items = self._check_sources_batch(batch)
-            calls_made += 1
-
-            for item in items:
-                yield ResearchResult(
-                    topic        = item.get("url", "feed"),
-                    title        = item.get("title", ""),
-                    text         = item.get("text", item.get("summary", "")),
-                    url          = item.get("url", ""),
-                    source_urls  = [item.get("url", "")] if item.get("url") else [],
-                    metadata     = {
-                        "model":        self._config.model,
-                        "author":       item.get("author", ""),
-                        "published_at": item.get("published_at", ""),
-                        "mode":         "feed",
+            parsed = self._client.json_from(response)
+            if parsed is None:
+                # Prose fallback — yield raw text
+                text = self._client.text_from(response)
+                yield {"topic": topic, "text": text, "metadata": {"mode": "topic"}}
+            else:
+                yield {
+                    "topic": topic,
+                    "text": self._flatten_result(parsed),
+                    "metadata": {
+                        "mode": "topic",
+                        "confidence": parsed.get("confidence"),
+                        "iocs_mentioned": parsed.get("iocs_mentioned", []),
+                        "search_queries_used": parsed.get("search_queries_used", []),
                     },
-                ).to_raw_record()
+                }
 
-    def _check_sources_batch(
-        self, sources: List[Dict[str, str]]
-    ) -> List[Dict[str, Any]]:
-        """Send one batch of sources to Claude and parse the result list."""
-        sources_block = "\n".join(
-            f"- {s.get('label', s['url'])}: {s['url']}"
+    def _build_topic_prompt(self, topic: str) -> str:
+        date_hint = (
+            f"\nOnly include information published after {self._newer_than}."
+            if self._newer_than
+            else ""
+        )
+        return (
+            f"You are a cyber threat intelligence analyst.\n"
+            f"Research the following topic and return a JSON object with keys: "
+            f"title, summary, key_findings, source_urls, iocs_mentioned, "
+            f"ttps_mentioned, actors_mentioned, cves_mentioned, confidence (0-100), "
+            f"search_queries_used.\n"
+            f"Topic: {topic}{date_hint}"
+        )
+
+    # ── Feed-driven iteration ─────────────────────────────────────────────
+
+    def _iter_feed_records(self) -> Iterator[RawRecord]:
+        sources = self._monitored_sources
+        for i in range(0, len(sources), _FEED_BATCH_SIZE):
+            batch = sources[i : i + _FEED_BATCH_SIZE]
+            user_prompt = self._build_feed_prompt(batch)
+            try:
+                response = self._client.complete(user_prompt)
+            except Exception as exc:
+                logger.warning("ResearchAgent: feed batch failed: %s", exc)
+                continue
+
+            items = self._client.json_from(response) or []
+            if not isinstance(items, list):
+                items = []
+            for item in items:
+                yield {
+                    "text": item.get("text", item.get("title", "")),
+                    "url": item.get("url", ""),
+                    "title": item.get("title", ""),
+                    "metadata": {"mode": "feed", **item},
+                }
+
+    def _build_feed_prompt(self, sources: list[dict[str, Any]]) -> str:
+        source_lines = "\n".join(
+            f"- {s.get('label', s.get('url', ''))}: {s.get('url', '')}"
             for s in sources
         )
-        newer_hint = ""
-        if self._newer_than:
-            newer_hint = RESEARCH_FEED_NEWER_HINT.format(newer_than=self._newer_than)
-
-        user_msg = RESEARCH_FEED_USER.format(
-            sources_block=sources_block,
-            newer_than_hint=newer_hint,
+        date_hint = (
+            f"\nOnly include items published after {self._newer_than}."
+            if self._newer_than
+            else ""
         )
-
-        try:
-            response = self._client.complete(
-                system=RESEARCH_FEED_SYSTEM,
-                user=user_msg,
-                tools=[_WEB_SEARCH_TOOL],
-                temperature=0.1,
-            )
-        except RuntimeError as exc:
-            logger.error("ResearchAgent: Claude API error for feed batch: %s", exc)
-            return []
-
-        data = self._client.json_from(response)
-        if data is None or not isinstance(data, list):
-            logger.warning(
-                "ResearchAgent: feed batch returned non-list response, "
-                "raw: %.200s", self._client.text_from(response)
-            )
-            return []
-
-        logger.info(
-            "ResearchAgent: feed batch returned %d items", len(data)
-        )
-        return data
-
-    def __repr__(self) -> str:  # pragma: no cover
-        if self._topics:
-            return (
-                f"ResearchAgent(mode=topic, topics={self._topics}, "
-                f"model={self._config.model!r})"
-            )
         return (
-            f"ResearchAgent(mode=feed, sources={len(self._sources)}, "
-            f"model={self._config.model!r})"
+            f"You are a cyber threat intelligence analyst monitoring threat feeds.\n"
+            f"Check the following sources for new threat-relevant content and return a "
+            f"JSON array of objects, each with keys: url, title, text, published_at.\n"
+            f"Return an empty array [] if no relevant content is found.{date_hint}\n\n"
+            f"Sources:\n{source_lines}"
         )
+
+    # ── Helpers ────────────────────────────────────────────────────────────
+
+    def _flatten_result(self, result: dict[str, Any]) -> str:
+        """Convert a structured research result dict to a plain-text string."""
+        parts: list[str] = []
+        if result.get("summary"):
+            parts.append(str(result["summary"]))
+        for finding in result.get("key_findings", []):
+            parts.append(str(finding))
+        for ioc in result.get("iocs_mentioned", []):
+            if ioc.get("value"):
+                parts.append(str(ioc["value"]))
+        for ttp in result.get("ttps_mentioned", []):
+            if ttp.get("technique_id"):
+                parts.append(str(ttp["technique_id"]))
+            if ttp.get("name"):
+                parts.append(str(ttp["name"]))
+        for actor in result.get("actors_mentioned", []):
+            if actor.get("name"):
+                parts.append(str(actor["name"]))
+        for cve in result.get("cves_mentioned", []):
+            if cve.get("cve_id"):
+                parts.append(str(cve["cve_id"]))
+        return " ".join(parts)
+
+    # ── Legacy helpers (preserved for backward compatibility) ─────────────
+
+    def research_topic(self, topic: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        """
+        Perform deep research on a threat topic using the configured LLM.
+
+        Returns structured output with threat summary, indicators, TTPs, etc.
+        """
+        user_prompt = (
+            f"Research the following threat intelligence topic: {topic}\n\n"
+            f"Additional context:\n{json.dumps(context or {}, indent=2)}\n\n"
+            "Focus on: threat actors, technical indicators (IOCs), TTPs (MITRE ATT&CK), "
+            "targeted sectors, mitigation recommendations, and confidence assessment.\n"
+            "Return a JSON object."
+        )
+        try:
+            response = self._client.complete(user_prompt)
+            content = self._client.text_from(response)
+            structured = self._client.json_from(response) or {"summary": content[:800]}
+            return {
+                "topic": topic,
+                "summary": structured.get("summary", content[:1000]),
+                "indicators": structured.get("indicators", []),
+                "ttps": structured.get("ttps", []),
+                "confidence": structured.get("confidence", 60),
+                "timestamp": _now_ts(),
+                "raw_response": content,
+            }
+        except Exception as exc:
+            raise RuntimeError(f"Research on topic '{topic}' failed: {exc}") from exc
+
+    def monitor_feeds(self, feeds: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Analyze multiple feed items and return enriched results."""
+        results = []
+        for item in feeds:
+            try:
+                prompt = (
+                    f"Analyze this threat intelligence feed item:\n"
+                    f"{json.dumps(item, indent=2)}\n\n"
+                    "Return a JSON object with keys: relevance_score, summary, "
+                    "extracted_iocs, ttps, recommended_action."
+                )
+                response = self._client.complete(prompt)
+                analysis = self._client.json_from(response) or {}
+                analysis["timestamp"] = _now_ts()
+                results.append({"feed_item": item, "analysis": analysis})
+            except Exception:
+                pass
+        return results

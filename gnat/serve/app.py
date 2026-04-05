@@ -28,8 +28,6 @@ Or via CLI::
 
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import Depends, FastAPI
 from fastapi.responses import HTMLResponse
 
@@ -341,7 +339,7 @@ def create_app(
     api_key: str,
     library_backend=None,
     scheduler_backend=None,
-    reports_dir: Optional[str] = None,
+    reports_dir: str | None = None,
 ) -> FastAPI:
     """
     Build and return the GNAT web dashboard FastAPI application.
@@ -365,7 +363,7 @@ def create_app(
     app = FastAPI(
         title="GNAT Web Dashboard",
         version="0.1.0",
-        docs_url=None,     # no Swagger UI exposed publicly
+        docs_url=None,  # no Swagger UI exposed publicly
         redoc_url=None,
         openapi_url=None,
     )
@@ -386,8 +384,8 @@ def create_app(
 
     # ── Authenticated API routers ──────────────────────────────────────────
     _api_deps = [Depends(auth), Depends(limiter)]
-    app.include_router(library.router,   dependencies=_api_deps)
-    app.include_router(reports.router,   dependencies=_api_deps)
+    app.include_router(library.router, dependencies=_api_deps)
+    app.include_router(reports.router, dependencies=_api_deps)
     app.include_router(scheduler.router, dependencies=_api_deps)
 
     return app
@@ -404,7 +402,7 @@ def run(
     port: int = 8088,
     library_backend=None,
     scheduler_backend=None,
-    reports_dir: Optional[str] = None,
+    reports_dir: str | None = None,
 ) -> None:
     """
     Launch the GNAT web dashboard with uvicorn.

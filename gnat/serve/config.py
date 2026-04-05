@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import configparser
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -42,10 +41,10 @@ class WebUIConfig:
     bind: str = "127.0.0.1"
     port: int = 8088
     api_key: str = ""
-    reports_dir: Optional[str] = None
+    reports_dir: str | None = None
 
     @classmethod
-    def from_ini(cls, path: str) -> "WebUIConfig":
+    def from_ini(cls, path: str) -> WebUIConfig:
         """Read ``[webui]`` section from an INI config file.
 
         Parameters

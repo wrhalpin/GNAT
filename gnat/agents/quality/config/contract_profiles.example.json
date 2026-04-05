@@ -1,0 +1,10 @@
+[
+  {
+    "connector_name": "cribl",
+    "connector_path": "gnat/connectors/cribl",
+    "required_files": ["__init__.py", "connector.py", "client.py"],
+    "recommended_files": ["stix_mapper.py", "tests/__init__.py"],
+    "required_symbols": ["class CriblConnector", "def collect", "def normalize"],
+    "required_docs": ["docs/api/connectors.rst"]
+  }
+]

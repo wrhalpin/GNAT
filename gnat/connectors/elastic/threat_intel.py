@@ -56,18 +56,24 @@ indicator.valid_until     -> threat.indicator.last_seen
 
 - https://www.elastic.co/guide/en/ecs/current/ecs-threat.html
 - https://www.elastic.co/guide/en/security/current/es-threat-intel-integrations.html
-  """
+"""
 
+from collections.abc import Iterator
 from datetime import datetime, timezone
-from typing import Iterator
 
 from .client import ElasticClient
 
 _DEFAULT_TI_INDEX = "logs-ti_gnat.indicator-default"
 _CONFIDENCE_MAP = {
-3: "High", 2: "Medium", 1: "Low", 0: "Not Specified",
-"high": "High", "medium": "Medium", "low": "Low",
+    3: "High",
+    2: "Medium",
+    1: "Low",
+    0: "Not Specified",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
 }
+
 
 class ElasticThreatIntelCommands:
     """
@@ -129,9 +135,7 @@ class ElasticThreatIntelCommands:
         if confidence:
             must.append({"term": {"threat.indicator.confidence": confidence}})
         if first_seen_after:
-            must.append({
-                "range": {"threat.indicator.first_seen": {"gte": first_seen_after}}
-            })
+            must.append({"range": {"threat.indicator.first_seen": {"gte": first_seen_after}}})
 
         if value:
             # Value might be in any of several sub-fields
@@ -201,6 +205,7 @@ class ElasticThreatIntelCommands:
         """
         target = index or self._client.config.es_index_ti
         from .es_search import ElasticSearchCommands
+
         searcher = ElasticSearchCommands(self._client)
         return searcher.aggregate_by_field(
             target,
@@ -273,6 +278,7 @@ class ElasticThreatIntelCommands:
                 doc["@timestamp"] = _now_iso()
 
         from .es_search import ElasticSearchCommands
+
         searcher = ElasticSearchCommands(self._client)
         return searcher.bulk_index(target, indicators, batch_size=batch_size)
 
@@ -330,6 +336,7 @@ class ElasticThreatIntelCommands:
             Summary with indexed_count and any errors.
         """
         from .stix_mapper import ElasticSTIXMapper
+
         mapper = ElasticSTIXMapper()
         ecs_docs = mapper.stix_bundle_to_ecs_indicators(bundle, provider=source_name)
 
@@ -337,10 +344,7 @@ class ElasticThreatIntelCommands:
             return {"indexed_count": 0, "errors": []}
 
         responses = self.bulk_index_indicators(ecs_docs, index=index)
-        total_errors = sum(
-            1 for r in responses
-            if r.get("errors")
-        )
+        total_errors = sum(1 for r in responses if r.get("errors"))
         return {
             "indexed_count": len(ecs_docs),
             "batch_responses": len(responses),
@@ -386,6 +390,7 @@ class ElasticThreatIntelCommands:
             "timestamp": doc.get("@timestamp"),
             "_raw": doc,
         }
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

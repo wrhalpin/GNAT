@@ -1,5 +1,13 @@
 # GNAT Pending Items
 
+> **⚠️ DEPRECATED** — This file is no longer maintained.
+> Outstanding tasks, release notes, and architectural decisions are now
+> tracked in:
+> - [`CHANGELOG.md`](CHANGELOG.md) — version history and unreleased changes
+> - [`docs/releases/`](docs/releases/) — detailed per-version release notes
+> - [`docs/explanation/architecture/adrs/`](docs/explanation/architecture/adrs/) — Architecture Decision Records
+> - [`docs/explanation/architecture/implementation-plan.md`](docs/explanation/architecture/implementation-plan.md) — project roadmap and layer design
+
 Tracked outstanding implementation tasks, normalization work, and
 known gaps. Update this file as items are completed or new ones are
 identified.
@@ -525,6 +533,7 @@ declared dependency and is a better fit for a JSON API + minimal HTML server.
 extends `FeedJob`; `SchemaSnapshot` persists baseline to workspace JSON.
 
 **Config:**
+
 ```ini
 [health_monitor]
 enabled          = true
@@ -547,6 +556,7 @@ drift_threshold  = 0.2                           # 20% field change triggers ale
 GitHub pull request against the upstream `wrhalpin/GNAT` repository.
 
 **CLI:**
+
 ```bash
 gnat contribute --connector myplatform --message "Add MyPlatform connector"
 # → validates connector structure (#15 compliance matrix)
@@ -576,6 +586,77 @@ draft_pr         = true        # always draft; human must mark ready
 
 ---
 
+### 26. TAXII 2.1 Server — ✅ COMPLETE
+
+**Priority:** MEDIUM — standard threat intelligence sharing protocol
+
+**Implemented:** `gnat/serve/taxii/__init__.py`, `gnat/serve/taxii/app.py` — full TAXII 2.1 server;
+`gnat taxii` CLI subcommand in `gnat/cli/main.py`. 44 unit tests in
+`tests/unit/test_taxii_server.py`.
+
+**What:** FastAPI application implementing the TAXII 2.1 protocol. Each GNAT workspace is exposed
+as a TAXII collection under a single `gnat` API root. Clients can discover collections, fetch
+STIX bundles with filtering and pagination, and POST new STIX objects directly into workspaces.
+
+**Endpoints:**
+```
+GET  /taxii2/                                           Discovery (no auth)
+GET  /taxii2/roots/gnat/                                API root info (no auth)
+GET  /taxii2/roots/gnat/collections/                    List collections (auth)
+GET  /taxii2/roots/gnat/collections/{id}/               Collection detail (auth)
+GET  /taxii2/roots/gnat/collections/{id}/objects/       Get bundle (auth, paginated)
+POST /taxii2/roots/gnat/collections/{id}/objects/       Add bundle (auth)
+GET  /taxii2/roots/gnat/collections/{id}/manifest/      Object manifest (auth)
+GET  /taxii2/roots/gnat/collections/{id}/objects/{oid}/ Single object (auth)
+GET  /taxii2/roots/gnat/collections/{id}/objects/{oid}/versions/  Versions (auth)
+```
+
+**CLI:**
+```bash
+gnat taxii --port 8090 --api-key s3cr3t
+gnat taxii --title "Acme TAXII" --contact admin@acme.com --port 9000
+```
+
+**Requires:** `gnat[serve]` (FastAPI + uvicorn)
+
+
+---
+
+### 27. STIX 2.1 Pattern Validator — ✅ COMPLETE
+
+**Priority:** MEDIUM — core data quality for Indicator objects
+
+**Implemented:** `gnat/stix/__init__.py`, `gnat/stix/pattern_validator.py`. 87 unit tests in
+`tests/unit/test_stix_validator.py`. `gnat validate` CLI subcommand in `gnat/cli/main.py`.
+`Indicator.__init__` gains `validate=True` kwarg. `pyproject.toml` gains `[stix-validate]` extra.
+
+**What:** Two-tier STIX 2.1 Indicator pattern validator. Tier 1 is a pure-Python recursive
+descent parser (no deps). Tier 2 uses the official `stix2-patterns` ANTLR grammar when
+`pip install "gnat[stix-validate]"` is present.
+
+**CLI:**
+```bash
+gnat validate pattern "[ipv4-addr:value = '1.2.3.4']"
+gnat validate bundle indicators.json --fail-fast
+gnat validate bundle indicators.json --strict   # uses stix2-patterns if installed
+```
+
+**Python API:**
+```python
+from gnat.stix import validate_pattern, PatternValidationError
+
+result = validate_pattern("[ipv4-addr:value = '1.2.3.4']")
+assert result.valid
+
+validate_pattern("[bad", raise_on_error=True)  # raises PatternValidationError
+
+# ORM integration (non-breaking, opt-in):
+from gnat.orm.indicator import Indicator
+ind = Indicator(pattern="[ipv4-addr:value = '1.2.3.4']", validate=True)
+```
+
+---
+
 ### 28. Multi-Tenant Workspace Isolation — ✅ COMPLETE
 
 **Priority:** MEDIUM — MSP deployments with multiple client tenants
@@ -590,6 +671,7 @@ migration required — works with existing SQLite and FlatFile stores. Existing 
 implicitly in the "default" tenant.
 
 **Python API:**
+
 ```python
 from gnat.context import WorkspaceManager, TenantRegistry, TenantWorkspaceManager
 
@@ -611,6 +693,7 @@ print(beta.list())  # [{"name": "apt28-investigation", "tenant_id": "beta", ...}
 ```
 
 **CLI:**
+
 ```bash
 gnat tenant list
 gnat tenant create acme --display-name "Acme Corp" --config /etc/gnat/acme.ini
@@ -626,15 +709,17 @@ gnat tenant delete acme --yes
 **Priority:** MEDIUM — live search index dashboards for ops teams
 
 **Implemented:**
+
 - `gnat/viz/grafana/search_endpoints.py` — `/solr/` FastAPI sub-router exposing Solr index data as a Grafana SimpleJSON datasource. Targets: `stats/total`, `stats/type_counts`, `stats/platform_counts`, `timeseries/ingest`, `facet/<field>`, `search/<query>`. Zero new dependencies (stdlib `urllib.request`).
 - `GrafanaServer` extended with optional `search_index` param; mounts `/solr/` router when provided.
 - `solr_dashboard()` / `save_solr_dashboard()` in `gnat/viz/export.py` — 7-panel dashboard JSON.
 - `gnat viz serve --with-solr` and `gnat viz solr-dashboard` CLI subcommands.
 - `docker/grafana/provisioning/` — auto-provisioned GNAT + GNAT-Solr datasources; bundled dashboard JSON files.
 - `docker-compose.yml` — `solr` (profile: `search`/`full`) + `grafana` (profile: `monitoring`/`full`) services; `make docker-search`, `make docker-full`.
-- 44 unit tests in `tests/unit/test_grafana_search.py`.
+- 44 unit tests in `tests/unit/test_grafana_searchi.py`.
 
 **Usage:**
+
 ```bash
 # Start Grafana + Solr sidecar via Docker Compose
 make docker-full      # or: docker compose --profile full up -d
@@ -663,6 +748,7 @@ gnat viz solr-dashboard --file solr_dashboard.json
 - `pyproject.toml`: `docker` pytest marker registered.
 
 **Usage:**
+
 ```bash
 make test-docker           # Up → run suite → down (automated)
 make test-docker-up        # Start containers only
@@ -674,19 +760,21 @@ make test-docker-down      # Teardown + remove volumes
 
 ---
 
-### 27. STIX 2.1 Pattern Validator — ✅ COMPLETE
+### 30. Solr/Grafana Observability Integration — ✅ COMPLETE
 
-**Priority:** MEDIUM — core data quality for Indicator objects
+**Priority:** MEDIUM — live search index dashboards for ops teams
 
-**Implemented:** `gnat/stix/__init__.py`, `gnat/stix/pattern_validator.py`. 87 unit tests in
-`tests/unit/test_stix_validator.py`. `gnat validate` CLI subcommand in `gnat/cli/main.py`.
-`Indicator.__init__` gains `validate=True` kwarg. `pyproject.toml` gains `[stix-validate]` extra.
-
-**What:** Two-tier STIX 2.1 Indicator pattern validator. Tier 1 is a pure-Python recursive
-descent parser (no deps). Tier 2 uses the official `stix2-patterns` ANTLR grammar when
-`pip install "gnat[stix-validate]"` is present.
+**Implemented:**
+- `gnat/viz/grafana/search_endpoints.py` — `/solr/` FastAPI sub-router exposing Solr index data as a Grafana SimpleJSON datasource. Targets: `stats/total`, `stats/type_counts`, `stats/platform_counts`, `timeseries/ingest`, `facet/<field>`, `search/<query>`. Zero new dependencies (stdlib `urllib.request`).
+- `GrafanaServer` extended with optional `search_index` param; mounts `/solr/` router when provided.
+- `solr_dashboard()` / `save_solr_dashboard()` in `gnat/viz/export.py` — 7-panel dashboard JSON.
+- `gnat viz serve --with-solr` and `gnat viz solr-dashboard` CLI subcommands.
+- `docker/grafana/provisioning/` — auto-provisioned GNAT + GNAT-Solr datasources; bundled dashboard JSON files.
+- `docker-compose.yml` — `solr` (profile: `search`/`full`) + `grafana` (profile: `monitoring`/`full`) services; `make docker-search`, `make docker-full`.
+- 44 unit tests in `tests/unit/test_grafana_search.py`.
 
 **CLI:**
+
 ```bash
 gnat validate pattern "[ipv4-addr:value = '1.2.3.4']"
 gnat validate bundle indicators.json --fail-fast
@@ -694,6 +782,7 @@ gnat validate bundle indicators.json --strict   # uses stix2-patterns if install
 ```
 
 **Python API:**
+
 ```python
 from gnat.stix import validate_pattern, PatternValidationError
 
@@ -733,11 +822,49 @@ GET  /taxii2/roots/gnat/collections/{id}/manifest/      Object manifest (auth)
 GET  /taxii2/roots/gnat/collections/{id}/objects/{oid}/ Single object (auth)
 GET  /taxii2/roots/gnat/collections/{id}/objects/{oid}/versions/  Versions (auth)
 ```
-
-**CLI:**
+**Usage:**
 ```bash
-gnat taxii --port 8090 --api-key s3cr3t
-gnat taxii --title "Acme TAXII" --contact admin@acme.com --port 9000
-```
+# Start Grafana + Solr sidecar via Docker Compose
+make docker-full      # or: docker compose --profile full up -d
 
-**Requires:** `gnat[serve]` (FastAPI + uvicorn)
+# Run GrafanaServer locally with Solr endpoints
+gnat viz serve --with-solr --port 3001
+
+# Export the Solr dashboard JSON (import into any Grafana instance)
+gnat viz solr-dashboard --file solr_dashboard.json
+```
+---
+
+### 31. New Connectors: Trellix, Sophos, Vectra, ExtraHop, Darktrace, Lansweeper, Censys, ServiceNow SecOps — ✅ COMPLETE
+
+**Priority:** HIGH — expand coverage to 70+ platforms
+
+**Implemented:**
+
+| Key | File | Auth | Notes |
+|-----|------|------|-------|
+| `trellix` | `gnat/connectors/trellix/client.py` | OAuth2 | XDR + ePO; IOCs, detections, vulns |
+| `sophos` | `gnat/connectors/sophos/client.py` | OAuth2 | Central endpoint protection + SIEM alerts |
+| `vectra` | `gnat/connectors/vectra/client.py` | API token | NDR; read-only detections + host scoring |
+| `extrahop` | `gnat/connectors/extrahop/client.py` | API key / OAuth2 | Reveal(x); read-only NDR detections + records |
+| `darktrace` | `gnat/connectors/darktrace/client.py` | HMAC key pair | Enterprise Immune System; model breaches + intel feed |
+| `lansweeper` | `gnat/connectors/lansweeper/client.py` | OAuth2 / Bearer | ITAM; read-only asset + software inventory |
+| `censys` | `gnat/connectors/censys/client.py` | Basic (API ID+secret) | Internet scanning + ASM; read-only host/cert search |
+| `servicenow_secops` | `gnat/connectors/servicenow_secops/client.py` | Basic / Bearer | Full SecOps: SIR + VR + TIARA observables |
+
+**Changes:**
+- 8 new connector packages under `gnat/connectors/`.
+- All registered in `gnat/clients/CLIENT_REGISTRY`.
+- 94 unit tests added to `tests/unit/connectors/test_connectors.py`.
+- `README.md` updated: new platforms added to Supported Platforms tables, count updated to 70+.
+- `pyproject.toml` keywords updated.
+
+**STIX coverage:**
+- `trellix`: `indicator` (IOC), `malware` (detection), `vulnerability`
+- `sophos`: `indicator` (blocked item), `malware` (detection)
+- `vectra`: `observed-data` (detection), `threat-actor` (host entity)
+- `extrahop`: `observed-data` (detection / record)
+- `darktrace`: `observed-data` (model breach), `threat-actor` (device entity)
+- `lansweeper`: `report` (asset), `vulnerability` (software inventory)
+- `censys`: `observed-data` (host scan result) with exposed CVE annotation
+- `servicenow_secops`: `observed-data` (SIR incident), `vulnerability` (VR item), `indicator` (TIARA observable), `course-of-action` (SI task)

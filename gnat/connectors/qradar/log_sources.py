@@ -28,7 +28,7 @@ class QRadarLogSourceCommands:
 
     def list_log_sources(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
@@ -37,7 +37,7 @@ class QRadarLogSourceCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             Filter expression, e.g. ``"enabled=true"``.
         fields : str | None
             Fields to return.
@@ -50,15 +50,13 @@ class QRadarLogSourceCommands:
             Log source records.
         """
         params: dict = {}
-        if filter:
-            params["filter"] = filter
+        if filter_val:
+            params["filter"] = filter_val
         if fields:
             params["fields"] = fields
 
         items = []
-        for item in self._client.paginate(
-            f"{_LS_BASE}/log_sources", params=params
-        ):
+        for item in self._client.paginate(f"{_LS_BASE}/log_sources", params=params):
             items.append(item)
             if limit and len(items) >= limit:
                 break
@@ -66,19 +64,13 @@ class QRadarLogSourceCommands:
 
     def get_log_source(self, log_source_id: int) -> dict:
         """Retrieve a single log source by ID."""
-        return self._client.get(
-            f"{_LS_BASE}/log_sources/{log_source_id}"
-        )
+        return self._client.get(f"{_LS_BASE}/log_sources/{log_source_id}")
 
     def list_log_source_types(self) -> list[dict]:
         """List all log source type definitions (DSM parsers)."""
-        return list(
-            self._client.paginate(f"{_LS_BASE}/log_source_types")
-        )
+        return list(self._client.paginate(f"{_LS_BASE}/log_source_types"))
 
-    def get_log_source_count(self, filter: str | None = None) -> int:
+    def get_log_source_count(self, filter_val: str | None = None) -> int:
         """Return the total number of configured log sources."""
-        params = {"filter": filter} if filter else None
-        return self._client.get_total_count(
-            f"{_LS_BASE}/log_sources", params=params
-        )
+        params = {"filter": filter_val} if filter_val else None
+        return self._client.get_total_count(f"{_LS_BASE}/log_sources", params=params)

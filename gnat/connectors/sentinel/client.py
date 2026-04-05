@@ -34,6 +34,7 @@ Error response shape
 import json
 import time
 import urllib.parse
+
 import urllib3
 
 from .auth import SentinelAuthManager
@@ -139,7 +140,8 @@ class SentinelClient:
 
     def _build_pool_manager(self) -> urllib3.PoolManager:
         kwargs: dict = {
-            "num_pools": 4, "maxsize": 10,
+            "num_pools": 4,
+            "maxsize": 10,
             "timeout": urllib3.Timeout(connect=10.0, read=float(self.config.timeout)),
             "retries": urllib3.Retry(total=0, raise_on_status=False),
         }
@@ -164,13 +166,16 @@ class SentinelClient:
         for attempt in range(_MAX_RETRIES + 1):
             try:
                 response = self._http.request(
-                    method, url,
+                    method,
+                    url,
                     body=encoded,
                     headers=headers,
                 )
             except urllib3.exceptions.HTTPError as exc:
                 if attempt < _MAX_RETRIES:
-                    time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                    time.sleep(delay)
+                    delay *= _RETRY_BACKOFF
+                    continue
                 raise SentinelAPIError(f"Connection error: {exc}", endpoint=url) from exc
 
             if response.status == 401:
@@ -213,11 +218,15 @@ class SentinelClient:
 
             if response.status == 429:
                 if attempt < _MAX_RETRIES:
-                    time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                    time.sleep(delay)
+                    delay *= _RETRY_BACKOFF
+                    continue
                 raise SentinelRateLimitError("Sentinel rate limit exceeded.", status_code=429)
 
             if response.status in _RETRYABLE_STATUS and attempt < _MAX_RETRIES:
-                time.sleep(delay); delay *= _RETRY_BACKOFF; continue
+                time.sleep(delay)
+                delay *= _RETRY_BACKOFF
+                continue
 
             if response.status not in (200, 201, 202, 204):
                 err = self._safe_parse(response.data)
@@ -242,9 +251,7 @@ class SentinelClient:
         try:
             return json.loads(data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise SentinelAPIError(
-                f"Failed to parse JSON from {url}: {exc}", endpoint=url
-            ) from exc
+            raise SentinelAPIError(f"Failed to parse JSON from {url}: {exc}", endpoint=url) from exc
 
     @staticmethod
     def _safe_parse(data: bytes) -> dict:

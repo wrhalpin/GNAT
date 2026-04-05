@@ -9,10 +9,10 @@ import pytest
 
 from gnat.connectors.base_connector import ConnectorMixin
 
-
 # ---------------------------------------------------------------------------
 # Minimal stub connector used throughout these tests
 # ---------------------------------------------------------------------------
+
 
 class _StubConnector(ConnectorMixin):
     """Minimal concrete connector for testing capability reflection."""
@@ -28,8 +28,7 @@ class _StubConnector(ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str):
         return {"id": object_id, "type": stix_type}
 
-    def list_objects(self, stix_type: str, filters=None, page: int = 1,
-                     page_size: int = 100):
+    def list_objects(self, stix_type: str, filters=None, page: int = 1, page_size: int = 100):
         return [{"id": "obj-1"}]
 
     def upsert_object(self, stix_type: str, payload):
@@ -39,8 +38,11 @@ class _StubConnector(ConnectorMixin):
         pass
 
     def to_stix(self, native_object):
-        return {"type": "indicator", "id": f"indicator--{native_object.get('id', '')}",
-                "name": "stub"}
+        return {
+            "type": "indicator",
+            "id": f"indicator--{native_object.get('id', '')}",
+            "name": "stub",
+        }
 
     def from_stix(self, stix_dict):
         return {"value": stix_dict.get("name", "")}
@@ -64,16 +66,24 @@ def connector():
 # capabilities() — structure and completeness
 # ---------------------------------------------------------------------------
 
-class TestCapabilitiesStructure:
 
+class TestCapabilitiesStructure:
     def test_returns_dict(self, connector):
         caps = connector.capabilities()
         assert isinstance(caps, dict)
 
     def test_standard_methods_present(self, connector):
         caps = connector.capabilities()
-        for name in ("authenticate", "health_check", "get_object", "list_objects",
-                     "upsert_object", "delete_object", "to_stix", "from_stix"):
+        for name in (
+            "authenticate",
+            "health_check",
+            "get_object",
+            "list_objects",
+            "upsert_object",
+            "delete_object",
+            "to_stix",
+            "from_stix",
+        ):
             assert name in caps, f"Standard method '{name}' missing from capabilities"
 
     def test_platform_specific_method_present(self, connector):
@@ -100,7 +110,6 @@ class TestCapabilitiesStructure:
 
 
 class TestCapabilitiesMetadata:
-
     def test_standard_method_type_read(self, connector):
         caps = connector.capabilities()
         for name in ("health_check", "get_object", "list_objects", "to_stix", "from_stix"):
@@ -121,8 +130,16 @@ class TestCapabilitiesMetadata:
 
     def test_standard_methods_not_platform_specific(self, connector):
         caps = connector.capabilities()
-        for name in ("authenticate", "health_check", "get_object", "list_objects",
-                     "upsert_object", "delete_object", "to_stix", "from_stix"):
+        for name in (
+            "authenticate",
+            "health_check",
+            "get_object",
+            "list_objects",
+            "upsert_object",
+            "delete_object",
+            "to_stix",
+            "from_stix",
+        ):
             assert caps[name]["platform_specific"] is False
 
     def test_signature_is_string(self, connector):
@@ -138,7 +155,7 @@ class TestCapabilitiesMetadata:
 
     def test_doc_is_string(self, connector):
         caps = connector.capabilities()
-        for name, meta in caps.items():
+        for _name, meta in caps.items():
             assert isinstance(meta["doc"], str)
 
     def test_doc_populated_for_documented_method(self, connector):
@@ -156,8 +173,8 @@ class TestCapabilitiesMetadata:
 # call() — dispatch and safety
 # ---------------------------------------------------------------------------
 
-class TestCall:
 
+class TestCall:
     def test_call_read_method_succeeds(self, connector):
         result = connector.call("list_objects", "indicator")
         assert isinstance(result, list)
@@ -171,8 +188,7 @@ class TestCall:
             connector.call("upsert_object", "indicator", {"name": "x"})
 
     def test_call_write_with_allow_write_succeeds(self, connector):
-        result = connector.call("upsert_object", "indicator", {"name": "x"},
-                                allow_write=True)
+        result = connector.call("upsert_object", "indicator", {"name": "x"}, allow_write=True)
         assert isinstance(result, dict)
 
     def test_call_delete_without_allow_write_raises(self, connector):
@@ -213,21 +229,29 @@ class TestCall:
 # Integration: real connector (ThreatQClient) exposes expected capabilities
 # ---------------------------------------------------------------------------
 
-class TestCapabilitiesOnRealConnector:
 
+class TestCapabilitiesOnRealConnector:
     def test_threatq_has_standard_interface(self):
         from gnat.connectors.threatq.client import ThreatQClient
-        c = ThreatQClient(host="https://fake.example.com", client_id="x",
-                          client_secret="y")
+
+        c = ThreatQClient(host="https://fake.example.com", client_id="x", client_secret="y")
         caps = c.capabilities()
-        for name in ("authenticate", "health_check", "get_object", "list_objects",
-                     "upsert_object", "delete_object", "to_stix", "from_stix"):
+        for name in (
+            "authenticate",
+            "health_check",
+            "get_object",
+            "list_objects",
+            "upsert_object",
+            "delete_object",
+            "to_stix",
+            "from_stix",
+        ):
             assert name in caps
 
     def test_threatq_extra_method_platform_specific(self):
         from gnat.connectors.threatq.client import ThreatQClient
-        c = ThreatQClient(host="https://fake.example.com", client_id="x",
-                          client_secret="y")
+
+        c = ThreatQClient(host="https://fake.example.com", client_id="x", client_secret="y")
         caps = c.capabilities()
         # get_attribute_types is a ThreatQ-specific method
         if "get_attribute_types" in caps:
@@ -235,6 +259,7 @@ class TestCapabilitiesOnRealConnector:
 
     def test_xsoar_link_incident_appears_as_platform_specific(self):
         from gnat.connectors.xsoar.client import XSOARClient
+
         c = XSOARClient(host="https://fake.example.com", api_key="key")
         caps = c.capabilities()
         assert "link_incident" in caps
@@ -243,16 +268,16 @@ class TestCapabilitiesOnRealConnector:
 
     def test_greymatter_link_investigation_appears(self):
         from gnat.connectors.greymatter.client import GreyMatterClient
-        c = GreyMatterClient(host="https://fake.example.com",
-                             client_id="x", client_secret="y")
+
+        c = GreyMatterClient(host="https://fake.example.com", client_id="x", client_secret="y")
         caps = c.capabilities()
         assert "link_investigation" in caps
         assert caps["link_investigation"]["platform_specific"] is True
 
     def test_servicenow_annotate_incident_appears(self):
         from gnat.connectors.servicenow.client import ServiceNowClient
-        c = ServiceNowClient(host="https://fake.example.com", username="u",
-                             password="p")
+
+        c = ServiceNowClient(host="https://fake.example.com", username="u", password="p")
         caps = c.capabilities()
         assert "annotate_incident" in caps
         assert caps["annotate_incident"]["platform_specific"] is True

@@ -44,7 +44,7 @@ class QRadarRulesCommands:
 
     def list_rules(
         self,
-        filter: str | None = None,
+        filter_val: str | None = None,
         fields: str | None = None,
         enabled_only: bool = False,
         limit: int | None = None,
@@ -54,7 +54,7 @@ class QRadarRulesCommands:
 
         Parameters
         ----------
-        filter : str | None
+        filter_val : str | None
             QRadar filter expression, e.g. ``"type=COMMON and enabled=true"``.
         fields : str | None
             Comma-separated fields to return.
@@ -71,11 +71,11 @@ class QRadarRulesCommands:
         params: dict = {}
         if enabled_only:
             params["filter"] = "enabled=true"
-        if filter:
+        if filter_val:
             if "filter" in params:
-                params["filter"] = f"({params['filter']}) and ({filter})"
+                params["filter"] = f"({params['filter']}) and ({filter_val})"
             else:
-                params["filter"] = filter
+                params["filter"] = filter_val
         if fields:
             params["fields"] = fields
 
@@ -116,7 +116,7 @@ class QRadarRulesCommands:
         list[dict]
             Matching rule records.
         """
-        return self.list_rules(filter=f"name ilike '%{name_fragment}%'")
+        return self.list_rules(filter_val=f"name ilike '%{name_fragment}%'")
 
     def list_rule_groups(self) -> list[dict]:
         """

@@ -23,7 +23,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any
 
 from gnat.nlp.query_spec import QuerySpec
 
@@ -77,6 +77,7 @@ class ClaudeParser:
 
     def __init__(self, config: Any) -> None:
         from gnat.agents.base import ClaudeClient
+
         self._client = ClaudeClient(config)
         self._config = config
 
@@ -101,29 +102,25 @@ class ClaudeParser:
         """
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         system = _SYSTEM_PROMPT.format(today=today)
-        user   = _USER_PROMPT.format(query=query)
+        user = _USER_PROMPT.format(query=query)
 
         try:
             raw = self._client.complete(
+                user=user,
                 system=system,
-                messages=[{"role": "user", "content": user}],
-                max_tokens=512,
             )
             return self._parse_response(raw, query, default_limit)
         except Exception as exc:
-            logger.warning(
-                "ClaudeParser API call failed (%s); falling back to BuiltinParser", exc
-            )
+            logger.warning("ClaudeParser API call failed (%s); falling back to BuiltinParser", exc)
             from gnat.nlp.builtin import BuiltinParser
+
             return BuiltinParser().parse(query, default_limit=default_limit)
 
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _parse_response(
-        self, raw: Any, query: str, default_limit: int
-    ) -> QuerySpec:
+    def _parse_response(self, raw: Any, query: str, default_limit: int) -> QuerySpec:
         """Deserialise Claude's JSON response into a QuerySpec."""
         # ClaudeClient.messages() returns the full response dict
         if isinstance(raw, dict):
@@ -144,27 +141,28 @@ class ClaudeParser:
             text = "\n".join(text.splitlines()[:-1])
 
         try:
-            data: Dict[str, Any] = json.loads(text)
+            data: dict[str, Any] = json.loads(text)
         except json.JSONDecodeError as exc:
             logger.warning("ClaudeParser: JSON decode error (%s); using builtin", exc)
             from gnat.nlp.builtin import BuiltinParser
+
             return BuiltinParser().parse(query, default_limit=default_limit)
 
         since = self._parse_dt(data.get("since"))
         until = self._parse_dt(data.get("until"))
 
         return QuerySpec(
-            entities   = [str(e) for e in data.get("entities", [])],
-            ioc_types  = [str(t) for t in data.get("ioc_types", [])],
-            since      = since,
-            until      = until,
-            platforms  = [str(p) for p in data.get("platforms", [])],
-            limit      = int(data.get("limit", default_limit)),
-            raw_query  = query,
+            entities=[str(e) for e in data.get("entities", [])],
+            ioc_types=[str(t) for t in data.get("ioc_types", [])],
+            since=since,
+            until=until,
+            platforms=[str(p) for p in data.get("platforms", [])],
+            limit=int(data.get("limit", default_limit)),
+            raw_query=query,
         )
 
     @staticmethod
-    def _parse_dt(value: Optional[str]) -> Optional[datetime]:
+    def _parse_dt(value: str | None) -> datetime | None:
         if not value:
             return None
         try:

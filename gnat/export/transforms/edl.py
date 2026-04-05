@@ -49,11 +49,13 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gnat.export.base import ExportTransform, TransformResult
 from gnat.ingest._ioc_classifier import (
     defang as _fast_defang,
+)
+from gnat.ingest._ioc_classifier import (
     extract_pattern_value as _fast_extract_pattern_value,
 )
 
@@ -62,16 +64,16 @@ if TYPE_CHECKING:
 
 
 # Pattern strings → IOC type keywords (in STIX pattern format)
-_PATTERN_KEYWORDS: Dict[str, str] = {
-    "ipv4":   "ipv4-addr",
-    "ipv6":   "ipv6-addr",
+_PATTERN_KEYWORDS: dict[str, str] = {
+    "ipv4": "ipv4-addr",
+    "ipv6": "ipv6-addr",
     "domain": "domain-name",
-    "url":    "url:",
-    "email":  "email-addr",
-    "md5":    "hashes.MD5",
-    "sha1":   "hashes.SHA-1",
+    "url": "url:",
+    "email": "email-addr",
+    "md5": "hashes.MD5",
+    "sha1": "hashes.SHA-1",
     "sha256": "hashes.SHA-256",
-    "asn":    "autonomous-system",
+    "asn": "autonomous-system",
 }
 
 # Regex to extract the value from a STIX pattern
@@ -79,10 +81,10 @@ _VALUE_RE = re.compile(r"=\s*'([^']+)'")
 
 # Defanging/refanging patterns
 _DEFANG_PATTERNS = [
-    (re.compile(r'\[\.?\]'), '.'),       # [.] or [.]
-    (re.compile(r'hxxp://'), 'http://'),
-    (re.compile(r'hxxps://'), 'https://'),
-    (re.compile(r'\[\.\]'), '.'),
+    (re.compile(r"\[\.?\]"), "."),  # [.] or [.]
+    (re.compile(r"hxxp://"), "http://"),
+    (re.compile(r"hxxps://"), "https://"),
+    (re.compile(r"\[\.\]"), "."),
 ]
 
 
@@ -91,12 +93,12 @@ def _refang(value: str) -> str:
     return _fast_defang(value)
 
 
-def _extract_value(pattern_str: str) -> Optional[str]:
+def _extract_value(pattern_str: str) -> str | None:
     """Pull the quoted value from a STIX pattern string."""
     return _fast_extract_pattern_value(pattern_str)
 
 
-def _detect_ioc_type(pattern_str: str) -> Optional[str]:
+def _detect_ioc_type(pattern_str: str) -> str | None:
     """Detect IOC type from a STIX pattern string."""
     for ioc_type, keyword in _PATTERN_KEYWORDS.items():
         if keyword in pattern_str:
@@ -151,7 +153,7 @@ class EDLTransform(ExportTransform):
 
     def __init__(
         self,
-        ioc_types: Optional[List[str]] = None,
+        ioc_types: list[str] | None = None,
         filename_prefix: str = "indicators",
         header_comment: bool = True,
         max_per_file: int = 500_000,
@@ -167,15 +169,15 @@ class EDLTransform(ExportTransform):
                     f"EDLTransform: unknown IOC types {sorted(unknown)}. "
                     f"Valid: {sorted(self.ALL_TYPES)}"
                 )
-        self._ioc_types       = set(ioc_types) if ioc_types else set(self.ALL_TYPES)
-        self._prefix          = filename_prefix
-        self._header          = header_comment
-        self._max             = max_per_file
-        self._sort            = sort_output
-        self._combine         = combine
-        self._deduplicate     = deduplicate
+        self._ioc_types = set(ioc_types) if ioc_types else set(self.ALL_TYPES)
+        self._prefix = filename_prefix
+        self._header = header_comment
+        self._max = max_per_file
+        self._sort = sort_output
+        self._combine = combine
+        self._deduplicate = deduplicate
 
-    def transform(self, objects: List["STIXBase"]) -> TransformResult:
+    def transform(self, objects: list[STIXBase]) -> TransformResult:
         """
         Extract IOC values from STIX Indicator objects and render EDL files.
 
@@ -190,8 +192,8 @@ class EDLTransform(ExportTransform):
             ``payloads`` contains one entry per IOC type file.
             ``metadata`` contains per-type counts and any truncation warnings.
         """
-        buckets: Dict[str, List[str]] = {t: [] for t in self._ioc_types}
-        seen:    Dict[str, Set[str]]  = {t: set() for t in self._ioc_types}
+        buckets: dict[str, list[str]] = {t: [] for t in self._ioc_types}
+        seen: dict[str, set[str]] = {t: set() for t in self._ioc_types}
         skipped = 0
         processed = 0
 
@@ -228,9 +230,9 @@ class EDLTransform(ExportTransform):
             processed += 1
 
         # Sort and cap
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "processed": processed,
-            "skipped":   skipped,
+            "skipped": skipped,
             "truncated": {},
         }
         for ioc_type in list(buckets.keys()):
@@ -244,10 +246,10 @@ class EDLTransform(ExportTransform):
 
         # Build payloads
         header = self._build_header()
-        payloads: Dict[str, str] = {}
+        payloads: dict[str, str] = {}
 
         if self._combine:
-            all_values: List[str] = []
+            all_values: list[str] = []
             for t in sorted(self._ioc_types):
                 all_values.extend(buckets[t])
             payloads[f"{self._prefix}-all.txt"] = header + "\n".join(all_values) + "\n"
@@ -272,10 +274,7 @@ class EDLTransform(ExportTransform):
         if not self._header:
             return ""
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        return (
-            f"# Generated by GNAT at {now}\n"
-            f"# Types: {', '.join(sorted(self._ioc_types))}\n"
-        )
+        return f"# Generated by GNAT at {now}\n# Types: {', '.join(sorted(self._ioc_types))}\n"
 
     def __repr__(self) -> str:
         return (

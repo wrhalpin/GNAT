@@ -34,7 +34,6 @@ import os
 from pathlib import Path
 from typing import Optional
 
-
 _DEFAULT_SEARCH_PATHS = [
     Path.home() / ".gnat" / "config.ini",
     Path("gnat.ini"),
@@ -101,8 +100,7 @@ class GNATConfig:
         """
         if not self._parser.has_section(target):
             raise KeyError(
-                f"No [{target}] section found in {self._path}. "
-                f"Available sections: {self.sections}"
+                f"No [{target}] section found in {self._path}. Available sections: {self.sections}"
             )
         return dict(self._parser[target])
 

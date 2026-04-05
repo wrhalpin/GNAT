@@ -27,15 +27,17 @@ This connector uses standard authentication; run-as is not implemented.
 
 - https://documentation.wazuh.com/current/user-manual/api/getting-started.html
 - https://documentation.wazuh.com/current/user-manual/api/securing-api.html
-  """
+"""
 
 import base64
 import json
 import time
+
 import urllib3
 
 from .config import WazuhConfig
 from .exceptions import WazuhAuthError
+
 
 class WazuhAuthManager:
     """
@@ -131,23 +133,17 @@ class WazuhAuthManager:
                 timeout=self._config.timeout,
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise WazuhAuthError(
-                f"HTTP error during Wazuh authentication: {exc}"
-            ) from exc
+            raise WazuhAuthError(f"HTTP error during Wazuh authentication: {exc}") from exc
 
         if response.status == 401:
-            raise WazuhAuthError(
-                "Wazuh authentication failed: invalid username or password."
-            )
+            raise WazuhAuthError("Wazuh authentication failed: invalid username or password.")
         if response.status == 403:
             raise WazuhAuthError(
                 "Wazuh authentication failed: account is disabled "
                 "or insufficient RBAC permissions on the auth endpoint."
             )
         if response.status not in (200, 201):
-            raise WazuhAuthError(
-                f"Unexpected status {response.status} from Wazuh auth endpoint."
-            )
+            raise WazuhAuthError(f"Unexpected status {response.status} from Wazuh auth endpoint.")
 
         try:
             body = json.loads(response.data.decode("utf-8"))

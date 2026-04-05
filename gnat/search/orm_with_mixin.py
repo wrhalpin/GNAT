@@ -21,10 +21,10 @@ Rules of thumb
 from gnat.orm.base import STIXBase
 from gnat.search.mixin import STIXSearchMixin
 
-
 # ---------------------------------------------------------------------------
 # Indicator SDO
 # ---------------------------------------------------------------------------
+
 
 class Indicator(STIXSearchMixin, STIXBase):
     """
@@ -53,6 +53,7 @@ class Indicator(STIXSearchMixin, STIXBase):
 # Threat Actor SDO
 # ---------------------------------------------------------------------------
 
+
 class ThreatActor(STIXSearchMixin, STIXBase):
     """
     STIX 2.1 Threat Actor SDO.
@@ -70,8 +71,13 @@ class ThreatActor(STIXSearchMixin, STIXBase):
     stix_type = "threat-actor"
 
     _search_text_fields = [
-        "name", "description", "aliases",
-        "goals", "resource_level", "sophistication", "roles",
+        "name",
+        "description",
+        "aliases",
+        "goals",
+        "resource_level",
+        "sophistication",
+        "roles",
     ]
     _search_display_priority = ["name", "aliases", "description"]
 
@@ -83,6 +89,7 @@ class ThreatActor(STIXSearchMixin, STIXBase):
 # ---------------------------------------------------------------------------
 # Malware SDO
 # ---------------------------------------------------------------------------
+
 
 class Malware(STIXSearchMixin, STIXBase):
     """
@@ -108,6 +115,7 @@ class Malware(STIXSearchMixin, STIXBase):
 # AttackPattern SDO
 # ---------------------------------------------------------------------------
 
+
 class AttackPattern(STIXSearchMixin, STIXBase):
     """
     STIX 2.1 Attack Pattern SDO (maps to MITRE ATT&CK techniques).
@@ -130,6 +138,7 @@ class AttackPattern(STIXSearchMixin, STIXBase):
 # ---------------------------------------------------------------------------
 # Vulnerability SDO
 # ---------------------------------------------------------------------------
+
 
 class Vulnerability(STIXSearchMixin, STIXBase):
     """
@@ -154,6 +163,7 @@ class Vulnerability(STIXSearchMixin, STIXBase):
 # Campaign SDO
 # ---------------------------------------------------------------------------
 
+
 class Campaign(STIXSearchMixin, STIXBase):
     """
     STIX 2.1 Campaign SDO.
@@ -176,39 +186,47 @@ class Campaign(STIXSearchMixin, STIXBase):
 # SCOs — exact-match; no search mixin
 # ---------------------------------------------------------------------------
 
+
 class Observable(STIXBase):
     """Generic STIX 2.1 Cyber Observable (base)."""
+
     stix_type = "observed-data"
 
 
 class IPv4Address(STIXBase):
     """STIX 2.1 IPv4 Address SCO.  Exact-match only — not indexed for FT."""
+
     stix_type = "ipv4-addr"
 
 
 class DomainName(STIXBase):
     """STIX 2.1 Domain Name SCO.  Exact-match only — not indexed for FT."""
+
     stix_type = "domain-name"
 
 
 class URL(STIXBase):
     """STIX 2.1 URL SCO.  Exact-match only — not indexed for FT."""
+
     stix_type = "url"
 
 
 class FileObject(STIXBase):
     """STIX 2.1 File SCO.  Exact-match only — not indexed for FT."""
+
     stix_type = "file"
 
 
 class EmailAddress(STIXBase):
     """STIX 2.1 Email Address SCO.  Exact-match only — not indexed for FT."""
+
     stix_type = "email-addr"
 
 
 # ---------------------------------------------------------------------------
 # Relationship SRO — structural, not indexed
 # ---------------------------------------------------------------------------
+
 
 class Relationship(STIXBase):
     """
@@ -217,4 +235,5 @@ class Relationship(STIXBase):
     Not indexed for FT — relationships are traversed via structured
     queries (source_ref / target_ref predicates), not keyword search.
     """
+
     stix_type = "relationship"

@@ -13,7 +13,8 @@ INI config::
     auth_type     = oauth2
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
 
@@ -21,9 +22,9 @@ from gnat.connectors.base_connector import ConnectorMixin
 class CrowdStrikeClient(BaseClient, ConnectorMixin):
     """HTTP client for the CrowdStrike Falcon REST API."""
 
-    stix_type_map: Dict[str, str] = {
-        "indicator":     "iocs",
-        "malware":       "detections",
+    stix_type_map: dict[str, str] = {
+        "indicator": "iocs",
+        "malware": "detections",
         "vulnerability": "vulnerabilities",
     }
 
@@ -47,22 +48,27 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
         self.get("/sensors/queries/installers/v1", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         resource = self.stix_type_map.get(stix_type, stix_type)
         resp = self.get(f"/indicators/entities/{resource}/v1", params={"ids": object_id})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
         return resources[0] if resources else {}
 
-    def list_objects(self, stix_type: str, filters: Optional[Dict[str, Any]] = None,
-                     page: int = 1, page_size: int = 100) -> List[Dict[str, Any]]:
+    def list_objects(
+        self,
+        stix_type: str,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
         resource = self.stix_type_map.get(stix_type, stix_type)
-        params: Dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
+        params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         if filters:
             params["filter"] = " + ".join(f"{k}:'{v}'" for k, v in filters.items())
         resp = self.get(f"/indicators/queries/{resource}/v1", params=params)
         return resp.get("resources", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         resp = self.post("/indicators/entities/iocs/v1", json={"indicators": [payload]})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
         return resources[0] if resources else {}
@@ -70,8 +76,8 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
     def delete_object(self, stix_type: str, object_id: str) -> None:
         self.delete(f"/indicators/entities/iocs/v1?ids={object_id}")
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
-        stix: Dict[str, Any] = {
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
             "name": native.get("value", ""),
@@ -88,7 +94,7 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
             stix["x_target_sectors"] = industries
         return stix
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         return {
             "type": "ipv4",
             "value": stix_dict.get("name", ""),

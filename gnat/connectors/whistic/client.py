@@ -44,7 +44,7 @@ field.  Relationship objects connect vendors to their assessments.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
@@ -62,7 +62,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         Whistic API key.
     """
 
-    stix_type_map: Dict[str, str] = {
+    stix_type_map: dict[str, str] = {
         "threat-actor": "vendors",
         "x-assessment": "assessments",
     }
@@ -84,7 +84,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         self.get("/v1/vendors", params={"limit": 1})
         return True
 
-    def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
+    def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """
         Fetch a Whistic vendor or assessment by id.
 
@@ -104,21 +104,19 @@ class WhisticClient(BaseClient, ConnectorMixin):
     def list_objects(
         self,
         stix_type: str,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List Whistic vendors or assessments."""
         if stix_type == "threat-actor":
-            return self.list_vendors(page=page, page_size=page_size,
-                                     filters=filters)
+            return self.list_vendors(page=page, page_size=page_size, filters=filters)
         if stix_type == "x-assessment":
             vendor_id = (filters or {}).get("vendor_id")
-            return self.list_assessments(vendor_id=vendor_id,
-                                         page=page, page_size=page_size)
+            return self.list_assessments(vendor_id=vendor_id, page=page, page_size=page_size)
         raise GNATClientError(f"Whistic: unsupported STIX type '{stix_type}'")
 
-    def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Create or update a Whistic resource.
 
@@ -126,7 +124,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         For assessments: sends a new questionnaire request.
         """
         if stix_type == "x-assessment":
-            vendor_id  = payload.get("vendor_id", "")
+            vendor_id = payload.get("vendor_id", "")
             profile_id = payload.get("profile_id", "")
             return self.request_assessment(vendor_id, profile_id)
         raise GNATClientError(
@@ -147,8 +145,8 @@ class WhisticClient(BaseClient, ConnectorMixin):
         self,
         page: int = 1,
         page_size: int = 100,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         List all vendors in your Whistic network.
 
@@ -163,8 +161,8 @@ class WhisticClient(BaseClient, ConnectorMixin):
         list of dict
             Raw Whistic vendor objects.
         """
-        params: Dict[str, Any] = {
-            "limit":  page_size,
+        params: dict[str, Any] = {
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -172,7 +170,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         resp = self.get("/v1/vendors", params=params)
         return resp.get("vendors", []) if isinstance(resp, dict) else []
 
-    def get_vendor(self, vendor_id: str) -> Dict[str, Any]:
+    def get_vendor(self, vendor_id: str) -> dict[str, Any]:
         """
         Fetch full vendor profile including trust score and assessment status.
 
@@ -191,10 +189,10 @@ class WhisticClient(BaseClient, ConnectorMixin):
 
     def list_assessments(
         self,
-        vendor_id: Optional[str] = None,
+        vendor_id: str | None = None,
         page: int = 1,
         page_size: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List questionnaire assessments, optionally filtered by vendor.
 
@@ -203,8 +201,8 @@ class WhisticClient(BaseClient, ConnectorMixin):
         vendor_id : str, optional
             If provided, only return assessments for this vendor.
         """
-        params: Dict[str, Any] = {
-            "limit":  page_size,
+        params: dict[str, Any] = {
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if vendor_id:
@@ -212,7 +210,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         resp = self.get("/v1/assessments", params=params)
         return resp.get("assessments", []) if isinstance(resp, dict) else []
 
-    def get_assessment(self, assessment_id: str) -> Dict[str, Any]:
+    def get_assessment(self, assessment_id: str) -> dict[str, Any]:
         """
         Fetch a completed questionnaire assessment with all question responses.
 
@@ -234,7 +232,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
         vendor_id: str,
         profile_id: str,
         message: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Send a questionnaire request to a vendor.
 
@@ -252,13 +250,16 @@ class WhisticClient(BaseClient, ConnectorMixin):
         dict
             The newly-created assessment object.
         """
-        return self.post("/v1/assessments", json={
-            "vendor_id":  vendor_id,
-            "profile_id": profile_id,
-            "message":    message,
-        })
+        return self.post(
+            "/v1/assessments",
+            json={
+                "vendor_id": vendor_id,
+                "profile_id": profile_id,
+                "message": message,
+            },
+        )
 
-    def get_trust_score(self, vendor_id: str) -> Optional[float]:
+    def get_trust_score(self, vendor_id: str) -> float | None:
         """
         Return just the trust score for a vendor (0.0–100.0).
 
@@ -277,7 +278,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
-    def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
+    def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a Whistic vendor record to a STIX threat-actor object.
 
@@ -287,34 +288,34 @@ class WhisticClient(BaseClient, ConnectorMixin):
         """
         data = native.get("data", native)
         categories = data.get("categories", [])
-        stix: Dict[str, Any] = {
-            "type":               "threat-actor",
-            "id":                 f"threat-actor--{data.get('id', '')}",
-            "name":               data.get("name", ""),
-            "description":        data.get("description", ""),
-            "created":            data.get("created_at", ""),
-            "modified":           data.get("updated_at", ""),
+        stix: dict[str, Any] = {
+            "type": "threat-actor",
+            "id": f"threat-actor--{data.get('id', '')}",
+            "name": data.get("name", ""),
+            "description": data.get("description", ""),
+            "created": data.get("created_at", ""),
+            "modified": data.get("updated_at", ""),
             "threat_actor_types": ["vendor"],
-            "x_whistic_trust_score":      data.get("trust_score"),
-            "x_whistic_status":           data.get("assessment_status", ""),
-            "x_whistic_categories":       categories,
-            "x_whistic_vendor_id":        data.get("id", ""),
+            "x_whistic_trust_score": data.get("trust_score"),
+            "x_whistic_status": data.get("assessment_status", ""),
+            "x_whistic_categories": categories,
+            "x_whistic_vendor_id": data.get("id", ""),
             "x_whistic_profile_complete": data.get("profile_complete", False),
         }
         if categories:
             stix["x_target_sectors"] = categories
         return stix
 
-    def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a STIX threat-actor dict to a Whistic vendor update payload.
         """
         return {
-            "name":        stix_dict.get("name", ""),
+            "name": stix_dict.get("name", ""),
             "description": stix_dict.get("description", ""),
         }
 
-    def assessment_to_stix(self, assessment: Dict[str, Any]) -> Dict[str, Any]:
+    def assessment_to_stix(self, assessment: dict[str, Any]) -> dict[str, Any]:
         """
         Translate a Whistic assessment to a custom STIX-like assessment object.
 
@@ -325,18 +326,17 @@ class WhisticClient(BaseClient, ConnectorMixin):
         """
         data = assessment.get("data", assessment)
         return {
-            "type":                    "x-whistic-assessment",
-            "id":                      f"x-whistic-assessment--{data.get('id', '')}",
-            "name":                    data.get("profile_name", ""),
-            "created":                 data.get("created_at", ""),
-            "modified":                data.get("completed_at", ""),
+            "type": "x-whistic-assessment",
+            "id": f"x-whistic-assessment--{data.get('id', '')}",
+            "name": data.get("profile_name", ""),
+            "created": data.get("created_at", ""),
+            "modified": data.get("completed_at", ""),
             "x_whistic_assessment_id": data.get("id", ""),
             "x_whistic_overall_score": data.get("overall_score"),
-            "x_whistic_completed_at":  data.get("completed_at", ""),
-            "x_whistic_vendor_id":     data.get("vendor_id", ""),
-            "x_whistic_profile_id":    data.get("profile_id", ""),
+            "x_whistic_completed_at": data.get("completed_at", ""),
+            "x_whistic_vendor_id": data.get("vendor_id", ""),
+            "x_whistic_profile_id": data.get("profile_id", ""),
             "x_whistic_section_scores": {
-                s.get("name", ""): s.get("score")
-                for s in data.get("sections", [])
+                s.get("name", ""): s.get("score") for s in data.get("sections", [])
             },
         }

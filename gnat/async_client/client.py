@@ -25,12 +25,13 @@ It also enables concurrent multi-platform queries::
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
-from typing import Any, Optional
+from typing import Any
 
-from gnat.config import GNATConfig
-from gnat.clients.base import GNATClientError
 from gnat.async_client.base import AsyncBaseClient
+from gnat.clients.base import GNATClientError
+from gnat.config import GNATConfig
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Async connector registry (mirrors the sync CLIENT_REGISTRY)
 # ---------------------------------------------------------------------------
+
 
 def _build_async_registry() -> dict:
     """
@@ -48,34 +50,35 @@ def _build_async_registry() -> dict:
     connector it is preferred; otherwise the sync connector is wrapped.
     """
     from gnat.async_client.connectors import (
-        AsyncThreatQClient,
-        AsyncGreyMatterClient,
-        AsyncWhisticClient,
-        AsyncRiskReconClient,
-        AsyncFeedlyClient,
-        AsyncSplunkClient,
         AsyncCrowdStrikeClient,
-        AsyncProofpointClient,
+        AsyncFeedlyClient,
+        AsyncGreyMatterClient,
         AsyncNetskopeClient,
-        AsyncXSOARClient,
+        AsyncProofpointClient,
         AsyncRecordedFutureClient,
+        AsyncRiskReconClient,
+        AsyncSplunkClient,
+        AsyncThreatQClient,
+        AsyncWhisticClient,
+        AsyncXSOARClient,
     )
+
     return {
-        "threatq":       AsyncThreatQClient,
-        "crowdstrike":   AsyncCrowdStrikeClient,
-        "proofpoint":    AsyncProofpointClient,
-        "netskope":      AsyncNetskopeClient,
-        "xsoar":         AsyncXSOARClient,
+        "threatq": AsyncThreatQClient,
+        "crowdstrike": AsyncCrowdStrikeClient,
+        "proofpoint": AsyncProofpointClient,
+        "netskope": AsyncNetskopeClient,
+        "xsoar": AsyncXSOARClient,
         "recordedfuture": AsyncRecordedFutureClient,
-        "greymatter":     AsyncGreyMatterClient,
-        "whistic":        AsyncWhisticClient,
-        "riskrecon":      AsyncRiskReconClient,
-        "feedly":         AsyncFeedlyClient,
-        "splunk":         AsyncSplunkClient,
+        "greymatter": AsyncGreyMatterClient,
+        "whistic": AsyncWhisticClient,
+        "riskrecon": AsyncRiskReconClient,
+        "feedly": AsyncFeedlyClient,
+        "splunk": AsyncSplunkClient,
     }
 
 
-ASYNC_CLIENT_REGISTRY: dict = {}   # populated on first use
+ASYNC_CLIENT_REGISTRY: dict = {}  # populated on first use
 
 
 class AsyncGNATClient:
@@ -110,17 +113,17 @@ class AsyncGNATClient:
             return {"threatq": tq_res, "recorded_future": rf_res}
     """
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         self._config_path = config_path
-        self._config: Optional[GNATConfig] = None
-        self.client: Optional[AsyncBaseClient] = None
-        self.target: Optional[str] = None
+        self._config: GNATConfig | None = None
+        self.client: AsyncBaseClient | None = None
+        self.target: str | None = None
 
     # ------------------------------------------------------------------
     # Async context manager
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "AsyncGNATClient":
+    async def __aenter__(self) -> AsyncGNATClient:
         return self
 
     async def __aexit__(self, *_: Any) -> None:
@@ -130,7 +133,7 @@ class AsyncGNATClient:
     # Public API
     # ------------------------------------------------------------------
 
-    async def connect(self, target: str, **overrides: Any) -> "AsyncGNATClient":
+    async def connect(self, target: str, **overrides: Any) -> AsyncGNATClient:
         """
         Connect to a security platform asynchronously.
 
@@ -146,7 +149,6 @@ class AsyncGNATClient:
         AsyncGNATClient
             ``self`` for optional chaining (``await cli.connect("tq")``).
         """
-        global ASYNC_CLIENT_REGISTRY
         if not ASYNC_CLIENT_REGISTRY:
             ASYNC_CLIENT_REGISTRY.update(_build_async_registry())
 
@@ -160,7 +162,7 @@ class AsyncGNATClient:
         cfg = self._load_config(target, overrides)
         connector_cls = ASYNC_CLIENT_REGISTRY[target]
         self.client = connector_cls(**cfg)
-        await self.client.__aenter__()
+        await self.client.__aenter__()  # pylint: disable=unnecessary-dunder-call
         self.target = target
         return self
 
@@ -188,20 +190,14 @@ class AsyncGNATClient:
     def _load_config(self, target: str, overrides: dict) -> dict:
         cfg: dict = {}
         if self._config is None:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 self._config = GNATConfig(self._config_path)
-            except FileNotFoundError:
-                pass
         if self._config is not None:
-            try:
+            with contextlib.suppress(KeyError):
                 cfg.update(self._config.get(target))
-            except KeyError:
-                pass
         cfg.update({k: v for k, v in overrides.items() if v is not None})
         if not cfg.get("host"):
-            raise GNATClientError(
-                f"No 'host' found for async target {target!r}."
-            )
+            raise GNATClientError(f"No 'host' found for async target {target!r}.")
         return cfg
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -211,6 +207,7 @@ class AsyncGNATClient:
 # ---------------------------------------------------------------------------
 # Async ORM base
 # ---------------------------------------------------------------------------
+
 
 class AsyncSTIXBase:
     """
@@ -235,14 +232,16 @@ class AsyncSTIXBase:
         await ind.delete()
     """
 
-    _sync_cls: Any = None   # set by concrete subclasses
+    _sync_cls: type[Any] | None = None  # set by concrete subclasses
 
-    def __init__(self, client: Optional["AsyncGNATClient"] = None, **kwargs: Any):
+    def __init__(self, client: AsyncGNATClient | None = None, **kwargs: Any):
         self._async_client = client
         # Instantiate the underlying sync ORM object (no client — async manages I/O)
-        if self._sync_cls:
-            self._obj = self._sync_cls(**kwargs)
-        self.__dict__.update(self._obj.__dict__ if self._sync_cls else {})
+        # Use a local variable so Pylint can narrow the type from `type | None` to `type`.
+        sync_cls = self._sync_cls
+        if sync_cls is not None:
+            self._obj = sync_cls(**kwargs)
+        self.__dict__.update(self._obj.__dict__ if sync_cls is not None else {})
 
     def __getattr__(self, name: str) -> Any:
         try:
@@ -265,25 +264,21 @@ class AsyncSTIXBase:
                 "Pass client= when constructing or await AsyncGNATClient.connect() first."
             )
 
-    async def select(self) -> "AsyncSTIXBase":
+    async def select(self) -> AsyncSTIXBase:
         """Async fetch this object from the platform by id."""
         self._require_client()
-        data = await self._async_client.client.get_object(
-            self._obj.stix_type, self._obj.id
-        )
+        data = await self._async_client.client.get_object(self._obj.stix_type, self._obj.id)
         translated = await asyncio.get_event_loop().run_in_executor(
             None, self._async_client.client.to_stix, data
         )
         self._obj._merge(translated)
         return self
 
-    async def save(self) -> "AsyncSTIXBase":
+    async def save(self) -> AsyncSTIXBase:
         """Async create or update this object on the platform."""
         self._require_client()
         payload = self._async_client.client.from_stix(self._obj.to_dict())
-        result = await self._async_client.client.upsert_object(
-            self._obj.stix_type, payload
-        )
+        result = await self._async_client.client.upsert_object(self._obj.stix_type, payload)
         translated = self._async_client.client.to_stix(result)
         self._obj._merge(translated)
         return self
@@ -291,11 +286,9 @@ class AsyncSTIXBase:
     async def delete(self) -> None:
         """Async delete this object from the platform."""
         self._require_client()
-        await self._async_client.client.delete_object(
-            self._obj.stix_type, self._obj.id
-        )
+        await self._async_client.client.delete_object(self._obj.stix_type, self._obj.id)
 
-    async def refresh(self) -> "AsyncSTIXBase":
+    async def refresh(self) -> AsyncSTIXBase:
         """Re-fetch and update from the platform."""
         return await self.select()
 

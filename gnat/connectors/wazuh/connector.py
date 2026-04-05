@@ -155,16 +155,13 @@ class WazuhConnector(BaseClient, ConnectorMixin):
                 raise GNATClientError(
                     "agent_id is required for list_objects(stix_type='vulnerability')."
                 )
-            vulns = self._vuln_cmds.get_agent_vulnerabilities(agent_id, limit=limit)
+            vulns = self._vuln_cmds.get_vulnerabilities(agent_id, limit=limit)
             return [self._mapper.vulnerability_to_stix(v) for v in vulns]
 
         # Default: alerts → observed-data
         alerts = self._alert_cmds.get_alerts(limit=limit)
         return [
-            self._mapper.alert_to_stix_bundle(
-                self._alert_cmds.normalise_alert(a)
-            )
-            for a in alerts
+            self._mapper.alert_to_stix_bundle(self._alert_cmds.normalise_alert(a)) for a in alerts
         ]
 
     def upsert_object(self, stix_type: str, payload: dict, **kwargs) -> dict:
@@ -190,9 +187,7 @@ class WazuhConnector(BaseClient, ConnectorMixin):
         GNATClientError
             Always raised.
         """
-        raise GNATClientError(
-            "Wazuh is a read-only platform. delete_object is not supported."
-        )
+        raise GNATClientError("Wazuh is a read-only platform. delete_object is not supported.")
 
     def to_stix(self, native_object: dict) -> dict:
         """

@@ -27,34 +27,34 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch
 
+from gnat.connectors.sentinel.analytic_rules import SentinelAnalyticRuleCommands
+from gnat.connectors.sentinel.auth import SentinelAuthManager
+from gnat.connectors.sentinel.client import SentinelClient
 from gnat.connectors.sentinel.config import SentinelConfig, load_sentinel_config
 from gnat.connectors.sentinel.exceptions import (
-    SentinelAuthError,
     SentinelAPIError,
+    SentinelAuthError,
     SentinelConfigError,
     SentinelNotFoundError,
     SentinelRateLimitError,
     SentinelSTIXError,
 )
-from gnat.connectors.sentinel.auth import SentinelAuthManager
-from gnat.connectors.sentinel.client import SentinelClient
 from gnat.connectors.sentinel.incidents import SentinelIncidentCommands
-from gnat.connectors.sentinel.analytic_rules import SentinelAnalyticRuleCommands
-from gnat.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
 from gnat.connectors.sentinel.stix_mapper import SentinelSTIXMapper
-
+from gnat.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 def _make_config(**overrides) -> SentinelConfig:
-    defaults = dict(
-        tenant_id="test-tenant",
-        client_id="test-client",
-        client_secret="test-secret",
-        subscription_id="test-sub",
-        resource_group="test-rg",
-        workspace_name="test-ws",
-    )
+    defaults = {
+        "tenant_id": "test-tenant",
+        "client_id": "test-client",
+        "client_secret": "test-secret",
+        "subscription_id": "test-sub",
+        "resource_group": "test-rg",
+        "workspace_name": "test-ws",
+    }
     defaults.update(overrides)
     return SentinelConfig(**defaults)
 
@@ -68,11 +68,14 @@ def _make_response(status: int = 200, body=None) -> MagicMock:
 
 
 def _token_response() -> MagicMock:
-    return _make_response(200, {
-        "access_token": "test-bearer-token",
-        "token_type": "Bearer",
-        "expires_in": 3600,
-    })
+    return _make_response(
+        200,
+        {
+            "access_token": "test-bearer-token",
+            "token_type": "Bearer",
+            "expires_in": 3600,
+        },
+    )
 
 
 def _azure_list(items: list, next_link: str | None = None) -> dict:
@@ -99,7 +102,7 @@ def _make_client(config: SentinelConfig | None = None) -> tuple[SentinelClient, 
 
 _SAMPLE_INCIDENT = {
     "name": "inc-001",
-    "etag": "\"abc\"",
+    "etag": '"abc"',
     "properties": {
         "incidentNumber": 42,
         "title": "Suspicious Login Activity",
@@ -139,8 +142,8 @@ _SAMPLE_TI_INDICATOR = {
 # SentinelConfig
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelConfig(unittest.TestCase):
 
+class TestSentinelConfig(unittest.TestCase):
     def test_minimal_config(self):
         cfg = _make_config()
         self.assertEqual(cfg.tenant_id, "test-tenant")
@@ -175,20 +178,29 @@ class TestSentinelConfig(unittest.TestCase):
     def test_missing_fields_raises(self):
         with self.assertRaises(SentinelConfigError):
             SentinelConfig(
-                tenant_id="", client_id="x", client_secret="x",
-                subscription_id="x", resource_group="x", workspace_name="x",
+                tenant_id="",
+                client_id="x",
+                client_secret="x",
+                subscription_id="x",
+                resource_group="x",
+                workspace_name="x",
             )
 
     def test_load_from_configparser(self):
         parser = configparser.ConfigParser()
-        parser.read_dict({
-            "sentinel": {
-                "tenant_id": "tid", "client_id": "cid",
-                "client_secret": "sec", "subscription_id": "sub",
-                "resource_group": "rg", "workspace_name": "ws",
-                "max_results": "50",
+        parser.read_dict(
+            {
+                "sentinel": {
+                    "tenant_id": "tid",
+                    "client_id": "cid",
+                    "client_secret": "sec",
+                    "subscription_id": "sub",
+                    "resource_group": "rg",
+                    "workspace_name": "ws",
+                    "max_results": "50",
+                }
             }
-        })
+        )
         cfg = load_sentinel_config(parser)
         self.assertEqual(cfg.tenant_id, "tid")
         self.assertEqual(cfg.max_results, 50)
@@ -202,8 +214,8 @@ class TestSentinelConfig(unittest.TestCase):
 # SentinelAuthManager
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelAuthManager(unittest.TestCase):
 
+class TestSentinelAuthManager(unittest.TestCase):
     def _make_auth(self):
         cfg = _make_config()
         mock_http = MagicMock()
@@ -235,10 +247,9 @@ class TestSentinelAuthManager(unittest.TestCase):
 
     def test_token_400_raises_auth_error(self):
         auth, mock_http = self._make_auth()
-        mock_http.request.return_value = _make_response(400, {
-            "error": "invalid_client",
-            "error_description": "AADSTS70011: ..."
-        })
+        mock_http.request.return_value = _make_response(
+            400, {"error": "invalid_client", "error_description": "AADSTS70011: ..."}
+        )
         with self.assertRaises(SentinelAuthError) as ctx:
             auth.get_headers()
         self.assertIn("invalid_client", ctx.exception.azure_error_code)
@@ -262,8 +273,8 @@ class TestSentinelAuthManager(unittest.TestCase):
 # SentinelClient
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelClient(unittest.TestCase):
 
+class TestSentinelClient(unittest.TestCase):
     def test_get_returns_dict(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {"value": []})
@@ -284,27 +295,26 @@ class TestSentinelClient(unittest.TestCase):
 
     def test_403_raises_auth_error(self):
         client, mock_http = _make_client()
-        mock_http.request.return_value = _make_response(403, {
-            "error": {"code": "AuthorizationFailed", "message": "..."}
-        })
+        mock_http.request.return_value = _make_response(
+            403, {"error": {"code": "AuthorizationFailed", "message": "..."}}
+        )
         with self.assertRaises(SentinelAuthError) as ctx:
             client.get("incidents")
         self.assertEqual(ctx.exception.azure_error_code, "AuthorizationFailed")
 
     def test_404_raises_not_found(self):
         client, mock_http = _make_client()
-        mock_http.request.return_value = _make_response(404, {
-            "error": {"code": "ResourceNotFound", "message": "Not found"}
-        })
+        mock_http.request.return_value = _make_response(
+            404, {"error": {"code": "ResourceNotFound", "message": "Not found"}}
+        )
         with self.assertRaises(SentinelNotFoundError):
             client.get("incidents/missing")
 
     def test_429_retries_then_raises(self):
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
-        with patch("time.sleep"):
-            with self.assertRaises(SentinelRateLimitError):
-                client.get("incidents")
+        with patch("time.sleep"), self.assertRaises(SentinelRateLimitError):
+            client.get("incidents")
 
     def test_204_returns_empty_dict(self):
         client, mock_http = _make_client()
@@ -333,35 +343,30 @@ class TestSentinelClient(unittest.TestCase):
 
     def test_paginate_stops_when_no_next_link(self):
         client, mock_http = _make_client()
-        mock_http.request.return_value = _make_response(
-            200, _azure_list([{"name": "only"}])
-        )
+        mock_http.request.return_value = _make_response(200, _azure_list([{"name": "only"}]))
         items = list(client.paginate("incidents"))
         self.assertEqual(len(items), 1)
         self.assertEqual(mock_http.request.call_count, 1)
 
     def test_context_manager(self):
         cfg = _make_config()
-        with patch("gnat.connectors.sentinel.client.urllib3.PoolManager"):
-            with SentinelClient(cfg) as c:
-                self.assertIsInstance(c, SentinelClient)
+        with patch("gnat.connectors.sentinel.client.urllib3.PoolManager"), SentinelClient(cfg) as c:
+            self.assertIsInstance(c, SentinelClient)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
 # SentinelIncidentCommands
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelIncidentCommands(unittest.TestCase):
 
+class TestSentinelIncidentCommands(unittest.TestCase):
     def _make_incidents(self):
         client, mock_http = _make_client()
         return SentinelIncidentCommands(client), mock_http
 
     def test_list_incidents(self):
         inc_cmd, mock_http = self._make_incidents()
-        mock_http.request.return_value = _make_response(
-            200, _azure_list([_SAMPLE_INCIDENT])
-        )
+        mock_http.request.return_value = _make_response(200, _azure_list([_SAMPLE_INCIDENT]))
         results = inc_cmd.list_incidents()
         self.assertEqual(len(results), 1)
 
@@ -398,7 +403,10 @@ class TestSentinelIncidentCommands(unittest.TestCase):
 
     def test_normalise_incident_severity_mapping(self):
         for sev_str, expected in [("High", 4), ("Medium", 3), ("Low", 2), ("Informational", 1)]:
-            inc = {**_SAMPLE_INCIDENT, "properties": {**_SAMPLE_INCIDENT["properties"], "severity": sev_str}}
+            inc = {
+                **_SAMPLE_INCIDENT,
+                "properties": {**_SAMPLE_INCIDENT["properties"], "severity": sev_str},
+            }
             result = SentinelIncidentCommands.normalise_incident(inc)
             self.assertEqual(result["severity"], expected)
 
@@ -407,17 +415,15 @@ class TestSentinelIncidentCommands(unittest.TestCase):
 # SentinelThreatIntelCommands
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelThreatIntelCommands(unittest.TestCase):
 
+class TestSentinelThreatIntelCommands(unittest.TestCase):
     def _make_ti(self):
         client, mock_http = _make_client()
         return SentinelThreatIntelCommands(client), mock_http
 
     def test_list_indicators(self):
         ti_cmd, mock_http = self._make_ti()
-        mock_http.request.return_value = _make_response(
-            200, _azure_list([_SAMPLE_TI_INDICATOR])
-        )
+        mock_http.request.return_value = _make_response(200, _azure_list([_SAMPLE_TI_INDICATOR]))
         results = ti_cmd.list_indicators()
         self.assertEqual(len(results), 1)
 
@@ -425,8 +431,10 @@ class TestSentinelThreatIntelCommands(unittest.TestCase):
         ti_cmd, mock_http = self._make_ti()
         mock_http.request.return_value = _make_response(201, _SAMPLE_TI_INDICATOR)
         props = {
-            "displayName": "Test", "pattern": "[ipv4-addr:value = '9.9.9.9']",
-            "patternType": "stix", "source": "gnat",
+            "displayName": "Test",
+            "pattern": "[ipv4-addr:value = '9.9.9.9']",
+            "patternType": "stix",
+            "source": "gnat",
             "validFrom": "2024-01-01T00:00:00Z",
         }
         result = ti_cmd.create_indicator(props)
@@ -438,10 +446,24 @@ class TestSentinelThreatIntelCommands(unittest.TestCase):
             _make_response(201, _SAMPLE_TI_INDICATOR),
             Exception("Network error"),
         ]
-        results = ti_cmd.bulk_create_indicators([
-            {"displayName": "A", "pattern": "...", "source": "gnat", "patternType": "stix", "validFrom": "2024-01-01T00:00:00Z"},
-            {"displayName": "B", "pattern": "...", "source": "gnat", "patternType": "stix", "validFrom": "2024-01-01T00:00:00Z"},
-        ])
+        results = ti_cmd.bulk_create_indicators(
+            [
+                {
+                    "displayName": "A",
+                    "pattern": "...",
+                    "source": "gnat",
+                    "patternType": "stix",
+                    "validFrom": "2024-01-01T00:00:00Z",
+                },
+                {
+                    "displayName": "B",
+                    "pattern": "...",
+                    "source": "gnat",
+                    "patternType": "stix",
+                    "validFrom": "2024-01-01T00:00:00Z",
+                },
+            ]
+        )
         self.assertEqual(len(results), 2)
         self.assertIn("error", results[1])
 
@@ -456,15 +478,19 @@ class TestSentinelThreatIntelCommands(unittest.TestCase):
 # SentinelAnalyticRuleCommands
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelAnalyticRuleCommands(unittest.TestCase):
 
+class TestSentinelAnalyticRuleCommands(unittest.TestCase):
     def _make_rules(self):
         client, mock_http = _make_client()
         return SentinelAnalyticRuleCommands(client), mock_http
 
     def test_list_rules(self):
         rules_cmd, mock_http = self._make_rules()
-        rule = {"name": "rule-001", "kind": "Scheduled", "properties": {"displayName": "Test Rule", "enabled": True}}
+        rule = {
+            "name": "rule-001",
+            "kind": "Scheduled",
+            "properties": {"displayName": "Test Rule", "enabled": True},
+        }
         mock_http.request.return_value = _make_response(200, _azure_list([rule]))
         results = rules_cmd.list_rules()
         self.assertEqual(results[0]["name"], "rule-001")
@@ -482,13 +508,18 @@ class TestSentinelAnalyticRuleCommands(unittest.TestCase):
 
     def test_normalise_rule(self):
         rule = {
-            "name": "rule-001", "kind": "Scheduled",
+            "name": "rule-001",
+            "kind": "Scheduled",
             "properties": {
-                "displayName": "Brute Force", "enabled": True,
-                "severity": "High", "query": "SecurityEvent | where ...",
-                "tactics": ["CredentialAccess"], "techniques": ["T1110"],
-                "queryFrequency": "PT5M", "queryPeriod": "PT5M",
-            }
+                "displayName": "Brute Force",
+                "enabled": True,
+                "severity": "High",
+                "query": "SecurityEvent | where ...",
+                "tactics": ["CredentialAccess"],
+                "techniques": ["T1110"],
+                "queryFrequency": "PT5M",
+                "queryPeriod": "PT5M",
+            },
         }
         result = SentinelAnalyticRuleCommands.normalise_rule(rule)
         self.assertEqual(result["display_name"], "Brute Force")
@@ -500,8 +531,8 @@ class TestSentinelAnalyticRuleCommands(unittest.TestCase):
 # SentinelSTIXMapper
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelSTIXMapper(unittest.TestCase):
 
+class TestSentinelSTIXMapper(unittest.TestCase):
     def setUp(self):
         self.mapper = SentinelSTIXMapper()
 
@@ -562,16 +593,20 @@ class TestSentinelSTIXMapper(unittest.TestCase):
 
     def test_stix_bundle_to_ti_properties_list(self):
         bundle = {
-            "type": "bundle", "spec_version": "2.1",
+            "type": "bundle",
+            "spec_version": "2.1",
             "objects": [
                 {
-                    "type": "indicator", "id": "indicator--1",
-                    "name": "Test", "pattern": "[ipv4-addr:value = '1.1.1.1']",
-                    "pattern_type": "stix", "valid_from": "2024-01-01T00:00:00Z",
+                    "type": "indicator",
+                    "id": "indicator--1",
+                    "name": "Test",
+                    "pattern": "[ipv4-addr:value = '1.1.1.1']",
+                    "pattern_type": "stix",
+                    "valid_from": "2024-01-01T00:00:00Z",
                     "indicator_types": ["malicious-activity"],
                 },
                 {"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.1.1.1"},
-            ]
+            ],
         }
         props_list = self.mapper.stix_bundle_to_ti_properties_list(bundle)
         self.assertEqual(len(props_list), 1)  # Only indicator SDOs
@@ -586,12 +621,19 @@ class TestSentinelSTIXMapper(unittest.TestCase):
 # Exception hierarchy
 # ═════════════════════════════════════════════════════════════════════════════
 
-class TestSentinelExceptions(unittest.TestCase):
 
+class TestSentinelExceptions(unittest.TestCase):
     def test_all_inherit_from_base(self):
         from gnat.connectors.sentinel.exceptions import SentinelError
-        for cls in [SentinelConfigError, SentinelAuthError, SentinelAPIError,
-                    SentinelNotFoundError, SentinelRateLimitError, SentinelSTIXError]:
+
+        for cls in [
+            SentinelConfigError,
+            SentinelAuthError,
+            SentinelAPIError,
+            SentinelNotFoundError,
+            SentinelRateLimitError,
+            SentinelSTIXError,
+        ]:
             self.assertTrue(issubclass(cls, SentinelError))
 
     def test_api_error_str(self):

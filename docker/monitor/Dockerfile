@@ -1,6 +1,6 @@
 # GNAT monitor service
 # Exposes a /health endpoint and connector status summary for external monitoring.
-FROM python:3.11-slim
+FROM python:3.15-rc-alpine3.22
 
 LABEL maintainer="GNAT" \
       description="GNAT health monitor service"

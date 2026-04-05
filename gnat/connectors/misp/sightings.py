@@ -55,6 +55,7 @@ class MISPSightingCommands:
         dict
         """
         import time as _time
+
         sighting: dict = {
             "type": str(type_sighting),
             "source": source,
@@ -91,6 +92,7 @@ class MISPSightingCommands:
         dict
         """
         import time as _time
+
         sighting: dict = {
             "values": values,
             "type": str(type_sighting),
@@ -117,13 +119,9 @@ class MISPSightingCommands:
         list[dict]
         """
         if attribute_id:
-            response = self._client.post_json(
-                f"sightings/listSightings/{attribute_id}"
-            )
+            response = self._client.post_json(f"sightings/listSightings/{attribute_id}")
         elif event_id:
-            response = self._client.post_json(
-                f"sightings/listSightings/{event_id}/event"
-            )
+            response = self._client.post_json(f"sightings/listSightings/{event_id}/event")
         else:
             response = self._client.get_json("sightings/index")
 

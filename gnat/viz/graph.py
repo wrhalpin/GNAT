@@ -115,7 +115,7 @@ import math
 import random
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import Workspace
@@ -125,32 +125,32 @@ logger = logging.getLogger(__name__)
 
 # ── Visual constants ────────────────────────────────────────────────────────
 
-_NODE_COLORS: Dict[str, str] = {
-    "indicator":      "#4ea8de",
-    "malware":        "#f28b82",
-    "vulnerability":  "#fdd663",
-    "threat-actor":   "#c58af9",
+_NODE_COLORS: dict[str, str] = {
+    "indicator": "#4ea8de",
+    "malware": "#f28b82",
+    "vulnerability": "#fdd663",
+    "threat-actor": "#c58af9",
     "attack-pattern": "#81c995",
-    "relationship":   "#aecbfa",
-    "_default":       "#9aa0a6",
+    "relationship": "#aecbfa",
+    "_default": "#9aa0a6",
 }
 
-_EDGE_COLORS: Dict[str, str] = {
-    "indicates":       "#4ea8de",
-    "uses":            "#f28b82",
-    "related-to":      "#5f6368",
-    "attributed-to":   "#c58af9",
-    "targets":         "#fdd663",
-    "_default":        "#3c4043",
+_EDGE_COLORS: dict[str, str] = {
+    "indicates": "#4ea8de",
+    "uses": "#f28b82",
+    "related-to": "#5f6368",
+    "attributed-to": "#c58af9",
+    "targets": "#fdd663",
+    "_default": "#3c4043",
 }
 
-_PLOTLY_SYMBOLS: Dict[str, str] = {
-    "indicator":      "circle",
-    "malware":        "square",
-    "vulnerability":  "diamond",
-    "threat-actor":   "cross",
+_PLOTLY_SYMBOLS: dict[str, str] = {
+    "indicator": "circle",
+    "malware": "square",
+    "vulnerability": "diamond",
+    "threat-actor": "cross",
     "attack-pattern": "x",
-    "_default":       "circle-open",
+    "_default": "circle-open",
 }
 
 # Threshold above which sigma.js is used instead of Plotly 3D
@@ -167,28 +167,33 @@ _SIGMA_CDN = (
 # Barnes-Hut layout  (pure Python, O(n log n))
 # ===========================================================================
 
+
 class _Vec2:
     """Lightweight 2D vector to avoid numpy dependency."""
+
     __slots__ = ("x", "y")
 
     def __init__(self, x: float = 0.0, y: float = 0.0):
         self.x = x
         self.y = y
 
-    def __add__(self, o: "_Vec2") -> "_Vec2":
+    def __add__(self, o: _Vec2) -> _Vec2:
         return _Vec2(self.x + o.x, self.y + o.y)
 
-    def __iadd__(self, o: "_Vec2") -> "_Vec2":
-        self.x += o.x; self.y += o.y; return self
+    def __iadd__(self, o: _Vec2) -> _Vec2:
+        self.x += o.x
+        self.y += o.y
+        return self
 
-    def __mul__(self, s: float) -> "_Vec2":
+    def __mul__(self, s: float) -> _Vec2:
         return _Vec2(self.x * s, self.y * s)
 
-    def dist2(self, o: "_Vec2") -> float:
-        dx = self.x - o.x; dy = self.y - o.y
+    def dist2(self, o: _Vec2) -> float:
+        dx = self.x - o.x
+        dy = self.y - o.y
         return dx * dx + dy * dy
 
-    def dist(self, o: "_Vec2") -> float:
+    def dist(self, o: _Vec2) -> float:
         return math.sqrt(self.dist2(o))
 
 
@@ -201,31 +206,31 @@ class _QuadTree:
     """
 
     def __init__(self, cx: float, cy: float, half: float):
-        self.cx    = cx
-        self.cy    = cy
-        self.half  = half
-        self.mass  = 0.0
-        self.cmx   = 0.0
-        self.cmy   = 0.0
-        self.node_id: Optional[int] = None
-        self.children: Optional[List["_QuadTree"]] = None
+        self.cx = cx
+        self.cy = cy
+        self.half = half
+        self.mass = 0.0
+        self.cmx = 0.0
+        self.cmy = 0.0
+        self.node_id: int | None = None
+        self.children: list[_QuadTree] | None = None
 
     def insert(self, nid: int, x: float, y: float, mass: float = 1.0) -> None:
         if self.mass == 0:
             # Empty cell — store directly
-            self.mass  = mass
-            self.cmx   = x
-            self.cmy   = y
+            self.mass = mass
+            self.cmx = x
+            self.cmy = y
             self.node_id = nid
             return
 
         if self.children is None:
             # Leaf — subdivide and re-insert existing node
             self._subdivide()
-            old_id  = self.node_id
-            old_x   = self.cmx
-            old_y   = self.cmy
-            old_m   = self.mass
+            old_id = self.node_id
+            old_x = self.cmx
+            old_y = self.cmy
+            old_m = self.mass
             self.node_id = None
             self._insert_into_child(old_id, old_x, old_y, old_m)
 
@@ -249,9 +254,7 @@ class _QuadTree:
         idx = (1 if x >= self.cx else 0) + (2 if y >= self.cy else 0)
         self.children[idx].insert(nid, x, y, mass)
 
-    def repulsion_force(
-        self, x: float, y: float, kr: float, theta: float
-    ) -> Tuple[float, float]:
+    def repulsion_force(self, x: float, y: float, kr: float, theta: float) -> tuple[float, float]:
         """Return (fx, fy) repulsion force on a node at (x, y)."""
         if self.mass == 0:
             return 0.0, 0.0
@@ -270,20 +273,21 @@ class _QuadTree:
         fx, fy = 0.0, 0.0
         for child in self.children:
             cfx, cfy = child.repulsion_force(x, y, kr, theta)
-            fx += cfx; fy += cfy
+            fx += cfx
+            fy += cfy
         return fx, fy
 
 
 def _barnes_hut_layout(
-    node_ids: List[str],
-    adj: Dict[str, List[str]],
+    node_ids: list[str],
+    adj: dict[str, list[str]],
     iterations: int = 100,
-    kr: float = 10.0,       # repulsion coefficient
-    ka: float = 0.1,        # attraction coefficient
-    gravity: float = 0.5,   # gravity toward origin
-    theta: float = 0.8,     # Barnes-Hut accuracy (lower = more accurate)
+    kr: float = 10.0,  # repulsion coefficient
+    ka: float = 0.1,  # attraction coefficient
+    gravity: float = 0.5,  # gravity toward origin
+    theta: float = 0.8,  # Barnes-Hut accuracy (lower = more accurate)
     seed: int = 42,
-) -> Dict[str, Tuple[float, float]]:
+) -> dict[str, tuple[float, float]]:
     """
     ForceAtlas2-inspired Barnes-Hut layout.
 
@@ -291,7 +295,7 @@ def _barnes_hut_layout(
     Pure Python, no numpy/scipy.
     """
     rng = random.Random(seed)
-    n   = len(node_ids)
+    n = len(node_ids)
     idx_map = {nid: i for i, nid in enumerate(node_ids)}
 
     # Initialise positions on a circle to avoid symmetry collapse
@@ -302,7 +306,7 @@ def _barnes_hut_layout(
         )
         for i in range(n)
     ]
-    vel = [_Vec2() for _ in range(n)]
+    _vel = [_Vec2() for _ in range(n)]
 
     # Degree for mass weighting
     degree = [1 + len(adj.get(nid, [])) for nid in node_ids]
@@ -311,19 +315,21 @@ def _barnes_hut_layout(
     step = 1.0
     step_ratio = 0.95
 
-    for iteration in range(iterations):
+    for _ in range(iterations):
         forces = [_Vec2() for _ in range(n)]
 
         # ── Repulsion via Barnes-Hut ────────────────────────────────────
         # Find bounding box
-        min_x = min(p.x for p in pos); max_x = max(p.x for p in pos)
-        min_y = min(p.y for p in pos); max_y = max(p.y for p in pos)
-        cx    = (min_x + max_x) / 2
-        cy    = (min_y + max_y) / 2
-        half  = max(max_x - min_x, max_y - min_y) / 2 + 1.0
+        min_x = min(p.x for p in pos)
+        max_x = max(p.x for p in pos)
+        min_y = min(p.y for p in pos)
+        max_y = max(p.y for p in pos)
+        cx = (min_x + max_x) / 2
+        cy = (min_y + max_y) / 2
+        half = max(max_x - min_x, max_y - min_y) / 2 + 1.0
 
         tree = _QuadTree(cx, cy, half)
-        for i, nid in enumerate(node_ids):
+        for i, _nid in enumerate(node_ids):
             tree.insert(i, pos[i].x, pos[i].y, float(degree[i]))
 
         for i in range(n):
@@ -342,8 +348,8 @@ def _barnes_hut_layout(
                     continue
                 dx = pos[j].x - pos[i].x
                 dy = pos[j].y - pos[i].y
-                d  = math.sqrt(dx * dx + dy * dy) + 1e-8
-                f  = ka * d / max(degree[i], degree[j])
+                d = math.sqrt(dx * dx + dy * dy) + 1e-8
+                f = ka * d / max(degree[i], degree[j])
                 forces[i].x += f * dx / d
                 forces[i].y += f * dy / d
                 forces[j].x -= f * dx / d
@@ -356,9 +362,7 @@ def _barnes_hut_layout(
 
         # ── Integrate with speed-capped update ──────────────────────────
         for i in range(n):
-            speed = math.sqrt(
-                forces[i].x ** 2 + forces[i].y ** 2
-            ) + 1e-8
+            speed = math.sqrt(forces[i].x ** 2 + forces[i].y ** 2) + 1e-8
             cap = min(step, 10.0)
             pos[i].x += forces[i].x / speed * cap
             pos[i].y += forces[i].y / speed * cap
@@ -369,11 +373,11 @@ def _barnes_hut_layout(
 
 
 def _type_cluster_layout(
-    node_ids: List[str],
-    node_types: Dict[str, str],
-    adj: Dict[str, List[str]],
+    node_ids: list[str],
+    node_types: dict[str, str],
+    adj: dict[str, list[str]],
     seed: int = 42,
-) -> Dict[str, Tuple[float, float]]:
+) -> dict[str, tuple[float, float]]:
     """
     Cluster-then-spread layout for very large graphs (> 1000 nodes).
 
@@ -383,39 +387,39 @@ def _type_cluster_layout(
 
     No iteration needed — O(n) placement.
     """
-    rng   = random.Random(seed)
+    rng = random.Random(seed)
     types = sorted(set(node_types.values()))
     n_types = len(types)
 
     # Assign each type a position on a large circle
-    type_centres: Dict[str, Tuple[float, float]] = {}
+    type_centres: dict[str, tuple[float, float]] = {}
     ring_r = max(n_types * 3.0, 10.0)
     for i, t in enumerate(types):
         angle = 2 * math.pi * i / max(n_types, 1)
         type_centres[t] = (ring_r * math.cos(angle), ring_r * math.sin(angle))
 
     # Count nodes per type for cluster radius sizing
-    type_counts: Dict[str, int] = {}
+    type_counts: dict[str, int] = {}
     for t in node_types.values():
         type_counts[t] = type_counts.get(t, 0) + 1
 
     # Fibonacci spiral within each cluster
-    by_type: Dict[str, List[str]] = {}
+    by_type: dict[str, list[str]] = {}
     for nid in node_ids:
         t = node_types.get(nid, "_default")
         by_type.setdefault(t, []).append(nid)
 
-    positions: Dict[str, Tuple[float, float]] = {}
+    positions: dict[str, tuple[float, float]] = {}
     golden = math.pi * (3 - math.sqrt(5))  # golden angle
 
     for t, members in by_type.items():
-        cx, cy  = type_centres.get(t, (0.0, 0.0))
-        n       = len(members)
-        radius  = max(math.sqrt(n) * 0.8, 1.0)
+        cx, cy = type_centres.get(t, (0.0, 0.0))
+        n = len(members)
+        radius = max(math.sqrt(n) * 0.8, 1.0)
 
         for k, nid in enumerate(members):
-            r      = radius * math.sqrt((k + 0.5) / max(n, 1))
-            theta  = golden * k
+            r = radius * math.sqrt((k + 0.5) / max(n, 1))
+            theta = golden * k
             jitter = rng.uniform(-0.1, 0.1)
             positions[nid] = (
                 cx + r * math.cos(theta) + jitter,
@@ -426,17 +430,18 @@ def _type_cluster_layout(
 
 
 def _fr_layout_small(
-    node_ids: List[str],
-    adj: Dict[str, List[str]],
+    node_ids: list[str],
+    adj: dict[str, list[str]],
     iterations: int = 80,
     seed: int = 42,
-) -> Dict[str, Tuple[float, float]]:
+) -> dict[str, tuple[float, float]]:
     """
     Fruchterman-Reingold for small graphs (≤ 200 nodes).
     Uses networkx if available, otherwise falls back to Barnes-Hut.
     """
     try:
         import networkx as nx
+
         G = nx.Graph()
         G.add_nodes_from(node_ids)
         for src, targets in adj.items():
@@ -445,12 +450,12 @@ def _fr_layout_small(
                     G.add_edge(src, tgt)
         n = len(node_ids)
         pos2d = nx.spring_layout(
-            G, seed=seed,
+            G,
+            seed=seed,
             k=2.0 / math.sqrt(max(n, 1)),
             iterations=iterations,
         )
-        return {nid: (pos2d[nid][0] * 10, pos2d[nid][1] * 10)
-                for nid in node_ids}
+        return {nid: (pos2d[nid][0] * 10, pos2d[nid][1] * 10) for nid in node_ids}
     except ImportError:
         return _barnes_hut_layout(node_ids, adj, iterations=iterations, seed=seed)
 
@@ -458,6 +463,7 @@ def _fr_layout_small(
 # ===========================================================================
 # GraphView
 # ===========================================================================
+
 
 class GraphView:
     """
@@ -503,7 +509,7 @@ class GraphView:
 
     def __init__(
         self,
-        workspace: "Workspace",
+        workspace: Workspace,
         seed: int = 42,
         node_size_field: str = "confidence",
         plotly_threshold: int = 300,
@@ -511,24 +517,24 @@ class GraphView:
         layout_iterations: int = 100,
         theta: float = 0.8,
     ):
-        self._ws               = workspace
-        self._seed             = seed
-        self._size_field       = node_size_field
+        self._ws = workspace
+        self._seed = seed
+        self._size_field = node_size_field
         self._plotly_threshold = plotly_threshold
         self._cluster_threshold = cluster_threshold
         self._layout_iterations = layout_iterations
-        self._theta            = theta
+        self._theta = theta
 
     # ── Public API ──────────────────────────────────────────────────────────
 
     def show(
         self,
-        stix_types: Optional[List[str]] = None,
-        relationship_types: Optional[List[str]] = None,
-        max_nodes: Optional[int] = None,
-        renderer: Optional[str] = None,   # "plotly3d" | "sigma" | None (auto)
-        cluster_threshold: Optional[int] = None,
-        title: Optional[str] = None,
+        stix_types: list[str] | None = None,
+        relationship_types: list[str] | None = None,
+        max_nodes: int | None = None,
+        renderer: str | None = None,  # "plotly3d" | "sigma" | None (auto)
+        cluster_threshold: int | None = None,
+        title: str | None = None,
     ) -> None:
         """
         Render the graph in a browser or Jupyter cell.
@@ -551,20 +557,20 @@ class GraphView:
         """
         nodes, edges = self._extract_graph(stix_types, relationship_types, max_nodes)
         n = len(nodes)
-        use_sigma = renderer == "sigma" or (
-            renderer != "plotly3d" and n > self._plotly_threshold
-        )
+        use_sigma = renderer == "sigma" or (renderer != "plotly3d" and n > self._plotly_threshold)
 
         if use_sigma:
             html = self._build_sigma_html(nodes, edges, title, cluster_threshold)
-            import tempfile, webbrowser
-            tmp = tempfile.NamedTemporaryFile(
+            import tempfile
+            import webbrowser
+
+            with tempfile.NamedTemporaryFile(
                 suffix=".html", delete=False, mode="w", encoding="utf-8"
-            )
-            tmp.write(html)
-            tmp.flush()
-            webbrowser.open(f"file://{tmp.name}")
-            logger.info("GraphView: sigma.js graph opened at %s", tmp.name)
+            ) as tmp:
+                tmp.write(html)
+                tmp_name = tmp.name
+            webbrowser.open(f"file://{tmp_name}")
+            logger.info("GraphView: sigma.js graph opened at %s", tmp_name)
         else:
             fig = self._build_plotly_figure(nodes, edges, title)
             fig.show()
@@ -585,9 +591,9 @@ class GraphView:
         path: str,
         stix_types=None,
         relationship_types=None,
-        max_nodes: Optional[int] = None,
-        renderer: Optional[str] = None,
-        title: Optional[str] = None,
+        max_nodes: int | None = None,
+        renderer: str | None = None,
+        title: str | None = None,
         offline: bool = False,
     ) -> None:
         """
@@ -605,34 +611,40 @@ class GraphView:
         """
         nodes, edges = self._extract_graph(stix_types, relationship_types, max_nodes)
         n = len(nodes)
-        use_sigma = renderer == "sigma" or (
-            renderer != "plotly3d" and n > self._plotly_threshold
-        )
+        use_sigma = renderer == "sigma" or (renderer != "plotly3d" and n > self._plotly_threshold)
 
         t0 = time.perf_counter()
         if use_sigma:
             html = self._build_sigma_html(nodes, edges, title, offline=offline)
         else:
-            fig  = self._build_plotly_figure(nodes, edges, title)
+            fig = self._build_plotly_figure(nodes, edges, title)
             html = fig.to_html(include_plotlyjs=True, full_html=True)
 
         Path(path).write_text(html, encoding="utf-8")
         elapsed = time.perf_counter() - t0
         logger.info(
             "GraphView: %s HTML written to %s (%d nodes, %d edges, %.2fs)",
-            "sigma" if use_sigma else "plotly", path, n, len(edges), elapsed
+            "sigma" if use_sigma else "plotly",
+            path,
+            n,
+            len(edges),
+            elapsed,
         )
 
-    def to_json(self, path: Optional[str] = None) -> str:
+    def to_json(self, path: str | None = None) -> str:
         """Return/save Plotly figure JSON."""
         spec = self._build_plotly_figure(*self._extract_graph()).to_json()
         if path:
-            Path(path).write_text(spec)
+            Path(path).write_text(spec, encoding="utf-8")
         return spec
 
-    def to_graph_json(self, path: Optional[str] = None,
-                      stix_types=None, relationship_types=None,
-                      max_nodes: Optional[int] = None) -> dict:
+    def to_graph_json(
+        self,
+        path: str | None = None,
+        stix_types=None,
+        relationship_types=None,
+        max_nodes: int | None = None,
+    ) -> dict:
         """
         Return/save a sigma.js-compatible graph JSON object.
 
@@ -652,7 +664,7 @@ class GraphView:
         positions = self._compute_layout(nodes, edges)
         data = self._build_graph_data(nodes, edges, positions)
         if path:
-            Path(path).write_text(json.dumps(data, indent=2))
+            Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
         return data
 
     def to_networkx(self, stix_types=None, relationship_types=None):
@@ -665,30 +677,31 @@ class GraphView:
         nodes, edges = self._extract_graph(stix_types, relationship_types)
         G = nx.DiGraph()
         for sid, obj in nodes.items():
-            G.add_node(sid,
+            G.add_node(
+                sid,
                 stix_type=obj.stix_type,
                 name=getattr(obj, "name", ""),
                 confidence=obj._properties.get("confidence", 50),
             )
         for e in edges:
-            G.add_edge(e["source"], e["target"],
-                       relationship_type=e["rel_type"])
+            G.add_edge(e["source"], e["target"], relationship_type=e["rel_type"])
         return G
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Return node/edge counts and type breakdown."""
         nodes, edges = self._extract_graph()
-        type_counts: Dict[str, int] = {}
+        type_counts: dict[str, int] = {}
         for obj in nodes.values():
             type_counts[obj.stix_type] = type_counts.get(obj.stix_type, 0) + 1
-        rel_counts: Dict[str, int] = {}
+        rel_counts: dict[str, int] = {}
         for e in edges:
             rel_counts[e["rel_type"]] = rel_counts.get(e["rel_type"], 0) + 1
         return {
-            "nodes": len(nodes), "edges": len(edges),
-            "node_types": type_counts, "edge_types": rel_counts,
+            "nodes": len(nodes),
+            "edges": len(edges),
+            "node_types": type_counts,
+            "edge_types": rel_counts,
         }
-
 
     # ── Intent-driven rendering API ─────────────────────────────────────────
     #
@@ -756,8 +769,12 @@ class GraphView:
         self._cluster_threshold = max(n + 1, 99_999)
         try:
             return self._render_intent(
-                nodes=nodes, edges=edges, title=title, path=path,
-                edge_opacity=0.7, hide_isolated=False,
+                nodes=nodes,
+                edges=edges,
+                title=title,
+                path=path,
+                edge_opacity=0.7,
+                hide_isolated=False,
             )
         finally:
             self._cluster_threshold = old_ct
@@ -816,8 +833,12 @@ class GraphView:
         self._cluster_threshold = 0
         try:
             return self._render_intent(
-                nodes=nodes, edges=edges, title=title, path=path,
-                uniform_node_size=True, edge_opacity=0.25,
+                nodes=nodes,
+                edges=edges,
+                title=title,
+                path=path,
+                uniform_node_size=True,
+                edge_opacity=0.25,
             )
         finally:
             self._cluster_threshold = old_ct
@@ -881,8 +902,12 @@ class GraphView:
         self._cluster_threshold = max(len(ego_nodes) + 1, 99_999)
         try:
             return self._render_intent(
-                nodes=ego_nodes, edges=ego_edges, title=title, path=path,
-                highlight_ids=set(seeds), edge_opacity=0.65,
+                nodes=ego_nodes,
+                edges=ego_edges,
+                title=title,
+                path=path,
+                highlight_ids=set(seeds),
+                edge_opacity=0.65,
             )
         finally:
             self._cluster_threshold = old_ct
@@ -935,7 +960,9 @@ class GraphView:
         title = title or f"{self._ws.name} — Timeline"
 
         html = self._build_sigma_html(
-            nodes, edges, title,
+            nodes,
+            edges,
+            title,
             _precomputed_positions=positions,
         )
         return self._deliver_html(html, path, "timeline")
@@ -988,7 +1015,9 @@ class GraphView:
         title = title or f"{self._ws.name} — Risk Heatmap ({x_field} vs {y_field})"
 
         html = self._build_sigma_html(
-            nodes, edges, title,
+            nodes,
+            edges,
+            title,
             _precomputed_positions=positions,
         )
         return self._deliver_html(html, path, "risk_heatmap")
@@ -1007,7 +1036,7 @@ class GraphView:
         highlight_ids=None,
     ):
         """Common rendering path for intent methods."""
-        n = len(nodes)
+        _n = len(nodes)
 
         if hide_isolated and edges:
             connected = {e["source"] for e in edges} | {e["target"] for e in edges}
@@ -1017,7 +1046,9 @@ class GraphView:
         # output with embedded GRAPH_DATA. Plotly is reserved for explicit
         # to_html(renderer="plotly3d") calls via the low-level API.
         html = self._build_sigma_html(
-            nodes, edges, title,
+            nodes,
+            edges,
+            title,
             edge_opacity_override=edge_opacity,
             uniform_node_size=uniform_node_size,
             highlight_ids=highlight_ids or set(),
@@ -1031,13 +1062,15 @@ class GraphView:
             Path(path).write_text(html, encoding="utf-8")
             logger.info("GraphView: %s HTML written to %s", label, path)
             return None
-        import tempfile, webbrowser
-        tmp = tempfile.NamedTemporaryFile(
+        import tempfile
+        import webbrowser
+
+        with tempfile.NamedTemporaryFile(
             suffix=".html", delete=False, mode="w", encoding="utf-8"
-        )
-        tmp.write(html)
-        tmp.flush()
-        webbrowser.open(f"file://{tmp.name}")
+        ) as tmp:
+            tmp.write(html)
+            tmp_name = tmp.name
+        webbrowser.open(f"file://{tmp_name}")
         return None
 
     def _ego_subgraph(self, all_nodes, all_edges, seeds, depth):
@@ -1063,10 +1096,7 @@ class GraphView:
                 break
 
         ego_nodes = {nid: all_nodes[nid] for nid in visited if nid in all_nodes}
-        ego_edges = [
-            e for e in all_edges
-            if e["source"] in ego_nodes and e["target"] in ego_nodes
-        ]
+        ego_edges = [e for e in all_edges if e["source"] in ego_nodes and e["target"] in ego_nodes]
         return ego_nodes, ego_edges
 
     def _timeline_layout(self, nodes, time_field="created"):
@@ -1084,26 +1114,24 @@ class GraphView:
             if not raw:
                 return None
             try:
-                return datetime.fromisoformat(
-                    str(raw).replace("Z", "+00:00")
-                ).timestamp()
+                return datetime.fromisoformat(str(raw).replace("Z", "+00:00")).timestamp()
             except (ValueError, TypeError):
                 return None
 
         timestamps = {nid: _parse_ts(obj) for nid, obj in nodes.items()}
         valid = [t for t in timestamps.values() if t is not None]
-        t_min  = min(valid) if valid else 0.0
+        t_min = min(valid) if valid else 0.0
         t_range = max(max(valid) - t_min, 1.0) if valid else 1.0
 
-        types  = sorted(set(obj.stix_type for obj in nodes.values()))
+        types = sorted({obj.stix_type for obj in nodes.values()})
         type_y = {t: i * 4.0 for i, t in enumerate(types)}
 
         rng = random.Random(self._seed)
         positions = {}
         for nid, obj in nodes.items():
             ts = timestamps.get(nid)
-            x  = ((ts - t_min) / t_range * 20.0) if ts is not None else -5.0
-            y  = type_y.get(obj.stix_type, 0.0) + rng.uniform(-0.3, 0.3)
+            x = ((ts - t_min) / t_range * 20.0) if ts is not None else -5.0
+            y = type_y.get(obj.stix_type, 0.0) + rng.uniform(-0.3, 0.3)
             positions[nid] = (x, y)
         return positions
 
@@ -1115,10 +1143,11 @@ class GraphView:
         rng = random.Random(self._seed)
         positions = {}
         for nid, obj in nodes.items():
-            def _get(f):
-                v = obj._properties.get(f)
-                if v is None and hasattr(obj, f):
-                    v = getattr(obj, f, None)
+
+            def _get(f, _obj=obj):
+                v = _obj._properties.get(f)
+                if v is None and hasattr(_obj, f):
+                    v = getattr(_obj, f, None)
                 return v
 
             xv, yv = _get(x_field), _get(y_field)
@@ -1130,47 +1159,45 @@ class GraphView:
             positions[nid] = (x, y)
         return positions
 
-
     # ── Graph extraction ────────────────────────────────────────────────────
 
     def _extract_graph(
         self,
-        stix_types=None, relationship_types=None,
-        max_nodes: Optional[int] = None,
-    ) -> Tuple[Dict[str, "STIXBase"], List[Dict[str, str]]]:
-        all_objects    = dict(self._ws.objects)
-        relationships  = {
-            sid: obj for sid, obj in all_objects.items()
-            if obj.stix_type == "relationship"
+        stix_types=None,
+        relationship_types=None,
+        max_nodes: int | None = None,
+    ) -> tuple[dict[str, STIXBase], list[dict[str, str]]]:
+        all_objects = dict(self._ws.objects)
+        relationships = {
+            sid: obj for sid, obj in all_objects.items() if obj.stix_type == "relationship"
         }
-        non_rels = {
-            sid: obj for sid, obj in all_objects.items()
-            if obj.stix_type != "relationship"
-        }
+        non_rels = {sid: obj for sid, obj in all_objects.items() if obj.stix_type != "relationship"}
 
-        edges: List[Dict[str, str]] = []
+        edges: list[dict[str, str]] = []
         referenced: set = set()
 
         for rel in relationships.values():
-            src      = rel._properties.get("source_ref", "")
-            tgt      = rel._properties.get("target_ref", "")
+            src = rel._properties.get("source_ref", "")
+            tgt = rel._properties.get("target_ref", "")
             rel_type = rel._properties.get("relationship_type", "related-to")
             if not src or not tgt:
                 continue
             if relationship_types and rel_type not in relationship_types:
                 continue
-            edges.append({
-                "source":   src,
-                "target":   tgt,
-                "rel_type": rel_type,
-                "enrichment_source": rel._properties.get(
-                    "x_enrichment_source", ""),
-            })
+            edges.append(
+                {
+                    "source": src,
+                    "target": tgt,
+                    "rel_type": rel_type,
+                    "enrichment_source": rel._properties.get("x_enrichment_source", ""),
+                }
+            )
             referenced.add(src)
             referenced.add(tgt)
 
-        nodes: Dict[str, "STIXBase"] = {
-            sid: obj for sid, obj in non_rels.items()
+        nodes: dict[str, STIXBase] = {
+            sid: obj
+            for sid, obj in non_rels.items()
             if not stix_types or obj.stix_type in stix_types
         }
         # Ensure referenced objects are included
@@ -1180,15 +1207,15 @@ class GraphView:
 
         if not edges and not referenced:
             nodes = {
-                sid: obj for sid, obj in non_rels.items()
+                sid: obj
+                for sid, obj in non_rels.items()
                 if not stix_types or obj.stix_type in stix_types
             }
 
         # Cap by degree centrality if max_nodes set
         if max_nodes and len(nodes) > max_nodes:
             nodes = self._top_by_degree(nodes, edges, max_nodes)
-            edges = [e for e in edges
-                     if e["source"] in nodes and e["target"] in nodes]
+            edges = [e for e in edges if e["source"] in nodes and e["target"] in nodes]
 
         return nodes, edges
 
@@ -1196,16 +1223,16 @@ class GraphView:
 
     def _compute_layout(
         self,
-        nodes: Dict[str, "STIXBase"],
-        edges: List[Dict[str, str]],
-        cluster_threshold: Optional[int] = None,
-    ) -> Dict[str, Tuple[float, float]]:
+        nodes: dict[str, STIXBase],
+        edges: list[dict[str, str]],
+        cluster_threshold: int | None = None,
+    ) -> dict[str, tuple[float, float]]:
         node_ids = list(nodes.keys())
         n = len(node_ids)
         if n == 0:
             return {}
 
-        adj: Dict[str, List[str]] = {nid: [] for nid in node_ids}
+        adj: dict[str, list[str]] = {nid: [] for nid in node_ids}
         for e in edges:
             if e["source"] in adj:
                 adj[e["source"]].append(e["target"])
@@ -1217,24 +1244,26 @@ class GraphView:
         t0 = time.perf_counter()
 
         if n <= 200:
-            pos = _fr_layout_small(node_ids, adj,
-                                   iterations=self._layout_iterations,
-                                   seed=self._seed)
+            pos = _fr_layout_small(
+                node_ids, adj, iterations=self._layout_iterations, seed=self._seed
+            )
         elif n <= ct:
-            pos = _barnes_hut_layout(node_ids, adj,
-                                     iterations=self._layout_iterations,
-                                     theta=self._theta,
-                                     seed=self._seed)
+            pos = _barnes_hut_layout(
+                node_ids,
+                adj,
+                iterations=self._layout_iterations,
+                theta=self._theta,
+                seed=self._seed,
+            )
         else:
             node_types = {nid: nodes[nid].stix_type for nid in node_ids}
-            pos = _type_cluster_layout(node_ids, node_types, adj,
-                                       seed=self._seed)
+            pos = _type_cluster_layout(node_ids, node_types, adj, seed=self._seed)
 
         elapsed = time.perf_counter() - t0
         logger.debug(
-            "GraphView: layout for %d nodes in %.3fs "
-            "(algorithm: %s)",
-            n, elapsed,
+            "GraphView: layout for %d nodes in %.3fs (algorithm: %s)",
+            n,
+            elapsed,
             "FR" if n <= 200 else "Barnes-Hut" if n <= ct else "cluster",
         )
         return pos
@@ -1243,15 +1272,15 @@ class GraphView:
 
     def _build_sigma_html(
         self,
-        nodes: Dict[str, "STIXBase"],
-        edges: List[Dict[str, str]],
-        title: Optional[str] = None,
-        cluster_threshold: Optional[int] = None,
+        nodes: dict[str, STIXBase],
+        edges: list[dict[str, str]],
+        title: str | None = None,
+        cluster_threshold: int | None = None,
         offline: bool = False,
-        edge_opacity_override: Optional[float] = None,
+        edge_opacity_override: float | None = None,
         uniform_node_size: bool = False,
-        highlight_ids: Optional[set] = None,
-        _precomputed_positions: Optional[Dict[str, Tuple[float, float]]] = None,
+        highlight_ids: set | None = None,
+        _precomputed_positions: dict[str, tuple[float, float]] | None = None,
     ) -> str:
         if _precomputed_positions is not None:
             positions = _precomputed_positions
@@ -1260,28 +1289,25 @@ class GraphView:
         graph_data = self._build_graph_data(nodes, edges, positions)
         graph_json = json.dumps(graph_data)
 
-        ws_title  = title or f"GNAT: {self._ws.name}"
-        n_nodes   = len(nodes)
-        n_edges   = len(edges)
+        ws_title = title or f"GNAT: {self._ws.name}"
+        n_nodes = len(nodes)
+        n_edges = len(edges)
 
         # Fetch CDN scripts inline for offline mode
         graphology_js = sigma_js = ""
+        script_tags = ""
         if offline:
             try:
                 import urllib.request
-                graphology_js = urllib.request.urlopen(_SIGMA_CDN[0]).read().decode()  # nosec B310 — hardcoded CDN URL
-                sigma_js      = urllib.request.urlopen(_SIGMA_CDN[1]).read().decode()  # nosec B310 — hardcoded CDN URL
-                script_tags   = (
-                    f"<script>{graphology_js}</script>\n"
-                    f"<script>{sigma_js}</script>"
-                )
+
+                graphology_js = urllib.request.urlopen(_SIGMA_CDN[0]).read().decode()  # nosec B310  # nosemgrep
+                sigma_js = urllib.request.urlopen(_SIGMA_CDN[1]).read().decode()  # nosec B310  # nosemgrep
+                script_tags = f"<script>{graphology_js}</script>\n<script>{sigma_js}</script>"
             except Exception:
                 offline = False  # fall back to CDN
 
         if not offline:
-            script_tags = "\n".join(
-                f'<script src="{url}"></script>' for url in _SIGMA_CDN
-            )
+            script_tags = "\n".join(f'<script src="{url}"></script>' for url in _SIGMA_CDN)
 
         return f"""<!DOCTYPE html>
 <html lang="en">
@@ -1491,29 +1517,29 @@ class GraphView:
 
     def _build_plotly_figure(
         self,
-        nodes: Dict[str, "STIXBase"],
-        edges: List[Dict[str, str]],
-        title: Optional[str] = None,
+        nodes: dict[str, STIXBase],
+        edges: list[dict[str, str]],
+        title: str | None = None,
     ) -> Any:
         try:
             import plotly.graph_objects as go
         except ImportError:
-            raise ImportError(
-                "plotly required for 3D graph: pip install 'gnat[viz]'"
-            )
+            raise ImportError("plotly required for 3D graph: pip install 'gnat[viz]'")
 
         positions_2d = self._compute_layout(nodes, edges)
         # Project to 3D by adding a small z-offset per type
-        type_z = {t: i * 0.3 for i, t in
-                  enumerate(sorted(set(o.stix_type for o in nodes.values())))}
-        positions: Dict[str, Tuple[float, float, float]] = {
-            nid: (xy[0], xy[1], type_z.get(nodes[nid].stix_type, 0)
-                  + random.Random(hash(nid)).uniform(-0.1, 0.1))
+        type_z = {t: i * 0.3 for i, t in enumerate(sorted({o.stix_type for o in nodes.values()}))}
+        positions: dict[str, tuple[float, float, float]] = {
+            nid: (
+                xy[0],
+                xy[1],
+                type_z.get(nodes[nid].stix_type, 0) + random.Random(hash(nid)).uniform(-0.1, 0.1),
+            )
             for nid, xy in positions_2d.items()
         }
 
         # Edge traces — one per relationship type
-        by_rel: Dict[str, Tuple[list, list, list]] = {}
+        by_rel: dict[str, tuple[list, list, list]] = {}
         for e in edges:
             sp = positions.get(e["source"])
             tp = positions.get(e["target"])
@@ -1526,16 +1552,24 @@ class GraphView:
 
         traces = []
         for rel_type, (xs, ys, zs) in sorted(by_rel.items()):
-            traces.append(go.Scatter3d(
-                x=xs, y=ys, z=zs, mode="lines",
-                name=f"→ {rel_type}",
-                line=dict(width=2, color=_EDGE_COLORS.get(
-                    rel_type, _EDGE_COLORS["_default"])),
-                hoverinfo="none", opacity=0.5,
-            ))
+            traces.append(
+                go.Scatter3d(
+                    x=xs,
+                    y=ys,
+                    z=zs,
+                    mode="lines",
+                    name=f"→ {rel_type}",
+                    line={
+                        "width": 2,
+                        "color": _EDGE_COLORS.get(rel_type, _EDGE_COLORS["_default"]),
+                    },
+                    hoverinfo="none",
+                    opacity=0.5,
+                )
+            )
 
         # Node traces — one per type
-        by_type: Dict[str, list] = {}
+        by_type: dict[str, list] = {}
         for sid, obj in nodes.items():
             by_type.setdefault(obj.stix_type, []).append((sid, obj))
 
@@ -1543,46 +1577,70 @@ class GraphView:
             xs, ys, zs, sizes, texts = [], [], [], [], []
             for sid, obj in items:
                 p = positions.get(sid, (0, 0, 0))
-                xs.append(p[0]); ys.append(p[1]); zs.append(p[2])
+                xs.append(p[0])
+                ys.append(p[1])
+                zs.append(p[2])
                 sizes.append(self._node_size(obj))
                 name = getattr(obj, "name", sid[:30])
-                score = obj._properties.get("x_rf_risk_score",
-                        obj._properties.get("confidence", ""))
+                score = obj._properties.get(
+                    "x_rf_risk_score", obj._properties.get("confidence", "")
+                )
                 texts.append(
-                    f"<b>{name}</b><br>type: {stype}<br>"
-                    + (f"score: {score}" if score else "")
+                    f"<b>{name}</b><br>type: {stype}<br>" + (f"score: {score}" if score else "")
                 )
             color = _NODE_COLORS.get(stype, _NODE_COLORS["_default"])
             symbol = _PLOTLY_SYMBOLS.get(stype, _PLOTLY_SYMBOLS["_default"])
-            traces.append(go.Scatter3d(
-                x=xs, y=ys, z=zs, mode="markers",
-                name=stype,
-                marker=dict(size=sizes, color=color, symbol=symbol,
-                            opacity=0.9,
-                            line=dict(width=1, color="rgba(255,255,255,0.2)")),
-                text=texts, hoverinfo="text",
-            ))
+            traces.append(
+                go.Scatter3d(
+                    x=xs,
+                    y=ys,
+                    z=zs,
+                    mode="markers",
+                    name=stype,
+                    marker={
+                        "size": sizes,
+                        "color": color,
+                        "symbol": symbol,
+                        "opacity": 0.9,
+                        "line": {"width": 1, "color": "rgba(255,255,255,0.2)"},
+                    },
+                    text=texts,
+                    hoverinfo="text",
+                )
+            )
 
         ws_title = title or f"GNAT: {self._ws.name}"
         return go.Figure(
             data=traces,
             layout=go.Layout(
-                title=dict(text=ws_title, font=dict(size=15, color="#e8eaed")),
-                paper_bgcolor="#0f1117", plot_bgcolor="#0f1117",
+                title={"text": ws_title, "font": {"size": 15, "color": "#e8eaed"}},
+                paper_bgcolor="#0f1117",
+                plot_bgcolor="#0f1117",
                 showlegend=True,
-                legend=dict(font=dict(color="#e8eaed"),
-                            bgcolor="rgba(0,0,0,0)"),
-                scene=dict(
-                    bgcolor="#0f1117",
-                    xaxis=dict(showgrid=False, zeroline=False,
-                               showticklabels=False, backgroundcolor="#0f1117"),
-                    yaxis=dict(showgrid=False, zeroline=False,
-                               showticklabels=False, backgroundcolor="#0f1117"),
-                    zaxis=dict(showgrid=False, zeroline=False,
-                               showticklabels=False, backgroundcolor="#0f1117"),
-                    camera=dict(eye=dict(x=1.5, y=1.5, z=0.8)),
-                ),
-                margin=dict(b=0, l=0, r=0, t=40),
+                legend={"font": {"color": "#e8eaed"}, "bgcolor": "rgba(0,0,0,0)"},
+                scene={
+                    "bgcolor": "#0f1117",
+                    "xaxis": {
+                        "showgrid": False,
+                        "zeroline": False,
+                        "showticklabels": False,
+                        "backgroundcolor": "#0f1117",
+                    },
+                    "yaxis": {
+                        "showgrid": False,
+                        "zeroline": False,
+                        "showticklabels": False,
+                        "backgroundcolor": "#0f1117",
+                    },
+                    "zaxis": {
+                        "showgrid": False,
+                        "zeroline": False,
+                        "showticklabels": False,
+                        "backgroundcolor": "#0f1117",
+                    },
+                    "camera": {"eye": {"x": 1.5, "y": 1.5, "z": 0.8}},
+                },
+                margin={"b": 0, "l": 0, "r": 0, "t": 40},
             ),
         )
 
@@ -1590,46 +1648,49 @@ class GraphView:
 
     def _build_graph_data(
         self,
-        nodes: Dict[str, "STIXBase"],
-        edges: List[Dict[str, str]],
-        positions: Dict[str, Tuple[float, float]],
+        nodes: dict[str, STIXBase],
+        edges: list[dict[str, str]],
+        positions: dict[str, tuple[float, float]],
     ) -> dict:
         node_list = []
         for sid, obj in nodes.items():
-            pos  = positions.get(sid, (0.0, 0.0))
+            pos = positions.get(sid, (0.0, 0.0))
             name = getattr(obj, "name", sid[:40])
             attrs = {
-                k: v for k, v in obj._properties.items()
+                k: v
+                for k, v in obj._properties.items()
                 if not k.startswith("_") and isinstance(v, (str, int, float, bool))
             }
-            node_list.append({
-                "key":        sid,
-                "label":      name[:80],
-                "x":          pos[0],
-                "y":          pos[1],
-                "size":       self._node_size(obj),
-                "color":      _NODE_COLORS.get(obj.stix_type,
-                              _NODE_COLORS["_default"]),
-                "type":       obj.stix_type,
-                "attributes": attrs,
-            })
+            node_list.append(
+                {
+                    "key": sid,
+                    "label": name[:80],
+                    "x": pos[0],
+                    "y": pos[1],
+                    "size": self._node_size(obj),
+                    "color": _NODE_COLORS.get(obj.stix_type, _NODE_COLORS["_default"]),
+                    "type": obj.stix_type,
+                    "attributes": attrs,
+                }
+            )
 
         edge_list = []
         for i, e in enumerate(edges):
-            edge_list.append({
-                "key":    f"e-{i}",
-                "source": e["source"],
-                "target": e["target"],
-                "label":  e["rel_type"],
-                "color":  _EDGE_COLORS.get(e["rel_type"],
-                          _EDGE_COLORS["_default"]),
-            })
+            edge_list.append(
+                {
+                    "key": f"e-{i}",
+                    "source": e["source"],
+                    "target": e["target"],
+                    "label": e["rel_type"],
+                    "color": _EDGE_COLORS.get(e["rel_type"], _EDGE_COLORS["_default"]),
+                }
+            )
 
         return {"nodes": node_list, "edges": edge_list}
 
     # ── Helpers ─────────────────────────────────────────────────────────────
 
-    def _node_size(self, obj: "STIXBase") -> int:
+    def _node_size(self, obj: STIXBase) -> int:
         val = obj._properties.get(self._size_field)
         if val is None:
             val = obj._properties.get("x_rf_risk_score")
@@ -1639,12 +1700,12 @@ class GraphView:
 
     @staticmethod
     def _top_by_degree(
-        nodes: Dict[str, "STIXBase"],
-        edges: List[Dict[str, str]],
+        nodes: dict[str, STIXBase],
+        edges: list[dict[str, str]],
         max_nodes: int,
-    ) -> Dict[str, "STIXBase"]:
+    ) -> dict[str, STIXBase]:
         """Keep the top-N nodes by degree centrality."""
-        degree: Dict[str, int] = {nid: 0 for nid in nodes}
+        degree: dict[str, int] = dict.fromkeys(nodes, 0)
         for e in edges:
             if e["source"] in degree:
                 degree[e["source"]] += 1

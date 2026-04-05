@@ -53,13 +53,12 @@ from gnat.agents.health_monitor import (
     save_snapshot,
 )
 
-
 # ---------------------------------------------------------------------------
 # HealthMonitorConfig
 # ---------------------------------------------------------------------------
 
-class TestHealthMonitorConfig:
 
+class TestHealthMonitorConfig:
     def test_defaults(self):
         cfg = HealthMonitorConfig()
         assert cfg.interval_minutes == 60
@@ -108,8 +107,8 @@ class TestHealthMonitorConfig:
 # _fingerprint_dict
 # ---------------------------------------------------------------------------
 
-class TestFingerprintDict:
 
+class TestFingerprintDict:
     def test_flat_dict(self):
         fp = _fingerprint_dict({"a": 1, "b": "x", "c": True})
         assert fp == {"a": "int", "b": "str", "c": "bool"}
@@ -149,8 +148,8 @@ class TestFingerprintDict:
 # _compute_drift
 # ---------------------------------------------------------------------------
 
-class TestComputeDrift:
 
+class TestComputeDrift:
     def _baseline(self, fields: dict) -> SchemaSnapshot:
         return SchemaSnapshot(
             connector="test",
@@ -205,8 +204,8 @@ class TestComputeDrift:
 # SchemaSnapshot serialization
 # ---------------------------------------------------------------------------
 
-class TestSchemaSnapshot:
 
+class TestSchemaSnapshot:
     def test_round_trip(self):
         snap = SchemaSnapshot(
             connector="threatq", captured_at="2026-01-01", fields={"a": "int"}, sample_count=3
@@ -226,8 +225,8 @@ class TestSchemaSnapshot:
 # load_snapshot / save_snapshot
 # ---------------------------------------------------------------------------
 
-class TestSnapshotIO:
 
+class TestSnapshotIO:
     def test_save_and_load(self, tmp_path):
         fields = {"a": "int", "b.c": "str"}
         save_snapshot("mytarget", fields, str(tmp_path))
@@ -260,8 +259,8 @@ class TestSnapshotIO:
 # DriftReport & HealthCheckResult
 # ---------------------------------------------------------------------------
 
-class TestDriftReport:
 
+class TestDriftReport:
     def test_is_significant_true(self):
         dr = DriftReport("c", "t", ["new"], [], {}, 0.5)
         assert dr.is_significant
@@ -284,7 +283,6 @@ class TestDriftReport:
 
 
 class TestHealthCheckResult:
-
     def test_status_ok(self):
         r = HealthCheckResult("c", reachable=True, response_ms=10.0)
         assert r.status == "ok"
@@ -305,7 +303,6 @@ class TestHealthCheckResult:
 
 
 class TestHealthRun:
-
     def test_counts(self):
         run = HealthRun("2026-01-01T00:00:00")
         run.checks = [
@@ -322,8 +319,8 @@ class TestHealthRun:
 # _try_sample_schema
 # ---------------------------------------------------------------------------
 
-class TestTrySampleSchema:
 
+class TestTrySampleSchema:
     def test_returns_fingerprint_on_success(self):
         mock_conn = MagicMock()
         mock_conn.list_objects.return_value = [{"id": "ind--1", "name": "evil.com"}]
@@ -374,8 +371,8 @@ class TestTrySampleSchema:
 # _post_slack_webhook
 # ---------------------------------------------------------------------------
 
-class TestPostSlackWebhook:
 
+class TestPostSlackWebhook:
     def test_returns_true_on_200(self):
         mock_resp = MagicMock()
         mock_resp.status = 200
@@ -403,11 +400,13 @@ class TestPostSlackWebhook:
 # _format_alert
 # ---------------------------------------------------------------------------
 
-class TestFormatAlert:
 
+class TestFormatAlert:
     def test_includes_connector_name_on_unreachable(self):
         run = HealthRun("2026-01-01T12:00:00")
-        run.checks = [HealthCheckResult("threatq", reachable=False, response_ms=0.0, error="timeout")]
+        run.checks = [
+            HealthCheckResult("threatq", reachable=False, response_ms=0.0, error="timeout")
+        ]
         text = _format_alert(run)
         assert "threatq" in text
         assert "unreachable" in text.lower()
@@ -415,7 +414,9 @@ class TestFormatAlert:
     def test_includes_drift_info(self):
         drift = DriftReport("crowdstrike", "t", ["new_field"], [], {}, 0.5)
         run = HealthRun("2026-01-01T12:00:00")
-        run.checks = [HealthCheckResult("crowdstrike", reachable=True, response_ms=5.0, drift=drift)]
+        run.checks = [
+            HealthCheckResult("crowdstrike", reachable=True, response_ms=5.0, drift=drift)
+        ]
         text = _format_alert(run, drift_threshold=0.1)
         assert "crowdstrike" in text
         assert "drift" in text.lower()
@@ -436,8 +437,8 @@ class TestFormatAlert:
 # ConnectorHealthJob construction
 # ---------------------------------------------------------------------------
 
-class TestConnectorHealthJobConstruction:
 
+class TestConnectorHealthJobConstruction:
     def test_basic_construction_interval(self):
         job = ConnectorHealthJob(connectors={}, interval_minutes=30)
         assert job.job_id == "connector-health"
@@ -459,13 +460,12 @@ class TestConnectorHealthJobConstruction:
 
     def test_connectors_stored(self):
         mock_conn = MagicMock()
-        job = ConnectorHealthJob(
-            connectors={"threatq": mock_conn}, interval_minutes=60
-        )
+        job = ConnectorHealthJob(connectors={"threatq": mock_conn}, interval_minutes=60)
         assert "threatq" in job._connectors
 
     def test_inherits_feedjob(self):
         from gnat.schedule.job import FeedJob
+
         job = ConnectorHealthJob(connectors={}, interval_minutes=60)
         assert isinstance(job, FeedJob)
 
@@ -474,8 +474,8 @@ class TestConnectorHealthJobConstruction:
 # ConnectorHealthJob.execute()
 # ---------------------------------------------------------------------------
 
-class TestConnectorHealthJobExecute:
 
+class TestConnectorHealthJobExecute:
     def _healthy_connector(self, fields=None):
         """Return a mock connector whose health_check returns True."""
         conn = MagicMock()
@@ -656,8 +656,8 @@ class TestConnectorHealthJobExecute:
 # ConnectorHealthJob.from_config()
 # ---------------------------------------------------------------------------
 
-class TestFromConfig:
 
+class TestFromConfig:
     def test_from_config_empty_config_no_connectors(self, tmp_path):
         ini = tmp_path / "gnat.ini"
         ini.write_text("[health_monitor]\ninterval_minutes = 45\n")
@@ -684,22 +684,25 @@ class TestFromConfig:
 # CLI subcommand registration
 # ---------------------------------------------------------------------------
 
-class TestCLIHealthSubcommand:
 
+class TestCLIHealthSubcommand:
     def test_health_check_help_exits_zero(self):
         from gnat.cli.main import main
+
         with pytest.raises(SystemExit) as exc:
             main(["health", "check", "--help"])
         assert exc.value.code == 0
 
     def test_health_baseline_help_exits_zero(self):
         from gnat.cli.main import main
+
         with pytest.raises(SystemExit) as exc:
             main(["health", "baseline", "--help"])
         assert exc.value.code == 0
 
     def test_health_registered_in_dispatch(self):
         from gnat.cli.main import _build_parser
+
         parser = _build_parser()
         args = parser.parse_args(["health"])
         assert args.command == "health"
@@ -709,6 +712,7 @@ class TestCLIHealthSubcommand:
         ini = tmp_path / "gnat.ini"
         ini.write_text("[health_monitor]\n")
         from gnat.cli.main import main
+
         result = main(["--config", str(ini), "health", "check"])
         assert result == 0
 
@@ -720,9 +724,7 @@ class TestCLIHealthSubcommand:
         bad_conn = MagicMock()
         bad_conn.health_check.return_value = False
 
-        with patch(
-            "gnat.agents.health_monitor.ConnectorHealthJob.from_config"
-        ) as mock_from_cfg:
+        with patch("gnat.agents.health_monitor.ConnectorHealthJob.from_config") as mock_from_cfg:
             mock_job = ConnectorHealthJob(
                 connectors={"bad": bad_conn},
                 interval_minutes=60,
@@ -731,5 +733,6 @@ class TestCLIHealthSubcommand:
             )
             mock_from_cfg.return_value = mock_job
             from gnat.cli.main import main
+
             result = main(["--config", str(ini), "health", "check"])
         assert result == 1

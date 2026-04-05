@@ -44,13 +44,15 @@ connectivity testing.
 
 - https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
 - https://www.elastic.co/guide/en/kibana/current/api-keys.html
-  """
+"""
 
 import json
+
 import urllib3
 
 from .config import ElasticConfig
 from .exceptions import ElasticAuthError
+
 
 class ElasticAuthManager:
     """
@@ -138,9 +140,7 @@ class ElasticAuthManager:
                 timeout=self._config.timeout,
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise ElasticAuthError(
-                f"Cannot connect to Elasticsearch at {url}: {exc}"
-            ) from exc
+            raise ElasticAuthError(f"Cannot connect to Elasticsearch at {url}: {exc}") from exc
 
         if response.status == 401:
             raise ElasticAuthError(
@@ -184,9 +184,7 @@ class ElasticAuthManager:
                 timeout=self._config.timeout,
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise ElasticAuthError(
-                f"Cannot connect to Kibana at {url}: {exc}"
-            ) from exc
+            raise ElasticAuthError(f"Cannot connect to Kibana at {url}: {exc}") from exc
 
         if response.status in (401, 403):
             raise ElasticAuthError(
@@ -194,9 +192,7 @@ class ElasticAuthManager:
                 "Ensure the API key has Kibana Security privileges."
             )
         if response.status != 200:
-            raise ElasticAuthError(
-                f"Unexpected response from Kibana: HTTP {response.status}"
-            )
+            raise ElasticAuthError(f"Unexpected response from Kibana: HTTP {response.status}")
 
         try:
             return json.loads(response.data.decode("utf-8"))
@@ -231,9 +227,7 @@ class ElasticAuthManager:
             raise ElasticAuthError(f"Failed to retrieve API key info: {exc}") from exc
 
         if response.status != 200:
-            raise ElasticAuthError(
-                f"Could not retrieve API key info: HTTP {response.status}"
-            )
+            raise ElasticAuthError(f"Could not retrieve API key info: HTTP {response.status}")
         try:
             body = json.loads(response.data.decode("utf-8"))
             keys = body.get("api_keys", [])

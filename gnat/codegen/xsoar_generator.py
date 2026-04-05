@@ -42,12 +42,12 @@ import re
 import textwrap
 import zipfile
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _to_pascal(name: str) -> str:
     """Convert snake_case or kebab-case to PascalCase."""
@@ -61,9 +61,9 @@ def _to_kebab(name: str) -> str:
 
 def _method_to_xsoar_command(
     method_name: str,
-    meta: Dict[str, Any],
+    meta: dict[str, Any],
     connector_prefix: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convert a capabilities() entry to an XSOAR command definition dict.
 
@@ -92,28 +92,30 @@ def _method_to_xsoar_command(
     raw_params = [p.strip() for p in inner.split(",") if p.strip()] if inner else []
 
     # Build XSOAR argument list — skip *args/**kwargs indicators
-    arguments: List[Dict[str, Any]] = []
+    arguments: list[dict[str, Any]] = []
     for param in raw_params:
         # Strip type annotations and defaults for display
         param_clean = re.split(r"[=:]", param)[0].strip()
         if not param_clean or param_clean.startswith("*"):
             continue
-        arguments.append({
-            "name":        param_clean,
-            "required":    param_clean in ("stix_type", "object_id", "payload"),
-            "description": f"Argument '{param_clean}' for {method_name}()",
-            "type":        "String",
-        })
+        arguments.append(
+            {
+                "name": param_clean,
+                "required": param_clean in ("stix_type", "object_id", "payload"),
+                "description": f"Argument '{param_clean}' for {method_name}()",
+                "type": "String",
+            }
+        )
 
-    cmd: Dict[str, Any] = {
-        "name":        xsoar_name,
+    cmd: dict[str, Any] = {
+        "name": xsoar_name,
         "description": doc or f"Call {method_name}() on the GNAT {connector_prefix} connector.",
-        "arguments":   arguments,
+        "arguments": arguments,
         "outputs": [
             {
                 "contextPath": f"GNAT.{_to_pascal(connector_prefix)}.{method_name}",
                 "description": f"Result of {method_name}()",
-                "type":        "Unknown",
+                "type": "Unknown",
             }
         ],
     }
@@ -126,10 +128,11 @@ def _method_to_xsoar_command(
 # Template renderers
 # ---------------------------------------------------------------------------
 
+
 def _render_integration_yml(
     connector_name: str,
     pascal_name: str,
-    commands: List[Dict[str, Any]],
+    commands: list[dict[str, Any]],
     auth_type: str,
 ) -> str:
     """
@@ -187,12 +190,12 @@ def _render_integration_yml(
     }.get(auth_type, "")
 
     # Render commands block (hand-crafted YAML to avoid pyyaml dependency)
-    cmd_lines: List[str] = ["script:"]
+    cmd_lines: list[str] = ["script:"]
     cmd_lines.append("  commands:")
     for cmd in commands:
         cmd_lines.append(f"  - name: {cmd['name']}")
         desc = cmd.get("description", "").replace('"', "'")
-        cmd_lines.append(f"    description: \"{desc}\"")
+        cmd_lines.append(f'    description: "{desc}"')
         if cmd.get("dangerous"):
             cmd_lines.append("    dangerous: true")
         if cmd.get("arguments"):
@@ -201,13 +204,13 @@ def _render_integration_yml(
                 cmd_lines.append(f"    - name: {arg['name']}")
                 cmd_lines.append(f"      required: {str(arg['required']).lower()}")
                 arg_desc = arg.get("description", "").replace('"', "'")
-                cmd_lines.append(f"      description: \"{arg_desc}\"")
+                cmd_lines.append(f'      description: "{arg_desc}"')
         if cmd.get("outputs"):
             cmd_lines.append("    outputs:")
             for out in cmd["outputs"]:
                 cmd_lines.append(f"    - contextPath: {out['contextPath']}")
                 out_desc = out.get("description", "").replace('"', "'")
-                cmd_lines.append(f"      description: \"{out_desc}\"")
+                cmd_lines.append(f'      description: "{out_desc}"')
                 cmd_lines.append(f"      type: {out['type']}")
 
     commands_yaml = "\n".join(cmd_lines)
@@ -236,7 +239,7 @@ def _render_integration_yml(
 def _render_integration_py(
     pascal_name: str,
     connector_key: str,
-    commands: List[Dict[str, Any]],
+    commands: list[dict[str, Any]],
     auth_type: str,
 ) -> str:
     """
@@ -283,25 +286,24 @@ def _render_integration_py(
                 "client_secret": demisto.params().get("client_secret", ""),
             }
         """),
-    }.get(auth_type, "init_kwargs = {\"host\": demisto.params().get(\"url\", \"\")}\n")
+    }.get(auth_type, 'init_kwargs = {"host": demisto.params().get("url", "")}\n')
 
     # Build dispatch table
-    dispatch_lines: List[str] = []
+    dispatch_lines: list[str] = []
     for cmd in commands:
         method = cmd["name"].split("-", 1)[-1].replace("-", "_")
         arg_names = [a["name"] for a in cmd.get("arguments", [])]
         is_write = cmd.get("dangerous", False)
-        kwargs_expr = (
-            ", ".join(f'{a}=args.get("{a}")' for a in arg_names)
-            if arg_names else ""
-        )
+        kwargs_expr = ", ".join(f'{a}=args.get("{a}")' for a in arg_names) if arg_names else ""
         aw_kwarg = ", allow_write=True" if is_write else ""
-        call_expr = f"connector.call(\"{method}\"{aw_kwarg}{', ' + kwargs_expr if kwargs_expr else ''})"
+        call_expr = (
+            f'connector.call("{method}"{aw_kwarg}{", " + kwargs_expr if kwargs_expr else ""})'
+        )
         dispatch_lines.append(
             f'    elif command == "{cmd["name"]}":\n'
-            f'        result = {call_expr}\n'
+            f"        result = {call_expr}\n"
             f'        return_results(CommandResults(outputs_prefix="GNAT.{pascal_name}.{method}",\n'
-            f'                                      outputs=result))'
+            f"                                      outputs=result))"
         )
 
     dispatch_block = "\n".join(dispatch_lines)
@@ -361,23 +363,23 @@ def _render_pack_metadata(
     """Render ``pack_metadata.json`` as a JSON string."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     meta = {
-        "name":        f"GNAT {pascal_name}",
+        "name": f"GNAT {pascal_name}",
         "description": (
             f"GNAT connector integration for {pascal_name}. "
             "Provides threat-intelligence CRUD operations via the GNAT unified client."
         ),
-        "support":     "community",
+        "support": "community",
         "currentVersion": version,
-        "author":      "GNAT",
-        "url":         "https://github.com/wrhalpin/GNAT",
-        "email":       "",
-        "categories":  ["Data Enrichment & Threat Intelligence"],
-        "tags":        ["GNAT", connector_key, "threat-intelligence"],
-        "useCases":    ["Threat Intelligence"],
-        "keywords":    [connector_key, "GNAT", "STIX"],
-        "created":     now,
-        "updated":     now,
-        "hidden":      False,
+        "author": "GNAT",
+        "url": "https://github.com/wrhalpin/GNAT",
+        "email": "",
+        "categories": ["Data Enrichment & Threat Intelligence"],
+        "tags": ["GNAT", connector_key, "threat-intelligence"],
+        "useCases": ["Threat Intelligence"],
+        "keywords": [connector_key, "GNAT", "STIX"],
+        "created": now,
+        "updated": now,
+        "hidden": False,
     }
     return json.dumps(meta, indent=2)
 
@@ -397,11 +399,12 @@ def _render_release_notes(version: str = "1.0.0") -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def generate_xsoar_pack(
     connector_name: str,
     output_dir: str = ".",
     version: str = "1.0.0",
-    auth_type: Optional[str] = None,
+    auth_type: str | None = None,
     overwrite: bool = False,
 ) -> str:
     """
@@ -453,6 +456,7 @@ def generate_xsoar_pack(
     if auth_type is None:
         # Look for hints in class-level attributes or constructor signature
         import inspect
+
         try:
             params = inspect.signature(cls.__init__).parameters
         except (ValueError, TypeError):
@@ -468,8 +472,9 @@ def generate_xsoar_pack(
     # We construct with dummy args; we never call authenticate() or HTTP methods.
     try:
         import inspect
+
         params = inspect.signature(cls.__init__).parameters
-        dummy_kwargs: Dict[str, Any] = {}
+        dummy_kwargs: dict[str, Any] = {}
         for pname, param in params.items():
             if pname in ("self", "args", "kwargs"):
                 continue
@@ -485,19 +490,17 @@ def generate_xsoar_pack(
     caps = instance.capabilities()
 
     # Filter to non-auth callable methods (auth is handled at integration level)
-    commands: List[Dict[str, Any]] = []
+    commands: list[dict[str, Any]] = []
     for method_name, meta in sorted(caps.items()):
         if meta["type"] == "auth":
             continue  # handled at integration level
-        commands.append(
-            _method_to_xsoar_command(method_name, meta, kebab_prefix)
-        )
+        commands.append(_method_to_xsoar_command(method_name, meta, kebab_prefix))
 
     # --- Render file contents -----------------------------------------------
-    yml_content   = _render_integration_yml(kebab_prefix, pascal_name, commands, auth_type)
-    py_content    = _render_integration_py(pascal_name, connector_name, commands, auth_type)
-    meta_content  = _render_pack_metadata(pascal_name, connector_name, version)
-    rn_content    = _render_release_notes(version)
+    yml_content = _render_integration_yml(kebab_prefix, pascal_name, commands, auth_type)
+    py_content = _render_integration_py(pascal_name, connector_name, commands, auth_type)
+    meta_content = _render_pack_metadata(pascal_name, connector_name, version)
+    rn_content = _render_release_notes(version)
 
     # --- Write zip ----------------------------------------------------------
     os.makedirs(output_dir, exist_ok=True)

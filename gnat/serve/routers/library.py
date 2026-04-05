@@ -13,7 +13,7 @@ POST /api/library/{entry_id}/reject   — Reject a staging entry
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
@@ -30,11 +30,11 @@ def _get_library(request: Request):
 @router.get("")
 def search_library(
     request: Request,
-    q: Optional[str] = Query(None, max_length=200, description="Free-text search"),
-    topic: Optional[str] = Query(None, max_length=100),
-    tlp: Optional[str] = Query(None, max_length=10),
+    q: str | None = Query(None, max_length=200, description="Free-text search"),
+    topic: str | None = Query(None, max_length=100),
+    tlp: str | None = Query(None, max_length=10),
     limit: int = Query(50, ge=1, le=500),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Search or list research library entries."""
     lib = _get_library(request)
     try:
@@ -44,15 +44,12 @@ def search_library(
         results = lib.search(q or "")
     except Exception as exc:
         raise HTTPException(500, str(exc))
-    serialized = [
-        r.to_dict() if hasattr(r, "to_dict") else dict(r)
-        for r in (results or [])
-    ]
+    serialized = [r.to_dict() if hasattr(r, "to_dict") else dict(r) for r in (results or [])]
     return {"results": serialized, "count": len(serialized)}
 
 
 @router.get("/{entry_id}")
-def get_entry(entry_id: str, request: Request) -> Dict[str, Any]:
+def get_entry(entry_id: str, request: Request) -> dict[str, Any]:
     """Fetch a single library entry by id."""
     lib = _get_library(request)
     try:
@@ -65,7 +62,7 @@ def get_entry(entry_id: str, request: Request) -> Dict[str, Any]:
 
 
 @router.post("/{entry_id}/promote")
-def promote_entry(entry_id: str, request: Request) -> Dict[str, Any]:
+def promote_entry(entry_id: str, request: Request) -> dict[str, Any]:
     """Promote a staging library entry to the main collection."""
     lib = _get_library(request)
     try:
@@ -76,7 +73,7 @@ def promote_entry(entry_id: str, request: Request) -> Dict[str, Any]:
 
 
 @router.post("/{entry_id}/reject")
-def reject_entry(entry_id: str, request: Request) -> Dict[str, Any]:
+def reject_entry(entry_id: str, request: Request) -> dict[str, Any]:
     """Reject and remove a staging library entry."""
     lib = _get_library(request)
     try:
