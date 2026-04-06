@@ -284,3 +284,236 @@ class MandiantClient(BaseClient, ConnectorMixin):
         if "SHA-256" in pattern:
             return "sha256"
         return "domain"
+
+    # ── Actor relationships ───────────────────────────────────────────────────
+
+    def get_actor_indicators(
+        self,
+        actor_id: str,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """List indicators attributed to a specific threat actor."""
+        resp = self.get(
+            f"{_V4}/actor/{actor_id}/indicators",
+            params={"limit": min(limit, 1000), "offset": offset},
+        )
+        return resp.get("indicators", []) if isinstance(resp, dict) else []
+
+    def get_actor_malware(self, actor_id: str) -> list[dict[str, Any]]:
+        """List malware families associated with a threat actor."""
+        resp = self.get(f"{_V4}/actor/{actor_id}/malware")
+        return resp.get("malware", []) if isinstance(resp, dict) else []
+
+    def get_actor_attack_patterns(self, actor_id: str) -> list[dict[str, Any]]:
+        """List MITRE ATT&CK techniques used by a threat actor."""
+        resp = self.get(f"{_V4}/actor/{actor_id}/attack-pattern")
+        return resp.get("attack-patterns", resp.get("attack_patterns", [])) if isinstance(resp, dict) else []
+
+    def get_actor_vulnerabilities(self, actor_id: str) -> list[dict[str, Any]]:
+        """List CVEs exploited by a specific threat actor."""
+        resp = self.get(f"{_V4}/actor/{actor_id}/vulnerability")
+        return resp.get("vulnerabilities", []) if isinstance(resp, dict) else []
+
+    def get_actor_campaigns(self, actor_id: str) -> list[dict[str, Any]]:
+        """List campaigns associated with a threat actor."""
+        resp = self.get(f"{_V4}/actor/{actor_id}/campaigns")
+        return resp.get("campaigns", []) if isinstance(resp, dict) else []
+
+    # ── Malware relationships ─────────────────────────────────────────────────
+
+    def get_malware_indicators(
+        self,
+        malware_id: str,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """List indicators associated with a malware family."""
+        resp = self.get(
+            f"{_V4}/malware/{malware_id}/indicators",
+            params={"limit": min(limit, 1000), "offset": offset},
+        )
+        return resp.get("indicators", []) if isinstance(resp, dict) else []
+
+    def get_malware_actors(self, malware_id: str) -> list[dict[str, Any]]:
+        """List threat actors that use a specific malware family."""
+        resp = self.get(f"{_V4}/malware/{malware_id}/actors")
+        return resp.get("actors", []) if isinstance(resp, dict) else []
+
+    def get_malware_attack_patterns(self, malware_id: str) -> list[dict[str, Any]]:
+        """List ATT&CK techniques used by a malware family."""
+        resp = self.get(f"{_V4}/malware/{malware_id}/attack-pattern")
+        return resp.get("attack-patterns", resp.get("attack_patterns", [])) if isinstance(resp, dict) else []
+
+    def get_malware_campaigns(self, malware_id: str) -> list[dict[str, Any]]:
+        """List campaigns that have used a specific malware family."""
+        resp = self.get(f"{_V4}/malware/{malware_id}/campaigns")
+        return resp.get("campaigns", []) if isinstance(resp, dict) else []
+
+    # ── Vulnerability / CVE ───────────────────────────────────────────────────
+
+    def get_vulnerability(self, cve_id: str) -> dict[str, Any]:
+        """
+        Retrieve full vulnerability details by CVE ID.
+
+        ``cve_id`` format: ``"CVE-2024-12345"``.
+        """
+        resp = self.get(f"{_V4}/vulnerability/{cve_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_vulnerability_actors(self, cve_id: str) -> list[dict[str, Any]]:
+        """List threat actors known to exploit a CVE."""
+        resp = self.get(f"{_V4}/vulnerability/{cve_id}/actors")
+        return resp.get("actors", []) if isinstance(resp, dict) else []
+
+    def get_vulnerability_malware(self, cve_id: str) -> list[dict[str, Any]]:
+        """List malware families that exploit a CVE."""
+        resp = self.get(f"{_V4}/vulnerability/{cve_id}/malware")
+        return resp.get("malware", []) if isinstance(resp, dict) else []
+
+    def get_vulnerability_epss(self, cve_id: str) -> dict[str, Any]:
+        """
+        Retrieve EPSS (Exploit Prediction Scoring System) score for a CVE.
+
+        Returns a dict with ``epss_score`` and ``percentile``.
+        """
+        resp = self.get(f"{_V4}/vulnerability/{cve_id}/epss")
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Reports ───────────────────────────────────────────────────────────────
+
+    def list_reports(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        start_epoch: int | None = None,
+        end_epoch: int | None = None,
+        report_type: str = "",
+    ) -> list[dict[str, Any]]:
+        """
+        List Mandiant Advantage intelligence reports.
+
+        ``report_type`` options: ``"Actor Profile"``, ``"Threat Activity Alert"``,
+        ``"Malware Profile"``, ``"Vulnerability Report"``, etc.
+        """
+        params: dict[str, Any] = {
+            "limit": min(limit, 1000),
+            "offset": offset,
+        }
+        if start_epoch is not None:
+            params["start_epoch"] = start_epoch
+        if end_epoch is not None:
+            params["end_epoch"] = end_epoch
+        if report_type:
+            params["report_type"] = report_type
+        resp = self.get(f"{_V4}/report", params=params)
+        return resp.get("reports", resp.get("objects", [])) if isinstance(resp, dict) else []
+
+    def get_report(self, report_id: str) -> dict[str, Any]:
+        """Retrieve a full intelligence report by ID."""
+        resp = self.get(f"{_V4}/report/{report_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_report_stix(self, report_id: str) -> dict[str, Any]:
+        """
+        Retrieve a report in STIX 2.1 bundle format.
+
+        Returns a STIX bundle dict if the report has STIX content.
+        """
+        resp = self.get(
+            f"{_V4}/report/{report_id}",
+            params={"format": "stix2.1"},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Campaigns ─────────────────────────────────────────────────────────────
+
+    def list_campaigns(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        start_epoch: int | None = None,
+        end_epoch: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """List Mandiant intelligence campaigns."""
+        params: dict[str, Any] = {
+            "limit": min(limit, 1000),
+            "offset": offset,
+        }
+        if start_epoch is not None:
+            params["start_epoch"] = start_epoch
+        if end_epoch is not None:
+            params["end_epoch"] = end_epoch
+        resp = self.get(f"{_V4}/campaign", params=params)
+        return resp.get("campaigns", resp.get("objects", [])) if isinstance(resp, dict) else []
+
+    def get_campaign(self, campaign_id: str) -> dict[str, Any]:
+        """Retrieve a single campaign by ID."""
+        resp = self.get(f"{_V4}/campaign/{campaign_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_campaign_actors(self, campaign_id: str) -> list[dict[str, Any]]:
+        """List threat actors associated with a campaign."""
+        resp = self.get(f"{_V4}/campaign/{campaign_id}/actors")
+        return resp.get("actors", []) if isinstance(resp, dict) else []
+
+    def get_campaign_malware(self, campaign_id: str) -> list[dict[str, Any]]:
+        """List malware families used in a campaign."""
+        resp = self.get(f"{_V4}/campaign/{campaign_id}/malware")
+        return resp.get("malware", []) if isinstance(resp, dict) else []
+
+    def get_campaign_indicators(self, campaign_id: str) -> list[dict[str, Any]]:
+        """List indicators associated with a campaign."""
+        resp = self.get(f"{_V4}/campaign/{campaign_id}/indicators")
+        return resp.get("indicators", []) if isinstance(resp, dict) else []
+
+    # ── Indicators (enriched lookups) ─────────────────────────────────────────
+
+    def lookup_indicator(
+        self,
+        value: str,
+        indicator_type: str = "",
+    ) -> dict[str, Any]:
+        """
+        Direct indicator lookup by value.
+
+        ``indicator_type`` options: ``"ipv4"``, ``"domain"``, ``"url"``,
+        ``"md5"``, ``"sha256"``, ``"sha1"``.
+        """
+        params: dict[str, Any] = {"value": value}
+        if indicator_type:
+            params["type"] = indicator_type
+        resp = self.get(f"{_V4}/indicator", params=params)
+        indicators = resp.get("indicators", []) if isinstance(resp, dict) else []
+        return indicators[0] if indicators else {}
+
+    def get_indicator_actors(self, indicator_value: str) -> list[dict[str, Any]]:
+        """List threat actors associated with an indicator value."""
+        resp = self.get(f"{_V4}/indicator", params={"value": indicator_value, "with_actors": "true"})
+        data = resp.get("indicators", [{}])[0] if isinstance(resp, dict) else {}
+        return data.get("actors", [])
+
+    def get_indicator_malware(self, indicator_value: str) -> list[dict[str, Any]]:
+        """List malware families associated with an indicator value."""
+        resp = self.get(f"{_V4}/indicator", params={"value": indicator_value, "with_malware": "true"})
+        data = resp.get("indicators", [{}])[0] if isinstance(resp, dict) else {}
+        return data.get("malware", [])
+
+    # ── Attack patterns / MITRE ATT&CK ───────────────────────────────────────
+
+    def list_attack_patterns(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """List Mandiant ATT&CK technique mappings."""
+        resp = self.get(
+            f"{_V4}/attack-pattern",
+            params={"limit": min(limit, 1000), "offset": offset},
+        )
+        return resp.get("attack-patterns", resp.get("objects", [])) if isinstance(resp, dict) else []
+
+    def get_attack_pattern(self, attack_pattern_id: str) -> dict[str, Any]:
+        """Retrieve a single ATT&CK technique by Mandiant ID."""
+        resp = self.get(f"{_V4}/attack-pattern/{attack_pattern_id}")
+        return resp if isinstance(resp, dict) else {}

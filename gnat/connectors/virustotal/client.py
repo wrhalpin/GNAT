@@ -264,3 +264,268 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", object_id):
             return "ip_addresses"
         return "domains"
+
+    # ── Typed entity lookups ──────────────────────────────────────────────────────
+
+    def lookup_ip(self, ip: str) -> dict[str, Any]:
+        """Look up reputation and metadata for an IP address."""
+        resp = self.get(f"/api/v3/ip_addresses/{ip}")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def lookup_domain(self, domain: str) -> dict[str, Any]:
+        """Look up reputation and metadata for a domain."""
+        resp = self.get(f"/api/v3/domains/{domain}")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def lookup_hash(self, file_hash: str) -> dict[str, Any]:
+        """
+        Look up a file by hash (MD5, SHA-1, or SHA-256).
+
+        Returns full file analysis attributes including scan results.
+        """
+        resp = self.get(f"/api/v3/files/{file_hash}")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def lookup_url(self, url: str) -> dict[str, Any]:
+        """
+        Look up a URL.
+
+        Accepts a raw URL; the connector handles URL-safe base64 encoding.
+        """
+        import base64
+        encoded = base64.urlsafe_b64encode(url.encode()).decode().rstrip("=")
+        resp = self.get(f"/api/v3/urls/{encoded}")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    # ── File analysis ─────────────────────────────────────────────────────────────
+
+    def get_file_behaviors(self, file_hash: str) -> list[dict[str, Any]]:
+        """
+        Retrieve sandbox behaviour reports for a file.
+
+        Returns a list of behaviour summary objects, one per sandbox.
+        """
+        resp = self.get(f"/api/v3/files/{file_hash}/behaviours")
+        data = resp.get("data", []) if isinstance(resp, dict) else []
+        return data if isinstance(data, list) else []
+
+    def get_file_sigma_analysis(self, file_hash: str) -> dict[str, Any]:
+        """Get Sigma rule analysis results for a file."""
+        resp = self.get(f"/api/v3/files/{file_hash}/sigma_analysis")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def rescan_file(self, file_hash: str) -> dict[str, Any]:
+        """
+        Request a rescan of an already-submitted file.
+
+        Queues the file for re-analysis by all VT engines.
+        """
+        resp = self.post(f"/api/v3/files/{file_hash}/analyse")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    # ── Entity relationships ──────────────────────────────────────────────────────
+
+    def get_entity_relationships(
+        self,
+        entity_type: str,
+        entity_id: str,
+        relationship: str,
+        limit: int = 40,
+        cursor: str = "",
+    ) -> list[dict[str, Any]]:
+        """
+        Fetch related objects for a VT entity.
+
+        Parameters
+        ----------
+        entity_type : str
+            VT collection name: ``"files"``, ``"domains"``, ``"ip_addresses"``, ``"urls"``.
+        entity_id : str
+            VT entity identifier (hash, domain, IP, or URL-safe base64 URL).
+        relationship : str
+            Relationship name, e.g. ``"contacted_ips"``, ``"communicating_files"``,
+            ``"resolutions"``, ``"related_threat_actors"``.
+        """
+        params: dict[str, Any] = {"limit": min(limit, 40)}
+        if cursor:
+            params["cursor"] = cursor
+        resp = self.get(f"/api/v3/{entity_type}/{entity_id}/{relationship}", params=params)
+        data = resp.get("data", []) if isinstance(resp, dict) else []
+        return data if isinstance(data, list) else []
+
+    def get_ip_resolutions(self, ip: str, limit: int = 40) -> list[dict[str, Any]]:
+        """List passive DNS resolutions for an IP address."""
+        return self.get_entity_relationships("ip_addresses", ip, "resolutions", limit=limit)
+
+    def get_domain_resolutions(self, domain: str, limit: int = 40) -> list[dict[str, Any]]:
+        """List passive DNS resolutions for a domain."""
+        return self.get_entity_relationships("domains", domain, "resolutions", limit=limit)
+
+    def get_domain_subdomains(self, domain: str, limit: int = 40) -> list[dict[str, Any]]:
+        """List known subdomains of a domain."""
+        return self.get_entity_relationships("domains", domain, "subdomains", limit=limit)
+
+    def get_file_contacted_ips(self, file_hash: str, limit: int = 40) -> list[dict[str, Any]]:
+        """List IPs contacted by a file during sandbox execution."""
+        return self.get_entity_relationships("files", file_hash, "contacted_ips", limit=limit)
+
+    def get_file_contacted_domains(self, file_hash: str, limit: int = 40) -> list[dict[str, Any]]:
+        """List domains contacted by a file during sandbox execution."""
+        return self.get_entity_relationships("files", file_hash, "contacted_domains", limit=limit)
+
+    def get_file_dropped_files(self, file_hash: str, limit: int = 40) -> list[dict[str, Any]]:
+        """List files dropped by a file during sandbox execution."""
+        return self.get_entity_relationships("files", file_hash, "dropped_files", limit=limit)
+
+    # ── Intelligence search ───────────────────────────────────────────────────────
+
+    def search_intelligence(
+        self,
+        query: str,
+        limit: int = 20,
+        cursor: str = "",
+        order: str = "",
+    ) -> list[dict[str, Any]]:
+        """
+        Search VT Intelligence (requires premium subscription).
+
+        Uses the VT query language, e.g.::
+
+            "type:peexe tag:ransomware fs:2024-01-01+ size:1MB-"
+
+        Returns a list of file data objects.
+        """
+        params: dict[str, Any] = {"query": query, "limit": min(limit, 300)}
+        if cursor:
+            params["cursor"] = cursor
+        if order:
+            params["order"] = order
+        resp = self.get("/api/v3/intelligence/search", params=params)
+        data = resp.get("data", []) if isinstance(resp, dict) else []
+        return data if isinstance(data, list) else []
+
+    # ── Comments ──────────────────────────────────────────────────────────────────
+
+    def get_comments(
+        self,
+        entity_type: str,
+        entity_id: str,
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        """
+        Get community comments on a VT entity.
+
+        ``entity_type`` is one of ``"files"``, ``"urls"``, ``"domains"``,
+        ``"ip_addresses"``.
+        """
+        resp = self.get(f"/api/v3/{entity_type}/{entity_id}/comments", params={"limit": limit})
+        data = resp.get("data", []) if isinstance(resp, dict) else []
+        return data if isinstance(data, list) else []
+
+    def add_comment(
+        self,
+        entity_type: str,
+        entity_id: str,
+        comment_text: str,
+    ) -> dict[str, Any]:
+        """Post a community comment on a VT entity."""
+        resp = self.post(
+            f"/api/v3/{entity_type}/{entity_id}/comments",
+            json={"data": {"type": "comment", "attributes": {"text": comment_text}}},
+        )
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    # ── Votes ─────────────────────────────────────────────────────────────────────
+
+    def add_vote(
+        self,
+        entity_type: str,
+        entity_id: str,
+        verdict: str,
+    ) -> dict[str, Any]:
+        """
+        Add a vote on a VT entity.
+
+        ``verdict`` must be ``"malicious"`` or ``"harmless"``.
+        ``entity_type`` is one of ``"files"``, ``"urls"``, ``"domains"``,
+        ``"ip_addresses"``.
+        """
+        resp = self.post(
+            f"/api/v3/{entity_type}/{entity_id}/votes",
+            json={"data": {"type": "vote", "attributes": {"verdict": verdict}}},
+        )
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    # ── Hunting rulesets ──────────────────────────────────────────────────────────
+
+    def list_hunting_rulesets(self, limit: int = 20) -> list[dict[str, Any]]:
+        """List YARA hunting rulesets (requires VT Premium)."""
+        resp = self.get("/api/v3/intelligence/hunting_rulesets", params={"limit": limit})
+        data = resp.get("data", []) if isinstance(resp, dict) else []
+        return data if isinstance(data, list) else []
+
+    def get_hunting_ruleset(self, ruleset_id: str) -> dict[str, Any]:
+        """Retrieve a single hunting ruleset by ID."""
+        resp = self.get(f"/api/v3/intelligence/hunting_rulesets/{ruleset_id}")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def create_hunting_ruleset(
+        self,
+        name: str,
+        rules: str,
+        enabled: bool = True,
+        notification_emails: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Create a new YARA hunting ruleset.
+
+        ``rules`` is a raw YARA rule string.
+        """
+        attrs: dict[str, Any] = {"name": name, "rules": rules, "enabled": enabled}
+        if notification_emails:
+            attrs["notification_emails"] = notification_emails
+        resp = self.post(
+            "/api/v3/intelligence/hunting_rulesets",
+            json={"data": {"type": "hunting_ruleset", "attributes": attrs}},
+        )
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def delete_hunting_ruleset(self, ruleset_id: str) -> None:
+        """Delete a hunting ruleset by ID."""
+        self.delete(f"/api/v3/intelligence/hunting_rulesets/{ruleset_id}")
+
+    # ── Collections (malware families) ───────────────────────────────────────────
+
+    def get_collection(self, collection_id: str) -> dict[str, Any]:
+        """Retrieve a VT collection (malware family) by ID."""
+        resp = self.get(f"/api/v3/collections/{collection_id}")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def get_collection_files(self, collection_id: str, limit: int = 40) -> list[dict[str, Any]]:
+        """List files associated with a VT collection."""
+        return self.get_entity_relationships("collections", collection_id, "files", limit=limit)
+
+    # ── Threat actors ─────────────────────────────────────────────────────────────
+
+    def get_threat_actor(self, actor_id: str) -> dict[str, Any]:
+        """Retrieve a VT threat actor profile."""
+        resp = self.get(f"/api/v3/threat_actors/{actor_id}")
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def list_threat_actors(self, limit: int = 20, cursor: str = "") -> list[dict[str, Any]]:
+        """List VT threat actor profiles."""
+        params: dict[str, Any] = {"limit": min(limit, 20)}
+        if cursor:
+            params["cursor"] = cursor
+        resp = self.get("/api/v3/threat_actors", params=params)
+        data = resp.get("data", []) if isinstance(resp, dict) else []
+        return data if isinstance(data, list) else []
+
+    def get_threat_actor_relationships(
+        self,
+        actor_id: str,
+        relationship: str = "related_threat_actors",
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """List relationships for a threat actor (e.g. related_malware_families, related_files)."""
+        return self.get_entity_relationships("threat_actors", actor_id, relationship, limit=limit)
