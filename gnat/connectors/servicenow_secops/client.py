@@ -280,6 +280,67 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         )
         return resp.get("result", {}) if isinstance(resp, dict) else {}
 
+    # ── Investigation sub-API ────────────────────────────────────────────
+
+    def get_incident_tasks(self, incident_sys_id: str) -> list[dict[str, Any]]:
+        """
+        Return security tasks linked to a SIR incident.
+
+        Queries the ``sn_si_task`` table filtered by parent ``sys_id``.
+
+        Parameters
+        ----------
+        incident_sys_id : str
+            ServiceNow ``sys_id`` of the parent SIR incident.
+        """
+        resp = self.get(
+            f"{_TABLE_BASE}/sn_si_task",
+            params={
+                "sysparm_query": f"parent={incident_sys_id}",
+                "sysparm_limit": 200,
+            },
+        )
+        return resp.get("result", []) if isinstance(resp, dict) else []
+
+    def get_incident_observables(self, incident_sys_id: str) -> list[dict[str, Any]]:
+        """
+        Return threat intelligence observables linked to a SIR incident.
+
+        Queries the ``sn_ti_observable`` table filtered by the incident
+        reference field.
+
+        Parameters
+        ----------
+        incident_sys_id : str
+            ServiceNow ``sys_id`` of the parent SIR incident.
+        """
+        resp = self.get(
+            f"{_TABLE_BASE}/sn_ti_observable",
+            params={
+                "sysparm_query": f"incident={incident_sys_id}",
+                "sysparm_limit": 200,
+            },
+        )
+        return resp.get("result", []) if isinstance(resp, dict) else []
+
+    def search_indicators_by_value(self, value: str) -> list[dict[str, Any]]:
+        """
+        Search TIARA observables by value (IP, domain, hash, URL, etc.).
+
+        Parameters
+        ----------
+        value : str
+            Observable value to search for.
+        """
+        resp = self.get(
+            f"{_TABLE_BASE}/sn_ti_observable",
+            params={
+                "sysparm_query": f"valueLIKE{value}",
+                "sysparm_limit": 100,
+            },
+        )
+        return resp.get("result", []) if isinstance(resp, dict) else []
+
     # ── Vulnerability Response (VR) helpers ──────────────────────────────
 
     def list_vulnerable_items(

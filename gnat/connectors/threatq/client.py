@@ -31,6 +31,23 @@ STIX Type Mapping
 +--------------------+---------------------------+
 | attack-pattern     | attack-pattern            |
 +--------------------+---------------------------+
+| observed-data      | event                     |
++--------------------+---------------------------+
+
+Investigation Linking
+---------------------
+ThreatQ *Events* are the investigation container.  Use :meth:`link_event`
+to associate a STIX indicator with an existing event, or pass ``event_id``
+to :meth:`upsert_object` to link automatically on write::
+
+    client.link_event("42", stix_indicator)
+    client.upsert_object("indicator", payload, event_id="42")
+
+Pass ``stix_type="observed-data"`` to standard CRUD methods to interact
+with ThreatQ Events directly::
+
+    client.list_objects("observed-data")
+    client.get_object("observed-data", "42")
 
 Sector / Industry attributes
 -----------------------------
@@ -94,11 +111,12 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     """
 
     stix_type_map: dict[str, str] = {
-        "indicator": "indicator",
-        "threat-actor": "adversary",
-        "malware": "malware",
+        "indicator":     "indicator",
+        "threat-actor":  "adversary",
+        "malware":       "malware",
         "vulnerability": "vulnerability",
         "attack-pattern": "attack-pattern",
+        "observed-data": "event",
     }
 
     def __init__(
@@ -177,25 +195,54 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
-        """Return a paginated list of ThreatQ objects (includes attributes)."""
+        """
+        Return a paginated list of ThreatQ objects.
+
+        For indicator-like types, ``?with=attributes`` is automatically
+        appended so sector/industry data is included.  Events (``observed-data``)
+        do not use this parameter.
+        """
         resource = self._resolve_resource(stix_type)
         params: dict[str, Any] = {
-            "limit": page_size,
+            "limit":  page_size,
             "offset": (page - 1) * page_size,
-            "with": "attributes",
         }
+        if stix_type != "observed-data":
+            params["with"] = "attributes"
         if filters:
             params.update(filters)
         resp = self.get(f"/api/{resource}", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
-        """Create or update a ThreatQ object."""
+    def upsert_object(
+        self,
+        stix_type: str,
+        payload: dict[str, Any],
+        event_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """
+        Create or update a ThreatQ object.
+
+        Parameters
+        ----------
+        stix_type : str
+            STIX type (used to resolve the API resource path).
+        payload : dict
+            Object fields.  An ``"id"`` key triggers an update (PUT).
+        event_id : str, optional
+            For indicator writes only: if provided, the indicator is linked
+            to this ThreatQ Event after upsert via :meth:`link_event`.
+        """
         resource = self._resolve_resource(stix_type)
         tq_id = payload.pop("id", None)
         if tq_id:
-            return self.put(f"/api/{resource}/{tq_id}", json=payload)
-        return self.post(f"/api/{resource}", json=payload)
+            result = self.put(f"/api/{resource}/{tq_id}", json=payload)
+        else:
+            result = self.post(f"/api/{resource}", json=payload)
+        if event_id and stix_type != "observed-data":
+            self.link_event(event_id, payload)
+        return result
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Delete a ThreatQ object."""
@@ -230,38 +277,70 @@ class ThreatQClient(BaseClient, ConnectorMixin):
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """
-        Translate a ThreatQ indicator dict to STIX 2.1 format.
+        Translate a ThreatQ native object to STIX 2.1.
 
-        Sector and industry context is extracted from the ``attributes`` array
-        when present (requires ``?with=attributes`` on the originating request,
-        which :meth:`get_object` and :meth:`list_objects` both include).
-        Matched attribute values are written to ``x_target_sectors``.
+        Dispatches to :meth:`_event_to_stix` for ThreatQ Events (detected by
+        ``happened_at`` or ``event_type`` fields) and to the indicator path
+        for all other objects.  Sector/industry attributes are extracted from
+        the ``attributes`` array when present.
 
         Parameters
         ----------
         native : dict
-            Raw ThreatQ API indicator object.
+            Raw ThreatQ API response (indicator or event record).
 
         Returns
         -------
         dict
-            Partial STIX Indicator dict.
+            STIX 2.1 SDO (``indicator`` or ``observed-data``).
         """
         data = native.get("data", native)
+        # Events have happened_at or event_type; indicators have value+type
+        if "happened_at" in data or "event_type" in data:
+            return self._event_to_stix(data)
         stix: dict[str, Any] = {
-            "type": "indicator",
-            "id": f"indicator--{data.get('id', '')}",
-            "name": data.get("value", ""),
-            "pattern": f"[{data.get('type', 'unknown')}:value = '{data.get('value', '')}']",
-            "pattern_type": "stix",
-            "created": data.get("created_at", ""),
-            "modified": data.get("updated_at", ""),
+            "type":            "indicator",
+            "id":              f"indicator--{data.get('id', '')}",
+            "name":            data.get("value", ""),
+            "pattern":         f"[{data.get('type', 'unknown')}:value = '{data.get('value', '')}']",
+            "pattern_type":    "stix",
+            "created":         data.get("created_at", ""),
+            "modified":        data.get("updated_at", ""),
             "indicator_types": [data.get("class", "unknown")],
         }
         sectors = self._extract_sectors(data.get("attributes", []))
         if sectors:
             stix["x_target_sectors"] = sectors
         return stix
+
+    @staticmethod
+    def _event_to_stix(data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Map a ThreatQ Event record to a STIX ``observed-data`` SDO.
+
+        Parameters
+        ----------
+        data : dict
+            ThreatQ event record (with ``title``, ``happened_at``,
+            ``event_type``, etc.).
+        """
+        created  = data.get("created_at", "")
+        modified = data.get("updated_at", created)
+        happened = data.get("happened_at", created)
+        return {
+            "type":            "observed-data",
+            "id":              f"observed-data--{data.get('id', '')}",
+            "created":         created,
+            "modified":        modified,
+            "first_observed":  happened,
+            "last_observed":   happened,
+            "number_observed": 1,
+            "object_refs":     [],
+            "name":            data.get("title", ""),
+            "description":     data.get("description", ""),
+            "x_tq_event_type": data.get("event_type", ""),
+            "x_tq_event_id":   str(data.get("id", "")),
+        }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """
@@ -284,6 +363,110 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         }
 
     # ------------------------------------------------------------------
+    # Investigation linking
+    # ------------------------------------------------------------------
+
+    def link_event(
+        self,
+        event_id: str,
+        stix_obj: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Link a STIX indicator to an existing ThreatQ Event.
+
+        Calls ``POST /api/events/{event_id}/indicators`` with an indicator
+        payload derived from *stix_obj*, associating the threat intelligence
+        with the event (investigation) record.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID (or STIX id — the numeric portion is
+            extracted automatically).
+        stix_obj : dict
+            STIX 2.1 indicator SDO (or any dict with ``name``/``pattern``).
+
+        Returns
+        -------
+        dict
+            Raw ThreatQ API response.
+        """
+        tq_id   = self._extract_numeric_id(event_id)
+        payload = {
+            "value":  stix_obj.get("name", ""),
+            "type":   self._infer_tq_type(stix_obj.get("pattern", "")),
+            "status": {"name": "Active"},
+        }
+        return self.post(f"/api/events/{tq_id}/indicators", json=payload)
+
+    # ------------------------------------------------------------------
+    # Evidence expansion
+    # ------------------------------------------------------------------
+
+    def get_event_indicators(self, event_id: str) -> list[dict[str, Any]]:
+        """
+        Return all indicators linked to a ThreatQ Event.
+
+        Calls ``GET /api/events/{event_id}/indicators``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID (or STIX id — the numeric portion is
+            extracted automatically).
+
+        Returns
+        -------
+        list of dict
+            Raw ThreatQ indicator records.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        resp  = self.get(f"/api/events/{tq_id}/indicators", params={"with": "attributes"})
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_event_adversaries(self, event_id: str) -> list[dict[str, Any]]:
+        """
+        Return all adversaries (threat actors) linked to a ThreatQ Event.
+
+        Calls ``GET /api/events/{event_id}/adversaries``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID (or STIX id).
+
+        Returns
+        -------
+        list of dict
+            Raw ThreatQ adversary records.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        resp  = self.get(f"/api/events/{tq_id}/adversaries")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def search_indicators_by_value(self, value: str) -> list[dict[str, Any]]:
+        """
+        Search ThreatQ indicators by value.
+
+        Calls ``GET /api/indicators?search={value}&with=attributes``.
+
+        Parameters
+        ----------
+        value : str
+            Indicator value to search for (IP, domain, hash, URL, …).
+
+        Returns
+        -------
+        list of dict
+            Raw ThreatQ indicator records (includes attributes array).
+        """
+        resp = self.get(
+            "/api/indicators",
+            params={"search": value, "with": "attributes", "limit": 50},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 
@@ -291,6 +474,8 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         resource = self.stix_type_map.get(stix_type)
         if not resource:
             raise GNATClientError(f"ThreatQ: unsupported STIX type '{stix_type}'")
+        if stix_type == "observed-data":
+            return "events"   # already the plural form used by the ThreatQ API
         return resource + "s"  # ThreatQ uses plural endpoints
 
     @staticmethod

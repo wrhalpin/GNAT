@@ -153,6 +153,72 @@ class TheHiveClient(BaseClient, ConnectorMixin):
     # Extra helpers
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Investigation sub-API
+    # ------------------------------------------------------------------
+
+    def get_case_observables(self, case_id: str) -> list[dict[str, Any]]:
+        """
+        Return all observables (IOCs) attached to a TheHive case.
+
+        Calls ``GET /api/v1/case/{case_id}/observable``.
+
+        Parameters
+        ----------
+        case_id : str
+            TheHive internal case ID (``_id`` field).
+        """
+        resp = self.get(f"{_API}/case/{case_id}/observable")
+        if isinstance(resp, list):
+            return resp
+        return resp.get("items", []) if isinstance(resp, dict) else []
+
+    def get_case_tasks(self, case_id: str) -> list[dict[str, Any]]:
+        """
+        Return all tasks linked to a TheHive case.
+
+        Uses ``POST /api/v1/query`` with a ``listTask`` filter.
+
+        Parameters
+        ----------
+        case_id : str
+            TheHive internal case ID.
+        """
+        query: dict[str, Any] = {
+            "query": [
+                {"_name": "getCase", "idOrName": case_id},
+                {"_name": "tasks"},
+            ]
+        }
+        resp = self.post(f"{_API}/query", json=query)
+        if isinstance(resp, list):
+            return resp
+        return resp.get("items", []) if isinstance(resp, dict) else []
+
+    def search_observables_by_value(self, value: str) -> list[dict[str, Any]]:
+        """
+        Search observables across all cases by data value.
+
+        Uses ``POST /api/v1/query`` with a ``like`` filter on the
+        ``data`` field.
+
+        Parameters
+        ----------
+        value : str
+            Observable value to search for (IP, domain, hash, etc.).
+        """
+        query: dict[str, Any] = {
+            "query": [
+                {"_name": "listObservable"},
+                {"_name": "filter", "_like": {"_field": "data", "_value": value}},
+                {"_name": "page", "from": 0, "to": 100},
+            ]
+        }
+        resp = self.post(f"{_API}/query", json=query)
+        if isinstance(resp, list):
+            return resp
+        return resp.get("items", []) if isinstance(resp, dict) else []
+
     def add_observable(self, case_id: str, stix_obj: dict[str, Any]) -> dict[str, Any]:
         """
         Add an observable (IOC) to an existing TheHive case.
