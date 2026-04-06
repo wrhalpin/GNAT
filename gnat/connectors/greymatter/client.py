@@ -402,6 +402,449 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         resp = self.get("/v1/observables", params={"value": value, "limit": 50})
         return resp.get("data", []) if isinstance(resp, dict) else []
 
+    # ── Case / Investigation management ───────────────────────────────────
+
+    def add_case_comment(self, case_id: str, text: str) -> dict[str, Any]:
+        """
+        Post a comment on an existing GreyMatter investigation case.
+
+        Calls ``POST /v1/incidents/{case_id}/comments``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter case UUID.
+        text : str
+            Comment body text.
+        """
+        return self.post(
+            f"/v1/incidents/{self._to_gm_id(case_id)}/comments",
+            json={"text": text},
+        )
+
+    def list_case_comments(self, case_id: str) -> list[dict[str, Any]]:
+        """
+        Return all comments on a GreyMatter investigation case.
+
+        Calls ``GET /v1/incidents/{case_id}/comments``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter case UUID.
+        """
+        resp = self.get(f"/v1/incidents/{self._to_gm_id(case_id)}/comments")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def update_case_status(self, case_id: str, status: str) -> dict[str, Any]:
+        """
+        Change the status of a GreyMatter investigation case.
+
+        Calls ``PUT /v1/incidents/{case_id}/status``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter case UUID.
+        status : str
+            New status value — e.g. ``"open"``, ``"in_progress"``,
+            ``"resolved"``, ``"closed"``.
+        """
+        return self.put(
+            f"/v1/incidents/{self._to_gm_id(case_id)}/status",
+            json={"status": status},
+        )
+
+    def assign_case(self, case_id: str, assignee: str) -> dict[str, Any]:
+        """
+        Reassign a GreyMatter investigation case to a different analyst.
+
+        Calls ``PUT /v1/incidents/{case_id}/assignee``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter case UUID.
+        assignee : str
+            Username or user ID of the new assignee.
+        """
+        return self.put(
+            f"/v1/incidents/{self._to_gm_id(case_id)}/assignee",
+            json={"assignee": assignee},
+        )
+
+    def close_case(
+        self,
+        case_id: str,
+        resolution: str = "",
+        close_notes: str = "",
+    ) -> dict[str, Any]:
+        """
+        Close a GreyMatter investigation case.
+
+        Calls ``POST /v1/incidents/{case_id}/close``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter case UUID.
+        resolution : str
+            Resolution label (e.g. ``"true_positive"``, ``"false_positive"``).
+        close_notes : str
+            Optional closure notes.
+        """
+        return self.post(
+            f"/v1/incidents/{self._to_gm_id(case_id)}/close",
+            json={"resolution": resolution, "close_notes": close_notes},
+        )
+
+    def add_case_observable(
+        self,
+        case_id: str,
+        obs_type: str,
+        value: str,
+        confidence: int = 50,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Create a new observable and immediately link it to a case.
+
+        Calls ``POST /v1/incidents/{case_id}/observables``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter case UUID.
+        obs_type : str
+            GreyMatter observable type: ``"ipv4"``, ``"domain"``,
+            ``"url"``, ``"md5"``, ``"sha1"``, ``"sha256"``, ``"email"``.
+        value : str
+            Observable value.
+        confidence : int
+            Confidence score 0–100.  Default ``50``.
+        tags : list of str, optional
+            Tags to apply to the observable.
+        """
+        return self.post(
+            f"/v1/incidents/{self._to_gm_id(case_id)}/observables",
+            json={
+                "type":       obs_type,
+                "value":      value,
+                "confidence": confidence,
+                "tags":       tags or [],
+            },
+        )
+
+    # ── Observable bulk operations ────────────────────────────────────────
+
+    def bulk_create_observables(
+        self,
+        observables: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """
+        Create multiple observables in a single request.
+
+        Calls ``POST /v1/observables/bulk``.  Each item in *observables*
+        should contain at minimum ``type`` and ``value``.
+
+        Parameters
+        ----------
+        observables : list of dict
+            List of observable payloads, e.g.
+            ``[{"type": "ipv4", "value": "1.2.3.4"}]``.
+        """
+        resp = self.post("/v1/observables/bulk", json={"observables": observables})
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def tag_observable(
+        self,
+        observable_id: str,
+        tags: list[str],
+    ) -> dict[str, Any]:
+        """
+        Apply tags to an existing GreyMatter observable.
+
+        Calls ``PUT /v1/observables/{observable_id}/tags``.
+
+        Parameters
+        ----------
+        observable_id : str
+            GreyMatter observable UUID.
+        tags : list of str
+            Tags to apply (replaces existing tag set).
+        """
+        return self.put(
+            f"/v1/observables/{self._to_gm_id(observable_id)}/tags",
+            json={"tags": tags},
+        )
+
+    # ── Threat actor / malware / vulnerability helpers ────────────────────
+
+    def get_threat_actor(self, actor_id: str) -> dict[str, Any]:
+        """
+        Retrieve a GreyMatter threat-actor entity by ID.
+
+        Calls ``GET /v1/threat-actors/{actor_id}``.
+
+        Parameters
+        ----------
+        actor_id : str
+            GreyMatter threat-actor UUID (or STIX id).
+        """
+        return self.get(f"/v1/threat-actors/{self._to_gm_id(actor_id)}")
+
+    def list_threat_actors(
+        self,
+        filters: dict[str, Any] | None = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List GreyMatter threat-actor entities.
+
+        Parameters
+        ----------
+        filters : dict, optional
+            Query filters (e.g. ``{"tag": "apt28"}``).
+        """
+        params: dict[str, Any] = {
+            "limit":  page_size,
+            "offset": (page - 1) * page_size,
+        }
+        if filters:
+            params.update(filters)
+        resp = self.get("/v1/threat-actors", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_malware_family(self, malware_id: str) -> dict[str, Any]:
+        """
+        Retrieve a GreyMatter malware-family entity by ID.
+
+        Calls ``GET /v1/malware/{malware_id}``.
+
+        Parameters
+        ----------
+        malware_id : str
+            GreyMatter malware UUID (or STIX id).
+        """
+        return self.get(f"/v1/malware/{self._to_gm_id(malware_id)}")
+
+    def list_malware(
+        self,
+        filters: dict[str, Any] | None = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List GreyMatter malware-family entities.
+
+        Parameters
+        ----------
+        filters : dict, optional
+            Query filters (e.g. ``{"tag": "ransomware"}``).
+        """
+        params: dict[str, Any] = {
+            "limit":  page_size,
+            "offset": (page - 1) * page_size,
+        }
+        if filters:
+            params.update(filters)
+        resp = self.get("/v1/malware", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_vulnerability(self, vuln_id: str) -> dict[str, Any]:
+        """
+        Retrieve a GreyMatter vulnerability entity by ID or CVE number.
+
+        Calls ``GET /v1/vulnerabilities/{vuln_id}``.
+
+        Parameters
+        ----------
+        vuln_id : str
+            GreyMatter vulnerability UUID, STIX id, or CVE-YYYY-NNNNN string.
+        """
+        return self.get(f"/v1/vulnerabilities/{self._to_gm_id(vuln_id)}")
+
+    def list_vulnerabilities(
+        self,
+        filters: dict[str, Any] | None = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List GreyMatter vulnerability entities.
+
+        Parameters
+        ----------
+        filters : dict, optional
+            Query filters (e.g. ``{"cve": "CVE-2021-44228"}``).
+        """
+        params: dict[str, Any] = {
+            "limit":  page_size,
+            "offset": (page - 1) * page_size,
+        }
+        if filters:
+            params.update(filters)
+        resp = self.get("/v1/vulnerabilities", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def list_attack_patterns(
+        self,
+        filters: dict[str, Any] | None = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List GreyMatter attack-pattern (MITRE ATT&CK technique) entities.
+
+        Parameters
+        ----------
+        filters : dict, optional
+            Query filters (e.g. ``{"technique_id": "T1059"}``).
+        """
+        params: dict[str, Any] = {
+            "limit":  page_size,
+            "offset": (page - 1) * page_size,
+        }
+        if filters:
+            params.update(filters)
+        resp = self.get("/v1/attack-patterns", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ── Analytics / metrics ────────────────────────────────────────────────
+
+    def get_metrics(
+        self,
+        from_date: str = "",
+        to_date: str = "",
+    ) -> dict[str, Any]:
+        """
+        Return GreyMatter operational metrics for a date range.
+
+        Calls ``GET /v1/metrics``.  Both *from_date* and *to_date* are
+        ISO-8601 date strings (e.g. ``"2026-01-01"``); omit either to use
+        the platform's default range.
+
+        Parameters
+        ----------
+        from_date : str, optional
+            Start of the reporting window (ISO-8601).
+        to_date : str, optional
+            End of the reporting window (ISO-8601).
+        """
+        params: dict[str, Any] = {}
+        if from_date:
+            params["from"] = from_date
+        if to_date:
+            params["to"] = to_date
+        resp = self.get("/v1/metrics", params=params)
+        return resp if isinstance(resp, dict) else {}
+
+    def get_observable_enrichments(self, observable_id: str) -> dict[str, Any]:
+        """
+        Fetch enrichment data (WHOIS, passive DNS, threat intel) for an observable.
+
+        Calls ``GET /v1/observables/{observable_id}/enrichments``.
+
+        Parameters
+        ----------
+        observable_id : str
+            GreyMatter observable UUID.
+        """
+        resp = self.get(
+            f"/v1/observables/{self._to_gm_id(observable_id)}/enrichments"
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def get_case_timeline(self, case_id: str) -> list[dict[str, Any]]:
+        """
+        Retrieve the activity timeline for a GreyMatter investigation case.
+
+        Calls ``GET /v1/incidents/{case_id}/timeline``.
+
+        Parameters
+        ----------
+        case_id : str
+            GreyMatter case UUID.
+        """
+        resp = self.get(f"/v1/incidents/{self._to_gm_id(case_id)}/timeline")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def list_users(self) -> list[dict[str, Any]]:
+        """
+        Return all GreyMatter platform users.
+
+        Calls ``GET /v1/users``.
+        """
+        resp = self.get("/v1/users")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_playbook(self, playbook_id: str) -> dict[str, Any]:
+        """
+        Retrieve a GreyMatter playbook by ID.
+
+        Calls ``GET /v1/playbooks/{playbook_id}``.
+
+        Parameters
+        ----------
+        playbook_id : str
+            GreyMatter playbook UUID.
+        """
+        return self.get(f"/v1/playbooks/{self._to_gm_id(playbook_id)}")
+
+    def list_playbooks(
+        self,
+        filters: dict[str, Any] | None = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List available GreyMatter playbooks.
+
+        Parameters
+        ----------
+        filters : dict, optional
+            Query filters (e.g. ``{"status": "active"}``).
+        """
+        params: dict[str, Any] = {
+            "limit":  page_size,
+            "offset": (page - 1) * page_size,
+        }
+        if filters:
+            params.update(filters)
+        resp = self.get("/v1/playbooks", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def run_playbook(
+        self,
+        playbook_id: str,
+        case_id: str,
+        inputs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Execute a GreyMatter playbook against an investigation case.
+
+        Calls ``POST /v1/playbooks/{playbook_id}/run``.
+
+        Parameters
+        ----------
+        playbook_id : str
+            GreyMatter playbook UUID.
+        case_id : str
+            GreyMatter case UUID to run the playbook against.
+        inputs : dict, optional
+            Additional playbook input parameters.
+        """
+        payload: dict[str, Any] = {
+            "case_id": self._to_gm_id(case_id),
+        }
+        if inputs:
+            payload["inputs"] = inputs
+        return self.post(
+            f"/v1/playbooks/{self._to_gm_id(playbook_id)}/run",
+            json=payload,
+        )
+
     # ── Helpers ────────────────────────────────────────────────────────────
 
     def _resolve(self, stix_type: str) -> str:

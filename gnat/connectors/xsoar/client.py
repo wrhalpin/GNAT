@@ -403,6 +403,365 @@ class XSOARClient(BaseClient, ConnectorMixin):
         resp = self.post("/indicators/search", json={"query": f'value:"{value}"', "size": 50})
         return resp.get("iocObjects", []) if isinstance(resp, dict) else []
 
+    # ── Incident lifecycle ────────────────────────────────────────────────
+
+    def close_incident(
+        self,
+        incident_id: str,
+        close_reason: str = "Resolved",
+        close_notes: str = "",
+    ) -> dict[str, Any]:
+        """
+        Close an XSOAR incident.
+
+        Calls ``POST /incident/close/{incident_id}``.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID (numeric string).
+        close_reason : str
+            Closure reason label shown in XSOAR.  Default ``"Resolved"``.
+        close_notes : str
+            Optional notes added to the incident on close.
+        """
+        return self.post(f"/incident/close/{incident_id}", json={
+            "closeReason": close_reason,
+            "closeNotes":  close_notes,
+            "id":          incident_id,
+        })
+
+    def reopen_incident(self, incident_id: str) -> dict[str, Any]:
+        """
+        Reopen a previously closed XSOAR incident.
+
+        Calls ``POST /incident/reopen/{incident_id}``.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID (numeric string).
+        """
+        return self.post(f"/incident/reopen/{incident_id}", json={"id": incident_id})
+
+    def get_incident_indicators(self, incident_id: str) -> list[dict[str, Any]]:
+        """
+        Return all indicators (IOCs) linked to an XSOAR incident.
+
+        Calls ``GET /incident/{incident_id}/indicators``.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID.
+        """
+        resp = self.get(f"/incident/{incident_id}/indicators")
+        if isinstance(resp, list):
+            return resp
+        return resp.get("indicators", resp.get("data", [])) if isinstance(resp, dict) else []
+
+    def add_incident_comment(
+        self,
+        incident_id: str,
+        comment: str,
+    ) -> dict[str, Any]:
+        """
+        Add a war-room entry (comment) to an XSOAR incident.
+
+        Calls ``POST /entry`` with the given *incident_id* and *comment*
+        content.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID.
+        comment : str
+            Comment text to post.
+        """
+        return self.post("/entry", json={
+            "incidentId": incident_id,
+            "data":       comment,
+            "markdown":   True,
+        })
+
+    def assign_incident(
+        self,
+        incident_id: str,
+        owner: str,
+    ) -> dict[str, Any]:
+        """
+        Assign an XSOAR incident to a specific user.
+
+        Calls ``PUT /incident/{incident_id}`` with the owner field.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID.
+        owner : str
+            Username of the user to assign the incident to.
+        """
+        return self.put(f"/incident/{incident_id}", json={"owner": owner, "id": incident_id})
+
+    # ── Indicator operations ──────────────────────────────────────────────
+
+    def get_indicator_reputation(self, value: str) -> dict[str, Any]:
+        """
+        Query the reputation (score) of an indicator value across all feeds.
+
+        Calls ``POST /indicator/reputation``.
+
+        Parameters
+        ----------
+        value : str
+            Indicator value to query (IP, domain, URL, hash, …).
+        """
+        resp = self.post("/indicator/reputation", json={"value": value})
+        return resp if isinstance(resp, dict) else {}
+
+    def bulk_create_indicators(
+        self,
+        indicators: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """
+        Create multiple XSOAR indicators in a single API call.
+
+        Calls ``POST /indicators/bulkCreate``.  Each item in *indicators*
+        must have at minimum ``value`` and ``indicator_type``.
+
+        Parameters
+        ----------
+        indicators : list of dict
+            List of indicator payloads.
+        """
+        resp = self.post("/indicators/bulkCreate", json={"iocObjects": indicators})
+        return resp if isinstance(resp, dict) else {}
+
+    def export_indicators(
+        self,
+        query: str = "",
+        export_format: str = "json",
+        page_size: int = 5000,
+    ) -> dict[str, Any]:
+        """
+        Export XSOAR indicators matching a query.
+
+        Calls ``POST /indicators/export``.
+
+        Parameters
+        ----------
+        query : str
+            XSOAR indicator query (e.g. ``"type:IP and score:3"``).
+        export_format : str
+            Export format: ``"json"`` or ``"csv"``.  Default ``"json"``.
+        page_size : int
+            Maximum number of indicators to export.  Default ``5000``.
+        """
+        resp = self.post("/indicators/export", json={
+            "query":  query,
+            "format": export_format,
+            "size":   page_size,
+        })
+        return resp if isinstance(resp, dict) else {}
+
+    def expire_indicator(self, indicator_id: str) -> dict[str, Any]:
+        """
+        Mark an XSOAR indicator as expired.
+
+        Calls ``POST /indicators/expire`` with the indicator ID.
+
+        Parameters
+        ----------
+        indicator_id : str
+            XSOAR indicator ID.
+        """
+        return self.post("/indicators/expire", json={"id": indicator_id})
+
+    # ── Playbook / automation ─────────────────────────────────────────────
+
+    def run_playbook(
+        self,
+        incident_id: str,
+        playbook_id: str = "",
+    ) -> dict[str, Any]:
+        """
+        Trigger a playbook run on an XSOAR incident.
+
+        Calls ``POST /playbook/run``.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID to run the playbook against.
+        playbook_id : str, optional
+            Playbook ID or name.  If omitted the incident's default
+            playbook is used.
+        """
+        payload: dict[str, Any] = {"incidentId": incident_id}
+        if playbook_id:
+            payload["playbookId"] = playbook_id
+        return self.post("/playbook/run", json=payload)
+
+    def search_automations(
+        self,
+        query: str = "",
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search XSOAR automation scripts by name or query.
+
+        Calls ``POST /automation/search``.
+
+        Parameters
+        ----------
+        query : str
+            Free-text or Lucene-style query to filter scripts by name,
+            tag, or description.
+        page_size : int
+            Maximum number of results.  Default ``100``.
+        """
+        resp = self.post("/automation/search", json={"query": query, "size": page_size})
+        return resp.get("scripts", []) if isinstance(resp, dict) else []
+
+    def search_integrations(
+        self,
+        query: str = "",
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search XSOAR integration instances by name or query.
+
+        Calls ``POST /settings/integration/search``.
+
+        Parameters
+        ----------
+        query : str
+            Filter query.
+        page_size : int
+            Maximum number of results.  Default ``100``.
+        """
+        resp = self.post("/settings/integration/search", json={
+            "query": query,
+            "size":  page_size,
+        })
+        return resp.get("configurations", []) if isinstance(resp, dict) else []
+
+    def get_playbook_tasks(self, incident_id: str) -> list[dict[str, Any]]:
+        """
+        Return the playbook task tree for an XSOAR incident.
+
+        Calls ``GET /playbook/tasks?incidentId={incident_id}``.
+
+        Parameters
+        ----------
+        incident_id : str
+            XSOAR incident ID.
+        """
+        resp = self.get("/playbook/tasks", params={"incidentId": incident_id})
+        if isinstance(resp, list):
+            return resp
+        return resp.get("tasks", []) if isinstance(resp, dict) else []
+
+    def complete_task(
+        self,
+        task_id: str,
+        incident_id: str,
+        answer: str = "",
+    ) -> dict[str, Any]:
+        """
+        Mark an XSOAR playbook task as complete.
+
+        Calls ``POST /task/complete``.
+
+        Parameters
+        ----------
+        task_id : str
+            XSOAR task ID.
+        incident_id : str
+            Parent incident ID.
+        answer : str, optional
+            Answer string for tasks with a manual response prompt.
+        """
+        return self.post("/task/complete", json={
+            "id":         task_id,
+            "incidentId": incident_id,
+            "answer":     answer,
+        })
+
+    # ── User / administration ─────────────────────────────────────────────
+
+    def list_users(self, page_size: int = 200) -> list[dict[str, Any]]:
+        """
+        Return all XSOAR users.
+
+        Calls ``GET /user/list``.
+
+        Parameters
+        ----------
+        page_size : int
+            Maximum users to return.  Default ``200``.
+        """
+        resp = self.get("/user/list", params={"size": page_size})
+        if isinstance(resp, list):
+            return resp
+        return resp.get("users", []) if isinstance(resp, dict) else []
+
+    def get_server_config(self) -> dict[str, Any]:
+        """
+        Retrieve XSOAR server configuration and licence information.
+
+        Calls ``GET /account``.
+        """
+        resp = self.get("/account")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_incident_types(self) -> list[dict[str, Any]]:
+        """
+        Return all configured XSOAR incident types.
+
+        Calls ``GET /incidenttype``.
+        """
+        resp = self.get("/incidenttype")
+        if isinstance(resp, list):
+            return resp
+        return resp.get("incidentTypes", []) if isinstance(resp, dict) else []
+
+    def list_indicator_types(self) -> list[dict[str, Any]]:
+        """
+        Return all configured XSOAR indicator types.
+
+        Calls ``GET /indicatorType``.
+        """
+        resp = self.get("/indicatorType")
+        if isinstance(resp, list):
+            return resp
+        return resp.get("indicatorTypes", []) if isinstance(resp, dict) else []
+
+    def get_dashboard(self, dashboard_id: str) -> dict[str, Any]:
+        """
+        Retrieve a specific XSOAR dashboard by ID.
+
+        Calls ``GET /dashboard/{dashboard_id}``.
+
+        Parameters
+        ----------
+        dashboard_id : str
+            XSOAR dashboard ID.
+        """
+        resp = self.get(f"/dashboard/{dashboard_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_reports(self) -> list[dict[str, Any]]:
+        """
+        List available XSOAR report definitions.
+
+        Calls ``GET /reports``.
+        """
+        resp = self.get("/reports")
+        if isinstance(resp, list):
+            return resp
+        return resp.get("reports", []) if isinstance(resp, dict) else []
+
     # ── Private helpers ────────────────────────────────────────────────────
 
     def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
