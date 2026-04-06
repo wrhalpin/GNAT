@@ -262,3 +262,313 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         pattern = stix_dict.get("pattern", "")
         m = re.search(r"= '([^']+)'", pattern)
         return {"value": m.group(1) if m else stix_dict.get("name", "")}
+
+    # ── InsightVM — Vulnerabilities ───────────────────────────────────────────
+
+    def list_vulnerabilities(
+        self,
+        severity: str = "",
+        cvss_min: float | None = None,
+        exploitable: bool | None = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List InsightVM vulnerability definitions.
+
+        Parameters
+        ----------
+        severity : str
+            ``"Critical"``, ``"Severe"``, ``"Moderate"``.
+        cvss_min : float
+            Minimum CVSS v3 base score.
+        exploitable : bool
+            If True, only return vulnerabilities with known exploits.
+        """
+        params: dict[str, Any] = {"page": page - 1, "size": page_size}
+        if severity:
+            params["severity"] = severity
+        if cvss_min is not None:
+            params["cvssV3ScoreMin"] = cvss_min
+        if exploitable is not None:
+            params["exploitable"] = exploitable
+        resp = self.get("/vm/v4/integration/vulnerabilities", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_vulnerability(self, vuln_id: str) -> dict[str, Any]:
+        """Retrieve full details for a specific InsightVM vulnerability by ID."""
+        resp = self.get(f"/vm/v4/integration/vulnerabilities/{vuln_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_vulnerability_solutions(self, vuln_id: str) -> list[dict[str, Any]]:
+        """List remediation solutions for an InsightVM vulnerability."""
+        resp = self.get(f"/vm/v4/integration/vulnerabilities/{vuln_id}/solutions")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ── InsightVM — Assets ────────────────────────────────────────────────────
+
+    def list_assets(
+        self, page: int = 1, page_size: int = 100
+    ) -> list[dict[str, Any]]:
+        """List discovered assets in InsightVM."""
+        resp = self.get(
+            "/vm/v4/integration/assets",
+            params={"page": page - 1, "size": page_size},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_asset(self, asset_id: str) -> dict[str, Any]:
+        """Retrieve full details for a specific InsightVM asset."""
+        resp = self.get(f"/vm/v4/integration/assets/{asset_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_asset_vulnerabilities(
+        self, asset_id: str, page: int = 1, page_size: int = 100
+    ) -> list[dict[str, Any]]:
+        """List vulnerabilities found on a specific asset."""
+        resp = self.get(
+            f"/vm/v4/integration/assets/{asset_id}/vulnerabilities",
+            params={"page": page - 1, "size": page_size},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_asset_services(self, asset_id: str) -> list[dict[str, Any]]:
+        """List running services discovered on an asset."""
+        resp = self.get(f"/vm/v4/integration/assets/{asset_id}/services")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def search_assets(
+        self,
+        query_filters: list[dict[str, Any]] | None = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search assets using InsightVM filter criteria.
+
+        ``query_filters`` example::
+
+            [{"field": "ip-address", "operator": "in-range",
+              "lower": "10.0.0.1", "upper": "10.0.0.254"}]
+        """
+        payload: dict[str, Any] = {
+            "filters": query_filters or [],
+            "match": "all",
+        }
+        resp = self.post(
+            f"/vm/v4/integration/assets/search?page={page-1}&size={page_size}",
+            json=payload,
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ── InsightVM — Sites & Scans ─────────────────────────────────────────────
+
+    def list_sites(self, page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
+        """List scan sites configured in InsightVM."""
+        resp = self.get(
+            "/vm/v3/sites",
+            params={"page": page - 1, "size": page_size},
+        )
+        return resp.get("resources", []) if isinstance(resp, dict) else []
+
+    def get_site(self, site_id: str) -> dict[str, Any]:
+        """Retrieve full configuration for a specific scan site."""
+        resp = self.get(f"/vm/v3/sites/{site_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_scans(
+        self, site_id: str = "", page: int = 1, page_size: int = 25
+    ) -> list[dict[str, Any]]:
+        """List scan history, optionally scoped to a site."""
+        if site_id:
+            resp = self.get(
+                f"/vm/v3/sites/{site_id}/scans",
+                params={"page": page - 1, "size": page_size},
+            )
+        else:
+            resp = self.get(
+                "/vm/v3/scans",
+                params={"page": page - 1, "size": page_size},
+            )
+        return resp.get("resources", []) if isinstance(resp, dict) else []
+
+    def get_scan(self, scan_id: str) -> dict[str, Any]:
+        """Retrieve details and status for a specific scan."""
+        resp = self.get(f"/vm/v3/scans/{scan_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def create_scan(self, site_id: str, hosts: list[str] | None = None) -> dict[str, Any]:
+        """
+        Trigger a new scan for a site.
+
+        ``hosts`` — optional list of specific host IPs/names to scan within the site.
+        """
+        payload: dict[str, Any] = {}
+        if hosts:
+            payload["hosts"] = hosts
+        resp = self.post(f"/vm/v3/sites/{site_id}/scans", json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    def get_remediation_report(
+        self, asset_id: str, page: int = 1, page_size: int = 50
+    ) -> list[dict[str, Any]]:
+        """
+        Retrieve prioritised remediation steps for an asset.
+
+        Returns a list of solution objects ranked by risk reduction.
+        """
+        resp = self.get(
+            f"/vm/v4/integration/assets/{asset_id}/vulnerabilities",
+            params={"page": page - 1, "size": page_size, "sort": "riskScore,DESC"},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ── Threat Command — IOCs ─────────────────────────────────────────────────
+
+    def lookup_ioc(self, value: str) -> dict[str, Any]:
+        """
+        Look up an IOC by value (IP, domain, URL, hash, email).
+
+        Returns reputation, severity, and associated threat context.
+        """
+        resp = self.get("/public/v2/iocs/ioc-by-value", params={"iocValue": value})
+        return resp if isinstance(resp, dict) else {}
+
+    def list_iocs(
+        self,
+        ioc_type: str = "",
+        severity: str = "",
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """
+        List Threat Command IOCs with optional type/severity filters.
+
+        ``ioc_type`` options: ``"IpAddresses"``, ``"Domains"``, ``"Urls"``,
+        ``"Hashes"``, ``"Emails"``.
+        ``severity`` options: ``"Critical"``, ``"High"``, ``"Medium"``, ``"Low"``.
+        """
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        if ioc_type:
+            params["type"] = ioc_type
+        if severity:
+            params["severity"] = severity
+        resp = self.get("/public/v2/iocs", params=params)
+        return resp.get("content", []) if isinstance(resp, dict) else []
+
+    def submit_ioc(
+        self,
+        value: str,
+        ioc_type: str,
+        severity: str = "Medium",
+        tags: list[str] | None = None,
+        comment: str = "",
+    ) -> dict[str, Any]:
+        """Submit a new IOC to Threat Command."""
+        payload: dict[str, Any] = {
+            "value": value,
+            "type": ioc_type,
+            "severity": severity,
+        }
+        if tags:
+            payload["tags"] = tags
+        if comment:
+            payload["comment"] = comment
+        return self.post("/public/v2/iocs", json=payload)
+
+    # ── Threat Command — Threat actors ────────────────────────────────────────
+
+    def list_threat_actors(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[dict[str, Any]]:
+        """List Threat Command threat actor profiles."""
+        resp = self.get(
+            "/public/v2/threat-actors",
+            params={"limit": limit, "offset": offset},
+        )
+        return resp.get("content", []) if isinstance(resp, dict) else []
+
+    def get_threat_actor(self, actor_id: str) -> dict[str, Any]:
+        """Retrieve a specific threat actor profile."""
+        resp = self.get(f"/public/v2/threat-actors/{actor_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Threat Command — CVE intelligence ────────────────────────────────────
+
+    def list_cves(
+        self,
+        severity: str = "",
+        exploitable: bool | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """
+        List CVEs from Threat Command intelligence.
+
+        ``severity`` options: ``"Critical"``, ``"High"``, ``"Medium"``, ``"Low"``.
+        """
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        if severity:
+            params["severity"] = severity
+        if exploitable is not None:
+            params["inTheWild"] = exploitable
+        resp = self.get("/public/v2/cves", params=params)
+        return resp.get("content", []) if isinstance(resp, dict) else []
+
+    def get_cve(self, cve_id: str) -> dict[str, Any]:
+        """Retrieve Threat Command intelligence for a specific CVE."""
+        resp = self.get(f"/public/v2/cves/{cve_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Threat Command — Alerts (dark web / brand) ───────────────────────────
+
+    def list_dark_web_alerts(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[dict[str, Any]]:
+        """List dark web mention alerts from Threat Command."""
+        resp = self.get(
+            "/public/v2/data/alerts",
+            params={"limit": limit, "offset": offset, "type": "darkWeb"},
+        )
+        return resp.get("content", []) if isinstance(resp, dict) else []
+
+    def list_brand_alerts(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[dict[str, Any]]:
+        """List brand protection alerts from Threat Command."""
+        resp = self.get(
+            "/public/v2/data/alerts",
+            params={"limit": limit, "offset": offset, "type": "phishing"},
+        )
+        return resp.get("content", []) if isinstance(resp, dict) else []
+
+    def get_alert(self, alert_id: str) -> dict[str, Any]:
+        """Retrieve a specific Threat Command alert by ID."""
+        resp = self.get(f"/public/v2/data/alerts/{alert_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def update_alert_status(
+        self, alert_id: str, status: str, comment: str = ""
+    ) -> dict[str, Any]:
+        """
+        Update the status of a Threat Command alert.
+
+        ``status`` options: ``"open"``, ``"closed"``, ``"accepted"``.
+        """
+        payload: dict[str, Any] = {"status": status}
+        if comment:
+            payload["comment"] = comment
+        resp = self.patch(f"/public/v2/data/alerts/{alert_id}", json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Threat Command — Intelligence search ─────────────────────────────────
+
+    def search_intelligence(
+        self, query: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """Free-text search across all Threat Command intelligence types."""
+        resp = self.get(
+            "/public/v2/search",
+            params={"query": query, "limit": limit},
+        )
+        return resp.get("content", resp.get("results", [])) if isinstance(resp, dict) else []

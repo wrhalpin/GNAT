@@ -248,3 +248,258 @@ class NucleusClient(BaseClient, ConnectorMixin):
             "source": stix_dict.get("x_source_platform", "gnat"),
             "tags": stix_dict.get("x_source_topic", ""),
         }
+
+    # ── Projects ──────────────────────────────────────────────────────────────
+
+    def list_projects(self) -> list[dict[str, Any]]:
+        """List all Nucleus projects accessible with the current API key."""
+        resp = self.get("/v2/projects")
+        return resp if isinstance(resp, list) else (resp.get("projects", []) if isinstance(resp, dict) else [])
+
+    def get_project(self, project_id: str) -> dict[str, Any]:
+        """Retrieve metadata for a specific Nucleus project."""
+        resp = self.get(f"/v2/projects/{project_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Vulnerabilities (typed) ───────────────────────────────────────────────
+
+    def list_vulnerabilities(
+        self,
+        severity: str = "",
+        status: str = "",
+        cve_id: str = "",
+        kev: bool = False,
+        epss_min: float | None = None,
+        asset_id: str = "",
+        page: int = 1,
+        page_size: int = 100,
+        project: str = "",
+    ) -> list[dict[str, Any]]:
+        """
+        List vulnerabilities with typed filters.
+
+        Parameters
+        ----------
+        severity : str
+            ``"critical"``, ``"high"``, ``"medium"``, ``"low"``.
+        status : str
+            ``"open"``, ``"closed"``, ``"accepted"``.
+        kev : bool
+            If True, return only CISA KEV vulnerabilities.
+        epss_min : float
+            Minimum EPSS probability score (0.0–1.0).
+        asset_id : str
+            Scope to a specific asset.
+        """
+        proj = project or self._project
+        params: dict[str, Any] = {"page": page - 1, "page_size": page_size}
+        if severity:
+            params["severity"] = severity
+        if status:
+            params["status"] = status
+        if cve_id:
+            params["cve"] = cve_id
+        if kev:
+            params["kev"] = True
+        if epss_min is not None:
+            params["epss_min"] = epss_min
+        if asset_id:
+            params["asset_id"] = asset_id
+        resp = self.get(f"/v2/projects/{proj}/vulnerabilities", params=params)
+        data = resp.get("vulnerabilities", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
+
+    def get_vulnerability(
+        self, vuln_id: str, project: str = ""
+    ) -> dict[str, Any]:
+        """Retrieve full details for a specific vulnerability finding."""
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/vulnerabilities/{vuln_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_vulnerability_assets(
+        self, vuln_id: str, project: str = ""
+    ) -> list[dict[str, Any]]:
+        """List assets affected by a specific vulnerability."""
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/vulnerabilities/{vuln_id}/assets")
+        data = resp.get("assets", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
+
+    def accept_risk(
+        self,
+        vuln_id: str,
+        reason: str,
+        expiry_date: str = "",
+        project: str = "",
+    ) -> dict[str, Any]:
+        """
+        Accept / waive a vulnerability finding.
+
+        ``reason`` — justification for the risk acceptance.
+        ``expiry_date`` — ISO 8601 date when the exception expires (optional).
+        """
+        proj = project or self._project
+        payload: dict[str, Any] = {"status": "accepted", "reason": reason}
+        if expiry_date:
+            payload["expiry_date"] = expiry_date
+        resp = self.patch(
+            f"/v2/projects/{proj}/vulnerabilities/{vuln_id}",
+            json=payload,
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def reopen_vulnerability(
+        self, vuln_id: str, project: str = ""
+    ) -> dict[str, Any]:
+        """Reopen a closed or accepted vulnerability."""
+        proj = project or self._project
+        resp = self.patch(
+            f"/v2/projects/{proj}/vulnerabilities/{vuln_id}",
+            json={"status": "open"},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Assets (typed) ────────────────────────────────────────────────────────
+
+    def list_assets(
+        self,
+        industry: str = "",
+        tag: str = "",
+        page: int = 1,
+        page_size: int = 100,
+        project: str = "",
+    ) -> list[dict[str, Any]]:
+        """List assets in a Nucleus project with optional filters."""
+        proj = project or self._project
+        params: dict[str, Any] = {"page": page - 1, "page_size": page_size}
+        if industry:
+            params["industry"] = industry
+        if tag:
+            params["tag"] = tag
+        resp = self.get(f"/v2/projects/{proj}/assets", params=params)
+        data = resp.get("assets", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
+
+    def get_asset(self, asset_id: str, project: str = "") -> dict[str, Any]:
+        """Retrieve full details for a specific asset."""
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/assets/{asset_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_asset_vulnerabilities(
+        self,
+        asset_id: str,
+        severity: str = "",
+        status: str = "",
+        limit: int = 100,
+        project: str = "",
+    ) -> list[dict[str, Any]]:
+        """List vulnerabilities for a specific asset."""
+        proj = project or self._project
+        params: dict[str, Any] = {"page_size": limit, "page": 0}
+        if severity:
+            params["severity"] = severity
+        if status:
+            params["status"] = status
+        resp = self.get(
+            f"/v2/projects/{proj}/assets/{asset_id}/vulnerabilities",
+            params=params,
+        )
+        data = resp.get("vulnerabilities", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
+
+    # ── Statistics & reporting ─────────────────────────────────────────────────
+
+    def get_statistics(self, project: str = "") -> dict[str, Any]:
+        """
+        Retrieve vulnerability statistics dashboard for a project.
+
+        Returns counts by severity, status, exploitability, KEV, and EPSS bands.
+        """
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/statistics")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_sla_violations(
+        self, project: str = "", limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List vulnerabilities currently in breach of SLA remediation policies."""
+        proj = project or self._project
+        resp = self.get(
+            f"/v2/projects/{proj}/vulnerabilities",
+            params={"sla_violated": True, "page_size": limit, "page": 0},
+        )
+        data = resp.get("vulnerabilities", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
+
+    # ── Tags ──────────────────────────────────────────────────────────────────
+
+    def list_tags(self, project: str = "") -> list[dict[str, Any]]:
+        """List all asset tags defined in a Nucleus project."""
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/tags")
+        data = resp.get("tags", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
+
+    def create_tag(
+        self,
+        tag_name: str,
+        color: str = "#6366f1",
+        project: str = "",
+    ) -> dict[str, Any]:
+        """Create a new asset classification tag."""
+        proj = project or self._project
+        resp = self.post(
+            f"/v2/projects/{proj}/tags",
+            json={"name": tag_name, "color": color},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def assign_tag_to_asset(
+        self,
+        asset_id: str,
+        tag_id: str,
+        project: str = "",
+    ) -> dict[str, Any]:
+        """Assign a tag to an asset."""
+        proj = project or self._project
+        resp = self.post(
+            f"/v2/projects/{proj}/assets/{asset_id}/tags",
+            json={"tag_id": tag_id},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Connectors / sources ──────────────────────────────────────────────────
+
+    def list_connectors(self, project: str = "") -> list[dict[str, Any]]:
+        """List scanner/source connectors configured for a project."""
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/connectors")
+        data = resp.get("connectors", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
+
+    def get_connector_status(
+        self, connector_id: str, project: str = ""
+    ) -> dict[str, Any]:
+        """Retrieve the last sync status for a specific connector."""
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/connectors/{connector_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def trigger_connector_sync(
+        self, connector_id: str, project: str = ""
+    ) -> dict[str, Any]:
+        """Force an immediate re-import from a connector source."""
+        proj = project or self._project
+        resp = self.post(f"/v2/projects/{proj}/connectors/{connector_id}/sync")
+        return resp if isinstance(resp, dict) else {}
+
+    # ── SLA policies ──────────────────────────────────────────────────────────
+
+    def list_sla_policies(self, project: str = "") -> list[dict[str, Any]]:
+        """List SLA remediation policies defined for a project."""
+        proj = project or self._project
+        resp = self.get(f"/v2/projects/{proj}/sla-policies")
+        data = resp.get("policies", resp) if isinstance(resp, dict) else resp
+        return data if isinstance(data, list) else []
