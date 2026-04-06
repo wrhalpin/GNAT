@@ -671,6 +671,401 @@ class SplunkClient(BaseClient, ConnectorMixin):
         except Exception:
             return []
 
+    # ── Search jobs ───────────────────────────────────────────────────────────
+
+    def create_search_job(
+        self,
+        search: str,
+        earliest_time: str = "-24h",
+        latest_time: str = "now",
+        exec_mode: str = "normal",
+    ) -> str:
+        """
+        Create an async search job and return its SID (search ID).
+
+        ``exec_mode`` options: ``"normal"`` (async) or ``"blocking"`` (wait).
+        """
+        resp = self.post(
+            "search/jobs",
+            data={
+                "search": search if search.startswith("search ") else f"search {search}",
+                "earliest_time": earliest_time,
+                "latest_time": latest_time,
+                "exec_mode": exec_mode,
+            },
+            namespaced=True,
+        )
+        return (resp or {}).get("sid", "")
+
+    def get_search_job(self, sid: str) -> dict:
+        """Return status and metadata for a search job."""
+        resp = self.get(f"search/jobs/{sid}", namespaced=True)
+        return (resp or {}).get("entry", [{}])[0] if isinstance((resp or {}).get("entry"), list) else (resp or {})
+
+    def get_job_results(
+        self,
+        sid: str,
+        count: int = 100,
+        offset: int = 0,
+        field_list: str = "",
+    ) -> list[dict]:
+        """
+        Fetch results from a completed search job.
+
+        Parameters
+        ----------
+        sid : str
+            Search job ID returned by ``create_search_job``.
+        count : int
+            Number of results to return.
+        offset : int
+            Result offset for pagination.
+        field_list : str
+            Comma-separated list of fields to include (empty = all).
+        """
+        params: dict = {"count": count, "offset": offset}
+        if field_list:
+            params["field_list"] = field_list
+        resp = self.get(f"search/jobs/{sid}/results", params=params, namespaced=True)
+        return (resp or {}).get("results", [])
+
+    def cancel_search_job(self, sid: str) -> dict:
+        """Cancel and delete a running search job."""
+        return self.delete(f"search/jobs/{sid}", namespaced=True)
+
+    def run_search(
+        self,
+        search: str,
+        earliest_time: str = "-24h",
+        latest_time: str = "now",
+        count: int = 100,
+    ) -> list[dict]:
+        """
+        Run a blocking one-shot search and return results.
+
+        Convenience wrapper around ``_run_oneshot_search`` with time bounds.
+        """
+        resp = self.post(
+            "search/jobs/oneshot",
+            data={
+                "search": search if search.startswith("search ") else f"search {search}",
+                "earliest_time": earliest_time,
+                "latest_time": latest_time,
+                "count": count,
+                "output_mode": "json",
+            },
+            namespaced=False,
+        )
+        return (resp or {}).get("results", [])
+
+    # ── Saved searches ────────────────────────────────────────────────────────
+
+    def list_saved_searches(
+        self,
+        count: int = 100,
+        offset: int = 0,
+        search: str = "",
+    ) -> list[dict]:
+        """List saved searches/reports in the current app context."""
+        params: dict = {"count": count, "offset": offset}
+        if search:
+            params["search"] = search
+        resp = self.get("saved/searches", params=params, namespaced=True)
+        return (resp or {}).get("entry", [])
+
+    def get_saved_search(self, name: str) -> dict:
+        """Retrieve a saved search by name."""
+        resp = self.get(f"saved/searches/{name}", namespaced=True)
+        entries = (resp or {}).get("entry", [])
+        return entries[0] if entries else {}
+
+    def create_saved_search(
+        self,
+        name: str,
+        search: str,
+        description: str = "",
+        cron_schedule: str = "",
+        dispatch_earliest: str = "-24h",
+        dispatch_latest: str = "now",
+    ) -> dict:
+        """Create a new saved search."""
+        data: dict = {
+            "name": name,
+            "search": search,
+            "dispatch.earliest_time": dispatch_earliest,
+            "dispatch.latest_time": dispatch_latest,
+        }
+        if description:
+            data["description"] = description
+        if cron_schedule:
+            data["cron_schedule"] = cron_schedule
+            data["is_scheduled"] = "1"
+        return self.post("saved/searches", data=data, namespaced=True)
+
+    def trigger_saved_search(self, name: str) -> str:
+        """Trigger a saved search to run immediately; returns the job SID."""
+        resp = self.post(f"saved/searches/{name}/dispatch", namespaced=True)
+        return (resp or {}).get("sid", "")
+
+    def delete_saved_search(self, name: str) -> dict:
+        """Delete a saved search by name."""
+        return self.delete(f"saved/searches/{name}", namespaced=True)
+
+    # ── Fired alerts ──────────────────────────────────────────────────────────
+
+    def list_fired_alerts(
+        self,
+        count: int = 100,
+        offset: int = 0,
+    ) -> list[dict]:
+        """List triggered alert instances (fired alerts)."""
+        params = {"count": count, "offset": offset}
+        resp = self.get("alerts/fired_alerts", params=params, namespaced=True)
+        return (resp or {}).get("entry", [])
+
+    def get_fired_alert(self, saved_search: str, sid: str) -> dict:
+        """Retrieve details for a specific fired alert instance."""
+        resp = self.get(f"alerts/fired_alerts/{saved_search}/{sid}", namespaced=True)
+        entries = (resp or {}).get("entry", [])
+        return entries[0] if entries else {}
+
+    # ── Indexes ───────────────────────────────────────────────────────────────
+
+    def list_indexes(self, count: int = 100) -> list[dict]:
+        """List all Splunk indexes accessible to the current user."""
+        resp = self.get("data/indexes", params={"count": count}, namespaced=False)
+        return (resp or {}).get("entry", [])
+
+    def get_index(self, name: str) -> dict:
+        """Retrieve metadata and settings for a specific index."""
+        resp = self.get(f"data/indexes/{name}", namespaced=False)
+        entries = (resp or {}).get("entry", [])
+        return entries[0] if entries else {}
+
+    def create_index(
+        self,
+        name: str,
+        max_total_data_size_mb: int = 500000,
+        max_hot_buckets: int = 3,
+    ) -> dict:
+        """Create a new Splunk index."""
+        return self.post(
+            "data/indexes",
+            data={
+                "name": name,
+                "maxTotalDataSizeMB": str(max_total_data_size_mb),
+                "maxHotBuckets": str(max_hot_buckets),
+            },
+            namespaced=False,
+        )
+
+    # ── KV Store ──────────────────────────────────────────────────────────────
+
+    def list_kv_collections(self) -> list[dict]:
+        """List all KV Store collections in the current app."""
+        resp = self.get("storage/collections/config", namespaced=True)
+        return (resp or {}).get("entry", [])
+
+    def get_kv_records(
+        self,
+        collection: str,
+        query: dict | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        """
+        Retrieve records from a KV Store collection.
+
+        ``query`` is a MongoDB-style filter dict serialised as JSON,
+        e.g. ``{"status": "open"}``.
+        """
+        import json as _json
+        params: dict = {"limit": limit}
+        if query:
+            params["query"] = _json.dumps(query)
+        resp = self.get(f"storage/collections/data/{collection}", params=params, namespaced=True)
+        return resp if isinstance(resp, list) else []
+
+    def upsert_kv_record(self, collection: str, record: dict, record_id: str = "") -> dict:
+        """
+        Insert or update a record in a KV Store collection.
+
+        If ``record_id`` is provided, updates that record; otherwise inserts.
+        """
+        import json as _json
+        endpoint = (
+            f"storage/collections/data/{collection}/{record_id}"
+            if record_id
+            else f"storage/collections/data/{collection}"
+        )
+        body = _json.dumps(record).encode("utf-8")
+        method = "PUT" if record_id else "POST"
+        url = self._build_url(endpoint, namespaced=True)
+        url = f"{url}?output_mode=json"
+        return self._request(
+            method,
+            url,
+            body=body,
+            extra_headers={"Content-Type": "application/json"},
+        )
+
+    def delete_kv_record(self, collection: str, record_id: str) -> dict:
+        """Delete a record from a KV Store collection by key."""
+        return self.delete(f"storage/collections/data/{collection}/{record_id}", namespaced=True)
+
+    def delete_all_kv_records(self, collection: str) -> dict:
+        """Delete all records from a KV Store collection (truncate)."""
+        return self.delete(f"storage/collections/data/{collection}", namespaced=True)
+
+    # ── HTTP Event Collector (HEC) ────────────────────────────────────────────
+
+    def send_hec_event(
+        self,
+        event: dict | str,
+        hec_token: str = "",
+        index: str = "",
+        source: str = "gnat",
+        sourcetype: str = "_json",
+        host: str = "",
+        hec_port: int = 8088,
+    ) -> dict:
+        """
+        Send an event to Splunk via HTTP Event Collector (HEC).
+
+        ``hec_token`` — HEC token (overrides stored config if provided).
+        ``hec_port``  — HEC listener port (default 8088).
+
+        The HEC endpoint is on a different port than the management API,
+        so this constructs the URL from the configured host.
+        """
+        import json as _json
+        import urllib.parse as _up
+
+        parsed = _up.urlparse(self.config.base_url)
+        hec_base = f"{parsed.scheme}://{parsed.hostname}:{hec_port}"
+        token = hec_token or self.config.token or ""
+        payload: dict = {"event": event, "source": source, "sourcetype": sourcetype}
+        if index:
+            payload["index"] = index
+        if host:
+            payload["host"] = host
+
+        body = _json.dumps(payload).encode("utf-8")
+        url = f"{hec_base}/services/collector/event"
+        headers = {
+            "Authorization": f"Splunk {token}",
+            "Content-Type": "application/json",
+        }
+        response = self._splunk_http.request("POST", url, body=body, headers=headers)
+        try:
+            return _json.loads(response.data.decode("utf-8")) if response.data else {}
+        except Exception:
+            return {}
+
+    def send_hec_events_batch(
+        self,
+        events: list[dict | str],
+        hec_token: str = "",
+        index: str = "",
+        source: str = "gnat",
+        sourcetype: str = "_json",
+        hec_port: int = 8088,
+    ) -> dict:
+        """
+        Send multiple events to Splunk HEC in a single batch request.
+
+        Each item in ``events`` is wrapped in an individual JSON payload
+        and newline-delimited (the HEC batch format).
+        """
+        import json as _json
+        import urllib.parse as _up
+
+        parsed = _up.urlparse(self.config.base_url)
+        hec_base = f"{parsed.scheme}://{parsed.hostname}:{hec_port}"
+        token = hec_token or self.config.token or ""
+        lines = []
+        for ev in events:
+            rec: dict = {"event": ev, "source": source, "sourcetype": sourcetype}
+            if index:
+                rec["index"] = index
+            lines.append(_json.dumps(rec))
+
+        body = "\n".join(lines).encode("utf-8")
+        url = f"{hec_base}/services/collector/event"
+        headers = {
+            "Authorization": f"Splunk {token}",
+            "Content-Type": "application/json",
+        }
+        response = self._splunk_http.request("POST", url, body=body, headers=headers)
+        try:
+            return _json.loads(response.data.decode("utf-8")) if response.data else {}
+        except Exception:
+            return {}
+
+    # ── Apps ──────────────────────────────────────────────────────────────────
+
+    def list_apps(self, count: int = 100) -> list[dict]:
+        """List installed Splunk apps."""
+        resp = self.get("apps/local", params={"count": count}, namespaced=False)
+        return (resp or {}).get("entry", [])
+
+    def get_app(self, app_name: str) -> dict:
+        """Retrieve metadata for a specific installed Splunk app."""
+        resp = self.get(f"apps/local/{app_name}", namespaced=False)
+        entries = (resp or {}).get("entry", [])
+        return entries[0] if entries else {}
+
+    # ── Lookups ───────────────────────────────────────────────────────────────
+
+    def list_lookup_tables(self, count: int = 100) -> list[dict]:
+        """List CSV lookup table files available in the current app."""
+        resp = self.get("data/lookup-table-files", params={"count": count}, namespaced=True)
+        return (resp or {}).get("entry", [])
+
+    def get_lookup_table(self, name: str) -> dict:
+        """Retrieve metadata for a specific lookup table file."""
+        resp = self.get(f"data/lookup-table-files/{name}", namespaced=True)
+        entries = (resp or {}).get("entry", [])
+        return entries[0] if entries else {}
+
+    # ── Threat intelligence framework ────────────────────────────────────────
+
+    def list_threat_intel_collections(self) -> list[dict]:
+        """List threat intelligence collections registered in Splunk ES."""
+        resp = self.get("data/threat_intel/collections", namespaced=False)
+        return (resp or {}).get("entry", [])
+
+    def add_threat_intel_ip(
+        self,
+        ip: str,
+        description: str = "",
+        severity: str = "high",
+        collection: str = "ip_intel",
+    ) -> dict:
+        """
+        Add an IP address to the Splunk threat intelligence framework.
+
+        Uses ``data/threat_intel/{collection}`` REST endpoint.
+        """
+        return self.post(
+            f"data/threat_intel/{collection}",
+            data={"ip": ip, "description": description, "severity": severity},
+            namespaced=False,
+        )
+
+    def add_threat_intel_domain(
+        self,
+        domain: str,
+        description: str = "",
+        severity: str = "high",
+        collection: str = "http_intel",
+    ) -> dict:
+        """Add a domain to the Splunk threat intelligence framework."""
+        return self.post(
+            f"data/threat_intel/{collection}",
+            data={"domain": domain, "description": description, "severity": severity},
+            namespaced=False,
+        )
+
 
 @staticmethod
 def _parse_json(data: bytes, url: str) -> dict:

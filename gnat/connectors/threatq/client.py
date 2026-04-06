@@ -467,6 +467,576 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ------------------------------------------------------------------
+    # Indicator relationship methods
+    # ------------------------------------------------------------------
+
+    def get_indicator_adversaries(self, indicator_id: str) -> list[dict[str, Any]]:
+        """
+        Return adversaries (threat actors) linked to a ThreatQ indicator.
+
+        Calls ``GET /api/indicators/{id}/adversaries``.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        resp  = self.get(f"/api/indicators/{tq_id}/adversaries")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_indicator_events(self, indicator_id: str) -> list[dict[str, Any]]:
+        """
+        Return events (investigations) linked to a ThreatQ indicator.
+
+        Calls ``GET /api/indicators/{id}/events``.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        resp  = self.get(f"/api/indicators/{tq_id}/events")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_indicator_malware(self, indicator_id: str) -> list[dict[str, Any]]:
+        """
+        Return malware families linked to a ThreatQ indicator.
+
+        Calls ``GET /api/indicators/{id}/malware``.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        resp  = self.get(f"/api/indicators/{tq_id}/malware")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_indicator_vulnerabilities(self, indicator_id: str) -> list[dict[str, Any]]:
+        """
+        Return vulnerabilities linked to a ThreatQ indicator.
+
+        Calls ``GET /api/indicators/{id}/vulnerabilities``.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        resp  = self.get(f"/api/indicators/{tq_id}/vulnerabilities")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_indicator_signatures(self, indicator_id: str) -> list[dict[str, Any]]:
+        """
+        Return detection signatures associated with a ThreatQ indicator.
+
+        Calls ``GET /api/indicators/{id}/signatures``.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        resp  = self.get(f"/api/indicators/{tq_id}/signatures")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_indicator_comments(self, indicator_id: str) -> list[dict[str, Any]]:
+        """
+        Return analyst comments on a ThreatQ indicator.
+
+        Calls ``GET /api/indicators/{id}/comments``.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        resp  = self.get(f"/api/indicators/{tq_id}/comments")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def add_indicator_comment(self, indicator_id: str, comment: str) -> dict[str, Any]:
+        """
+        Post an analyst comment on a ThreatQ indicator.
+
+        Calls ``POST /api/indicators/{id}/comments``.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        comment : str
+            Comment body text.
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        return self.post(f"/api/indicators/{tq_id}/comments", json={"value": comment})
+
+    def score_indicator(
+        self,
+        indicator_id: str,
+        generated_score: int | None = None,
+        manual_score: int | None = None,
+    ) -> dict[str, Any]:
+        """
+        Update the generated or manual score on a ThreatQ indicator.
+
+        Calls ``PUT /api/indicators/{id}/score``.  Scores range 0–10.
+
+        Parameters
+        ----------
+        indicator_id : str
+            ThreatQ indicator numeric ID or STIX id.
+        generated_score : int, optional
+            System-generated score (0–10).
+        manual_score : int, optional
+            Analyst-assigned manual score (0–10).
+        """
+        tq_id = self._extract_numeric_id(indicator_id)
+        payload: dict[str, Any] = {}
+        if generated_score is not None:
+            payload["generated_score"] = generated_score
+        if manual_score is not None:
+            payload["manual_score"] = manual_score
+        return self.put(f"/api/indicators/{tq_id}/score", json=payload)
+
+    # ------------------------------------------------------------------
+    # Adversary relationship methods
+    # ------------------------------------------------------------------
+
+    def get_adversary_indicators(self, adversary_id: str) -> list[dict[str, Any]]:
+        """
+        Return indicators linked to a ThreatQ adversary.
+
+        Calls ``GET /api/adversaries/{id}/indicators?with=attributes``.
+
+        Parameters
+        ----------
+        adversary_id : str
+            ThreatQ adversary numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(adversary_id)
+        resp  = self.get(
+            f"/api/adversaries/{tq_id}/indicators",
+            params={"with": "attributes"},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_adversary_malware(self, adversary_id: str) -> list[dict[str, Any]]:
+        """
+        Return malware families associated with a ThreatQ adversary.
+
+        Calls ``GET /api/adversaries/{id}/malware``.
+
+        Parameters
+        ----------
+        adversary_id : str
+            ThreatQ adversary numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(adversary_id)
+        resp  = self.get(f"/api/adversaries/{tq_id}/malware")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_adversary_vulnerabilities(self, adversary_id: str) -> list[dict[str, Any]]:
+        """
+        Return vulnerabilities associated with a ThreatQ adversary.
+
+        Calls ``GET /api/adversaries/{id}/vulnerabilities``.
+
+        Parameters
+        ----------
+        adversary_id : str
+            ThreatQ adversary numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(adversary_id)
+        resp  = self.get(f"/api/adversaries/{tq_id}/vulnerabilities")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_adversary_attack_patterns(self, adversary_id: str) -> list[dict[str, Any]]:
+        """
+        Return MITRE ATT&CK patterns associated with a ThreatQ adversary.
+
+        Calls ``GET /api/adversaries/{id}/attack-patterns``.
+
+        Parameters
+        ----------
+        adversary_id : str
+            ThreatQ adversary numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(adversary_id)
+        resp  = self.get(f"/api/adversaries/{tq_id}/attack-patterns")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ------------------------------------------------------------------
+    # Event (investigation) extended methods
+    # ------------------------------------------------------------------
+
+    def get_event_malware(self, event_id: str) -> list[dict[str, Any]]:
+        """
+        Return malware families linked to a ThreatQ Event.
+
+        Calls ``GET /api/events/{id}/malware``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        resp  = self.get(f"/api/events/{tq_id}/malware")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_event_vulnerabilities(self, event_id: str) -> list[dict[str, Any]]:
+        """
+        Return vulnerabilities linked to a ThreatQ Event.
+
+        Calls ``GET /api/events/{id}/vulnerabilities``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        resp  = self.get(f"/api/events/{tq_id}/vulnerabilities")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_event_attack_patterns(self, event_id: str) -> list[dict[str, Any]]:
+        """
+        Return MITRE ATT&CK patterns linked to a ThreatQ Event.
+
+        Calls ``GET /api/events/{id}/attack-patterns``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        resp  = self.get(f"/api/events/{tq_id}/attack-patterns")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def add_event_comment(self, event_id: str, comment: str) -> dict[str, Any]:
+        """
+        Post a comment on a ThreatQ Event (investigation).
+
+        Calls ``POST /api/events/{id}/comments``.
+
+        Parameters
+        ----------
+        event_id : str
+            ThreatQ Event numeric ID or STIX id.
+        comment : str
+            Comment body text.
+        """
+        tq_id = self._extract_numeric_id(event_id)
+        return self.post(f"/api/events/{tq_id}/comments", json={"value": comment})
+
+    # ------------------------------------------------------------------
+    # Signatures
+    # ------------------------------------------------------------------
+
+    def list_signatures(
+        self,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List ThreatQ detection signatures (Snort, Yara, Sigma, etc.).
+
+        Calls ``GET /api/signatures``.
+
+        Parameters
+        ----------
+        filters : dict, optional
+            Query filters (e.g. ``{"type": "Snort"}``).
+        """
+        params: dict[str, Any] = {
+            "limit":  page_size,
+            "offset": (page - 1) * page_size,
+        }
+        if filters:
+            params.update(filters)
+        resp = self.get("/api/signatures", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_signature(self, signature_id: str) -> dict[str, Any]:
+        """
+        Retrieve a single ThreatQ signature by ID.
+
+        Calls ``GET /api/signatures/{id}``.
+
+        Parameters
+        ----------
+        signature_id : str
+            ThreatQ signature numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(signature_id)
+        resp  = self.get(f"/api/signatures/{tq_id}")
+        return resp.get("data", resp) if isinstance(resp, dict) else {}
+
+    def get_signature_indicators(self, signature_id: str) -> list[dict[str, Any]]:
+        """
+        Return indicators linked to a ThreatQ signature.
+
+        Calls ``GET /api/signatures/{id}/indicators``.
+
+        Parameters
+        ----------
+        signature_id : str
+            ThreatQ signature numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(signature_id)
+        resp  = self.get(f"/api/signatures/{tq_id}/indicators")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ------------------------------------------------------------------
+    # Attachments
+    # ------------------------------------------------------------------
+
+    def list_attachments(
+        self,
+        entity_type: str = "",
+        entity_id: str = "",
+    ) -> list[dict[str, Any]]:
+        """
+        List ThreatQ file attachments, optionally scoped to an entity.
+
+        Calls ``GET /api/attachments`` (unscoped) or
+        ``GET /api/{entity_type}/{entity_id}/attachments`` (scoped).
+
+        Parameters
+        ----------
+        entity_type : str, optional
+            ThreatQ entity type (e.g. ``"indicators"``, ``"events"``).
+        entity_id : str, optional
+            ThreatQ entity numeric ID.
+        """
+        if entity_type and entity_id:
+            tq_id = self._extract_numeric_id(entity_id)
+            path  = f"/api/{entity_type}/{tq_id}/attachments"
+        else:
+            path  = "/api/attachments"
+        resp = self.get(path)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def upload_attachment(
+        self,
+        entity_type: str,
+        entity_id: str,
+        filename: str,
+        content: bytes,
+        content_type: str = "application/octet-stream",
+    ) -> dict[str, Any]:
+        """
+        Upload a file attachment and link it to a ThreatQ entity.
+
+        Calls ``POST /api/{entity_type}/{entity_id}/attachments`` with a
+        multipart form body.
+
+        Parameters
+        ----------
+        entity_type : str
+            ThreatQ entity type (e.g. ``"indicators"``, ``"events"``).
+        entity_id : str
+            ThreatQ entity numeric ID or STIX id.
+        filename : str
+            Attachment filename as stored in ThreatQ.
+        content : bytes
+            Raw file bytes.
+        content_type : str
+            MIME type of the attachment.  Default ``"application/octet-stream"``.
+        """
+        tq_id = self._extract_numeric_id(entity_id)
+        resp  = self.post(
+            f"/api/{entity_type}/{tq_id}/attachments",
+            files={"file": (filename, content, content_type)},
+        )
+        return resp.get("data", resp) if isinstance(resp, dict) else {}
+
+    # ------------------------------------------------------------------
+    # Tasks
+    # ------------------------------------------------------------------
+
+    def list_tasks(
+        self,
+        filters: Optional[dict[str, Any]] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        List ThreatQ tasks.
+
+        Calls ``GET /api/tasks``.
+
+        Parameters
+        ----------
+        filters : dict, optional
+            Query filters (e.g. ``{"status": "open"}``).
+        """
+        params: dict[str, Any] = {
+            "limit":  page_size,
+            "offset": (page - 1) * page_size,
+        }
+        if filters:
+            params.update(filters)
+        resp = self.get("/api/tasks", params=params)
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def create_task(
+        self,
+        title: str,
+        event_id: str = "",
+        assignee: str = "",
+        due_date: str = "",
+        description: str = "",
+    ) -> dict[str, Any]:
+        """
+        Create a new ThreatQ task.
+
+        Calls ``POST /api/tasks``.
+
+        Parameters
+        ----------
+        title : str
+            Task title / name.
+        event_id : str, optional
+            ThreatQ Event ID to link this task to.
+        assignee : str, optional
+            Username of the assignee.
+        due_date : str, optional
+            ISO-8601 due date string.
+        description : str, optional
+            Task description.
+        """
+        payload: dict[str, Any] = {"title": title, "description": description}
+        if event_id:
+            payload["event_id"] = self._extract_numeric_id(event_id)
+        if assignee:
+            payload["assignee"] = assignee
+        if due_date:
+            payload["due_date"] = due_date
+        resp = self.post("/api/tasks", json=payload)
+        return resp.get("data", resp) if isinstance(resp, dict) else {}
+
+    def complete_task(self, task_id: str) -> dict[str, Any]:
+        """
+        Mark a ThreatQ task as completed.
+
+        Calls ``PUT /api/tasks/{task_id}`` with ``status = "Completed"``.
+
+        Parameters
+        ----------
+        task_id : str
+            ThreatQ task numeric ID.
+        """
+        tq_id = self._extract_numeric_id(task_id)
+        return self.put(f"/api/tasks/{tq_id}", json={"status": "Completed"})
+
+    # ------------------------------------------------------------------
+    # Sources
+    # ------------------------------------------------------------------
+
+    def list_sources(self) -> list[dict[str, Any]]:
+        """
+        Return all ThreatQ intelligence sources defined in the deployment.
+
+        Calls ``GET /api/sources``.
+        """
+        resp = self.get("/api/sources")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_source(self, source_id: str) -> dict[str, Any]:
+        """
+        Retrieve a specific ThreatQ source by ID.
+
+        Calls ``GET /api/sources/{source_id}``.
+
+        Parameters
+        ----------
+        source_id : str
+            ThreatQ source numeric ID.
+        """
+        tq_id = self._extract_numeric_id(source_id)
+        resp  = self.get(f"/api/sources/{tq_id}")
+        return resp.get("data", resp) if isinstance(resp, dict) else {}
+
+    # ------------------------------------------------------------------
+    # Malware / vulnerability entity helpers
+    # ------------------------------------------------------------------
+
+    def get_malware_indicators(self, malware_id: str) -> list[dict[str, Any]]:
+        """
+        Return indicators linked to a ThreatQ malware family.
+
+        Calls ``GET /api/malware/{id}/indicators?with=attributes``.
+
+        Parameters
+        ----------
+        malware_id : str
+            ThreatQ malware numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(malware_id)
+        resp  = self.get(
+            f"/api/malware/{tq_id}/indicators",
+            params={"with": "attributes"},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_malware_adversaries(self, malware_id: str) -> list[dict[str, Any]]:
+        """
+        Return adversaries associated with a ThreatQ malware family.
+
+        Calls ``GET /api/malware/{id}/adversaries``.
+
+        Parameters
+        ----------
+        malware_id : str
+            ThreatQ malware numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(malware_id)
+        resp  = self.get(f"/api/malware/{tq_id}/adversaries")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_vulnerability_indicators(self, vuln_id: str) -> list[dict[str, Any]]:
+        """
+        Return indicators linked to a ThreatQ vulnerability.
+
+        Calls ``GET /api/vulnerabilities/{id}/indicators?with=attributes``.
+
+        Parameters
+        ----------
+        vuln_id : str
+            ThreatQ vulnerability numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(vuln_id)
+        resp  = self.get(
+            f"/api/vulnerabilities/{tq_id}/indicators",
+            params={"with": "attributes"},
+        )
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    def get_vulnerability_adversaries(self, vuln_id: str) -> list[dict[str, Any]]:
+        """
+        Return adversaries linked to a ThreatQ vulnerability.
+
+        Calls ``GET /api/vulnerabilities/{id}/adversaries``.
+
+        Parameters
+        ----------
+        vuln_id : str
+            ThreatQ vulnerability numeric ID or STIX id.
+        """
+        tq_id = self._extract_numeric_id(vuln_id)
+        resp  = self.get(f"/api/vulnerabilities/{tq_id}/adversaries")
+        return resp.get("data", []) if isinstance(resp, dict) else []
+
+    # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 
