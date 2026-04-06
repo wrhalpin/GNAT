@@ -253,3 +253,436 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         if "email" in pattern:
             return "email"
         return "domain"
+
+    # ── Intelligence (typed indicator operations) ─────────────────────────────
+
+    def list_intelligence(
+        self,
+        ioc_type: str = "",
+        status: str = "active",
+        confidence_gte: int = 0,
+        modified_after: str = "",
+        tags: str = "",
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """
+        List threat intelligence indicators with typed filters.
+
+        Parameters
+        ----------
+        ioc_type : str
+            IOC type filter: ``"ip"``, ``"domain"``, ``"url"``, ``"md5"``,
+            ``"sha1"``, ``"sha256"``, ``"email"``, ``"cidr"``.
+        status : str
+            ``"active"`` (default), ``"inactive"``, or ``"falsepos"``.
+        confidence_gte : int
+            Minimum confidence score (0–100).
+        modified_after : str
+            ISO-8601 modified-after filter, e.g. ``"2024-01-01T00:00:00"``.
+        tags : str
+            Comma-separated tag names to filter by.
+        """
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "limit": min(limit, 1000),
+            "offset": offset,
+            "format": "json",
+        }
+        if ioc_type:
+            params["type"] = ioc_type
+        if status:
+            params["status"] = status
+        if confidence_gte:
+            params["confidence__gte"] = confidence_gte
+        if modified_after:
+            params["modified_ts__gte"] = modified_after
+        if tags:
+            params["tags__name__in"] = tags
+        resp = self.get(f"{_API}/intelligence/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def import_indicators(
+        self,
+        indicators: list[dict[str, Any]],
+        trusted_circles: list[int] | None = None,
+        tags: list[str] | None = None,
+        source: str = "gnat",
+    ) -> dict[str, Any]:
+        """
+        Bulk import indicators into ThreatStream.
+
+        Each item in ``indicators`` needs at minimum ``"type"`` and ``"value"``.
+        ``trusted_circles`` — list of trusted circle IDs to share with.
+        """
+        payload: dict[str, Any] = {
+            "objects": [
+                {**ind, "source": ind.get("source", source)}
+                for ind in indicators
+            ],
+            "meta": {"allow_unresolved": True},
+        }
+        if trusted_circles:
+            payload["meta"]["circles"] = trusted_circles
+        if tags:
+            for obj in payload["objects"]:
+                obj.setdefault("tags", []).extend(tags)
+        resp = self.post(
+            f"{_API}/intelligence/",
+            params=self._ts_auth,
+            json=payload,
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def update_indicator_status(
+        self, ioc_id: int | str, status: str
+    ) -> dict[str, Any]:
+        """
+        Update the status of a single indicator.
+
+        ``status`` options: ``"active"``, ``"inactive"``, ``"falsepos"``.
+        """
+        resp = self.patch(
+            f"{_API}/intelligence/{ioc_id}/",
+            params=self._ts_auth,
+            json={"status": status},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def tag_indicators(
+        self, ioc_ids: list[int | str], tags: list[str]
+    ) -> dict[str, Any]:
+        """Apply a list of tags to multiple indicators."""
+        resp = self.post(
+            f"{_API}/intelligence/bulk_tag/",
+            params=self._ts_auth,
+            json={"ids": ioc_ids, "tags": tags},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def export_indicators(
+        self,
+        ioc_type: str = "",
+        export_format: str = "json",
+        status: str = "active",
+        limit: int = 1000,
+    ) -> dict[str, Any]:
+        """
+        Export indicators in JSON or CSV format.
+
+        Returns a dict with a ``"download_url"`` key or inline data.
+        """
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "format": export_format,
+            "status": status,
+            "limit": limit,
+        }
+        if ioc_type:
+            params["type"] = ioc_type
+        resp = self.get(f"{_API}/intelligence/export/", params=params)
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Threat actors ─────────────────────────────────────────────────────────
+
+    def list_actors(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        name: str = "",
+    ) -> list[dict[str, Any]]:
+        """List threat actor profiles."""
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "limit": min(limit, 1000),
+            "offset": offset,
+        }
+        if name:
+            params["name__icontains"] = name
+        resp = self.get(f"{_API}/actor/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_actor(self, actor_id: int | str) -> dict[str, Any]:
+        """Retrieve a specific threat actor by ID."""
+        resp = self.get(f"{_API}/actor/{actor_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}
+
+    def list_actor_indicators(
+        self, actor_id: int | str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List intelligence indicators associated with a threat actor."""
+        params: dict[str, Any] = {**self._ts_auth, "limit": limit}
+        resp = self.get(f"{_API}/actor/{actor_id}/intelligence/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def create_actor(
+        self, name: str, description: str = "", **kwargs: Any
+    ) -> dict[str, Any]:
+        """Create a new threat actor entity."""
+        payload: dict[str, Any] = {"name": name, "description": description, **kwargs}
+        resp = self.post(f"{_API}/actor/", params=self._ts_auth, json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Malware families ──────────────────────────────────────────────────────
+
+    def list_malware(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        name: str = "",
+    ) -> list[dict[str, Any]]:
+        """List malware family profiles."""
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "limit": min(limit, 1000),
+            "offset": offset,
+        }
+        if name:
+            params["name__icontains"] = name
+        resp = self.get(f"{_API}/malware/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_malware_family(self, malware_id: int | str) -> dict[str, Any]:
+        """Retrieve a specific malware family by ID."""
+        resp = self.get(f"{_API}/malware/{malware_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}
+
+    def list_malware_indicators(
+        self, malware_id: int | str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List intelligence indicators associated with a malware family."""
+        params: dict[str, Any] = {**self._ts_auth, "limit": limit}
+        resp = self.get(f"{_API}/malware/{malware_id}/intelligence/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    # ── Campaigns ─────────────────────────────────────────────────────────────
+
+    def list_campaigns(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        name: str = "",
+    ) -> list[dict[str, Any]]:
+        """List campaign profiles."""
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "limit": min(limit, 1000),
+            "offset": offset,
+        }
+        if name:
+            params["name__icontains"] = name
+        resp = self.get(f"{_API}/campaign/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_campaign(self, campaign_id: int | str) -> dict[str, Any]:
+        """Retrieve a specific campaign by ID."""
+        resp = self.get(f"{_API}/campaign/{campaign_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}
+
+    def list_campaign_indicators(
+        self, campaign_id: int | str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List intelligence indicators associated with a campaign."""
+        params: dict[str, Any] = {**self._ts_auth, "limit": limit}
+        resp = self.get(f"{_API}/campaign/{campaign_id}/intelligence/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    # ── Vulnerabilities ───────────────────────────────────────────────────────
+
+    def list_vulnerabilities(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        cve_id: str = "",
+    ) -> list[dict[str, Any]]:
+        """List vulnerability profiles."""
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "limit": min(limit, 1000),
+            "offset": offset,
+        }
+        if cve_id:
+            params["name__icontains"] = cve_id
+        resp = self.get(f"{_API}/vulnerability/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_vulnerability(self, vuln_id: int | str) -> dict[str, Any]:
+        """Retrieve a specific vulnerability by ThreatStream ID."""
+        resp = self.get(f"{_API}/vulnerability/{vuln_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Incidents ─────────────────────────────────────────────────────────────
+
+    def list_incidents(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        status: str = "",
+        name: str = "",
+    ) -> list[dict[str, Any]]:
+        """List ThreatStream incidents."""
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "limit": min(limit, 1000),
+            "offset": offset,
+        }
+        if status:
+            params["status"] = status
+        if name:
+            params["name__icontains"] = name
+        resp = self.get(f"{_API}/incident/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_incident(self, incident_id: int | str) -> dict[str, Any]:
+        """Retrieve a specific incident by ID."""
+        resp = self.get(f"{_API}/incident/{incident_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}
+
+    def create_incident(
+        self,
+        name: str,
+        status: str = "open",
+        description: str = "",
+        severity: str = "medium",
+        ioc_ids: list[int | str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Create a new ThreatStream incident.
+
+        ``status`` options: ``"open"``, ``"closed"``, ``"contained"``.
+        ``severity`` options: ``"low"``, ``"medium"``, ``"high"``, ``"very-high"``.
+        """
+        payload: dict[str, Any] = {
+            "name": name,
+            "status": status,
+            "description": description,
+            "severity": severity,
+        }
+        if ioc_ids:
+            payload["intelligence"] = [{"id": i} for i in ioc_ids]
+        resp = self.post(f"{_API}/incident/", params=self._ts_auth, json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    def update_incident(
+        self, incident_id: int | str, updates: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update an existing incident (status, severity, description, etc.)."""
+        resp = self.patch(
+            f"{_API}/incident/{incident_id}/",
+            params=self._ts_auth,
+            json=updates,
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def add_incident_indicators(
+        self, incident_id: int | str, ioc_ids: list[int | str]
+    ) -> dict[str, Any]:
+        """Associate intelligence indicators with an incident."""
+        resp = self.post(
+            f"{_API}/incident/{incident_id}/intelligence/",
+            params=self._ts_auth,
+            json=[{"id": i} for i in ioc_ids],
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Trusted circles ───────────────────────────────────────────────────────
+
+    def list_trusted_circles(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List trusted sharing circles the organisation belongs to."""
+        resp = self.get(
+            f"{_API}/trustedcircle/",
+            params={**self._ts_auth, "limit": limit},
+        )
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_trusted_circle(self, circle_id: int | str) -> dict[str, Any]:
+        """Retrieve details for a specific trusted circle."""
+        resp = self.get(f"{_API}/trustedcircle/{circle_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}
+
+    def list_circle_indicators(
+        self, circle_id: int | str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List indicators shared within a trusted circle."""
+        params: dict[str, Any] = {
+            **self._ts_auth,
+            "limit": limit,
+            "circles": circle_id,
+        }
+        resp = self.get(f"{_API}/intelligence/", params=params)
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    # ── Feeds ─────────────────────────────────────────────────────────────────
+
+    def list_feeds(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List configured threat intelligence feeds."""
+        resp = self.get(
+            f"{_API}/feed/",
+            params={**self._ts_auth, "limit": limit},
+        )
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_feed(self, feed_id: int | str) -> dict[str, Any]:
+        """Retrieve details for a specific feed configuration."""
+        resp = self.get(f"{_API}/feed/{feed_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}
+
+    def run_feed(self, feed_id: int | str) -> dict[str, Any]:
+        """Trigger an immediate import run for a feed."""
+        resp = self.post(
+            f"{_API}/feed/{feed_id}/import/",
+            params=self._ts_auth,
+            json={},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Rule sets ─────────────────────────────────────────────────────────────
+
+    def list_rules(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List observable matching rules configured in ThreatStream."""
+        resp = self.get(
+            f"{_API}/rule/",
+            params={**self._ts_auth, "limit": limit},
+        )
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def create_rule(
+        self,
+        name: str,
+        keywords: list[str],
+        match_type: str = "exact",
+        notify_me: bool = True,
+    ) -> dict[str, Any]:
+        """
+        Create an observable matching rule.
+
+        ``match_type`` options: ``"exact"``, ``"contains"``, ``"regex"``.
+        """
+        resp = self.post(
+            f"{_API}/rule/",
+            params=self._ts_auth,
+            json={
+                "name": name,
+                "keywords": keywords,
+                "match_type": match_type,
+                "notify_me": notify_me,
+            },
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Reports ───────────────────────────────────────────────────────────────
+
+    def list_reports(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[dict[str, Any]]:
+        """List threat intelligence reports in ThreatStream."""
+        resp = self.get(
+            f"{_API}/report/",
+            params={**self._ts_auth, "limit": limit, "offset": offset},
+        )
+        return resp.get("objects", []) if isinstance(resp, dict) else []
+
+    def get_report(self, report_id: int | str) -> dict[str, Any]:
+        """Retrieve a specific report by ID."""
+        resp = self.get(f"{_API}/report/{report_id}/", params=self._ts_auth)
+        return resp if isinstance(resp, dict) else {}

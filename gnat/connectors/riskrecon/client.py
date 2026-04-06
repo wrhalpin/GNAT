@@ -351,3 +351,201 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         return {
             "domain": stix_dict.get("x_rr_domain", stix_dict.get("name", "")),
         }
+
+    # ── Company discovery & search ────────────────────────────────────────────
+
+    def list_companies(
+        self,
+        name: str = "",
+        domain: str = "",
+        industry: str = "",
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """
+        List monitored companies with optional filters.
+
+        ``industry`` — sector filter, e.g. ``"Financial Services"``.
+        """
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        if name:
+            params["name"] = name
+        if domain:
+            params["domain"] = domain
+        if industry:
+            params["industry"] = industry
+        resp = self.get("/companies", params=params)
+        return resp.get("companies", []) if isinstance(resp, dict) else []
+
+    def search_companies(self, keyword: str, limit: int = 50) -> list[dict[str, Any]]:
+        """Search for companies by name or domain keyword."""
+        resp = self.get("/companies/search", params={"q": keyword, "limit": limit})
+        return resp.get("companies", []) if isinstance(resp, dict) else []
+
+    def get_company_by_domain(self, domain: str) -> dict[str, Any]:
+        """Look up a company by primary domain name."""
+        resp = self.get("/companies", params={"domain": domain, "limit": 1})
+        companies = resp.get("companies", []) if isinstance(resp, dict) else []
+        return companies[0] if companies else {}
+
+    def add_company(self, domain: str, name: str = "") -> dict[str, Any]:
+        """Add a company to your RiskRecon monitoring watchlist."""
+        payload: dict[str, Any] = {"domain": domain}
+        if name:
+            payload["name"] = name
+        return self.post("/companies", json=payload)
+
+    def remove_company(self, company_id: str) -> None:
+        """Remove a company from monitoring."""
+        self.delete(f"/companies/{company_id}")
+
+    # ── Scoring & trends ──────────────────────────────────────────────────────
+
+    def get_score_history(
+        self,
+        company_id: str,
+        days: int = 90,
+    ) -> list[dict[str, Any]]:
+        """
+        Retrieve historical risk score data points for a company.
+
+        ``days`` — look-back window (default 90 days).
+        Returns a list of ``{"date": ..., "score": ..., "grade": ...}`` dicts.
+        """
+        resp = self.get(
+            f"/companies/{company_id}/score/history",
+            params={"days": days},
+        )
+        return resp.get("history", []) if isinstance(resp, dict) else []
+
+    def get_portfolio_summary(self) -> dict[str, Any]:
+        """
+        Retrieve aggregate risk statistics across all monitored companies.
+
+        Returns average score, grade distribution, and top finding criteria.
+        """
+        resp = self.get("/portfolio/summary")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_industry_benchmarks(self) -> list[dict[str, Any]]:
+        """List industry-level risk benchmark scores for comparison."""
+        resp = self.get("/benchmarks/industries")
+        return resp.get("benchmarks", []) if isinstance(resp, dict) else []
+
+    # ── Findings (enhanced) ───────────────────────────────────────────────────
+
+    def get_critical_findings(
+        self, company_id: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """Return only critical and high severity findings for a company."""
+        results: list[dict[str, Any]] = []
+        for sev in ("critical", "high"):
+            results.extend(
+                self.list_findings(company_id, severity=sev, page_size=limit)
+            )
+        return results
+
+    def list_remediated_findings(
+        self, company_id: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List findings that have been remediated / closed."""
+        resp = self.get(
+            f"/companies/{company_id}/findings",
+            params={"status": "remediated", "limit": limit},
+        )
+        return resp.get("findings", []) if isinstance(resp, dict) else []
+
+    def get_finding_detail(self, finding_id: str) -> dict[str, Any]:
+        """Retrieve full detail for a specific finding including evidence."""
+        resp = self.get(f"/findings/{finding_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_asset_findings(
+        self, asset_id: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List all findings associated with a specific asset."""
+        resp = self.get(
+            f"/assets/{asset_id}/findings",
+            params={"limit": limit},
+        )
+        return resp.get("findings", []) if isinstance(resp, dict) else []
+
+    # ── Finding criteria ──────────────────────────────────────────────────────
+
+    def list_criteria(self) -> list[dict[str, Any]]:
+        """
+        List all RiskRecon finding criteria definitions.
+
+        Each criterion has an ``id``, ``name``, ``description``,
+        ``category``, and ``severity`` range.
+        """
+        resp = self.get("/criteria")
+        return resp.get("criteria", []) if isinstance(resp, dict) else []
+
+    def get_criterion(self, criterion_id: str) -> dict[str, Any]:
+        """Retrieve the definition and remediation guidance for a specific criterion."""
+        resp = self.get(f"/criteria/{criterion_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Assets (enhanced) ─────────────────────────────────────────────────────
+
+    def get_asset(self, asset_id: str) -> dict[str, Any]:
+        """Retrieve full details for a specific discovered asset."""
+        resp = self.get(f"/assets/{asset_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_open_ports(
+        self, company_id: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List open ports detected across a company's internet-facing assets."""
+        resp = self.get(
+            f"/companies/{company_id}/assets",
+            params={"has_open_ports": True, "limit": limit},
+        )
+        return resp.get("assets", []) if isinstance(resp, dict) else []
+
+    # ── Action plans / remediation ────────────────────────────────────────────
+
+    def list_action_plans(self, company_id: str) -> list[dict[str, Any]]:
+        """List remediation action plans for a company."""
+        resp = self.get(f"/companies/{company_id}/action-plans")
+        return resp.get("action_plans", []) if isinstance(resp, dict) else []
+
+    def create_action_plan(
+        self,
+        company_id: str,
+        finding_ids: list[str],
+        due_date: str = "",
+        notes: str = "",
+    ) -> dict[str, Any]:
+        """
+        Create a remediation action plan for a set of findings.
+
+        ``due_date`` — ISO 8601 date for remediation deadline.
+        """
+        payload: dict[str, Any] = {"findings": finding_ids}
+        if due_date:
+            payload["due_date"] = due_date
+        if notes:
+            payload["notes"] = notes
+        return self.post(f"/companies/{company_id}/action-plans", json=payload)
+
+    def update_action_plan(
+        self,
+        company_id: str,
+        plan_id: str,
+        updates: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Update an action plan (due date, status, notes)."""
+        resp = self.patch(
+            f"/companies/{company_id}/action-plans/{plan_id}",
+            json=updates,
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Contacts ──────────────────────────────────────────────────────────────
+
+    def list_company_contacts(self, company_id: str) -> list[dict[str, Any]]:
+        """List security contacts on file for a monitored company."""
+        resp = self.get(f"/companies/{company_id}/contacts")
+        return resp.get("contacts", []) if isinstance(resp, dict) else []

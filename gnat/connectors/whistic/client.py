@@ -340,3 +340,171 @@ class WhisticClient(BaseClient, ConnectorMixin):
                 s.get("name", ""): s.get("score") for s in data.get("sections", [])
             },
         }
+
+    # ── Profiles (questionnaire templates) ───────────────────────────────────
+
+    def list_profiles(self) -> list[dict[str, Any]]:
+        """List available Whistic security profile templates."""
+        resp = self.get("/v1/profiles")
+        return resp.get("profiles", []) if isinstance(resp, dict) else []
+
+    def get_profile(self, profile_id: str) -> dict[str, Any]:
+        """Retrieve a specific security profile template by ID."""
+        return self.get(f"/v1/profiles/{profile_id}")
+
+    # ── Vendor management ─────────────────────────────────────────────────────
+
+    def search_vendors(self, query: str, limit: int = 50) -> list[dict[str, Any]]:
+        """Search the Whistic vendor network by name or domain."""
+        resp = self.get("/v1/vendors/search", params={"q": query, "limit": limit})
+        return resp.get("vendors", []) if isinstance(resp, dict) else []
+
+    def update_vendor(self, vendor_id: str, updates: dict[str, Any]) -> dict[str, Any]:
+        """Update vendor metadata (tier, tags, notes, etc.)."""
+        resp = self.patch(f"/v1/vendors/{vendor_id}", json=updates)
+        return resp if isinstance(resp, dict) else {}
+
+    def invite_vendor(
+        self,
+        email: str,
+        name: str = "",
+        message: str = "",
+        profile_id: str = "",
+    ) -> dict[str, Any]:
+        """
+        Invite a vendor to join your Whistic network.
+
+        An email invitation is sent to the vendor's security contact.
+        """
+        payload: dict[str, Any] = {"email": email}
+        if name:
+            payload["name"] = name
+        if message:
+            payload["message"] = message
+        if profile_id:
+            payload["profile_id"] = profile_id
+        return self.post("/v1/vendors/invite", json=payload)
+
+    def get_vendor_risk_summary(self, vendor_id: str) -> dict[str, Any]:
+        """
+        Retrieve a consolidated risk summary for a vendor.
+
+        Returns trust score, assessment completion, and section-level
+        risk breakdowns.
+        """
+        resp = self.get(f"/v1/vendors/{vendor_id}/risk-summary")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_vendor_documents(self, vendor_id: str) -> list[dict[str, Any]]:
+        """List compliance documents (SOC 2, ISO 27001, etc.) shared by a vendor."""
+        resp = self.get(f"/v1/vendors/{vendor_id}/documents")
+        return resp.get("documents", []) if isinstance(resp, dict) else []
+
+    def get_vendor_document(self, vendor_id: str, document_id: str) -> dict[str, Any]:
+        """Retrieve metadata and download URL for a specific compliance document."""
+        return self.get(f"/v1/vendors/{vendor_id}/documents/{document_id}")
+
+    def list_contacts(self, vendor_id: str) -> list[dict[str, Any]]:
+        """List security contacts associated with a vendor."""
+        resp = self.get(f"/v1/vendors/{vendor_id}/contacts")
+        return resp.get("contacts", []) if isinstance(resp, dict) else []
+
+    def add_contact(
+        self,
+        vendor_id: str,
+        name: str,
+        email: str,
+        role: str = "",
+    ) -> dict[str, Any]:
+        """Add a security contact to a vendor record."""
+        payload: dict[str, Any] = {"name": name, "email": email}
+        if role:
+            payload["role"] = role
+        return self.post(f"/v1/vendors/{vendor_id}/contacts", json=payload)
+
+    # ── Assessment lifecycle ──────────────────────────────────────────────────
+
+    def bulk_request_assessments(
+        self,
+        vendor_ids: list[str],
+        profile_id: str,
+        message: str = "",
+    ) -> list[dict[str, Any]]:
+        """
+        Send a questionnaire request to multiple vendors at once.
+
+        Returns a list of newly created assessment objects.
+        """
+        results = []
+        for vid in vendor_ids:
+            try:
+                result = self.request_assessment(vid, profile_id, message)
+                results.append(result)
+            except Exception:
+                results.append({"vendor_id": vid, "error": "request_failed"})
+        return results
+
+    def resend_assessment_request(self, assessment_id: str) -> dict[str, Any]:
+        """Resend a reminder to a vendor for a pending assessment."""
+        return self.post(f"/v1/assessments/{assessment_id}/resend")
+
+    def archive_assessment(self, assessment_id: str) -> dict[str, Any]:
+        """Archive a completed or superseded assessment."""
+        return self.post(f"/v1/assessments/{assessment_id}/archive")
+
+    def get_assessment_sections(self, assessment_id: str) -> list[dict[str, Any]]:
+        """
+        Retrieve section-level scores and responses for an assessment.
+
+        Returns a list of section dicts each containing ``name``,
+        ``score``, ``max_score``, and ``questions``.
+        """
+        resp = self.get(f"/v1/assessments/{assessment_id}/sections")
+        return resp.get("sections", []) if isinstance(resp, dict) else []
+
+    # ── Risk exceptions ───────────────────────────────────────────────────────
+
+    def list_exceptions(self, vendor_id: str) -> list[dict[str, Any]]:
+        """List accepted risk exceptions for a vendor."""
+        resp = self.get(f"/v1/vendors/{vendor_id}/exceptions")
+        return resp.get("exceptions", []) if isinstance(resp, dict) else []
+
+    def create_exception(
+        self,
+        vendor_id: str,
+        criterion: str,
+        reason: str,
+        expires_at: str = "",
+    ) -> dict[str, Any]:
+        """
+        Accept a risk exception for a specific criterion on a vendor.
+
+        ``criterion`` — name or ID of the failing control.
+        ``expires_at`` — ISO 8601 date for exception expiry (optional).
+        """
+        payload: dict[str, Any] = {"criterion": criterion, "reason": reason}
+        if expires_at:
+            payload["expires_at"] = expires_at
+        return self.post(f"/v1/vendors/{vendor_id}/exceptions", json=payload)
+
+    # ── Portfolio & reporting ─────────────────────────────────────────────────
+
+    def get_network_stats(self) -> dict[str, Any]:
+        """
+        Retrieve aggregate portfolio statistics.
+
+        Returns vendor counts by trust score tier, assessment completion
+        rates, and risk distribution across the monitored vendor network.
+        """
+        resp = self.get("/v1/network/stats")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_categories(self) -> list[dict[str, Any]]:
+        """List all available vendor risk categories."""
+        resp = self.get("/v1/categories")
+        return resp.get("categories", []) if isinstance(resp, dict) else []
+
+    def list_integrations(self) -> list[dict[str, Any]]:
+        """List configured third-party integrations (Jira, Slack, SSO, etc.)."""
+        resp = self.get("/v1/integrations")
+        return resp.get("integrations", []) if isinstance(resp, dict) else []

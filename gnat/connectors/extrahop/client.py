@@ -234,6 +234,360 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
             "stix_type": stix_dict.get("type", ""),
         }
 
+    # ── Detections (enhanced) ─────────────────────────────────────────────────
+
+    def get_detection(self, detection_id: int | str) -> dict[str, Any]:
+        """Retrieve a single detection by ID."""
+        resp = self.get(f"/api/v1/detections/{detection_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def update_detection(
+        self,
+        detection_id: int | str,
+        status: str = "",
+        assignee: str = "",
+        resolution: str = "",
+        notes: str = "",
+    ) -> dict[str, Any]:
+        """
+        Update a detection's triage status or assignee.
+
+        ``status`` options: ``"new"``, ``"in_progress"``, ``"closed"``.
+        ``resolution`` options: ``"action_taken"``, ``"no_action_taken"``,
+        ``"acknowledged"``.
+        """
+        payload: dict[str, Any] = {}
+        if status:
+            payload["status"] = status
+        if assignee:
+            payload["assignee"] = assignee
+        if resolution:
+            payload["resolution"] = resolution
+        if notes:
+            payload["notes"] = notes
+        resp = self.patch(f"/api/v1/detections/{detection_id}", json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    def search_detections(
+        self,
+        filter_body: dict[str, Any] | None = None,
+        from_time: int | None = None,
+        until_time: int | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort: list[dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Advanced detection search using the ExtraHop filter DSL.
+
+        ``filter_body`` example::
+
+            {"field": "risk_score", "operator": ">=", "operand": 70}
+
+        ``from_time`` / ``until_time`` — Unix timestamps in milliseconds.
+        """
+        payload: dict[str, Any] = {"limit": limit, "offset": offset}
+        if filter_body:
+            payload["filter"] = filter_body
+        if from_time is not None:
+            payload["from"] = from_time
+        if until_time is not None:
+            payload["until"] = until_time
+        if sort:
+            payload["sort"] = sort
+        resp = self.post("/api/v1/detections/search", json=payload)
+        return resp if isinstance(resp, list) else []
+
+    def add_detection_note(
+        self, detection_id: int | str, note: str
+    ) -> dict[str, Any]:
+        """Add an analyst note to a detection."""
+        resp = self.post(
+            f"/api/v1/detections/{detection_id}/notes",
+            json={"note": note},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def list_detection_notes(self, detection_id: int | str) -> list[dict[str, Any]]:
+        """List analyst notes attached to a detection."""
+        resp = self.get(f"/api/v1/detections/{detection_id}/notes")
+        return resp if isinstance(resp, list) else []
+
+    # ── Devices ───────────────────────────────────────────────────────────────
+
+    def get_device(self, device_id: int | str) -> dict[str, Any]:
+        """Retrieve full metadata for a specific discovered device."""
+        resp = self.get(f"/api/v1/devices/{device_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def search_devices(
+        self,
+        query: str = "",
+        active_from: int | None = None,
+        active_until: int | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """
+        Search devices by name, IP, MAC, or other attributes.
+
+        ``query`` is matched against device names, IPs, and hostnames.
+        ``active_from`` / ``active_until`` — Unix timestamps (ms) for activity window.
+        """
+        payload: dict[str, Any] = {"limit": limit, "offset": offset}
+        if query:
+            payload["search_type"] = "any"
+            payload["value"] = query
+        if active_from is not None:
+            payload["active_from"] = active_from
+        if active_until is not None:
+            payload["active_until"] = active_until
+        resp = self.post("/api/v1/devices/search", json=payload)
+        return resp if isinstance(resp, list) else []
+
+    def get_device_alerts(
+        self, device_id: int | str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """List detections involving a specific device."""
+        payload: dict[str, Any] = {
+            "limit": limit,
+            "filter": {
+                "field": "participants",
+                "operator": "includes",
+                "operand": {"type": "device", "id": int(device_id)},
+            },
+        }
+        resp = self.post("/api/v1/detections/search", json=payload)
+        return resp if isinstance(resp, list) else []
+
+    def get_device_activity(
+        self,
+        device_id: int | str,
+        from_time: int | None = None,
+        until_time: int | None = None,
+    ) -> dict[str, Any]:
+        """
+        Retrieve protocol activity summary for a device.
+
+        ``from_time`` / ``until_time`` — Unix timestamps in milliseconds.
+        """
+        params: dict[str, Any] = {}
+        if from_time is not None:
+            params["from"] = from_time
+        if until_time is not None:
+            params["until"] = until_time
+        resp = self.get(f"/api/v1/devices/{device_id}/activity", params=params)
+        return resp if isinstance(resp, dict) else {}
+
+    def list_device_peers(
+        self, device_id: int | str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """List peer devices that communicated with a specific device."""
+        resp = self.get(f"/api/v1/devices/{device_id}/peers", params={"limit": limit})
+        return resp if isinstance(resp, list) else []
+
+    # ── Custom device groups ──────────────────────────────────────────────────
+
+    def list_custom_devices(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List all custom device groups defined in ExtraHop."""
+        resp = self.get("/api/v1/customdevices", params={"limit": limit})
+        return resp if isinstance(resp, list) else []
+
+    def create_custom_device(
+        self,
+        name: str,
+        criteria: list[dict[str, Any]],
+        description: str = "",
+    ) -> dict[str, Any]:
+        """
+        Create a custom device group.
+
+        ``criteria`` example::
+
+            [{"ipaddr": "10.0.1.0/24"},
+             {"ipaddr": "10.0.2.5"}]
+        """
+        payload: dict[str, Any] = {"name": name, "criteria": criteria}
+        if description:
+            payload["description"] = description
+        resp = self.post("/api/v1/customdevices", json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Network locality ──────────────────────────────────────────────────────
+
+    def list_network_localities(self) -> list[dict[str, Any]]:
+        """List network locality entries (CIDR → label mappings)."""
+        resp = self.get("/api/v1/networklocalities")
+        return resp if isinstance(resp, list) else []
+
+    def create_network_locality(
+        self,
+        cidr: str,
+        label: str,
+        description: str = "",
+    ) -> dict[str, Any]:
+        """
+        Define a network locality (label a CIDR block).
+
+        Useful for tagging internal subnets, DMZs, or cloud VPCs.
+        """
+        payload: dict[str, Any] = {"network": cidr, "name": label}
+        if description:
+            payload["description"] = description
+        resp = self.post("/api/v1/networklocalities", json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Records (advanced) ────────────────────────────────────────────────────
+
+    def search_records_typed(
+        self,
+        record_types: list[str] | None = None,
+        filter_body: dict[str, Any] | None = None,
+        from_time: int | None = None,
+        until_time: int | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search transaction records with explicit type filtering.
+
+        ``record_types`` example: ``["~ssl", "~http", "~dns"]``.
+        ``filter_body`` — ExtraHop record filter DSL dict.
+        """
+        payload: dict[str, Any] = {"limit": limit}
+        if record_types:
+            payload["types"] = record_types
+        if filter_body:
+            payload["filter"] = filter_body
+        if from_time is not None:
+            payload["from"] = from_time
+        if until_time is not None:
+            payload["until"] = until_time
+        resp = self.post("/api/v1/records/search", json=payload)
+        return resp.get("records", []) if isinstance(resp, dict) else []
+
+    # ── Metrics ───────────────────────────────────────────────────────────────
+
+    def query_metrics(
+        self,
+        metric_category: str,
+        object_type: str,
+        object_ids: list[int],
+        metric_specs: list[dict[str, Any]],
+        from_time: int | None = None,
+        until_time: int | None = None,
+        cycle: str = "auto",
+    ) -> dict[str, Any]:
+        """
+        Query ExtraHop wire-data metrics.
+
+        Parameters
+        ----------
+        metric_category : str
+            Metric category, e.g. ``"net"``, ``"http"``, ``"ssl"``.
+        object_type : str
+            ``"device"``, ``"network"``, ``"application"``, ``"device_group"``.
+        object_ids : list of int
+            IDs of the objects to query metrics for.
+        metric_specs : list of dict
+            List of ``{"name": "..."}`` metric specification dicts.
+        cycle : str
+            Time granularity: ``"auto"``, ``"1sec"``, ``"30sec"``, ``"5min"``, ``"1hr"``.
+        """
+        payload: dict[str, Any] = {
+            "metric_category": metric_category,
+            "object_type": object_type,
+            "object_ids": object_ids,
+            "metric_specs": metric_specs,
+            "cycle": cycle,
+        }
+        if from_time is not None:
+            payload["from"] = from_time
+        if until_time is not None:
+            payload["until"] = until_time
+        resp = self.post("/api/v1/metrics", json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Watchlists ────────────────────────────────────────────────────────────
+
+    def list_watchlists(self) -> list[dict[str, Any]]:
+        """List all device watchlists defined in ExtraHop."""
+        resp = self.get("/api/v1/watchlists")
+        return resp if isinstance(resp, list) else []
+
+    def create_watchlist(
+        self,
+        name: str,
+        description: str = "",
+        device_ids: list[int] | None = None,
+    ) -> dict[str, Any]:
+        """Create a device watchlist."""
+        payload: dict[str, Any] = {"name": name}
+        if description:
+            payload["description"] = description
+        if device_ids:
+            payload["assignments"] = device_ids
+        resp = self.post("/api/v1/watchlists", json=payload)
+        return resp if isinstance(resp, dict) else {}
+
+    def add_devices_to_watchlist(
+        self, watchlist_id: int | str, device_ids: list[int]
+    ) -> dict[str, Any]:
+        """Add devices to an existing watchlist."""
+        resp = self.post(
+            f"/api/v1/watchlists/{watchlist_id}/devices",
+            json={"assign": device_ids},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ── Appliance info & administration ──────────────────────────────────────
+
+    def get_appliance_info(self) -> dict[str, Any]:
+        """Retrieve ExtraHop appliance metadata, firmware version, and health."""
+        resp = self.get("/api/v1/extrahop")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_users(self) -> list[dict[str, Any]]:
+        """List all user accounts on the ExtraHop appliance."""
+        resp = self.get("/api/v1/users")
+        return resp if isinstance(resp, list) else []
+
+    def list_api_keys(self) -> list[dict[str, Any]]:
+        """List API keys (excludes secret values)."""
+        resp = self.get("/api/v1/apikeys")
+        return resp if isinstance(resp, list) else []
+
+    def get_audit_log(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[dict[str, Any]]:
+        """Retrieve the ExtraHop audit log (admin actions, config changes)."""
+        resp = self.get(
+            "/api/v1/auditlog",
+            params={"limit": limit, "offset": offset},
+        )
+        return resp if isinstance(resp, list) else []
+
+    # ── Threat intelligence ───────────────────────────────────────────────────
+
+    def bulk_threat_lookup(self, observables: list[str]) -> list[dict[str, Any]]:
+        """
+        Look up multiple threat observables in a single request.
+
+        ``observables`` — list of IPs, domains, or URLs to check.
+        Returns a list of threat match results, one per observable.
+        """
+        resp = self.post("/api/v1/threats/search", json={"observables": observables})
+        return resp.get("results", []) if isinstance(resp, dict) else []
+
+    def get_threat_collection(self, collection_id: str) -> dict[str, Any]:
+        """Retrieve a configured ExtraHop threat intelligence collection."""
+        resp = self.get(f"/api/v1/threatcollections/{collection_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_threat_collections(self) -> list[dict[str, Any]]:
+        """List all configured threat intelligence collections."""
+        resp = self.get("/api/v1/threatcollections")
+        return resp if isinstance(resp, list) else []
+
     def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
         now = _now_ts()
         det_id = str(detection.get("id", ""))
