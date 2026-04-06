@@ -25,9 +25,12 @@ Usage::
     from gnat.investigations.workspace import materialize
 
     builder = InvestigationBuilder({
-        "xsoar":       xsoar_client,
-        "greymatter":  gm_client,
-        "threatq":     tq_client,
+        "xsoar":             xsoar_client,
+        "greymatter":        gm_client,
+        "threatq":           tq_client,
+        "thehive":           hive_client,
+        "servicenow_secops": sn_client,
+        "cortex_xdr":        xdr_client,
     })
 
     graph = builder.build(
@@ -92,7 +95,8 @@ class InvestigationBuilder:
         implements the :class:`~gnat.connectors.base_connector.ConnectorMixin`
         interface (or a subset of it) is accepted.  Platform names should
         match those expected by the normaliser: ``"xsoar"``, ``"greymatter"``,
-        ``"threatq"``.
+        ``"threatq"``, ``"thehive"``, ``"servicenow_secops"``,
+        ``"cortex_xdr"``.
     """
 
     def __init__(self, connectors: dict[str, Any]) -> None:
@@ -224,6 +228,12 @@ class InvestigationBuilder:
             self._expand_gm_incident(graph, node, connector, inc_id)
         elif platform == "threatq":
             self._expand_tq_event(graph, node, connector, inc_id)
+        elif platform == "thehive":
+            self._expand_hive_case(graph, node, connector, inc_id)
+        elif platform == "servicenow_secops":
+            self._expand_sn_secops_incident(graph, node, connector, inc_id)
+        elif platform == "cortex_xdr":
+            self._expand_xdr_incident(graph, node, connector, inc_id)
 
     def _expand_xsoar_incident(
         self,
@@ -291,6 +301,69 @@ class InvestigationBuilder:
         if hasattr(connector, "get_event_adversaries"):
             for r in _safe_call(connector.get_event_adversaries, event_id):
                 child = normalize(parent.platform, "adversary", r)
+                if child:
+                    _add_node(graph, child)
+                    _add_part_of(graph, child, parent)
+
+    def _expand_hive_case(
+        self,
+        graph: EvidenceGraph,
+        parent: EvidenceNode,
+        connector: Any,
+        case_id: str,
+    ) -> None:
+        if hasattr(connector, "get_case_observables"):
+            for r in _safe_call(connector.get_case_observables, case_id):
+                child = normalize(parent.platform, "observable", r)
+                if child:
+                    _add_node(graph, child)
+                    _add_part_of(graph, child, parent)
+
+        if hasattr(connector, "get_case_tasks"):
+            for r in _safe_call(connector.get_case_tasks, case_id):
+                child = normalize(parent.platform, "task", r)
+                if child:
+                    _add_node(graph, child)
+                    _add_part_of(graph, child, parent)
+
+    def _expand_sn_secops_incident(
+        self,
+        graph: EvidenceGraph,
+        parent: EvidenceNode,
+        connector: Any,
+        incident_sys_id: str,
+    ) -> None:
+        if hasattr(connector, "get_incident_tasks"):
+            for r in _safe_call(connector.get_incident_tasks, incident_sys_id):
+                child = normalize(parent.platform, "task", r)
+                if child:
+                    _add_node(graph, child)
+                    _add_part_of(graph, child, parent)
+
+        if hasattr(connector, "get_incident_observables"):
+            for r in _safe_call(connector.get_incident_observables, incident_sys_id):
+                child = normalize(parent.platform, "observable", r)
+                if child:
+                    _add_node(graph, child)
+                    _add_part_of(graph, child, parent)
+
+    def _expand_xdr_incident(
+        self,
+        graph: EvidenceGraph,
+        parent: EvidenceNode,
+        connector: Any,
+        incident_id: str,
+    ) -> None:
+        if hasattr(connector, "get_incident_alerts"):
+            for r in _safe_call(connector.get_incident_alerts, incident_id):
+                child = normalize(parent.platform, "alert", r)
+                if child:
+                    _add_node(graph, child)
+                    _add_part_of(graph, child, parent)
+
+        if hasattr(connector, "get_incident_artifacts"):
+            for r in _safe_call(connector.get_incident_artifacts, incident_id):
+                child = normalize(parent.platform, "artifact", r)
                 if child:
                     _add_node(graph, child)
                     _add_part_of(graph, child, parent)

@@ -447,24 +447,390 @@ def _tq_adversary(platform: str, raw: dict[str, Any]) -> EvidenceNode:
     )
 
 
+# ── TheHive ────────────────────────────────────────────────────────────────
+
+def _hive_case(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    src_id   = str(raw.get("_id", raw.get("id", "")))
+    title    = raw.get("title", "")
+    desc     = raw.get("description", "")
+    created  = raw.get("_createdAt", raw.get("startDate", ""))
+    modified = raw.get("_updatedAt", raw.get("endDate", created))
+    blob     = f"{title} {desc}"
+    campaign_labels = [t for t in raw.get("tags", []) if isinstance(t, str)]
+    ticket_refs = _extract_tickets(blob)
+
+    stix: dict[str, Any] = {
+        "type":                "observed-data",
+        "id":                  f"observed-data--hive-{src_id}",
+        "created":             created,
+        "modified":            modified,
+        "first_observed":      created,
+        "last_observed":       modified,
+        "number_observed":     1,
+        "object_refs":         [],
+        "name":                title,
+        "description":         desc,
+        "x_hive_case_id":      src_id,
+        "x_hive_status":       raw.get("status", ""),
+        "x_hive_severity":     raw.get("severity", 2),
+        "x_hive_assigned_to":  raw.get("assignee", ""),
+        "x_source_platform":   platform,
+    }
+    return EvidenceNode(
+        node_id         = _node_id(platform, NodeType.INCIDENT, src_id),
+        node_type       = NodeType.INCIDENT,
+        platform        = platform,
+        source_id       = src_id,
+        stix            = stix,
+        raw             = raw,
+        ioc_values      = _extract_iocs(blob),
+        campaign_labels = campaign_labels,
+        ticket_refs     = ticket_refs,
+        time_window     = (created, modified) if created else None,
+    )
+
+
+def _hive_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    src_id    = str(raw.get("_id", raw.get("id", "")))
+    value     = raw.get("data", "")
+    data_type = raw.get("dataType", "unknown")
+    created   = raw.get("_createdAt", "")
+    modified  = raw.get("_updatedAt", created)
+
+    _pattern_map = {
+        "ip":       f"[ipv4-addr:value = '{value}']",
+        "domain":   f"[domain-name:value = '{value}']",
+        "url":      f"[url:value = '{value}']",
+        "hash":     f"[file:hashes.MD5 = '{value}']",
+        "mail":     f"[email-addr:value = '{value}']",
+        "hostname": f"[domain-name:value = '{value}']",
+        "filename": f"[file:name = '{value}']",
+    }
+    pattern = _pattern_map.get(data_type, f"[unknown:value = '{value}']")
+
+    stix: dict[str, Any] = {
+        "type":              "indicator",
+        "id":                f"indicator--hive-obs-{src_id}",
+        "name":              value,
+        "pattern":           pattern,
+        "pattern_type":      "stix",
+        "created":           created,
+        "modified":          modified,
+        "indicator_types":   [data_type],
+        "x_hive_ioc":        raw.get("ioc", False),
+        "x_hive_tlp":        raw.get("tlp", 1),
+        "x_source_platform": platform,
+    }
+    return EvidenceNode(
+        node_id     = _node_id(platform, NodeType.OBSERVABLE, src_id),
+        node_type   = NodeType.OBSERVABLE,
+        platform    = platform,
+        source_id   = src_id,
+        stix        = stix,
+        raw         = raw,
+        ioc_values  = [value] if value else [],
+        time_window = (created, modified) if created else None,
+    )
+
+
+def _hive_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    src_id   = str(raw.get("_id", raw.get("id", "")))
+    title    = raw.get("title", raw.get("name", ""))
+    created  = raw.get("_createdAt", "")
+    modified = raw.get("_updatedAt", created)
+
+    stix: dict[str, Any] = {
+        "type":               "note",
+        "id":                 f"note--hive-task-{src_id}",
+        "created":            created,
+        "modified":           modified,
+        "abstract":           title,
+        "content":            raw.get("description", ""),
+        "x_hive_task_status": raw.get("status", ""),
+        "x_hive_assignee":    raw.get("assignee", ""),
+        "x_source_platform":  platform,
+    }
+    return EvidenceNode(
+        node_id    = _node_id(platform, NodeType.TASK, src_id),
+        node_type  = NodeType.TASK,
+        platform   = platform,
+        source_id  = src_id,
+        stix       = stix,
+        raw        = raw,
+        time_window = (created, modified) if created else None,
+    )
+
+
+# ── ServiceNow SecOps ─────────────────────────────────────────────────────
+
+def _sn_secops_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    src_id   = str(raw.get("sys_id", ""))
+    title    = raw.get("short_description", "")
+    desc     = raw.get("description", "")
+    created  = raw.get("sys_created_on", "")
+    modified = raw.get("sys_updated_on", created)
+    blob     = f"{title} {desc} {raw.get('work_notes', '')}"
+    campaign_labels = [
+        raw.get("category", ""),
+        raw.get("subcategory", ""),
+    ]
+    campaign_labels = [c for c in campaign_labels if c]
+    ticket_refs = _extract_tickets(blob)
+    # Extract linked Jira/ticket from correlation_id or correlation_display
+    corr = raw.get("correlation_id", "") or raw.get("correlation_display", "")
+    if corr:
+        ticket_refs = list(dict.fromkeys(ticket_refs + [corr]))
+
+    stix: dict[str, Any] = {
+        "type":                   "observed-data",
+        "id":                     f"observed-data--sn-{src_id}",
+        "created":                created,
+        "modified":               modified,
+        "first_observed":         created,
+        "last_observed":          modified,
+        "number_observed":        1,
+        "object_refs":            [],
+        "name":                   title,
+        "description":            desc,
+        "x_sn_sys_id":            src_id,
+        "x_sn_number":            raw.get("number", ""),
+        "x_sn_state":             raw.get("state", {}).get("value", raw.get("state", "")),
+        "x_sn_priority":          raw.get("priority", {}).get("value", raw.get("priority", "")),
+        "x_sn_assigned_to":       raw.get("assigned_to", {}).get("display_value", ""),
+        "x_sn_category":          raw.get("category", ""),
+        "x_source_platform":      platform,
+    }
+    return EvidenceNode(
+        node_id         = _node_id(platform, NodeType.INCIDENT, src_id),
+        node_type       = NodeType.INCIDENT,
+        platform        = platform,
+        source_id       = src_id,
+        stix            = stix,
+        raw             = raw,
+        ioc_values      = _extract_iocs(blob),
+        campaign_labels = campaign_labels,
+        ticket_refs     = ticket_refs,
+        time_window     = (created, modified) if created else None,
+    )
+
+
+def _sn_secops_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    src_id   = str(raw.get("sys_id", ""))
+    title    = raw.get("short_description", raw.get("name", ""))
+    created  = raw.get("sys_created_on", "")
+    modified = raw.get("sys_updated_on", created)
+
+    stix: dict[str, Any] = {
+        "type":              "note",
+        "id":                f"note--sn-task-{src_id}",
+        "created":           created,
+        "modified":          modified,
+        "abstract":          title,
+        "content":           raw.get("description", raw.get("work_notes", "")),
+        "x_sn_task_state":   raw.get("state", {}).get("value", raw.get("state", "")),
+        "x_source_platform": platform,
+    }
+    return EvidenceNode(
+        node_id    = _node_id(platform, NodeType.TASK, src_id),
+        node_type  = NodeType.TASK,
+        platform   = platform,
+        source_id  = src_id,
+        stix       = stix,
+        raw        = raw,
+        time_window = (created, modified) if created else None,
+    )
+
+
+def _sn_secops_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    src_id    = str(raw.get("sys_id", ""))
+    value     = raw.get("value", "")
+    obs_type  = raw.get("type", {}).get("display_value", raw.get("type", "unknown"))
+    created   = raw.get("sys_created_on", "")
+    modified  = raw.get("sys_updated_on", created)
+
+    _pattern_map: dict[str, str] = {
+        "IP Address":  f"[ipv4-addr:value = '{value}']",
+        "Domain":      f"[domain-name:value = '{value}']",
+        "URL":         f"[url:value = '{value}']",
+        "File Hash":   f"[file:hashes.MD5 = '{value}']",
+        "Email":       f"[email-addr:value = '{value}']",
+    }
+    pattern = _pattern_map.get(obs_type, f"[unknown:value = '{value}']")
+
+    stix: dict[str, Any] = {
+        "type":              "indicator",
+        "id":                f"indicator--sn-obs-{src_id}",
+        "name":              value,
+        "pattern":           pattern,
+        "pattern_type":      "stix",
+        "created":           created,
+        "modified":          modified,
+        "indicator_types":   [obs_type],
+        "x_sn_obs_type":     obs_type,
+        "x_source_platform": platform,
+    }
+    return EvidenceNode(
+        node_id     = _node_id(platform, NodeType.OBSERVABLE, src_id),
+        node_type   = NodeType.OBSERVABLE,
+        platform    = platform,
+        source_id   = src_id,
+        stix        = stix,
+        raw         = raw,
+        ioc_values  = [value] if value else [],
+        time_window = (created, modified) if created else None,
+    )
+
+
+# ── Cortex XDR ────────────────────────────────────────────────────────────
+
+def _xdr_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    inc_id   = str(raw.get("incident_id", ""))
+    name     = raw.get("incident_name", f"XDR Incident {inc_id}")
+    desc     = raw.get("description", "")
+    ts       = raw.get("creation_time", "")
+    mod_ts   = raw.get("modification_time", ts)
+    hosts    = raw.get("hosts", [])
+    users    = raw.get("users", [])
+    blob     = f"{name} {desc}"
+
+    stix: dict[str, Any] = {
+        "type":              "observed-data",
+        "id":                f"observed-data--xdr-{inc_id}",
+        "created":           str(ts),
+        "modified":          str(mod_ts),
+        "first_observed":    str(ts),
+        "last_observed":     str(mod_ts),
+        "number_observed":   1,
+        "object_refs":       [],
+        "name":              name,
+        "description":       desc,
+        "x_xdr_incident_id": inc_id,
+        "x_xdr_severity":    raw.get("severity", ""),
+        "x_xdr_status":      raw.get("status", ""),
+        "x_xdr_alert_count": raw.get("alert_count", 0),
+        "x_source_platform": platform,
+    }
+    return EvidenceNode(
+        node_id     = _node_id(platform, NodeType.INCIDENT, inc_id),
+        node_type   = NodeType.INCIDENT,
+        platform    = platform,
+        source_id   = inc_id,
+        stix        = stix,
+        raw         = raw,
+        ioc_values  = _extract_iocs(blob),
+        hostnames   = [str(h) for h in hosts if h],
+        usernames   = [str(u) for u in users if u],
+        time_window = (str(ts), str(mod_ts)) if ts else None,
+    )
+
+
+def _xdr_alert(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    alert_id = str(raw.get("alert_id", ""))
+    name     = raw.get("name", raw.get("alert_name", f"XDR Alert {alert_id}"))
+    ts       = raw.get("detection_timestamp", "")
+    host     = raw.get("host_name", "")
+    remote_ip = raw.get("remote_ip", "")
+
+    stix: dict[str, Any] = {
+        "type":              "observed-data",
+        "id":                f"observed-data--xdr-alert-{alert_id}",
+        "created":           str(ts),
+        "modified":          str(ts),
+        "first_observed":    str(ts),
+        "last_observed":     str(ts),
+        "number_observed":   1,
+        "object_refs":       [],
+        "name":              name,
+        "x_xdr_alert_id":    alert_id,
+        "x_xdr_severity":    raw.get("severity", ""),
+        "x_xdr_category":    raw.get("category", ""),
+        "x_source_platform": platform,
+    }
+    return EvidenceNode(
+        node_id     = _node_id(platform, NodeType.FINDING, f"alert-{alert_id}"),
+        node_type   = NodeType.FINDING,
+        platform    = platform,
+        source_id   = f"alert-{alert_id}",
+        stix        = stix,
+        raw         = raw,
+        ioc_values  = [remote_ip] if remote_ip else [],
+        hostnames   = [host] if host else [],
+        time_window = (str(ts), str(ts)) if ts else None,
+    )
+
+
+def _xdr_artifact(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    src_id = str(raw.get("alert_id", raw.get("file_sha256", raw.get("network_remote_ip", ""))))
+    artifact_type = "network" if "network_remote_ip" in raw else "file"
+    value = raw.get("network_remote_ip", "") or raw.get("file_sha256", "")
+    name = raw.get("file_name", "") or raw.get("network_remote_domain", value)
+
+    stix: dict[str, Any] = {
+        "type":              "indicator",
+        "id":                f"indicator--xdr-artifact-{src_id[:40]}",
+        "name":              name or value,
+        "pattern":           (
+            f"[ipv4-addr:value = '{value}']" if artifact_type == "network"
+            else f"[file:hashes.'SHA-256' = '{value}']"
+        ),
+        "pattern_type":      "stix",
+        "created":           "",
+        "modified":          "",
+        "indicator_types":   ["malicious-activity"],
+        "x_source_platform": platform,
+    }
+    return EvidenceNode(
+        node_id    = _node_id(platform, NodeType.ARTIFACT, f"artifact-{src_id[:40]}"),
+        node_type  = NodeType.ARTIFACT,
+        platform   = platform,
+        source_id  = f"artifact-{src_id[:40]}",
+        stix       = stix,
+        raw        = raw,
+        ioc_values = [value] if value else [],
+    )
+
+
 # ── Public dispatcher ──────────────────────────────────────────────────────
 
 _DISPATCH: dict[tuple[str, str], Any] = {
-    ("xsoar",       "incident"):       _xsoar_incident,
-    ("xsoar",       "indicator"):      _xsoar_indicator,
-    ("xsoar",       "alert"):          _xsoar_alert,
-    ("xsoar",       "task"):           _xsoar_task,
-    ("xsoar",       "timeline"):       _xsoar_timeline,
-    ("greymatter",  "incident"):       _gm_incident,
-    ("greymatter",  "observable"):     _gm_observable,
-    ("greymatter",  "task"):           _gm_task,
-    ("threatq",     "event"):          _tq_event,
-    ("threatq",     "indicator"):      _tq_indicator,
-    ("threatq",     "adversary"):      _tq_adversary,
-    # Aliases
-    ("xsoar",       "observed-data"):  _xsoar_incident,
-    ("greymatter",  "observed-data"):  _gm_incident,
-    ("threatq",     "observed-data"):  _tq_event,
+    # XSOAR
+    ("xsoar",             "incident"):       _xsoar_incident,
+    ("xsoar",             "indicator"):      _xsoar_indicator,
+    ("xsoar",             "alert"):          _xsoar_alert,
+    ("xsoar",             "task"):           _xsoar_task,
+    ("xsoar",             "timeline"):       _xsoar_timeline,
+    # GreyMatter
+    ("greymatter",        "incident"):       _gm_incident,
+    ("greymatter",        "observable"):     _gm_observable,
+    ("greymatter",        "task"):           _gm_task,
+    # ThreatQ
+    ("threatq",           "event"):          _tq_event,
+    ("threatq",           "indicator"):      _tq_indicator,
+    ("threatq",           "adversary"):      _tq_adversary,
+    # TheHive
+    ("thehive",           "case"):           _hive_case,
+    ("thehive",           "incident"):       _hive_case,
+    ("thehive",           "observable"):     _hive_observable,
+    ("thehive",           "task"):           _hive_task,
+    # ServiceNow SecOps
+    ("servicenow_secops", "incident"):       _sn_secops_incident,
+    ("servicenow_secops", "task"):           _sn_secops_task,
+    ("servicenow_secops", "observable"):     _sn_secops_observable,
+    # Cortex XDR
+    ("cortex_xdr",        "incident"):       _xdr_incident,
+    ("cortex_xdr",        "alert"):          _xdr_alert,
+    ("cortex_xdr",        "artifact"):       _xdr_artifact,
+    # Aliases — "observed-data" → incident normaliser for each platform
+    ("xsoar",             "observed-data"):  _xsoar_incident,
+    ("greymatter",        "observed-data"):  _gm_incident,
+    ("threatq",           "observed-data"):  _tq_event,
+    ("thehive",           "observed-data"):  _hive_case,
+    ("servicenow_secops", "observed-data"):  _sn_secops_incident,
+    ("cortex_xdr",        "observed-data"):  _xdr_incident,
+    # indicator alias for platforms that call it differently
+    ("thehive",           "indicator"):      _hive_observable,
+    ("servicenow_secops", "indicator"):      _sn_secops_observable,
+    ("cortex_xdr",        "indicator"):      _xdr_alert,
 }
 
 
@@ -482,7 +848,8 @@ def normalize(
     Parameters
     ----------
     platform : str
-        Connector name (``"xsoar"``, ``"greymatter"``, ``"threatq"``).
+        Connector name (``"xsoar"``, ``"greymatter"``, ``"threatq"``,
+        ``"thehive"``, ``"servicenow_secops"``, ``"cortex_xdr"``).
     record_type : str
         Platform record category (``"incident"``, ``"indicator"``,
         ``"observable"``, ``"alert"``, ``"task"``, ``"event"``, …).

@@ -294,6 +294,73 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
+    # ── Investigation sub-API ──────────────────────────────────────────────
+
+    def get_incident_alerts(self, incident_id: str) -> list[dict[str, Any]]:
+        """
+        Return the alerts that belong to a Cortex XDR incident.
+
+        Calls ``get_incident_extra_data`` and extracts the ``alerts`` list
+        from the enriched response.
+
+        Parameters
+        ----------
+        incident_id : str
+            Cortex XDR incident ID.
+        """
+        extra = self.get_incident_extra_data(incident_id)
+        alerts = extra.get("alerts", {})
+        if isinstance(alerts, dict):
+            return alerts.get("data", [])
+        if isinstance(alerts, list):
+            return alerts
+        return []
+
+    def get_incident_artifacts(self, incident_id: str) -> list[dict[str, Any]]:
+        """
+        Return network / file artifacts observed in a Cortex XDR incident.
+
+        Extracts ``network_artifacts`` and ``file_artifacts`` from the
+        enriched incident response and merges them into a single list.
+
+        Parameters
+        ----------
+        incident_id : str
+            Cortex XDR incident ID.
+        """
+        extra = self.get_incident_extra_data(incident_id)
+        artifacts: list[dict[str, Any]] = []
+        for key in ("network_artifacts", "file_artifacts"):
+            bucket = extra.get(key, {})
+            if isinstance(bucket, dict):
+                artifacts.extend(bucket.get("data", []))
+            elif isinstance(bucket, list):
+                artifacts.extend(bucket)
+        return artifacts
+
+    def search_indicators_by_value(self, value: str) -> list[dict[str, Any]]:
+        """
+        Search XDR/XSIAM threat indicators by exact value.
+
+        Parameters
+        ----------
+        value : str
+            Indicator value (IP, domain, hash, etc.) to search for.
+        """
+        resp = self.post(
+            "/public_api/v1/indicators/",
+            json={
+                "request_data": {
+                    "filters": [
+                        {"field": "indicator_value", "operator": "eq", "value": value}
+                    ],
+                    "page_size": 100,
+                    "page_number": 0,
+                }
+            },
+        )
+        return resp.get("reply", {}).get("indicators", []) if isinstance(resp, dict) else []
+
     def get_indicators(
         self,
         ioc_type: str | None = None,
