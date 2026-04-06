@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A production-ready Python library for unified threat intelligence operations across 99 security platforms.
+**GNAT's Not Another TIP** — A production-ready Python library for unified cyber threat intelligence and management operations across 99 security platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
