@@ -8,7 +8,7 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 
 ---
 
-## [Unreleased]
+## [1.4.0]
 
 ### Added — Analysis Layer (Phase 0 + 1 + 2)
 
