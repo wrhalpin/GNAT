@@ -60,3 +60,7 @@ view.to_excel("intel.xlsx")             # Excel / Power BI
 - [Explanation: Tabular Visualization](../explanation/architecture/adrs/0008-visualization-tabular.md)
 - [Explanation: Graph Visualization](../explanation/architecture/adrs/0009-visualization-graph.md)
 - [Explanation: Grafana vs Power BI](../explanation/architecture/adrs/0010-visualization-grafana-vs-power-bi.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

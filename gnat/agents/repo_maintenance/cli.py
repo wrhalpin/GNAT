@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Optional lightweight CLI wrapper for phased repo maintenance runs."""
 
 from __future__ import annotations

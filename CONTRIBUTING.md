@@ -207,3 +207,7 @@ Before opening a PR:
 - [ ] `config/config.ini.example` updated if new config keys added
 - [ ] `gnat/__init__.py` updated if new public symbols added
 - [ ] `make lint` and `make typecheck` clean (or known suppressions documented)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -27,3 +27,7 @@ Overrideable via `--auth` flag.
 Write-classified methods are flagged `dangerous: true` in the YAML. The generated
 Python script calls `ConnectorMixin.call(method, allow_write=False)` by default —
 XSOAR operators must explicitly set `allow_write=True` per-command.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 from gnat.agents.secrets.hygiene.duplicate_detector import DuplicateSecretDetector
 from gnat.agents.secrets.hygiene.leak_scanner import SecretLeakScanner
 from gnat.agents.secrets.hygiene.unsafe_secrets import UnsafeSecretAnalyzer

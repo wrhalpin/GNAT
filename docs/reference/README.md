@@ -10,3 +10,7 @@ Precise technical details for configuration syntax and other lookup material.
 
 > **Diataxis note:** Reference docs are information-oriented — they describe things exactly as they are.
 > For step-by-step instructions, see the [How-to guides](../how-to/README.md).
+
+---
+
+*Licensed under the Apache License, Version 2.0*

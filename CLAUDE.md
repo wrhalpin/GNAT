@@ -433,3 +433,7 @@ The Claude model defaults to `claude-sonnet-4-6`. When modifying AI agent code, 
 - Do not skip `CHANGELOG.md` updates for user-visible changes.
 - Do not commit credentials or real API keys — only example values in `config/config.ini.example`.
 - Do not add optional feature code to core imports — use the extras groups pattern.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

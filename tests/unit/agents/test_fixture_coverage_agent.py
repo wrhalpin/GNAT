@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 from pathlib import Path
 
 from gnat.agents.quality.fixture_coverage import FixtureCoverageAgent

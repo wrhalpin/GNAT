@@ -41,3 +41,7 @@ original reference passed to `add()` is not the same object as
 `ws.objects[id]`. All enrichment strategies (`merge_extensions`,
 `tag_only`) must operate on `self.objects.get(original.id, original)`,
 not on `original` directly.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

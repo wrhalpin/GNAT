@@ -21,3 +21,7 @@ column definitions across screens and provides a typed `selected_job_id()` helpe
 The Query screen works without a Claude API key (falls back to builtin NLP parser).
 The Library and Scheduler screens work without a Research Library or active scheduler
 (they render empty tables with a status bar message).
+
+---
+
+*Licensed under the Apache License, Version 2.0*

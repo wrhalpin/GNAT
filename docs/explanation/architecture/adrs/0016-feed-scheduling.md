@@ -116,3 +116,7 @@ for status in scheduler.statuses():
     if not status["is_healthy"]:
         print(f"UNHEALTHY: {status['job_id']} — {status['last_run_status']}")
 ```
+
+---
+
+*Licensed under the Apache License, Version 2.0*

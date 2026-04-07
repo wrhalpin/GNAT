@@ -30,3 +30,7 @@ the wire format valid.
 Returns the most specific ORM class based on `type` field. Unknown types
 return bare `STIXBase`. The `_from_dict` helper in `workspace.py` uses
 a hardcoded map — update it when adding new ORM types.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 from gnat.agents.secrets.broker import SecretsBroker
 from gnat.agents.secrets.exceptions import SecretPolicyError
 from gnat.agents.secrets.models import SecretGetRequest, SecretPurpose, SecretPutRequest, SecretRef

@@ -19,3 +19,7 @@ When reviewing PRs in this repository, prioritize:
 5. **Maintenance bot expectations**
    - Bot-authored PRs should stay draft until a human reviewer is satisfied.
    - Prefer actionable comments that reference the concrete file and likely regression mode.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -30,3 +30,7 @@ as domains.
 `PlainTextReader` strips `[.]`, `hxxp://`, `hxxps://` before
 classification. Connectors receiving IOC values from the ingestion
 pipeline will see clean values.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

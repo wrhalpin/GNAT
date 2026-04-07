@@ -110,3 +110,7 @@ See `config/config.ini.example` for the full list of connector keys.
 
 - [How-to: Connect to Platforms](../how-to/connect-to-platforms.md)
 - `config/config.ini.example`
+
+---
+
+*Licensed under the Apache License, Version 2.0*

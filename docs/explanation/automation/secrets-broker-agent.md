@@ -37,3 +37,7 @@ This scaffold introduces a new `gnat/agents/secrets/` family designed for:
 - rotation flows
 - connector post-rotation verification
 - richer CyberArk account workflows
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -62,3 +62,7 @@ stored as `stix_bundle_json` in the report row and the STIX Report SDO
 ID is written to `stix_report_ref`. Downstream dissemination consumers
 poll for rows where `stix_report_ref IS NOT NULL` and status is
 PUBLISHED.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

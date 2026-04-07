@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Repository-maintenance helpers for GNAT connector compatibility work."""
 
 from gnat.agents.repo_maintenance.discovery import DiscoveryEngine

@@ -21,3 +21,7 @@ critical for MSP deployments.
 **CLI:**
 `gnat tenant list/create/info/workspaces/delete` — all standard CRUD; `--yes` flag
 required for destructive operations.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

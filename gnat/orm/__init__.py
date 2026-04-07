@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """gnat.orm — STIX 2.1-compatible ORM domain objects."""
 
 from gnat.orm.attack_pattern import AttackPattern

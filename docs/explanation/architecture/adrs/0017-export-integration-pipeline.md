@@ -153,3 +153,7 @@ scheduler.start(run_immediately=True)   # backfill on startup
 Netskope CE's sharing rules then push the received indicators to tenant URL/domain/IP
 lists, which push to perimeter firewall EDLs. GNAT's role is the authoritative
 push from ThreatQ into CE — everything downstream is Netskope's responsibility.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

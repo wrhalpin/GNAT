@@ -54,3 +54,7 @@ registry = GlobalContextRegistry.from_clients(
 endpoint data become separate nodes in the graph, linked to the
 original indicator. `diff()` and `commit()` will pick them up as new
 objects.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

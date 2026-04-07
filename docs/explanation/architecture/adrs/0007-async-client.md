@@ -29,3 +29,7 @@ async with AsyncGNATClient() as tq, AsyncGNATClient() as rf:
 This is the primary reason to use the async client — fan-out enrichment
 across 5 platforms takes the same wall-clock time as the slowest single
 platform.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

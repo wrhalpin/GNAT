@@ -20,3 +20,7 @@ implements the server-side cursor.
 **STIX version filtering:**
 The `Accept` header (`application/taxii+json;version=2.1`) is enforced; only STIX 2.1
 bundles are served. Clients requesting TAXII 2.0 receive a `406 Not Acceptable`.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

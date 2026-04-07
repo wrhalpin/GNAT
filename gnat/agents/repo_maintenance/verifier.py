@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Golden fixture and test verification helpers for repo maintenance."""
 
 from __future__ import annotations

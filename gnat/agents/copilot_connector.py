@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Agent helper for using the Copilot connector inside GNAT AI workflows.
 
 This is intentionally lightweight: it wraps CopilotClient and exposes a
