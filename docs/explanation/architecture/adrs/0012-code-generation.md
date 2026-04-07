@@ -25,3 +25,7 @@ CLIENT_REGISTRY["myplatform"] = MyplatformClient
 # gnat/async_client/connectors.py — add async mirror
 # gnat/async_client/client.py — add to _build_async_registry()
 ```
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -36,3 +36,7 @@ client. Use for validating format mappings before committing.
 - `0` — success
 - `1` — error (exception, missing config, unknown target)
 - `2` — partial success (ingest completed with some errors)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -1173,3 +1173,7 @@ Apache 2.0 — see [LICENSE](LICENSE).
 ---
 
 *See also: [EXAMPLES.md](EXAMPLES.md) · [Implementation Plan](docs/architecture/implementation-plan.md) · [Architecture Decision Records](docs/architecture/adrs/README.md) · [CHANGELOG.md](CHANGELOG.md)*
+
+---
+
+*Licensed under the Apache License, Version 2.0*

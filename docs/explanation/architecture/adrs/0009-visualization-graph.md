@@ -103,3 +103,7 @@ The low-level `figure()` method still raises ImportError as documented.
 Keeps the most-connected nodes. For large workspaces this means hub
 indicators (seen by many sources) survive the cap; isolated singletons
 are dropped. Run `view.summary()` first to understand the graph before capping.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -89,3 +89,7 @@ result = (
 - [How-to: Schedule Feeds](schedule-feeds.md)
 - [How-to: Use AI Agents](use-ai-agents.md)
 - [Explanation: Ingestion Framework](../explanation/architecture/adrs/0004-ingestion-framework.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

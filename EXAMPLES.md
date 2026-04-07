@@ -43,3 +43,7 @@ Complete, end-to-end walkthroughs.
 
 Architecture Decision Records live in
 [docs/explanation/architecture/adrs/](docs/explanation/architecture/adrs/).
+
+---
+
+*Licensed under the Apache License, Version 2.0*

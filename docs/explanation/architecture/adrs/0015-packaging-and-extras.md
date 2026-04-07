@@ -40,3 +40,7 @@ project settings under the repo name.
 2. Add `## [X.Y.Z]` section to `CHANGELOG.md`
 3. `git tag vX.Y.Z && git push --tags`
 4. Release workflow fires automatically
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -123,3 +123,7 @@ from gnat.viz import TabularView, GraphView
 TabularView(ws).show()
 GraphView(ws).to_html("graph.html")  # auto-selects sigma.js at scale
 ```
+
+---
+
+*Licensed under the Apache License, Version 2.0*

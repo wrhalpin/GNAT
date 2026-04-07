@@ -109,3 +109,7 @@ stdlib `urllib` (not the async `httpx` client from `async_client.base`) because
 The prose fallback in `_parse_reply` handles cases where Copilot returns a
 natural-language "no results" message instead of JSON — this is common when
 the M365 source has no new content matching the query.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

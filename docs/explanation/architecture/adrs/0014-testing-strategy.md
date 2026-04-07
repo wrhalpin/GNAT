@@ -49,3 +49,7 @@ does not include `--run-integration`.
 **`DeduplicationCache` truthiness:**
 An empty cache is falsy via `__len__`. Always guard with
 `if cache is not None` not `if cache`. This is a known footgun.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

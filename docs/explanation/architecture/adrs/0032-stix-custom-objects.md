@@ -57,3 +57,7 @@ but still process all standard SDOs and SROs in the same bundle. Export
 bundles always include both the custom investigation object and all
 standard STIX objects it references, so partial consumers still receive
 full indicator/threat-actor data.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

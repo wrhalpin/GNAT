@@ -48,3 +48,7 @@ with `read_only=True` which prevents `Workspace.commit()` targeting them.
 **`CLIENT_REGISTRY` in `gnat/clients/__init__.py`:**
 Must be updated for every new connector. Keys are lowercase, hyphens
 replaced with underscores (e.g. `"greymatter"`, `"riskrecon"`).
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -64,3 +64,7 @@ print(ind.to_stix_bundle())
 - [How-to: Run the Ingest Pipeline](run-ingest-pipeline.md)
 - [How-to: Use Workspaces](use-workspaces.md)
 - [Explanation: ORM and STIX Compatibility](../explanation/architecture/adrs/0002-orm-stix-compatibility.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

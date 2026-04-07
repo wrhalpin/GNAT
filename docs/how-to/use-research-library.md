@@ -73,3 +73,7 @@ with FeedScheduler() as sched:
 - [How-to: Use AI Agents](use-ai-agents.md)
 - [How-to: Generate Reports](generate-reports.md)
 - [Explanation: Shared Research Library](../explanation/architecture/adrs/0019-shared-research-library.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

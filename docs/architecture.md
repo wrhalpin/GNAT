@@ -259,3 +259,7 @@ All 30 ADRs are stored in [`docs/explanation/architecture/adrs/`](explanation/ar
 | **AI confidence ceiling** | AI-extracted intel requires human review before high-stakes propagation |
 | **INI configuration** | Zero external config library; works everywhere `configparser` works |
 | **Diátaxis docs** | Each document has one purpose — tutorial, how-to, reference, or explanation |
+
+---
+
+*Licensed under the Apache License, Version 2.0*

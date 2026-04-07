@@ -82,3 +82,7 @@ result = (
 - [How-to: Schedule Feeds](schedule-feeds.md)
 - [How-to: Use Workspaces](use-workspaces.md)
 - [Explanation: Export Integration Pipeline](../explanation/architecture/adrs/0017-export-integration-pipeline.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

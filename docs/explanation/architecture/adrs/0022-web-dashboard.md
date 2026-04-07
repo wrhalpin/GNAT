@@ -20,3 +20,7 @@
 The EDL server (`gnat/export/`) serves static IOC lists and must stay lightweight and
 independent. The dashboard needs auth, rate limiting, and multiple routers — mixing them
 would create a dependency between the export pipeline and the UI.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

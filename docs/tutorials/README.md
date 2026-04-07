@@ -12,3 +12,7 @@ Each tutorial is designed for learning — follow the steps in order.
 
 > **Diataxis note:** Tutorials are learning-oriented.
 > If you already know what you want to do, see the [How-to guides](../how-to/README.md) instead.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

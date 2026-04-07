@@ -145,3 +145,7 @@ Initial release. Core client layer (`GNATClient`, `BaseClient`, `CLIENT_REGISTRY
 [v0.6.0]: https://github.com/your-org/gnat/compare/v0.3.0...v0.6.0
 [v0.3.0]: https://github.com/your-org/gnat/compare/v0.1.0...v0.3.0
 [v0.1.0]: https://github.com/your-org/gnat/releases/tag/v0.1.0
+
+---
+
+*Licensed under the Apache License, Version 2.0*

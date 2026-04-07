@@ -33,3 +33,7 @@ docs/
 ## Guiding Principle
 
 Documentation should match user intent.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

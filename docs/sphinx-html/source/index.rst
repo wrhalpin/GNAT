@@ -50,3 +50,7 @@ Indices
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+----
+
+*Licensed under the Apache License, Version 2.0*

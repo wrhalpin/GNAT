@@ -44,3 +44,7 @@ capped at the minimum source's maximum band ceiling).
 `gnat.analysis.confidence` — shared dependency imported by
 `gnat.analysis.investigations`, `gnat.reporting`, and
 `gnat.investigations` (the existing EvidenceGraph module).
+
+---
+
+*Licensed under the Apache License, Version 2.0*

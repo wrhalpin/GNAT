@@ -84,3 +84,7 @@ print(f"EDL updated: {export_result.delivery_result.delivered}")
 - Automate this cycle with `FeedScheduler` — see [Tutorial: Production Scheduled Pipeline](production-scheduled-pipeline.md)
 - Add sector filtering to the EDL — see [How-to: Export Indicators](../how-to/export-indicators.md)
 - Generate a PDF report at the end of the cycle — see [How-to: Generate Reports](../how-to/generate-reports.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*
