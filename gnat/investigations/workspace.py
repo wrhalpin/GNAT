@@ -108,9 +108,9 @@ def materialize(
                 source_ref        = src_stix_id,
                 target_ref        = tgt_stix_id,
             )
-            rel["x_confidence"]     = edge.confidence
-            rel["x_reasoning"]      = edge.reasoning
-            rel["x_source_platform"] = edge.source_platform
+            rel.x_confidence     = edge.confidence
+            rel.x_reasoning      = edge.reasoning
+            rel.x_source_platform = edge.source_platform
             ws.add(rel)
         except Exception as exc:  # noqa: BLE001
             logger.warning("Could not add edge %s→%s: %s",
@@ -151,13 +151,13 @@ def _node_to_stix_base(node: EvidenceNode) -> STIXBase:
         k: v for k, v in node.stix.items() if k != "type"
     })
     # Tag with investigation metadata not already in the STIX dict
-    obj["x_evidence_node_id"]   = node.node_id
-    obj["x_evidence_node_type"] = node.node_type
-    obj["x_source_platform"]    = node.platform
-    obj["x_source_id"]          = node.source_id
+    obj.x_evidence_node_id   = node.node_id
+    obj.x_evidence_node_type = node.node_type
+    obj.x_source_platform    = node.platform
+    obj.x_source_id          = node.source_id
     if node.time_window:
-        obj["x_time_window_start"] = node.time_window[0]
-        obj["x_time_window_end"]   = node.time_window[1]
+        obj.x_time_window_start = node.time_window[0]
+        obj.x_time_window_end   = node.time_window[1]
     return obj
 
 

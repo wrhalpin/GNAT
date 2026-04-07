@@ -805,6 +805,7 @@ _DISPATCH: dict[tuple[str, str], Any] = {
     ("greymatter",        "task"):           _gm_task,
     # ThreatQ
     ("threatq",           "event"):          _tq_event,
+    ("threatq",           "incident"):       _tq_event,      # alias: ThreatQ Events are the investigation container
     ("threatq",           "indicator"):      _tq_indicator,
     ("threatq",           "adversary"):      _tq_adversary,
     # TheHive
