@@ -33,6 +33,8 @@ rss    = ["feedparser>=6.0"]
 ingest = ["taxii2-client>=2.3", "feedparser>=6.0"]
 async  = ["httpx>=0.27"]
 persist   = ["sqlalchemy>=2.0"]
+analysis  = ["sqlalchemy>=2.0"]                                       # Investigation + Report persistence
+reporting = ["sqlalchemy>=2.0"]                                       # Report lifecycle persistence
 schedule  = ["croniter>=2.0"]
 agents    = []
 research  = []
@@ -64,6 +66,7 @@ include = ["gnat*"]
 
 [tool.setuptools.package-data]
 "gnat" = ["py.typed"]
+"gnat.reporting" = ["templates/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = [

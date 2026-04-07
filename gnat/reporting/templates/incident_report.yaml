@@ -1,0 +1,74 @@
+# Incident Report Template
+# ========================
+# Use for post-incident analysis and triage reporting.
+# Covers initial detection, scope, response timeline, and recommendations.
+
+name:        Incident Report
+report_type: incident_report
+default_classification: amber
+
+# Sections define the expected body structure.
+# Each section will be pre-created with an empty content field.
+sections:
+  - title: Executive Summary
+    order: 10
+    guidance: |
+      1–3 paragraphs. Audience: senior leadership. No technical jargon.
+      Cover: what happened, who was affected, what was the impact,
+      what was done in response, and the current status.
+
+  - title: Scope and Impact
+    order: 20
+    guidance: |
+      - Affected systems/assets (count and type)
+      - Affected users / accounts
+      - Data exposure (confirmed or suspected)
+      - Business impact (availability, integrity, confidentiality)
+
+  - title: Timeline
+    order: 30
+    guidance: |
+      Chronological list of key events. Use ISO 8601 timestamps.
+      Include: first observed activity, detection time, notification time,
+      containment, eradication, recovery.
+
+  - title: Technical Analysis
+    order: 40
+    guidance: |
+      IOCs observed (IPs, domains, file hashes, URLs).
+      TTPs mapped to MITRE ATT&CK.
+      Infection vector, lateral movement, persistence mechanisms,
+      exfiltration evidence.
+
+  - title: Response Actions
+    order: 50
+    guidance: |
+      Actions taken: containment, eradication, recovery.
+      Tools/platforms used.
+      Stakeholders involved.
+
+  - title: Recommendations
+    order: 60
+    guidance: |
+      Short-term (0–30 days): immediate remediation actions.
+      Medium-term (30–90 days): detective and preventive controls.
+      Long-term (>90 days): architectural improvements.
+
+# Required fields — validation will warn if these are empty at REVIEW time
+required_fields:
+  - executive_summary
+  - key_findings
+  - recommendations
+
+# Default finding template
+finding_template:
+  confidence_default: medium
+  mitre_techniques_required: false
+
+# Attribution is optional for incident reports; some incidents are
+# opportunistic or the actor is unknown.
+attribution_required: false
+
+# Auto-approve collapses REVIEW → APPROVED → PUBLISHED for teams
+# without a formal review gate. Set to false for regulated environments.
+auto_approve: false
