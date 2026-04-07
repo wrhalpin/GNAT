@@ -1,0 +1,81 @@
+# Threat Actor Profile Template
+# ==============================
+# Use for characterising a specific threat actor group:
+# motivation, capability, targeting, TTPs, infrastructure, and attribution.
+
+name:        Threat Actor Profile
+report_type: threat_actor_profile
+default_classification: amber
+
+sections:
+  - title: Executive Summary
+    order: 10
+    guidance: |
+      1–2 paragraphs for a non-technical audience.
+      Who is this actor, what is their primary motivation, and what
+      sectors/geographies are at risk.
+
+  - title: Actor Overview
+    order: 20
+    guidance: |
+      - Known aliases / tracking names (your internal + third-party names)
+      - First observed activity date
+      - Suspected origin / sponsorship (with confidence level)
+      - Primary motivation: espionage | financial | hacktivism | destruction
+      - Sophistication level: low | medium | high | advanced
+
+  - title: Targeting
+    order: 30
+    guidance: |
+      - Target sectors (e.g. Financial, Healthcare, Defence, Energy)
+      - Target geographies
+      - Target organisation types (e.g. government, SME, critical infrastructure)
+      - Known victims (anonymised if required)
+
+  - title: Tactics, Techniques, and Procedures (TTPs)
+    order: 40
+    guidance: |
+      Map all observed TTPs to MITRE ATT&CK framework.
+      Group by ATT&CK tactic (Initial Access → Execution → ... → Exfiltration).
+      For each technique include: ATT&CK ID, technique name, observed evidence.
+
+  - title: Infrastructure
+    order: 50
+    guidance: |
+      - C2 infrastructure: IPs, domains, hosting patterns, ASN preferences
+      - Tools and malware families used
+      - Obfuscation/evasion techniques
+      - Infrastructure reuse patterns (link to other campaigns/actors)
+
+  - title: Indicators of Compromise
+    order: 60
+    guidance: |
+      Current IOCs attributed to this actor.
+      Include: type, value, first_seen, last_seen, confidence.
+      Mark as TLP:AMBER if for limited sharing or TLP:RED for restricted.
+
+  - title: Attribution
+    order: 70
+    guidance: |
+      Attribution rationale. Be explicit about confidence and evidence basis.
+      Reference ADR-0033 Admiralty Scale for confidence grading.
+      Include: MITRE ATT&CK group ID if known, government attribution statements,
+      overlapping infrastructure with known groups.
+
+  - title: Mitigations
+    order: 80
+    guidance: |
+      Defensive recommendations specific to this actor's TTPs.
+      Map mitigations to ATT&CK mitigations where possible.
+
+required_fields:
+  - executive_summary
+  - key_findings
+  - attribution
+
+finding_template:
+  confidence_default: medium
+  mitre_techniques_required: true
+
+attribution_required: true
+auto_approve: false

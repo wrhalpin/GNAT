@@ -1,0 +1,80 @@
+# Campaign Analysis Template
+# ===========================
+# Use for analysing a coordinated series of threat activity linked by
+# shared infrastructure, TTPs, or objectives (a "campaign" in STIX terms).
+
+name:        Campaign Analysis
+report_type: campaign_analysis
+default_classification: amber
+
+sections:
+  - title: Executive Summary
+    order: 10
+    guidance: |
+      1–2 paragraphs for a non-technical audience.
+      What is the campaign, who is responsible (if known), who is targeted,
+      what is the observed impact, and what is the current activity level.
+
+  - title: Campaign Overview
+    order: 20
+    guidance: |
+      - Campaign name / tracking designator
+      - First observed date / last observed date
+      - Activity status: active | dormant | concluded
+      - Suspected campaign objective: espionage | financial | disruption | influence
+      - Linked threat actor (if attributed)
+      - Geographic scope
+      - Sector scope
+
+  - title: Incident Chain and Timeline
+    order: 30
+    guidance: |
+      Ordered list of incidents/events that form this campaign.
+      For each incident: date, victim type, vector, outcome.
+      Highlight shared artefacts that link incidents (same C2, same malware, etc.).
+
+  - title: Technical Analysis
+    order: 40
+    guidance: |
+      - Common malware families across the campaign
+      - Shared C2 infrastructure
+      - Phishing lure patterns / delivery mechanism
+      - Lateral movement and privilege escalation patterns
+      - Data exfiltration evidence
+      - ATT&CK technique coverage map
+
+  - title: Correlation and Attribution
+    order: 50
+    guidance: |
+      Evidence linking campaign incidents to each other:
+      - Infrastructure overlaps
+      - Code similarities / malware family linkage
+      - Victimology pattern
+      - Timing patterns
+
+      Attribution to a threat actor (with confidence level and rationale).
+
+  - title: Indicators of Compromise
+    order: 60
+    guidance: |
+      All IOCs observed across campaign incidents.
+      Group by type. Mark confidence and first/last seen.
+      Note which IOCs are still active vs. burned.
+
+  - title: Defensive Recommendations
+    order: 70
+    guidance: |
+      Prioritised mitigations based on the campaign's observed TTPs.
+      Include: detection opportunities, hunting queries, hardening steps.
+      Reference affected MITRE ATT&CK mitigations.
+
+required_fields:
+  - executive_summary
+  - key_findings
+
+finding_template:
+  confidence_default: medium
+  mitre_techniques_required: true
+
+attribution_required: false
+auto_approve: false
