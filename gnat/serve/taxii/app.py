@@ -84,6 +84,7 @@ def _taxii_response(content: Any, status_code: int = 200) -> JSONResponse:
 
 
 def _utcnow_iso() -> str:
+    """Internal helper for utcnow iso."""
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
 
 
@@ -123,6 +124,7 @@ class _TaxiiAPIKeyAuth:
     """FastAPI callable dependency — validates ``X-Api-Key`` header."""
 
     def __init__(self, api_key: str) -> None:
+        """Initialize _TaxiiAPIKeyAuth."""
         import hmac as _hmac
 
         self._key = api_key.encode("utf-8")

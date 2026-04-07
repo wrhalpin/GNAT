@@ -70,28 +70,34 @@ _NO_COLOR = [False]
 
 
 def _c(code: str, text: str) -> str:
+    """Internal helper for c."""
     if _NO_COLOR[0] or not sys.stdout.isatty():
         return text
     return f"\033[{code}m{text}\033[0m"
 
 
 def _green(t: str) -> str:
+    """Internal helper for green."""
     return _c("32", t)
 
 
 def _red(t: str) -> str:
+    """Internal helper for red."""
     return _c("31", t)
 
 
 def _yellow(t: str) -> str:
+    """Internal helper for yellow."""
     return _c("33", t)
 
 
 def _bold(t: str) -> str:
+    """Internal helper for bold."""
     return _c("1", t)
 
 
 def _dim(t: str) -> str:
+    """Internal helper for dim."""
     return _c("2", t)
 
 
@@ -99,6 +105,7 @@ def _dim(t: str) -> str:
 
 
 def _print_json(data: Any) -> None:
+    """Internal helper for print json."""
     print(json.dumps(data, indent=2, default=str))
 
 
@@ -118,6 +125,7 @@ def _print_table(rows: list[dict[str, Any]], fields: list[str] | None = None) ->
 
 
 def _print_stix(obj: Any) -> None:
+    """Internal helper for print stix."""
     d = obj.to_dict() if hasattr(obj, "to_dict") else obj
     _print_json(d)
 
@@ -126,6 +134,7 @@ def _print_stix(obj: Any) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Internal helper for build parser."""
     parser = argparse.ArgumentParser(
         prog="gnat",
         description=_bold("GNAT — Cybersecurity Threat Management Swiss Army Knife"),
@@ -760,6 +769,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _cmd_ping(args: argparse.Namespace) -> int:
+    """Internal helper for cmd ping."""
     from gnat.client import GNATClient
 
     _info(args, f"Pinging {_bold(args.target)} …")
@@ -778,6 +788,7 @@ def _cmd_ping(args: argparse.Namespace) -> int:
 
 
 def _cmd_query(args: argparse.Namespace) -> int:
+    """Internal helper for cmd query."""
     from gnat.client import GNATClient
 
     _info(args, f"Querying {_bold(args.target)} for {args.type} {_dim(args.id)} …")
@@ -794,6 +805,7 @@ def _cmd_query(args: argparse.Namespace) -> int:
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
+    """Internal helper for cmd list."""
     from gnat.client import GNATClient
 
     _info(args, f"Listing {args.type} from {_bold(args.target)} …")
@@ -824,6 +836,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
 
 
 def _cmd_ingest(args: argparse.Namespace) -> int:
+    """Internal helper for cmd ingest."""
     from gnat.client import GNATClient
     from gnat.ingest import IngestPipeline
     from gnat.ingest.mappers import (
@@ -925,6 +938,7 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
 
 
 def _cmd_codegen(args: argparse.Namespace) -> int:
+    """Internal helper for cmd codegen."""
     if args.codegen_command == "openapi":
         from gnat.codegen.openapi_generator import generate_connector
 
@@ -975,6 +989,7 @@ def _cmd_codegen(args: argparse.Namespace) -> int:
 
 
 def _cmd_config(args: argparse.Namespace) -> int:
+    """Internal helper for cmd config."""
     from gnat.config import GNATConfig
 
     _REQUIRED_KEYS = {
@@ -1042,11 +1057,13 @@ def _cmd_config(args: argparse.Namespace) -> int:
 
 
 def _info(args: argparse.Namespace, msg: str) -> None:
+    """Internal helper for info."""
     if not args.quiet:
         print(msg)
 
 
 def _output(args: argparse.Namespace, data: Any) -> None:
+    """Internal helper for output."""
     if args.output == "json":
         _print_json(data)
     elif args.output == "stix":
@@ -1064,6 +1081,7 @@ def _output(args: argparse.Namespace, data: Any) -> None:
 
 
 def _cmd_viz(args: argparse.Namespace) -> int:
+    """Internal helper for cmd viz."""
     from gnat.context import WorkspaceManager
     from gnat.viz import GraphView, PowerBIExporter, TabularView, save_grafana_dashboard
 

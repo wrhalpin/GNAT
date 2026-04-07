@@ -11,6 +11,7 @@ from typing import Any
 
 
 def _now_iso() -> str:
+    """Internal helper for now iso."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -177,6 +178,7 @@ class SynapseSTIXMapper:
     # ------------------------------------------------------------------
 
     def _base_fields(self, stix_type: str, value: str, node: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for base fields."""
         ts = _now_iso()
         tags = node.get("tags", {})
         labels = self._tags_to_stix_labels(tags)

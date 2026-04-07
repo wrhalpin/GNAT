@@ -88,6 +88,7 @@ class ElasticThreatIntelCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize ElasticThreatIntelCommands."""
         self._client = client
 
     # ── Read indicators ────────────────────────────────────────────────────
@@ -395,4 +396,5 @@ class ElasticThreatIntelCommands:
 
 
 def _now_iso() -> str:
+    """Internal helper for now iso."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

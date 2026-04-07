@@ -30,6 +30,7 @@ class MaintenanceExecutor:
         upstream_repo: str | None = None,
         remote_name: str = "origin",
     ):
+        """Initialize MaintenanceExecutor."""
         self.repo_root = Path(repo_root)
         self.github_token = github_token
         self.upstream_repo = upstream_repo
@@ -44,6 +45,7 @@ class MaintenanceExecutor:
         create_pr: bool = False,
         commit: bool = False,
     ) -> ExecutionResult:
+        """Execute the operation."""
         result = ExecutionResult(success=False, branch_name=plan.pull_request.branch_name)
         branch = plan.pull_request.branch_name
         if self._is_protected(branch):
@@ -97,30 +99,35 @@ class MaintenanceExecutor:
         return result
 
     def _git_create_branch(self, branch: str) -> tuple[bool, str]:
+        """Internal helper for git create branch."""
         proc = self._run(["git", "checkout", "-b", branch])
         if proc.returncode != 0:
             return False, (proc.stderr or proc.stdout).strip()
         return True, ""
 
     def _git_stage(self, paths: list[str]) -> tuple[bool, str]:
+        """Internal helper for git stage."""
         proc = self._run(["git", "add", *paths])
         if proc.returncode != 0:
             return False, (proc.stderr or proc.stdout).strip()
         return True, ""
 
     def _git_commit(self, message: str) -> tuple[bool, str]:
+        """Internal helper for git commit."""
         proc = self._run(["git", "commit", "-m", message])
         if proc.returncode != 0:
             return False, (proc.stderr or proc.stdout).strip()
         return True, ""
 
     def _git_push(self, branch: str) -> tuple[bool, str]:
+        """Internal helper for git push."""
         proc = self._run(["git", "push", "-u", self.remote_name, branch])
         if proc.returncode != 0:
             return False, (proc.stderr or proc.stdout).strip()
         return True, ""
 
     def _git_head_sha(self) -> tuple[str | None, str]:
+        """Internal helper for git head sha."""
         proc = self._run(["git", "rev-parse", "HEAD"])
         if proc.returncode != 0:
             return None, (proc.stderr or proc.stdout).strip()
@@ -131,6 +138,7 @@ class MaintenanceExecutor:
         plan: RepoMaintenancePlan,
         verification: VerificationResult | None,
     ) -> tuple[str | None, str]:
+        """Internal helper for create github pr."""
         if not self.github_token:
             return None, "Missing GitHub token."
         if not self.upstream_repo or "/" not in self.upstream_repo:
@@ -170,6 +178,7 @@ class MaintenanceExecutor:
         return None, f"GitHub API {response.status}: {data.get('message', 'unknown error')}"
 
     def _get_remote_owner(self, remote: str) -> str:
+        """Internal helper for get remote owner."""
         proc = self._run(["git", "remote", "get-url", remote])
         if proc.returncode != 0:
             return "unknown"
@@ -177,10 +186,12 @@ class MaintenanceExecutor:
         return match.group(1) if match else "unknown"
 
     def _is_protected(self, branch: str) -> bool:
+        """Internal helper for is protected."""
         base = branch.split("/")[-1]
         return branch in _PROTECTED_BRANCHES or base in _PROTECTED_BRANCHES
 
     def _run(self, cmd: list[str]) -> subprocess.CompletedProcess[str]:
+        """Internal helper for run."""
         return subprocess.run(
             cmd,
             cwd=self.repo_root,
@@ -191,6 +202,7 @@ class MaintenanceExecutor:
 
 
 def _serialize_plan(plan: RepoMaintenancePlan, verification: VerificationResult | None) -> dict:
+    """Internal helper for serialize plan."""
     payload = {
         "connector": plan.connector,
         "impact": plan.impact.value,

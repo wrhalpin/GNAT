@@ -54,6 +54,7 @@ class KibanaAlertsCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize KibanaAlertsCommands."""
         self._client = client
 
     # ── Query alerts ───────────────────────────────────────────────────────

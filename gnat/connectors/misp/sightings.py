@@ -26,6 +26,7 @@ class MISPSightingCommands:
     """Sighting management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPSightingCommands."""
         self._client = client
 
     def add_sighting(

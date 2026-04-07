@@ -74,6 +74,7 @@ class MISPAttributeCommands:
     """Attribute management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPAttributeCommands."""
         self._client = client
 
     # ── Search ─────────────────────────────────────────────────────────────

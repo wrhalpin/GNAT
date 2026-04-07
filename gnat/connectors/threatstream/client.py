@@ -58,6 +58,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize ThreatStreamClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._api_key = api_key
@@ -208,15 +209,18 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
 
     @property
     def _ts_auth(self) -> dict[str, str]:
+        """Internal helper for ts auth."""
         return {"username": self._username, "api_key": self._api_key}
 
     @_ts_auth.setter
     def _ts_auth(self, value: dict[str, str]) -> None:
         # Setter exists so authenticate() can assign; values already stored
+        """Internal helper for ts auth."""
         pass
 
     @staticmethod
     def _make_pattern(ts_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = (ts_type or "").lower()
         if t in ("ip", "ipv4", "srcip"):
             return f"[ipv4-addr:value = '{value}']"
@@ -238,6 +242,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_to_ts_type(pattern: str) -> str:
+        """Internal helper for stix to ts type."""
         if "ipv4-addr" in pattern:
             return "ip"
         if "ipv6-addr" in pattern:

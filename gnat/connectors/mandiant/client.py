@@ -60,6 +60,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         api_secret: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize MandiantClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._api_secret = api_secret
@@ -151,6 +152,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Mandiant Advantage API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
@@ -186,6 +188,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for indicator to stix."""
         value = native.get("value", native.get("name", ""))
         mi_type = native.get("type", "")
         pattern = self._make_pattern(mi_type, value)
@@ -207,6 +210,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for actor to stix."""
         return {
             "type": "threat-actor",
             "id": f"threat-actor--mti-{native.get('id', '')}",
@@ -220,6 +224,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         }
 
     def _malware_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for malware to stix."""
         return {
             "type": "malware",
             "id": f"malware--mti-{native.get('id', '')}",
@@ -234,6 +239,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
         }
 
     def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         return {
             "type": "vulnerability",
             "id": f"vulnerability--mti-{native.get('id', '')}",
@@ -250,6 +256,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(mi_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = (mi_type or "").lower()
         if t in ("ipv4", "ipv4-addr", "ip"):
             return f"[ipv4-addr:value = '{value}']"
@@ -271,6 +278,7 @@ class MandiantClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_to_mandiant_type(pattern: str) -> str:
+        """Internal helper for stix to mandiant type."""
         if "ipv4-addr" in pattern:
             return "ipv4"
         if "ipv6-addr" in pattern:

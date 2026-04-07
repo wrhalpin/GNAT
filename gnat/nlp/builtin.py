@@ -162,6 +162,7 @@ _STOP_WORDS = frozenset(
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(timezone.utc)
 
 
@@ -224,6 +225,7 @@ class BuiltinParser:
 
     def _extract_since(self, query: str, now: datetime) -> datetime | None:
         # "last N days/weeks/months"
+        """Internal helper for extract since."""
         m = _RE_LAST_N.search(query)
         if m:
             n, unit = int(m.group(1)), m.group(2).lower().rstrip("s")
@@ -264,6 +266,7 @@ class BuiltinParser:
         return None
 
     def _extract_until(self, query: str, now: datetime) -> datetime | None:
+        """Internal helper for extract until."""
         m = re.search(r"\b(?:until|before|up to)\s+(\d{4}-\d{2}-\d{2})\b", query, re.I)
         if m:
             try:
@@ -273,6 +276,7 @@ class BuiltinParser:
         return None
 
     def _extract_ioc_types(self, query: str) -> list[str]:
+        """Internal helper for extract ioc types."""
         found = []
         for ioc_type, pattern in _IOC_KEYWORDS.items():
             if pattern.search(query):
@@ -280,6 +284,7 @@ class BuiltinParser:
         return found
 
     def _extract_entities(self, query: str) -> list[str]:
+        """Internal helper for extract entities."""
         entities = []
 
         # Named threat actors
@@ -313,6 +318,7 @@ class BuiltinParser:
         return entities
 
     def _extract_platforms(self, query: str) -> list[str]:
+        """Internal helper for extract platforms."""
         from gnat.clients import CLIENT_REGISTRY
 
         found = []
@@ -323,6 +329,7 @@ class BuiltinParser:
         return found
 
     def _extract_limit(self, query: str, default: int) -> int:
+        """Internal helper for extract limit."""
         m = _RE_TOP_N.search(query)
         if m:
             return int(m.group(1))

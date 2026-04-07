@@ -33,6 +33,7 @@ from .client import WazuhClient
 
 
 def _level_to_severity(level: int) -> int:
+    """Internal helper for level to severity."""
     if level >= 15:
         return 4
     if level >= 12:
@@ -58,6 +59,7 @@ class WazuhAlertCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhAlertCommands."""
         self._client = client
 
     # ── Alert queries ──────────────────────────────────────────────────────

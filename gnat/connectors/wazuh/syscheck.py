@@ -46,6 +46,7 @@ class WazuhSyscheckCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhSyscheckCommands."""
         self._client = client
 
     # ── FIM event queries ──────────────────────────────────────────────────

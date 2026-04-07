@@ -51,33 +51,41 @@ import urllib3
 
 
 class OTXError(Exception):
+    """Raised when a o t x error error occurs."""
     pass
 
 
 class OTXConfigError(OTXError):
+    """Raised when a o t x config error error occurs."""
     pass
 
 
 class OTXAuthError(OTXError):
+    """Raised when a o t x auth error error occurs."""
     pass
 
 
 class OTXAPIError(OTXError):
+    """Raised when a o t x a p i error error occurs."""
     def __init__(self, message, status_code=None, endpoint=None):
+        """Initialize OTXAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.endpoint = endpoint
 
 
 class OTXNotFoundError(OTXAPIError):
+    """Raised when a o t x not found error error occurs."""
     pass
 
 
 class OTXRateLimitError(OTXAPIError):
+    """Raised when a o t x rate limit error error occurs."""
     pass
 
 
 class OTXSTIXError(OTXError):
+    """Raised when a o t x s t i x error error occurs."""
     pass
 
 
@@ -88,6 +96,7 @@ _OTX_BASE = "https://otx.alienvault.com/api/v1"
 
 @dataclass
 class OTXConfig:
+    """Configuration container for o t x."""
     api_key: str
     base_url: str = _OTX_BASE
     verify_ssl: bool = True
@@ -95,15 +104,18 @@ class OTXConfig:
     max_results: int = 50
 
     def __post_init__(self):
+        """Post-init setup for OTXConfig."""
         if not self.api_key:
             raise OTXConfigError("'api_key' required in [alienvault_otx].")
         self.base_url = self.base_url.rstrip("/")
 
     def endpoint(self, path: str) -> str:
+        """Endpoint."""
         return f"{self.base_url}/{path.lstrip('/')}"
 
     @property
     def base_headers(self) -> dict:
+        """Base headers."""
         return {
             "X-OTX-API-KEY": self.api_key,
             "Accept": "application/json",
@@ -114,6 +126,7 @@ class OTXConfig:
 def load_otx_config(
     config: configparser.ConfigParser, section: str = "alienvault_otx"
 ) -> OTXConfig:
+    """Load otx config from the configured source."""
     if not config.has_section(section):
         raise OTXConfigError(f"Section '[{section}]' not found.")
     raw = {
@@ -144,25 +157,31 @@ class OTXClient:
     _RETRYABLE = {500, 502, 503, 504}
 
     def __init__(self, config: OTXConfig):
+        """Initialize OTXClient."""
         self.config = config
         self._http = self._build_pool()
 
     def __enter__(self):
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_):
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self):
+        """Release resources and close any open connections."""
         self._http.clear()
 
     def get(self, path: str, params: dict | None = None) -> dict | list:
+        """Get."""
         url = self.config.endpoint(path)
         if params:
             url += "?" + urllib.parse.urlencode(params)
         return self._request("GET", url)
 
     def post(self, path: str, body: dict | None = None) -> dict | list:
+        """Post."""
         return self._request("POST", self.config.endpoint(path), body=body)
 
     def paginate(
@@ -193,6 +212,7 @@ class OTXClient:
             url = next_url
 
     def _build_pool(self) -> urllib3.PoolManager:
+        """Internal helper for build pool."""
         kw = {
             "num_pools": 4,
             "maxsize": 10,
@@ -207,6 +227,7 @@ class OTXClient:
         return urllib3.PoolManager(**kw)
 
     def _request(self, method: str, url: str, body: dict | None = None) -> dict | list:
+        """Internal helper for request."""
         headers = self.config.base_headers
         encoded = json.dumps(body).encode() if body else None
         delay = 1.0
@@ -256,6 +277,7 @@ class OTXPulseCommands:
     """
 
     def __init__(self, client: OTXClient):
+        """Initialize OTXPulseCommands."""
         self._client = client
 
     def list_subscribed_pulses(
@@ -385,6 +407,7 @@ class OTXIndicatorCommands:
     """IOC indicator lookup and enrichment."""
 
     def __init__(self, client: OTXClient):
+        """Initialize OTXIndicatorCommands."""
         self._client = client
 
     def get_ip_details(self, ip: str, section: str = "general") -> dict:
@@ -459,6 +482,7 @@ class OTXFeedCommands:
     """OTX feed / subscription operations."""
 
     def __init__(self, client: OTXClient):
+        """Initialize OTXFeedCommands."""
         self._client = client
 
     def get_indicator_feed(
@@ -621,6 +645,7 @@ class OTXSTIXMapper:
 
     @staticmethod
     def _build_sco(stix_type: str, otx_type: str, value: str) -> dict | None:
+        """Internal helper for build sco."""
         if stix_type in ("ipv4-addr", "ipv6-addr"):
             return {
                 "type": stix_type,
@@ -677,6 +702,7 @@ class OTXSTIXMapper:
 
     @staticmethod
     def _build_pattern(stix_type: str, otx_type: str, value: str) -> str | None:
+        """Internal helper for build pattern."""
         if stix_type in ("ipv4-addr", "ipv6-addr"):
             return f"[{stix_type}:value = '{value}']"
         if stix_type == "domain-name":
@@ -697,8 +723,10 @@ class OTXSTIXMapper:
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

@@ -25,6 +25,7 @@ class CopilotConnectorAgent:
         azure_token: str = "",
         model: str = "copilot-latest",
     ) -> None:
+        """Initialize CopilotConnectorAgent."""
         self.client = CopilotClient(
             host=host,
             auth_type=auth_type,

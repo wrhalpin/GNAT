@@ -71,10 +71,12 @@ class MISPConfig:
     default_analysis: int = 0
 
     def __post_init__(self) -> None:
+        """Post-init setup for MISPConfig."""
         self.url = self.url.rstrip("/")
         self._validate()
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         if not self.url:
             raise MISPConfigError("'url' is required in [misp] config.")
         if not self.api_key:
@@ -111,6 +113,7 @@ def load_misp_config(
         raise MISPConfigError(f"Missing required [misp] config keys: {', '.join(sorted(missing))}")
 
     def _bool(v: str) -> bool:
+        """Internal helper for bool."""
         return v.strip().lower() in ("true", "1", "yes")
 
     return MISPConfig(

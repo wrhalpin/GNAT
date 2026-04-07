@@ -14,6 +14,7 @@ class SentinelAlertCommands:
     """Alert query operations."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelAlertCommands."""
         self._client = client
 
     def list_alerts(

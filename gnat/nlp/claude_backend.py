@@ -78,6 +78,7 @@ class ClaudeParser:
     """
 
     def __init__(self, config: Any) -> None:
+        """Initialize ClaudeParser."""
         from gnat.agents.base import ClaudeClient
 
         self._client = ClaudeClient(config)
@@ -165,6 +166,7 @@ class ClaudeParser:
 
     @staticmethod
     def _parse_dt(value: str | None) -> datetime | None:
+        """Internal helper for parse dt."""
         if not value:
             return None
         try:

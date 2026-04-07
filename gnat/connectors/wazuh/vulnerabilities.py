@@ -53,6 +53,7 @@ class WazuhVulnerabilityCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhVulnerabilityCommands."""
         self._client = client
 
     def get_vulnerabilities(

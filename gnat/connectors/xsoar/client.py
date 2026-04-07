@@ -108,6 +108,7 @@ class XSOARClient(BaseClient, ConnectorMixin):
         auth_id: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize XSOARClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._auth_id = auth_id

@@ -23,6 +23,7 @@ class SentinelAnalyticRuleCommands:
     """Analytic rule inspection and management."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelAnalyticRuleCommands."""
         self._client = client
 
     def list_rules(

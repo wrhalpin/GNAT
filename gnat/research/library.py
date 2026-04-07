@@ -148,6 +148,7 @@ class ResearchLibrary:
         staging_name: str = _STAGING_NAME,
         library_name: str = _LIBRARY_NAME,
     ):
+        """Initialize ResearchLibrary."""
         self._manager = manager
         self._ttls = {**DEFAULT_TTLS, **(ttls or {})}
         self._staging_name = staging_name
@@ -562,9 +563,11 @@ class ResearchLibrary:
         return f"{_ENTRY_PREFIX}{entry.entry_id}"
 
     def _write_entry_to_staging(self, entry: ResearchEntry) -> None:
+        """Internal helper for write entry to staging."""
         self._save_entry(entry, self._staging_name)
 
     def _write_entry_to_library(self, entry: ResearchEntry) -> None:
+        """Internal helper for write entry to library."""
         self._save_entry(entry, self._library_name)
 
     def _save_entry(self, entry: ResearchEntry, workspace_name: str) -> None:
@@ -658,6 +661,7 @@ class ResearchLibrary:
         return max(entries, key=lambda e: e.promoted_at)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         stats = self.stats()
         return (
             f"ResearchLibrary(library={stats['library_total']} entries, "
@@ -666,4 +670,5 @@ class ResearchLibrary:
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(timezone.utc)

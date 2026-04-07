@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Bill Halpin
+"""
+gnat.agents.security.secrets.models
+=======================================
+
+Models utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -8,6 +14,7 @@ from datetime import datetime
 
 @dataclass
 class ProviderCapabilities:
+    """ProviderCapabilities implementation."""
     supports_read: bool = True
     supports_write: bool = False
     supports_versioning: bool = False
@@ -19,12 +26,14 @@ class ProviderCapabilities:
 
 @dataclass
 class SecretRef:
+    """SecretRef implementation."""
     provider: str
     path: str
     vault: str | None = None
     version: str | None = None
 
     def to_uri(self) -> str:
+        """Convert this object to URI format."""
         vault = self.vault or "default"
         suffix = f"?version={self.version}" if self.version else ""
         return f"{self.provider}://{vault}/{self.path}{suffix}"
@@ -32,6 +41,7 @@ class SecretRef:
 
 @dataclass
 class SecretMetadata:
+    """SecretMetadata implementation."""
     path: str
     provider: str
     vault: str | None = None
@@ -43,6 +53,7 @@ class SecretMetadata:
 
 @dataclass
 class SecretValue:
+    """SecretValue implementation."""
     ref: SecretRef
     value: str
     metadata: SecretMetadata
@@ -50,6 +61,7 @@ class SecretValue:
 
 @dataclass
 class SecretLease:
+    """SecretLease implementation."""
     ref: SecretRef
     secret: str
     username: str | None = None
@@ -60,6 +72,7 @@ class SecretLease:
 
 @dataclass
 class StoreSecretRequest:
+    """StoreSecretRequest implementation."""
     ref: SecretRef
     value: str
     tags: dict[str, str] = field(default_factory=dict)
@@ -69,6 +82,7 @@ class StoreSecretRequest:
 
 @dataclass
 class SecretVersionInfo:
+    """SecretVersionInfo implementation."""
     ref: SecretRef
     version: str | None = None
     created_at: datetime | None = None
@@ -77,6 +91,7 @@ class SecretVersionInfo:
 
 @dataclass
 class AuditEvent:
+    """AuditEvent implementation."""
     action: str
     actor: str
     ref_uri: str

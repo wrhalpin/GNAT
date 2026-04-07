@@ -178,6 +178,7 @@ class ParsingAgent(RecordMapper):
         always_yield_summary: bool = True,
         label: str = "ParsingAgent",
     ):
+        """Initialize ParsingAgent."""
         super().__init__()
         self._config = config
         self._min_conf = min_confidence
@@ -308,6 +309,7 @@ class ParsingAgent(RecordMapper):
         }
 
     def _indicators_from(self, intel: ParsedIntel) -> Iterator[Indicator]:
+        """Internal helper for indicators from."""
         seen: set = set()
         for ioc in intel.indicators:
             ioc_type = ioc.get("type", "").lower()
@@ -343,6 +345,7 @@ class ParsingAgent(RecordMapper):
             )
 
     def _ttps_from(self, intel: ParsedIntel) -> Iterator[AttackPattern]:
+        """Internal helper for ttps from."""
         seen: set = set()
         for ttp in intel.ttps:
             name = ttp.get("name", "").strip()
@@ -366,6 +369,7 @@ class ParsingAgent(RecordMapper):
             )
 
     def _actors_from(self, intel: ParsedIntel) -> Iterator[ThreatActor]:
+        """Internal helper for actors from."""
         seen: set = set()
         for actor in intel.actors:
             name = actor.get("name", "").strip()
@@ -397,6 +401,7 @@ class ParsingAgent(RecordMapper):
             )
 
     def _vulns_from(self, intel: ParsedIntel) -> Iterator[Vulnerability]:
+        """Internal helper for vulns from."""
         seen: set = set()
         for vuln in intel.vulnerabilities:
             cve_id = vuln.get("cve_id", "").strip()
@@ -447,6 +452,7 @@ class ParsingAgent(RecordMapper):
         )
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return (
             f"ParsingAgent(model={self._config.model!r}, "
             f"confidence_ceiling={self._config.ai_confidence_ceiling})"

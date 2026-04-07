@@ -53,6 +53,7 @@ class OpenAICompatibleProvider(LLMProvider, BaseClient):
         **kwargs: Any,
     ) -> None:
         # Set sensible defaults
+        """Initialize OpenAICompatibleProvider."""
         if provider == "grok":
             default_host = "https://api.x.ai"
             default_model = "grok-4"

@@ -85,10 +85,12 @@ INVESTIGATION_TRANSITIONS: dict[InvestigationStatus, frozenset[InvestigationStat
 # ── Helper ────────────────────────────────────────────────────────────────────
 
 def _now() -> datetime:
+    """Internal helper for now."""
     return datetime.now(tz=timezone.utc)
 
 
 def _uuid() -> str:
+    """Internal helper for uuid."""
     return str(uuid.uuid4())
 
 
@@ -123,6 +125,7 @@ class InvestigationScope:
     keywords:            list[str]       = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "date_range_start":   self.date_range_start.isoformat() if self.date_range_start else None,
             "date_range_end":     self.date_range_end.isoformat() if self.date_range_end else None,
@@ -134,6 +137,7 @@ class InvestigationScope:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "InvestigationScope":
+        """Create an instance from DICT data."""
         return cls(
             date_range_start    = datetime.fromisoformat(data["date_range_start"])
                                   if data.get("date_range_start") else None,
@@ -181,6 +185,7 @@ class Hypothesis:
     updated_at:          datetime             = field(default_factory=_now)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "id":                  self.id,
             "statement":           self.statement,
@@ -194,6 +199,7 @@ class Hypothesis:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Hypothesis":
+        """Create an instance from DICT data."""
         return cls(
             id                  = data["id"],
             statement           = data["statement"],
@@ -232,6 +238,7 @@ class AnalystNote:
     linked_artifacts: list[str]  = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "id":               self.id,
             "content":          self.content,
@@ -242,6 +249,7 @@ class AnalystNote:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AnalystNote":
+        """Create an instance from DICT data."""
         return cls(
             id               = data["id"],
             content          = data["content"],
@@ -287,6 +295,7 @@ class InvestigationTask:
     updated_at:   datetime         = field(default_factory=_now)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "id":          self.id,
             "title":       self.title,
@@ -301,6 +310,7 @@ class InvestigationTask:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "InvestigationTask":
+        """Create an instance from DICT data."""
         return cls(
             id          = data["id"],
             title       = data["title"],

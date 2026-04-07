@@ -170,6 +170,7 @@ class FeedConnectorFactory:
 
         # Build a subclass that pre-fills config defaults
         def __init__(self: OsintFeedConnector, **kwargs: Any) -> None:  # type: ignore[misc]
+            """Initialize FeedConnectorFactory."""
             merged = {**feed_defaults, **kwargs}
             # host is required by BaseClient; pull from merged
             host = merged.pop("host", "")

@@ -72,6 +72,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         client_secret: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize DefenderTIClient."""
         super().__init__(host=host, **kwargs)
         self._tenant_id = tenant_id
         self._client_id = client_id
@@ -232,6 +233,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(native: dict[str, Any], value: str) -> str:
+        """Internal helper for make pattern."""
         if native.get("networkIPv4"):
             return f"[ipv4-addr:value = '{native['networkIPv4']}']"
         if native.get("networkIPv6"):
@@ -249,6 +251,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_pattern_to_ti_payload(pattern: str, value: str) -> dict[str, Any]:
+        """Internal helper for stix pattern to ti payload."""
         if "ipv4-addr" in pattern:
             return {"networkIPv4": value}
         if "ipv6-addr" in pattern:

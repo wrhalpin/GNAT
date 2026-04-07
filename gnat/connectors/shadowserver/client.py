@@ -70,6 +70,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         api_secret: str = "",
         **kwargs: Any,
     ):
+        """Initialize ShadowServerClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._api_secret = api_secret
@@ -80,6 +81,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         self._auth_headers["Accept"] = "application/json"
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         resp = self._signed_post("/api/test/ping", {})
         return isinstance(resp, dict) and resp.get("pong") == 1
 
@@ -140,9 +142,11 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         return resp
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Shadowserver API is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Shadowserver API is read-only — delete not supported.")
 
     # ── STIX translation ───────────────────────────────────────────────────
@@ -194,6 +198,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         import re
 
         pattern = stix_dict.get("pattern", "")

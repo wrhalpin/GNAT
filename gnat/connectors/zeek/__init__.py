@@ -59,18 +59,22 @@ from datetime import datetime, timezone
 
 
 class ZeekError(Exception):
+    """Raised when a zeek error error occurs."""
     pass
 
 
 class ZeekConfigError(ZeekError):
+    """Raised when a zeek config error error occurs."""
     pass
 
 
 class ZeekLogError(ZeekError):
+    """Raised when a zeek log error error occurs."""
     pass
 
 
 class ZeekSTIXError(ZeekError):
+    """Raised when a zeek s t i x error error occurs."""
     pass
 
 
@@ -79,11 +83,13 @@ class ZeekSTIXError(ZeekError):
 
 @dataclass
 class ZeekConfig:
+    """Configuration container for zeek."""
     log_dir: str = "/var/log/zeek/current"
     log_format: str = "tsv"  # 'tsv' or 'json'
     timeout: int = 10
 
     def __post_init__(self):
+        """Post-init setup for ZeekConfig."""
         if not self.log_dir:
             raise ZeekConfigError("'log_dir' required in [zeek].")
         if self.log_format not in ("tsv", "json"):
@@ -96,6 +102,7 @@ class ZeekConfig:
 
 
 def load_zeek_config(config: configparser.ConfigParser, section: str = "zeek") -> ZeekConfig:
+    """Load zeek config from the configured source."""
     if not config.has_section(section):
         raise ZeekConfigError(f"Section '[{section}]' not found.")
     raw = {"log_dir": "/var/log/zeek/current", "log_format": "tsv", "timeout": "10"}
@@ -126,6 +133,7 @@ class ZeekTSVReader:
     """
 
     def __init__(self, config: ZeekConfig):
+        """Initialize ZeekTSVReader."""
         self.config = config
 
     def iter_records(
@@ -184,6 +192,7 @@ class ZeekTSVReader:
             )
 
     def count_records(self, log_name: str) -> int:
+        """Return the count of records."""
         return sum(1 for _ in self.iter_records(log_name))
 
 
@@ -194,9 +203,11 @@ class ZeekJSONReader:
     """Reads Zeek JSON log files (json-logs package or zeek-cut -j output)."""
 
     def __init__(self, config: ZeekConfig):
+        """Initialize ZeekJSONReader."""
         self.config = config
 
     def iter_records(self, log_name: str, path: str | None = None) -> Iterator[dict]:
+        """Iter records."""
         log_path = path or self.config.log_path(log_name)
         try:
             with open(log_path, encoding="utf-8", errors="replace") as f:
@@ -212,6 +223,7 @@ class ZeekJSONReader:
             raise ZeekLogError(f"Zeek JSON log not found: {log_path}")
 
     def count_records(self, log_name: str) -> int:
+        """Return the count of records."""
         return sum(1 for _ in self.iter_records(log_name))
 
 
@@ -231,6 +243,7 @@ class ZeekLogCommands:
     """
 
     def __init__(self, config: ZeekConfig):
+        """Initialize ZeekLogCommands."""
         self.config = config
         if config.log_format == "json":
             self._reader = ZeekJSONReader(config)
@@ -238,6 +251,7 @@ class ZeekLogCommands:
             self._reader = ZeekTSVReader(config)
 
     def iter_records(self, log_name: str, path: str | None = None) -> Iterator[dict]:
+        """Iter records."""
         yield from self._reader.iter_records(log_name, path=path)
 
     def iter_notices(self, path: str | None = None) -> Iterator[dict]:
@@ -484,6 +498,7 @@ class ZeekSTIXMapper:
         }
 
     def notices_to_stix_bundle(self, notices: list[dict]) -> dict:
+        """Notices to stix bundle."""
         all_objects: list[dict] = []
         seen: set[str] = set()
         for n in notices:
@@ -500,8 +515,10 @@ class ZeekSTIXMapper:
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

@@ -139,6 +139,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         tlp_marking: str = "white",
         **kwargs: Any,
     ):
+        """Initialize CiscoUmbrellaClient."""
         super().__init__(host=host or _INVESTIGATE_HOST, **kwargs)
         self._investigate_key = investigate_api_key
         self._enforcement_key = enforcement_api_key

@@ -149,6 +149,7 @@ class ExportJob(FeedJob):
         overlap_policy: str = "skip",
         enabled: bool = True,
     ):
+        """Initialize ExportJob."""
         self._pipeline_factory = pipeline_factory
         self.last_export_result: ExportResult | None = None
 
@@ -294,6 +295,7 @@ class ExportJob(FeedJob):
         return record
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         sched = (
             f"every {self.interval_seconds}s" if self.interval_seconds else f"cron={self.cron!r}"
         )

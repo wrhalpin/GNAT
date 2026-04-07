@@ -120,6 +120,7 @@ class ResearchAgent(SourceReader):
         newer_than: str | None = None,
         max_calls_per_run: int | None = None,
     ) -> None:
+        """Initialize ResearchAgent."""
         if topics and monitored_sources:
             raise ValueError(
                 "Provide topics or monitored_sources, not both."
@@ -140,6 +141,7 @@ class ResearchAgent(SourceReader):
     # ── SourceReader protocol ─────────────────────────────────────────────
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         if self._topics:
             yield from self._iter_topic_records()
         else:
@@ -148,6 +150,7 @@ class ResearchAgent(SourceReader):
     # ── Topic-driven iteration ────────────────────────────────────────────
 
     def _iter_topic_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter topic records."""
         calls = 0
         for topic in self._topics:
             if self._max_calls is not None and calls >= self._max_calls:
@@ -178,6 +181,7 @@ class ResearchAgent(SourceReader):
                 }
 
     def _build_topic_prompt(self, topic: str) -> str:
+        """Internal helper for build topic prompt."""
         date_hint = (
             f"\nOnly include information published after {self._newer_than}."
             if self._newer_than
@@ -195,6 +199,7 @@ class ResearchAgent(SourceReader):
     # ── Feed-driven iteration ─────────────────────────────────────────────
 
     def _iter_feed_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter feed records."""
         sources = self._monitored_sources
         for i in range(0, len(sources), _FEED_BATCH_SIZE):
             batch = sources[i : i + _FEED_BATCH_SIZE]
@@ -217,6 +222,7 @@ class ResearchAgent(SourceReader):
                 }
 
     def _build_feed_prompt(self, sources: list[dict[str, Any]]) -> str:
+        """Internal helper for build feed prompt."""
         source_lines = "\n".join(
             f"- {s.get('label', s.get('url', ''))}: {s.get('url', '')}"
             for s in sources

@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Bill Halpin
+"""
+gnat.agents.security.secrets
+================================
+
+Public API surface for the ``gnat.agents.security.secrets`` package.
+"""
 from .broker import SecretsBroker as SecretsBroker
 from .models import AuditEvent as AuditEvent
 from .models import ProviderCapabilities as ProviderCapabilities

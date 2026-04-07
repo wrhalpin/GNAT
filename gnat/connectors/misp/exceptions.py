@@ -60,12 +60,14 @@ class MISPAPIError(MISPError):
         misp_message: str = "",
         endpoint: str | None = None,
     ) -> None:
+        """Initialize MISPAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.misp_message = misp_message
         self.endpoint = endpoint
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.status_code:
             parts.append(f"HTTP {self.status_code}")

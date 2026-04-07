@@ -116,6 +116,7 @@ class AsyncGNATClient:
     """
 
     def __init__(self, config_path: str | None = None):
+        """Initialize AsyncGNATClient."""
         self._config_path = config_path
         self._config: GNATConfig | None = None
         self.client: AsyncBaseClient | None = None
@@ -126,9 +127,11 @@ class AsyncGNATClient:
     # ------------------------------------------------------------------
 
     async def __aenter__(self) -> AsyncGNATClient:
+        """Internal helper for aenter."""
         return self
 
     async def __aexit__(self, *_: Any) -> None:
+        """Internal helper for aexit."""
         await self.disconnect()
 
     # ------------------------------------------------------------------
@@ -190,6 +193,7 @@ class AsyncGNATClient:
     # ------------------------------------------------------------------
 
     def _load_config(self, target: str, overrides: dict) -> dict:
+        """Internal helper for load config."""
         cfg: dict = {}
         if self._config is None:
             with contextlib.suppress(FileNotFoundError):
@@ -203,6 +207,7 @@ class AsyncGNATClient:
         return cfg
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"AsyncGNATClient(target={self.target!r}, connected={self.client is not None})"
 
 
@@ -237,6 +242,7 @@ class AsyncSTIXBase:
     _sync_cls: type[Any] | None = None  # set by concrete subclasses
 
     def __init__(self, client: AsyncGNATClient | None = None, **kwargs: Any):
+        """Initialize AsyncSTIXBase."""
         self._async_client = client
         # Instantiate the underlying sync ORM object (no client — async manages I/O)
         # Use a local variable so Pylint can narrow the type from `type | None` to `type`.
@@ -246,12 +252,14 @@ class AsyncSTIXBase:
         self.__dict__.update(self._obj.__dict__ if sync_cls is not None else {})
 
     def __getattr__(self, name: str) -> Any:
+        """Internal helper for getattr."""
         try:
             return getattr(self._obj, name)
         except AttributeError:
             raise AttributeError(f"{type(self).__name__} has no attribute {name!r}")
 
     def __setattr__(self, name: str, value: Any) -> None:
+        """Internal helper for setattr."""
         if name.startswith("_") or name in ("stix_type",):
             super().__setattr__(name, value)
         elif hasattr(self, "_obj"):
@@ -260,6 +268,7 @@ class AsyncSTIXBase:
             super().__setattr__(name, value)
 
     def _require_client(self) -> None:
+        """Internal helper for require client."""
         if self._async_client is None or self._async_client.client is None:
             raise RuntimeError(
                 f"No async client bound to {type(self).__name__}. "
@@ -295,10 +304,13 @@ class AsyncSTIXBase:
         return await self.select()
 
     def to_dict(self) -> dict:
+        """Convert this object to DICT format."""
         return self._obj.to_dict()
 
     def to_stix_bundle(self) -> dict:
+        """Convert this object to STIX BUNDLE format."""
         return self._obj.to_stix_bundle()
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"Async{type(self).__name__}(id={self._obj.id!r})"

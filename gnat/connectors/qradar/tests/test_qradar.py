@@ -67,6 +67,7 @@ from gnat.connectors.qradar.stix_mapper import QRadarSTIXMapper
 
 
 def _make_config(**overrides) -> QRadarConfig:
+    """Internal helper for make config."""
     defaults = {"host": "qradar.test.local", "token": "test-uuid-token"}
     defaults.update(overrides)
     return QRadarConfig(**defaults)
@@ -91,6 +92,7 @@ def _make_response(
 
 
 def _make_client(config: QRadarConfig | None = None) -> tuple[QRadarClient, MagicMock]:
+    """Internal helper for make client."""
     cfg = config or _make_config()
     with patch("gnat.connectors.qradar.client.urllib3.PoolManager") as pm_cls:
         mock_pm = MagicMock()
@@ -160,17 +162,21 @@ _SAMPLE_EVENT_ROW = {
 
 
 class TestQRadarConfig(unittest.TestCase):
+    """Configuration container for test q radar."""
     def test_minimal_config(self):
+        """Test that minimal config."""
         cfg = _make_config()
         self.assertEqual(cfg.host, "qradar.test.local")
         self.assertEqual(cfg.token, "test-uuid-token")
         self.assertEqual(cfg.api_version, "20.0")
 
     def test_base_url(self):
+        """Test that base url."""
         cfg = _make_config()
         self.assertEqual(cfg.base_url, "https://qradar.test.local/api")
 
     def test_endpoint_helper(self):
+        """Test that endpoint helper."""
         cfg = _make_config()
         self.assertEqual(
             cfg.endpoint("siem/offenses"),
@@ -178,6 +184,7 @@ class TestQRadarConfig(unittest.TestCase):
         )
 
     def test_base_headers_sec_token(self):
+        """Test that base headers sec token."""
         cfg = _make_config()
         headers = cfg.base_headers
         self.assertEqual(headers["SEC"], "test-uuid-token")
@@ -185,6 +192,7 @@ class TestQRadarConfig(unittest.TestCase):
         self.assertEqual(headers["Accept"], "application/json")
 
     def test_json_headers_has_content_type(self):
+        """Test that json headers has content type."""
         cfg = _make_config()
         headers = cfg.json_headers
         self.assertEqual(headers["Content-Type"], "application/json")
@@ -198,18 +206,22 @@ class TestQRadarConfig(unittest.TestCase):
         self.assertNotIn("Bearer", str(headers))
 
     def test_missing_host_raises(self):
+        """Test that missing host raises."""
         with self.assertRaises(QRadarConfigError):
             QRadarConfig(host="", token="t")
 
     def test_missing_token_raises(self):
+        """Test that missing token raises."""
         with self.assertRaises(QRadarConfigError):
             QRadarConfig(host="h", token="")
 
     def test_invalid_scheme_raises(self):
+        """Test that invalid scheme raises."""
         with self.assertRaises(QRadarConfigError):
             QRadarConfig(host="h", token="t", scheme="ftp")
 
     def test_load_from_configparser(self):
+        """Test that load from configparser."""
         parser = configparser.ConfigParser()
         parser.read_dict(
             {
@@ -229,10 +241,12 @@ class TestQRadarConfig(unittest.TestCase):
         self.assertEqual(cfg.max_results, 100)
 
     def test_load_missing_section_raises(self):
+        """Test that load missing section raises."""
         with self.assertRaises(QRadarConfigError):
             load_qradar_config(configparser.ConfigParser())
 
     def test_load_missing_token_raises(self):
+        """Test that load missing token raises."""
         parser = configparser.ConfigParser()
         parser.read_dict({"qradar": {"host": "h"}})
         with self.assertRaises(QRadarConfigError):
@@ -245,34 +259,41 @@ class TestQRadarConfig(unittest.TestCase):
 
 
 class TestQRadarAuthManager(unittest.TestCase):
+    """Unit tests for :class:`QRadarAuthManager`."""
     def _make_auth(self, config=None):
+        """Internal helper for make auth."""
         cfg = config or _make_config()
         mock_http = MagicMock()
         return QRadarAuthManager(cfg, mock_http), mock_http
 
     def test_get_headers_includes_sec(self):
+        """Test that get headers includes sec."""
         auth, _ = self._make_auth()
         headers = auth.get_headers()
         self.assertEqual(headers["SEC"], "test-uuid-token")
 
     def test_get_headers_with_body_includes_content_type(self):
+        """Test that get headers with body includes content type."""
         auth, _ = self._make_auth()
         headers = auth.get_headers(with_body=True)
         self.assertEqual(headers["Content-Type"], "application/json")
 
     def test_verify_success(self):
+        """Test that verify success."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(200, {"id": "20.0", "deprecated": False})
         result = auth.verify()
         self.assertIsInstance(result, dict)
 
     def test_verify_401_raises(self):
+        """Test that verify 401 raises."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(401)
         with self.assertRaises(QRadarAuthError):
             auth.verify()
 
     def test_verify_403_raises(self):
+        """Test that verify 403 raises."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(403)
         with self.assertRaises(QRadarAuthError):
@@ -285,13 +306,16 @@ class TestQRadarAuthManager(unittest.TestCase):
 
 
 class TestQRadarClient(unittest.TestCase):
+    """HTTP API client for the TestQRadar platform."""
     def test_get_returns_dict(self):
+        """Test that get returns dict."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {"id": 42})
         result = client.get("siem/offenses/42")
         self.assertEqual(result["id"], 42)
 
     def test_get_sends_sec_header(self):
+        """Test that get sends sec header."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {})
         client.get("siem/offenses")
@@ -300,6 +324,7 @@ class TestQRadarClient(unittest.TestCase):
         self.assertEqual(headers["SEC"], "test-uuid-token")
 
     def test_get_sends_version_header(self):
+        """Test that get sends version header."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {})
         client.get("siem/offenses")
@@ -307,6 +332,7 @@ class TestQRadarClient(unittest.TestCase):
         self.assertEqual(headers["Version"], "20.0")
 
     def test_get_with_range_header(self):
+        """Test that get with range header."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, [])
         client.get("siem/offenses", range_header="items=0-49")
@@ -314,12 +340,14 @@ class TestQRadarClient(unittest.TestCase):
         self.assertEqual(headers["Range"], "items=0-49")
 
     def test_401_raises_auth_error(self):
+        """Test that 401 raises auth error."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(401)
         with self.assertRaises(QRadarAuthError):
             client.get("siem/offenses")
 
     def test_403_raises_auth_error(self):
+        """Test that 403 raises auth error."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(
             403, {"code": 1002, "description": "Not authorized"}
@@ -328,6 +356,7 @@ class TestQRadarClient(unittest.TestCase):
             client.get("siem/offenses")
 
     def test_404_raises_not_found(self):
+        """Test that 404 raises not found."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(
             404, {"code": 1003, "description": "Offense not found"}
@@ -337,6 +366,7 @@ class TestQRadarClient(unittest.TestCase):
         self.assertEqual(ctx.exception.qradar_code, 1003)
 
     def test_409_raises_conflict(self):
+        """Test that 409 raises conflict."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(
             409, {"description": "Duplicate reference set name"}
@@ -345,12 +375,14 @@ class TestQRadarClient(unittest.TestCase):
             client.post("reference_data/sets", params={"name": "dup"})
 
     def test_429_retries_then_raises(self):
+        """Test that 429 retries then raises."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
         with patch("time.sleep"), self.assertRaises(QRadarRateLimitError):
             client.get("siem/offenses")
 
     def test_context_manager(self):
+        """Test that context manager."""
         cfg = _make_config()
         with patch("gnat.connectors.qradar.client.urllib3.PoolManager"), QRadarClient(cfg) as c:
             self.assertIsInstance(c, QRadarClient)
@@ -387,11 +419,13 @@ class TestQRadarClient(unittest.TestCase):
         self.assertEqual(items, [])
 
     def test_parse_content_range_total(self):
+        """Test that parse content range total."""
         self.assertEqual(QRadarClient._parse_content_range_total("items 0-49/1234"), 1234)
         self.assertEqual(QRadarClient._parse_content_range_total(""), 0)
         self.assertEqual(QRadarClient._parse_content_range_total("items 0-0/1"), 1)
 
     def test_get_total_count(self):
+        """Test that get total count."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(
             200, [{"id": 1}], content_range="items 0-0/999"
@@ -408,11 +442,14 @@ class TestQRadarClient(unittest.TestCase):
 
 
 class TestQRadarOffenseCommands(unittest.TestCase):
+    """Unit tests for :class:`QRadarOffenseCommands`."""
     def _make_offenses(self):
+        """Internal helper for make offenses."""
         client, mock_http = _make_client()
         return QRadarOffenseCommands(client), mock_http
 
     def test_list_offenses(self):
+        """Test that list offenses."""
         off_cmd, mock_http = self._make_offenses()
         mock_http.request.return_value = _make_response(
             200, [_SAMPLE_OFFENSE], content_range="items 0-0/1"
@@ -430,12 +467,14 @@ class TestQRadarOffenseCommands(unittest.TestCase):
         self.assertIn("OPEN", call_url)
 
     def test_get_offense(self):
+        """Test that get offense."""
         off_cmd, mock_http = self._make_offenses()
         mock_http.request.return_value = _make_response(200, _SAMPLE_OFFENSE)
         result = off_cmd.get_offense(42)
         self.assertEqual(result["id"], 42)
 
     def test_update_offense_status(self):
+        """Test that update offense status."""
         off_cmd, mock_http = self._make_offenses()
         mock_http.request.return_value = _make_response(
             200, {**_SAMPLE_OFFENSE, "status": "CLOSED"}
@@ -446,6 +485,7 @@ class TestQRadarOffenseCommands(unittest.TestCase):
         self.assertIn("status=CLOSED", call_url)
 
     def test_close_offense(self):
+        """Test that close offense."""
         off_cmd, mock_http = self._make_offenses()
         mock_http.request.return_value = _make_response(200, _SAMPLE_OFFENSE)
         off_cmd.close_offense(42, closing_reason_id=2)
@@ -453,6 +493,7 @@ class TestQRadarOffenseCommands(unittest.TestCase):
         self.assertIn("CLOSED", call_url)
 
     def test_add_note(self):
+        """Test that add note."""
         off_cmd, mock_http = self._make_offenses()
         mock_http.request.return_value = _make_response(
             201, {"id": 1, "note_text": "Investigating"}
@@ -461,6 +502,7 @@ class TestQRadarOffenseCommands(unittest.TestCase):
         self.assertIsNotNone(result)
 
     def test_normalise_offense(self):
+        """Test that normalise offense."""
         result = QRadarOffenseCommands.normalise_offense(_SAMPLE_OFFENSE)
         self.assertEqual(result["id"], 42)
         self.assertEqual(result["offense_type_label"], "Username")
@@ -472,6 +514,7 @@ class TestQRadarOffenseCommands(unittest.TestCase):
         self.assertIn("2024", result["start_time"])
 
     def test_magnitude_to_severity_mapping(self):
+        """Test that magnitude to severity mapping."""
         self.assertEqual(_magnitude_to_severity(0), 0)
         self.assertEqual(_magnitude_to_severity(2), 0)
         self.assertEqual(_magnitude_to_severity(3), 1)
@@ -481,12 +524,14 @@ class TestQRadarOffenseCommands(unittest.TestCase):
         self.assertEqual(_magnitude_to_severity(10), 4)
 
     def test_epoch_ms_to_iso(self):
+        """Test that epoch ms to iso."""
         ts = _epoch_ms_to_iso(1709640000000)
         self.assertIsNotNone(ts)
         self.assertIn("2024", ts)
         self.assertTrue(ts.endswith("Z"))
 
     def test_epoch_ms_to_iso_none(self):
+        """Test that epoch ms to iso none."""
         self.assertIsNone(_epoch_ms_to_iso(None))
         self.assertIsNone(_epoch_ms_to_iso(0))
 
@@ -497,11 +542,14 @@ class TestQRadarOffenseCommands(unittest.TestCase):
 
 
 class TestQRadarArielCommands(unittest.TestCase):
+    """Unit tests for :class:`QRadarArielCommands`."""
     def _make_ariel(self):
+        """Internal helper for make ariel."""
         client, mock_http = _make_client()
         return QRadarArielCommands(client), mock_http
 
     def test_create_search(self):
+        """Test that create search."""
         ariel, mock_http = self._make_ariel()
         mock_http.request.return_value = _make_response(
             201,
@@ -514,18 +562,21 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertEqual(search_id, "search-001")
 
     def test_get_search_status(self):
+        """Test that get search status."""
         ariel, mock_http = self._make_ariel()
         mock_http.request.return_value = _make_response(200, _SAMPLE_ARIEL_JOB)
         result = ariel.get_search_status("search-uuid-001")
         self.assertEqual(result["status"], "COMPLETED")
 
     def test_wait_for_completion_succeeds(self):
+        """Test that wait for completion succeeds."""
         ariel, mock_http = self._make_ariel()
         mock_http.request.return_value = _make_response(200, _SAMPLE_ARIEL_JOB)
         result = ariel.wait_for_completion("search-uuid-001")
         self.assertEqual(result["status"], "COMPLETED")
 
     def test_wait_for_completion_polls_until_done(self):
+        """Test that wait for completion polls until done."""
         ariel, mock_http = self._make_ariel()
         mock_http.request.side_effect = [
             _make_response(200, {**_SAMPLE_ARIEL_JOB, "status": "EXECUTE"}),
@@ -538,6 +589,7 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertEqual(mock_http.request.call_count, 3)
 
     def test_wait_for_completion_error_raises(self):
+        """Test that wait for completion error raises."""
         ariel, mock_http = self._make_ariel()
         mock_http.request.return_value = _make_response(
             200,
@@ -553,6 +605,7 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertIn("syntax error", str(ctx.exception.error_messages[0]))
 
     def test_wait_for_completion_cancelled_raises(self):
+        """Test that wait for completion cancelled raises."""
         ariel, mock_http = self._make_ariel()
         mock_http.request.return_value = _make_response(
             200, {**_SAMPLE_ARIEL_JOB, "status": "CANCELLED"}
@@ -562,6 +615,7 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertEqual(ctx.exception.status, "CANCELLED")
 
     def test_wait_for_completion_timeout_raises(self):
+        """Test that wait for completion timeout raises."""
         ariel, mock_http = self._make_ariel()
         mock_http.request.return_value = _make_response(
             200, {**_SAMPLE_ARIEL_JOB, "status": "EXECUTE"}
@@ -575,6 +629,7 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertIn("timed out", str(ctx.exception))
 
     def test_iter_results_yields_events(self):
+        """Test that iter results yields events."""
         ariel, mock_http = self._make_ariel()
         results_body = {
             "events": [_SAMPLE_EVENT_ROW, {**_SAMPLE_EVENT_ROW, "sourceip": "10.0.0.2"}],
@@ -587,12 +642,14 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertEqual(len(rows), 2)
 
     def test_build_event_query_defaults(self):
+        """Test that build event query defaults."""
         aql = QRadarArielCommands.build_event_query()
         self.assertIn("SELECT", aql)
         self.assertIn("FROM events", aql)
         self.assertIn("LAST 1 HOURS", aql)
 
     def test_build_event_query_with_where(self):
+        """Test that build event query with where."""
         aql = QRadarArielCommands.build_event_query(
             where="category=4001",
             time_range="LAST 24 HOURS",
@@ -603,6 +660,7 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertIn("LIMIT 1000", aql)
 
     def test_build_flow_query(self):
+        """Test that build flow query."""
         aql = QRadarArielCommands.build_flow_query(
             where="sourcebytes > 1000000",
             time_range="LAST 30 MINUTES",
@@ -611,6 +669,7 @@ class TestQRadarArielCommands(unittest.TestCase):
         self.assertIn("sourcebytes > 1000000", aql)
 
     def test_normalise_event_row(self):
+        """Test that normalise event row."""
         result = QRadarArielCommands.normalise_event_row(_SAMPLE_EVENT_ROW)
         self.assertEqual(result["src_ip"], "10.0.0.1")
         self.assertEqual(result["dst_ip"], "192.168.1.100")
@@ -625,11 +684,14 @@ class TestQRadarArielCommands(unittest.TestCase):
 
 
 class TestQRadarReferenceDataCommands(unittest.TestCase):
+    """Unit tests for :class:`QRadarReferenceDataCommands`."""
     def _make_rd(self):
+        """Internal helper for make rd."""
         client, mock_http = _make_client()
         return QRadarReferenceDataCommands(client), mock_http
 
     def test_list_sets(self):
+        """Test that list sets."""
         rd, mock_http = self._make_rd()
         mock_http.request.return_value = _make_response(
             200, [{"name": "gnat_ips", "element_type": "IP"}], content_range="items 0-0/1"
@@ -638,6 +700,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_create_set(self):
+        """Test that create set."""
         rd, mock_http = self._make_rd()
         mock_http.request.return_value = _make_response(
             201, {"name": "my_set", "element_type": "IP", "number_of_elements": 0}
@@ -649,6 +712,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         self.assertIn("IP", call_url)
 
     def test_add_set_values_bulk(self):
+        """Test that add set values bulk."""
         rd, mock_http = self._make_rd()
         mock_http.request.return_value = _make_response(
             200, {"name": "my_ips", "number_of_elements": 3}
@@ -660,6 +724,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         self.assertIn("1.2.3.4", body)
 
     def test_ensure_set_exists_creates_if_missing(self):
+        """Test that ensure set exists creates if missing."""
         rd, mock_http = self._make_rd()
         # First call = 404 (not found), second call = 201 (created)
         mock_http.request.side_effect = [
@@ -671,6 +736,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         self.assertEqual(mock_http.request.call_count, 2)
 
     def test_ensure_set_exists_returns_existing(self):
+        """Test that ensure set exists returns existing."""
         rd, mock_http = self._make_rd()
         mock_http.request.return_value = _make_response(
             200, {"name": "existing_set", "element_type": "IP"}
@@ -680,6 +746,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         self.assertEqual(mock_http.request.call_count, 1)
 
     def test_push_ip_iocs(self):
+        """Test that push ip iocs."""
         rd, mock_http = self._make_rd()
         # ensure_set_exists → 200 (exists), bulk_load → 200
         mock_http.request.side_effect = [
@@ -690,6 +757,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         self.assertIsNotNone(result)
 
     def test_create_map(self):
+        """Test that create map."""
         rd, mock_http = self._make_rd()
         mock_http.request.return_value = _make_response(
             201, {"name": "ioc_map", "element_type": "ALN"}
@@ -698,6 +766,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
         self.assertIsNotNone(result)
 
     def test_add_map_entry(self):
+        """Test that add map entry."""
         rd, mock_http = self._make_rd()
         mock_http.request.return_value = _make_response(200, {"name": "my_map"})
         rd.add_map_entry("my_map", "1.2.3.4", "C2 Server")
@@ -711,11 +780,14 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
 
 
 class TestQRadarRulesCommands(unittest.TestCase):
+    """Unit tests for :class:`QRadarRulesCommands`."""
     def _make_rules(self):
+        """Internal helper for make rules."""
         client, mock_http = _make_client()
         return QRadarRulesCommands(client), mock_http
 
     def test_list_rules(self):
+        """Test that list rules."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200,
@@ -726,12 +798,14 @@ class TestQRadarRulesCommands(unittest.TestCase):
         self.assertEqual(results[0]["name"], "Brute Force Attempt")
 
     def test_get_rule(self):
+        """Test that get rule."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(200, {"id": 100, "name": "My Rule"})
         result = rules_cmd.get_rule(100)
         self.assertEqual(result["id"], 100)
 
     def test_list_rules_enabled_only(self):
+        """Test that list rules enabled only."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(200, [], content_range="items 0-0/0")
         rules_cmd.list_rules(enabled_only=True)
@@ -749,11 +823,14 @@ class TestQRadarRulesCommands(unittest.TestCase):
 
 
 class TestQRadarAssetCommands(unittest.TestCase):
+    """Unit tests for :class:`QRadarAssetCommands`."""
     def _make_assets(self):
+        """Internal helper for make assets."""
         client, mock_http = _make_client()
         return QRadarAssetCommands(client), mock_http
 
     def test_list_assets(self):
+        """Test that list assets."""
         assets_cmd, mock_http = self._make_assets()
         mock_http.request.return_value = _make_response(
             200, [{"id": 1, "domain_id": 0}], content_range="items 0-0/1"
@@ -762,12 +839,14 @@ class TestQRadarAssetCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_get_asset(self):
+        """Test that get asset."""
         assets_cmd, mock_http = self._make_assets()
         mock_http.request.return_value = _make_response(200, {"id": 1})
         result = assets_cmd.get_asset(1)
         self.assertEqual(result["id"], 1)
 
     def test_search_by_ip(self):
+        """Test that search by ip."""
         assets_cmd, mock_http = self._make_assets()
         mock_http.request.return_value = _make_response(200, [], content_range="items 0-0/0")
         assets_cmd.search_by_ip("10.0.0.1")
@@ -781,11 +860,14 @@ class TestQRadarAssetCommands(unittest.TestCase):
 
 
 class TestQRadarLogSourceCommands(unittest.TestCase):
+    """Unit tests for :class:`QRadarLogSourceCommands`."""
     def _make_ls(self):
+        """Internal helper for make ls."""
         client, mock_http = _make_client()
         return QRadarLogSourceCommands(client), mock_http
 
     def test_list_log_sources(self):
+        """Test that list log sources."""
         ls_cmd, mock_http = self._make_ls()
         mock_http.request.return_value = _make_response(
             200, [{"id": 73, "name": "Windows Auth"}], content_range="items 0-0/1"
@@ -794,12 +876,14 @@ class TestQRadarLogSourceCommands(unittest.TestCase):
         self.assertEqual(results[0]["name"], "Windows Auth")
 
     def test_get_log_source(self):
+        """Test that get log source."""
         ls_cmd, mock_http = self._make_ls()
         mock_http.request.return_value = _make_response(200, {"id": 73})
         result = ls_cmd.get_log_source(73)
         self.assertEqual(result["id"], 73)
 
     def test_get_log_source_count(self):
+        """Test that get log source count."""
         ls_cmd, mock_http = self._make_ls()
         mock_http.request.return_value = _make_response(
             200, [{"id": 1}], content_range="items 0-0/42"
@@ -814,12 +898,15 @@ class TestQRadarLogSourceCommands(unittest.TestCase):
 
 
 class TestQRadarSTIXMapper(unittest.TestCase):
+    """STIX translation helper for test q radar s t i x objects."""
     def setUp(self):
+        """Set up test fixtures before each test method."""
         self.mapper = QRadarSTIXMapper()
 
     # ── A: Offense → STIX ─────────────────────────────────────────────────
 
     def test_offense_to_stix_bundle_structure(self):
+        """Test that offense to stix bundle structure."""
         offense = QRadarOffenseCommands.normalise_offense(_SAMPLE_OFFENSE)
         bundle = self.mapper.offense_to_stix_bundle(offense)
         self.assertEqual(bundle["type"], "bundle")
@@ -855,6 +942,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertIn("domain-name", types)
 
     def test_observed_data_has_qradar_extension(self):
+        """Test that observed data has qradar extension."""
         offense = QRadarOffenseCommands.normalise_offense(_SAMPLE_OFFENSE)
         bundle = self.mapper.offense_to_stix_bundle(offense)
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
@@ -872,6 +960,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertEqual(jdoe_count, 1)
 
     def test_offense_number_observed_uses_event_count(self):
+        """Test that offense number observed uses event count."""
         offense = QRadarOffenseCommands.normalise_offense(_SAMPLE_OFFENSE)
         bundle = self.mapper.offense_to_stix_bundle(offense)
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
@@ -880,6 +969,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
     # ── A: Ariel event → STIX ─────────────────────────────────────────────
 
     def test_event_to_stix_bundle_structure(self):
+        """Test that event to stix bundle structure."""
         event = QRadarArielCommands.normalise_event_row(_SAMPLE_EVENT_ROW)
         bundle = self.mapper.event_to_stix_bundle(event)
         types = {o["type"] for o in bundle["objects"]}
@@ -889,6 +979,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_event_observed_data_has_qradar_extension(self):
+        """Test that event observed data has qradar extension."""
         event = QRadarArielCommands.normalise_event_row(_SAMPLE_EVENT_ROW)
         bundle = self.mapper.event_to_stix_bundle(event)
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
@@ -896,6 +987,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertEqual(obs["x_qradar_event"]["category_name"], "Authentication")
 
     def test_event_network_traffic_ports(self):
+        """Test that event network traffic ports."""
         event = QRadarArielCommands.normalise_event_row(_SAMPLE_EVENT_ROW)
         bundle = self.mapper.event_to_stix_bundle(event)
         nt = next(o for o in bundle["objects"] if o["type"] == "network-traffic")
@@ -903,6 +995,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertEqual(nt.get("dst_port"), 445)
 
     def test_events_bundle_deduplication(self):
+        """Test that events bundle deduplication."""
         event = QRadarArielCommands.normalise_event_row(_SAMPLE_EVENT_ROW)
         bundle = self.mapper.events_to_stix_bundle([event, event])
         ip_objects = [o for o in bundle["objects"] if o["type"] == "ipv4-addr"]
@@ -912,6 +1005,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
     # ── B: STIX → reference sets ───────────────────────────────────────────
 
     def test_stix_bundle_to_reference_sets_ipv4(self):
+        """Test that stix bundle to reference sets ipv4."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -926,6 +1020,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertEqual(len(groups["domain"]), 0)
 
     def test_stix_bundle_to_reference_sets_mixed(self):
+        """Test that stix bundle to reference sets mixed."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -945,6 +1040,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertIn("abc123", groups["hash"])  # SHA-256 preferred
 
     def test_stix_bundle_to_reference_sets_deduplication(self):
+        """Test that stix bundle to reference sets deduplication."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -957,6 +1053,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertEqual(groups["ip"].count("1.2.3.4"), 1)
 
     def test_stix_bundle_to_reference_sets_indicator_pattern(self):
+        """Test that stix bundle to reference sets indicator pattern."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -974,6 +1071,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         self.assertIn("10.0.0.99", groups["ip"])
 
     def test_invalid_bundle_raises(self):
+        """Test that invalid bundle raises."""
         with self.assertRaises(QRadarSTIXError):
             self.mapper.stix_bundle_to_reference_sets({"type": "indicator"})
 
@@ -984,7 +1082,9 @@ class TestQRadarSTIXMapper(unittest.TestCase):
 
 
 class TestQRadarExceptions(unittest.TestCase):
+    """Raised when a test q radar exceptions error occurs."""
     def test_all_inherit_from_base(self):
+        """Test that all inherit from base."""
         from gnat.connectors.qradar.exceptions import QRadarError
 
         for exc_cls in [
@@ -1000,6 +1100,7 @@ class TestQRadarExceptions(unittest.TestCase):
             self.assertTrue(issubclass(exc_cls, QRadarError))
 
     def test_api_error_str_includes_context(self):
+        """Test that api error str includes context."""
         exc = QRadarAPIError(
             "msg",
             status_code=403,
@@ -1013,6 +1114,7 @@ class TestQRadarExceptions(unittest.TestCase):
         self.assertIn("Not authorized", s)
 
     def test_ariel_error_str(self):
+        """Test that ariel error str."""
         exc = QRadarArielError(
             "Job failed", search_id="srch-001", status="ERROR", error_messages=["AQL syntax error"]
         )
@@ -1021,9 +1123,11 @@ class TestQRadarExceptions(unittest.TestCase):
         self.assertIn("ERROR", s)
 
     def test_not_found_is_api_error(self):
+        """Test that not found is api error."""
         self.assertTrue(issubclass(QRadarNotFoundError, QRadarAPIError))
 
     def test_conflict_is_api_error(self):
+        """Test that conflict is api error."""
         self.assertTrue(issubclass(QRadarConflictError, QRadarAPIError))
 
 

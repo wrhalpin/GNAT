@@ -24,16 +24,19 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
 def _get_reports_dir(request: Request) -> str | None:
+    """Internal helper for get reports dir."""
     return getattr(request.app.state, "reports_dir", None)
 
 
 def _fmt_size(n: int) -> str:
+    """Internal helper for fmt size."""
     if n >= 1_048_576:
         return f"{n // 1_048_576} MB"
     return f"{max(1, n // 1024)} KB"
 
 
 def _scan_dir(rdir: str) -> list[dict[str, Any]]:
+    """Internal helper for scan dir."""
     entries: list[dict[str, Any]] = []
     try:
         for p in Path(rdir).iterdir():

@@ -58,6 +58,7 @@ class QRadarAuthManager:
     """
 
     def __init__(self, config: QRadarConfig, http: urllib3.PoolManager) -> None:
+        """Initialize QRadarAuthManager."""
         self._config = config
         self._http = http
 

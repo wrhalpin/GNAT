@@ -89,6 +89,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         client_secret: str = "",
         **kwargs: Any,
     ):
+        """Initialize RiskReconClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret

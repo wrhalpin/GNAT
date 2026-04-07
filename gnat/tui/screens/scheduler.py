@@ -59,11 +59,13 @@ class SchedulerScreen(Screen):
         config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
+        """Initialize SchedulerScreen."""
         super().__init__(**kwargs)
         self._scheduler = scheduler
         self._config_path = config_path
 
     def compose(self) -> ComposeResult:
+        """Build and return the SchedulerScreen."""
         yield Header()
         with Vertical():
             with Horizontal(id="toolbar"):
@@ -75,9 +77,11 @@ class SchedulerScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Handle the mount event."""
         self._refresh_jobs()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle the button pressed event."""
         btn = event.button.id
         if btn == "refresh-btn":
             self.action_refresh()
@@ -87,6 +91,7 @@ class SchedulerScreen(Screen):
             self._toggle_selected()
 
     def action_refresh(self) -> None:
+        """Action refresh."""
         self._refresh_jobs()
 
     def action_trigger_selected(self) -> None:
@@ -116,6 +121,7 @@ class SchedulerScreen(Screen):
     # ------------------------------------------------------------------
 
     def _refresh_jobs(self) -> None:
+        """Internal helper for refresh jobs."""
         sched = self._scheduler
         table = self.query_one(JobTable)
         status = self.query_one("#status-label", Label)
@@ -135,6 +141,7 @@ class SchedulerScreen(Screen):
             status.update(f"[red]{exc}[/red]")
 
     def _toggle_selected(self) -> None:
+        """Internal helper for toggle selected."""
         sched = self._scheduler
         status = self.query_one("#status-label", Label)
         if sched is None:

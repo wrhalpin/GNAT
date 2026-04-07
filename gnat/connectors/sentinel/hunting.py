@@ -20,6 +20,7 @@ class SentinelHuntingCommands:
     """Hunting query management operations."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelHuntingCommands."""
         self._client = client
 
     def list_queries(self, limit: int | None = None) -> list[dict]:

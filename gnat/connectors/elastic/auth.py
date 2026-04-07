@@ -73,6 +73,7 @@ class ElasticAuthManager:
     """
 
     def __init__(self, config: ElasticConfig, http: urllib3.PoolManager) -> None:
+        """Initialize ElasticAuthManager."""
         self._config = config
         self._http = http
 

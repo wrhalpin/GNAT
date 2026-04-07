@@ -77,6 +77,7 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
     def __init__(
         self, host: str = "https://api.cyble.ai/engine/api/v4", api_token: str = "", **kwargs: Any
     ):
+        """Initialize CybleVisionClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 
@@ -129,9 +130,11 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
         )
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Cyble Vision is read-only — no upsert support.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Cyble Vision is read-only — no deletion support.")
 
     # ── Domain-specific helpers (platform-specific) ───────────────────────

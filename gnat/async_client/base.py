@@ -96,6 +96,7 @@ class AsyncBaseClient:
         max_retries: int = 3,
         config: dict[str, Any] | None = None,
     ):
+        """Initialize AsyncBaseClient."""
         self.host = host.rstrip("/")
         self.verify_ssl = verify_ssl
         self.timeout = timeout
@@ -110,10 +111,12 @@ class AsyncBaseClient:
     # ------------------------------------------------------------------
 
     async def __aenter__(self) -> AsyncBaseClient:
+        """Internal helper for aenter."""
         await self._init_http()
         return self
 
     async def __aexit__(self, *_: Any) -> None:
+        """Internal helper for aexit."""
         await self.aclose()
 
     async def _init_http(self) -> None:
@@ -213,6 +216,7 @@ class AsyncBaseClient:
         form_data: dict[str, Any] | None = None,
         extra_headers: dict[str, str] | None = None,
     ) -> Any:
+        """Internal helper for request."""
         if self._http is None:
             await self._init_http()
 
@@ -257,4 +261,5 @@ class AsyncBaseClient:
             return response.text
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"{type(self).__name__}(host={self.host!r}, authenticated={self._authenticated})"

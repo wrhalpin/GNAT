@@ -78,6 +78,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, username: str = "", password: str = "", **kwargs: Any):
+        """Initialize FortiSIEMClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
@@ -165,6 +166,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"upsert_object limited support for {stix_type} in FortiSIEM")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError(
             "FortiSIEM connector does not support deletion via public Integration API."
         )

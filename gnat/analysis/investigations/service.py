@@ -84,6 +84,7 @@ class InvestigationService:
     """
 
     def __init__(self, store: InvestigationStore) -> None:
+        """Initialize InvestigationService."""
         self._store = store
 
     # ── Factory / CRUD ────────────────────────────────────────────────────────

@@ -71,6 +71,7 @@ _STIX_NS = _uuid.UUID("b1c2d3e4-f5a6-7890-abcd-ef0123456789")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -115,6 +116,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize CortexXDRClient."""
         super().__init__(host=host, **kwargs)
         self._api_key_id = api_key_id
         self._api_key = api_key
@@ -384,6 +386,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         return self._incident_to_stix(native)
 
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         alert_id = str(alert.get("alert_id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"xdr-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -434,6 +437,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         return stix
 
     def _incident_to_stix(self, incident: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for incident to stix."""
         inc_id = str(incident.get("incident_id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"xdr-incident-{inc_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}

@@ -131,6 +131,7 @@ class PlainTextReader(SourceReader):
         extra_patterns: dict[str, re.Pattern] | None = None,
         **kwargs: Any,
     ):
+        """Initialize PlainTextReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = source
         self._from_string = from_string
@@ -142,6 +143,7 @@ class PlainTextReader(SourceReader):
 
     def _classify(self, value: str) -> str:
         # Use the fast path when no custom extra_patterns are registered
+        """Internal helper for classify."""
         if self._patterns is self.__class__._PATTERNS:
             return _fast_classify(value)
         for ioc_type, pattern in self._patterns.items():
@@ -150,6 +152,7 @@ class PlainTextReader(SourceReader):
         return "unknown"
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         if self._from_string:
             lines = str(self._source).splitlines()
         else:
@@ -218,6 +221,7 @@ class CSVReader(SourceReader):
         skip_rows: int = 0,
         **kwargs: Any,
     ):
+        """Initialize CSVReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
         self._value_col = value_col
@@ -229,6 +233,7 @@ class CSVReader(SourceReader):
         self._classifier = PlainTextReader("", from_string=True)
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         with self._source.open(encoding=self._encoding, newline="") as fh:
             for _ in range(self._skip_rows):
                 try:
@@ -291,12 +296,14 @@ class JSONReader(SourceReader):
         from_string: bool = False,
         **kwargs: Any,
     ):
+        """Initialize JSONReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = source
         self._records_key = records_key
         self._from_string = from_string
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         if self._from_string:
             data = json.loads(str(self._source))
         else:
@@ -349,11 +356,13 @@ class JSONLReader(SourceReader):
         encoding: str = "utf-8",
         **kwargs: Any,
     ):
+        """Initialize JSONLReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
         self._encoding = encoding
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         with self._source.open(encoding=self._encoding) as fh:
             for lineno, raw in enumerate(fh, 1):
                 line = raw.strip()
@@ -405,12 +414,14 @@ class STIXBundleReader(SourceReader):
         from_string: bool = False,
         **kwargs: Any,
     ):
+        """Initialize STIXBundleReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = source
         self._stix_types = set(stix_types) if stix_types else None
         self._from_string = from_string
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         if self._from_string:
             data = json.loads(str(self._source))
         else:
@@ -468,6 +479,7 @@ class TAXIICollectionReader(SourceReader):
         limit: int | None = None,
         **kwargs: Any,
     ):
+        """Initialize TAXIICollectionReader."""
         super().__init__(source_id=getattr(collection, "title", "taxii"), **kwargs)
         self._collection = collection
         self._added_after = added_after
@@ -475,6 +487,7 @@ class TAXIICollectionReader(SourceReader):
         self._limit = limit
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         try:
             kwargs: dict[str, Any] = {}
             if self._added_after:
@@ -558,6 +571,7 @@ class SQLReader(SourceReader):
         close_connection: bool = False,
         **kwargs: Any,
     ):
+        """Initialize SQLReader."""
         super().__init__(source_id="sql", **kwargs)
         self._conn = connection
         self._query = query
@@ -566,12 +580,14 @@ class SQLReader(SourceReader):
         self._close_conn = close_connection
 
     def close(self) -> None:
+        """Release resources and close any open connections."""
         if self._close_conn:
             with contextlib.suppress(Exception):  # noqa: BLE001
                 self._conn.close()
         super().close()
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         cursor = self._conn.cursor()
         try:
             if self._params is not None:
@@ -626,12 +642,14 @@ class MISPReader(SourceReader):
         attribute_types: list[str] | None = None,
         **kwargs: Any,
     ):
+        """Initialize MISPReader."""
         super().__init__(source_id="misp", **kwargs)
         self._source = source
         self._from_string = from_string
         self._attr_types = set(attribute_types) if attribute_types else None
 
     def _load(self) -> list:
+        """Internal helper for load."""
         if isinstance(self._source, list):
             return self._source
         if self._from_string:
@@ -646,6 +664,7 @@ class MISPReader(SourceReader):
         return data
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         for event_wrapper in self._load():
             event = event_wrapper.get("Event", event_wrapper)
             event_meta = {
@@ -745,12 +764,14 @@ class SyslogReader(SourceReader):
         encoding: str = "utf-8",
         **kwargs: Any,
     ):
+        """Initialize SyslogReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
         self._format = format if format is not None else fmt
         self._encoding = encoding
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         with self._source.open(encoding=self._encoding, errors="replace") as fh:
             for lineno, raw in enumerate(fh, 1):
                 line = raw.rstrip("\n\r")
@@ -780,6 +801,7 @@ class SyslogReader(SourceReader):
                     logger.debug("SyslogReader: parse error at line %d: %s", lineno, exc)
 
     def _parse_syslog(self, line: str) -> RawRecord:
+        """Internal helper for parse syslog."""
         m = self._SYSLOG_RE.match(line)
         if m:
             return {k: v or "" for k, v in m.groupdict().items()}
@@ -787,6 +809,7 @@ class SyslogReader(SourceReader):
 
     def _parse_cef(self, line: str) -> RawRecord:
         # Strip syslog prefix before CEF header
+        """Internal helper for parse cef."""
         cef_start = line.find("CEF:")
         m = self._CEF_RE.match(line[cef_start:])
         if not m:
@@ -799,6 +822,7 @@ class SyslogReader(SourceReader):
         return rec
 
     def _parse_leef(self, line: str) -> RawRecord:
+        """Internal helper for parse leef."""
         leef_start = line.find("LEEF:")
         m = self._LEEF_RE.match(line[leef_start:])
         if not m:
@@ -851,12 +875,14 @@ class RSSReader(SourceReader):
         max_entries: int | None = None,
         **kwargs: Any,
     ):
+        """Initialize RSSReader."""
         super().__init__(source_id=url[:80], **kwargs)
         self._url = url
         self._http_client = http_client
         self._max_entries = max_entries
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         try:
             import feedparser  # type: ignore
         except ImportError:
@@ -922,11 +948,13 @@ class EmailReader(SourceReader):
         recursive: bool = False,
         **kwargs: Any,
     ):
+        """Initialize EmailReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
         self._recursive = recursive
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         import email as email_lib
         from email import policy as email_policy
 
@@ -949,6 +977,7 @@ class EmailReader(SourceReader):
                 logger.warning("EmailReader: failed to parse %s — %s", path, exc)
 
     def _extract_record(self, msg: Any, path: str) -> RawRecord:
+        """Internal helper for extract record."""
         body_text = ""
         body_html = ""
         attachments: list[dict[str, Any]] = []
@@ -1033,10 +1062,12 @@ class OpenIOCReader(SourceReader):
     }
 
     def __init__(self, source: str | Path, **kwargs: Any):
+        """Initialize OpenIOCReader."""
         super().__init__(source_id=str(source)[:60], **kwargs)
         self._source = Path(source)
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         paths = list(self._source.glob("*.ioc")) if self._source.is_dir() else [self._source]
         for path in paths:
             try:
@@ -1045,6 +1076,7 @@ class OpenIOCReader(SourceReader):
                 logger.warning("OpenIOCReader: failed to parse %s — %s", path, exc)
 
     def _parse_file(self, path: Path) -> Iterator[RawRecord]:
+        """Internal helper for parse file."""
         tree = ET.parse(str(path))  # nosec B314  # nosemgrep
         root = tree.getroot()
 
@@ -1119,6 +1151,7 @@ class SplunkReader(SourceReader):
         max_results: int = 10_000,
         **kwargs: Any,
     ):
+        """Initialize SplunkReader."""
         super().__init__(source_id="splunk", **kwargs)
         self._client = base_client
         self._search = search if search.startswith("search") else f"search {search}"
@@ -1128,6 +1161,7 @@ class SplunkReader(SourceReader):
 
     def _iter_records(self) -> Iterator[RawRecord]:
         # Create search job
+        """Internal helper for iter records."""
         job = self._client.post(
             "/services/search/jobs",
             data={
@@ -1198,6 +1232,7 @@ class ElasticReader(SourceReader):
         page_size: int = 500,
         **kwargs: Any,
     ):
+        """Initialize ElasticReader."""
         super().__init__(source_id=f"elastic:{index}", batch_size=page_size, **kwargs)
         self._client = base_client
         self._index = index
@@ -1206,6 +1241,7 @@ class ElasticReader(SourceReader):
         self._scroll_ttl = scroll_ttl
 
     def _iter_records(self) -> Iterator[RawRecord]:
+        """Internal helper for iter records."""
         body: dict[str, Any] = {
             "query": self._query,
             "size": self.batch_size,

@@ -96,6 +96,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         **kwargs: Any,
     ) -> None:
         # Build SplunkConfig from kwargs when not supplied directly
+        """Initialize SplunkClient."""
         if config is None:
             token = api_token
             config = SplunkConfig.__new__(SplunkConfig)
@@ -129,9 +130,11 @@ class SplunkClient(BaseClient, ConnectorMixin):
     # ── Context manager ───────────────────────────────────────────────────
 
     def __enter__(self) -> "SplunkClient":
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     # ── ConnectorMixin interface ──────────────────────────────────────────
@@ -252,9 +255,11 @@ class SplunkClient(BaseClient, ConnectorMixin):
         return (resp or {}).get("results", [])
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("SplunkClient: upsert not supported via generic interface.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("SplunkClient: delete not supported via generic interface.")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
@@ -510,6 +515,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         return urllib3.PoolManager(**kwargs)
 
     def _build_url(self, endpoint: str, namespaced: bool) -> str:
+        """Internal helper for build url."""
         endpoint = endpoint.lstrip("/")
         if namespaced:
             return self.config.namespace_path(endpoint)
@@ -517,6 +523,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _inject_output_mode(params: dict | None) -> dict:
+        """Internal helper for inject output mode."""
         result = dict(params or {})
         result.setdefault("output_mode", "json")
         return result
@@ -657,6 +664,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _parse_json(data: bytes, url: str) -> dict:
+        """Internal helper for parse json."""
         try:
             return json.loads(data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -667,6 +675,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _extract_error_messages(data: bytes) -> list[str]:
+        """Internal helper for extract error messages."""
         try:
             body = json.loads(data.decode("utf-8"))
             return [m.get("text", "") for m in body.get("messages", [])]
@@ -1071,6 +1080,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
 
 @staticmethod
 def _parse_json(data: bytes, url: str) -> dict:
+    """Internal helper for parse json."""
     try:
         return json.loads(data.decode("utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -1082,6 +1092,7 @@ def _parse_json(data: bytes, url: str) -> dict:
 
 @staticmethod
 def _extract_error_messages(data: bytes) -> list[str]:
+    """Internal helper for extract error messages."""
     try:
         body = json.loads(data.decode("utf-8"))
         return [m.get("text", "") for m in body.get("messages", [])]

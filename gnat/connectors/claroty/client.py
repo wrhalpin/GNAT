@@ -89,6 +89,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         password: str = "",
         **kwargs: Any,
     ):
+        """Initialize ClarotyClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
         self._username = username
@@ -164,6 +165,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"upsert_object limited support for {stix_type} in Claroty")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Claroty connector does not support deletion via standard API.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────

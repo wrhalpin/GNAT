@@ -133,6 +133,7 @@ class SynapseClient(BaseClient, ConnectorMixin):
         view: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize SynapseClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password

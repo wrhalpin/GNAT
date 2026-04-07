@@ -46,6 +46,7 @@ class Indicator(STIXSearchMixin, STIXBase):
     _search_display_priority = ["name", "pattern", "description"]
 
     def __init__(self, client=None, **kwargs):
+        """Initialize Indicator."""
         kwargs.setdefault("pattern_type", "stix")
         kwargs.setdefault("indicator_types", [])
         super().__init__(client=client, **kwargs)
@@ -84,6 +85,7 @@ class ThreatActor(STIXSearchMixin, STIXBase):
     _search_display_priority = ["name", "aliases", "description"]
 
     def __init__(self, client=None, **kwargs):
+        """Initialize ThreatActor."""
         kwargs.setdefault("threat_actor_types", [])
         super().__init__(client=client, **kwargs)
 
@@ -108,6 +110,7 @@ class Malware(STIXSearchMixin, STIXBase):
     _search_display_priority = ["name", "aliases", "description"]
 
     def __init__(self, client=None, **kwargs):
+        """Initialize Malware."""
         kwargs.setdefault("malware_types", [])
         kwargs.setdefault("is_family", False)
         super().__init__(client=client, **kwargs)
@@ -181,6 +184,7 @@ class Campaign(STIXSearchMixin, STIXBase):
     _search_display_priority = ["name", "aliases", "description"]
 
     def __init__(self, client=None, **kwargs):
+        """Initialize Campaign."""
         super().__init__(client=client, **kwargs)
 
 

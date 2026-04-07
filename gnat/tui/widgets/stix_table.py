@@ -32,6 +32,7 @@ class STIXTable(DataTable):
     ]
 
     def __init__(self, show_columns: list[str] | None = None, **kwargs: Any) -> None:
+        """Initialize STIXTable."""
         super().__init__(**kwargs)
         self._show = set(show_columns) if show_columns else {c[0] for c in self.DEFAULT_COLUMNS}
         self.cursor_type = "row"

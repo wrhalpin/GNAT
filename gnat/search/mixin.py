@@ -217,6 +217,7 @@ class STIXSearchMixin:
         seen: set = set()
 
         def _add(token: str) -> None:
+            """Internal helper for add."""
             t = token.strip()
             if t and t not in seen:
                 seen.add(t)

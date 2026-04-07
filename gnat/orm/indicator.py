@@ -59,6 +59,7 @@ class Indicator(STIXBase):
     stix_type = "indicator"
 
     def __init__(self, client=None, **kwargs):
+        """Initialize Indicator."""
         validate = kwargs.pop("validate", False)
         kwargs.setdefault("pattern_type", "stix")
         kwargs.setdefault("indicator_types", [])

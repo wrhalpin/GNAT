@@ -141,6 +141,7 @@ class ReportGenerator:
         agent_config: AgentConfig | None = None,
         research_library: ResearchLibrary | None = None,
     ):
+        """Initialize ReportGenerator."""
         self._manager = manager
         self._config = config
         self._acfg = agent_config
@@ -404,6 +405,7 @@ class ReportGenerator:
                 logger.warning("ReportGenerator: unknown delivery target %r", t)
 
     def _deliver_email(self, result: ReportResult, doc: ReportDocument | None = None) -> None:
+        """Internal helper for deliver email."""
         if not self._config.email_to:
             logger.warning("ReportGenerator: email delivery but no email_to configured")
             return
@@ -464,6 +466,7 @@ class ReportGenerator:
         return ""
 
     def _deliver_sharepoint(self, result: ReportResult) -> None:
+        """Internal helper for deliver sharepoint."""
         if not self._config.sharepoint_url:
             logger.warning("ReportGenerator: sharepoint delivery but no sharepoint_url configured")
             return
@@ -507,6 +510,7 @@ class ReportGenerator:
     # ── Helpers ────────────────────────────────────────────────────────────
 
     def _auto_title(self, now: datetime) -> str:
+        """Internal helper for auto title."""
         type_names = {
             "daily": "Daily Threat Intelligence Report",
             "trends": "Threat Intelligence Trends Report",
@@ -578,6 +582,7 @@ class ReportJob(FeedJob):
         on_success=None,
         on_failure=None,
     ):
+        """Initialize ReportJob."""
         self._report_manager = manager
         self._report_config = config
         self._report_acfg = agent_config

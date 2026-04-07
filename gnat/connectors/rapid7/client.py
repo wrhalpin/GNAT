@@ -73,17 +73,20 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         account_id: str = "",
         **kwargs: Any,
     ):
+        """Initialize Rapid7Client."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._product = product.lower()
         self._account = account_id
 
     def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         self._auth_headers["X-Api-Key"] = self._api_key
         if self._account:
             self._auth_headers["Account-Id"] = self._account
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         if self._product == "insightvm":
             resp = self.get("/vm/v4/integration/vulnerabilities", params={"size": 1})
         else:
@@ -91,6 +94,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         return isinstance(resp, dict)
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if self._product == "insightvm":
             return self._insightvm_get(stix_type, object_id)
         return self._tc_get(stix_type, object_id)
@@ -102,11 +106,13 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         if self._product == "insightvm":
             return self._insightvm_list(stix_type, filters, page, page_size)
         return self._tc_list(stix_type, filters, page, page_size)
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         if self._product == "insightvm":
             raise GNATClientError(
                 "InsightVM is read-only via GNAT. "
@@ -120,6 +126,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         return self.post("/public/v2/iocs", json=payload)
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         if self._product == "insightvm":
             raise GNATClientError("InsightVM is read-only — delete not supported.")
         self.delete(f"/public/v2/iocs/{object_id}")
@@ -127,6 +134,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     # ── InsightVM ──────────────────────────────────────────────────────────
 
     def _insightvm_get(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Internal helper for insightvm get."""
         if stix_type == "vulnerability":
             resp = self.get(f"/vm/v4/integration/vulnerabilities/{object_id}")
             return resp if isinstance(resp, dict) else {}
@@ -138,6 +146,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     def _insightvm_list(
         self, stix_type: str, filters: Optional[dict[str, Any]], page: int, page_size: int
     ) -> list[dict[str, Any]]:
+        """Internal helper for insightvm list."""
         params: dict[str, Any] = {
             "page": page - 1,
             "size": page_size,
@@ -155,6 +164,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     # ── Threat Command ─────────────────────────────────────────────────────
 
     def _tc_get(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Internal helper for tc get."""
         if stix_type == "indicator":
             resp = self.get("/public/v2/iocs/ioc-by-value", params={"iocValue": object_id})
             return resp if isinstance(resp, dict) else {}
@@ -166,6 +176,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     def _tc_list(
         self, stix_type: str, filters: Optional[dict[str, Any]], page: int, page_size: int
     ) -> list[dict[str, Any]]:
+        """Internal helper for tc list."""
         params: dict[str, Any] = {
             "limit": page_size,
             "offset": (page - 1) * page_size,
@@ -183,6 +194,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
     # ── STIX translation ───────────────────────────────────────────────────
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         if self._product == "insightvm":
             return self._vuln_to_stix(native)
         return self._ioc_to_stix(native)
@@ -259,6 +271,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         import re
 
         pattern = stix_dict.get("pattern", "")

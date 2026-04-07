@@ -199,6 +199,7 @@ _TOKEN_RE = re.compile(
 
 @dataclass
 class _Token:
+    """_Token implementation."""
     kind: str
     value: str
     pos: int
@@ -243,9 +244,11 @@ class ValidationResult:
     strict: bool = False
 
     def __bool__(self) -> bool:
+        """Return truthiness."""
         return self.valid
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         status = "valid" if self.valid else f"invalid ({len(self.errors)} error(s))"
         return f"ValidationResult({status}, strict={self.strict})"
 
@@ -264,6 +267,7 @@ class PatternValidationError(ValueError):
     """
 
     def __init__(self, pattern: str, errors: Sequence[str]) -> None:
+        """Initialize PatternValidationError."""
         self.pattern = pattern
         self.errors: list[str] = list(errors)
         summary = "; ".join(self.errors[:3])
@@ -306,6 +310,7 @@ class _Parser:
     """
 
     def __init__(self, tokens: list[_Token], pattern: str) -> None:
+        """Initialize _Parser."""
         self._tokens = tokens
         self._pos = 0
         self._pattern = pattern
@@ -317,21 +322,25 @@ class _Parser:
     # ------------------------------------------------------------------
 
     def _peek(self) -> _Token | None:
+        """Internal helper for peek."""
         if self._pos < len(self._tokens):
             return self._tokens[self._pos]
         return None
 
     def _peek_ahead(self, offset: int = 1) -> _Token | None:
+        """Internal helper for peek ahead."""
         idx = self._pos + offset
         return self._tokens[idx] if idx < len(self._tokens) else None
 
     def _advance(self) -> _Token | None:
+        """Internal helper for advance."""
         tok = self._peek()
         if tok is not None:
             self._pos += 1
         return tok
 
     def _expect(self, *kinds: str) -> _Token | None:
+        """Internal helper for expect."""
         tok = self._peek()
         if tok is None or tok.kind not in kinds:
             expected = "/".join(kinds)
@@ -341,6 +350,7 @@ class _Parser:
         return self._advance()
 
     def _at(self, *kinds: str) -> bool:
+        """Internal helper for at."""
         tok = self._peek()
         return tok is not None and tok.kind in kinds
 
@@ -598,6 +608,7 @@ class PatternValidator:
         strict: bool = False,
         allow_custom_types: bool = False,
     ) -> None:
+        """Initialize PatternValidator."""
         self._raise = raise_on_error
         self._strict = strict
         self._allow_custom = allow_custom_types

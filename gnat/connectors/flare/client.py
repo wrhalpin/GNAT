@@ -60,6 +60,7 @@ class FlareClient(BaseClient, ConnectorMixin):
         tenant_id: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize FlareClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._tenant_id = tenant_id
@@ -123,6 +124,7 @@ class FlareClient(BaseClient, ConnectorMixin):
         raise GNATClientError("Flare Systems API is read-only. Exposure data is sourced passively.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Flare Systems API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
@@ -174,6 +176,7 @@ class FlareClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _leak_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for leak to stix."""
         leak_type = native.get("type", "")
         value = (
             native.get("email")
@@ -206,6 +209,7 @@ class FlareClient(BaseClient, ConnectorMixin):
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for actor to stix."""
         return {
             "type": "threat-actor",
             "id": f"threat-actor--flare-{native.get('id', '')}",
@@ -219,6 +223,7 @@ class FlareClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(event_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = (event_type or "").lower()
         if t in ("email", "credential"):
             return f"[email-message:from_ref.value = '{value}']"

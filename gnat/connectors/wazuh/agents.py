@@ -51,6 +51,7 @@ class WazuhAgentCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhAgentCommands."""
         self._client = client
 
     # ── Listing and retrieval ──────────────────────────────────────────────

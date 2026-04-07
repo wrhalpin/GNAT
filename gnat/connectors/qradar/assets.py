@@ -24,6 +24,7 @@ class QRadarAssetCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarAssetCommands."""
         self._client = client
 
     def list_assets(

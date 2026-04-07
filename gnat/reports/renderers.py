@@ -53,15 +53,18 @@ class MarkdownRenderer:
     """Renders a ReportDocument to Markdown."""
 
     def render(self, doc: ReportDocument, path: str) -> str:
+        """Render output to the configured format."""
         md = self._build(doc)
         Path(path).write_text(md, encoding="utf-8")
         logger.info("MarkdownRenderer: wrote %s", path)
         return path
 
     def render_string(self, doc: ReportDocument) -> str:
+        """Render string to the output format."""
         return self._build(doc)
 
     def _build(self, doc: ReportDocument) -> str:
+        """Internal helper for build."""
         lines = []
         lines.append(f"# {doc.title}")
         lines.append("")
@@ -105,12 +108,14 @@ class HTMLRenderer:
     """Renders a ReportDocument to a self-contained HTML file."""
 
     def render(self, doc: ReportDocument, path: str) -> str:
+        """Render output to the configured format."""
         html = self._build(doc)
         Path(path).write_text(html, encoding="utf-8")
         logger.info("HTMLRenderer: wrote %s", path)
         return path
 
     def _build(self, doc: ReportDocument) -> str:
+        """Internal helper for build."""
         sections_html = "\n".join(self._section_html(s) for s in doc.sections)
         sector_badge = ""
         if doc.config and doc.config.sectors:
@@ -192,6 +197,7 @@ class HTMLRenderer:
 </html>"""
 
     def _section_html(self, section: ReportSection) -> str:
+        """Internal helper for section html."""
         narrative_html = ""
         if section.has_narrative:
             paragraphs = [f"<p>{_esc(p)}</p>" for p in section.narrative.split("\n\n") if p.strip()]
@@ -215,6 +221,7 @@ class PDFRenderer:
     """Renders a ReportDocument to PDF using reportlab."""
 
     def render(self, doc: ReportDocument, path: str) -> str:
+        """Render output to the configured format."""
         try:
             from reportlab.lib import colors
             from reportlab.lib.pagesizes import letter
@@ -394,6 +401,7 @@ class DOCXRenderer:
     _ALT_ROW = "F5F7FA"
 
     def render(self, doc: ReportDocument, path: str) -> str:
+        """Render output to the configured format."""
         try:
             from docx import Document
             from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -459,6 +467,7 @@ class DOCXRenderer:
     # ------------------------------------------------------------------
 
     def _meta_line(self, d, label: str, value: str) -> None:
+        """Internal helper for meta line."""
         from docx.shared import Pt
 
         p = d.add_paragraph()
@@ -472,6 +481,7 @@ class DOCXRenderer:
         val_run.font.color.rgb = self._rgb(self._MUTED)
 
     def _add_data_tables(self, d, section: ReportSection) -> None:
+        """Internal helper for add data tables."""
         data = section.data
         if "top_actors" in data and data["top_actors"]:
             rows = [
@@ -504,6 +514,7 @@ class DOCXRenderer:
             self._table(d, ["Source", "Objects"], rows)
 
     def _table(self, d, headers: list[str], rows: list[list[str]]) -> None:
+        """Internal helper for table."""
         from docx.shared import Pt
 
         tbl = d.add_table(rows=1 + len(rows), cols=len(headers))
@@ -532,6 +543,7 @@ class DOCXRenderer:
 
     @staticmethod
     def _rgb(hex6: str) -> RGBColor:
+        """Internal helper for rgb."""
         from docx.shared import RGBColor
 
         r, g, b = int(hex6[0:2], 16), int(hex6[2:4], 16), int(hex6[4:6], 16)
@@ -539,6 +551,7 @@ class DOCXRenderer:
 
     @staticmethod
     def _pt(points: float) -> Pt:
+        """Internal helper for pt."""
         from docx.shared import Pt
 
         return Pt(points)
@@ -569,6 +582,7 @@ def _render_data_md(section: ReportSection) -> list[str]:
     data = section.data
 
     def _table(headers, rows):
+        """Internal helper for table."""
         lines.append("| " + " | ".join(headers) + " |")
         lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
         for row in rows:
@@ -631,6 +645,7 @@ def _render_data_html(section: ReportSection) -> str:
         parts.append(f'<div class="stat-grid">{cards}</div>')
 
     def _html_table(headers, rows, caption=""):
+        """Internal helper for html table."""
         hdr = "".join(f"<th>{_esc(h)}</th>" for h in headers)
         body_rows = "".join(
             "<tr>" + "".join(f"<td>{_esc(str(c))}</td>" for c in row) + "</tr>" for row in rows

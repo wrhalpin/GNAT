@@ -86,6 +86,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         client_secret: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize ExtraHopClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._client_id = client_id
@@ -591,6 +592,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         return resp if isinstance(resp, list) else []
 
     def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for detection to stix."""
         now = _now_ts()
         det_id = str(detection.get("id", ""))
         start_time = detection.get("start_time", now)
@@ -616,6 +618,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         }
 
     def _record_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for record to stix."""
         now = _now_ts()
         rec_id = str(record.get("id", ""))
         return {

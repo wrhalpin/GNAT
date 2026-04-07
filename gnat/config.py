@@ -65,6 +65,7 @@ class GNATConfig:
     """
 
     def __init__(self, config_path: Optional[str] = None):
+        """Initialize GNATConfig."""
         self._parser = configparser.ConfigParser()
         resolved = self._resolve_path(config_path)
         if resolved is None:
@@ -121,6 +122,7 @@ class GNATConfig:
     # ------------------------------------------------------------------
 
     def _resolve_path(self, explicit: Optional[str]) -> Optional[Path]:
+        """Internal helper for resolve path."""
         if explicit:
             p = Path(explicit)
             if p.exists():
@@ -140,4 +142,5 @@ class GNATConfig:
         return None
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"GNATConfig(path={self._path!r}, sections={self.sections})"

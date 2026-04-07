@@ -31,6 +31,7 @@ class ProofpointClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, service_principal: str = "", secret: str = "", **kwargs: Any):
+        """Initialize ProofpointClient."""
         super().__init__(host=host, **kwargs)
         self._sp = service_principal
         self._secret = secret
@@ -42,10 +43,12 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Basic {encoded}"
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         self.get("/v2/siem/all", params={"format": "json", "sinceSeconds": 60})
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resp = self.get("/v2/forensics", params={"threatId": object_id})
         return resp if isinstance(resp, dict) else {}
 
@@ -56,6 +59,7 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         params: dict[str, Any] = {"format": "json", "sinceSeconds": 3600}
         if filters:
             params.update(filters)
@@ -63,12 +67,15 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Proofpoint TAP API does not support object creation.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Proofpoint TAP API does not support object deletion.")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', native.get('threatId', ''))}",
@@ -79,4 +86,5 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"threatId": stix_dict.get("id", "").split("--")[-1]}

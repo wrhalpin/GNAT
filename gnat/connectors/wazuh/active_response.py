@@ -43,6 +43,7 @@ class WazuhActiveResponseCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhActiveResponseCommands."""
         self._client = client
 
     def run_command(

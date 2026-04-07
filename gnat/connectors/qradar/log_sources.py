@@ -26,6 +26,7 @@ class QRadarLogSourceCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarLogSourceCommands."""
         self._client = client
 
     def list_log_sources(

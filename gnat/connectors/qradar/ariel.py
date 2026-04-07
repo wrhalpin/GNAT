@@ -102,6 +102,7 @@ class QRadarArielCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarArielCommands."""
         self._client = client
 
     # ── High-level search helpers ──────────────────────────────────────────

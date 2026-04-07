@@ -102,6 +102,7 @@ class SourceReader(ABC):
         source_id: str = "",
         batch_size: int = 500,
     ):
+        """Initialize SourceReader."""
         self.source_id = source_id or type(self).__name__
         self.batch_size = batch_size
         self._open = False
@@ -111,10 +112,12 @@ class SourceReader(ABC):
     # ------------------------------------------------------------------
 
     def __enter__(self) -> SourceReader:
+        """Enter the context manager."""
         self.open()
         return self
 
     def __exit__(self, *_: Any) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     # ------------------------------------------------------------------
@@ -150,6 +153,7 @@ class SourceReader(ABC):
         """
 
     def __iter__(self) -> Iterator[RawRecord]:
+        """Iterate over items."""
         if not self._open:
             self.open()
         yield from self._iter_records()
@@ -159,6 +163,7 @@ class SourceReader(ABC):
         return list(self)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"{type(self).__name__}(source_id={self.source_id!r})"
 
 
@@ -203,6 +208,7 @@ class RecordMapper(ABC):
         tlp_marking: str = "white",
         confidence: int = 50,
     ):
+        """Initialize RecordMapper."""
         self._client = client
         self.tlp_marking = tlp_marking
         self.confidence = confidence
@@ -238,6 +244,7 @@ class RecordMapper(ABC):
                 )
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"{type(self).__name__}(tlp={self.tlp_marking!r}, confidence={self.confidence})"
 
 
@@ -282,6 +289,7 @@ class IngestResult:
         return self.written_objects / self.mapped_objects
 
     def __str__(self) -> str:  # pragma: no cover
+        """Return human-readable string representation."""
         return (
             f"IngestResult({self.source_id!r}): "
             f"{self.total_records} records → "
@@ -311,6 +319,7 @@ class DeduplicationCache:
     """
 
     def __init__(self, key_fields: list[str] | None = None):
+        """Initialize DeduplicationCache."""
         self._fields = key_fields or ["id"]
         self._seen: set = set()
 
@@ -323,6 +332,7 @@ class DeduplicationCache:
         return False
 
     def _fingerprint(self, obj: STIXBase) -> str:
+        """Internal helper for fingerprint."""
         parts = []
         for fld in self._fields:
             if fld == "id":
@@ -337,4 +347,5 @@ class DeduplicationCache:
         self._seen.clear()
 
     def __len__(self) -> int:
+        """Return the number of items."""
         return len(self._seen)

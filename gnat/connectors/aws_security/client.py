@@ -75,18 +75,22 @@ _STIX_NS = _uuid.UUID("d4e5f6a7-b8c9-0123-def0-234567890123")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
 def _utc_now() -> datetime:
+    """Internal helper for utc now."""
     return datetime.now(timezone.utc)
 
 
 def _sign(key: bytes, msg: str) -> bytes:
+    """Internal helper for sign."""
     return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
 
 def _get_signature_key(secret_key: str, date_stamp: str, region: str, service: str) -> bytes:
+    """Internal helper for get signature key."""
     k_date = _sign(("AWS4" + secret_key).encode("utf-8"), date_stamp)
     k_region = _sign(k_date, region)
     k_service = _sign(k_region, service)
@@ -133,6 +137,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         guardduty_host: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize AWSSecurityClient."""
         super().__init__(host=host, **kwargs)
         self._access_key = aws_access_key
         self._secret_key = aws_secret_key
@@ -378,6 +383,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         return self._securityhub_to_stix(native)
 
     def _securityhub_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for securityhub to stix."""
         finding_id = native.get("Id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"aws-sh-{finding_id}"))
         sev = native.get("Severity", {})
@@ -410,6 +416,7 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         }
 
     def _guardduty_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for guardduty to stix."""
         finding_id = native.get("Id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"aws-gd-{finding_id}"))
         severity = native.get("Severity", 0.0)

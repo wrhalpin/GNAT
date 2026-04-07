@@ -77,6 +77,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.bitsighttech.com", token: str = "", **kwargs: Any):
+        """Initialize BitSightClient."""
         super().__init__(host=host, **kwargs)
         self._token = token
 
@@ -96,6 +97,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "report":
             return self.get(f"/v1/companies/{object_id}")
         if stix_type == "vulnerability":
@@ -109,6 +111,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -126,9 +129,11 @@ class BitSightClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("BitSight connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Expanded Domain-specific helpers ───────────────────────────────────
@@ -193,12 +198,14 @@ class BitSightClient(BaseClient, ConnectorMixin):
         return self._company_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "BitSight is primarily read-only for security ratings and vendor risk data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _finding_to_stix(self, finding: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for finding to stix."""
         now = _now_ts()
         fid = finding.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'bitsight:{fid}')}"
@@ -220,6 +227,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         }
 
     def _company_to_stix(self, company: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for company to stix."""
         now = _now_ts()
         cid = company.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'bitsight:{cid}')}"

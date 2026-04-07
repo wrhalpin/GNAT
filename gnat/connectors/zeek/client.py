@@ -44,10 +44,12 @@ _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -76,6 +78,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         log_format: str = "tsv",
         **kwargs: Any,
     ):
+        """Initialize ZeekClient."""
         super().__init__(host=host, **kwargs)
         self.log_dir = log_dir
         self.log_format = log_format
@@ -95,6 +98,7 @@ class ZeekClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         raise GNATClientError(
             "Zeek is file-based — individual record lookup by id is not supported."
         )
@@ -136,9 +140,11 @@ class ZeekClient(BaseClient, ConnectorMixin):
         return records
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Zeek is read-only — no write API available.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Zeek is read-only — no delete API available.")
 
     # ── Domain-specific operations ────────────────────────────────────────

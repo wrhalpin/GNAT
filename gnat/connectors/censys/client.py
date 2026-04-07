@@ -79,6 +79,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         api_secret: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize CensysClient."""
         super().__init__(host=host, **kwargs)
         self._api_id = api_id
         self._api_secret = api_secret
