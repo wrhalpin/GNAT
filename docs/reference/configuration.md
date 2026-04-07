@@ -99,6 +99,40 @@ Optional Solr full-text search sidecar.
 | `enabled` | bool | `false` | Enable automatic indexing on write |
 | `batch_size` | int | `100` | Records per Solr batch |
 
+### `[analysis]`
+
+Controls the analysis layer (`gnat.analysis`).  Requires `sqlalchemy>=2.0`
+(included in the `[analysis]` or `[persist]` extras).
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `db_url` | str | `sqlite:///~/.gnat/gnat.db` | SQLAlchemy database URL for `InvestigationStore` |
+| `default_tlp` | str | `amber` | Default TLP level assigned to new investigations (`white`/`clear`/`green`/`amber`/`amber+strict`/`red`) |
+
+```ini
+[analysis]
+db_url      = sqlite:///~/.gnat/gnat.db
+default_tlp = amber
+```
+
+### `[reporting]`
+
+Controls the reporting layer (`gnat.reporting`).  Requires `sqlalchemy>=2.0`
+(included in the `[reporting]` or `[persist]` extras).
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `db_url` | str | `sqlite:///~/.gnat/gnat.db` | SQLAlchemy database URL for `ReportStore` (may share the analysis DB) |
+| `default_tlp` | str | `amber` | Default TLP level assigned to new reports |
+| `auto_approve` | bool | `false` | When `true`, collapses REVIEW → APPROVED → PUBLISHED into a single step |
+
+```ini
+[reporting]
+db_url       = sqlite:///~/.gnat/gnat.db
+default_tlp  = amber
+auto_approve = false
+```
+
 ### Platform sections
 
 Each platform connector reads its own INI section.
@@ -109,6 +143,8 @@ See `config/config.ini.example` for the full list of connector keys.
 ## See Also
 
 - [How-to: Connect to Platforms](../how-to/connect-to-platforms.md)
+- [How-to: Use the Analysis Layer](../how-to/use-analysis-layer.md)
+- [How-to: Create Intelligence Reports](../how-to/create-intelligence-reports.md)
 - `config/config.ini.example`
 
 ---

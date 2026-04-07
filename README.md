@@ -62,6 +62,10 @@ GNAT provides a single, consistent abstraction layer over 99 security platforms 
 | **Research Library** | Team knowledge base with staging/curation workflow, TTL management, and deduplication |
 | **Automated Reports** | PDF, HTML, DOCX, Markdown; daily/weekly/annual; AI-assisted synthesis; email + SharePoint delivery |
 | **Sector Intelligence** | `x_target_sectors` normalized across all connectors with alias expansion and composable filters |
+| **Analysis Layer** | NATO Admiralty Scale confidence scoring, TLP 2.0, analyst investigations, cross-platform correlation, timeline reconstruction, evidence graph queries, and LLM-backed gap detection + report drafting |
+| **Investigation Builder** | Five-step cross-platform evidence graph pipeline (seed → incident expansion → normalise → correlate → materialise) from any combination of connected platforms |
+| **Intelligence Reports** | Structured finished-intelligence products with five-state lifecycle (DRAFT → PUBLISHED), STIX 2.1 SDO export on publish, versioning, and attribution |
+| **Dissemination** | ExportService (STIX/JSON/PDF), webhook fan-out with HMAC signing, TAXII 2.1 server, bearer-token REST gateway |
 | **Solr Search** | Full-text search sidecar; auto-indexes on write; Grafana SimpleJSON dashboards |
 | **TAXII 2.1 Server** | Each GNAT workspace exposed as a TAXII 2.1 collection; full protocol compliance |
 | **STIX Validator** | Two-tier pattern validator (built-in + ANTLR `stix2-patterns`); ORM `validate=True` opt-in |
@@ -1039,6 +1043,40 @@ gnat/
 ├── schedule/                # FeedJob, FeedScheduler, APScheduler/Celery adapters
 ├── context/                 # Workspace, WorkspaceManager, GlobalContextRegistry
 │   └── tenant.py            # TenantRegistry + TenantWorkspaceManager (multi-tenant isolation)
+├── analysis/                # Analyst-facing layer (gnat.analysis)
+│   ├── confidence.py        # ConfidenceScore — NATO Admiralty Scale + STIX numeric confidence
+│   ├── tlp.py               # TLPLevel — TLP 2.0 classification levels
+│   ├── investigations/      # Investigation lifecycle (OPEN→IN_PROGRESS→REVIEW→CLOSED)
+│   │   ├── models.py        # Investigation, Hypothesis, AnalystNote, InvestigationTask
+│   │   ├── service.py       # InvestigationService — state machine + CRUD
+│   │   └── storage.py       # InvestigationStore (SQLAlchemy)
+│   ├── correlation/         # Cross-platform correlation engine
+│   │   ├── entity_resolver.py    # EntityResolver — IOC deduplication across platforms
+│   │   ├── relationship_scorer.py # RelationshipScorer — co-occurrence scoring
+│   │   ├── cluster_detector.py   # ClusterDetector — rule-based indicator clustering
+│   │   └── enrichment.py         # EnrichmentDispatcher — best-effort fan-out enrichment
+│   ├── timeline.py          # TimelineBuilder — chronological event reconstruction
+│   ├── graph.py             # GraphQuery — BFS pivot/expand/filter on EvidenceGraph
+│   └── copilot/             # Analyst assistance
+│       ├── gap_detector.py  # GapDetector — rule-based hypothesis gap analysis
+│       └── drafting.py      # ReportDraftingAssistant — LLM-backed exec summary + key findings
+├── investigations/          # Cross-platform evidence graph builder (gnat.investigations)
+│   ├── builder.py           # InvestigationBuilder — five-step pipeline orchestration
+│   ├── model.py             # EvidenceGraph, EvidenceNode, EvidenceEdge, Seed, SeedType
+│   ├── normalizer.py        # normalize() — raw platform record → EvidenceNode
+│   ├── correlator.py        # correlate() — add cross-platform edges to EvidenceGraph
+│   └── workspace.py         # materialize() — write graph into GNAT workspace as STIX
+├── reporting/               # Intelligence report lifecycle (gnat.reporting)
+│   ├── models.py            # Report, Finding, EvidenceLink, Attribution, ReportSection
+│   ├── service.py           # ReportService — state machine (DRAFT→PUBLISHED)
+│   ├── storage.py           # ReportStore (SQLAlchemy)
+│   └── export/
+│       └── stix.py          # report_to_stix_bundle() — STIX 2.1 report SDO + bundle
+├── dissemination/           # Outbound intelligence delivery (gnat.dissemination)
+│   ├── export.py            # ExportService — STIX/JSON/PDF export with checksums
+│   ├── notify.py            # WebhookNotifier — TLP-filtered + HMAC-signed fan-out
+│   ├── taxii/               # TAXII 2.1 FastAPI router (build_taxii_router)
+│   └── api/                 # REST gateway (build_gateway_router) + APIKeyStore
 ├── agents/                  # AI agent layer
 │   ├── llm.py               # LLMClient — unified Claude/OpenAI/Grok/Gemini facade
 │   ├── copilot.py           # CopilotReader (M365 DirectLine, token refresh)
@@ -1132,12 +1170,32 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
+                        │          DISSEMINATION LAYER            │
+                        │  ExportService · WebhookNotifier        │
+                        │  TAXII 2.1 Server · REST Gateway        │
+                        └──────────────────┬──────────────────────┘
+                                           │
+                        ┌─────────────────┬▼─────────────────────┐
+                        │  ANALYSIS LAYER  │   REPORTING LAYER    │
+                        │  Confidence/TLP  │ Report lifecycle     │
+                        │  Investigations  │ STIX SDO export      │
+                        │  Correlation     │ AI drafting assist   │
+                        │  Timeline/Graph  │                      │
+                        └─────────────────┴──────────┬───────────┘
+                                                      │
+                        ┌─────────────────────────────▼───────────┐
+                        │  INVESTIGATION BUILDER (cross-platform)  │
+                        │  5-step: seed→expand→normalise→          │
+                        │          correlate→materialise           │
+                        └──────────────────┬──────────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────────┐
                         │              GNAT CORE                  │
                         │  GNATClient · IngestPipeline            │
                         │  ExportPipeline · FeedScheduler         │
                         │  AI Agents · ResearchLibrary            │
                         │  ReportGenerator · NLPQueryEngine       │
-                        │  TAXII 2.1 Server · Solr Sidecar        │
+                        │  Solr Sidecar                           │
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐

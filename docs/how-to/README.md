@@ -16,6 +16,10 @@ Pick the guide for your goal — no need to read them in order.
 | [Generate Reports](generate-reports.md) | Create PDF/HTML/DOCX reports with or without AI assistance |
 | [Visualize Data](visualize-data.md) | Render graphs, timelines, risk heatmaps, and tables |
 | [Use the Async Client](use-async-client.md) | Gather data from multiple platforms concurrently |
+| [Use the Analysis Layer](use-analysis-layer.md) | Confidence scoring, TLP, analyst investigations, correlation, timelines, graph queries, and AI-assisted drafting |
+| [Build Cross-Platform Investigations](build-investigations.md) | Collect and correlate evidence from multiple platforms into a unified evidence graph |
+| [Create Intelligence Reports](create-intelligence-reports.md) | Author structured intelligence products with a formal lifecycle and STIX 2.1 export |
+| [Disseminate Intelligence](disseminate-intelligence.md) | Export, webhook notifications, TAXII 2.1 serving, and REST API gateway |
 
 ---
 
