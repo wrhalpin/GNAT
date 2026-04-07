@@ -30,13 +30,13 @@ Usage
 -----
     # Full run from real credentials (gnat.ini must have [xsoar], [threatq],
     # [greymatter] sections):
-    python examples/investigation_xsoar_tq_gm_powerbi.py
+    python docs/tutorials/investigation_xsoar_tq_gm_powerbi.py
 
     # Dry-run with mock connectors (no live credentials required):
-    python examples/investigation_xsoar_tq_gm_powerbi.py --mock
+    python docs/tutorials/investigation_xsoar_tq_gm_powerbi.py --mock
 
     # Custom output path:
-    python examples/investigation_xsoar_tq_gm_powerbi.py --output /tmp/incident.xlsx
+    python docs/tutorials/investigation_xsoar_tq_gm_powerbi.py --output /tmp/incident.xlsx
 
 Configuration (gnat.ini / ~/.gnat/config.ini)
 ---------------------------------------------
