@@ -54,6 +54,7 @@ class WazuhAuthManager:
     """
 
     def __init__(self, config: WazuhConfig, http: urllib3.PoolManager) -> None:
+        """Initialize WazuhAuthManager."""
         self._config = config
         self._http = http
         self._token: str | None = None

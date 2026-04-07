@@ -61,6 +61,7 @@ _STIX_NS = _uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -89,6 +90,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         token: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize TrendMicroVisionOneClient."""
         super().__init__(host=host, **kwargs)
         self._token = token
 
@@ -233,6 +235,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         return self._alert_to_stix(native)
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         alert_id = native.get("id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"visionone-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -258,6 +261,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         }
 
     def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for ioc to stix."""
         ioc_id = native.get("id", "")
         value = native.get("value", ioc_id)
         ioc_type = native.get("type", "domain").lower()
@@ -290,6 +294,7 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         }
 
     def _sandbox_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for sandbox to stix."""
         task_id = native.get("id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"visionone-sandbox-{task_id}"))
         return {

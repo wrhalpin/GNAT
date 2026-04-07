@@ -85,6 +85,7 @@ class SophosClient(BaseClient, ConnectorMixin):
         tenant_id: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize SophosClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
@@ -234,6 +235,7 @@ class SophosClient(BaseClient, ConnectorMixin):
         }
 
     def _blocked_item_to_stix(self, item: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for blocked item to stix."""
         now = _now_ts()
         item_id = item.get("id", "")
         value = item.get("sha256", item.get("value", ""))
@@ -260,6 +262,7 @@ class SophosClient(BaseClient, ConnectorMixin):
         }
 
     def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for detection to stix."""
         now = _now_ts()
         det_id = detection.get("id", "")
         return {

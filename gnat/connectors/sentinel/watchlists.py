@@ -21,6 +21,7 @@ class SentinelWatchlistCommands:
     """Watchlist management operations."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelWatchlistCommands."""
         self._client = client
 
     def list_watchlists(self) -> list[dict]:

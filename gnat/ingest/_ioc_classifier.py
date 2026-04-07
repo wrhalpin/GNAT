@@ -84,6 +84,7 @@ _VALUE_RE = re.compile(r"=\s*'([^']+)'")
 
 
 def _py_classify_ioc(value: str) -> str:
+    """Internal helper for py classify ioc."""
     for ioc_type, pattern in _PATTERNS.items():
         if pattern.match(value):
             return ioc_type
@@ -91,22 +92,26 @@ def _py_classify_ioc(value: str) -> str:
 
 
 def _py_defang(value: str) -> str:
+    """Internal helper for py defang."""
     for pattern, repl in _DEFANG_RE:
         value = pattern.sub(repl, value)
     return value.strip()
 
 
 def _py_refang(value: str) -> str:
+    """Internal helper for py refang."""
     value = value.replace("https://", "hxxps://").replace("http://", "hxxp://")
     return value.replace(".", "[.]")
 
 
 def _py_extract_pattern_value(pattern: str) -> str | None:
+    """Internal helper for py extract pattern value."""
     m = _VALUE_RE.search(pattern)
     return m.group(1) if m else None
 
 
 def _py_classify_ioc_batch(values: list[str]) -> list[str]:
+    """Internal helper for py classify ioc batch."""
     return [_py_classify_ioc(v) for v in values]
 
 

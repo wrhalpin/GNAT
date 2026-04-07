@@ -107,6 +107,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         client_secret: str = "",
         **kwargs: Any,
     ):
+        """Initialize GreyMatterClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
@@ -850,6 +851,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     # ── Helpers ────────────────────────────────────────────────────────────
 
     def _resolve(self, stix_type: str) -> str:
+        """Internal helper for resolve."""
         resource = self.stix_type_map.get(stix_type)
         if not resource:
             raise GNATClientError(
@@ -865,6 +867,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _infer_gm_type(pattern: str) -> str:
+        """Internal helper for infer gm type."""
         pattern = pattern.lower()
         if "ipv4-addr"   in pattern:
             return "ipv4"

@@ -144,6 +144,7 @@ class ContributeConfig:
 
 @dataclass
 class MethodStatus:
+    """MethodStatus implementation."""
     name: str
     implemented: bool
     note: str = ""
@@ -351,6 +352,7 @@ class ContributionPipeline:
         repo_root: str | None = None,
         http_client: urllib3.PoolManager | None = None,
     ) -> None:
+        """Initialize ContributionPipeline."""
         self._runner = runner or SubprocessRunner()
         self._root = repo_root or str(Path.cwd())
         self._http = http_client or urllib3.PoolManager(
@@ -473,6 +475,7 @@ class ContributionPipeline:
     # ── Git helpers ─────────────────────────────────────────────────────────
 
     def _branch_name(self, connector_name: str) -> str:
+        """Internal helper for branch name."""
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         return f"contribute/{connector_name}-{ts}"
 
@@ -513,6 +516,7 @@ class ContributionPipeline:
         return True, ""
 
     def _git_commit(self, message: str) -> tuple:
+        """Internal helper for git commit."""
         proc = self._runner.run(["git", "commit", "-m", message], cwd=self._root, capture=True)
         if proc.returncode != 0:
             return False, proc.stderr.strip()

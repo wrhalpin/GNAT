@@ -21,6 +21,7 @@ class MISPFeedCommands:
     """Feed management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPFeedCommands."""
         self._client = client
 
     def list_feeds(self) -> list[dict]:

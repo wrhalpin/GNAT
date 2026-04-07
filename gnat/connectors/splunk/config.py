@@ -103,10 +103,12 @@ class SplunkConfig:
     base_url: str = field(init=False)
 
     def __post_init__(self) -> None:
+        """Post-init setup for SplunkConfig."""
         self.base_url = f"{self.scheme}://{self.host}:{self.port}"
         self._validate()
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         if not self.host:
             raise SplunkConfigError("'host' is required in [splunk] config section.")
         if not self.token and not (self.username and self.password):

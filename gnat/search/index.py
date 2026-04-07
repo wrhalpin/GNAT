@@ -221,23 +221,29 @@ class NullSearchIndex(SearchIndex):
     """
 
     def index(self, obj, source_platform="", extra_fields=None) -> bool:
+        """Index the given object in the search backend."""
         return True
 
     def index_batch(self, objects, source_platform="", extra_fields=None) -> int:
+        """Index batch."""
         return len(objects)
 
     def delete(self, stix_id: str) -> bool:
+        """Delete."""
         return True
 
     def search(
         self, query, stix_types=None, source_platforms=None, limit=50, offset=0
     ) -> list[str]:
+        """Search for objects matching the given query."""
         return []
 
     def ping(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         return True
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return "NullSearchIndex()"
 
 
@@ -280,6 +286,7 @@ class SolrSearchIndex(SearchIndex):
         verify_ssl: bool = True,
         batch_size: int = 100,
     ):
+        """Initialize SolrSearchIndex."""
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.batch_size = batch_size
@@ -358,6 +365,7 @@ class SolrSearchIndex(SearchIndex):
         source_platform: str = "",
         extra_fields: dict[str, Any] | None = None,
     ) -> bool:
+        """Index the given object in the search backend."""
         doc = self._to_doc(obj, source_platform, extra_fields)
         return self._post_documents([doc])
 
@@ -367,6 +375,7 @@ class SolrSearchIndex(SearchIndex):
         source_platform: str = "",
         extra_fields: dict[str, Any] | None = None,
     ) -> int:
+        """Index batch."""
         if not objects:
             return 0
         submitted = 0
@@ -527,4 +536,5 @@ class SolrSearchIndex(SearchIndex):
             return False
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"SolrSearchIndex(base_url={self.base_url!r})"

@@ -57,10 +57,12 @@ _FAST_PATTERN = re.compile(
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -89,6 +91,7 @@ class SnortClient(BaseClient, ConnectorMixin):
         log_format: str = "json",
         **kwargs: Any,
     ):
+        """Initialize SnortClient."""
         super().__init__(host=host, **kwargs)
         self.alert_log_path = alert_log_path
         self.log_format = log_format
@@ -108,6 +111,7 @@ class SnortClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         raise GNATClientError(
             "Snort is file-based — individual alert lookup by id is not supported."
         )
@@ -144,9 +148,11 @@ class SnortClient(BaseClient, ConnectorMixin):
         return alerts
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Snort is read-only — no write API available.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Snort is read-only — no delete API available.")
 
     # ── Domain-specific operations ────────────────────────────────────────

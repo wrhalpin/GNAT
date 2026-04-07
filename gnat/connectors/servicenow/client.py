@@ -78,6 +78,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize ServiceNowClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password

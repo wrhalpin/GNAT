@@ -81,6 +81,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
         timeout: float = 30.0,
         **kwargs,
     ) -> None:
+        """Initialize SentinelConnector."""
         super().__init__(
             host=host or "management.azure.com",
             verify_ssl=verify_ssl,

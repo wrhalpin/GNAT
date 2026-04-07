@@ -64,17 +64,21 @@ class MISPClient:
     """urllib3-based HTTP client for the MISP REST API."""
 
     def __init__(self, config: MISPConfig) -> None:
+        """Initialize MISPClient."""
         self.config = config
         self._http = self._build_pool_manager()
         self.auth = MISPAuthManager(config, self._http)
 
     def __enter__(self) -> "MISPClient":
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self) -> None:
+        """Release resources and close any open connections."""
         self._http.clear()
 
     # ── HTTP verbs ─────────────────────────────────────────────────────────
@@ -175,6 +179,7 @@ class MISPClient:
     # ── Internal ───────────────────────────────────────────────────────────
 
     def _build_pool_manager(self) -> urllib3.PoolManager:
+        """Internal helper for build pool manager."""
         kwargs: dict = {
             "num_pools": 4,
             "maxsize": 10,
@@ -194,6 +199,7 @@ class MISPClient:
         url: str,
         body: dict | None = None,
     ) -> dict | list:
+        """Internal helper for request."""
         headers = self.auth.get_headers()
         encoded = json.dumps(body).encode("utf-8") if body is not None else None
         delay = _RETRY_BASE_DELAY
@@ -265,6 +271,7 @@ class MISPClient:
 
     @staticmethod
     def _parse_json(data: bytes, url: str) -> dict | list:
+        """Internal helper for parse json."""
         try:
             return json.loads(data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -272,6 +279,7 @@ class MISPClient:
 
     @staticmethod
     def _safe_parse(data: bytes) -> dict:
+        """Internal helper for safe parse."""
         try:
             return json.loads(data.decode("utf-8"))
         except Exception:

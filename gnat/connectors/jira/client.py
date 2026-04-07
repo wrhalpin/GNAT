@@ -91,6 +91,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize JiraClient."""
         super().__init__(host=host, **kwargs)
         self._email = email
         self._api_token = api_token

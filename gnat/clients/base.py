@@ -50,6 +50,7 @@ class GNATClientError(Exception):
     """
 
     def __init__(self, message: str, status: int = 0, body: str = ""):
+        """Initialize GNATClientError."""
         super().__init__(message)
         self.status = status
         self.body = body
@@ -89,6 +90,7 @@ class BaseClient:
         config: Optional[dict[str, Any]] = None,
         **_ignored: Any,
     ):
+        """Initialize BaseClient."""
         self.host = host.rstrip("/")
         self.verify_ssl = verify_ssl
         self.timeout = float(timeout)
@@ -269,5 +271,6 @@ class BaseClient:
             return response.data.decode("utf-8", errors="replace")
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         cls = type(self).__name__
         return f"{cls}(host={self.host!r}, authenticated={self._authenticated})"

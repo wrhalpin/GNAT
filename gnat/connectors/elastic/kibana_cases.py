@@ -44,6 +44,7 @@ class KibanaCasesCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize KibanaCasesCommands."""
         self._client = client
 
     # ── Case CRUD ──────────────────────────────────────────────────────────

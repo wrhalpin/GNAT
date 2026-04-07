@@ -69,12 +69,14 @@ class SplunkAPIError(SplunkError):
         endpoint: str | None = None,
         messages: list[str] | None = None,
     ) -> None:
+        """Initialize SplunkAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.endpoint = endpoint
         self.messages = messages or []
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.status_code:
             parts.append(f"HTTP {self.status_code}")
@@ -118,11 +120,13 @@ class SplunkSearchError(SplunkError):
         job_sid: str | None = None,
         dispatch_state: str | None = None,
     ) -> None:
+        """Initialize SplunkSearchError."""
         super().__init__(message)
         self.job_sid = job_sid
         self.dispatch_state = dispatch_state
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.job_sid:
             parts.append(f"sid={self.job_sid}")

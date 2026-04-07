@@ -64,6 +64,7 @@ class KibanaRulesCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize KibanaRulesCommands."""
         self._client = client
 
     # ── List and search ────────────────────────────────────────────────────

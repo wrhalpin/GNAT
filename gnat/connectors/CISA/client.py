@@ -72,6 +72,7 @@ class CISAClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://www.cisa.gov", **kwargs: Any):
+        """Initialize CISAClient."""
         super().__init__(host=host, **kwargs)
 
     # ── Authentication ─────────────────────────────────────────────────────
@@ -141,9 +142,11 @@ class CISAClient(BaseClient, ConnectorMixin):
         return catalog[start : start + page_size]
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("CISA connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("CISA connector is read-only — no deletion supported.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────

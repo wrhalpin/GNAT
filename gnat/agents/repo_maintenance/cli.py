@@ -16,6 +16,7 @@ from gnat.agents.repo_maintenance.verifier import VerificationEngine
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the parser."""
     parser = argparse.ArgumentParser(prog="gnat-maintain")
     parser.add_argument("connector")
     parser.add_argument("--registry", default="gnat/connectors/_registry/connector_registry.yaml")
@@ -31,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Main."""
     args = build_parser().parse_args(argv)
     registry = ConnectorRegistry.load(args.registry)
     repo_root = Path(args.repo_root)

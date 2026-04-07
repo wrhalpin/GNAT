@@ -136,6 +136,7 @@ def build_app(
             return None
 
     def _obj_to_row(obj: Any, cols: list[str]) -> list[Any]:
+        """Internal helper for obj to row."""
         row = []
         for col in cols:
             if col == "type":
@@ -154,10 +155,12 @@ def build_app(
 
     @app.get("/")
     async def health():
+        """Health."""
         return {"status": "ok", "service": "gnat-grafana"}
 
     @app.get("/workspaces")
     async def list_workspaces():
+        """List all workspaces objects."""
         return manager.list()
 
     @app.post("/search")
@@ -296,6 +299,7 @@ def build_app(
 
     @app.post("/tag-keys")
     async def tag_keys():
+        """Tag keys."""
         return [
             {"type": "string", "text": "stix_type"},
             {"type": "string", "text": "tlp"},
@@ -304,6 +308,7 @@ def build_app(
 
     @app.post("/tag-values")
     async def tag_values(request: Request):
+        """Tag values."""
         body = await request.json()
         key = body.get("key", "stix_type")
         if key == "stix_type":
@@ -362,6 +367,7 @@ class GrafanaServer:
         port: int = 3001,
         search_index: Any | None = None,
     ):
+        """Initialize GrafanaServer."""
         self._manager = manager
         self._host = host
         self._port = port
@@ -370,6 +376,7 @@ class GrafanaServer:
 
     @property
     def app(self) -> Any:
+        """App."""
         if self._app is None:
             self._app = build_app(self._manager, search_index=self._search_index)
         return self._app
@@ -406,8 +413,10 @@ class GrafanaServer:
         return thread
 
     def url(self) -> str:
+        """Url."""
         host = "localhost" if self._host in ("0.0.0.0", "") else self._host  # nosec B104 — comparing, not binding
         return f"http://{host}:{self._port}"
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"GrafanaServer(url={self.url()!r})"

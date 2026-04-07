@@ -25,6 +25,7 @@ class CriblError(Exception):
         status_code: int | None = None,
         response_body: str | None = None,
     ) -> None:
+        """Initialize CriblError."""
         super().__init__(message)
         self.status_code = status_code
         self.response_body = response_body

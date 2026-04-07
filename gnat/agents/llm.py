@@ -30,10 +30,12 @@ class LLMClient:
         backend: str = "claude",
         **config: Any,
     ) -> None:
+        """Initialize LLMClient."""
         self.backend = backend.lower()
         self.provider = self._create_provider(backend, config)
 
     def _create_provider(self, backend: str, config: dict[str, Any]) -> LLMProvider:
+        """Internal helper for create provider."""
         if backend == "claude":
             from .claude import ClaudeProvider
 

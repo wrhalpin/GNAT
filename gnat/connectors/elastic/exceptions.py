@@ -71,6 +71,7 @@ class ElasticAuthError(ElasticError):
     """
 
     def __init__(self, message: str, status_code: int | None = None) -> None:
+        """Initialize ElasticAuthError."""
         super().__init__(message)
         self.status_code = status_code
 
@@ -101,6 +102,7 @@ class ElasticAPIError(ElasticError):
         reason: str = "",
         endpoint: str | None = None,
     ) -> None:
+        """Initialize ElasticAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.error_type = error_type
@@ -108,6 +110,7 @@ class ElasticAPIError(ElasticError):
         self.endpoint = endpoint
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.status_code:
             parts.append(f"HTTP {self.status_code}")
@@ -158,12 +161,14 @@ class ElasticKibanaError(ElasticError):
         kibana_message: str = "",
         endpoint: str | None = None,
     ) -> None:
+        """Initialize ElasticKibanaError."""
         super().__init__(message)
         self.status_code = status_code
         self.kibana_message = kibana_message
         self.endpoint = endpoint
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.status_code:
             parts.append(f"HTTP {self.status_code}")

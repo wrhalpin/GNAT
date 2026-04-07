@@ -111,6 +111,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         private_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize DarktraceClient."""
         super().__init__(host=host, **kwargs)
         self._public_key = public_key
         self._private_key = private_key
@@ -263,6 +264,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         }
 
     def _breach_to_stix(self, breach: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for breach to stix."""
         now = _now_ts()
         bid = str(breach.get("pbid", ""))
         ts = breach.get("time", now)
@@ -286,6 +288,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         }
 
     def _device_to_stix(self, device: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for device to stix."""
         now = _now_ts()
         did = str(device.get("did", ""))
         return {

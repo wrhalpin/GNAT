@@ -85,6 +85,7 @@ OFFENSE_TYPE_LABELS = {
 
 # Magnitude → GNAT severity (0–4)
 def _magnitude_to_severity(magnitude: int) -> int:
+    """Internal helper for magnitude to severity."""
     if magnitude >= 9:
         return 4  # critical
     if magnitude >= 7:
@@ -110,6 +111,7 @@ class QRadarOffenseCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarOffenseCommands."""
         self._client = client
 
     # ── List and retrieve ──────────────────────────────────────────────────

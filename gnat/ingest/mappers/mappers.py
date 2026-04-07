@@ -66,10 +66,12 @@ logger = logging.getLogger(__name__)
 
 
 def _make_id(stix_type: str) -> str:
+    """Internal helper for make id."""
     return f"{stix_type}--{uuid.uuid4()}"
 
 
 def _utcnow() -> str:
+    """Internal helper for utcnow."""
     from gnat.orm.base import _utcnow as _base_utcnow
 
     return _base_utcnow()
@@ -167,6 +169,7 @@ class FlatIOCMapper(RecordMapper):
         extra_stix_fields: dict[str, Any] | None = None,
         **kwargs: Any,
     ):
+        """Initialize FlatIOCMapper."""
         super().__init__(**kwargs)
         self._vf = value_field
         self._tf = type_field
@@ -175,6 +178,7 @@ class FlatIOCMapper(RecordMapper):
         self._extra = extra_stix_fields or {}
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         value = str(record.get(self._vf, "")).strip()
         ioc_type = str(record.get(self._tf, "unknown")).strip().lower()
 
@@ -247,10 +251,12 @@ class STIXPassthroughMapper(RecordMapper):
         type_filter: list[str] | None = None,
         **kwargs: Any,
     ):
+        """Initialize STIXPassthroughMapper."""
         super().__init__(**kwargs)
         self._type_filter = set(type_filter) if type_filter else None
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         stix_type = record.get("type", "")
         if self._type_filter and stix_type not in self._type_filter:
             return
@@ -290,10 +296,12 @@ class MISPAttributeMapper(RecordMapper):
     """
 
     def __init__(self, require_to_ids: bool = False, **kwargs: Any):
+        """Initialize MISPAttributeMapper."""
         super().__init__(**kwargs)
         self._require_to_ids = require_to_ids
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         misp_type = record.get("type", "")
         value = str(record.get("value", "")).strip()
 
@@ -387,6 +395,7 @@ class CEFMapper(RecordMapper):
         ioc_fields: list[str] | None = None,
         **kwargs: Any,
     ):
+        """Initialize CEFMapper."""
         super().__init__(**kwargs)
         self._ioc_fields = ioc_fields or self._DEFAULT_IOC_FIELDS
         from gnat.ingest.sources.readers import PlainTextReader
@@ -394,6 +403,7 @@ class CEFMapper(RecordMapper):
         self._classifier = PlainTextReader("", from_string=True)
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         for field in self._ioc_fields:
             value = str(record.get(field, "")).strip()
             if not value:
@@ -474,6 +484,7 @@ class SQLRowMapper(RecordMapper):
         extra_col_map: dict[str, str] | None = None,
         **kwargs: Any,
     ):
+        """Initialize SQLRowMapper."""
         super().__init__(**kwargs)
         self._vc = value_col
         self._tc = type_col
@@ -486,6 +497,7 @@ class SQLRowMapper(RecordMapper):
         self._classifier = PlainTextReader("", from_string=True)
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         value = str(record.get(self._vc, "")).strip()
         if not value:
             return
@@ -540,6 +552,7 @@ class CSVIndicatorMapper(FlatIOCMapper):
     """
 
     def __init__(self, value_field: str = "indicator", **kwargs: Any):
+        """Initialize CSVIndicatorMapper."""
         super().__init__(value_field=value_field, **kwargs)
 
 
@@ -571,10 +584,12 @@ class RSSEntryMapper(RecordMapper):
     _CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
 
     def __init__(self, extract_iocs: bool = True, **kwargs: Any):
+        """Initialize RSSEntryMapper."""
         super().__init__(**kwargs)
         self._extract = extract_iocs
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         title = record.get("title", "")
         summary = record.get("summary", "")
         link = record.get("link", "")
@@ -672,10 +687,12 @@ class EmailIOCMapper(RecordMapper):
         ioc_types: list[str] | None = None,
         **kwargs: Any,
     ):
+        """Initialize EmailIOCMapper."""
         super().__init__(**kwargs)
         self._ioc_types = set(ioc_types or ["ips", "domains", "urls", "hashes"])
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         subject = record.get("subject", "")
         msg_id = record.get("message_id", "")
         email_from = record.get("from", "")
@@ -768,6 +785,7 @@ class OpenIOCMapper(RecordMapper):
     }
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
+        """Map the input record to the output schema."""
         search = record.get("context_search", "")
         content = record.get("content", "").strip()
         ioc_id = record.get("ioc_name", record.get("ioc_id", ""))
@@ -819,10 +837,12 @@ class SplunkResultMapper(FlatIOCMapper):
     """
 
     def __init__(self, value_field: str = "value", **kwargs: Any):
+        """Initialize SplunkResultMapper."""
         super().__init__(value_field=value_field, **kwargs)
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
         # Try common Splunk field names if configured field is empty
+        """Map the input record to the output schema."""
         if not record.get(self._vf):
             for candidate in ("src_ip", "dest_ip", "url", "file_hash", "domain"):
                 if record.get(candidate):
@@ -877,6 +897,7 @@ class NVDCVEMapper(RecordMapper):
 
     def map(self, record: RawRecord) -> Iterator[STIXBase]:
         # NVD 2.x wraps in {"cve": {...}}
+        """Map the input record to the output schema."""
         cve_data = record.get("cve", record)
 
         cve_id = cve_data.get("id") or cve_data.get("CVE_data_meta", {}).get("ID", "")

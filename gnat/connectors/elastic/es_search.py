@@ -54,6 +54,7 @@ class ElasticSearchCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize ElasticSearchCommands."""
         self._client = client
 
     # ── Cluster / health ───────────────────────────────────────────────────

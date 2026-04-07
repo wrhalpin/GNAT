@@ -83,6 +83,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         token: str = "",
         **kwargs: Any,
     ):
+        """Initialize GroupIBClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._token = token
@@ -104,6 +105,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         # Example: fetch specific item from a collection
+        """Retrieve object."""
         return self.get(f"/collections/{object_id}")  # adjust path as needed per collection
 
     def list_objects(
@@ -113,6 +115,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -123,9 +126,11 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         return resp.get("items", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Group-IB connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -171,12 +176,14 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         return self._event_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Group-IB is read-only for threat intelligence and risk data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _compromised_to_stix(self, item: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for compromised to stix."""
         now = _now_ts()
         iid = item.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'groupib:{iid}')}"
@@ -199,6 +206,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         }
 
     def _ioc_to_stix(self, ioc: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for ioc to stix."""
         now = _now_ts()
         iid = ioc.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'groupib:{iid}')}"
@@ -222,6 +230,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         }
 
     def _event_to_stix(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for event to stix."""
         now = _now_ts()
         eid = event.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'groupib:{eid}')}"

@@ -52,16 +52,19 @@ def _extract_iocs(text: str) -> list[str]:
 
 
 def _extract_tickets(text: str) -> list[str]:
+    """Internal helper for extract tickets."""
     return list(dict.fromkeys(_TICKET_RE.findall(text)))
 
 
 def _node_id(platform: str, node_type: NodeType, source_id: str) -> str:
+    """Internal helper for node id."""
     return f"{platform}::{node_type}::{source_id}"
 
 
 # ── XSOAR ──────────────────────────────────────────────────────────────────
 
 def _xsoar_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xsoar incident."""
     inc_id     = str(raw.get("id", ""))
     opened_at  = raw.get("occurred", raw.get("created", ""))
     modified   = raw.get("modified", opened_at)
@@ -124,6 +127,7 @@ def _xsoar_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _xsoar_indicator(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xsoar indicator."""
     src_id  = str(raw.get("id", ""))
     value   = raw.get("value", "")
     i_type  = str(raw.get("indicator_type", "")).lower()
@@ -154,6 +158,7 @@ def _xsoar_indicator(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _xsoar_alert(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xsoar alert."""
     src_id  = str(raw.get("id", raw.get("alertId", "")))
     name    = raw.get("name", raw.get("message", ""))
     created = raw.get("startDate", raw.get("occurred", ""))
@@ -183,6 +188,7 @@ def _xsoar_alert(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _xsoar_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xsoar task."""
     src_id  = str(raw.get("id", ""))
     name    = raw.get("name", raw.get("title", ""))
     created = raw.get("startDate", "")
@@ -209,6 +215,7 @@ def _xsoar_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _xsoar_timeline(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xsoar timeline."""
     src_id  = str(raw.get("id", ""))
     content = raw.get("contents", raw.get("message", ""))
     created = raw.get("created", "")
@@ -236,6 +243,7 @@ def _xsoar_timeline(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 # ── GreyMatter ─────────────────────────────────────────────────────────────
 
 def _gm_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for gm incident."""
     data    = raw.get("data", raw)
     src_id  = str(data.get("id", ""))
     created = data.get("created_at", "")
@@ -281,6 +289,7 @@ def _gm_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _gm_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for gm observable."""
     data    = raw.get("data", raw)
     src_id  = str(data.get("id", ""))
     value   = data.get("value", data.get("name", ""))
@@ -327,6 +336,7 @@ def _gm_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _gm_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for gm task."""
     data    = raw.get("data", raw)
     src_id  = str(data.get("id", ""))
     title   = data.get("title", data.get("name", ""))
@@ -355,6 +365,7 @@ def _gm_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 # ── ThreatQ ────────────────────────────────────────────────────────────────
 
 def _tq_event(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for tq event."""
     data    = raw.get("data", raw)
     src_id  = str(data.get("id", ""))
     title   = data.get("title", "")
@@ -394,6 +405,7 @@ def _tq_event(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _tq_indicator(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for tq indicator."""
     data    = raw.get("data", raw)
     src_id  = str(data.get("id", ""))
     value   = data.get("value", "")
@@ -425,6 +437,7 @@ def _tq_indicator(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _tq_adversary(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for tq adversary."""
     data    = raw.get("data", raw)
     src_id  = str(data.get("id", ""))
     name    = data.get("name", data.get("value", ""))
@@ -452,6 +465,7 @@ def _tq_adversary(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 # ── TheHive ────────────────────────────────────────────────────────────────
 
 def _hive_case(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for hive case."""
     src_id   = str(raw.get("_id", raw.get("id", "")))
     title    = raw.get("title", "")
     desc     = raw.get("description", "")
@@ -493,6 +507,7 @@ def _hive_case(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _hive_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for hive observable."""
     src_id    = str(raw.get("_id", raw.get("id", "")))
     value     = raw.get("data", "")
     data_type = raw.get("dataType", "unknown")
@@ -536,6 +551,7 @@ def _hive_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _hive_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for hive task."""
     src_id   = str(raw.get("_id", raw.get("id", "")))
     title    = raw.get("title", raw.get("name", ""))
     created  = raw.get("_createdAt", "")
@@ -566,6 +582,7 @@ def _hive_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 # ── ServiceNow SecOps ─────────────────────────────────────────────────────
 
 def _sn_secops_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for sn secops incident."""
     src_id   = str(raw.get("sys_id", ""))
     title    = raw.get("short_description", "")
     desc     = raw.get("description", "")
@@ -617,6 +634,7 @@ def _sn_secops_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _sn_secops_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for sn secops task."""
     src_id   = str(raw.get("sys_id", ""))
     title    = raw.get("short_description", raw.get("name", ""))
     created  = raw.get("sys_created_on", "")
@@ -644,6 +662,7 @@ def _sn_secops_task(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _sn_secops_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for sn secops observable."""
     src_id    = str(raw.get("sys_id", ""))
     value     = raw.get("value", "")
     obs_type  = raw.get("type", {}).get("display_value", raw.get("type", "unknown"))
@@ -686,6 +705,7 @@ def _sn_secops_observable(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 # ── Cortex XDR ────────────────────────────────────────────────────────────
 
 def _xdr_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xdr incident."""
     inc_id   = str(raw.get("incident_id", ""))
     name     = raw.get("incident_name", f"XDR Incident {inc_id}")
     desc     = raw.get("description", "")
@@ -727,6 +747,7 @@ def _xdr_incident(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _xdr_alert(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xdr alert."""
     alert_id = str(raw.get("alert_id", ""))
     name     = raw.get("name", raw.get("alert_name", f"XDR Alert {alert_id}"))
     ts       = raw.get("detection_timestamp", "")
@@ -762,6 +783,7 @@ def _xdr_alert(platform: str, raw: dict[str, Any]) -> EvidenceNode:
 
 
 def _xdr_artifact(platform: str, raw: dict[str, Any]) -> EvidenceNode:
+    """Internal helper for xdr artifact."""
     src_id = str(raw.get("alert_id", raw.get("file_sha256", raw.get("network_remote_ip", ""))))
     artifact_type = "network" if "network_remote_ip" in raw else "file"
     value = raw.get("network_remote_ip", "") or raw.get("file_sha256", "")

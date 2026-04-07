@@ -47,16 +47,20 @@ class ConnectorRegistry:
     """Loads and validates the connector maintenance registry."""
 
     def __init__(self, specs: dict[str, ConnectorSpec]):
+        """Initialize ConnectorRegistry."""
         self._specs = specs
 
     def get(self, connector: str) -> ConnectorSpec:
+        """Get."""
         return self._specs[connector]
 
     def names(self) -> list[str]:
+        """Names."""
         return sorted(self._specs.keys())
 
     @classmethod
     def load(cls, path: str | Path) -> ConnectorRegistry:
+        """Load data from the configured source."""
         raw = _load_registry_file(Path(path))
         specs: dict[str, ConnectorSpec] = {}
         for name, item in raw.items():
@@ -85,6 +89,7 @@ class ConnectorRegistry:
 
 
 def _load_registry_file(path: Path) -> dict[str, Any]:
+    """Internal helper for load registry file."""
     text = path.read_text(encoding="utf-8")
     if path.suffix in {".yaml", ".yml"}:
         if not _HAS_YAML:

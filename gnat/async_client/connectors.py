@@ -42,11 +42,13 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, client_id: str = "", client_secret: str = "", **kwargs: Any):
+        """Initialize AsyncThreatQClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
 
     async def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         resp = await self.post(
             "/api/token",
             data={
@@ -61,10 +63,12 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     async def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/api/ping")
         return True
 
     async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resource = self._resolve(stix_type)
         tq_id = object_id.split("--")[-1] if "--" in object_id else object_id
         return await self.get(f"/api/{resource}/{tq_id}", params={"with": "tags,score"})
@@ -76,6 +80,7 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         resource = self._resolve(stix_type)
         params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         if filters:
@@ -84,6 +89,7 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         resource = self._resolve(stix_type)
         tq_id = payload.pop("id", None)
         if tq_id:
@@ -91,11 +97,13 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         return await self.post(f"/api/{resource}", json=payload)
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         resource = self._resolve(stix_type)
         tq_id = object_id.split("--")[-1] if "--" in object_id else object_id
         await self.delete(f"/api/{resource}/{tq_id}")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         d = native.get("data", native)
         return {
             "type": "indicator",
@@ -109,9 +117,11 @@ class AsyncThreatQClient(AsyncBaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"value": stix_dict.get("name", ""), "status": {"name": "Active"}}
 
     def _resolve(self, stix_type: str) -> str:
+        """Internal helper for resolve."""
         r = self.stix_type_map.get(stix_type)
         if not r:
             raise GNATClientError(f"AsyncThreatQ: unsupported STIX type '{stix_type}'")
@@ -129,11 +139,13 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "iocs", "malware": "detections"}
 
     def __init__(self, host: str, client_id: str = "", client_secret: str = "", **kwargs: Any):
+        """Initialize AsyncCrowdStrikeClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
 
     async def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         resp = await self.post(
             "/oauth2/token",
             data={
@@ -147,10 +159,12 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     async def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/sensors/queries/installers/v1", params={"limit": 1})
         return True
 
     async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resp = await self.get("/indicators/entities/iocs/v1", params={"ids": object_id})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
         return resources[0] if resources else {}
@@ -162,19 +176,23 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         resp = await self.get("/indicators/queries/iocs/v1", params=params)
         return resp.get("resources", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         resp = await self.post("/indicators/entities/iocs/v1", json={"indicators": [payload]})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
         return resources[0] if resources else {}
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         await self.delete(f"/indicators/entities/iocs/v1?ids={object_id}")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -186,6 +204,7 @@ class AsyncCrowdStrikeClient(AsyncBaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "type": "ipv4",
             "value": stix_dict.get("name", ""),
@@ -205,19 +224,23 @@ class AsyncProofpointClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "threat"}
 
     def __init__(self, host: str, service_principal: str = "", secret: str = "", **kwargs: Any):
+        """Initialize AsyncProofpointClient."""
         super().__init__(host=host, **kwargs)
         self._sp = service_principal
         self._secret = secret
 
     async def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         encoded = base64.b64encode(f"{self._sp}:{self._secret}".encode()).decode()
         self._auth_headers["Authorization"] = f"Basic {encoded}"
 
     async def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/v2/siem/all", params={"format": "json", "sinceSeconds": 60})
         return True
 
     async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resp = await self.get("/v2/forensics", params={"threatId": object_id})
         return resp if isinstance(resp, dict) else {}
 
@@ -228,6 +251,7 @@ class AsyncProofpointClient(AsyncBaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         params: dict[str, Any] = {"format": "json", "sinceSeconds": 3600}
         if filters:
             params.update(filters)
@@ -235,12 +259,15 @@ class AsyncProofpointClient(AsyncBaseClient, ConnectorMixin):
         return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Proofpoint TAP API does not support object creation.")
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Proofpoint TAP API does not support object deletion.")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', native.get('threatId', ''))}",
@@ -251,6 +278,7 @@ class AsyncProofpointClient(AsyncBaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"threatId": stix_dict.get("id", "").split("--")[-1]}
 
 
@@ -265,17 +293,21 @@ class AsyncNetskopeClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "urllist"}
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
+        """Initialize AsyncNetskopeClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 
     async def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         self._auth_headers["Netskope-Api-Token"] = self._api_token
 
     async def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/api/v2/policy/urllist", params={"limit": 1})
         return True
 
     async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         return await self.get(f"/api/v2/policy/urllist/{object_id}")
 
     async def list_objects(
@@ -285,6 +317,7 @@ class AsyncNetskopeClient(AsyncBaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         params: dict[str, Any] = {"limit": page_size, "skip": (page - 1) * page_size}
         if filters:
             params.update(filters)
@@ -292,15 +325,18 @@ class AsyncNetskopeClient(AsyncBaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         list_id = payload.pop("id", None)
         if list_id:
             return await self.patch(f"/api/v2/policy/urllist/{list_id}", json=payload)
         return await self.post("/api/v2/policy/urllist", json=payload)
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         await self.delete(f"/api/v2/policy/urllist/{object_id}")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -310,6 +346,7 @@ class AsyncNetskopeClient(AsyncBaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"name": stix_dict.get("name", ""), "type": "exact", "data": {"urls": []}}
 
 
@@ -329,20 +366,24 @@ class AsyncXSOARClient(AsyncBaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_key: str = "", auth_id: str = "", **kwargs: Any):
+        """Initialize AsyncXSOARClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._auth_id = auth_id
 
     async def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         self._auth_headers["Authorization"] = self._api_key
         if self._auth_id:
             self._auth_headers["x-xdr-auth-id"] = self._auth_id
 
     async def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/health")
         return True
 
     async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resp = await self.post("/indicators/search", json={"query": f"id:{object_id}", "size": 1})
         items = resp.get("iocObjects", []) if isinstance(resp, dict) else []
         return items[0] if items else {}
@@ -354,6 +395,7 @@ class AsyncXSOARClient(AsyncBaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         query = filters.get("query", "") if filters else ""
         resp = await self.post(
             "/indicators/search", json={"query": query, "size": page_size, "page": page - 1}
@@ -361,12 +403,15 @@ class AsyncXSOARClient(AsyncBaseClient, ConnectorMixin):
         return resp.get("iocObjects", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         return await self.post("/indicators/edit", json=payload)
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         await self.post("/indicators/delete", json={"id": object_id, "doNotWhitelist": False})
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -378,6 +423,7 @@ class AsyncXSOARClient(AsyncBaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"value": stix_dict.get("name", ""), "indicator_type": "IP", "score": 2}
 
 
@@ -397,17 +443,21 @@ class AsyncRecordedFutureClient(AsyncBaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
+        """Initialize AsyncRecordedFutureClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 
     async def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         self._auth_headers["X-RFToken"] = self._api_token
 
     async def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/v2/ip/search", params={"limit": 1})
         return True
 
     async def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resource = self.stix_type_map.get(stix_type, stix_type)
         resp = await self.get(
             f"/v2/{resource}/{object_id}", params={"fields": "entity,risk,timestamps"}
@@ -421,6 +471,7 @@ class AsyncRecordedFutureClient(AsyncBaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         resource = self.stix_type_map.get(stix_type, stix_type)
         params: dict[str, Any] = {"limit": page_size, "from": (page - 1) * page_size}
         if filters:
@@ -429,12 +480,15 @@ class AsyncRecordedFutureClient(AsyncBaseClient, ConnectorMixin):
         return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     async def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Recorded Future API is read-only.")
 
     async def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Recorded Future API is read-only.")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         entity = native.get("entity", {})
         risk = native.get("risk", {})
         return {
@@ -450,6 +504,7 @@ class AsyncRecordedFutureClient(AsyncBaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"entity": stix_dict.get("name", "")}
 
 
@@ -469,11 +524,13 @@ class AsyncGreyMatterClient(AsyncBaseClient, ConnectorMixin):
     }
 
     def __init__(self, host, client_id="", client_secret="", **kw):
+        """Initialize AsyncGreyMatterClient."""
         super().__init__(host=host, **kw)
         self._client_id = client_id
         self._client_secret = client_secret
 
     async def authenticate(self):
+        """Authenticate with the remote API and populate auth headers."""
         resp = await self.post(
             "/v1/auth/token",
             data={
@@ -488,29 +545,36 @@ class AsyncGreyMatterClient(AsyncBaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     async def health_check(self):
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/v1/health")
         return True
 
     async def get_object(self, t, oid):
+        """Retrieve object."""
         return await self.get(f"/v1/{t}/{oid.split('--')[-1]}")
 
     async def list_objects(self, t, f=None, page=1, ps=100):
+        """List all objects objects."""
         r = await self.get(f"/v1/{t}", params={"limit": ps, "offset": (page - 1) * ps})
         return r.get("data", []) if isinstance(r, dict) else []
 
     async def upsert_object(self, t, p):
+        """Create or update object."""
         gid = p.pop("id", None)
         return await (self.put(f"/v1/{t}/{gid}", json=p) if gid else self.post(f"/v1/{t}", json=p))
 
     async def delete_object(self, t, oid):
+        """Delete the object."""
         await self.delete(f"/v1/{t}/{oid.split('--')[-1]}")
 
     def to_stix(self, n):
+        """Convert this object to STIX format."""
         from gnat.connectors.greymatter.client import GreyMatterClient
 
         return GreyMatterClient(host=self.host).to_stix(n)
 
     def from_stix(self, d):
+        """Create an instance from STIX data."""
         from gnat.connectors.greymatter.client import GreyMatterClient
 
         return GreyMatterClient(host=self.host).from_stix(d)
@@ -527,37 +591,46 @@ class AsyncWhisticClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"threat-actor": "vendors", "x-assessment": "assessments"}
 
     def __init__(self, host, api_key="", **kw):
+        """Initialize AsyncWhisticClient."""
         super().__init__(host=host, **kw)
         self._api_key = api_key
 
     async def authenticate(self):
+        """Authenticate with the remote API and populate auth headers."""
         self._auth_headers["X-Whistic-Token"] = self._api_key
 
     async def health_check(self):
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/v1/vendors", params={"limit": 1})
         return True
 
     async def get_object(self, t, oid):
+        """Retrieve object."""
         ep = "/v1/vendors" if t == "threat-actor" else "/v1/assessments"
         return await self.get(f"{ep}/{oid}")
 
     async def list_objects(self, t, f=None, page=1, ps=100):
+        """List all objects objects."""
         ep = "/v1/vendors" if t == "threat-actor" else "/v1/assessments"
         r = await self.get(ep, params={"limit": ps, "offset": (page - 1) * ps})
         return r.get("vendors", r.get("assessments", [])) if isinstance(r, dict) else []
 
     async def upsert_object(self, t, p):
+        """Create or update object."""
         raise GNATClientError("Whistic: direct create not supported")
 
     async def delete_object(self, t, oid):
+        """Delete the object."""
         await self.delete(f"/v1/vendors/{oid}")
 
     def to_stix(self, n):
+        """Convert this object to STIX format."""
         from gnat.connectors.whistic.client import WhisticClient
 
         return WhisticClient(host=self.host).to_stix(n)
 
     def from_stix(self, d):
+        """Create an instance from STIX data."""
         from gnat.connectors.whistic.client import WhisticClient
 
         return WhisticClient(host=self.host).from_stix(d)
@@ -574,11 +647,13 @@ class AsyncRiskReconClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"threat-actor": "companies", "vulnerability": "findings"}
 
     def __init__(self, host, client_id="", client_secret="", **kw):
+        """Initialize AsyncRiskReconClient."""
         super().__init__(host=host, **kw)
         self._client_id = client_id
         self._client_secret = client_secret
 
     async def authenticate(self):
+        """Authenticate with the remote API and populate auth headers."""
         resp = await self.post(
             "/oauth2/token",
             data={
@@ -593,28 +668,35 @@ class AsyncRiskReconClient(AsyncBaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     async def health_check(self):
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/companies", params={"limit": 1})
         return True
 
     async def get_object(self, t, oid):
+        """Retrieve object."""
         return await self.get(f"/{t}/{oid.split('--')[-1]}")
 
     async def list_objects(self, t, f=None, page=1, ps=100):
+        """List all objects objects."""
         r = await self.get("/companies", params={"limit": ps, "offset": (page - 1) * ps})
         return r.get("companies", []) if isinstance(r, dict) else []
 
     async def upsert_object(self, t, p):
+        """Create or update object."""
         return await self.post("/companies", json=p)
 
     async def delete_object(self, t, oid):
+        """Delete the object."""
         await self.delete(f"/companies/{oid.split('--')[-1]}")
 
     def to_stix(self, n):
+        """Convert this object to STIX format."""
         from gnat.connectors.riskrecon.client import RiskReconClient
 
         return RiskReconClient(host=self.host).to_stix(n)
 
     def from_stix(self, d):
+        """Create an instance from STIX data."""
         from gnat.connectors.riskrecon.client import RiskReconClient
 
         return RiskReconClient(host=self.host).from_stix(d)
@@ -631,20 +713,25 @@ class AsyncFeedlyClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "iocFeed", "vulnerability": "cvesFeed"}
 
     def __init__(self, host, api_token="", **kw):
+        """Initialize AsyncFeedlyClient."""
         super().__init__(host=host, **kw)
         self._api_token = api_token
 
     async def authenticate(self):
+        """Authenticate with the remote API and populate auth headers."""
         self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
 
     async def health_check(self):
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/v3/profile")
         return True
 
     async def get_object(self, t, oid):
+        """Retrieve object."""
         return await self.get(f"/v3/entities/{oid}")
 
     async def list_objects(self, t, f=None, page=1, ps=100):
+        """List all objects objects."""
         import time
 
         nt = int((time.time() - 86400) * 1000)
@@ -653,17 +740,21 @@ class AsyncFeedlyClient(AsyncBaseClient, ConnectorMixin):
         return r.get("indicators", r.get("cves", [])) if isinstance(r, dict) else []
 
     async def upsert_object(self, t, p):
+        """Create or update object."""
         raise GNATClientError("Feedly is read-only")
 
     async def delete_object(self, t, oid):
+        """Delete the object."""
         raise GNATClientError("Feedly is read-only")
 
     def to_stix(self, n):
+        """Convert this object to STIX format."""
         from gnat.connectors.feedly.client import FeedlyClient
 
         return FeedlyClient(host=self.host).to_stix(n)
 
     def from_stix(self, d):
+        """Create an instance from STIX data."""
         return {"note": "Feedly read-only"}
 
 
@@ -678,12 +769,14 @@ class AsyncSplunkClient(AsyncBaseClient, ConnectorMixin):
     stix_type_map = {"indicator": "threat_activity", "vulnerability": "notable"}
 
     def __init__(self, host, api_token="", username="", password="", **kw):
+        """Initialize AsyncSplunkClient."""
         super().__init__(host=host, **kw)
         self._api_token = api_token
         self._username = username
         self._password = password
 
     async def authenticate(self):
+        """Authenticate with the remote API and populate auth headers."""
         if self._api_token:
             self._auth_headers["Authorization"] = f"Bearer {self._api_token}"
             return
@@ -697,27 +790,34 @@ class AsyncSplunkClient(AsyncBaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Splunk {key}"
 
     async def health_check(self):
+        """Perform a lightweight connectivity check against the remote API."""
         await self.get("/services/server/info", params={"output_mode": "json"})
         return True
 
     async def get_object(self, t, oid):
+        """Retrieve object."""
         return {}
 
     async def list_objects(self, t, f=None, page=1, ps=100):
+        """List all objects objects."""
         return []
 
     async def upsert_object(self, t, p):
+        """Create or update object."""
         return {}
 
     async def delete_object(self, t, oid):
+        """Delete the object."""
         pass
 
     def to_stix(self, n):
+        """Convert this object to STIX format."""
         from gnat.connectors.splunk.client import SplunkClient
 
         return SplunkClient(host=self.host).to_stix(n)
 
     def from_stix(self, d):
+        """Create an instance from STIX data."""
         from gnat.connectors.splunk.client import SplunkClient
 
         return SplunkClient(host=self.host).from_stix(d)

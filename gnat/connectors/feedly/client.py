@@ -92,6 +92,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
+        """Initialize FeedlyClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 
@@ -159,9 +160,11 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"Feedly: unsupported STIX type '{stix_type}'")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Feedly is read-only — object creation is not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Feedly is read-only — object deletion is not supported.")
 
     # ── Domain-specific operations ────────────────────────────────────────

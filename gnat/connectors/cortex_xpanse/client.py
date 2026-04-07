@@ -83,6 +83,7 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         api_key_id: str = "",
         **kwargs: Any,
     ):
+        """Initialize CortexXpanseClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._api_key_id = api_key_id
@@ -104,6 +105,7 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "report":
             return self.get(f"/v2/assets/{object_id}")
         if stix_type == "vulnerability":
@@ -117,6 +119,7 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -129,11 +132,13 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError(
             "Cortex Xpanse connector is primarily read-only (limited incident updates)."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -177,12 +182,14 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         return self._asset_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Cortex Xpanse is primarily read-only for ASM data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _exposure_to_stix(self, exposure: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for exposure to stix."""
         now = _now_ts()
         eid = exposure.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'xpanse:{eid}')}"
@@ -204,6 +211,7 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         }
 
     def _asset_to_stix(self, asset: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for asset to stix."""
         now = _now_ts()
         aid = asset.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'asset:{aid}')}"

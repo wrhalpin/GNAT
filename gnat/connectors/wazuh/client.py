@@ -86,6 +86,7 @@ class WazuhClient:
     """
 
     def __init__(self, config: WazuhConfig) -> None:
+        """Initialize WazuhClient."""
         self.config = config
         self._http = self._build_pool_manager()
         self.auth = WazuhAuthManager(config, self._http)
@@ -93,9 +94,11 @@ class WazuhClient:
     # ── Context manager ───────────────────────────────────────────────────
 
     def __enter__(self) -> "WazuhClient":
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self) -> None:
@@ -252,6 +255,7 @@ class WazuhClient:
     # ── Internal ───────────────────────────────────────────────────────────
 
     def _build_pool_manager(self) -> urllib3.PoolManager:
+        """Internal helper for build pool manager."""
         kwargs: dict = {
             "num_pools": 4,
             "maxsize": 10,
@@ -409,6 +413,7 @@ class WazuhClient:
 
     @staticmethod
     def _parse_json(data: bytes, url: str) -> dict:
+        """Internal helper for parse json."""
         try:
             return json.loads(data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -419,6 +424,7 @@ class WazuhClient:
 
     @staticmethod
     def _safe_parse_json(data: bytes) -> dict:
+        """Internal helper for safe parse json."""
         try:
             return json.loads(data.decode("utf-8"))
         except Exception:
@@ -426,6 +432,7 @@ class WazuhClient:
 
     @staticmethod
     def _extract_error_code(data: bytes) -> int | None:
+        """Internal helper for extract error code."""
         try:
             body = json.loads(data.decode("utf-8"))
             return body.get("error") or body.get("data", {}).get("error")

@@ -83,6 +83,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         secret_key: str = "",
         **kwargs: Any,
     ):
+        """Initialize TenableOneClient."""
         super().__init__(host=host, **kwargs)
         self._access_key = access_key
         self._secret_key = secret_key
@@ -119,6 +120,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         if stix_type == "vulnerability":
             return self.fetch_vulnerabilities(limit=page_size, **filters)
@@ -126,9 +128,11 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         return self.fetch_exposure_cards(limit=page_size, **filters)
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Tenable One connector is read-focused.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Tenable One connector does not support deletion.")
 
     # ── Domain-specific helpers (expanded) ─────────────────────────────────
@@ -194,6 +198,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         return self._exposure_card_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Tenable One is primarily read-only. Use fetch_* helpers.",
             "stix_id": stix_dict.get("id", ""),
@@ -202,6 +207,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
     # ── Private STIX mappers ───────────────────────────────────────────────
 
     def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         now = _now_ts()
         vid = vuln.get("id") or vuln.get("plugin_id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'tenable:{vid}')}"
@@ -223,6 +229,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         }
 
     def _exposure_card_to_stix(self, card: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for exposure card to stix."""
         now = _now_ts()
         cid = card.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'card:{cid}')}"
@@ -243,6 +250,7 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         }
 
     def _attack_path_to_stix(self, path: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for attack path to stix."""
         now = _now_ts()
         pid = path.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'attackpath:{pid}')}"

@@ -58,6 +58,7 @@ class SentinelAuthManager:
     """
 
     def __init__(self, config: SentinelConfig, http: urllib3.PoolManager) -> None:
+        """Initialize SentinelAuthManager."""
         self._config = config
         self._http = http
         self._token: str | None = None
@@ -85,6 +86,7 @@ class SentinelAuthManager:
     # ── Internal ───────────────────────────────────────────────────────────
 
     def _token_is_valid(self) -> bool:
+        """Internal helper for token is valid."""
         if not self._token:
             return False
         elapsed = time.time() - self._acquired_at

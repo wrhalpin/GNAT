@@ -70,6 +70,7 @@ class WhisticClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_key: str = "", **kwargs: Any):
+        """Initialize WhisticClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 

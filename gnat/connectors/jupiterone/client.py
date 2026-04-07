@@ -74,6 +74,7 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
     def __init__(
         self, host: str = "https://graphql.us.jupiterone.io", api_key: str = "", **kwargs: Any
     ):
+        """Initialize JupiterOneClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -122,6 +123,7 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         limit = page_size
 
@@ -132,11 +134,13 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         # JupiterOne supports mutations for custom entities; stub for now
+        """Create or update object."""
         raise GNATClientError(
             "JupiterOne upsert via GraphQL mutation not implemented in this connector yet."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion via GraphQL not implemented in this connector.")
 
     # ── GraphQL Core Helper ─────────────────────────────────────────────

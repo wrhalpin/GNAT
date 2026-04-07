@@ -89,6 +89,7 @@ class GlobalContext:
         priority: int = 10,
         description: str = "",
     ):
+        """Initialize GlobalContext."""
         self.name = name
         self.client = client
         self.read_only = read_only
@@ -148,6 +149,7 @@ class GlobalContext:
         self.client.client.delete_object(stix_type, stix_id)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         rw = "read-only" if self.read_only else "read-write"
         return (
             f"GlobalContext(name={self.name!r}, target={self.target!r}, "
@@ -185,6 +187,7 @@ class GlobalContextRegistry:
     """
 
     def __init__(self, default_name: str | None = None):
+        """Initialize GlobalContextRegistry."""
         self._contexts: dict[str, GlobalContext] = {}
         self._default_name: str | None = default_name
 
@@ -379,15 +382,19 @@ class GlobalContextRegistry:
         return [g for g in self.all() if g.read_only]
 
     def __iter__(self) -> Iterator[GlobalContext]:
+        """Iterate over items."""
         return iter(self.all())
 
     def __len__(self) -> int:
+        """Return the number of items."""
         return len(self._contexts)
 
     def __contains__(self, name: str) -> bool:
+        """Check membership."""
         return name in self._contexts
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         default = self._default_name or "(none)"
         return (
             f"GlobalContextRegistry(contexts={sorted(self._contexts.keys())}, default={default!r})"

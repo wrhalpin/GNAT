@@ -65,12 +65,16 @@ logger = logging.getLogger(__name__)
 
 
 class _NullReader:
+    """_NullReader implementation."""
     def read(self):
+        """Read and yield records from the source."""
         return iter([])
 
 
 class _NullMapper:
+    """STIX translation helper for null objects."""
     def map(self, record):  # noqa: PLR0201
+        """Map the input record to the output schema."""
         return None
 
 
@@ -150,6 +154,7 @@ class SchemaSnapshot:
     sample_count: int = 1
 
     def to_dict(self) -> dict:
+        """Convert this object to DICT format."""
         return {
             "connector": self.connector,
             "captured_at": self.captured_at,
@@ -159,6 +164,7 @@ class SchemaSnapshot:
 
     @classmethod
     def from_dict(cls, d: dict) -> SchemaSnapshot:
+        """Create an instance from DICT data."""
         return cls(
             connector=d["connector"],
             captured_at=d["captured_at"],
@@ -399,6 +405,7 @@ def _try_sample_schema(connector: Any) -> dict[str, str] | None:
 
 
 def _default_snapshot_dir() -> Path:
+    """Internal helper for default snapshot dir."""
     return Path.home() / ".gnat" / "snapshots"
 
 
@@ -548,6 +555,7 @@ class ConnectorHealthJob(FeedJob):
         job_id: str = "connector-health",
         enabled: bool = True,
     ) -> None:
+        """Initialize ConnectorHealthJob."""
         _stub_reader = lambda ctx: _NullReader()  # noqa: E731
         _stub_mapper = lambda ctx: _NullMapper()  # noqa: E731
 
@@ -784,6 +792,7 @@ class ConnectorHealthJob(FeedJob):
         return cls(connectors=connectors, **merged)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         sched = (
             f"every {self.interval_seconds}s" if self.interval_seconds else f"cron={self.cron!r}"
         )

@@ -59,22 +59,27 @@ class SentinelClient:
     """urllib3-based HTTP client for the Microsoft Sentinel REST API."""
 
     def __init__(self, config: SentinelConfig) -> None:
+        """Initialize SentinelClient."""
         self.config = config
         self._http = self._build_pool_manager()
         self.auth = SentinelAuthManager(config, self._http)
 
     def __enter__(self) -> "SentinelClient":
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self) -> None:
+        """Release resources and close any open connections."""
         self._http.clear()
 
     # ── HTTP verbs ────────────────────────────────────────────────────────
 
     def get(self, resource: str, params: dict | None = None) -> dict:
+        """Get."""
         url = self.config.endpoint(resource)
         if params:
             # Merge extra params with existing api-version
@@ -82,15 +87,19 @@ class SentinelClient:
         return self._request("GET", url)
 
     def post(self, resource: str, body: dict | None = None) -> dict:
+        """Post."""
         return self._request("POST", self.config.endpoint(resource), body=body)
 
     def put(self, resource: str, body: dict | None = None) -> dict:
+        """Put."""
         return self._request("PUT", self.config.endpoint(resource), body=body)
 
     def patch(self, resource: str, body: dict | None = None) -> dict:
+        """Apply a partial update to the object."""
         return self._request("PATCH", self.config.endpoint(resource), body=body)
 
     def delete(self, resource: str) -> dict:
+        """Delete."""
         return self._request("DELETE", self.config.endpoint(resource))
 
     # ── nextLink pagination ────────────────────────────────────────────────
@@ -141,6 +150,7 @@ class SentinelClient:
     # ── Internal ───────────────────────────────────────────────────────────
 
     def _build_pool_manager(self) -> urllib3.PoolManager:
+        """Internal helper for build pool manager."""
         kwargs: dict = {
             "num_pools": 4,
             "maxsize": 10,
@@ -161,6 +171,7 @@ class SentinelClient:
         body: dict | None = None,
         retry_on_401: bool = True,
     ) -> dict:
+        """Internal helper for request."""
         headers = self.auth.get_headers()
         encoded = json.dumps(body).encode("utf-8") if body is not None else None
         delay = _RETRY_BASE_DELAY
@@ -250,6 +261,7 @@ class SentinelClient:
 
     @staticmethod
     def _parse_json(data: bytes, url: str) -> dict:
+        """Internal helper for parse json."""
         try:
             return json.loads(data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -257,6 +269,7 @@ class SentinelClient:
 
     @staticmethod
     def _safe_parse(data: bytes) -> dict:
+        """Internal helper for safe parse."""
         try:
             return json.loads(data.decode("utf-8"))
         except Exception:

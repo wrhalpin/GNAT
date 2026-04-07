@@ -61,6 +61,7 @@ _STIX_NS = _uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f12345678901")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -89,6 +90,7 @@ class HIBPClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize HIBPClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -155,9 +157,11 @@ class HIBPClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"Unsupported STIX type for HIBP: {stix_type}")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("HIBP API is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("HIBP API is read-only — delete not supported.")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
@@ -201,6 +205,7 @@ class HIBPClient(BaseClient, ConnectorMixin):
         return self._paste_to_stix(native)
 
     def _breach_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for breach to stix."""
         name = native.get("Name", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"hibp-breach-{name}"))
         data_classes = native.get("DataClasses", [])
@@ -226,6 +231,7 @@ class HIBPClient(BaseClient, ConnectorMixin):
         }
 
     def _paste_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for paste to stix."""
         paste_id = native.get("Id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"hibp-paste-{paste_id}"))
         return {

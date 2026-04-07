@@ -52,6 +52,7 @@ class MISPEventCommands:
     """MISP Event management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPEventCommands."""
         self._client = client
 
     # ── List / search ──────────────────────────────────────────────────────

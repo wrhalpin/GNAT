@@ -92,6 +92,7 @@ class EmailDelivery:
         body_html: str = "",
         use_tls: bool = True,
     ):
+        """Initialize EmailDelivery."""
         self._host = smtp_host
         self._port = smtp_port
         self._user = smtp_user
@@ -265,6 +266,7 @@ class SharePointDelivery:
         client_secret: str = "",
         folder: str = "",
     ):
+        """Initialize SharePointDelivery."""
         self._site_url = site_url.rstrip("/")
         self._library_path = library_path
         self._tenant_id = tenant_id
@@ -406,6 +408,7 @@ class SharePointDelivery:
             return None
 
     def _graph_get(self, token: str, path: str) -> dict | None:
+        """Internal helper for graph get."""
         import json as _json
         import urllib.request
 

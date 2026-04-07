@@ -28,6 +28,7 @@ class RateLimiter:
     """
 
     def __init__(self, max_requests: int = 100, window_seconds: int = 60) -> None:
+        """Initialize RateLimiter."""
         self._max = max_requests
         self._window = window_seconds
         self._counts: dict[str, list[float]] = {}

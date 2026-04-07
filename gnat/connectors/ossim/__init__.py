@@ -52,29 +52,36 @@ import urllib3
 
 
 class OSSIMError(Exception):
+    """Raised when a o s s i m error error occurs."""
     pass
 
 
 class OSSIMConfigError(OSSIMError):
+    """Raised when a o s s i m config error error occurs."""
     pass
 
 
 class OSSIMAuthError(OSSIMError):
+    """Raised when a o s s i m auth error error occurs."""
     pass
 
 
 class OSSIMAPIError(OSSIMError):
+    """Raised when a o s s i m a p i error error occurs."""
     def __init__(self, message, status_code=None, endpoint=None):
+        """Initialize OSSIMAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.endpoint = endpoint
 
 
 class OSSIMNotFoundError(OSSIMAPIError):
+    """Raised when a o s s i m not found error error occurs."""
     pass
 
 
 class OSSIMSTIXError(OSSIMError):
+    """Raised when a o s s i m s t i x error error occurs."""
     pass
 
 
@@ -83,6 +90,7 @@ class OSSIMSTIXError(OSSIMError):
 
 @dataclass
 class OSSIMConfig:
+    """Configuration container for o s s i m."""
     url: str
     api_key: str
     verify_ssl: bool = False  # OSSIM commonly uses self-signed certs
@@ -91,6 +99,7 @@ class OSSIMConfig:
     base_url: str = field(init=False)
 
     def __post_init__(self):
+        """Post-init setup for OSSIMConfig."""
         if not self.url:
             raise OSSIMConfigError("'url' required in [ossim].")
         if not self.api_key:
@@ -98,10 +107,12 @@ class OSSIMConfig:
         self.base_url = self.url.rstrip("/")
 
     def endpoint(self, path: str) -> str:
+        """Endpoint."""
         return f"{self.base_url}/api/1.0/{path.lstrip('/')}"
 
     @property
     def base_headers(self) -> dict:
+        """Base headers."""
         return {
             "X-USM-API-KEY": self.api_key,
             "Accept": "application/json",
@@ -110,6 +121,7 @@ class OSSIMConfig:
 
 
 def load_ossim_config(config: configparser.ConfigParser, section: str = "ossim") -> OSSIMConfig:
+    """Load ossim config from the configured source."""
     if not config.has_section(section):
         raise OSSIMConfigError(f"Section '[{section}]' not found.")
     raw = {"url": "", "api_key": "", "verify_ssl": "false", "timeout": "30", "max_results": "50"}
@@ -135,31 +147,39 @@ class OSSIMClient:
     _RETRYABLE = {500, 502, 503, 504}
 
     def __init__(self, config: OSSIMConfig):
+        """Initialize OSSIMClient."""
         self.config = config
         self._http = self._build_pool()
 
     def __enter__(self):
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_):
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self):
+        """Release resources and close any open connections."""
         self._http.clear()
 
     def get(self, path: str, params: dict | None = None) -> dict | list:
+        """Get."""
         url = self.config.endpoint(path)
         if params:
             url += "?" + urllib.parse.urlencode(params)
         return self._request("GET", url)
 
     def post(self, path: str, body: dict | None = None) -> dict | list:
+        """Post."""
         return self._request("POST", self.config.endpoint(path), body=body)
 
     def put(self, path: str, body: dict | None = None) -> dict | list:
+        """Put."""
         return self._request("PUT", self.config.endpoint(path), body=body)
 
     def delete(self, path: str) -> dict:
+        """Delete."""
         return self._request("DELETE", self.config.endpoint(path))
 
     def paginate(
@@ -191,6 +211,7 @@ class OSSIMClient:
                 break
 
     def _build_pool(self) -> urllib3.PoolManager:
+        """Internal helper for build pool."""
         kw = {
             "num_pools": 4,
             "maxsize": 10,
@@ -205,6 +226,7 @@ class OSSIMClient:
         return urllib3.PoolManager(**kw)
 
     def _request(self, method: str, url: str, body: dict | None = None) -> dict | list:
+        """Internal helper for request."""
         headers = self.config.base_headers
         encoded = json.dumps(body).encode() if body else None
         delay = 1.0
@@ -243,6 +265,7 @@ class OSSIMAlarmCommands:
     """Alarm management operations — OSSIM's primary security object."""
 
     def __init__(self, client: OSSIMClient):
+        """Initialize OSSIMAlarmCommands."""
         self._client = client
 
     def list_alarms(
@@ -325,6 +348,7 @@ class OSSIMEventCommands:
     """Raw security event operations."""
 
     def __init__(self, client: OSSIMClient):
+        """Initialize OSSIMEventCommands."""
         self._client = client
 
     def search_events(
@@ -334,6 +358,7 @@ class OSSIMEventCommands:
         dst_ip: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
+        """Search for events matching the query."""
         params: dict = {"page_items": limit or self._client.config.max_results}
         if query:
             params["q"] = query
@@ -352,22 +377,27 @@ class OSSIMAssetCommands:
     """Asset / host inventory operations."""
 
     def __init__(self, client: OSSIMClient):
+        """Initialize OSSIMAssetCommands."""
         self._client = client
 
     def list_assets(self, limit: int | None = None) -> list[dict]:
+        """List all assets objects."""
         params = {"page_items": limit or self._client.config.max_results}
         result = self._client.get("assets", params=params)
         return result.get("data", [])
 
     def get_asset(self, asset_id: str) -> dict:
+        """Retrieve asset."""
         return self._client.get(f"assets/{asset_id}")
 
     def search_by_ip(self, ip: str) -> list[dict]:
+        """Search for by ip matching the query."""
         params = {"ip": ip, "page_items": 50}
         result = self._client.get("assets", params=params)
         return result.get("data", [])
 
     def iter_all_assets(self) -> Iterator[dict]:
+        """Iter all assets."""
         yield from self._client.paginate("assets")
 
 
@@ -378,13 +408,16 @@ class OSSIMSensorCommands:
     """Sensor node inventory."""
 
     def __init__(self, client: OSSIMClient):
+        """Initialize OSSIMSensorCommands."""
         self._client = client
 
     def list_sensors(self) -> list[dict]:
+        """List all sensors objects."""
         result = self._client.get("sensors")
         return result.get("data", [])
 
     def get_sensor(self, sensor_id: str) -> dict:
+        """Retrieve sensor."""
         return self._client.get(f"sensors/{sensor_id}")
 
 
@@ -471,6 +504,7 @@ class OSSIMSTIXMapper:
         }
 
     def alarms_to_stix_bundle(self, alarms: list[dict]) -> dict:
+        """Alarms to stix bundle."""
         all_objects: list[dict] = []
         seen: set[str] = set()
         for a in alarms:
@@ -487,8 +521,10 @@ class OSSIMSTIXMapper:
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

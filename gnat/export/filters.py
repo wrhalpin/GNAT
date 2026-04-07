@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(timezone.utc)
 
 
@@ -85,16 +86,19 @@ class TypeFilter(ExportFilter):
     """
 
     def __init__(self, *stix_types: str):
+        """Initialize TypeFilter."""
         if not stix_types:
             raise ValueError("TypeFilter: at least one stix_type is required")
         self._types: set[str] = set(stix_types)
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this TypeFilter instance."""
         for obj in objects:
             if obj.stix_type in self._types:
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"TypeFilter(types={sorted(self._types)})"
 
 
@@ -136,11 +140,13 @@ class ConfidenceFilter(ExportFilter):
         default_confidence: int = 50,
         score_fields: list[str] | None = None,
     ):
+        """Initialize ConfidenceFilter."""
         self.min_confidence = min_confidence
         self.default_confidence = default_confidence
         self._fields = score_fields or self._DEFAULT_FIELDS
 
     def _score(self, obj: STIXBase) -> float:
+        """Internal helper for score."""
         for field in self._fields:
             val = _get(obj, field)
             if val is not None:
@@ -151,11 +157,13 @@ class ConfidenceFilter(ExportFilter):
         return float(self.default_confidence)
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this ConfidenceFilter instance."""
         for obj in objects:
             if self._score(obj) >= self.min_confidence:
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"ConfidenceFilter(min={self.min_confidence})"
 
 
@@ -187,16 +195,19 @@ class TLPFilter(ExportFilter):
     """
 
     def __init__(self, allowed: list[str], default_tlp: str = "white"):
+        """Initialize TLPFilter."""
         self._allowed = {t.lower() for t in allowed}
         self._default = default_tlp.lower()
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this TLPFilter instance."""
         for obj in objects:
             tlp = (_get(obj, "x_tlp") or self._default).lower()
             if tlp in self._allowed:
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"TLPFilter(allowed={sorted(self._allowed)})"
 
 
@@ -248,11 +259,13 @@ class TagFilter(ExportFilter):
         excluded: list[str] | None = None,
         match_any: bool = False,
     ):
+        """Initialize TagFilter."""
         self._required = [t.lower() for t in (required or [])]
         self._excluded = {t.lower() for t in (excluded or [])}
         self._match_any = match_any
 
     def _tags(self, obj: STIXBase) -> set[str]:
+        """Internal helper for tags."""
         tags: set[str] = set()
         for field in self._TAG_FIELDS:
             val = _get(obj, field)
@@ -263,6 +276,7 @@ class TagFilter(ExportFilter):
         return tags
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this TagFilter instance."""
         for obj in objects:
             obj_tags = self._tags(obj)
             # Exclusion check (always AND)
@@ -280,6 +294,7 @@ class TagFilter(ExportFilter):
             yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return (
             f"TagFilter(required={self._required}, "
             f"excluded={sorted(self._excluded)}, match_any={self._match_any})"
@@ -320,11 +335,13 @@ class AgeFilter(ExportFilter):
         time_field: str = "modified",
         drop_missing: bool = False,
     ):
+        """Initialize AgeFilter."""
         self.max_age_days = max_age_days
         self.time_field = time_field
         self.drop_missing = drop_missing
 
     def _timestamp(self, obj: STIXBase) -> datetime | None:
+        """Internal helper for timestamp."""
         for field in (self.time_field, "modified", "created"):
             raw = _get(obj, field)
             if raw:
@@ -338,6 +355,7 @@ class AgeFilter(ExportFilter):
         return None
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this AgeFilter instance."""
         cutoff = _utcnow() - timedelta(days=self.max_age_days)
         for obj in objects:
             ts = self._timestamp(obj)
@@ -348,6 +366,7 @@ class AgeFilter(ExportFilter):
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"AgeFilter(max_age_days={self.max_age_days}, field={self.time_field!r})"
 
 
@@ -388,17 +407,20 @@ class PatternFilter(ExportFilter):
         regex: bool = False,
         pattern_types: list[str] | None = None,
     ):
+        """Initialize PatternFilter."""
         self._pattern = pattern
         self._regex = regex
         self._types = pattern_types
         self._re = re.compile(pattern) if regex else None
 
     def _matches(self, stix_pattern: str) -> bool:
+        """Internal helper for matches."""
         if self._re:
             return bool(self._re.search(stix_pattern))
         return self._pattern in stix_pattern
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this PatternFilter instance."""
         for obj in objects:
             if obj.stix_type != "indicator":
                 yield obj
@@ -408,6 +430,7 @@ class PatternFilter(ExportFilter):
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"PatternFilter(pattern={self._pattern!r}, regex={self._regex})"
 
 
@@ -450,6 +473,7 @@ class IOCTypeFilter(ExportFilter):
     }
 
     def __init__(self, ioc_types: list[str]):
+        """Initialize IOCTypeFilter."""
         unknown = set(ioc_types) - set(self._KEYWORDS)
         if unknown:
             raise ValueError(
@@ -460,6 +484,7 @@ class IOCTypeFilter(ExportFilter):
         self._types = ioc_types
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this IOCTypeFilter instance."""
         for obj in objects:
             if obj.stix_type != "indicator":
                 continue
@@ -468,6 +493,7 @@ class IOCTypeFilter(ExportFilter):
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"IOCTypeFilter(types={sorted(self._types)})"
 
 
@@ -493,15 +519,18 @@ class LimitFilter(ExportFilter):
     """
 
     def __init__(self, n: int):
+        """Initialize LimitFilter."""
         self.n = n
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this LimitFilter instance."""
         for count, obj in enumerate(objects):
             if count >= self.n:
                 return
             yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"LimitFilter(n={self.n})"
 
 
@@ -530,9 +559,11 @@ class DeduplicateFilter(ExportFilter):
     """
 
     def __init__(self, key_field: str = "name"):
+        """Initialize DeduplicateFilter."""
         self.key_field = key_field
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this DeduplicateFilter instance."""
         seen: set[Any] = set()
         for obj in objects:
             key = _get(obj, self.key_field)
@@ -542,6 +573,7 @@ class DeduplicateFilter(ExportFilter):
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"DeduplicateFilter(key={self.key_field!r})"
 
 
@@ -573,12 +605,15 @@ class FunctionFilter(ExportFilter):
     """
 
     def __init__(self, predicate: Callable[[STIXBase], bool]):
+        """Initialize FunctionFilter."""
         self._predicate = predicate
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this FunctionFilter instance."""
         return filter(self._predicate, objects)
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"FunctionFilter(fn={self._predicate.__name__!r})"
 
 
@@ -636,15 +671,18 @@ class SectorFilter(ExportFilter):
         strict: bool = False,
         aliases: dict[str, list[str]] | None = None,
     ):
+        """Initialize SectorFilter."""
         self._sectors = [s.lower().strip() for s in sectors]
         self._match = match.lower()
         self._strict = strict
         self._aliases = self._build_alias_set(aliases or {})
 
     def _build_alias_set(self, aliases: dict[str, list[str]]) -> dict[str, list[str]]:
+        """Internal helper for build alias set."""
         return {k.lower().strip(): [a.lower().strip() for a in v] for k, v in aliases.items()}
 
     def _sector_values(self, obj: STIXBase) -> list[str]:
+        """Internal helper for sector values."""
         values: list[str] = []
         for field_name in self._SECTOR_FIELDS:
             raw = obj._properties.get(field_name)
@@ -657,6 +695,7 @@ class SectorFilter(ExportFilter):
         return values
 
     def _matches_sector(self, obj_sector: str, target: str) -> bool:
+        """Internal helper for matches sector."""
         if target in obj_sector or obj_sector in target:
             return True
         for aliases in self._aliases.values():
@@ -665,6 +704,7 @@ class SectorFilter(ExportFilter):
         return False
 
     def _object_matches(self, obj: STIXBase) -> bool:
+        """Internal helper for object matches."""
         obj_sectors = self._sector_values(obj)
         if not obj_sectors:
             return not self._strict
@@ -675,6 +715,7 @@ class SectorFilter(ExportFilter):
         return any(any(self._matches_sector(os, t) for os in obj_sectors) for t in self._sectors)
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this SectorFilter instance."""
         if not self._sectors:
             yield from objects
             return
@@ -683,6 +724,7 @@ class SectorFilter(ExportFilter):
                 yield obj
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return (
             f"SectorFilter(sectors={self._sectors}, match={self._match!r}, strict={self._strict})"
         )

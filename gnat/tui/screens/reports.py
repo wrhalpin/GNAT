@@ -57,12 +57,14 @@ class ReportsScreen(Screen):
         config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
+        """Initialize ReportsScreen."""
         super().__init__(**kwargs)
         self._reports_dir = reports_dir
         self._config_path = config_path
         self._entries: list[dict] = []
 
     def compose(self) -> ComposeResult:
+        """Build and return the ReportsScreen."""
         yield Header()
         with Vertical():
             with Horizontal(id="toolbar"):
@@ -73,10 +75,12 @@ class ReportsScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Handle the mount event."""
         self._setup_table()
         self._load_reports()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle the button pressed event."""
         btn = event.button.id
         if btn == "refresh-btn":
             self.action_refresh()
@@ -84,6 +88,7 @@ class ReportsScreen(Screen):
             self.action_open_selected()
 
     def action_refresh(self) -> None:
+        """Action refresh."""
         self._load_reports()
 
     def action_open_selected(self) -> None:
@@ -118,6 +123,7 @@ class ReportsScreen(Screen):
     # ------------------------------------------------------------------
 
     def _setup_table(self) -> None:
+        """Internal helper for setup table."""
         table: DataTable = self.query_one("#reports-table", DataTable)
         table.add_column("Name", key="name", width=30)
         table.add_column("Type", key="rtype", width=14)
@@ -127,6 +133,7 @@ class ReportsScreen(Screen):
         table.add_column("Path", key="path", width=50)
 
     def _load_reports(self) -> None:
+        """Internal helper for load reports."""
         table = self.query_one("#reports-table", DataTable)
         status = self.query_one("#status-label", Label)
         table.clear()
@@ -158,6 +165,7 @@ class ReportsScreen(Screen):
             status.update(f"[red]{exc}[/red]")
 
     def _resolve_reports_dir(self) -> str | None:
+        """Internal helper for resolve reports dir."""
         if self._reports_dir:
             return self._reports_dir
         if self._config_path:

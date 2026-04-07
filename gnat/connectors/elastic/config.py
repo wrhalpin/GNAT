@@ -136,6 +136,7 @@ class ElasticConfig:
     api_key_header: str = field(init=False)
 
     def __post_init__(self) -> None:
+        """Post-init setup for ElasticConfig."""
         if self.cloud_id:
             self._decode_cloud_id()
         else:
@@ -175,6 +176,7 @@ class ElasticConfig:
             raise ElasticConfigError(f"Invalid cloud_id format: {exc}") from exc
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         if not self.api_key_id:
             raise ElasticConfigError("'api_key_id' is required in [elastic] config.")
         if not self.api_key_secret:
@@ -259,6 +261,7 @@ def load_elastic_config(
     raw.update(dict(config.items(section)))
 
     def _bool(v: str) -> bool:
+        """Internal helper for bool."""
         return v.strip().lower() in ("true", "1", "yes")
 
     return ElasticConfig(

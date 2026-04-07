@@ -56,6 +56,7 @@ class ConnectorDiscoveryResult:
 
     @property
     def has_changes(self) -> bool:
+        """Return True if changes."""
         return self.impact != ChangeImpact.NO_CHANGE
 
 
@@ -92,6 +93,7 @@ class RepairPlan:
 
     @property
     def has_actions(self) -> bool:
+        """Return True if actions."""
         return bool(self.actions)
 
 

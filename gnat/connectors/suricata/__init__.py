@@ -66,22 +66,27 @@ from datetime import datetime, timezone
 
 
 class SuricataError(Exception):
+    """Raised when a suricata error error occurs."""
     pass
 
 
 class SuricataConfigError(SuricataError):
+    """Raised when a suricata config error error occurs."""
     pass
 
 
 class SuricataLogError(SuricataError):
+    """Raised when a suricata log error error occurs."""
     pass
 
 
 class SuricataSocketError(SuricataError):
+    """Raised when a suricata socket error error occurs."""
     pass
 
 
 class SuricataSTIXError(SuricataError):
+    """Raised when a suricata s t i x error error occurs."""
     pass
 
 
@@ -90,12 +95,14 @@ class SuricataSTIXError(SuricataError):
 
 @dataclass
 class SuricataConfig:
+    """Configuration container for suricata."""
     eve_log_path: str = "/var/log/suricata/eve.json"
     socket_path: str = "/var/run/suricata/suricata-command.socket"
     timeout: int = 10
     tail_chunk_size: int = 65536
 
     def __post_init__(self):
+        """Post-init setup for SuricataConfig."""
         if not self.eve_log_path:
             raise SuricataConfigError("'eve_log_path' required in [suricata].")
 
@@ -103,6 +110,7 @@ class SuricataConfig:
 def load_suricata_config(
     config: configparser.ConfigParser, section: str = "suricata"
 ) -> SuricataConfig:
+    """Load suricata config from the configured source."""
     if not config.has_section(section):
         raise SuricataConfigError(f"Section '[{section}]' not found.")
     raw = {
@@ -141,6 +149,7 @@ class SuricataEVEReader:
     """
 
     def __init__(self, config: SuricataConfig):
+        """Initialize SuricataEVEReader."""
         self.config = config
 
     def iter_events(
@@ -221,6 +230,7 @@ class SuricataEVEReader:
             file_size = 0
 
         def _gen():
+            """Internal helper for gen."""
             try:
                 with open(log_path, encoding="utf-8", errors="replace") as f:
                     f.seek(offset)
@@ -321,6 +331,7 @@ class SuricataSocketCommands:
     """
 
     def __init__(self, config: SuricataConfig):
+        """Initialize SuricataSocketCommands."""
         self.config = config
 
     def _send_command(self, command: str, arguments: dict | None = None) -> dict:
@@ -511,8 +522,10 @@ class SuricataSTIXMapper:
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

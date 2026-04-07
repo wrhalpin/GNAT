@@ -1,7 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Bill Halpin
+"""
+gnat.connectors.discord.connector
+=====================================
+
+Connector utilities and helpers for the GNAT toolkit.
+"""
 class DiscordConnector:
+    """Connector integrating GNAT with the Discord platform."""
     def __init__(self):
+        """Initialize DiscordConnector."""
         pass  # Initialize Discord API connection
 
     def post_message(self, channel_id, text, thread_id=None):

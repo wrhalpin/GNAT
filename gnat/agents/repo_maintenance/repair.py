@@ -19,10 +19,12 @@ class RepairPlanner:
     """Build a conservative file-level repair plan from discovery results."""
 
     def __init__(self, registry: ConnectorRegistry, repo_root: str | Path = "."):
+        """Initialize RepairPlanner."""
         self.registry = registry
         self.repo_root = Path(repo_root)
 
     def build(self, plan: RepoMaintenancePlan) -> RepairPlan:
+        """Build and return the RepairPlanner."""
         spec = self.registry.get(plan.connector)
         actions: list[RepairAction] = []
         notes: list[str] = []

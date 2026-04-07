@@ -59,6 +59,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize StellarCyberClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._api_key = api_key
@@ -172,6 +173,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         src_ip = native.get("srcip", "")
         dst_ip = native.get("dstip", "")
         pattern = f"[ipv4-addr:value = '{src_ip}']" if src_ip else "[domain-name:value = 'unknown']"
@@ -198,6 +200,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         }
 
     def _ti_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for ti to stix."""
         ioc_type = native.get("indicator_type", native.get("type", ""))
         value = native.get("indicator_value", native.get("value", ""))
         pattern = self._make_pattern(ioc_type, value)
@@ -218,6 +221,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(ioc_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = (ioc_type or "").lower()
         if t in ("ip", "ipv4", "srcip", "dstip"):
             return f"[ipv4-addr:value = '{value}']"
@@ -235,6 +239,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_to_sc_type(pattern: str) -> str:
+        """Internal helper for stix to sc type."""
         if "ipv4-addr" in pattern:
             return "ip"
         if "domain-name" in pattern:

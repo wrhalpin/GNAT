@@ -24,6 +24,7 @@ class WazuhRulesCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhRulesCommands."""
         self._client = client
 
     def list_rules(

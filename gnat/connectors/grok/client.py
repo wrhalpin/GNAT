@@ -67,6 +67,7 @@ class GrokClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.x.ai", api_key: str = "", **kwargs: Any):
+        """Initialize GrokClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 

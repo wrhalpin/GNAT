@@ -77,6 +77,7 @@ class STIXBase:
         client: Optional["GNATClient"] = None,
         **kwargs: Any,
     ):
+        """Initialize STIXBase."""
         self._client = client
         # Core STIX identity fields
         self.id: str = kwargs.pop("id", f"{self.stix_type}--{uuid.uuid4()}")
@@ -92,12 +93,14 @@ class STIXBase:
 
     def __getattr__(self, name: str) -> Any:
         # Only called when normal attribute lookup fails
+        """Internal helper for getattr."""
         try:
             return self._properties[name]
         except KeyError:
             raise AttributeError(f"{type(self).__name__!r} has no attribute {name!r}") from None
 
     def __setattr__(self, name: str, value: Any) -> None:
+        """Internal helper for setattr."""
         _core = {"_client", "_properties", "id", "spec_version", "created", "modified"}
         if name.startswith("_") or name in _core or name in type(self).__dict__:
             super().__setattr__(name, value)
@@ -235,6 +238,7 @@ class STIXBase:
     # ------------------------------------------------------------------
 
     def _require_client(self) -> None:
+        """Internal helper for require client."""
         if self._client is None or self._client.client is None:
             raise RuntimeError(
                 f"No client bound to this {type(self).__name__}. "
@@ -257,4 +261,5 @@ class STIXBase:
                 self._properties[key] = value
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"{type(self).__name__}(id={self.id!r})"

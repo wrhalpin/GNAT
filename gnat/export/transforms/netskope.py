@@ -121,6 +121,7 @@ class NetskopeCETransform(ExportTransform):
         category: str = "Malware",
         ioc_types: list[str] | None = None,
     ):
+        """Initialize NetskopeCETransform."""
         super().__init__(label="NetskopeCETransform")
         self._source = source_label
         self._default_r = default_reputation
@@ -129,6 +130,7 @@ class NetskopeCETransform(ExportTransform):
         self._ioc_types = set(ioc_types) if ioc_types else None
 
     def _reputation(self, obj: STIXBase) -> int:
+        """Internal helper for reputation."""
         for field in ("confidence", "x_rf_risk_score", "x_rr_score"):
             val = obj._properties.get(field)
             if val is not None:
@@ -139,6 +141,7 @@ class NetskopeCETransform(ExportTransform):
         return self._default_r
 
     def transform(self, objects: list[STIXBase]) -> TransformResult:
+        """Transform the input data."""
         indicator_list = []
         skipped = 0
 
@@ -227,11 +230,13 @@ class STIXBundleTransform(ExportTransform):
     """
 
     def __init__(self, include_relationships: bool = True, pretty: bool = True):
+        """Initialize STIXBundleTransform."""
         super().__init__(label="STIXBundleTransform")
         self._include_rels = include_relationships
         self._pretty = pretty
 
     def transform(self, objects: list[STIXBase]) -> TransformResult:
+        """Transform the input data."""
         import uuid as _uuid
 
         _obj_ids = {obj.id for obj in objects}
@@ -305,12 +310,14 @@ class CSVTransform(ExportTransform):
         filename: str = "export.csv",
         include_header: bool = True,
     ):
+        """Initialize CSVTransform."""
         super().__init__(label="CSVTransform")
         self._fields = fields or self.DEFAULT_FIELDS
         self._filename = filename
         self._header = include_header
 
     def _get(self, obj: STIXBase, field: str) -> str:
+        """Internal helper for get."""
         if field == "type":
             return obj.stix_type
         val = obj._properties.get(field)
@@ -323,6 +330,7 @@ class CSVTransform(ExportTransform):
         return str(val).replace('"', '""')
 
     def transform(self, objects: list[STIXBase]) -> TransformResult:
+        """Transform the input data."""
         import io
 
         buf = io.StringIO()

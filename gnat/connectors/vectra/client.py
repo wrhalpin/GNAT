@@ -75,6 +75,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize VectraClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -217,6 +218,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         }
 
     def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for detection to stix."""
         now = _now_ts()
         det_id = str(detection.get("id", ""))
         first_ts = detection.get("first_timestamp", now)
@@ -244,6 +246,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         }
 
     def _host_to_stix(self, host: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for host to stix."""
         now = _now_ts()
         host_id = str(host.get("id", ""))
         return {

@@ -50,16 +50,19 @@ class WazuhIndexerCommands:
     """
 
     def __init__(self, config: WazuhConfig, http: urllib3.PoolManager) -> None:
+        """Initialize WazuhIndexerCommands."""
         self._config = config
         self._http = http
 
     def _require_indexer(self) -> None:
+        """Internal helper for require indexer."""
         if not self._config.indexer_enabled:
             raise WazuhIndexerError(
                 "Indexer commands require 'indexer_enabled = true' in [wazuh] config."
             )
 
     def _auth_header(self) -> dict[str, str]:
+        """Internal helper for auth header."""
         creds = f"{self._config.indexer_username}:{self._config.indexer_password}"
         encoded = base64.b64encode(creds.encode()).decode()
         return {"Authorization": f"Basic {encoded}"}
@@ -70,6 +73,7 @@ class WazuhIndexerCommands:
         path: str,
         body: dict | None = None,
     ) -> dict:
+        """Internal helper for indexer request."""
         url = self._config.indexer_endpoint(path)
         headers = {**self._auth_header(), "Content-Type": "application/json"}
         encoded = json.dumps(body).encode() if body else None

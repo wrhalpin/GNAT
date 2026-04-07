@@ -93,6 +93,7 @@ class GNATApp(App):
         nlp_platform: str | None = None,
         **kwargs,
     ) -> None:
+        """Initialize GNATApp."""
         super().__init__(**kwargs)
         self._config_path = config_path
         self._initial_tab = initial_tab
@@ -102,6 +103,7 @@ class GNATApp(App):
         self._nlp_platform = nlp_platform
 
     def compose(self) -> ComposeResult:
+        """Build and return the GNATApp."""
         yield Header()
         with TabbedContent(initial=self._initial_tab):
             with TabPane("Query  F1", id="query"):

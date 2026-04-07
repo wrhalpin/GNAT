@@ -277,6 +277,7 @@ class FeedJob:
         overlap_policy: str = "skip",
         enabled: bool = True,
     ):
+        """Initialize FeedJob."""
         if interval_seconds is None and cron is None:
             raise ValueError(f"FeedJob {job_id!r}: must specify either interval_seconds or cron.")
         if interval_seconds is not None and cron is not None:
@@ -530,18 +531,21 @@ class FeedJob:
     # ── Internal helpers ───────────────────────────────────────────────────
 
     def _append_history(self, record: RunRecord) -> None:
+        """Internal helper for append history."""
         self.history.append(record)
         if len(self.history) > self.max_history:
             self.history = self.history[-self.max_history :]
 
     @staticmethod
     def _safe_callback(fn: Callable, record: RunRecord) -> None:
+        """Internal helper for safe callback."""
         try:
             fn(record)
         except Exception as exc:  # noqa: BLE001
             logger.warning("FeedJob: callback raised %s", exc)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         sched = (
             f"every {self.interval_seconds}s" if self.interval_seconds else f"cron={self.cron!r}"
         )
@@ -552,4 +556,5 @@ class FeedJob:
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(timezone.utc)

@@ -55,6 +55,7 @@ class SplunkSearchCommands:
     """
 
     def __init__(self, client: SplunkClient) -> None:
+        """Initialize SplunkSearchCommands."""
         self._client = client
 
     # ── High-level convenience ─────────────────────────────────────────────

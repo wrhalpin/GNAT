@@ -55,6 +55,7 @@ class SplunkKVStoreCommands:
     """
 
     def __init__(self, client: SplunkClient) -> None:
+        """Initialize SplunkKVStoreCommands."""
         self._client = client
 
     # ── Collection management ──────────────────────────────────────────────

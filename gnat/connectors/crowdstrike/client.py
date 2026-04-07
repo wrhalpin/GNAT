@@ -31,6 +31,7 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, client_id: str = "", client_secret: str = "", **kwargs: Any):
+        """Initialize CrowdStrikeClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
@@ -47,10 +48,12 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Bearer {token}"
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         self.get("/sensors/queries/installers/v1", params={"limit": 1})
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resource = self.stix_type_map.get(stix_type, stix_type)
         resp = self.get(f"/indicators/entities/{resource}/v1", params={"ids": object_id})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
@@ -63,6 +66,7 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         resource = self.stix_type_map.get(stix_type, stix_type)
         params: dict[str, Any] = {"limit": page_size, "offset": (page - 1) * page_size}
         if filters:
@@ -71,14 +75,17 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
         return resp.get("resources", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         resp = self.post("/indicators/entities/iocs/v1", json={"indicators": [payload]})
         resources = resp.get("resources", []) if isinstance(resp, dict) else []
         return resources[0] if resources else {}
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         self.delete(f"/indicators/entities/iocs/v1?ids={object_id}")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         stix: dict[str, Any] = {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -97,6 +104,7 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
         return stix
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "type": "ipv4",
             "value": stix_dict.get("name", ""),

@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Bill Halpin
+"""
+gnat.agents.security.secrets.providers.azure_key_vault
+==========================================================
+
+Azure key vault utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 from ..exceptions import SecretProviderError
@@ -22,14 +28,17 @@ except Exception:
 
 
 class AzureKeyVaultProvider:
+    """AzureKeyVaultProvider implementation."""
     name = "azurekeyvault"
 
     def __init__(self, credential=None) -> None:
+        """Initialize AzureKeyVaultProvider."""
         self.credential = credential or (
             DefaultAzureCredential() if DefaultAzureCredential else None
         )
 
     def capabilities(self) -> ProviderCapabilities:
+        """Capabilities."""
         return ProviderCapabilities(
             supports_read=True,
             supports_write=True,
@@ -39,6 +48,7 @@ class AzureKeyVaultProvider:
         )
 
     def _client(self, vault: str):
+        """Internal helper for client."""
         if SecretClient is None or self.credential is None:
             raise SecretProviderError("azure dependencies not installed or credential unavailable")
         return SecretClient(
@@ -46,9 +56,11 @@ class AzureKeyVaultProvider:
         )
 
     def _secret_name(self, path: str) -> str:
+        """Internal helper for secret name."""
         return path.replace("/", "--")
 
     def resolve(self, ref: SecretRef) -> SecretValue:
+        """Resolve the value from available sources."""
         if not ref.vault:
             raise SecretProviderError("azure key vault ref requires vault name")
         client = self._client(ref.vault)
@@ -74,6 +86,7 @@ class AzureKeyVaultProvider:
         )
 
     def store(self, request: StoreSecretRequest) -> SecretVersionInfo:
+        """Store."""
         if not request.ref.vault:
             raise SecretProviderError("azure key vault ref requires vault name")
         client = self._client(request.ref.vault)
@@ -93,10 +106,13 @@ class AzureKeyVaultProvider:
         )
 
     def describe(self, ref: SecretRef) -> SecretMetadata:
+        """Describe."""
         return self.resolve(ref).metadata
 
     def list_refs(self, prefix: str | None = None) -> list[SecretRef]:
+        """List all refs objects."""
         return []
 
     def checkout(self, ref: SecretRef) -> SecretLease | None:
+        """Checkout."""
         return None

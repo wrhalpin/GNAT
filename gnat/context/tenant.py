@@ -123,6 +123,7 @@ class Tenant:
     )
 
     def __post_init__(self) -> None:
+        """Post-init setup for Tenant."""
         if not _TENANT_ID_RE.match(self.tenant_id):
             raise ValueError(
                 f"Invalid tenant_id {self.tenant_id!r}. "
@@ -169,6 +170,7 @@ class TenantRegistry:
     DEFAULT_PATH = "~/.gnat/tenants.json"
 
     def __init__(self, registry_path: str | None = None) -> None:
+        """Initialize TenantRegistry."""
         self._path = Path(registry_path or self.DEFAULT_PATH).expanduser()
         self._tenants: dict[str, Tenant] = {}
         self._load()
@@ -316,9 +318,11 @@ class TenantRegistry:
         return cls()
 
     def __len__(self) -> int:
+        """Return the number of items."""
         return len(self._tenants)
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"TenantRegistry(path={str(self._path)!r}, tenants={len(self._tenants)})"
 
 
@@ -365,6 +369,7 @@ class TenantWorkspaceManager:
 
     def __init__(self, tenant_id: str, manager: WorkspaceManager) -> None:
         # Validate tenant_id
+        """Initialize TenantWorkspaceManager."""
         if not _TENANT_ID_RE.match(tenant_id):
             raise ValueError(
                 f"Invalid tenant_id {tenant_id!r}. "
@@ -511,4 +516,5 @@ class TenantWorkspaceManager:
         return cls(tenant_id, manager)
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"TenantWorkspaceManager(tenant_id={self.tenant_id!r})"

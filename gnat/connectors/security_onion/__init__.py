@@ -55,25 +55,31 @@ class SecurityOnionError(Exception):
 
 
 class SecurityOnionConfigError(SecurityOnionError):
+    """Raised when a security onion config error error occurs."""
     pass
 
 
 class SecurityOnionAuthError(SecurityOnionError):
+    """Raised when a security onion auth error error occurs."""
     pass
 
 
 class SecurityOnionAPIError(SecurityOnionError):
+    """Raised when a security onion a p i error error occurs."""
     def __init__(self, message, status_code=None, endpoint=None):
+        """Initialize SecurityOnionAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.endpoint = endpoint
 
 
 class SecurityOnionNotFoundError(SecurityOnionAPIError):
+    """Raised when a security onion not found error error occurs."""
     pass
 
 
 class SecurityOnionSTIXError(SecurityOnionError):
+    """Raised when a security onion s t i x error error occurs."""
     pass
 
 
@@ -82,6 +88,7 @@ class SecurityOnionSTIXError(SecurityOnionError):
 
 @dataclass
 class SecurityOnionConfig:
+    """Configuration container for security onion."""
     url: str
     username: str
     password: str
@@ -91,6 +98,7 @@ class SecurityOnionConfig:
     base_url: str = field(init=False)
 
     def __post_init__(self):
+        """Post-init setup for SecurityOnionConfig."""
         if not self.url:
             raise SecurityOnionConfigError("'url' required in [security_onion].")
         if not self.username:
@@ -100,16 +108,19 @@ class SecurityOnionConfig:
         self.base_url = self.url.rstrip("/")
 
     def endpoint(self, path: str) -> str:
+        """Endpoint."""
         return f"{self.base_url}/api/{path.lstrip('/')}"
 
     @property
     def login_url(self) -> str:
+        """Login url."""
         return f"{self.base_url}/api/login"
 
 
 def load_security_onion_config(
     config: configparser.ConfigParser, section: str = "security_onion"
 ) -> SecurityOnionConfig:
+    """Load security onion config from the configured source."""
     if not config.has_section(section):
         raise SecurityOnionConfigError(f"Section '[{section}]' not found.")
     raw = {
@@ -143,12 +154,14 @@ class SecurityOnionAuthManager:
     _TOKEN_EXPIRY_SECS = 86400  # 24h default
 
     def __init__(self, config: SecurityOnionConfig, http: urllib3.PoolManager):
+        """Initialize SecurityOnionAuthManager."""
         self._config = config
         self._http = http
         self._token: str | None = None
         self._acquired_at: float = 0.0
 
     def get_headers(self) -> dict:
+        """Retrieve headers."""
         if not self._token_valid():
             self._login()
         return {
@@ -157,14 +170,17 @@ class SecurityOnionAuthManager:
         }
 
     def invalidate(self):
+        """Invalidate."""
         self._token = None
 
     def _token_valid(self) -> bool:
+        """Internal helper for token valid."""
         if not self._token:
             return False
         return (time.time() - self._acquired_at) < (self._TOKEN_EXPIRY_SECS * 0.8)
 
     def _login(self):
+        """Internal helper for login."""
         body = json.dumps(
             {
                 "user": self._config.username,
@@ -201,29 +217,36 @@ class SecurityOnionClient:
     _RETRYABLE = {500, 502, 503, 504}
 
     def __init__(self, config: SecurityOnionConfig):
+        """Initialize SecurityOnionClient."""
         self.config = config
         self._http = self._build_pool()
         self.auth = SecurityOnionAuthManager(config, self._http)
 
     def __enter__(self):
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_):
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self):
+        """Release resources and close any open connections."""
         self._http.clear()
 
     def get(self, path: str, params: dict | None = None) -> dict | list:
+        """Get."""
         url = self.config.endpoint(path)
         if params:
             url += "?" + urllib.parse.urlencode(params)
         return self._request("GET", url)
 
     def post(self, path: str, body: dict | None = None) -> dict | list:
+        """Post."""
         return self._request("POST", self.config.endpoint(path), body=body)
 
     def delete(self, path: str) -> dict:
+        """Delete."""
         return self._request("DELETE", self.config.endpoint(path))
 
     def paginate(self, path: str, params: dict | None = None, page_size: int | None = None):
@@ -244,6 +267,7 @@ class SecurityOnionClient:
                 break
 
     def _build_pool(self) -> urllib3.PoolManager:
+        """Internal helper for build pool."""
         kw = {
             "num_pools": 4,
             "maxsize": 10,
@@ -258,6 +282,7 @@ class SecurityOnionClient:
         return urllib3.PoolManager(**kw)
 
     def _request(self, method: str, url: str, body: dict | None = None) -> dict | list:
+        """Internal helper for request."""
         headers = self.auth.get_headers()
         encoded = json.dumps(body).encode() if body else None
         delay = 1.0
@@ -298,6 +323,7 @@ class SecurityOnionAlertCommands:
     """Alert query and management operations."""
 
     def __init__(self, client: SecurityOnionClient):
+        """Initialize SecurityOnionAlertCommands."""
         self._client = client
 
     def search_alerts(
@@ -398,6 +424,7 @@ class SecurityOnionCaseCommands:
     """Case management operations."""
 
     def __init__(self, client: SecurityOnionClient):
+        """Initialize SecurityOnionCaseCommands."""
         self._client = client
 
     def list_cases(
@@ -405,6 +432,7 @@ class SecurityOnionCaseCommands:
         status: str | None = None,
         limit: int | None = None,
     ) -> list[dict]:
+        """List all cases objects."""
         params: dict = {}
         if status:
             params["status"] = status
@@ -414,6 +442,7 @@ class SecurityOnionCaseCommands:
         return result if isinstance(result, list) else result.get("data", [])
 
     def get_case(self, case_id: str) -> dict:
+        """Retrieve case."""
         return self._client.get(f"cases/{case_id}")
 
     def create_case(
@@ -423,15 +452,18 @@ class SecurityOnionCaseCommands:
         severity: int = 2,
         assignee: str | None = None,
     ) -> dict:
+        """Create a new case."""
         body: dict = {"title": title, "description": description, "severity": severity}
         if assignee:
             body["assignee"] = assignee
         return self._client.post("cases", body=body)
 
     def add_comment(self, case_id: str, comment: str) -> dict:
+        """Create a new comment."""
         return self._client.post(f"cases/{case_id}/comments", body={"value": comment})
 
     def close_case(self, case_id: str) -> dict:
+        """Close case."""
         return self._client.post(f"cases/{case_id}/close")
 
 
@@ -442,6 +474,7 @@ class SecurityOnionGridCommands:
     """Sensor grid / node inventory operations."""
 
     def __init__(self, client: SecurityOnionClient):
+        """Initialize SecurityOnionGridCommands."""
         self._client = client
 
     def list_nodes(self) -> list[dict]:
@@ -450,6 +483,7 @@ class SecurityOnionGridCommands:
         return result if isinstance(result, list) else result.get("nodes", [])
 
     def get_node(self, node_id: str) -> dict:
+        """Retrieve node."""
         return self._client.get(f"grid/{node_id}")
 
     def get_grid_status(self) -> dict:
@@ -538,6 +572,7 @@ class SecurityOnionSTIXMapper:
         }
 
     def alerts_to_stix_bundle(self, alerts: list[dict]) -> dict:
+        """Alerts to stix bundle."""
         all_objects: list[dict] = []
         seen: set[str] = set()
         for a in alerts:
@@ -554,8 +589,10 @@ class SecurityOnionSTIXMapper:
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

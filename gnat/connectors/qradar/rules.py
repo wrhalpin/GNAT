@@ -42,6 +42,7 @@ class QRadarRulesCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarRulesCommands."""
         self._client = client
 
     def list_rules(

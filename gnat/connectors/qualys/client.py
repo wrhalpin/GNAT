@@ -83,6 +83,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         password: str = "",
         **kwargs: Any,
     ):
+        """Initialize QualysVMDRClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
@@ -103,6 +104,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "vulnerability":
             return self.get(
                 "/api/2.0/fo/knowledge_base/vuln/", params={"action": "list", "ids": object_id}
@@ -118,6 +120,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         if stix_type == "vulnerability":
             return self.fetch_vulnerabilities(
@@ -132,11 +135,13 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         )
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError(
             "Qualys VMDR connector is read-focused; write operations not supported here."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Qualys VMDR connector does not support deletion.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -178,12 +183,14 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         return self._detection_to_stix(native_object)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Qualys VMDR is primarily read-only for this connector.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         now = _now_ts()
         qid = vuln.get("QID", "")
         vuln_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'qid:{qid}')}"
@@ -205,6 +212,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         }
 
     def _detection_to_stix(self, detection: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for detection to stix."""
         now = _now_ts()
         det_id = detection.get("ID", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'detection:{det_id}')}"

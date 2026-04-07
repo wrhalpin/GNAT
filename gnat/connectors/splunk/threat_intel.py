@@ -99,11 +99,13 @@ class SplunkThreatIntelCommands:
     """
 
     def __init__(self, client: SplunkClient) -> None:
+        """Initialize SplunkThreatIntelCommands."""
         self._client = client
 
     # ── Guard ──────────────────────────────────────────────────────────────
 
     def _require_es(self) -> None:
+        """Internal helper for require es."""
         if not self._client.config.es_enabled:
             raise SplunkThreatIntelError(
                 "Threat Intel commands require 'es_enabled = true' in [splunk] config."

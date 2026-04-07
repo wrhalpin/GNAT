@@ -64,18 +64,22 @@ class NucleusClient(BaseClient, ConnectorMixin):
         project: str = "",
         **kwargs: Any,
     ):
+        """Initialize NucleusClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._project = project
 
     def authenticate(self) -> None:
+        """Authenticate with the remote API and populate auth headers."""
         self._auth_headers["x-apikey"] = self._api_key
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         resp = self.get("/v2/projects")
         return isinstance(resp, (dict, list))
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         project = self._project
         if stix_type == "vulnerability":
             resp = self.get(f"/v2/projects/{project}/vulnerabilities/{object_id}")
@@ -156,6 +160,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         return resp if isinstance(resp, dict) else {}
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         if stix_type == "indicator":
             project = self._project
             self.delete(f"/v2/projects/{project}/threat-intel/{object_id}")

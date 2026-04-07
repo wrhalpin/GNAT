@@ -60,6 +60,7 @@ class QRadarReferenceDataCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarReferenceDataCommands."""
         self._client = client
 
     # ── Reference Sets ─────────────────────────────────────────────────────

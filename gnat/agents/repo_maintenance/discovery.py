@@ -33,6 +33,7 @@ class DiscoveryEngine:
         repo_root: str | Path = ".",
         timeout: float = 10.0,
     ):
+        """Initialize DiscoveryEngine."""
         self.registry = registry
         self.baseline_dir = Path(baseline_dir)
         self.repo_root = Path(repo_root)
@@ -41,6 +42,7 @@ class DiscoveryEngine:
         )
 
     def discover(self, connector: str) -> RepoMaintenancePlan:
+        """Discover."""
         spec = self.registry.get(connector)
         probes = [self._run_probe(p) for p in spec.probes]
         signals = self._signals_from_probes(spec, probes)
@@ -64,6 +66,7 @@ class DiscoveryEngine:
         )
 
     def persist_baseline(self, connector: str, plan: RepoMaintenancePlan) -> Path:
+        """Persist baseline."""
         self.baseline_dir.mkdir(parents=True, exist_ok=True)
         path = self.baseline_dir / f"{connector}.json"
         payload = {
@@ -76,6 +79,7 @@ class DiscoveryEngine:
         return path
 
     def _run_probe(self, probe: ProbeSpec) -> ProbeResult:
+        """Internal helper for run probe."""
         if probe.target.startswith("file://"):
             target_path = self.repo_root / probe.target.removeprefix("file://")
             return self._file_probe(probe, target_path)
@@ -101,6 +105,7 @@ class DiscoveryEngine:
             )
 
     def _file_probe(self, probe: ProbeSpec, target_path: Path) -> ProbeResult:
+        """Internal helper for file probe."""
         body = target_path.read_text(encoding="utf-8")
         fingerprint = _fingerprint_text(_extract_pointer(body, probe.json_pointer))
         return ProbeResult(
@@ -117,6 +122,7 @@ class DiscoveryEngine:
         spec: ConnectorSpec,
         probes: list[ProbeResult],
     ) -> list[DriftSignal]:
+        """Internal helper for signals from probes."""
         baseline = _load_previous_probe_fingerprints(self.baseline_dir / f"{spec.name}.json")
         signals: list[DriftSignal] = []
         for probe in probes:
@@ -147,6 +153,7 @@ class DiscoveryEngine:
         return signals
 
     def _classify(self, spec: ConnectorSpec, signals: list[DriftSignal]) -> ChangeImpact:
+        """Internal helper for classify."""
         if not signals:
             return ChangeImpact.NO_CHANGE
         if any(signal.kind == "probe_failure" for signal in signals):
@@ -165,6 +172,7 @@ class DiscoveryEngine:
         impact: ChangeImpact,
         signals: list[DriftSignal],
     ) -> list[str]:
+        """Internal helper for recommended actions."""
         if impact == ChangeImpact.NO_CHANGE:
             return ["No action required; refresh baseline only."]
         actions = [
@@ -186,6 +194,7 @@ class DiscoveryEngine:
     def _build_pr_plan(
         self, spec: ConnectorSpec, discovery: ConnectorDiscoveryResult
     ) -> PullRequestPlan:
+        """Internal helper for build pr plan."""
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         branch = f"bot/connector/{spec.name}/compat-{today}"
         labels = ["connector-maintenance", f"impact:{discovery.impact.value}"]
@@ -214,6 +223,7 @@ class DiscoveryEngine:
 
 
 def _extract_pointer(body: str, pointer: str | None) -> str:
+    """Internal helper for extract pointer."""
     if not pointer:
         return body
     try:
@@ -234,10 +244,12 @@ def _extract_pointer(body: str, pointer: str | None) -> str:
 
 
 def _fingerprint_text(text: str) -> str:
+    """Internal helper for fingerprint text."""
     return hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()
 
 
 def _load_previous_probe_fingerprints(path: Path) -> dict[str, str]:
+    """Internal helper for load previous probe fingerprints."""
     if not path.exists():
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -253,6 +265,7 @@ def _confidence_for(
     probes: list[ProbeResult],
     signals: list[DriftSignal],
 ) -> float:
+    """Internal helper for confidence for."""
     if impact == ChangeImpact.NO_CHANGE:
         return 0.98
     success_ratio = sum(1 for probe in probes if probe.success) / max(len(probes), 1)
@@ -268,4 +281,5 @@ def _confidence_for(
 
 
 def _utcnow_iso() -> str:
+    """Internal helper for utcnow iso."""
     return datetime.now(timezone.utc).isoformat()

@@ -24,6 +24,7 @@ class MISPTagCommands:
     """Tag management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPTagCommands."""
         self._client = client
 
     def list_tags(self) -> list[dict]:
