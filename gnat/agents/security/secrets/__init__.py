@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 from .broker import SecretsBroker as SecretsBroker
 from .models import AuditEvent as AuditEvent
 from .models import ProviderCapabilities as ProviderCapabilities

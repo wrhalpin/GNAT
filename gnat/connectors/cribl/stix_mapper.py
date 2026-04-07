@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """STIX ↔ Cribl object translation helpers."""
 
 from __future__ import annotations

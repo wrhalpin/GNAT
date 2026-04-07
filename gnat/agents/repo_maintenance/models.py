@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Models for GNAT connector repository maintenance."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 Comprehensive unit tests for the Splunk connector modules.
 

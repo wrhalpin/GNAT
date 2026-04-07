@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Exception hierarchy for the Cribl connector."""
 
 from __future__ import annotations
