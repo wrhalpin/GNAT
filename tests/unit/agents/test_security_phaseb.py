@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 from gnat.agents.security.hygiene.leak_scanner import LeakScanner
 from gnat.agents.security.hygiene.unsafe_patterns import UnsafePatternDetector
 from gnat.agents.security.secrets.audit import InMemoryAuditRecorder

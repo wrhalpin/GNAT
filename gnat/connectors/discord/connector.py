@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 class DiscordConnector:
     def __init__(self):
         pass  # Initialize Discord API connection

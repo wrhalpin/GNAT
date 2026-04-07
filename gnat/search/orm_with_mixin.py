@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.orm — STIX 2.1 ORM classes with search mixin applied.
 

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Discovery and planning engine for connector compatibility maintenance."""
 
 from __future__ import annotations
