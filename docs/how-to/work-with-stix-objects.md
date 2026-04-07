@@ -59,11 +59,70 @@ print(ind.to_stix_bundle())
 
 ---
 
+## TLP classification
+
+Assign TLP 2.0 levels to objects using `TLPLevel` from `gnat.analysis`:
+
+```python
+from gnat.analysis.tlp import TLPLevel
+
+# Set TLP on any ORM object via the x_tlp extension field
+ind.x_tlp = TLPLevel.AMBER.value   # "amber"
+
+# Compare levels (higher rank = more restrictive)
+assert TLPLevel.RED > TLPLevel.AMBER > TLPLevel.GREEN
+
+# Human-readable label
+print(TLPLevel.AMBER.label)   # "TLP:AMBER"
+
+# All TLP 2.0 levels: WHITE (legacy) / CLEAR / GREEN / AMBER / AMBER_STRICT / RED
+```
+
+---
+
+## Confidence scoring (NATO Admiralty Scale)
+
+Attach a structured confidence assessment to any intelligence object:
+
+```python
+from gnat.analysis.confidence import (
+    ConfidenceScore,
+    SourceReliability,
+    InformationCredibility,
+)
+
+# Full Admiralty Scale assessment
+score = ConfidenceScore(
+    source_reliability      = SourceReliability.B_USUALLY_RELIABLE,
+    information_credibility = InformationCredibility.PROBABLY_TRUE,
+    stix_confidence         = 75,
+    rationale               = "Cross-corroborated by two independent sources.",
+)
+
+print(score.label)          # "B2 (HIGH)"
+print(score.stix_confidence) # 75 — maps directly to STIX confidence field
+
+# Use the numeric score in the ORM object
+ind.confidence = score.stix_confidence
+
+# Convenience factories
+high   = ConfidenceScore.high()
+medium = ConfidenceScore.medium()
+low    = ConfidenceScore.low(rationale="Single unverified source.")
+```
+
+See [How-to: Use the Analysis Layer](use-analysis-layer.md) for the full
+confidence and TLP reference.
+
+---
+
 ## See Also
 
 - [How-to: Run the Ingest Pipeline](run-ingest-pipeline.md)
 - [How-to: Use Workspaces](use-workspaces.md)
+- [How-to: Use the Analysis Layer](use-analysis-layer.md)
 - [Explanation: ORM and STIX Compatibility](../explanation/architecture/adrs/0002-orm-stix-compatibility.md)
+- [Explanation: Confidence Scoring Model](../explanation/architecture/adrs/0033-ADR-confidence-scoring.md)
 
 ---
 
