@@ -52,6 +52,63 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 **Example**
 - `examples/investigation_xsoar_tq_gm_powerbi.py`: End-to-end cross-platform investigation script (XSOAR + ThreatQ + GreyMatter → EvidenceGraph → workspace → Power BI xlsx); `--mock` flag for dry runs without live credentials; completeness check verifying 14 investigation methods across 3 platforms
 
+### Added — Analysis Layer (Phase 3: Correlation Engine + Analyst Assistance)
+
+**`gnat.analysis.correlation` — Cross-platform indicator correlation**
+- `EntityResolver`: deduplicates indicators across platforms by canonical value; normalises IPv4 (strips /32), IPv6 (compressed), domain (lowercase, trailing dot stripped), URL (scheme+host lowercase), email, MD5/SHA1/SHA256 hashes, hostname, and ASN; groups cross-platform aliases into `EntityGroup` objects
+- `IndicatorRecord`: lightweight dataclass for platform-sourced IOC records with platform, ioc_type, value, confidence, tags, and first/last seen timestamps
+- `EntityGroup`: aggregated view of cross-platform aliases; exposes `platforms`, `is_cross_platform`, `max_confidence`, `all_tags` properties
+- `RelationshipScorer`: scores entity-to-entity relationships using co-occurrence (0/0/15/30/45 pts for 1–4+ platforms), recency (≤7d=25pts, ≤30d=15pts, ≤90d=5pts), and source-reliability bonus (+10 if all ≥ B_USUALLY_RELIABLE); output is a `ConfidenceScore`
+- `ClusterDetector`: rule-based heuristic clustering of `EntityGroup` objects via shared /24 subnet, shared tags, platform co-occurrence, and timing proximity (72-hour window); BFS connected-component grouping; `Cluster` dataclass with member IDs, signals list, and confidence score
+- `EnrichmentDispatcher`: fan-out enrichment across registered connectors; tries `search_indicators_by_value` → `search_observables_by_value` → `list_objects` in priority order; fully best-effort (errors logged, never raised); returns `EnrichmentResult` dict per platform
+
+**`gnat.analysis.timeline` — Chronological event reconstruction**
+- `TimelineBuilder`: reconstructs investigation timelines from `Investigation` objects (opened/notes/tasks/closed), `EvidenceGraph` nodes (via `time_window` and `stix` metadata), and raw records (arbitrary timestamp + title fields)
+- `TimelineEvent`: dataclass with timestamp, event_type, title, source, description, and linked_artifacts
+- `TimelineEventType` enum: 14 event types covering incident/investigation lifecycle, analyst actions, and observables
+
+**`gnat.analysis.graph` — Evidence graph querying**
+- `GraphQuery`: adjacency-index BFS pivot/expand/filter over `EvidenceGraph` objects; supports N-hop pivoting, cross-node expansion, and multi-dimensional filtering (confidence, platform set, date range, node types)
+- `GraphContext`: results container with nodes dict, edges list, seed_ids; `platforms()`, `node_count`, `edge_count` properties; `to_dict()` for API serialisation
+- `GraphQuery.shortest_path()`: BFS shortest-path between any two nodes
+
+**`gnat.analysis.copilot` — Analyst assistance**
+- `GapDetector`: 8 rule-based evidence gap detection rules (no-evidence/CRITICAL, lateral-movement-no-host/HIGH, exfiltration-no-network/HIGH, attribution-no-ttp/HIGH, ransomware-no-hash/MEDIUM, phishing-no-email-or-domain/MEDIUM, c2-no-network-ioc/HIGH, no-campaign-linkage/LOW); `detect()` per hypothesis, `detect_all()` across all hypotheses, `summary()` counts by severity
+- `GapRecommendation`: dataclass with rule_id, severity, description, suggested_action
+- `ReportDraftingAssistant`: LLM-backed executive summary and key-findings narrative drafting; graceful fallback (placeholder text + warning) when no LLM configured; two-call `draft_full()` for merged results; configurable prompt templates; evidence capped at 20 links to avoid token explosion
+- `DraftResult`: output dataclass with executive_summary, key_findings_narrative, model, prompt/completion token counts, and warnings
+
+### Added — Dissemination Layer (Phase 4)
+
+**`gnat.dissemination.export` — Report export**
+- `ExportService`: exports published intelligence reports to STIX 2.1 bundle, GNAT JSON, or PDF; uses cached `stix_bundle_json` when available; SHA-256 checksum on all outputs
+- `ExportFormat` enum: STIX / JSON / PDF
+- `ExportResult`: dataclass with report_id, format, path, size_bytes, checksum (SHA-256 hex), exported_at
+- `export_stix_bundle()`: in-memory STIX bundle retrieval without disk write
+- PDF export via `gnat.reports.renderers.PDFRenderer`; falls back to plain-text if reportlab not installed
+
+**`gnat.dissemination.taxii` — TAXII 2.1 server**
+- `TAXIICollection`: TAXII 2.1 collection backed by GNAT report store; deterministic UUIDs (uuid5); TLP rank-based `is_accessible()` access control
+- `COLLECTIONS`: four built-in collections (tlp-white/green/amber/red) with cumulative TLP filtering
+- `build_taxii_router()`: FastAPI router implementing all six TAXII 2.1 read-only endpoints (Discovery, API Root, Collections list/metadata, Objects, Manifest); offset-based pagination with base64 cursor; `application/taxii+json;version=2.1` content type
+- ADR-0035: FastAPI over dedicated TAXII library; TLP-based collection model; single-process TAXII+API mount
+
+**`gnat.dissemination.notify` — Webhook notifications**
+- `WebhookNotifier`: fan-out HTTP POST notifications to registered subscribers; TLP-level access control per subscriber; HMAC-SHA256 `X-GNAT-Signature` header when secret configured; best-effort delivery (errors logged, never raised)
+- `WebhookSubscription`: dataclass with id, url, min_tlp, secret, events list, timeout
+- `DeliveryReceipt`: per-delivery outcome with status_code, success flag, error message, attempted_at
+
+**`gnat.dissemination.api` — REST gateway and API key management**
+- `APIKey`: API key dataclass with TLP access level, label, expiry, enabled flag, SHA-256 token hash property
+- `APIKeyStore`: in-memory bearer token store with add/generate/revoke/delete/list operations; `generate_key()` produces cryptographically random 32-byte tokens
+- `build_gateway_router()`: FastAPI router for report listing/metadata/export (STIX/JSON/PDF) and admin key management; TLP-filtered report responses; PDF via `FileResponse` with background cleanup
+
+**Optional extras**
+- `gnat[taxii-server]`: FastAPI + uvicorn for TAXII 2.1 server
+- `gnat[dissemination]`: FastAPI + uvicorn + SQLAlchemy for full dissemination layer
+
+**Tests**: 142 new unit tests across `tests/unit/analysis/test_correlation.py`, `test_timeline.py`, `test_graph.py`, `test_copilot.py`, `tests/unit/dissemination/test_export.py`, `test_taxii.py`, `test_notify.py`
+
 ---
 
 ## [v1.3.0] — Unreleased
