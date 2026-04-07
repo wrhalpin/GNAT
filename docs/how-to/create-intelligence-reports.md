@@ -20,9 +20,10 @@ pip install "gnat[reporting]"   # or gnat[all]
 ```
 
 ```python
+import os
 from gnat.reporting import Report, ReportService, ReportStore, ReportType, ReportStatus
 
-store   = ReportStore("sqlite:///~/.gnat/gnat.db")
+store   = ReportStore("sqlite:///" + os.path.expanduser("~/.gnat/gnat.db"))
 store.create_all()                # zero-migration schema init
 service = ReportService(store)
 ```

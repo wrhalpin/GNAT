@@ -72,6 +72,7 @@ assert TLPLevel.RED > TLPLevel.AMBER > TLPLevel.GREEN
 ## Analyst investigations
 
 ```python
+import os
 from gnat.analysis.investigations import (
     Investigation,
     InvestigationService,
@@ -83,7 +84,7 @@ from gnat.analysis.investigations import (
 )
 
 # One-time setup (SQLite or Postgres via SQLAlchemy URL)
-store   = InvestigationStore("sqlite:///~/.gnat/gnat.db")
+store   = InvestigationStore("sqlite:///" + os.path.expanduser("~/.gnat/gnat.db"))
 store.create_all()
 service = InvestigationService(store)
 

@@ -15,6 +15,7 @@ produce a structured intelligence report, and publish it to downstream consumers
 ## 1. Import dependencies
 
 ```python
+import os
 from gnat.analysis.confidence import ConfidenceScore, SourceReliability, InformationCredibility
 from gnat.analysis.tlp import TLPLevel
 from gnat.analysis.investigations import (
@@ -38,8 +39,8 @@ from gnat.agents.llm import LLMClient
 ```python
 # Shared SQLite database for investigations and reports
 # (use PostgreSQL URL in production: postgresql://user:pass@host/gnat)
-inv_store    = InvestigationStore("sqlite:///~/.gnat/gnat.db")
-report_store = ReportStore("sqlite:///~/.gnat/gnat.db")
+inv_store    = InvestigationStore("sqlite:///" + os.path.expanduser("~/.gnat/gnat.db"))
+report_store = ReportStore("sqlite:///" + os.path.expanduser("~/.gnat/gnat.db"))
 
 inv_store.create_all()
 report_store.create_all()
@@ -270,8 +271,6 @@ print(f"Published: {published.stix_report_ref}")
 ## 12. Disseminate to subscribers
 
 ```python
-from gnat.dissemination import ExportService, ExportFormat, WebhookNotifier, WebhookSubscription
-
 # Export to STIX bundle file
 export_svc = ExportService(report_store)
 result = export_svc.export(published.id, ExportFormat.STIX, "/var/intel/blackcat-apr-2026.json")
