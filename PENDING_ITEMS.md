@@ -868,3 +868,7 @@ gnat viz solr-dashboard --file solr_dashboard.json
 - `lansweeper`: `report` (asset), `vulnerability` (software inventory)
 - `censys`: `observed-data` (host scan result) with exposed CVE annotation
 - `servicenow_secops`: `observed-data` (SIR incident), `vulnerability` (VR item), `indicator` (TIARA observable), `course-of-action` (SI task)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

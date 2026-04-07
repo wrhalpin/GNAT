@@ -59,3 +59,7 @@ ws.enrich(strategy="create_relationships")
 - [How-to: Use the Research Library](use-research-library.md)
 - [Explanation: Context System](../explanation/architecture/adrs/0005-context-system.md)
 - [Explanation: Workspace Persistence](../explanation/architecture/adrs/0006-workspace-persistence.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

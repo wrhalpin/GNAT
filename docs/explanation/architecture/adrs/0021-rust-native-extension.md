@@ -27,3 +27,7 @@ This means `RUST_AVAILABLE` is a public API flag; all callers check it in tests.
 **Extras group:**
 `pip install "gnat[fast]"` documents the native extension as optional. The core library
 never requires it — the extra is purely for performance-critical deployments.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

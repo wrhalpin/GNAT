@@ -57,3 +57,7 @@ Follows the established `WorkspaceStore` pattern:
 - Storage: `sqlalchemy>=2.0` (already in `[persist]` extra)
 - STIX export: zero (uses existing ORM)
 - TAXII server: `taxii2-server` (Phase 4, new `[taxii-server]` extra)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

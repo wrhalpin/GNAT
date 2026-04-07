@@ -33,3 +33,7 @@ Any INI key can be overridden by passing it to `connect()`:
 ```python
 cli.connect("threatq", client_secret="runtime-secret")
 ```
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -31,3 +31,7 @@ gnat viz serve --port 3001
 3. Load all sheets. Relationships sheet auto-creates the graph visual.
 4. `to_model_json()` optional — auto-wires foreign keys if imported via
    Power BI Desktop's "Transform Data" flow.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

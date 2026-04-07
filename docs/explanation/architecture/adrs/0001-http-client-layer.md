@@ -31,3 +31,7 @@ Note: `allowed_methods` (not `method_whitelist`) — urllib3 ≥ 2.0 API.
 **`GNATClientError` carries `status` and `body`:**
 Always check `exc.status` in connector tests — 401 vs 403 vs 429 all
 need different handling.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

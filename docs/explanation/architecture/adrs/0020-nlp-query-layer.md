@@ -24,3 +24,7 @@ a Claude API key.
 The Textual Query screen passes user input directly to `NLPQueryEngine.parse()` and
 dispatches the resulting `QuerySpec` to `GNATClient.natural_language_query()`. No
 intermediate serialisation.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

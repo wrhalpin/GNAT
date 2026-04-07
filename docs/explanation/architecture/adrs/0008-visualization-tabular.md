@@ -25,3 +25,7 @@ Confidence 90 appears before confidence 10.
   Power BI's graph visual maps to from/to node ids. Do not rename these.
 - `to_model_json()` generates the data model descriptor with foreign key
   relationships pre-wired.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

@@ -101,3 +101,7 @@ with FeedScheduler() as sched:
 
 - [How-to: Use the Research Library](use-research-library.md)
 - [How-to: Schedule Feeds](schedule-feeds.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

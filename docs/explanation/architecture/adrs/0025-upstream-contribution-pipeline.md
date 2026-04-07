@@ -19,3 +19,7 @@ bar automatically so contributors don't need to read a checklist.
 **`draft_pr` hardcoded:**
 The PR is always a draft. This is intentional — human review before merge is non-negotiable
 for a shared security library. No config knob exposes this.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

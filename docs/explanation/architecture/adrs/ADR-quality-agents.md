@@ -80,3 +80,7 @@ Rejected because semantic drift and fixture weakness are often not captured by o
 - bundle-aware STIX comparisons
 - confidence scoring shared with maintenance agents
 - automatic downgrading of risky patch PRs to draft
+
+---
+
+*Licensed under the Apache License, Version 2.0*

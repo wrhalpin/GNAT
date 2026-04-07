@@ -137,3 +137,7 @@ scheduler.start(run_immediately=True)
 - Monitor job health via `scheduler.statuses()` — see [How-to: Schedule Feeds](../how-to/schedule-feeds.md)
 - Add an AI research feed — see [How-to: Use AI Agents](../how-to/use-ai-agents.md)
 - Containerise this pipeline — see [Explanation: Docker Containerisation](../explanation/architecture/adrs/0029-docker-containerization.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

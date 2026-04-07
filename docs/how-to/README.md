@@ -22,3 +22,7 @@ Pick the guide for your goal — no need to read them in order.
 > **Diataxis note:** How-to guides are task-oriented.
 > For background understanding, see the [Explanation docs](../explanation/architecture/adrs/).
 > For exact API details, see the [Reference docs](../reference/).
+
+---
+
+*Licensed under the Apache License, Version 2.0*

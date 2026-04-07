@@ -495,3 +495,7 @@ All near-term and medium-term roadmap items have shipped:
 
 ### Long term
 - Federated multi-GNAT deployments with cross-instance workspace sync
+
+---
+
+*Licensed under the Apache License, Version 2.0*

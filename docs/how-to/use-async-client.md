@@ -29,3 +29,7 @@ print(f"Gathered {len(indicators)} indicators from 3 platforms")
 
 - [How-to: Connect to Platforms](connect-to-platforms.md)
 - [Explanation: Async Client](../explanation/architecture/adrs/0007-async-client.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

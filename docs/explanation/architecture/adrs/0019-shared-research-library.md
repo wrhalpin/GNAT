@@ -79,3 +79,7 @@ Four hours is a reasonable default — staging entries don't sit unreviewed for
 long, but the curation job doesn't run so frequently that it becomes noisy in
 the scheduler status output. For teams that need faster promotion, `cron="0 * * * *"`
 (hourly) works equally well.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

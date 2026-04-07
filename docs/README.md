@@ -15,3 +15,7 @@ Each document has one primary purpose — choose the section that matches your i
 ## Standards
 
 See [Documentation-Standards.md](Documentation-Standards.md) for authoring rules.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

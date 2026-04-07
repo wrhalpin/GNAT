@@ -14,3 +14,7 @@ GNAT will implement a security agent family centered on a secrets broker with:
 3. policy-first read, write, and checkout decisions
 4. audit event recording
 5. hygiene agents for leak and unsafe-pattern detection
+
+---
+
+*Licensed under the Apache License, Version 2.0*

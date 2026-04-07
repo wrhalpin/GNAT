@@ -22,3 +22,7 @@ monitoring framework.
 `gnat health baseline` runs one sampling pass and writes the initial `SchemaSnapshot`
 files. Production deployments should run baseline after initial connector setup and
 after planned API migrations.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

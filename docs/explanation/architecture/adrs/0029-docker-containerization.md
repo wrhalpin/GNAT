@@ -28,3 +28,7 @@ components.
 The devcontainer config includes the Rust toolchain and Docker-in-Docker so that Rust
 extension development and Docker testing both work in VS Code / Codespaces without
 local tool installation.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

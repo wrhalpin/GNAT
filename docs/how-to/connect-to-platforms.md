@@ -151,3 +151,7 @@ for v in risky:
 - [Reference: Configuration](../reference/configuration.md)
 - [How-to: Run the Ingest Pipeline](run-ingest-pipeline.md)
 - [How-to: Use the Async Client](use-async-client.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

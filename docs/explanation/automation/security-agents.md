@@ -22,3 +22,7 @@ This scaffold also includes the initial hygiene layer:
 - leak scanning
 - duplicate detection
 - unsafe secret pattern detection
+
+---
+
+*Licensed under the Apache License, Version 2.0*
