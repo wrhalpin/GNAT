@@ -5,5 +5,5 @@
 gnat.connectors.trendmicro_visionone
 ========================================
 
-Public API surface for the ``gnat.gnat.connectors.trendmicro_visionone`` package.
+Public API surface for the ``gnat.connectors.trendmicro_visionone`` package.
 """

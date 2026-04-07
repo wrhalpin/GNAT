@@ -5,5 +5,5 @@
 gnat.connectors.extrahop
 ============================
 
-Public API surface for the ``gnat.gnat.connectors.extrahop`` package.
+Public API surface for the ``gnat.connectors.extrahop`` package.
 """

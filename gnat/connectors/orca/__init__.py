@@ -4,7 +4,7 @@
 gnat.connectors.orca
 ========================
 
-Public API surface for the ``gnat.gnat.connectors.orca`` package.
+Public API surface for the ``gnat.connectors.orca`` package.
 
 Exports: ``OrcaClient``.
 """

@@ -4,7 +4,7 @@
 gnat.connectors.armis
 =========================
 
-Public API surface for the ``gnat.gnat.connectors.armis`` package.
+Public API surface for the ``gnat.connectors.armis`` package.
 
 Exports: ``ArmisClient``.
 """

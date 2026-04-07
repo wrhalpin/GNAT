@@ -4,5 +4,5 @@
 gnat.connectors.logrhythm
 =============================
 
-Public API surface for the ``gnat.gnat.connectors.logrhythm`` package.
+Public API surface for the ``gnat.connectors.logrhythm`` package.
 """

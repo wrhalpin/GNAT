@@ -4,5 +4,5 @@
 gnat.connectors.snort.tests
 ===============================
 
-Public API surface for the ``gnat.gnat.connectors.snort.tests`` package.
+Public API surface for the ``gnat.connectors.snort.tests`` package.
 """

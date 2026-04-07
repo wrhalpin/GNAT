@@ -4,7 +4,7 @@
 gnat.connectors.upguard
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.upguard`` package.
+Public API surface for the ``gnat.connectors.upguard`` package.
 
 Exports: ``UpGuardClient``.
 """

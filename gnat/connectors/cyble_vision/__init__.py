@@ -4,7 +4,7 @@
 gnat.connectors.cyble_vision
 ================================
 
-Public API surface for the ``gnat.gnat.connectors.cyble_vision`` package.
+Public API surface for the ``gnat.connectors.cyble_vision`` package.
 
 Exports: ``CybleVisionClient``.
 """

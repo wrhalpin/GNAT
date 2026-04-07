@@ -4,7 +4,7 @@
 gnat.connectors.group_ib
 ============================
 
-Public API surface for the ``gnat.gnat.connectors.group_ib`` package.
+Public API surface for the ``gnat.connectors.group_ib`` package.
 
 Exports: ``GroupIBClient``.
 """

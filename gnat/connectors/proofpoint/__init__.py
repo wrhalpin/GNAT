@@ -5,5 +5,5 @@
 gnat.connectors.proofpoint
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.proofpoint`` package.
+Public API surface for the ``gnat.connectors.proofpoint`` package.
 """

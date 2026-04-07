@@ -5,5 +5,5 @@
 gnat.connectors.sophos
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.sophos`` package.
+Public API surface for the ``gnat.connectors.sophos`` package.
 """

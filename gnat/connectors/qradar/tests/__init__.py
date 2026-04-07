@@ -4,5 +4,5 @@
 gnat.connectors.qradar.tests
 ================================
 
-Public API surface for the ``gnat.gnat.connectors.qradar.tests`` package.
+Public API surface for the ``gnat.connectors.qradar.tests`` package.
 """

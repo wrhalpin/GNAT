@@ -5,5 +5,5 @@
 gnat.connectors.vectra
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.vectra`` package.
+Public API surface for the ``gnat.connectors.vectra`` package.
 """

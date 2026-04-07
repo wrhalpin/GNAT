@@ -4,5 +4,5 @@
 gnat.connectors.suricata.tests
 ==================================
 
-Public API surface for the ``gnat.gnat.connectors.suricata.tests`` package.
+Public API surface for the ``gnat.connectors.suricata.tests`` package.
 """

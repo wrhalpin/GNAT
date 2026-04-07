@@ -4,5 +4,5 @@
 gnat.connectors.sentinel.tests
 ==================================
 
-Public API surface for the ``gnat.gnat.connectors.sentinel.tests`` package.
+Public API surface for the ``gnat.connectors.sentinel.tests`` package.
 """

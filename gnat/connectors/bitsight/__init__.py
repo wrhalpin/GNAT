@@ -4,7 +4,7 @@
 gnat.connectors.bitsight
 ============================
 
-Public API surface for the ``gnat.gnat.connectors.bitsight`` package.
+Public API surface for the ``gnat.connectors.bitsight`` package.
 
 Exports: ``BitSightClient``.
 """

@@ -4,5 +4,5 @@
 gnat.connectors.carbon_black
 ================================
 
-Public API surface for the ``gnat.gnat.connectors.carbon_black`` package.
+Public API surface for the ``gnat.connectors.carbon_black`` package.
 """

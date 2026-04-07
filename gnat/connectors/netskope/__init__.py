@@ -5,5 +5,5 @@
 gnat.connectors.netskope
 ============================
 
-Public API surface for the ``gnat.gnat.connectors.netskope`` package.
+Public API surface for the ``gnat.connectors.netskope`` package.
 """

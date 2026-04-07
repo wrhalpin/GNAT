@@ -5,5 +5,5 @@
 gnat.connectors.feedly
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.feedly`` package.
+Public API surface for the ``gnat.connectors.feedly`` package.
 """

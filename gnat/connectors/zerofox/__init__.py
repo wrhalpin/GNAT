@@ -4,7 +4,7 @@
 gnat.connectors.zerofox
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.zerofox`` package.
+Public API surface for the ``gnat.connectors.zerofox`` package.
 
 Exports: ``ZeroFoxClient``.
 """

@@ -4,5 +4,5 @@
 gnat.connectors.virustotal
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.virustotal`` package.
+Public API surface for the ``gnat.connectors.virustotal`` package.
 """

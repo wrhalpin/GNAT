@@ -5,5 +5,5 @@
 gnat.connectors.censys
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.censys`` package.
+Public API surface for the ``gnat.connectors.censys`` package.
 """

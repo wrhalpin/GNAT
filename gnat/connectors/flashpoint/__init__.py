@@ -4,7 +4,7 @@
 gnat.connectors.flashpoint
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.flashpoint`` package.
+Public API surface for the ``gnat.connectors.flashpoint`` package.
 
 Exports: ``FlashpointClient``.
 """

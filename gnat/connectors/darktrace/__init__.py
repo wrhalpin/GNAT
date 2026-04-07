@@ -5,5 +5,5 @@
 gnat.connectors.darktrace
 =============================
 
-Public API surface for the ``gnat.gnat.connectors.darktrace`` package.
+Public API surface for the ``gnat.connectors.darktrace`` package.
 """

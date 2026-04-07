@@ -5,5 +5,5 @@
 gnat.connectors.whistic
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.whistic`` package.
+Public API surface for the ``gnat.connectors.whistic`` package.
 """

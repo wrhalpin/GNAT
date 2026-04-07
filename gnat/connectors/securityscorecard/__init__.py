@@ -5,5 +5,5 @@
 gnat.connectors.securityscorecard
 =====================================
 
-Public API surface for the ``gnat.gnat.connectors.securityscorecard`` package.
+Public API surface for the ``gnat.connectors.securityscorecard`` package.
 """

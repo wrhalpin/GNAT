@@ -5,5 +5,5 @@
 gnat.connectors.recordedfuture
 ==================================
 
-Public API surface for the ``gnat.gnat.connectors.recordedfuture`` package.
+Public API surface for the ``gnat.connectors.recordedfuture`` package.
 """

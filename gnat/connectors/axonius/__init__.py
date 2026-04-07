@@ -4,7 +4,7 @@
 gnat.connectors.axonius
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.axonius`` package.
+Public API surface for the ``gnat.connectors.axonius`` package.
 
 Exports: ``AxoniusClient``.
 """

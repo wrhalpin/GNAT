@@ -5,5 +5,5 @@
 gnat.connectors.dragos
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.dragos`` package.
+Public API surface for the ``gnat.connectors.dragos`` package.
 """

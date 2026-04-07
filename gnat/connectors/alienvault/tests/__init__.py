@@ -4,5 +4,5 @@
 gnat.connectors.alienvault.tests
 ====================================
 
-Public API surface for the ``gnat.gnat.connectors.alienvault.tests`` package.
+Public API surface for the ``gnat.connectors.alienvault.tests`` package.
 """

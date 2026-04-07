@@ -4,7 +4,7 @@
 gnat.connectors.intel471
 ============================
 
-Public API surface for the ``gnat.gnat.connectors.intel471`` package.
+Public API surface for the ``gnat.connectors.intel471`` package.
 
 Exports: ``Intel471Client``.
 """

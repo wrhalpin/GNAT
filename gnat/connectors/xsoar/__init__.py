@@ -5,5 +5,5 @@
 gnat.connectors.xsoar
 =========================
 
-Public API surface for the ``gnat.gnat.connectors.xsoar`` package.
+Public API surface for the ``gnat.connectors.xsoar`` package.
 """

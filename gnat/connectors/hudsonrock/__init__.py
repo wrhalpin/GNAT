@@ -4,7 +4,7 @@
 gnat.connectors.hudsonrock
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.hudsonrock`` package.
+Public API surface for the ``gnat.connectors.hudsonrock`` package.
 
 Exports: ``HudsonRockClient``.
 """

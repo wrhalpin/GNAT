@@ -4,7 +4,7 @@
 gnat.connectors.wiz
 =======================
 
-Public API surface for the ``gnat.gnat.connectors.wiz`` package.
+Public API surface for the ``gnat.connectors.wiz`` package.
 
 Exports: ``WizClient``.
 """

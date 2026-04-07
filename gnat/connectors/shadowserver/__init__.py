@@ -4,5 +4,5 @@
 gnat.connectors.shadowserver
 ================================
 
-Public API surface for the ``gnat.gnat.connectors.shadowserver`` package.
+Public API surface for the ``gnat.connectors.shadowserver`` package.
 """

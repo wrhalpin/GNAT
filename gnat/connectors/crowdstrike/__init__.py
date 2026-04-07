@@ -5,5 +5,5 @@
 gnat.connectors.crowdstrike
 ===============================
 
-Public API surface for the ``gnat.gnat.connectors.crowdstrike`` package.
+Public API surface for the ``gnat.connectors.crowdstrike`` package.
 """

@@ -4,5 +4,5 @@
 gnat.connectors.prisma_cloud
 ================================
 
-Public API surface for the ``gnat.gnat.connectors.prisma_cloud`` package.
+Public API surface for the ``gnat.connectors.prisma_cloud`` package.
 """

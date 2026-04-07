@@ -4,5 +4,5 @@
 gnat.connectors.nozomi
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.nozomi`` package.
+Public API surface for the ``gnat.connectors.nozomi`` package.
 """

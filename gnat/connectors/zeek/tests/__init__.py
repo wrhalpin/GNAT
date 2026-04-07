@@ -4,5 +4,5 @@
 gnat.connectors.zeek.tests
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.zeek.tests`` package.
+Public API surface for the ``gnat.connectors.zeek.tests`` package.
 """

@@ -4,5 +4,5 @@
 gnat.connectors.nucleus
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.nucleus`` package.
+Public API surface for the ``gnat.connectors.nucleus`` package.
 """

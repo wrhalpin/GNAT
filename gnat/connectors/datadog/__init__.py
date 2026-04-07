@@ -5,5 +5,5 @@
 gnat.connectors.datadog
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.datadog`` package.
+Public API surface for the ``gnat.connectors.datadog`` package.
 """

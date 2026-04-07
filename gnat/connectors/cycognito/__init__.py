@@ -4,7 +4,7 @@
 gnat.connectors.cycognito
 =============================
 
-Public API surface for the ``gnat.gnat.connectors.cycognito`` package.
+Public API surface for the ``gnat.connectors.cycognito`` package.
 
 Exports: ``CyCognitoClient``.
 """

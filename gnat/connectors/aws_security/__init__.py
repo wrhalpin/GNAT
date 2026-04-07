@@ -5,5 +5,5 @@
 gnat.connectors.aws_security
 ================================
 
-Public API surface for the ``gnat.gnat.connectors.aws_security`` package.
+Public API surface for the ``gnat.connectors.aws_security`` package.
 """

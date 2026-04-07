@@ -4,5 +4,5 @@
 gnat.connectors.misp.tests
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.misp.tests`` package.
+Public API surface for the ``gnat.connectors.misp.tests`` package.
 """

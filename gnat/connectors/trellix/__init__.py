@@ -5,5 +5,5 @@
 gnat.connectors.trellix
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.trellix`` package.
+Public API surface for the ``gnat.connectors.trellix`` package.
 """

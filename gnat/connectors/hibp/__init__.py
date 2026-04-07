@@ -5,5 +5,5 @@
 gnat.connectors.hibp
 ========================
 
-Public API surface for the ``gnat.gnat.connectors.hibp`` package.
+Public API surface for the ``gnat.connectors.hibp`` package.
 """

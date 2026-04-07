@@ -4,5 +4,5 @@
 gnat.connectors
 ===================
 
-Public API surface for the ``gnat.gnat.connectors`` package.
+Public API surface for the ``gnat.connectors`` package.
 """

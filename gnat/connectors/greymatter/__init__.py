@@ -5,5 +5,5 @@
 gnat.connectors.greymatter
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.greymatter`` package.
+Public API surface for the ``gnat.connectors.greymatter`` package.
 """

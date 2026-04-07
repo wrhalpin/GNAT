@@ -4,7 +4,7 @@
 gnat.connectors.sentinelone
 ===============================
 
-Public API surface for the ``gnat.gnat.connectors.sentinelone`` package.
+Public API surface for the ``gnat.connectors.sentinelone`` package.
 
 Exports: ``SentinelOneClient``.
 """

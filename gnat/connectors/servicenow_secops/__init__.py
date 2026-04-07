@@ -5,5 +5,5 @@
 gnat.connectors.servicenow_secops
 =====================================
 
-Public API surface for the ``gnat.gnat.connectors.servicenow_secops`` package.
+Public API surface for the ``gnat.connectors.servicenow_secops`` package.
 """

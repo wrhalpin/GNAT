@@ -4,5 +4,5 @@
 gnat.connectors.ossim.tests
 ===============================
 
-Public API surface for the ``gnat.gnat.connectors.ossim.tests`` package.
+Public API surface for the ``gnat.connectors.ossim.tests`` package.
 """

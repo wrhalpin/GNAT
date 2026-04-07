@@ -5,5 +5,5 @@
 gnat.connectors.riskrecon
 =============================
 
-Public API surface for the ``gnat.gnat.connectors.riskrecon`` package.
+Public API surface for the ``gnat.connectors.riskrecon`` package.
 """

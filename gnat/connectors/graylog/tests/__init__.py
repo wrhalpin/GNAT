@@ -4,5 +4,5 @@
 gnat.connectors.graylog.tests
 =================================
 
-Public API surface for the ``gnat.gnat.connectors.graylog.tests`` package.
+Public API surface for the ``gnat.connectors.graylog.tests`` package.
 """

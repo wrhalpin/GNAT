@@ -4,7 +4,7 @@
 gnat.connectors.qualys
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.qualys`` package.
+Public API surface for the ``gnat.connectors.qualys`` package.
 
 Exports: ``QualysVMDRClient``.
 """

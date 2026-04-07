@@ -4,5 +4,5 @@
 gnat.connectors.security_onion.tests
 ========================================
 
-Public API surface for the ``gnat.gnat.connectors.security_onion.tests`` package.
+Public API surface for the ``gnat.connectors.security_onion.tests`` package.
 """

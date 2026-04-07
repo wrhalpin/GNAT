@@ -4,5 +4,5 @@
 gnat.reports.reports
 ========================
 
-Public API surface for the ``gnat.gnat.reports.reports`` package.
+Public API surface for the ``gnat.reports.reports`` package.
 """

@@ -5,5 +5,5 @@
 gnat.connectors.tanium
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.tanium`` package.
+Public API surface for the ``gnat.connectors.tanium`` package.
 """

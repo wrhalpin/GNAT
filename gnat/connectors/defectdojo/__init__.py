@@ -4,7 +4,7 @@
 gnat.connectors.defectdojo
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.defectdojo`` package.
+Public API surface for the ``gnat.connectors.defectdojo`` package.
 
 Exports: ``DefectDojoClient``.
 """

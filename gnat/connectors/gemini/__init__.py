@@ -4,7 +4,7 @@
 gnat.connectors.gemini
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.gemini`` package.
+Public API surface for the ``gnat.connectors.gemini`` package.
 
 Exports: ``GeminiClient``.
 """

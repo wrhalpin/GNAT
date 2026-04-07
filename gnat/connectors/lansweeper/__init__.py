@@ -5,5 +5,5 @@
 gnat.connectors.lansweeper
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.lansweeper`` package.
+Public API surface for the ``gnat.connectors.lansweeper`` package.
 """

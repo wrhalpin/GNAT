@@ -4,7 +4,7 @@
 gnat.connectors.greenbone
 =============================
 
-Public API surface for the ``gnat.gnat.connectors.greenbone`` package.
+Public API surface for the ``gnat.connectors.greenbone`` package.
 
 Exports: ``GreenboneClient``.
 """

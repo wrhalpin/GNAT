@@ -5,7 +5,7 @@
 gnat.connectors.chatgpt
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.chatgpt`` package.
+Public API surface for the ``gnat.connectors.chatgpt`` package.
 
 Exports: ``ChatGPTClient``.
 """

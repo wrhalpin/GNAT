@@ -4,5 +4,5 @@
 gnat.connectors.rapid7
 ==========================
 
-Public API surface for the ``gnat.gnat.connectors.rapid7`` package.
+Public API surface for the ``gnat.connectors.rapid7`` package.
 """

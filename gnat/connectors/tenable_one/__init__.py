@@ -4,7 +4,7 @@
 gnat.connectors.tenable_one
 ===============================
 
-Public API surface for the ``gnat.gnat.connectors.tenable_one`` package.
+Public API surface for the ``gnat.connectors.tenable_one`` package.
 
 Exports: ``TenableOneClient``.
 """

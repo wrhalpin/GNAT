@@ -5,5 +5,5 @@
 gnat.connectors.threatq
 ===========================
 
-Public API surface for the ``gnat.gnat.connectors.threatq`` package.
+Public API surface for the ``gnat.connectors.threatq`` package.
 """

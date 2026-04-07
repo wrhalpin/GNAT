@@ -4,7 +4,7 @@
 gnat.connectors.cortex_xpanse
 =================================
 
-Public API surface for the ``gnat.gnat.connectors.cortex_xpanse`` package.
+Public API surface for the ``gnat.connectors.cortex_xpanse`` package.
 
 Exports: ``CortexXpanseClient``.
 """

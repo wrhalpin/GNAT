@@ -4,5 +4,5 @@
 gnat.connectors.cortex_xdr
 ==============================
 
-Public API surface for the ``gnat.gnat.connectors.cortex_xdr`` package.
+Public API surface for the ``gnat.connectors.cortex_xdr`` package.
 """
