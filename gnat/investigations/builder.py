@@ -190,9 +190,8 @@ class InvestigationBuilder:
 
         # ── Direct case / alert / ticket lookup ───────────────────────────
         if seed.seed_type in (SeedType.CASE_ID, SeedType.ALERT_ID, SeedType.TICKET_REF):
-            result = _safe_call(connector.get_object, "observed-data", seed.value)
-            if result:
-                node = normalize(platform, "incident", result)
+            for raw in _safe_call(connector.get_object, "observed-data", seed.value):
+                node = normalize(platform, "incident", raw)
                 if node:
                     _add_node(graph, node)
 
