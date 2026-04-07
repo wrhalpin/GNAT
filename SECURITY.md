@@ -17,7 +17,7 @@ If you discover a security vulnerability in GNAT, please report it responsibly.
 
 Instead, report vulnerabilities privately to the project maintainers.
 
-**Security contact:** replace this line with your preferred address, such as `security@yourdomain.example` or a dedicated maintainer mailbox.
+**Security contact:** wrhalpin@gmail.com
 
 ## What to Include
 
