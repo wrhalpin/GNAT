@@ -199,7 +199,6 @@ def _run_async(coro: Any) -> Any:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             # Already inside an event loop (e.g. FastAPI) — schedule as task
-            import concurrent.futures
             future = asyncio.run_coroutine_threadsafe(coro, loop)
             return future.result(timeout=30)
         return loop.run_until_complete(coro)

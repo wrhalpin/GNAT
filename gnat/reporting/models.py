@@ -35,7 +35,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from gnat.analysis.confidence import ConfidenceLevel, ConfidenceScore
+from gnat.analysis.confidence import ConfidenceScore
 from gnat.analysis.tlp import TLPLevel
 
 

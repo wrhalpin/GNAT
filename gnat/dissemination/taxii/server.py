@@ -40,7 +40,6 @@ from typing import Any
 from gnat.analysis.tlp import TLPLevel
 from gnat.dissemination.taxii.collections import (
     COLLECTION_BY_ID,
-    COLLECTIONS,
     collections_for_key,
     tlp_filter_for_collection,
 )

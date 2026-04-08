@@ -67,27 +67,22 @@ from datetime import datetime, timezone
 
 class SuricataError(Exception):
     """Raised when a suricata error error occurs."""
-    pass
 
 
 class SuricataConfigError(SuricataError):
     """Raised when a suricata config error error occurs."""
-    pass
 
 
 class SuricataLogError(SuricataError):
     """Raised when a suricata log error error occurs."""
-    pass
 
 
 class SuricataSocketError(SuricataError):
     """Raised when a suricata socket error error occurs."""
-    pass
 
 
 class SuricataSTIXError(SuricataError):
     """Raised when a suricata s t i x error error occurs."""
-    pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

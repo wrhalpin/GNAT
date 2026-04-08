@@ -40,7 +40,6 @@ import logging
 import sys
 import threading
 from pathlib import Path
-from typing import Any, Type
 
 from gnat.plugins.base import GNATPlugin, PluginCapability
 from gnat.plugins.hooks import HookBus
@@ -296,7 +295,6 @@ class PluginRegistry:
         """
         # No-op by design: CLIENT_REGISTRY connectors are not GNATPlugin instances.
         # Plugins that add connectors go through register_connector().
-        pass
 
     def __len__(self) -> int:
         with self._reg_lock:

@@ -60,22 +60,18 @@ from datetime import datetime, timezone
 
 class ZeekError(Exception):
     """Raised when a zeek error error occurs."""
-    pass
 
 
 class ZeekConfigError(ZeekError):
     """Raised when a zeek config error error occurs."""
-    pass
 
 
 class ZeekLogError(ZeekError):
     """Raised when a zeek log error error occurs."""
-    pass
 
 
 class ZeekSTIXError(ZeekError):
     """Raised when a zeek s t i x error error occurs."""
-    pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

@@ -44,7 +44,6 @@ try:
         Boolean,
         Column,
         DateTime,
-        Integer,
         String,
         Text,
         create_engine,
@@ -73,7 +72,6 @@ def _utcnow() -> datetime:
 if _SA_AVAILABLE:
     class _Base(DeclarativeBase):
         """_Base implementation."""
-        pass
 
     class InvestigationModel(_Base):
         """SQLAlchemy model backing :class:`~.models.Investigation`."""
@@ -270,9 +268,8 @@ class InvestigationStore:
 
         with self._Session() as session:
             q = session.query(InvestigationModel).filter(
-                InvestigationModel.is_deleted == False  # noqa: E712
+                InvestigationModel.is_deleted.is_(False)
             )
-
             # Status filter
             sv = query.status_values
             if sv:
@@ -352,7 +349,7 @@ class InvestigationStore:
         _require_sqlalchemy()
         with self._Session() as session:
             q = session.query(InvestigationModel).filter(
-                InvestigationModel.is_deleted == False  # noqa: E712
+                InvestigationModel.is_deleted.is_(False)
             )
             if status is not None:
                 q = q.filter(InvestigationModel.status == status.value)

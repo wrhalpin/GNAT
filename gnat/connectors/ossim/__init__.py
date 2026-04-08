@@ -53,17 +53,14 @@ import urllib3
 
 class OSSIMError(Exception):
     """Raised when a o s s i m error error occurs."""
-    pass
 
 
 class OSSIMConfigError(OSSIMError):
     """Raised when a o s s i m config error error occurs."""
-    pass
 
 
 class OSSIMAuthError(OSSIMError):
     """Raised when a o s s i m auth error error occurs."""
-    pass
 
 
 class OSSIMAPIError(OSSIMError):
@@ -77,12 +74,10 @@ class OSSIMAPIError(OSSIMError):
 
 class OSSIMNotFoundError(OSSIMAPIError):
     """Raised when a o s s i m not found error error occurs."""
-    pass
 
 
 class OSSIMSTIXError(OSSIMError):
     """Raised when a o s s i m s t i x error error occurs."""
-    pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

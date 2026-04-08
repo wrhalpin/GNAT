@@ -56,12 +56,10 @@ class SecurityOnionError(Exception):
 
 class SecurityOnionConfigError(SecurityOnionError):
     """Raised when a security onion config error error occurs."""
-    pass
 
 
 class SecurityOnionAuthError(SecurityOnionError):
     """Raised when a security onion auth error error occurs."""
-    pass
 
 
 class SecurityOnionAPIError(SecurityOnionError):
@@ -75,12 +73,10 @@ class SecurityOnionAPIError(SecurityOnionError):
 
 class SecurityOnionNotFoundError(SecurityOnionAPIError):
     """Raised when a security onion not found error error occurs."""
-    pass
 
 
 class SecurityOnionSTIXError(SecurityOnionError):
     """Raised when a security onion s t i x error error occurs."""
-    pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

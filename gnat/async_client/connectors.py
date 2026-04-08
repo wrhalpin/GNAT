@@ -808,7 +808,6 @@ class AsyncSplunkClient(AsyncBaseClient, ConnectorMixin):
 
     async def delete_object(self, t, oid):
         """Delete the object."""
-        pass
 
     def to_stix(self, n):
         """Convert this object to STIX format."""

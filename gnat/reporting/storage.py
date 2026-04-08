@@ -71,7 +71,6 @@ def _utcnow() -> datetime:
 if _SA_AVAILABLE:
     class _Base(DeclarativeBase):
         """_Base implementation."""
-        pass
 
     class ReportModel(_Base):
         """SQLAlchemy model backing :class:`~.models.Report`."""
@@ -251,7 +250,7 @@ class ReportStore:
         _require_sqlalchemy()
         with self._Session() as session:
             q = session.query(ReportModel).filter(
-                ReportModel.is_deleted == False  # noqa: E712
+                ReportModel.is_deleted.is_(False)
             )
             if status is not None:
                 q = q.filter(ReportModel.status == status.value)
@@ -285,7 +284,7 @@ class ReportStore:
         _require_sqlalchemy()
         with self._Session() as session:
             q = session.query(ReportModel).filter(
-                ReportModel.is_deleted == False  # noqa: E712
+                ReportModel.is_deleted.is_(False)
             )
             if status is not None:
                 q = q.filter(ReportModel.status == status.value)
