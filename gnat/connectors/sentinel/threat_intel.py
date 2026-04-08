@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.threat_intel
 ==========================================
@@ -35,6 +37,7 @@ class SentinelThreatIntelCommands:
     """Threat Intelligence Indicator management operations."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelThreatIntelCommands."""
         self._client = client
 
     def list_indicators(

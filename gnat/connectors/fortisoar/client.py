@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.fortisoar.client
 ================================
@@ -48,6 +50,7 @@ _STIX_NS = _uuid.UUID("aabbccdd-eeff-0011-2233-445566778899")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -73,6 +76,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, username: str = "", password: str = "", **kwargs: Any) -> None:
+        """Initialize FortiSOARClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
@@ -212,6 +216,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         return self._alert_to_stix(native)
 
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         alert_id = str(alert.get("id", alert.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -253,6 +258,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         }
 
     def _incident_to_stix(self, incident: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for incident to stix."""
         inc_id = str(incident.get("id", incident.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-incident-{inc_id}"))
         ts = incident.get("createDate", _now_ts())
@@ -282,6 +288,7 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         }
 
     def _indicator_to_stix(self, indicator: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for indicator to stix."""
         ioc_id = str(indicator.get("id", indicator.get("@id", "").split("/")[-1]))
         uid = str(_uuid.uuid5(_STIX_NS, f"fortisoar-ioc-{ioc_id}"))
         value = indicator.get("indicatorValue", "")

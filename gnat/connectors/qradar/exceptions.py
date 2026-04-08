@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.exceptions
 =======================================
@@ -94,6 +96,7 @@ class QRadarAPIError(QRadarError):
         description: str = "",
         endpoint: str | None = None,
     ) -> None:
+        """Initialize QRadarAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.qradar_code = qradar_code
@@ -101,6 +104,7 @@ class QRadarAPIError(QRadarError):
         self.endpoint = endpoint
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.status_code:
             parts.append(f"HTTP {self.status_code}")
@@ -152,12 +156,14 @@ class QRadarArielError(QRadarError):
         status: str | None = None,
         error_messages: list[str] | None = None,
     ) -> None:
+        """Initialize QRadarArielError."""
         super().__init__(message)
         self.search_id = search_id
         self.status = status
         self.error_messages = error_messages or []
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.search_id:
             parts.append(f"search_id={self.search_id}")

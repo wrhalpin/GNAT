@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.context.store
 ======================
@@ -87,6 +89,7 @@ except ImportError:
 
 
 def _require_sqlalchemy() -> None:
+    """Internal helper for require sqlalchemy."""
     if not _HAS_SQLALCHEMY:
         raise ImportError(
             "SQLAlchemy is required for workspace persistence: pip install 'gnat[persist]'"
@@ -94,6 +97,7 @@ def _require_sqlalchemy() -> None:
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(timezone.utc)
 
 
@@ -104,7 +108,7 @@ def _utcnow() -> datetime:
 if _HAS_SQLALCHEMY:
 
     class _Base(DeclarativeBase):
-        pass
+        """_Base implementation."""
 
     # ── Workspace ──────────────────────────────────────────────────────────
 
@@ -142,12 +146,15 @@ if _HAS_SQLALCHEMY:
         )
 
         def meta(self) -> dict:
+            """Meta."""
             return json.loads(self.metadata_json or "{}")
 
         def set_meta(self, data: dict) -> None:
+            """Set meta."""
             self.metadata_json = json.dumps(data)
 
         def __repr__(self) -> str:
+            """Return unambiguous string representation."""
             return f"<Workspace name={self.name!r} id={self.id}>"
 
     # ── WorkspaceObject ────────────────────────────────────────────────────
@@ -185,9 +192,11 @@ if _HAS_SQLALCHEMY:
         workspace = relationship("WorkspaceModel", back_populates="objects")
 
         def to_stix_dict(self) -> dict:
+            """Convert this object to STIX DICT format."""
             return json.loads(self.stix_json)
 
         def __repr__(self) -> str:
+            """Return unambiguous string representation."""
             return (
                 f"<WorkspaceObject stix_id={self.stix_id!r} "
                 f"type={self.stix_type!r} dirty={self.is_dirty}>"
@@ -222,9 +231,11 @@ if _HAS_SQLALCHEMY:
         workspace = relationship("WorkspaceModel", back_populates="enrichments")
 
         def enrichment_data(self) -> dict:
+            """Enrichment data."""
             return json.loads(self.enrichment_json)
 
         def __repr__(self) -> str:
+            """Return unambiguous string representation."""
             return f"<EnrichmentLog stix_id={self.stix_id!r} source={self.source_platform!r}>"
 
     # ── GlobalContextModel ─────────────────────────────────────────────────
@@ -246,9 +257,11 @@ if _HAS_SQLALCHEMY:
         created_at = Column(DateTime(timezone=True), default=_utcnow)
 
         def config(self) -> dict:
+            """Config."""
             return json.loads(self.config_json or "{}")
 
         def __repr__(self) -> str:
+            """Return unambiguous string representation."""
             return (
                 f"<GlobalContext name={self.name!r} "
                 f"platform={self.target_platform!r} "
@@ -287,6 +300,7 @@ class WorkspaceStore:
     """
 
     def __init__(self, url: str, echo: bool = False):
+        """Initialize WorkspaceStore."""
         _require_sqlalchemy()
         # Expand ~ in SQLite paths
         if url.startswith("sqlite:///") and "~" in url:
@@ -301,6 +315,7 @@ class WorkspaceStore:
 
             @event.listens_for(self._engine, "connect")
             def _set_wal(dbapi_conn, _rec):
+                """Internal helper for set wal."""
                 dbapi_conn.execute("PRAGMA journal_mode=WAL")
                 dbapi_conn.execute("PRAGMA foreign_keys=ON")
 
@@ -503,6 +518,7 @@ class WorkspaceStore:
             )
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"WorkspaceStore(url={self._url!r})"
 
 
@@ -538,21 +554,26 @@ class FlatFileStore:
     """
 
     def __init__(self, base_dir: str | None = None):
+        """Initialize FlatFileStore."""
         self._base = Path(base_dir or "~/.gnat/workspaces").expanduser()
         self._base.mkdir(parents=True, exist_ok=True)
 
     def _ws_dir(self, name: str) -> Path:
+        """Internal helper for ws dir."""
         return self._base / name
 
     def _objects_dir(self, name: str) -> Path:
+        """Internal helper for objects dir."""
         d = self._ws_dir(name) / "objects"
         d.mkdir(parents=True, exist_ok=True)
         return d
 
     def _meta_path(self, name: str) -> Path:
+        """Internal helper for meta path."""
         return self._ws_dir(name) / "workspace.json"
 
     def _log_path(self, name: str) -> Path:
+        """Internal helper for log path."""
         return self._ws_dir(name) / "enrichment_log.jsonl"
 
     # ── Workspace lifecycle ────────────────────────────────────────────────
@@ -583,6 +604,7 @@ class FlatFileStore:
         return json.loads(p.read_text())
 
     def get_or_create_workspace(self, name: str, **kwargs: Any) -> dict:
+        """Retrieve or create workspace."""
         return self.get_workspace(name) or self.create_workspace(name, **kwargs)
 
     def list_workspaces(self) -> list[dict]:
@@ -642,6 +664,7 @@ class FlatFileStore:
         return result
 
     def get_dirty_objects(self, workspace_name: str) -> list[dict]:
+        """Retrieve dirty objects."""
         objs_dir = self._objects_dir(workspace_name)
         result = []
         for f in sorted(objs_dir.glob("*.json")):
@@ -654,6 +677,7 @@ class FlatFileStore:
         return result
 
     def delete_object(self, workspace_name: str, stix_id: str) -> bool:
+        """Delete the object."""
         safe_id = stix_id.replace("--", "_").replace("/", "_")
         p = self._objects_dir(workspace_name) / f"{safe_id}.json"
         if p.exists():
@@ -662,6 +686,7 @@ class FlatFileStore:
         return False
 
     def object_count(self, workspace_name: str) -> int:
+        """Object count."""
         return len(list(self._objects_dir(workspace_name).glob("*.json")))
 
     # ── Enrichment log ─────────────────────────────────────────────────────
@@ -686,6 +711,7 @@ class FlatFileStore:
             fh.write(json.dumps(entry) + "\n")
 
     def get_enrichment_history(self, workspace_name: str, stix_id: str | None = None) -> list[dict]:
+        """Retrieve enrichment history."""
         log_path = self._log_path(workspace_name)
         if not log_path.exists():
             return []
@@ -712,4 +738,5 @@ class FlatFileStore:
         }
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"FlatFileStore(base_dir={self._base!r})"

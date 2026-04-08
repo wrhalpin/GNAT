@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.agents.quality.cli
+===========================
+
+Cli utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 import argparse
@@ -9,6 +17,7 @@ from .fixture_coverage import FixtureCoverageAgent
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the parser."""
     parser = argparse.ArgumentParser(description="Run GNAT quality agents")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -24,6 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    """Main."""
     parser = build_parser()
     args = parser.parse_args()
 

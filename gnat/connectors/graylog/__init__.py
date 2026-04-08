@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 GNAT Graylog Connector
 ===========================
@@ -50,30 +52,32 @@ import urllib3
 
 
 class GraylogError(Exception):
-    pass
+    """Raised when a graylog error error occurs."""
 
 
 class GraylogConfigError(GraylogError):
-    pass
+    """Raised when a graylog config error error occurs."""
 
 
 class GraylogAuthError(GraylogError):
-    pass
+    """Raised when a graylog auth error error occurs."""
 
 
 class GraylogAPIError(GraylogError):
+    """Raised when a graylog a p i error error occurs."""
     def __init__(self, message, status_code=None, endpoint=None):
+        """Initialize GraylogAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.endpoint = endpoint
 
 
 class GraylogNotFoundError(GraylogAPIError):
-    pass
+    """Raised when a graylog not found error error occurs."""
 
 
 class GraylogSTIXError(GraylogError):
-    pass
+    """Raised when a graylog s t i x error error occurs."""
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -81,6 +85,7 @@ class GraylogSTIXError(GraylogError):
 
 @dataclass
 class GraylogConfig:
+    """Configuration container for graylog."""
     url: str
     username: str
     password: str
@@ -91,6 +96,7 @@ class GraylogConfig:
     auth_header: str = field(init=False)
 
     def __post_init__(self):
+        """Post-init setup for GraylogConfig."""
         if not self.url:
             raise GraylogConfigError("'url' required in [graylog].")
         if not self.username:
@@ -102,10 +108,12 @@ class GraylogConfig:
         self.auth_header = f"Basic {creds}"
 
     def endpoint(self, path: str) -> str:
+        """Endpoint."""
         return f"{self.base_url}/api/{path.lstrip('/')}"
 
     @property
     def base_headers(self) -> dict:
+        """Base headers."""
         return {
             "Authorization": self.auth_header,
             "Accept": "application/json",
@@ -121,6 +129,7 @@ class GraylogConfig:
 def load_graylog_config(
     config: configparser.ConfigParser, section: str = "graylog"
 ) -> GraylogConfig:
+    """Load graylog config from the configured source."""
     if not config.has_section(section):
         raise GraylogConfigError(f"Section '[{section}]' not found.")
     raw = {
@@ -154,35 +163,43 @@ class GraylogClient:
     _RETRYABLE = {500, 502, 503, 504}
 
     def __init__(self, config: GraylogConfig):
+        """Initialize GraylogClient."""
         self.config = config
         self._http = self._build_pool()
 
     def __enter__(self):
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_):
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self):
+        """Release resources and close any open connections."""
         self._http.clear()
 
     def get(self, path: str, params: dict | None = None) -> dict | list:
+        """Get."""
         url = self.config.endpoint(path)
         if params:
             url += "?" + urllib.parse.urlencode(params)
         return self._request("GET", url, headers=self.config.base_headers)
 
     def post(self, path: str, body: dict | None = None) -> dict | list:
+        """Post."""
         return self._request(
             "POST", self.config.endpoint(path), body=body, headers=self.config.write_headers
         )
 
     def put(self, path: str, body: dict | None = None) -> dict | list:
+        """Put."""
         return self._request(
             "PUT", self.config.endpoint(path), body=body, headers=self.config.write_headers
         )
 
     def delete(self, path: str) -> dict:
+        """Delete."""
         return self._request(
             "DELETE", self.config.endpoint(path), headers=self.config.write_headers
         )
@@ -216,6 +233,7 @@ class GraylogClient:
                 break
 
     def _build_pool(self) -> urllib3.PoolManager:
+        """Internal helper for build pool."""
         kw = {
             "num_pools": 4,
             "maxsize": 10,
@@ -232,6 +250,7 @@ class GraylogClient:
     def _request(
         self, method: str, url: str, body: dict | None = None, headers: dict | None = None
     ) -> dict | list:
+        """Internal helper for request."""
         hdrs = headers or self.config.base_headers
         encoded = json.dumps(body).encode() if body else None
         delay = 1.0
@@ -272,6 +291,7 @@ class GraylogSearchCommands:
     """Log message search operations."""
 
     def __init__(self, client: GraylogClient):
+        """Initialize GraylogSearchCommands."""
         self._client = client
 
     def search(
@@ -432,22 +452,28 @@ class GraylogStreamCommands:
     """Stream management operations."""
 
     def __init__(self, client: GraylogClient):
+        """Initialize GraylogStreamCommands."""
         self._client = client
 
     def list_streams(self) -> list[dict]:
+        """List all streams objects."""
         result = self._client.get("streams")
         return result.get("streams", [])
 
     def get_stream(self, stream_id: str) -> dict:
+        """Retrieve stream."""
         return self._client.get(f"streams/{stream_id}")
 
     def pause_stream(self, stream_id: str) -> dict:
+        """Pause stream."""
         return self._client.post(f"streams/{stream_id}/pause")
 
     def resume_stream(self, stream_id: str) -> dict:
+        """Resume stream."""
         return self._client.post(f"streams/{stream_id}/resume")
 
     def get_stream_throughput(self, stream_id: str) -> dict:
+        """Retrieve stream throughput."""
         return self._client.get(f"streams/{stream_id}/throughput")
 
 
@@ -458,26 +484,32 @@ class GraylogSystemCommands:
     """Cluster and system health operations."""
 
     def __init__(self, client: GraylogClient):
+        """Initialize GraylogSystemCommands."""
         self._client = client
 
     def get_system_info(self) -> dict:
+        """Retrieve system info."""
         return self._client.get("system")
 
     def get_cluster_nodes(self) -> list[dict]:
+        """Retrieve cluster nodes."""
         result = self._client.get("system/cluster/nodes")
         return result.get("nodes", [])
 
     def get_inputs(self) -> list[dict]:
+        """Retrieve inputs."""
         result = self._client.get("system/inputs")
         return result.get("inputs", [])
 
     def get_metrics(self, namespace: str = "") -> dict:
+        """Retrieve metrics."""
         path = "system/metrics"
         if namespace:
             path += f"/namespace/{namespace}"
         return self._client.get(path)
 
     def get_throughput(self) -> dict:
+        """Retrieve throughput."""
         return self._client.get("system/throughput")
 
 
@@ -488,9 +520,11 @@ class GraylogAlertCommands:
     """Alert and event notification operations."""
 
     def __init__(self, client: GraylogClient):
+        """Initialize GraylogAlertCommands."""
         self._client = client
 
     def list_alerts(self, state: str | None = None, limit: int | None = None) -> list[dict]:
+        """List all alerts objects."""
         params: dict = {"limit": limit or self._client.config.max_results}
         if state:
             params["state"] = state
@@ -498,6 +532,7 @@ class GraylogAlertCommands:
         return result.get("event_definitions", [])
 
     def get_alert(self, alert_id: str) -> dict:
+        """Retrieve alert."""
         return self._client.get(f"events/definitions/{alert_id}")
 
     def list_alert_events(self, limit: int | None = None) -> list[dict]:
@@ -574,6 +609,7 @@ class GraylogSTIXMapper:
         }
 
     def messages_to_stix_bundle(self, messages: list[dict]) -> dict:
+        """Messages to stix bundle."""
         all_objects: list[dict] = []
         seen: set[str] = set()
         for m in messages:
@@ -590,8 +626,10 @@ class GraylogSTIXMapper:
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.reporting.models
 ======================
@@ -33,7 +35,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from gnat.analysis.confidence import ConfidenceLevel, ConfidenceScore
+from gnat.analysis.confidence import ConfidenceScore
 from gnat.analysis.tlp import TLPLevel
 
 
@@ -79,10 +81,12 @@ REPORT_TRANSITIONS: dict[ReportStatus, frozenset[ReportStatus]] = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _now() -> datetime:
+    """Internal helper for now."""
     return datetime.now(tz=timezone.utc)
 
 
 def _uuid() -> str:
+    """Internal helper for uuid."""
     return str(uuid.uuid4())
 
 
@@ -120,6 +124,7 @@ class EvidenceLink:
     confidence:      ConfidenceScore | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "id":              self.id,
             "statement":       self.statement,
@@ -132,6 +137,7 @@ class EvidenceLink:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "EvidenceLink":
+        """Create an instance from DICT data."""
         return cls(
             id              = data["id"],
             statement       = data["statement"],
@@ -170,6 +176,7 @@ class Finding:
     mitre_techniques:    list[str]            = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "id":                  self.id,
             "statement":           self.statement,
@@ -180,6 +187,7 @@ class Finding:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Finding":
+        """Create an instance from DICT data."""
         return cls(
             id                  = data["id"],
             statement           = data["statement"],
@@ -216,6 +224,7 @@ class Attribution:
     mitre_group_id:    str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "threat_actor_name": self.threat_actor_name,
             "confidence":        self.confidence.to_dict(),
@@ -226,6 +235,7 @@ class Attribution:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Attribution":
+        """Create an instance from DICT data."""
         return cls(
             threat_actor_name = data["threat_actor_name"],
             confidence        = ConfidenceScore.from_dict(data["confidence"]),
@@ -255,10 +265,12 @@ class ReportSection:
     order:   int   = 0
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {"title": self.title, "content": self.content, "order": self.order}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ReportSection":
+        """Create an instance from DICT data."""
         return cls(
             title   = data["title"],
             content = data.get("content", ""),
@@ -288,6 +300,7 @@ class ChangelogEntry:
     changed_at: datetime = field(default_factory=_now)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this object to DICT format."""
         return {
             "version":    self.version,
             "changed_by": self.changed_by,
@@ -297,6 +310,7 @@ class ChangelogEntry:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ChangelogEntry":
+        """Create an instance from DICT data."""
         return cls(
             version    = data["version"],
             changed_by = data["changed_by"],

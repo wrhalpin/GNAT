@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Agent helper for using the Copilot connector inside GNAT AI workflows.
 
 This is intentionally lightweight: it wraps CopilotClient and exposes a
@@ -23,6 +25,7 @@ class CopilotConnectorAgent:
         azure_token: str = "",
         model: str = "copilot-latest",
     ) -> None:
+        """Initialize CopilotConnectorAgent."""
         self.client = CopilotClient(
             host=host,
             auth_type=auth_type,

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.ingest.pipeline.pipeline
 ==================================
@@ -85,6 +87,7 @@ class IngestPipeline:
     """
 
     def __init__(self, name: str = ""):
+        """Initialize IngestPipeline."""
         self._name = name
         self._reader: SourceReader | None = None
         self._mapper: RecordMapper | None = None
@@ -332,20 +335,24 @@ class IngestPipeline:
     # ------------------------------------------------------------------
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         if self._reader is None:
             raise RuntimeError("IngestPipeline: no reader configured. Call .read_from() first.")
         if self._mapper is None:
             raise RuntimeError("IngestPipeline: no mapper configured. Call .map_with() first.")
 
     def _passes_filters(self, obj: STIXBase) -> bool:
+        """Internal helper for passes filters."""
         return all(f(obj) for f in self._filters)
 
     def _apply_transforms(self, obj: STIXBase) -> STIXBase:
+        """Internal helper for apply transforms."""
         for fn in self._transforms:
             obj = fn(obj)
         return obj
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return (
             f"IngestPipeline(name={self._name!r}, reader={self._reader!r}, mapper={self._mapper!r})"
         )

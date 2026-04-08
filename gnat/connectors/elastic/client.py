@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.elastic.client
 
@@ -82,6 +84,7 @@ class ElasticClient:
     """
 
     def __init__(self, config: ElasticConfig) -> None:
+        """Initialize ElasticClient."""
         self.config = config
         self._http = self._build_pool_manager()
         self.auth = ElasticAuthManager(config, self._http)
@@ -89,9 +92,11 @@ class ElasticClient:
     # ── Context manager ───────────────────────────────────────────────────
 
     def __enter__(self) -> "ElasticClient":
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self) -> None:
@@ -438,6 +443,7 @@ class ElasticClient:
     # ── Internal ───────────────────────────────────────────────────────────
 
     def _build_pool_manager(self) -> urllib3.PoolManager:
+        """Internal helper for build pool manager."""
         kwargs: dict = {
             "num_pools": 4,
             "maxsize": 10,
@@ -647,6 +653,7 @@ class ElasticClient:
 
     @staticmethod
     def _parse_json(data: bytes, url: str) -> dict:
+        """Internal helper for parse json."""
         try:
             return json.loads(data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -657,6 +664,7 @@ class ElasticClient:
 
     @staticmethod
     def _safe_parse(data: bytes) -> dict:
+        """Internal helper for safe parse."""
         try:
             return json.loads(data.decode("utf-8"))
         except Exception:

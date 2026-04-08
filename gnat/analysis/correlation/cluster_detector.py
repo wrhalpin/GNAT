@@ -83,7 +83,7 @@ class Cluster:
     member_ids:         list[str]
     signals:            list[str]         = field(default_factory=list)
     confidence:         ConfidenceScore   = field(
-                            default_factory=lambda: ConfidenceScore.low()
+                            default_factory=ConfidenceScore.low
                         )
     suggested_actor:    str | None        = None
     suggested_campaign: str | None        = None

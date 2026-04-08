@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.agents
 
@@ -49,6 +51,7 @@ class WazuhAgentCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhAgentCommands."""
         self._client = client
 
     # ── Listing and retrieval ──────────────────────────────────────────────

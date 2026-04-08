@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.agents.security.secrets.broker
+=======================================
+
+Broker utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 from urllib.parse import parse_qs, urlparse
@@ -10,17 +18,20 @@ from .providers.base import SecretProvider
 
 
 class SecretsBroker:
+    """SecretsBroker implementation."""
     def __init__(
         self,
         providers: dict[str, SecretProvider],
         policy: SecretPolicyEngine,
         audit: InMemoryAuditRecorder | None = None,
     ) -> None:
+        """Initialize SecretsBroker."""
         self.providers = providers
         self.policy = policy
         self.audit = audit or InMemoryAuditRecorder()
 
     def parse_ref(self, uri: str) -> SecretRef:
+        """Parse ref from raw input."""
         parsed = urlparse(uri)
         params = parse_qs(parsed.query)
         return SecretRef(
@@ -31,6 +42,7 @@ class SecretsBroker:
         )
 
     def resolve(self, ref: SecretRef, *, caller: str) -> SecretValue:
+        """Resolve the value from available sources."""
         decision = self.policy.decide(ref, action="resolve", caller=caller)
         self.audit.record(
             action="resolve",
@@ -48,6 +60,7 @@ class SecretsBroker:
         return provider.resolve(ref)
 
     def store(self, request: StoreSecretRequest, *, caller: str) -> SecretVersionInfo:
+        """Store."""
         decision = self.policy.decide(
             request.ref, action="store", caller=caller, overwrite=request.allow_overwrite
         )
@@ -74,6 +87,7 @@ class SecretsBroker:
         return provider.store(request)
 
     def checkout(self, ref: SecretRef, *, caller: str):
+        """Checkout."""
         decision = self.policy.decide(ref, action="checkout", caller=caller)
         self.audit.record(
             action="checkout",
@@ -91,6 +105,7 @@ class SecretsBroker:
         return provider.checkout(ref)
 
     def _provider(self, name: str) -> SecretProvider:
+        """Internal helper for provider."""
         if name not in self.providers:
             raise SecretProviderError(f"unknown provider: {name}")
         return self.providers[name]

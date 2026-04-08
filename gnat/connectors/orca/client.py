@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.orca.client
 ===========================
@@ -75,6 +77,7 @@ class OrcaClient(BaseClient, ConnectorMixin):
     def __init__(
         self, host: str = "https://api.orcasecurity.io", api_token: str = "", **kwargs: Any
     ):
+        """Initialize OrcaClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 
@@ -94,6 +97,7 @@ class OrcaClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "vulnerability":
             return self.get(f"/v1/findings/{object_id}")
         if stix_type == "report":
@@ -107,6 +111,7 @@ class OrcaClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -119,9 +124,11 @@ class OrcaClient(BaseClient, ConnectorMixin):
         return resp.get("assets", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Orca connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -171,12 +178,14 @@ class OrcaClient(BaseClient, ConnectorMixin):
         return self._asset_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Orca is read-only for cloud risk and asset data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _finding_to_stix(self, finding: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for finding to stix."""
         now = _now_ts()
         fid = finding.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'orca:{fid}')}"
@@ -200,6 +209,7 @@ class OrcaClient(BaseClient, ConnectorMixin):
         }
 
     def _asset_to_stix(self, asset: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for asset to stix."""
         now = _now_ts()
         aid = asset.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'asset:{aid}')}"

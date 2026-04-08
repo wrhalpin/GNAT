@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.cribl.client
 ====================================
@@ -83,6 +85,7 @@ class CriblClient(BaseClient, ConnectorMixin):
         worker_group: str = "default",
         **kwargs: Any,
     ) -> None:
+        """Initialize CriblClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password

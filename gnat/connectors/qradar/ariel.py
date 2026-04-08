@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.ariel
 ==================================
@@ -100,6 +102,7 @@ class QRadarArielCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarArielCommands."""
         self._client = client
 
     # ── High-level search helpers ──────────────────────────────────────────

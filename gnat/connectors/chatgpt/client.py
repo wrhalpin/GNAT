@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.chatgpt.client
 ==============================
@@ -71,6 +73,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.openai.com", api_key: str = "", **kwargs: Any):
+        """Initialize ChatGPTClient."""
         super().__init__(host=host.rstrip("/"), **kwargs)
         self._api_key = api_key
 

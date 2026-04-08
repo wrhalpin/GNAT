@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.virustotal.client
 ======================================
@@ -67,6 +69,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://www.virustotal.com", api_key: str = "", **kwargs: Any):
+        """Initialize VirusTotalClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -75,6 +78,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         self._auth_headers["x-apikey"] = self._api_key
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         resp = self.get("/api/v3/domains/google.com", params={"fields": "id,type"})
         return isinstance(resp, dict) and "data" in resp
 
@@ -134,6 +138,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         return data if isinstance(data, list) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError(
             "VirusTotal API is read-only — upsert not supported. "
             "Use VT Intelligence to submit files: "
@@ -141,6 +146,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("VirusTotal API is read-only — delete not supported.")
 
     # ── STIX translation ───────────────────────────────────────────────────

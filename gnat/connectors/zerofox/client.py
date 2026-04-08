@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.zerofox.client
 ==============================
@@ -72,6 +74,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.zerofox.com", token: str = "", **kwargs: Any):
+        """Initialize ZeroFoxClient."""
         super().__init__(host=host, **kwargs)
         self._token = token
 
@@ -91,6 +94,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "report":
             return self.get(f"/v1/alerts/{object_id}")
         if stix_type == "indicator":
@@ -105,6 +109,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -118,9 +123,11 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("ZeroFox connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -158,12 +165,14 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         return self._alert_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "ZeroFox is read-only for brand protection and CTI data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         now = _now_ts()
         aid = alert.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'zerofox:{aid}')}"
@@ -186,6 +195,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         }
 
     def _threat_to_stix(self, threat: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for threat to stix."""
         now = _now_ts()
         tid = threat.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'zerofox:{tid}')}"

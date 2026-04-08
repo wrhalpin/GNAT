@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.splunk.search
 
@@ -53,6 +55,7 @@ class SplunkSearchCommands:
     """
 
     def __init__(self, client: SplunkClient) -> None:
+        """Initialize SplunkSearchCommands."""
         self._client = client
 
     # ── High-level convenience ─────────────────────────────────────────────

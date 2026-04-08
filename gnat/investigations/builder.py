@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.investigations.builder
 ==============================
@@ -100,6 +102,7 @@ class InvestigationBuilder:
     """
 
     def __init__(self, connectors: dict[str, Any]) -> None:
+        """Initialize InvestigationBuilder."""
         self._connectors = connectors
 
     # ── Public API ────────────────────────────────────────────────────────
@@ -159,6 +162,7 @@ class InvestigationBuilder:
     # ── Step 1: seed expansion ────────────────────────────────────────────
 
     def _expand_seed(self, graph: EvidenceGraph, seed: Seed) -> None:
+        """Internal helper for expand seed."""
         for platform, connector in self._connectors.items():
             if seed.hint_platform and seed.hint_platform != platform:
                 continue
@@ -172,6 +176,7 @@ class InvestigationBuilder:
         connector: Any,
     ) -> None:
         # ── IOC / indicator value search ──────────────────────────────────
+        """Internal helper for query seed on platform."""
         if seed.seed_type in _IOC_SEED_TYPES:
             # Prefer platform-specific value-search methods
             if hasattr(connector, "search_indicators_by_value"):
@@ -214,6 +219,7 @@ class InvestigationBuilder:
     # ── Step 2: incident expansion ────────────────────────────────────────
 
     def _expand_incident(self, graph: EvidenceGraph, node: EvidenceNode) -> None:
+        """Internal helper for expand incident."""
         connector = self._connectors.get(node.platform)
         if connector is None:
             return
@@ -241,6 +247,7 @@ class InvestigationBuilder:
         connector: Any,
         inc_id: str,
     ) -> None:
+        """Internal helper for expand xsoar incident."""
         if hasattr(connector, "get_incident_alerts"):
             for r in _safe_call(connector.get_incident_alerts, inc_id):
                 child = normalize(parent.platform, "alert", r)
@@ -269,6 +276,7 @@ class InvestigationBuilder:
         connector: Any,
         case_id: str,
     ) -> None:
+        """Internal helper for expand gm incident."""
         if hasattr(connector, "get_investigation_observables"):
             for r in _safe_call(connector.get_investigation_observables, case_id):
                 child = normalize(parent.platform, "observable", r)
@@ -290,6 +298,7 @@ class InvestigationBuilder:
         connector: Any,
         event_id: str,
     ) -> None:
+        """Internal helper for expand tq event."""
         if hasattr(connector, "get_event_indicators"):
             for r in _safe_call(connector.get_event_indicators, event_id):
                 child = normalize(parent.platform, "indicator", r)
@@ -311,6 +320,7 @@ class InvestigationBuilder:
         connector: Any,
         case_id: str,
     ) -> None:
+        """Internal helper for expand hive case."""
         if hasattr(connector, "get_case_observables"):
             for r in _safe_call(connector.get_case_observables, case_id):
                 child = normalize(parent.platform, "observable", r)
@@ -332,6 +342,7 @@ class InvestigationBuilder:
         connector: Any,
         incident_sys_id: str,
     ) -> None:
+        """Internal helper for expand sn secops incident."""
         if hasattr(connector, "get_incident_tasks"):
             for r in _safe_call(connector.get_incident_tasks, incident_sys_id):
                 child = normalize(parent.platform, "task", r)
@@ -353,6 +364,7 @@ class InvestigationBuilder:
         connector: Any,
         incident_id: str,
     ) -> None:
+        """Internal helper for expand xdr incident."""
         if hasattr(connector, "get_incident_alerts"):
             for r in _safe_call(connector.get_incident_alerts, incident_id):
                 child = normalize(parent.platform, "alert", r)
@@ -376,6 +388,7 @@ class InvestigationBuilder:
         record_type: str,
         results: list[dict[str, Any]] | None,
     ) -> None:
+        """Internal helper for collect."""
         if not results:
             return
         for raw in results:

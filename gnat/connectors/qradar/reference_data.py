@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.reference_data
 ==========================================
@@ -58,6 +60,7 @@ class QRadarReferenceDataCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarReferenceDataCommands."""
         self._client = client
 
     # ── Reference Sets ─────────────────────────────────────────────────────

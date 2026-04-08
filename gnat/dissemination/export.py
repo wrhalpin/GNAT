@@ -22,7 +22,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum

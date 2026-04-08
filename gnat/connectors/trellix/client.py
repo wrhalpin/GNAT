@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.trellix.client
 ================================
@@ -81,6 +83,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         iam_url: str = _DEFAULT_IAM,
         **kwargs: Any,
     ) -> None:
+        """Initialize TrellixClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
@@ -238,6 +241,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         }
 
     def _ioc_to_stix(self, ioc: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for ioc to stix."""
         now = _now_ts()
         ioc_id = str(ioc.get("id", ""))
         value = ioc.get("value", "")
@@ -267,6 +271,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         }
 
     def _threat_to_stix(self, threat: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for threat to stix."""
         now = _now_ts()
         tid = str(threat.get("id", ""))
         return {
@@ -288,6 +293,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         }
 
     def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         now = _now_ts()
         vid = str(vuln.get("id", ""))
         return {

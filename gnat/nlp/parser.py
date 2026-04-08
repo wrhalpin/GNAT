@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.nlp.parser
 =================
@@ -63,6 +65,7 @@ class NLPQueryEngine:
         claude_config: Any | None = None,
         default_limit: int = 100,
     ) -> None:
+        """Initialize NLPQueryEngine."""
         self._backend_name = backend
         self._default_limit = default_limit
         self._parser = self._build_parser(backend, claude_config)
@@ -193,6 +196,7 @@ class NLPQueryEngine:
 
     @staticmethod
     def _build_parser(backend: str, claude_config: Any | None) -> Any:
+        """Internal helper for build parser."""
         if backend == "claude":
             if claude_config is None:
                 raise ValueError("NLPQueryEngine: backend='claude' requires claude_config")

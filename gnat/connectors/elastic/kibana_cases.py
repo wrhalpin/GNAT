@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.elastic.kibana_cases
 
@@ -42,6 +44,7 @@ class KibanaCasesCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize KibanaCasesCommands."""
         self._client = client
 
     # ── Case CRUD ──────────────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.prisma_cloud.client
 ======================================
@@ -61,6 +63,7 @@ _STIX_NS = _uuid.UUID("c2d3e4f5-a6b7-8901-bcde-f01234567890")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -91,6 +94,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         secret_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize PrismaCloudClient."""
         super().__init__(host=host, **kwargs)
         self._access_key_id = access_key_id
         self._secret_key = secret_key
@@ -251,6 +255,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         return self._alert_to_stix(native)
 
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"prisma-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25, "informational": 10}
@@ -303,6 +308,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         return stix
 
     def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         cve_id = vuln.get("cveId", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"prisma-cve-{cve_id}"))
         cvss = vuln.get("cvssScore", 0.0)
@@ -330,6 +336,7 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         }
 
     def _compliance_to_stix(self, report: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for compliance to stix."""
         standard = report.get("name", "Prisma Compliance Report")
         uid = str(_uuid.uuid5(_STIX_NS, f"prisma-compliance-{standard}"))
         ts = report.get("scanTime", _now_ts())

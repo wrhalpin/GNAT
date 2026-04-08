@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.context.workspace
 ==========================
@@ -126,6 +128,7 @@ class Workspace:
         store: Any,  # WorkspaceStore | FlatFileStore
         description: str = "",
     ):
+        """Initialize Workspace."""
         self.name = name
         self.description = description
         self._registry = registry
@@ -657,6 +660,7 @@ class Workspace:
     def _add_object(
         self, stix_dict: dict, source_platform: str = "", mark_dirty: bool = False
     ) -> STIXBase:
+        """Internal helper for add object."""
         obj = self._from_dict(stix_dict)
         self.objects[obj.id] = obj
         if mark_dirty:
@@ -670,6 +674,7 @@ class Workspace:
     def _persist_object(
         self, stix_dict: dict, source_platform: str = "", mark_dirty: bool = False
     ) -> None:
+        """Internal helper for persist object."""
         from gnat.context.store import WorkspaceStore
 
         if isinstance(self._store, WorkspaceStore):
@@ -682,6 +687,7 @@ class Workspace:
             )
 
     def _log_enrichment(self, stix_id: str, source: str, data: dict, strategy: str) -> None:
+        """Internal helper for log enrichment."""
         from gnat.context.store import WorkspaceStore
 
         if isinstance(self._store, WorkspaceStore):
@@ -690,17 +696,20 @@ class Workspace:
             self._store.log_enrichment(self.name, stix_id, source, data, strategy)
 
     def _mark_clean(self) -> None:
+        """Internal helper for mark clean."""
         from gnat.context.store import WorkspaceStore
 
         if isinstance(self._store, WorkspaceStore):
             self._store.mark_clean(self._ws_id)
 
     def _resolve_source(self, name: str | None) -> GlobalContext:
+        """Internal helper for resolve source."""
         if name:
             return self._registry.get(name)
         return self._registry.default
 
     def _resolve_target(self, name: str | None) -> GlobalContext:
+        """Internal helper for resolve target."""
         gc = self._registry.get(name) if name else self._registry.default
         if gc.read_only:
             raise PermissionError(
@@ -734,12 +743,15 @@ class Workspace:
     # ── Dunder ──────────────────────────────────────────────────────────────
 
     def __len__(self) -> int:
+        """Return the number of items."""
         return len(self.objects)
 
     def __iter__(self) -> Iterator[STIXBase]:
+        """Iterate over items."""
         return iter(self.objects.values())
 
     def __contains__(self, stix_id: str) -> bool:
+        """Check membership."""
         return stix_id in self.objects
 
     def get(self, stix_id: str) -> STIXBase | None:
@@ -765,6 +777,7 @@ class Workspace:
         return result
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"Workspace(name={self.name!r}, objects={len(self)}, dirty={len(self.dirty)})"
 
 
@@ -777,6 +790,7 @@ class CommitResult:
     """Summary of a :meth:`Workspace.commit` operation."""
 
     def __init__(self, workspace_name: str, target_platform: str, dry_run: bool):
+        """Initialize CommitResult."""
         self.workspace_name = workspace_name
         self.target_platform = target_platform
         self.dry_run = dry_run
@@ -787,9 +801,11 @@ class CommitResult:
 
     @property
     def success(self) -> bool:
+        """Success."""
         return len(self.errors) == 0
 
     def __str__(self) -> str:  # pragma: no cover
+        """Return human-readable string representation."""
         if self.dry_run:
             return (
                 f"CommitResult(dry_run, workspace={self.workspace_name!r}, "
@@ -846,6 +862,7 @@ class WorkspaceManager:
         registry: GlobalContextRegistry,
         store: Any = None,
     ):
+        """Initialize WorkspaceManager."""
         self._registry = registry
         self._store = store or self._default_store()
 
@@ -1014,6 +1031,7 @@ class WorkspaceManager:
 
     @staticmethod
     def _default_store(db_url: str | None = None) -> Any:
+        """Internal helper for default store."""
         from gnat.context.store import FlatFileStore, WorkspaceStore
 
         if _HAS_SQLALCHEMY := WorkspaceStore.__module__ != "builtins":
@@ -1029,4 +1047,5 @@ class WorkspaceManager:
         return FlatFileStore()
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"WorkspaceManager(registry={self._registry!r}, store={self._store!r})"

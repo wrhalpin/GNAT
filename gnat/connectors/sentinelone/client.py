@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinelone.client
 ==================================
@@ -74,6 +76,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, token: str = "", **kwargs: Any):
+        """Initialize SentinelOneClient."""
         super().__init__(host=host, **kwargs)
         self._token = token
 
@@ -93,6 +96,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type in ("indicator", "report"):
             return self.get(f"/web/api/v2.1/threats/{object_id}")
         raise GNATClientError(f"Unsupported STIX type for SentinelOne: {stix_type}")
@@ -104,6 +108,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         # Add common filters (e.g., created_after, threat_level)
@@ -116,11 +121,13 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"list_objects not supported for STIX type: {stix_type}")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError(
             "SentinelOne connector is primarily read-only (limited write via blacklist)."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not directly supported in this connector.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -154,12 +161,14 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         return self._agent_to_stix(native)  # fallback for asset context
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "SentinelOne is primarily read-only for threat intel. Use get_hash_reputation or add_to_blocklist for actions.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _threat_to_stix(self, threat: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for threat to stix."""
         now = _now_ts()
         tid = threat.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f's1:{tid}')}"
@@ -187,6 +196,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         }
 
     def _agent_to_stix(self, agent: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for agent to stix."""
         now = _now_ts()
         aid = agent.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'agent:{aid}')}"

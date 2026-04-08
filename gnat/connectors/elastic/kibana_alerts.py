@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.elastic.kibana_alerts
 
@@ -52,6 +54,7 @@ class KibanaAlertsCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize KibanaAlertsCommands."""
         self._client = client
 
     # ── Query alerts ───────────────────────────────────────────────────────

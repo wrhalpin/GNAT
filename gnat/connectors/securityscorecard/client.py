@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.securityscorecard.client
 =========================================
@@ -59,6 +61,7 @@ _STIX_NS = _uuid.UUID("e5f6a7b8-c9d0-1234-ef01-345678901234")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -86,6 +89,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize SecurityScorecardClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -160,9 +164,11 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"Unsupported STIX type for SecurityScorecard: {stix_type}")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("SecurityScorecard API is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("SecurityScorecard API is read-only — delete not supported.")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
@@ -226,6 +232,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         return self._score_to_stix(native)
 
     def _score_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for score to stix."""
         domain = native.get("domain", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"ssc-score-{domain}"))
         score = native.get("score", 0)
@@ -252,6 +259,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         }
 
     def _issue_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for issue to stix."""
         issue_id = native.get("id", "")
         issue_type = native.get("type", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"ssc-issue-{issue_id or issue_type}"))
@@ -275,6 +283,7 @@ class SecurityScorecardClient(BaseClient, ConnectorMixin):
         }
 
     def _portfolio_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for portfolio to stix."""
         portfolio_id = native.get("id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"ssc-portfolio-{portfolio_id}"))
         return {

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.google_chronicle.client
 =======================================
@@ -88,6 +90,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         project_id: str = "",
         **kwargs: Any,
     ):
+        """Initialize GoogleChronicleClient."""
         super().__init__(host=host, **kwargs)
         if isinstance(service_account, str) and service_account:
             with open(service_account, encoding="utf-8") as f:
@@ -153,6 +156,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion support is limited in Chronicle API.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────

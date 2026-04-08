@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.agents.security.hygiene.unsafe_patterns
+================================================
+
+Unsafe patterns utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,13 +14,16 @@ from typing import Any
 
 @dataclass
 class UnsafePatternFinding:
+    """UnsafePatternFinding implementation."""
     location: str
     rule: str
     message: str
 
 
 class UnsafePatternDetector:
+    """UnsafePatternDetector implementation."""
     def inspect_connector_config(self, config: dict[str, Any]) -> list[UnsafePatternFinding]:
+        """Inspect connector config."""
         findings: list[UnsafePatternFinding] = []
         credentials = config.get("credentials", {})
         if not isinstance(credentials, dict):

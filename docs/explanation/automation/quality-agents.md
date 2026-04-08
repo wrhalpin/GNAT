@@ -60,3 +60,7 @@ In GNAT, a connector that still runs but emits the wrong meaning is more dangero
 - Fail hard on semantic drift unless explicitly approved.
 - Run contract checks on all connector PRs.
 - Use fixture coverage results as a policy input, not an immediate hard failure, until baseline coverage improves.
+
+---
+
+*Licensed under the Apache License, Version 2.0*

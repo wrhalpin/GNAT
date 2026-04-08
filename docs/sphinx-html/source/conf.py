@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Sphinx configuration for GNAT documentation."""
 
 import os
@@ -18,6 +20,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
     "sphinx_copybutton",
+    "sphinxcontrib.mermaid",
 ]
 
 napoleon_numpy_docstring = True

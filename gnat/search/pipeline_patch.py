@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.ingest.pipeline.pipeline  (search-integrated version)
 =============================================================
@@ -81,6 +83,7 @@ class IngestPipeline:
     """
 
     def __init__(self, name: str = ""):
+        """Initialize IngestPipeline."""
         self._name = name
         self._reader: SourceReader | None = None
         self._mapper: RecordMapper | None = None
@@ -98,26 +101,32 @@ class IngestPipeline:
     # ------------------------------------------------------------------
 
     def read_from(self, reader: SourceReader) -> IngestPipeline:
+        """Read from."""
         self._reader = reader
         return self
 
     def map_with(self, mapper: RecordMapper) -> IngestPipeline:
+        """Map with to the target schema."""
         self._mapper = mapper
         return self
 
     def write_to(self, client: GNATClient) -> IngestPipeline:
+        """Write to."""
         self._client = client
         return self
 
     def deduplicate(self, key_fields: list[str] | None = None) -> IngestPipeline:
+        """Deduplicate."""
         self._dedup = DeduplicationCache(key_fields)
         return self
 
     def filter(self, predicate: Callable[[STIXBase], bool]) -> IngestPipeline:
+        """Filter the collection by configured criteria."""
         self._filters.append(predicate)
         return self
 
     def transform(self, fn: Callable[[STIXBase], STIXBase]) -> IngestPipeline:
+        """Transform the input data."""
         self._transforms.append(fn)
         return self
 
@@ -236,20 +245,24 @@ class IngestPipeline:
     # ------------------------------------------------------------------
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         if self._reader is None:
             raise RuntimeError("IngestPipeline: no reader configured. Call .read_from() first.")
         if self._mapper is None:
             raise RuntimeError("IngestPipeline: no mapper configured. Call .map_with() first.")
 
     def _passes_filters(self, obj: STIXBase) -> bool:
+        """Internal helper for passes filters."""
         return all(f(obj) for f in self._filters)
 
     def _apply_transforms(self, obj: STIXBase) -> STIXBase:
+        """Internal helper for apply transforms."""
         for fn in self._transforms:
             obj = fn(obj)
         return obj
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return (
             f"IngestPipeline(name={self._name!r}, reader={self._reader!r}, mapper={self._mapper!r})"
         )
@@ -264,10 +277,12 @@ class _SearchAwareIngestResult(IngestResult):
     """
 
     def __init__(self, source_id: str = ""):
+        """Initialize _SearchAwareIngestResult."""
         super().__init__(source_id=source_id)
         self.indexed_objects: int = 0
         self.index_errors: int = 0
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         base = super().__str__()
         return f"{base} | indexed={self.indexed_objects} index_errors={self.index_errors}"

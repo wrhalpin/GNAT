@@ -68,3 +68,7 @@ print(scheduler.summary())
 - [How-to: Export Indicators](export-indicators.md)
 - [How-to: Generate Reports](generate-reports.md)
 - [Explanation: Feed Scheduling](../explanation/architecture/adrs/0016-feed-scheduling.md)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

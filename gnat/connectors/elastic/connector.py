@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.elastic.connector
 ==================================
@@ -64,6 +66,7 @@ class ElasticConnector(BaseClient, ConnectorMixin):
         timeout: float = 30.0,
         **kwargs,
     ) -> None:
+        """Initialize ElasticConnector."""
         super().__init__(host=host, verify_ssl=verify_ssl, timeout=timeout)
         cfg = ElasticConfig(
             api_key_id=api_key_id,

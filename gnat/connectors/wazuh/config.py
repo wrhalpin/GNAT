@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.config
 
@@ -121,6 +123,7 @@ class WazuhConfig:
     indexer_url: str = field(init=False)
 
     def __post_init__(self) -> None:
+        """Post-init setup for WazuhConfig."""
         self.base_url = f"{self.scheme}://{self.host}:{self.port}"
         _idx_host = self.indexer_host or self.host
         self.indexer_url = f"{self.scheme}://{_idx_host}:{self.indexer_port}"
@@ -129,6 +132,7 @@ class WazuhConfig:
         self._validate()
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         if not self.host:
             raise WazuhConfigError("'host' is required in [wazuh] config.")
         if not self.username:
@@ -199,6 +203,7 @@ def load_wazuh_config(
         )
 
     def _bool(val: str) -> bool:
+        """Internal helper for bool."""
         return val.strip().lower() in ("true", "1", "yes")
 
     return WazuhConfig(

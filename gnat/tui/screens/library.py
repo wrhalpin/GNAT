@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.tui.screens.library
 ==========================
@@ -68,12 +70,14 @@ class LibraryScreen(Screen):
         config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
+        """Initialize LibraryScreen."""
         super().__init__(**kwargs)
         self._config_path = config_path
         self._library = None
         self._mode = "library"  # "library" | "staging"
 
     def compose(self) -> ComposeResult:
+        """Build and return the LibraryScreen."""
         yield Header()
         with Vertical():
             with Horizontal(id="search-bar"):
@@ -91,12 +95,14 @@ class LibraryScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Handle the mount event."""
         self._setup_table()
         self._library = self._build_library()
         self._load_library()
         self.query_one("#search-input", Input).focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle the button pressed event."""
         btn = event.button.id
         if btn == "search-btn":
             self._run_search()
@@ -110,9 +116,11 @@ class LibraryScreen(Screen):
             self.action_refresh()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle the input submitted event."""
         self._run_search()
 
     def action_refresh(self) -> None:
+        """Action refresh."""
         if self._mode == "staging":
             self._load_staging()
         else:
@@ -154,6 +162,7 @@ class LibraryScreen(Screen):
     # ------------------------------------------------------------------
 
     def _setup_table(self) -> None:
+        """Internal helper for setup table."""
         table: DataTable = self.query_one("#library-table", DataTable)
         table.add_column("Topic", key="topic", width=28)
         table.add_column("TLP", key="tlp", width=8)
@@ -163,6 +172,7 @@ class LibraryScreen(Screen):
         table.add_column("Status", key="status", width=14)
 
     def _build_library(self):
+        """Internal helper for build library."""
         try:
             from gnat.research.library import ResearchLibrary
 
@@ -171,6 +181,7 @@ class LibraryScreen(Screen):
             return None
 
     def _load_library(self) -> None:
+        """Internal helper for load library."""
         table = self.query_one("#library-table", DataTable)
         status = self.query_one("#status-label", Label)
         table.clear()
@@ -193,6 +204,7 @@ class LibraryScreen(Screen):
             status.update(f"[red]{exc}[/red]")
 
     def _load_staging(self) -> None:
+        """Internal helper for load staging."""
         table = self.query_one("#library-table", DataTable)
         status = self.query_one("#status-label", Label)
         table.clear()
@@ -218,6 +230,7 @@ class LibraryScreen(Screen):
             status.update(f"[red]{exc}[/red]")
 
     def _run_search(self) -> None:
+        """Internal helper for run search."""
         query = self.query_one("#search-input", Input).value.strip()
         status = self.query_one("#status-label", Label)
         table = self.query_one("#library-table", DataTable)
@@ -240,6 +253,7 @@ class LibraryScreen(Screen):
             status.update(f"[red]{exc}[/red]")
 
     def _selected_topic(self) -> str | None:
+        """Internal helper for selected topic."""
         table: DataTable = self.query_one("#library-table", DataTable)
         try:
             row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)

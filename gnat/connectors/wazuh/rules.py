@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.rules
 
@@ -22,6 +24,7 @@ class WazuhRulesCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhRulesCommands."""
         self._client = client
 
     def list_rules(

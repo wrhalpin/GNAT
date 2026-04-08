@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.reports.aggregator
 ===========================
@@ -156,6 +158,7 @@ class DataAggregator:
         sector_filter: SectorFilter | None = None,
         research_library=None,
     ):
+        """Initialize DataAggregator."""
         self._manager = manager
         self._config = config
         self._sf = sector_filter
@@ -250,6 +253,7 @@ class DataAggregator:
         p_start: datetime,
         p_end: datetime,
     ) -> None:
+        """Internal helper for compute volume."""
         agg.total_objects = len(objects)
         for obj in objects:
             created = _parse_dt(obj._properties.get("created"))
@@ -265,6 +269,7 @@ class DataAggregator:
         objects: list[STIXBase],
         p_start: datetime,
     ) -> None:
+        """Internal helper for compute by type."""
         total_counter: Counter = Counter()
         new_counter: Counter = Counter()
         for obj in objects:
@@ -279,6 +284,7 @@ class DataAggregator:
     # ── Indicators ─────────────────────────────────────────────────────────
 
     def _compute_indicators(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute indicators."""
         indicators = [o for o in objects if o.stix_type == "indicator"]
         agg.indicator_count = len(indicators)
         if not indicators:
@@ -309,6 +315,7 @@ class DataAggregator:
     # ── Threat actors ──────────────────────────────────────────────────────
 
     def _compute_actors(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute actors."""
         actors = [o for o in objects if o.stix_type == "threat-actor"]
         agg.actor_count = len(actors)
         if not actors:
@@ -331,6 +338,7 @@ class DataAggregator:
     # ── Vulnerabilities ────────────────────────────────────────────────────
 
     def _compute_vulnerabilities(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute vulnerabilities."""
         vulns = [o for o in objects if o.stix_type == "vulnerability"]
         agg.vuln_count = len(vulns)
         if not vulns:
@@ -361,6 +369,7 @@ class DataAggregator:
     # ── TTPs ───────────────────────────────────────────────────────────────
 
     def _compute_ttps(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute ttps."""
         ttps = [o for o in objects if o.stix_type == "attack-pattern"]
         agg.ttp_count = len(ttps)
         if not ttps:
@@ -378,6 +387,7 @@ class DataAggregator:
     # ── Sectors ────────────────────────────────────────────────────────────
 
     def _compute_sectors(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute sectors."""
         sector_counter: Counter = Counter()
         for obj in objects:
             sectors = obj._properties.get("x_target_sectors", [])
@@ -393,6 +403,7 @@ class DataAggregator:
     # ── Sources ────────────────────────────────────────────────────────────
 
     def _compute_sources(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute sources."""
         source_counter: Counter = Counter()
         ai_count = 0
         for obj in objects:
@@ -410,6 +421,7 @@ class DataAggregator:
     # ── Confidence ─────────────────────────────────────────────────────────
 
     def _compute_confidence(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute confidence."""
         scores = []
         dist: Counter = Counter()
         for obj in objects:
@@ -427,6 +439,7 @@ class DataAggregator:
     # ── Relationships ──────────────────────────────────────────────────────
 
     def _compute_relationships(self, agg: ReportAggregates, objects: list[STIXBase]) -> None:
+        """Internal helper for compute relationships."""
         rels = [o for o in objects if o.stix_type == "relationship"]
         agg.relationship_count = len(rels)
         rel_type_counter: Counter = Counter()
@@ -478,6 +491,7 @@ class DataAggregator:
         prior_start = p_start - timedelta(days=window)
 
         def _count_in_window(start: datetime, end: datetime) -> dict[str, int]:
+            """Internal helper for count in window."""
             counts: Counter = Counter()
             for obj in objects:
                 ts = _parse_dt(obj._properties.get("created"))
@@ -506,6 +520,7 @@ class DataAggregator:
     # ── Research library ──────────────────────────────────────────────────
 
     def _collect_library_context(self, agg: ReportAggregates) -> None:
+        """Internal helper for collect library context."""
         try:
             entries = self._lib.list_entries(include_stale=False)
             agg.library_entries_count = len(entries)
@@ -520,6 +535,7 @@ class DataAggregator:
 
 
 def _parse_dt(value: Any) -> datetime | None:
+    """Internal helper for parse dt."""
     if not value:
         return None
     try:
@@ -529,6 +545,7 @@ def _parse_dt(value: Any) -> datetime | None:
 
 
 def _ioc_type_from_pattern(pattern: str) -> str:
+    """Internal helper for ioc type from pattern."""
     p = pattern.lower()
     if "ipv4-addr" in p:
         return "ipv4"
@@ -554,6 +571,7 @@ def _ioc_type_from_pattern(pattern: str) -> str:
 
 
 def _cvss_bucket(score: float) -> str:
+    """Internal helper for cvss bucket."""
     if score >= 9.0:
         return "Critical (9.0-10.0)"
     if score >= 7.0:
@@ -564,6 +582,7 @@ def _cvss_bucket(score: float) -> str:
 
 
 def _conf_bucket(score: float) -> str:
+    """Internal helper for conf bucket."""
     if score >= 80:
         return "High (80-100)"
     if score >= 50:
@@ -572,6 +591,7 @@ def _conf_bucket(score: float) -> str:
 
 
 def _indicator_summary(obj: STIXBase) -> dict[str, Any]:
+    """Internal helper for indicator summary."""
     return {
         "name": obj._properties.get("name", ""),
         "pattern": obj._properties.get("pattern", "")[:120],
@@ -582,6 +602,7 @@ def _indicator_summary(obj: STIXBase) -> dict[str, Any]:
 
 
 def _actor_summary(obj: STIXBase) -> dict[str, Any]:
+    """Internal helper for actor summary."""
     return {
         "name": obj._properties.get("name", ""),
         "aliases": obj._properties.get("aliases", [])[:5],
@@ -591,6 +612,7 @@ def _actor_summary(obj: STIXBase) -> dict[str, Any]:
 
 
 def _vuln_summary(obj: STIXBase) -> dict[str, Any]:
+    """Internal helper for vuln summary."""
     return {
         "name": obj._properties.get("name", ""),
         "cve_id": obj._properties.get("x_cve_id", ""),
@@ -601,6 +623,7 @@ def _vuln_summary(obj: STIXBase) -> dict[str, Any]:
 
 
 def _ttp_summary(obj: STIXBase) -> dict[str, Any]:
+    """Internal helper for ttp summary."""
     return {
         "name": obj._properties.get("name", ""),
         "mitre_id": obj._properties.get("x_mitre_id", ""),

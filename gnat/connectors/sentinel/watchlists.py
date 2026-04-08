@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.watchlists
 =========================================
@@ -19,6 +21,7 @@ class SentinelWatchlistCommands:
     """Watchlist management operations."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelWatchlistCommands."""
         self._client = client
 
     def list_watchlists(self) -> list[dict]:

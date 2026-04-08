@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Exception hierarchy for the Synapse connector."""
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ class SynapseError(Exception):
         status_code: int | None = None,
         response_body: str | None = None,
     ) -> None:
+        """Initialize SynapseError."""
         super().__init__(message)
         self.status_code = status_code
         self.response_body = response_body
@@ -59,6 +62,7 @@ class SynapseStormError(SynapseError):
         status_code: int | None = None,
         response_body: str | None = None,
     ) -> None:
+        """Initialize SynapseStormError."""
         super().__init__(message, status_code=status_code, response_body=response_body)
         self.query = query
 

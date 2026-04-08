@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.clients.base
 ====================
@@ -48,6 +50,7 @@ class GNATClientError(Exception):
     """
 
     def __init__(self, message: str, status: int = 0, body: str = ""):
+        """Initialize GNATClientError."""
         super().__init__(message)
         self.status = status
         self.body = body
@@ -87,6 +90,7 @@ class BaseClient:
         config: Optional[dict[str, Any]] = None,
         **_ignored: Any,
     ):
+        """Initialize BaseClient."""
         self.host = host.rstrip("/")
         self.verify_ssl = verify_ssl
         self.timeout = float(timeout)
@@ -170,10 +174,12 @@ class BaseClient:
         data: Optional[dict[str, Any]] = None,
         params: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, str]] = None,
+        files: Optional[dict[str, Any]] = None,
     ) -> Any:
-        """Issue an HTTP POST request. Provide either *json* or *data*."""
+        """Issue an HTTP POST request. Provide either *json*, *data*, or *files*."""
         return self._request(
-            "POST", path, body=json, form_data=data, params=params, extra_headers=headers
+            "POST", path, body=json, form_data=data, params=params, extra_headers=headers,
+            files=files,
         )
 
     def put(
@@ -217,6 +223,7 @@ class BaseClient:
         body: Optional[dict[str, Any]] = None,
         form_data: Optional[dict[str, Any]] = None,
         extra_headers: Optional[dict[str, str]] = None,
+        files: Optional[dict[str, Any]] = None,
     ) -> Any:
         """
         Core request dispatcher.  Handles encoding, auth headers, and errors.
@@ -235,7 +242,20 @@ class BaseClient:
             headers.update(extra_headers)
 
         encoded_body: Optional[bytes] = None
-        if body is not None:
+        if files is not None:
+            # Multipart form upload via urllib3's encode_multipart_formdata
+            fields: dict[str, Any] = {}
+            if form_data:
+                fields.update(form_data)
+            for field_name, file_tuple in files.items():
+                if isinstance(file_tuple, tuple) and len(file_tuple) == 3:
+                    fname, fdata, ftype = file_tuple
+                    fields[field_name] = (fname, fdata, ftype)
+                else:
+                    fields[field_name] = file_tuple
+            encoded_body, content_type = urllib3.encode_multipart_formdata(fields)
+            headers["Content-Type"] = content_type
+        elif body is not None:
             encoded_body = json.dumps(body).encode("utf-8")
             headers["Content-Type"] = "application/json"
         elif form_data is not None:
@@ -267,5 +287,6 @@ class BaseClient:
             return response.data.decode("utf-8", errors="replace")
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         cls = type(self).__name__
         return f"{cls}(host={self.host!r}, authenticated={self._authenticated})"

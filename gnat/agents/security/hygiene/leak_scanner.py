@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.agents.security.hygiene.leak_scanner
+=============================================
+
+Leak scanner utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 import re
@@ -8,6 +16,7 @@ from pathlib import Path
 
 @dataclass
 class LeakFinding:
+    """LeakFinding implementation."""
     path: str
     line_number: int
     severity: str
@@ -16,6 +25,7 @@ class LeakFinding:
 
 
 class LeakScanner:
+    """LeakScanner implementation."""
     DEFAULT_PATTERNS = {
         "aws_access_key": re.compile(r"AKIA[0-9A-Z]{16}"),
         "private_key_header": re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"),
@@ -25,9 +35,11 @@ class LeakScanner:
     }
 
     def __init__(self, allowlist: Iterable[str] | None = None) -> None:
+        """Initialize LeakScanner."""
         self.allowlist = set(allowlist or [])
 
     def scan_paths(self, paths: Iterable[str]) -> list[LeakFinding]:
+        """Scan paths."""
         findings: list[LeakFinding] = []
         for root in paths:
             for path in Path(root).rglob("*"):
@@ -38,6 +50,7 @@ class LeakScanner:
         return findings
 
     def _scan_file(self, path: Path) -> list[LeakFinding]:
+        """Internal helper for scan file."""
         try:
             text = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:

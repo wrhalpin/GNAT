@@ -1,1 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 # extrahop connector
+"""
+gnat.connectors.extrahop
+============================
+
+Public API surface for the ``gnat.connectors.extrahop`` package.
+"""

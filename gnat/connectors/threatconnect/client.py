@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.threatconnect.client
 ======================================
@@ -73,6 +75,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         auth_type: str = "token",
         **kwargs: Any,
     ) -> None:
+        """Initialize ThreatConnectClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._access_id = access_id
@@ -233,6 +236,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(tc_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = tc_type.lower()
         if t in ("address", "host"):
             if "." in value and not value.startswith("http"):
@@ -257,6 +261,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_pattern_to_tc_type(pattern: str) -> str:
+        """Internal helper for stix pattern to tc type."""
         if "ipv4-addr" in pattern or "ipv6-addr" in pattern:
             return "Address"
         if "domain-name" in pattern:

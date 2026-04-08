@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Golden fixture and test verification helpers for repo maintenance."""
 
 from __future__ import annotations
@@ -16,10 +18,12 @@ class VerificationEngine:
     """Run targeted checks before opening a maintenance PR."""
 
     def __init__(self, registry: ConnectorRegistry, repo_root: str | Path = "."):
+        """Initialize VerificationEngine."""
         self.registry = registry
         self.repo_root = Path(repo_root)
 
     def verify(self, connector: str) -> VerificationResult:
+        """Verify."""
         spec = self.registry.get(connector)
         checks: list[VerificationCheck] = []
 
@@ -40,6 +44,7 @@ class VerificationEngine:
         )
 
     def _verify_golden_fixture(self, fixture_path: str) -> VerificationCheck:
+        """Internal helper for verify golden fixture."""
         full_path = self.repo_root / fixture_path
         if not full_path.exists():
             return VerificationCheck(
@@ -61,6 +66,7 @@ class VerificationEngine:
         )
 
     def _run_pytest(self, test_paths: list[str]) -> VerificationCheck:
+        """Internal helper for run pytest."""
         cmd = [sys.executable, "-m", "pytest", *test_paths, "-q", "--tb=short"]
         proc = subprocess.run(
             cmd,
@@ -79,4 +85,5 @@ class VerificationEngine:
 
 
 def _canonical_json(obj: Any) -> str:
+    """Internal helper for canonical json."""
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str)

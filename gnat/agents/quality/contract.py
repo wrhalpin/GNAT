@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.agents.quality.contract
+================================
+
+Contract utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
@@ -7,6 +15,7 @@ from pathlib import Path
 
 @dataclass(slots=True)
 class ConnectorContractProfile:
+    """Connector integrating GNAT with the ContractProfile platform."""
     connector_name: str
     connector_path: str
     required_files: Sequence[str] = field(default_factory=lambda: ("__init__.py",))
@@ -17,6 +26,7 @@ class ConnectorContractProfile:
 
 @dataclass(slots=True)
 class ContractCheckResult:
+    """ContractCheckResult implementation."""
     connector_name: str
     passed: bool
     errors: list[str] = field(default_factory=list)
@@ -24,6 +34,7 @@ class ContractCheckResult:
 
     @property
     def summary(self) -> str:
+        """Summary."""
         state = "passed" if self.passed else "failed"
         return f"{self.connector_name}: {state} ({len(self.errors)} errors, {len(self.warnings)} warnings)"
 
@@ -32,9 +43,11 @@ class ContractAgent:
     """Shape and standards enforcement for GNAT connectors."""
 
     def __init__(self, repo_root: str) -> None:
+        """Initialize ContractAgent."""
         self.repo_root = Path(repo_root)
 
     def evaluate(self, profile: ConnectorContractProfile) -> ContractCheckResult:
+        """Evaluate."""
         connector_dir = self.repo_root / profile.connector_path
         errors: list[str] = []
         warnings: list[str] = []
@@ -68,9 +81,11 @@ class ContractAgent:
         )
 
     def evaluate_many(self, profiles: Iterable[ConnectorContractProfile]) -> list[ContractCheckResult]:
+        """Evaluate many."""
         return [self.evaluate(profile) for profile in profiles]
 
     def _concat_python_sources(self, connector_dir: Path) -> str:
+        """Internal helper for concat python sources."""
         buffer: list[str] = []
         for path in sorted(connector_dir.rglob("*.py")):
             try:

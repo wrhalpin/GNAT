@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.viz.tabular
 ====================
@@ -127,6 +129,7 @@ def _get_field(obj: STIXBase, field: str) -> Any:
 
 
 def _to_rows(objects: list[STIXBase], columns: list[str]) -> list[dict[str, str]]:
+    """Internal helper for to rows."""
     return [{col: _coerce(_get_field(obj, col)) for col in columns} for obj in objects]
 
 
@@ -150,6 +153,7 @@ class TabularView:
     """
 
     def __init__(self, workspace: Workspace, default_top: int = 100):
+        """Initialize TabularView."""
         self._ws = workspace
         self._top = default_top
 
@@ -392,10 +396,12 @@ class TabularView:
 
     @staticmethod
     def _sort(objs: list[STIXBase], sort_by: str | None) -> list[STIXBase]:
+        """Internal helper for sort."""
         if not sort_by:
             return objs
 
         def _key(obj):
+            """Internal helper for key."""
             v = _get_field(obj, sort_by)
             if v is None:
                 return ""
@@ -406,6 +412,7 @@ class TabularView:
         return sorted(objs, key=_key)
 
     def _show_rich(self, groups, sort_by, limit, fields) -> None:
+        """Internal helper for show rich."""
         from rich import box as rich_box
         from rich.console import Console
         from rich.table import Table
@@ -437,6 +444,7 @@ class TabularView:
             console.print()
 
     def _show_plain(self, groups, sort_by, limit, fields) -> None:
+        """Internal helper for show plain."""
         for stype, objs in groups.items():
             cols = fields or _COLUMNS.get(stype, _COLUMNS["_default"])
             sorted_objs = self._sort(objs, sort_by)[:limit]

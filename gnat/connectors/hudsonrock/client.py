@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.hudsonrock.client
 =================================
@@ -74,6 +76,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.hudsonrock.com", api_key: str = "", **kwargs: Any):
+        """Initialize HudsonRockClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -93,6 +96,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "report":
             return self.get(f"/v1/breaches/{object_id}")
         if stix_type == "indicator":
@@ -106,6 +110,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -118,9 +123,11 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Hudson Rock connector is read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Expanded Domain-specific helpers ───────────────────────────────────
@@ -184,12 +191,14 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         return self._breach_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Hudson Rock is read-only for breach and credential intelligence.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _credential_to_stix(self, cred: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for credential to stix."""
         now = _now_ts()
         cid = cred.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'hudsonrock:{cid}')}"
@@ -213,6 +222,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         }
 
     def _breach_to_stix(self, breach: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for breach to stix."""
         now = _now_ts()
         bid = breach.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'hudsonrock:{bid}')}"

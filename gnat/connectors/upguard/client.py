@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.upguard.client
 ==============================
@@ -77,6 +79,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
     def __init__(
         self, host: str = "https://cyber-risk.upguard.com", api_key: str = "", **kwargs: Any
     ):
+        """Initialize UpGuardClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -96,6 +99,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "report":
             return self.get(f"/api/vendors/{object_id}")
         if stix_type == "vulnerability":
@@ -109,6 +113,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -121,9 +126,11 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("UpGuard connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Expanded Domain-specific helpers ───────────────────────────────────
@@ -183,12 +190,14 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         return self._vendor_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "UpGuard is primarily read-only for vendor risk and breach data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _breach_to_stix(self, breach: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for breach to stix."""
         now = _now_ts()
         bid = breach.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'upguard:{bid}')}"
@@ -210,6 +219,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         }
 
     def _vendor_to_stix(self, vendor: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vendor to stix."""
         now = _now_ts()
         vid = vendor.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'upguard:{vid}')}"

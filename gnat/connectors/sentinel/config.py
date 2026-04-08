@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.config
 =====================================
@@ -82,6 +84,7 @@ class SentinelConfig:
     token_url: str = field(init=False)
 
     def __post_init__(self) -> None:
+        """Post-init setup for SentinelConfig."""
         ws_path = (
             f"/subscriptions/{self.subscription_id}"
             f"/resourceGroups/{self.resource_group}"
@@ -94,6 +97,7 @@ class SentinelConfig:
         self._validate()
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         missing = {k for k in _REQUIRED if not getattr(self, k, "").strip()}
         if missing:
             raise SentinelConfigError(
@@ -144,6 +148,7 @@ def load_sentinel_config(
     raw.update(dict(config.items(section)))
 
     def _bool(v: str) -> bool:
+        """Internal helper for bool."""
         return v.strip().lower() in ("true", "1", "yes")
 
     return SentinelConfig(

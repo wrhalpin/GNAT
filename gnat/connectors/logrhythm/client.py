@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.logrhythm.client
 ====================================
@@ -63,6 +65,7 @@ _STIX_NS = _uuid.UUID("f5a6b7c8-d9e0-1234-efab-234567890123")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -96,6 +99,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         client_secret: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize LogRhythmClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
         self._client_id = client_id
@@ -306,6 +310,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         return self._event_to_stix(native)
 
     def _alarm_to_stix(self, alarm: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alarm to stix."""
         alarm_id = str(alarm.get("alarmId", alarm.get("id", "")))
         uid = str(_uuid.uuid5(_STIX_NS, f"logrhythm-alarm-{alarm_id}"))
         priority_map = {1: 90, 2: 75, 3: 50, 4: 25, 5: 10}
@@ -358,6 +363,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         return stix
 
     def _case_to_stix(self, case: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for case to stix."""
         case_id = str(case.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"logrhythm-case-{case_id}"))
         ts = case.get("dateCreated", _now_ts())
@@ -386,6 +392,7 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         }
 
     def _event_to_stix(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for event to stix."""
         msg_id = str(event.get("logSourceMsgId", event.get("id", "")))
         uid = str(_uuid.uuid5(_STIX_NS, f"logrhythm-event-{msg_id}"))
         ts = event.get("logDate", _now_ts())

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.cloudsek.client
 =================================
@@ -55,6 +57,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         org_id: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize CloudSEKClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._org_id = org_id
@@ -120,6 +123,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("CloudSEK XVigil API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
@@ -170,6 +174,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         category = native.get("category", "")
         value = (
             native.get("email")
@@ -201,6 +206,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for actor to stix."""
         return {
             "type": "threat-actor",
             "id": f"threat-actor--cs-{native.get('id', '')}",
@@ -214,6 +220,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(category: str, value: str) -> str:
+        """Internal helper for make pattern."""
         cat = (category or "").lower()
         if "credential" in cat or "email" in cat:
             return f"[email-message:from_ref.value = '{value}']"
@@ -230,6 +237,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_to_cs_category(pattern: str) -> str:
+        """Internal helper for stix to cs category."""
         if "ipv4-addr" in pattern:
             return "ip_exposure"
         if "domain-name" in pattern:

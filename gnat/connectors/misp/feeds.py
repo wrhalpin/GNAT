@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.misp.feeds
 ================================
@@ -19,6 +21,7 @@ class MISPFeedCommands:
     """Feed management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPFeedCommands."""
         self._client = client
 
     def list_feeds(self) -> list[dict]:

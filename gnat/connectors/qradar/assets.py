@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.assets
 ===================================
@@ -22,6 +24,7 @@ class QRadarAssetCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarAssetCommands."""
         self._client = client
 
     def list_assets(

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.recordedfuture.client
 ==========================================
@@ -29,6 +31,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
+        """Initialize RecordedFutureClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 
@@ -37,10 +40,12 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         self._auth_headers["X-RFToken"] = self._api_token
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         self.get("/v2/ip/search", params={"limit": 1})
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         resource = self.stix_type_map.get(stix_type, stix_type)
         resp = self.get(
             f"/v2/{resource}/{object_id}",
@@ -55,6 +60,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         resource = self.stix_type_map.get(stix_type, stix_type)
         params: dict[str, Any] = {"limit": page_size, "from": (page - 1) * page_size}
         if filters:
@@ -63,12 +69,15 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Recorded Future API is read-only -- upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Recorded Future API is read-only -- delete not supported.")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         entity = native.get("entity", {})
         risk = native.get("risk", {})
         stix: dict[str, Any] = {
@@ -95,6 +104,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         return stix
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"entity": stix_dict.get("name", "")}
 
     # ── Entity intelligence lookups ────────────────────────────────────────

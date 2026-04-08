@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 tests/connectors/test_elastic.py
 
@@ -56,6 +58,7 @@ from gnat.connectors.elastic.threat_intel import ElasticThreatIntelCommands
 
 
 def _make_config(**overrides) -> ElasticConfig:
+    """Internal helper for make config."""
     defaults = {
         "es_host": "elastic.test.local",
         "api_key_id": "test_key_id",
@@ -66,6 +69,7 @@ def _make_config(**overrides) -> ElasticConfig:
 
 
 def _make_response(status: int = 200, body=None) -> MagicMock:
+    """Internal helper for make response."""
     resp = MagicMock()
     resp.status = status
     payload = body if body is not None else {}
@@ -84,6 +88,7 @@ def _es_hits(docs: list, total: int | None = None) -> dict:
 
 
 def _make_client(config: ElasticConfig | None = None) -> tuple[ElasticClient, MagicMock]:
+    """Internal helper for make client."""
     cfg = config or _make_config()
     with patch("gnat.connectors.elastic.client.urllib3.PoolManager") as pm_cls:
         mock_pm = MagicMock()
@@ -101,62 +106,75 @@ def _make_client(config: ElasticConfig | None = None) -> tuple[ElasticClient, Ma
 
 
 class TestElasticConfig(unittest.TestCase):
+    """Configuration container for test elastic."""
     def test_minimal_config(self):
+        """Test that minimal config."""
         cfg = _make_config()
         self.assertEqual(cfg.es_host, "elastic.test.local")
         self.assertEqual(cfg.es_port, 9200)
         self.assertEqual(cfg.kibana_port, 5601)
 
     def test_es_base_url(self):
+        """Test that es base url."""
         cfg = _make_config()
         self.assertEqual(cfg.es_base_url, "https://elastic.test.local:9200")
 
     def test_kibana_defaults_to_es_host(self):
+        """Test that kibana defaults to es host."""
         cfg = _make_config()
         self.assertIn("elastic.test.local", cfg.kibana_base_url)
 
     def test_kibana_custom_host(self):
+        """Test that kibana custom host."""
         cfg = _make_config(kibana_host="kibana.test.local")
         self.assertIn("kibana.test.local", cfg.kibana_base_url)
 
     def test_api_key_header_is_base64(self):
+        """Test that api key header is base64."""
         cfg = _make_config(api_key_id="id123", api_key_secret="sec456")
         expected = base64.b64encode(b"id123:sec456").decode()
         self.assertEqual(cfg.api_key_header, expected)
 
     def test_auth_headers(self):
+        """Test that auth headers."""
         cfg = _make_config()
         headers = cfg.auth_headers
         self.assertIn("Authorization", headers)
         self.assertTrue(headers["Authorization"].startswith("ApiKey "))
 
     def test_kibana_headers_include_xsrf(self):
+        """Test that kibana headers include xsrf."""
         cfg = _make_config()
         headers = cfg.kibana_headers
         self.assertEqual(headers.get("kbn-xsrf"), "true")
 
     def test_kibana_get_headers_no_xsrf(self):
+        """Test that kibana get headers no xsrf."""
         cfg = _make_config()
         headers = cfg.kibana_get_headers
         self.assertNotIn("kbn-xsrf", headers)
 
     def test_kibana_url_default_space(self):
+        """Test that kibana url default space."""
         cfg = _make_config()
         url = cfg.kibana_url("api/detection_engine/rules")
         self.assertNotIn("/s/", url)
         self.assertIn("api/detection_engine/rules", url)
 
     def test_kibana_url_custom_space(self):
+        """Test that kibana url custom space."""
         cfg = _make_config(kibana_space="security-team")
         url = cfg.kibana_url("api/detection_engine/rules")
         self.assertIn("/s/security-team/", url)
 
     def test_es_url(self):
+        """Test that es url."""
         cfg = _make_config()
         url = cfg.es_url("_cluster/health")
         self.assertEqual(url, "https://elastic.test.local:9200/_cluster/health")
 
     def test_missing_api_key_id_raises(self):
+        """Test that missing api key id raises."""
         with self.assertRaises(ElasticConfigError):
             ElasticConfig(
                 es_host="h",
@@ -165,6 +183,7 @@ class TestElasticConfig(unittest.TestCase):
             )
 
     def test_missing_es_host_and_cloud_id_raises(self):
+        """Test that missing es host and cloud id raises."""
         with self.assertRaises(ElasticConfigError):
             ElasticConfig(
                 es_host="",
@@ -173,6 +192,7 @@ class TestElasticConfig(unittest.TestCase):
             )
 
     def test_invalid_scheme_raises(self):
+        """Test that invalid scheme raises."""
         with self.assertRaises(ElasticConfigError):
             ElasticConfig(
                 es_host="h",
@@ -182,6 +202,7 @@ class TestElasticConfig(unittest.TestCase):
             )
 
     def test_load_from_configparser(self):
+        """Test that load from configparser."""
         parser = configparser.ConfigParser()
         parser.read_dict(
             {
@@ -202,10 +223,12 @@ class TestElasticConfig(unittest.TestCase):
         self.assertEqual(cfg.timeout, 45)
 
     def test_load_missing_section_raises(self):
+        """Test that load missing section raises."""
         with self.assertRaises(ElasticConfigError):
             load_elastic_config(configparser.ConfigParser())
 
     def test_load_missing_api_key_raises(self):
+        """Test that load missing api key raises."""
         parser = configparser.ConfigParser()
         parser.read_dict({"elastic": {"es_host": "h"}})
         with self.assertRaises(ElasticConfigError):
@@ -219,28 +242,34 @@ class TestElasticConfig(unittest.TestCase):
 
 
 class TestElasticAuthManager(unittest.TestCase):
+    """Unit tests for :class:`ElasticAuthManager`."""
     def _make_auth(self, config=None):
+        """Internal helper for make auth."""
         cfg = config or _make_config()
         mock_http = MagicMock()
         return ElasticAuthManager(cfg, mock_http), mock_http
 
     def test_get_es_headers_has_auth(self):
+        """Test that get es headers has auth."""
         auth, _ = self._make_auth()
         headers = auth.get_es_headers()
         self.assertIn("Authorization", headers)
         self.assertTrue(headers["Authorization"].startswith("ApiKey "))
 
     def test_get_kibana_headers_post_has_xsrf(self):
+        """Test that get kibana headers post has xsrf."""
         auth, _ = self._make_auth()
         headers = auth.get_kibana_headers("POST")
         self.assertEqual(headers.get("kbn-xsrf"), "true")
 
     def test_get_kibana_headers_get_no_xsrf(self):
+        """Test that get kibana headers get no xsrf."""
         auth, _ = self._make_auth()
         headers = auth.get_kibana_headers("GET")
         self.assertNotIn("kbn-xsrf", headers)
 
     def test_verify_es_success(self):
+        """Test that verify es success."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(
             200, {"name": "my-node", "version": {"number": "8.12.0"}}
@@ -249,12 +278,14 @@ class TestElasticAuthManager(unittest.TestCase):
         self.assertEqual(result.get("name"), "my-node")
 
     def test_verify_es_401_raises(self):
+        """Test that verify es 401 raises."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(401)
         with self.assertRaises(ElasticAuthError):
             auth.verify_es()
 
     def test_verify_kibana_success(self):
+        """Test that verify kibana success."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(
             200, {"status": {"overall": {"level": "green"}}}
@@ -263,6 +294,7 @@ class TestElasticAuthManager(unittest.TestCase):
         self.assertIsInstance(result, dict)
 
     def test_verify_kibana_403_raises(self):
+        """Test that verify kibana 403 raises."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(403)
         with self.assertRaises(ElasticAuthError):
@@ -276,31 +308,37 @@ class TestElasticAuthManager(unittest.TestCase):
 
 
 class TestElasticClient(unittest.TestCase):
+    """HTTP API client for the TestElastic platform."""
     def test_es_get_returns_dict(self):
+        """Test that es get returns dict."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {"status": "green"})
         result = client.es_get("_cluster/health")
         self.assertIsInstance(result, dict)
 
     def test_kibana_get_returns_dict(self):
+        """Test that kibana get returns dict."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {"data": [], "total": 0})
         result = client.kibana_get("api/detection_engine/rules/_find")
         self.assertIsInstance(result, dict)
 
     def test_es_401_raises_auth_error(self):
+        """Test that es 401 raises auth error."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(401)
         with self.assertRaises(ElasticAuthError):
             client.es_get("_cluster/health")
 
     def test_es_403_raises_auth_error(self):
+        """Test that es 403 raises auth error."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(403)
         with self.assertRaises(ElasticAuthError):
             client.es_get("some/endpoint")
 
     def test_es_404_raises_not_found(self):
+        """Test that es 404 raises not found."""
         client, mock_http = _make_client()
         body = {
             "error": {"type": "index_not_found_exception", "reason": "no such index"},
@@ -312,6 +350,7 @@ class TestElasticClient(unittest.TestCase):
         self.assertEqual(ctx.exception.error_type, "index_not_found_exception")
 
     def test_es_409_raises_conflict(self):
+        """Test that es 409 raises conflict."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(
             409, {"error": {"type": "version_conflict_engine_exception"}}
@@ -320,18 +359,21 @@ class TestElasticClient(unittest.TestCase):
             client.es_put("my-index/_doc/1", body={"field": "val"})
 
     def test_es_429_retries_then_raises(self):
+        """Test that es 429 retries then raises."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
         with patch("time.sleep"), self.assertRaises(ElasticRateLimitError):
             client.es_get("_search")
 
     def test_kibana_404_raises_kibana_not_found(self):
+        """Test that kibana 404 raises kibana not found."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(404, {"message": "Not found"})
         with self.assertRaises(ElasticKibanaNotFoundError):
             client.kibana_get("api/detection_engine/rules?rule_id=missing")
 
     def test_kibana_400_raises_validation_error(self):
+        """Test that kibana 400 raises validation error."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(400, {"message": "[name]: required"})
         with self.assertRaises(ElasticKibanaValidationError) as ctx:
@@ -339,6 +381,7 @@ class TestElasticClient(unittest.TestCase):
         self.assertIn("[name]", ctx.exception.kibana_message)
 
     def test_context_manager(self):
+        """Test that context manager."""
         cfg = _make_config()
         with (
             patch("gnat.connectors.elastic.client.urllib3.PoolManager"),
@@ -347,6 +390,7 @@ class TestElasticClient(unittest.TestCase):
             self.assertIsInstance(client, ElasticClient)
 
     def test_es_search_hits_extracts_sources(self):
+        """Test that es search hits extracts sources."""
         client, mock_http = _make_client()
         docs = [{"source.ip": "1.2.3.4"}, {"source.ip": "5.6.7.8"}]
         mock_http.request.return_value = _make_response(200, _es_hits(docs))
@@ -355,12 +399,14 @@ class TestElasticClient(unittest.TestCase):
         self.assertEqual(results[0]["source.ip"], "1.2.3.4")
 
     def test_es_count(self):
+        """Test that es count."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, {"count": 42})
         count = client.es_count("my-index")
         self.assertEqual(count, 42)
 
     def test_es_paginate_yields_all(self):
+        """Test that es paginate yields all."""
         client, mock_http = _make_client()
         page1 = _es_hits([{"id": i} for i in range(1000)], total=1200)
         page2 = _es_hits([{"id": i} for i in range(1000, 1200)], total=1200)
@@ -372,6 +418,7 @@ class TestElasticClient(unittest.TestCase):
         self.assertEqual(len(items), 1200)
 
     def test_kibana_paginate_yields_all(self):
+        """Test that kibana paginate yields all."""
         client, mock_http = _make_client()
         page1 = {"data": [{"name": f"rule{i}"} for i in range(100)], "total": 150}
         page2 = {"data": [{"name": f"rule{i}"} for i in range(100, 150)], "total": 150}
@@ -390,17 +437,21 @@ class TestElasticClient(unittest.TestCase):
 
 
 class TestElasticSearchCommands(unittest.TestCase):
+    """Unit tests for :class:`ElasticSearchCommands`."""
     def _make_search_cmd(self):
+        """Internal helper for make search cmd."""
         client, mock_http = _make_client()
         return ElasticSearchCommands(client), mock_http
 
     def test_cluster_health(self):
+        """Test that cluster health."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(200, {"status": "green"})
         result = search.cluster_health()
         self.assertEqual(result.get("status"), "green")
 
     def test_list_indices(self):
+        """Test that list indices."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(
             200, [{"index": ".alerts-security.default-000001", "health": "green"}]
@@ -410,21 +461,25 @@ class TestElasticSearchCommands(unittest.TestCase):
         self.assertIsInstance(results, list)
 
     def test_index_exists_true(self):
+        """Test that index exists true."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(200, {})
         self.assertTrue(search.index_exists("my-index"))
 
     def test_index_exists_false(self):
+        """Test that index exists false."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(404)
         self.assertFalse(search.index_exists("missing-index"))
 
     def test_doc_count(self):
+        """Test that doc count."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(200, {"count": 99})
         self.assertEqual(search.doc_count("my-index"), 99)
 
     def test_search_alerts_with_filters(self):
+        """Test that search alerts with filters."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(
             200, _es_hits([{"kibana.alert.rule.name": "Test Rule"}])
@@ -433,6 +488,7 @@ class TestElasticSearchCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_aggregate_by_field(self):
+        """Test that aggregate by field."""
         search, mock_http = self._make_search_cmd()
         agg_response = {
             "hits": {"hits": [], "total": {"value": 0}},
@@ -451,6 +507,7 @@ class TestElasticSearchCommands(unittest.TestCase):
         self.assertEqual(buckets[0]["key"], "authentication")
 
     def test_get_document_found(self):
+        """Test that get document found."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(
             200, {"_id": "abc", "_source": {"field": "val"}}
@@ -459,6 +516,7 @@ class TestElasticSearchCommands(unittest.TestCase):
         self.assertEqual(result["field"], "val")
 
     def test_get_document_not_found(self):
+        """Test that get document not found."""
         search, mock_http = self._make_search_cmd()
         mock_http.request.return_value = _make_response(404)
         result = search.get_document("my-index", "missing")
@@ -472,11 +530,14 @@ class TestElasticSearchCommands(unittest.TestCase):
 
 
 class TestKibanaRulesCommands(unittest.TestCase):
+    """Unit tests for :class:`KibanaRulesCommands`."""
     def _make_rules(self):
+        """Internal helper for make rules."""
         client, mock_http = _make_client()
         return KibanaRulesCommands(client), mock_http
 
     def test_list_rules(self):
+        """Test that list rules."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200, {"data": [{"rule_id": "test-123", "name": "Test Rule"}], "total": 1}
@@ -485,6 +546,7 @@ class TestKibanaRulesCommands(unittest.TestCase):
         self.assertEqual(result["total"], 1)
 
     def test_get_rule(self):
+        """Test that get rule."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200, {"rule_id": "test-123", "name": "Test Rule", "enabled": True}
@@ -493,6 +555,7 @@ class TestKibanaRulesCommands(unittest.TestCase):
         self.assertEqual(rule["rule_id"], "test-123")
 
     def test_create_rule(self):
+        """Test that create rule."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200, {"id": "kibana-id", "rule_id": "test-123", "name": "New Rule"}
@@ -510,6 +573,7 @@ class TestKibanaRulesCommands(unittest.TestCase):
         self.assertEqual(rule["rule_id"], "test-123")
 
     def test_enable_rule(self):
+        """Test that enable rule."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200, {"rule_id": "test-123", "enabled": True}
@@ -518,12 +582,14 @@ class TestKibanaRulesCommands(unittest.TestCase):
         self.assertTrue(result.get("enabled"))
 
     def test_delete_rule(self):
+        """Test that delete rule."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(200, {"rule_id": "test-123"})
         result = rules_cmd.delete_rule("test-123")
         self.assertIsNotNone(result)
 
     def test_normalise_rule(self):
+        """Test that normalise rule."""
         raw = {
             "id": "internal-id",
             "rule_id": "test-123",
@@ -562,11 +628,14 @@ class TestKibanaRulesCommands(unittest.TestCase):
 
 
 class TestKibanaAlertsCommands(unittest.TestCase):
+    """Unit tests for :class:`KibanaAlertsCommands`."""
     def _make_alerts_cmd(self):
+        """Internal helper for make alerts cmd."""
         client, mock_http = _make_client()
         return KibanaAlertsCommands(client), mock_http
 
     def test_search_alerts(self):
+        """Test that search alerts."""
         alerts_cmd, mock_http = self._make_alerts_cmd()
         doc = {
             "@timestamp": "2024-03-10T12:00:00Z",
@@ -586,17 +655,20 @@ class TestKibanaAlertsCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_update_alert_status(self):
+        """Test that update alert status."""
         alerts_cmd, mock_http = self._make_alerts_cmd()
         mock_http.request.return_value = _make_response(200, {"updated": 1})
         result = alerts_cmd.update_alert_status(["alert1"], "closed")
         self.assertIsNotNone(result)
 
     def test_update_invalid_status_raises(self):
+        """Test that update invalid status raises."""
         alerts_cmd, _ = self._make_alerts_cmd()
         with self.assertRaises(ValueError):
             alerts_cmd.update_alert_status(["a1"], "resolved")
 
     def test_normalise_alert_severity_map(self):
+        """Test that normalise alert severity map."""
         alert = {
             "kibana": {
                 "alert": {
@@ -618,6 +690,7 @@ class TestKibanaAlertsCommands(unittest.TestCase):
         self.assertEqual(result["src_ip"], "1.2.3.4")
 
     def test_get_alert_counts(self):
+        """Test that get alert counts."""
         alerts_cmd, mock_http = self._make_alerts_cmd()
         mock_http.request.return_value = _make_response(
             200,
@@ -644,11 +717,14 @@ class TestKibanaAlertsCommands(unittest.TestCase):
 
 
 class TestKibanaCasesCommands(unittest.TestCase):
+    """Unit tests for :class:`KibanaCasesCommands`."""
     def _make_cases(self):
+        """Internal helper for make cases."""
         client, mock_http = _make_client()
         return KibanaCasesCommands(client), mock_http
 
     def test_list_cases(self):
+        """Test that list cases."""
         cases_cmd, mock_http = self._make_cases()
         mock_http.request.return_value = _make_response(
             200, {"cases": [{"id": "case-1", "title": "Incident 1"}], "total": 1}
@@ -657,6 +733,7 @@ class TestKibanaCasesCommands(unittest.TestCase):
         self.assertEqual(result["total"], 1)
 
     def test_create_case(self):
+        """Test that create case."""
         cases_cmd, mock_http = self._make_cases()
         mock_http.request.return_value = _make_response(
             200, {"id": "new-case-id", "title": "Test Case"}
@@ -665,6 +742,7 @@ class TestKibanaCasesCommands(unittest.TestCase):
         self.assertEqual(result["id"], "new-case-id")
 
     def test_add_comment(self):
+        """Test that add comment."""
         cases_cmd, mock_http = self._make_cases()
         mock_http.request.return_value = _make_response(
             200, {"id": "comment-id", "comment": "Investigation notes"}
@@ -673,6 +751,7 @@ class TestKibanaCasesCommands(unittest.TestCase):
         self.assertIsNotNone(result)
 
     def test_close_case(self):
+        """Test that close case."""
         cases_cmd, mock_http = self._make_cases()
         mock_http.request.return_value = _make_response(200, {"id": "case-1", "status": "closed"})
         result = cases_cmd.close_case("case-1", "v1")
@@ -686,11 +765,14 @@ class TestKibanaCasesCommands(unittest.TestCase):
 
 
 class TestElasticThreatIntelCommands(unittest.TestCase):
+    """Unit tests for :class:`ElasticThreatIntelCommands`."""
     def _make_ti(self):
+        """Internal helper for make ti."""
         client, mock_http = _make_client()
         return ElasticThreatIntelCommands(client), mock_http
 
     def test_search_indicators(self):
+        """Test that search indicators."""
         ti_cmd, mock_http = self._make_ti()
         doc = {"threat": {"indicator": {"type": "ipv4-addr", "ip": "1.2.3.4"}}}
         mock_http.request.return_value = _make_response(200, _es_hits([doc]))
@@ -698,6 +780,7 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_index_indicator_adds_timestamp(self):
+        """Test that index indicator adds timestamp."""
         ti_cmd, mock_http = self._make_ti()
         mock_http.request.return_value = _make_response(200, {"_id": "new-id", "result": "created"})
         doc = {"threat": {"indicator": {"type": "ipv4-addr", "ip": "10.0.0.1"}}}
@@ -707,6 +790,7 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
         self.assertIn("@timestamp", call_body)
 
     def test_normalise_indicator(self):
+        """Test that normalise indicator."""
         doc = {
             "@timestamp": "2024-03-10T12:00:00Z",
             "threat": {
@@ -727,6 +811,7 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
         self.assertEqual(result["feed_name"], "Test Feed")
 
     def test_get_indicator_counts_by_type(self):
+        """Test that get indicator counts by type."""
         ti_cmd, mock_http = self._make_ti()
         mock_http.request.return_value = _make_response(
             200,
@@ -753,12 +838,15 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
 
 
 class TestElasticSTIXMapper(unittest.TestCase):
+    """STIX translation helper for test elastic s t i x objects."""
     def setUp(self):
+        """Set up test fixtures before each test method."""
         self.mapper = ElasticSTIXMapper()
 
     # ── STIX -> ECS ────────────────────────────────────────────────────────
 
     def test_ipv4_sco_to_ecs(self):
+        """Test that ipv4 sco to ecs."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -770,6 +858,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(docs[0]["threat"]["indicator"]["type"], "ipv4-addr")
 
     def test_ipv6_sco_to_ecs(self):
+        """Test that ipv6 sco to ecs."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -779,6 +868,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(docs[0]["threat"]["indicator"]["ip"], "::1")
 
     def test_domain_sco_to_ecs(self):
+        """Test that domain sco to ecs."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -788,6 +878,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(docs[0]["threat"]["indicator"]["domain"], "evil.com")
 
     def test_url_sco_to_ecs_extracts_domain(self):
+        """Test that url sco to ecs extracts domain."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -799,6 +890,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(ti["url"]["domain"], "evil.com")
 
     def test_file_sco_to_ecs_with_hashes(self):
+        """Test that file sco to ecs with hashes."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -822,11 +914,13 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(file_field["name"], "malware.exe")
 
     def test_file_sco_no_hashes_no_name_returns_none(self):
+        """Test that file sco no hashes no name returns none."""
         obj = {"type": "file", "id": "file--1", "size": 1024}
         result = self.mapper.stix_object_to_ecs_indicator(obj)
         self.assertIsNone(result)
 
     def test_indicator_sdo_to_ecs(self):
+        """Test that indicator sdo to ecs."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -851,15 +945,18 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(ti["confidence"], "High")  # 85 -> High
 
     def test_unsupported_type_returns_none(self):
+        """Test that unsupported type returns none."""
         obj = {"type": "threat-actor", "id": "ta--1", "name": "APT1"}
         result = self.mapper.stix_object_to_ecs_indicator(obj)
         self.assertIsNone(result)
 
     def test_invalid_bundle_raises(self):
+        """Test that invalid bundle raises."""
         with self.assertRaises(ElasticSTIXError):
             self.mapper.stix_bundle_to_ecs_indicators({"type": "indicator"})
 
     def test_provider_and_feed_name_applied(self):
+        """Test that provider and feed name applied."""
         bundle = {
             "type": "bundle",
             "spec_version": "2.1",
@@ -874,6 +971,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
     # ── ECS -> STIX ────────────────────────────────────────────────────────
 
     def test_ecs_ipv4_to_stix_indicator(self):
+        """Test that ecs ipv4 to stix indicator."""
         doc = {
             "threat": {
                 "indicator": {
@@ -889,12 +987,14 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertIn("1.2.3.4", obj["pattern"])
 
     def test_ecs_domain_to_stix_indicator(self):
+        """Test that ecs domain to stix indicator."""
         doc = {"threat": {"indicator": {"type": "domain-name", "domain": "evil.com"}}}
         obj = self.mapper.ecs_indicator_to_stix(doc)
         self.assertIn("evil.com", obj["pattern"])
         self.assertIn("domain-name:value", obj["pattern"])
 
     def test_ecs_to_stix_bundle_deduplication(self):
+        """Test that ecs to stix bundle deduplication."""
         docs = [
             {"threat": {"indicator": {"type": "ipv4-addr", "ip": "1.2.3.4"}}},
             {"threat": {"indicator": {"type": "ipv4-addr", "ip": "1.2.3.4"}}},  # dup
@@ -904,6 +1004,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(len(bundle["objects"]), 2)
 
     def test_ecs_no_type_returns_none(self):
+        """Test that ecs no type returns none."""
         doc = {"threat": {"indicator": {}}}
         result = self.mapper.ecs_indicator_to_stix(doc)
         self.assertIsNone(result)
@@ -911,6 +1012,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
     # ── Alert -> STIX ──────────────────────────────────────────────────────
 
     def test_alert_to_stix_bundle_structure(self):
+        """Test that alert to stix bundle structure."""
         alert = {
             "timestamp": "2024-03-10T12:00:00Z",
             "rule_name": "Test Rule",
@@ -935,6 +1037,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_alert_observed_data_has_elastic_extension(self):
+        """Test that alert observed data has elastic extension."""
         alert = {
             "rule_name": "Test",
             "rule_id": "r1",
@@ -948,6 +1051,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(obs["x_elastic_alert"]["rule_name"], "Test")
 
     def test_alert_file_hash_creates_file_sco(self):
+        """Test that alert file hash creates file sco."""
         alert = {
             "rule_name": "Malware",
             "_raw": {
@@ -972,6 +1076,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertEqual(len([o for o in ip_objects if o["value"] == "1.2.3.4"]), 1)
 
     def test_alert_url_creates_url_sco(self):
+        """Test that alert url creates url sco."""
         alert = {
             "rule_name": "Phishing",
             "_raw": {"url": {"full": "https://phish.example.com/login"}},
@@ -981,6 +1086,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         self.assertIn("url", types)
 
     def test_alert_domain_only_creates_domain_sco(self):
+        """Test that alert domain only creates domain sco."""
         alert = {"rule_name": "C2", "_raw": {"url": {"domain": "c2.evil.com"}}}
         bundle = self.mapper.alert_to_stix_bundle(alert)
         types = [o["type"] for o in bundle["objects"]]
@@ -995,7 +1101,9 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
 
 class TestElasticExceptions(unittest.TestCase):
+    """Raised when a test elastic exceptions error occurs."""
     def test_all_inherit_from_base(self):
+        """Test that all inherit from base."""
         from gnat.connectors.elastic.exceptions import ElasticError
 
         for exc_cls in [
@@ -1013,6 +1121,7 @@ class TestElasticExceptions(unittest.TestCase):
             self.assertTrue(issubclass(exc_cls, ElasticError))
 
     def test_api_error_str_includes_context(self):
+        """Test that api error str includes context."""
         exc = ElasticAPIError(
             "msg",
             status_code=400,
@@ -1026,6 +1135,7 @@ class TestElasticExceptions(unittest.TestCase):
         self.assertIn("bad query", s)
 
     def test_kibana_error_str_includes_message(self):
+        """Test that kibana error str includes message."""
         exc = ElasticKibanaError(
             "msg",
             status_code=400,
@@ -1036,12 +1146,15 @@ class TestElasticExceptions(unittest.TestCase):
         self.assertIn("[name]: required", s)
 
     def test_not_found_is_api_error(self):
+        """Test that not found is api error."""
         self.assertTrue(issubclass(ElasticNotFoundError, ElasticAPIError))
 
     def test_kibana_not_found_is_kibana_error(self):
+        """Test that kibana not found is kibana error."""
         self.assertTrue(issubclass(ElasticKibanaNotFoundError, ElasticKibanaError))
 
     def test_kibana_validation_is_kibana_error(self):
+        """Test that kibana validation is kibana error."""
         self.assertTrue(issubclass(ElasticKibanaValidationError, ElasticKibanaError))
 
     if __name__ == "**main**":

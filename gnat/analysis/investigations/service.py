@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.analysis.investigations.service
 ======================================
@@ -82,6 +84,7 @@ class InvestigationService:
     """
 
     def __init__(self, store: InvestigationStore) -> None:
+        """Initialize InvestigationService."""
         self._store = store
 
     # ── Factory / CRUD ────────────────────────────────────────────────────────

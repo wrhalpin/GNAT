@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.search.mixin
 ====================
@@ -215,6 +217,7 @@ class STIXSearchMixin:
         seen: set = set()
 
         def _add(token: str) -> None:
+            """Internal helper for add."""
             t = token.strip()
             if t and t not in seen:
                 seen.add(t)

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.serve.app
 ==============
@@ -388,10 +390,12 @@ def create_app(
     # ── Unauthenticated endpoints ──────────────────────────────────────────
     @app.get("/health", tags=["health"], include_in_schema=False)
     def health_check():
+        """Perform a lightweight connectivity check against the remote API."""
         return {"status": "ok", "service": "gnat-webui"}
 
     @app.get("/", include_in_schema=False)
     def dashboard():
+        """Dashboard."""
         return HTMLResponse(content=_DASHBOARD_HTML)
 
     # ── Authenticated API routers ──────────────────────────────────────────

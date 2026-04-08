@@ -47,3 +47,7 @@ The maintenance pipeline should call this agent after patch generation and befor
 - support for bundle-level STIX comparison
 - selective field tolerance for `x_*` vendor extension additions
 - machine-readable regression reports for PR comments
+
+---
+
+*Licensed under the Apache License, Version 2.0*

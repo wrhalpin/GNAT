@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.misp.tags
 ===============================
@@ -22,6 +24,7 @@ class MISPTagCommands:
     """Tag management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPTagCommands."""
         self._client = client
 
     def list_tags(self) -> list[dict]:

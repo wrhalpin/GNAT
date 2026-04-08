@@ -8,12 +8,35 @@ improvements.
 
 ## Table of Contents
 
-1. [Development setup](#development-setup)
-2. [Running tests](#running-tests)
-3. [Adding a new connector](#adding-a-new-connector)
-4. [Adding a new ingest reader or mapper](#adding-a-new-ingest-reader-or-mapper)
-5. [Code style](#code-style)
-6. [Pull request checklist](#pull-request-checklist)
+1. [Developer Certificate of Origin (DCO)](#developer-certificate-of-origin-dco)
+2. [Development setup](#development-setup)
+3. [Running tests](#running-tests)
+4. [Adding a new connector](#adding-a-new-connector)
+5. [Adding a new ingest reader or mapper](#adding-a-new-ingest-reader-or-mapper)
+6. [Code style](#code-style)
+7. [Pull request checklist](#pull-request-checklist)
+
+---
+
+## Developer Certificate of Origin (DCO)
+
+This project uses the [Developer Certificate of Origin (DCO)](DCO.md) to
+ensure that contributions are properly licensed. By contributing, you agree
+to the terms in `DCO.md`.
+
+### Signing your commits
+
+All commits must include a sign-off line. Add `-s` to your commit command:
+
+```bash
+git commit -s -m "Your commit message"
+```
+
+This appends the following to your commit message automatically:
+
+```
+Signed-off-by: Your Name <your@email.com>
+```
 
 ---
 
@@ -207,3 +230,7 @@ Before opening a PR:
 - [ ] `config/config.ini.example` updated if new config keys added
 - [ ] `gnat/__init__.py` updated if new public symbols added
 - [ ] `make lint` and `make typecheck` clean (or known suppressions documented)
+
+---
+
+*Licensed under the Apache License, Version 2.0*

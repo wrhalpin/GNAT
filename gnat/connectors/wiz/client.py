@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wiz.client
 ==========================
@@ -77,6 +79,7 @@ class WizClient(BaseClient, ConnectorMixin):
         client_secret: str = "",
         **kwargs: Any,
     ):
+        """Initialize WizClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
@@ -112,6 +115,7 @@ class WizClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         raise GNATClientError(
             "Wiz get_object by single ID not directly supported; use filtered list_objects."
         )
@@ -147,9 +151,11 @@ class WizClient(BaseClient, ConnectorMixin):
         return data.get("issues", {}).get("nodes", [])
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Wiz is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Wiz is read-only — delete not supported.")
 
     # ── STIX conversion ───────────────────────────────────────────────────

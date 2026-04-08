@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.research.entry
 =======================
@@ -199,12 +201,14 @@ class ResearchEntry:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Post-init setup for ResearchEntry."""
         if not self.category:
             self.category = categorise_topic(self.topic)
         if not self.entry_id:
             self.entry_id = self._compute_id()
 
     def _compute_id(self) -> str:
+        """Internal helper for compute id."""
         raw = f"{topic_key(self.topic)}:{self.promoted_at.isoformat()}"
         return hashlib.sha256(raw.encode()).hexdigest()[:24]
 
@@ -239,21 +243,26 @@ class ResearchEntry:
 
     @property
     def is_pending(self) -> bool:
+        """Return True if pending."""
         return self.curator_status == "pending"
 
     @property
     def is_curated(self) -> bool:
+        """Return True if curated."""
         return self.curator_status == "curated"
 
     @property
     def is_archived(self) -> bool:
+        """Return True if archived."""
         return self.curator_status == "archived"
 
     def mark_curated(self) -> None:
+        """Mark curated."""
         self.curator_status = "curated"
         self.curated_at = datetime.now(timezone.utc)
 
     def mark_archived(self) -> None:
+        """Mark archived."""
         self.curator_status = "archived"
 
     # ── Serialisation ──────────────────────────────────────────────────────
@@ -282,6 +291,7 @@ class ResearchEntry:
         """Reconstruct a ``ResearchEntry`` from a stored dict."""
 
         def _parse_dt(s: str | None) -> datetime | None:
+            """Internal helper for parse dt."""
             if not s:
                 return None
             return datetime.fromisoformat(s)
@@ -322,6 +332,7 @@ class ResearchEntry:
         }
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         fresh = "fresh" if self.is_fresh else "STALE"
         return (
             f"ResearchEntry(topic={self.topic!r}, category={self.category!r}, "

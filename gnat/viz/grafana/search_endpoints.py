@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.viz.grafana.search_endpoints
 ====================================
@@ -193,6 +195,7 @@ def build_search_router(search_index: SearchIndex) -> Any:
 
     @router.get("/")
     async def solr_health():
+        """Solr health."""
         alive = search_index.ping()
         return {"status": "ok" if alive else "degraded", "solr_reachable": alive}
 
@@ -330,6 +333,7 @@ def build_search_router(search_index: SearchIndex) -> Any:
 
     @router.post("/tag-keys")
     async def solr_tag_keys():
+        """Solr tag keys."""
         return [
             {"type": "string", "text": "stix_type"},
             {"type": "string", "text": "source_platform"},
@@ -337,6 +341,7 @@ def build_search_router(search_index: SearchIndex) -> Any:
 
     @router.post("/tag-values")
     async def solr_tag_values(request: Request):
+        """Solr tag values."""
         body = await request.json()
         key = body.get("key", "stix_type")
         if key in ("stix_type", "source_platform"):

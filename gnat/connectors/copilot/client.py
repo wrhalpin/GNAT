@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.copilot.client
 ==============================
@@ -77,6 +79,7 @@ class CopilotClient(BaseClient, ConnectorMixin):
         azure_token: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize CopilotClient."""
         super().__init__(host=host, **kwargs)
         self.auth_type = auth_type
         self.api_key = api_key

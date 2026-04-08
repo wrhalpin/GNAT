@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.misp.galaxies
 ===================================
@@ -30,6 +32,7 @@ class MISPGalaxyCommands:
     """Galaxy and cluster inspection operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPGalaxyCommands."""
         self._client = client
 
     def list_galaxies(self) -> list[dict]:

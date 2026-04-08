@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.socradar.client
 =================================
@@ -54,6 +56,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         company_id: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize SOCRadarClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._company_id = company_id
@@ -115,6 +118,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("SOCRadar TI API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
@@ -147,6 +151,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for ioc to stix."""
         sr_type = native.get("ioc_type", native.get("type", ""))
         value = native.get("value", native.get("indicator", ""))
         pattern = self._make_pattern(sr_type, value)
@@ -171,6 +176,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for actor to stix."""
         return {
             "type": "threat-actor",
             "id": f"threat-actor--sr-{native.get('id', '')}",
@@ -183,6 +189,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         }
 
     def _malware_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for malware to stix."""
         return {
             "type": "malware",
             "id": f"malware--sr-{native.get('id', '')}",
@@ -196,6 +203,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(sr_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = (sr_type or "").lower()
         if t in ("ip", "ipv4"):
             return f"[ipv4-addr:value = '{value}']"
@@ -217,6 +225,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_to_sr_type(pattern: str) -> str:
+        """Internal helper for stix to sr type."""
         if "ipv4-addr" in pattern:
             return "ip"
         if "ipv6-addr" in pattern:

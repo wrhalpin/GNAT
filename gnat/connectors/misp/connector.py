@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.misp.connector
 ================================
@@ -47,6 +49,7 @@ class MISPConnector(BaseClient, ConnectorMixin):
         timeout: float = 30.0,
         **kwargs,
     ) -> None:
+        """Initialize MISPConnector."""
         super().__init__(host=host, verify_ssl=verify_ssl, timeout=timeout)
         url = host if host.startswith(("http://", "https://")) else f"https://{host}"
         cfg = MISPConfig(

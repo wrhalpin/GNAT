@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.shodan.client
 =============================
@@ -78,6 +80,7 @@ class ShodanClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.shodan.io", api_key: str = "", **kwargs: Any):
+        """Initialize ShodanClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -136,9 +139,11 @@ class ShodanClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"list_objects not implemented for STIX type {stix_type} in Shodan")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Shodan is read-only — no object creation or updates supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Shodan is read-only — no deletion supported.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.exceptions
 
@@ -67,6 +69,7 @@ class WazuhAuthError(WazuhError):
         status_code: int | None = None,
         endpoint: str | None = None,
     ) -> None:
+        """Initialize WazuhAuthError."""
         super().__init__(message)
         self.status_code = status_code
         self.endpoint = endpoint
@@ -112,6 +115,7 @@ class WazuhAPIError(WazuhError):
         detail: str = "",
         remediation: str = "",
     ) -> None:
+        """Initialize WazuhAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.error_code = error_code
@@ -121,6 +125,7 @@ class WazuhAPIError(WazuhError):
         self.remediation = remediation
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.status_code:
             parts.append(f"HTTP {self.status_code}")

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.jira.client
 ==============================
@@ -89,6 +91,7 @@ class JiraClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize JiraClient."""
         super().__init__(host=host, **kwargs)
         self._email = email
         self._api_token = api_token

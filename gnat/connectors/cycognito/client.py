@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.cycognito.client
 ================================
@@ -75,6 +77,7 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
     def __init__(
         self, host: str = "https://api.platform.cycognito.com", api_key: str = "", **kwargs: Any
     ):
+        """Initialize CyCognitoClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -94,6 +97,7 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "vulnerability":
             return self.get(f"/v1/issues/issue/{object_id}")
         if stix_type == "report":
@@ -108,6 +112,7 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -122,9 +127,11 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
         return resp.get("assets", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("CyCognito is read-only for this connector (asset/issue ingestion).")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("CyCognito does not support deletion via this connector.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -165,12 +172,14 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
         return self._asset_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "CyCognito is read-only for external exposure data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _issue_to_stix(self, issue: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for issue to stix."""
         now = _now_ts()
         iid = issue.get("id") or issue.get("issue_instance_id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'cycognito:{iid}')}"
@@ -193,6 +202,7 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
         }
 
     def _asset_to_stix(self, asset: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for asset to stix."""
         now = _now_ts()
         aid = asset.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'asset:{aid}')}"

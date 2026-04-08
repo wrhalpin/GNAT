@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """tests for OSSIM connector"""
 
 import configparser
@@ -19,12 +21,14 @@ from gnat.connectors.ossim import (
 
 
 def _cfg(**kw):
+    """Internal helper for cfg."""
     d = {"url": "https://ossim.test", "api_key": "test-key"}
     d.update(kw)
     return OSSIMConfig(**d)
 
 
 def _resp(status=200, body=None):
+    """Internal helper for resp."""
     r = MagicMock()
     r.status = status
     r.data = json.dumps(body if body is not None else {}).encode()
@@ -32,6 +36,7 @@ def _resp(status=200, body=None):
 
 
 def _make_client():
+    """Internal helper for make client."""
     cfg = _cfg()
     with patch("gnat.connectors.ossim.urllib3.PoolManager") as pm:
         mock_http = MagicMock()
@@ -58,27 +63,34 @@ _ALARM = {
 
 
 class TestOSSIMConfig(unittest.TestCase):
+    """Configuration container for test o s s i m."""
     def test_basic(self):
+        """Test that basic."""
         cfg = _cfg()
         self.assertEqual(cfg.base_url, "https://ossim.test")
 
     def test_api_key_header(self):
+        """Test that api key header."""
         cfg = _cfg()
         self.assertEqual(cfg.base_headers["X-USM-API-KEY"], "test-key")
 
     def test_endpoint(self):
+        """Test that endpoint."""
         cfg = _cfg()
         self.assertEqual(cfg.endpoint("alarms"), "https://ossim.test/api/1.0/alarms")
 
     def test_missing_url_raises(self):
+        """Test that missing url raises."""
         with self.assertRaises(OSSIMConfigError):
             OSSIMConfig(url="", api_key="k")
 
     def test_missing_api_key_raises(self):
+        """Test that missing api key raises."""
         with self.assertRaises(OSSIMConfigError):
             OSSIMConfig(url="https://h", api_key="")
 
     def test_load_from_ini(self):
+        """Test that load from ini."""
         p = configparser.ConfigParser()
         p.read_dict({"ossim": {"url": "https://ossim", "api_key": "k"}})
         cfg = load_ossim_config(p)
@@ -86,12 +98,15 @@ class TestOSSIMConfig(unittest.TestCase):
 
     def test_verify_ssl_defaults_false(self):
         # OSSIM commonly uses self-signed certs
+        """Test that verify ssl defaults false."""
         cfg = _cfg()
         self.assertFalse(cfg.verify_ssl)
 
 
 class TestOSSIMClient(unittest.TestCase):
+    """HTTP API client for the TestOSSIM platform."""
     def test_get_sends_api_key_header(self):
+        """Test that get sends api key header."""
         c, mock_http = _make_client()
         mock_http.request.return_value = _resp(200, {"data": []})
         c.get("alarms")
@@ -99,35 +114,42 @@ class TestOSSIMClient(unittest.TestCase):
         self.assertEqual(headers["X-USM-API-KEY"], "test-key")
 
     def test_401_raises_auth_error(self):
+        """Test that 401 raises auth error."""
         c, mock_http = _make_client()
         mock_http.request.return_value = _resp(401)
         with self.assertRaises(OSSIMAuthError):
             c.get("alarms")
 
     def test_404_raises_not_found(self):
+        """Test that 404 raises not found."""
         c, mock_http = _make_client()
         mock_http.request.return_value = _resp(404)
         with self.assertRaises(OSSIMNotFoundError):
             c.get("alarms/missing")
 
     def test_context_manager(self):
+        """Test that context manager."""
         cfg = _cfg()
         with patch("gnat.connectors.ossim.urllib3.PoolManager"), OSSIMClient(cfg) as client:
             self.assertIsInstance(client, OSSIMClient)
 
 
 class TestOSSIMAlarmCommands(unittest.TestCase):
+    """Unit tests for :class:`OSSIMAlarmCommands`."""
     def _make_alarms(self):
+        """Internal helper for make alarms."""
         c, mock_http = _make_client()
         return OSSIMAlarmCommands(c), mock_http
 
     def test_list_alarms(self):
+        """Test that list alarms."""
         cmd, mock_http = self._make_alarms()
         mock_http.request.return_value = _resp(200, {"data": [_ALARM], "total": 1})
         results = cmd.list_alarms()
         self.assertEqual(len(results), 1)
 
     def test_close_alarm(self):
+        """Test that close alarm."""
         cmd, mock_http = self._make_alarms()
         mock_http.request.return_value = _resp(200, {"status": "closed"})
         cmd.close_alarm("alarm-1")
@@ -135,6 +157,7 @@ class TestOSSIMAlarmCommands(unittest.TestCase):
         self.assertEqual(body["status"], "closed")
 
     def test_normalise_alarm(self):
+        """Test that normalise alarm."""
         norm = OSSIMAlarmCommands.normalise_alarm(_ALARM)
         self.assertEqual(norm["id"], "alarm-1")
         self.assertEqual(norm["priority"], 4)
@@ -143,12 +166,14 @@ class TestOSSIMAlarmCommands(unittest.TestCase):
         self.assertEqual(norm["event_count"], 50)
 
     def test_priority_to_severity_mapping(self):
+        """Test that priority to severity mapping."""
         for prio, expected_sev in [(1, 0), (2, 1), (3, 2), (4, 3), (5, 4)]:
             alarm = {**_ALARM, "priority": prio}
             result = OSSIMAlarmCommands.normalise_alarm(alarm)
             self.assertEqual(result["severity"], expected_sev)
 
     def test_get_alarm_events(self):
+        """Test that get alarm events."""
         cmd, mock_http = self._make_alarms()
         mock_http.request.return_value = _resp(200, {"data": [{"event_id": "e1"}]})
         events = cmd.get_alarm_events("alarm-1")
@@ -156,11 +181,14 @@ class TestOSSIMAlarmCommands(unittest.TestCase):
 
 
 class TestOSSIMAssetCommands(unittest.TestCase):
+    """Unit tests for :class:`OSSIMAssetCommands`."""
     def _make_assets(self):
+        """Internal helper for make assets."""
         c, mock_http = _make_client()
         return OSSIMAssetCommands(c), mock_http
 
     def test_list_assets(self):
+        """Test that list assets."""
         cmd, mock_http = self._make_assets()
         mock_http.request.return_value = _resp(
             200, {"data": [{"id": "a1", "ip": "10.0.0.5"}], "total": 1}
@@ -169,6 +197,7 @@ class TestOSSIMAssetCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_search_by_ip(self):
+        """Test that search by ip."""
         cmd, mock_http = self._make_assets()
         mock_http.request.return_value = _resp(200, {"data": []})
         cmd.search_by_ip("10.0.0.5")
@@ -177,11 +206,14 @@ class TestOSSIMAssetCommands(unittest.TestCase):
 
 
 class TestOSSIMSTIXMapper(unittest.TestCase):
+    """STIX translation helper for test o s s i m s t i x objects."""
     def setUp(self):
+        """Set up test fixtures before each test method."""
         self.mapper = OSSIMSTIXMapper()
         self._alarm = OSSIMAlarmCommands.normalise_alarm(_ALARM)
 
     def test_bundle_structure(self):
+        """Test that bundle structure."""
         bundle = self.mapper.alarm_to_stix_bundle(self._alarm)
         types = {o["type"] for o in bundle["objects"]}
         self.assertIn("ipv4-addr", types)
@@ -189,17 +221,20 @@ class TestOSSIMSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_observed_data_extension(self):
+        """Test that observed data extension."""
         bundle = self.mapper.alarm_to_stix_bundle(self._alarm)
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
         self.assertIn("x_ossim_alarm", obs)
         self.assertEqual(obs["x_ossim_alarm"]["priority"], 4)
 
     def test_number_observed_uses_event_count(self):
+        """Test that number observed uses event count."""
         bundle = self.mapper.alarm_to_stix_bundle(self._alarm)
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
         self.assertEqual(obs["number_observed"], 50)
 
     def test_deduplication(self):
+        """Test that deduplication."""
         bundle = self.mapper.alarms_to_stix_bundle([self._alarm, self._alarm])
         ip_objs = [o for o in bundle["objects"] if o["type"] == "ipv4-addr"]
         self.assertEqual(len([o for o in ip_objs if o["value"] == "1.2.3.4"]), 1)

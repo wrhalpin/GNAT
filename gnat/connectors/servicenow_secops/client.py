@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.servicenow_secops.client
 =========================================
@@ -102,6 +104,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize ServiceNowSecOpsClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
@@ -438,6 +441,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         return self._to_sn_payload(stix_dict.get("type", "observed-data"), stix_dict)
 
     def _incident_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for incident to stix."""
         sys_id = record.get("sys_id", "")
         opened_at = record.get("opened_at", _now_ts())
         return {
@@ -463,6 +467,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         }
 
     def _vuln_item_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln item to stix."""
         sys_id = record.get("sys_id", "")
         cve = record.get("vulnerability", {})
         cve_id = cve.get("value", "") if isinstance(cve, dict) else str(cve)
@@ -487,6 +492,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         }
 
     def _observable_to_stix(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for observable to stix."""
         sys_id = record.get("sys_id", "")
         value = record.get("value", "")
         obs_type = record.get("type", "domain")

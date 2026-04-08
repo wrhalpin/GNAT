@@ -187,7 +187,7 @@ class Workflow:
         errors:   list[str] = []
 
         # Use a pointer-based traversal to support routing
-        remaining = list(self._steps)  # default order
+        _remaining = list(self._steps)  # default order
         visited   : set[str] = set()
 
         step_idx = 0

@@ -8,7 +8,7 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 
 ---
 
-## [Unreleased]
+## [1.4.0]
 
 ### Added — Analyst OS Layer (Phase 3)
 
@@ -169,7 +169,7 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 - `gnat/investigations/workspace.py`: `_node_to_stix_base` and Relationship tagging used `obj["key"] = value` item assignment; `STIXBase` only supports `obj.key = value` attribute access — fixed, workspace now materialises all nodes correctly (was 0 nodes materialised)
 
 **Example**
-- `examples/investigation_xsoar_tq_gm_powerbi.py`: End-to-end cross-platform investigation script (XSOAR + ThreatQ + GreyMatter → EvidenceGraph → workspace → Power BI xlsx); `--mock` flag for dry runs without live credentials; completeness check verifying 14 investigation methods across 3 platforms
+- `docs/tutorials/investigation_xsoar_tq_gm_powerbi.py`: End-to-end cross-platform investigation script (XSOAR + ThreatQ + GreyMatter → EvidenceGraph → workspace → Power BI xlsx); `--mock` flag for dry runs without live credentials; completeness check verifying 14 investigation methods across 3 platforms
 
 ### Added — Analysis Layer (Phase 3: Correlation Engine + Analyst Assistance)
 
@@ -321,3 +321,7 @@ Initial release. Core client layer (`GNATClient`, `BaseClient`, `CLIENT_REGISTRY
 [v0.6.0]: https://github.com/your-org/gnat/compare/v0.3.0...v0.6.0
 [v0.3.0]: https://github.com/your-org/gnat/compare/v0.1.0...v0.3.0
 [v0.1.0]: https://github.com/your-org/gnat/releases/tag/v0.1.0
+
+---
+
+*Licensed under the Apache License, Version 2.0*

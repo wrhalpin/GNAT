@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 GNAT Snort Connector
 =========================
@@ -57,19 +59,19 @@ from datetime import datetime, timezone
 
 
 class SnortError(Exception):
-    pass
+    """Raised when a snort error error occurs."""
 
 
 class SnortConfigError(SnortError):
-    pass
+    """Raised when a snort config error error occurs."""
 
 
 class SnortLogError(SnortError):
-    pass
+    """Raised when a snort log error error occurs."""
 
 
 class SnortSTIXError(SnortError):
-    pass
+    """Raised when a snort s t i x error error occurs."""
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -77,11 +79,13 @@ class SnortSTIXError(SnortError):
 
 @dataclass
 class SnortConfig:
+    """Configuration container for snort."""
     alert_log_path: str = "/var/log/snort/alert_json.txt"
     log_format: str = "json"  # 'json' or 'fast'
     timeout: int = 10
 
     def __post_init__(self):
+        """Post-init setup for SnortConfig."""
         if not self.alert_log_path:
             raise SnortConfigError("'alert_log_path' required in [snort].")
         if self.log_format not in ("json", "fast"):
@@ -89,6 +93,7 @@ class SnortConfig:
 
 
 def load_snort_config(config: configparser.ConfigParser, section: str = "snort") -> SnortConfig:
+    """Load snort config from the configured source."""
     if not config.has_section(section):
         raise SnortConfigError(f"Section '[{section}]' not found.")
     raw = {
@@ -120,6 +125,7 @@ class SnortJSONReader:
     """
 
     def __init__(self, config: SnortConfig):
+        """Initialize SnortJSONReader."""
         self.config = config
 
     def iter_alerts(self, path: str | None = None) -> Iterator[dict]:
@@ -174,9 +180,11 @@ class SnortJSONReader:
         return new_offset
 
     def count_alerts(self, path: str | None = None) -> int:
+        """Return the count of alerts."""
         return sum(1 for _ in self.iter_alerts(path=path))
 
     def get_log_size(self, path: str | None = None) -> int:
+        """Retrieve log size."""
         try:
             return os.path.getsize(path or self.config.alert_log_path)
         except OSError:
@@ -228,6 +236,7 @@ class SnortFastReader:
     """Reads Snort 2 fast alert text log format."""
 
     def __init__(self, config: SnortConfig):
+        """Initialize SnortFastReader."""
         self.config = config
 
     def iter_alerts(self, path: str | None = None) -> Iterator[dict]:
@@ -243,10 +252,12 @@ class SnortFastReader:
             raise SnortLogError(f"Snort fast alert log not found: {log_path}")
 
     def count_alerts(self, path: str | None = None) -> int:
+        """Return the count of alerts."""
         return sum(1 for _ in self.iter_alerts(path=path))
 
     @staticmethod
     def _parse_fast_line(line: str) -> dict | None:
+        """Internal helper for parse fast line."""
         m = _FAST_PATTERN.match(line)
         if not m:
             return None
@@ -285,6 +296,7 @@ class SnortAlertReader:
     """
 
     def __init__(self, config: SnortConfig):
+        """Initialize SnortAlertReader."""
         self.config = config
         if config.log_format == "json":
             self._reader = SnortJSONReader(config)
@@ -292,9 +304,11 @@ class SnortAlertReader:
             self._reader = SnortFastReader(config)
 
     def iter_alerts(self, path: str | None = None) -> Iterator[dict]:
+        """Iter alerts."""
         yield from self._reader.iter_alerts(path=path)
 
     def count_alerts(self, path: str | None = None) -> int:
+        """Return the count of alerts."""
         return self._reader.count_alerts(path=path)
 
     @staticmethod
@@ -388,6 +402,7 @@ class SnortSTIXMapper:
         }
 
     def alerts_to_stix_bundle(self, alerts: list[dict]) -> dict:
+        """Alerts to stix bundle."""
         all_objects: list[dict] = []
         seen: set[str] = set()
         for a in alerts:
@@ -404,8 +419,10 @@ class SnortSTIXMapper:
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

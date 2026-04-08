@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.incidents
 ========================================
@@ -41,6 +43,7 @@ class SentinelIncidentCommands:
     """Incident management operations."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelIncidentCommands."""
         self._client = client
 
     def list_incidents(

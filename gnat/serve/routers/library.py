@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.serve.routers.library
 ==========================
@@ -21,6 +23,7 @@ router = APIRouter(prefix="/api/library", tags=["library"])
 
 
 def _get_library(request: Request):
+    """Internal helper for get library."""
     lib = getattr(request.app.state, "library", None)
     if lib is None:
         raise HTTPException(503, "Research library not configured on this server")

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.fortiedr.client
 ===============================
@@ -78,6 +80,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, username: str = "", password: str = "", **kwargs: Any):
+        """Initialize FortiEDRClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
@@ -154,6 +157,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
         raise GNATClientError(f"upsert_object limited for {stix_type} in FortiEDR")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("FortiEDR connector does not support object deletion via public API.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────

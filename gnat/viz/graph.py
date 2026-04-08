@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.viz.graph
 ==================
@@ -174,26 +176,32 @@ class _Vec2:
     __slots__ = ("x", "y")
 
     def __init__(self, x: float = 0.0, y: float = 0.0):
+        """Initialize _Vec2."""
         self.x = x
         self.y = y
 
     def __add__(self, o: _Vec2) -> _Vec2:
+        """Internal helper for add."""
         return _Vec2(self.x + o.x, self.y + o.y)
 
     def __iadd__(self, o: _Vec2) -> _Vec2:
+        """Internal helper for iadd."""
         self.x += o.x
         self.y += o.y
         return self
 
     def __mul__(self, s: float) -> _Vec2:
+        """Internal helper for mul."""
         return _Vec2(self.x * s, self.y * s)
 
     def dist2(self, o: _Vec2) -> float:
+        """Dist2."""
         dx = self.x - o.x
         dy = self.y - o.y
         return dx * dx + dy * dy
 
     def dist(self, o: _Vec2) -> float:
+        """Dist."""
         return math.sqrt(self.dist2(o))
 
 
@@ -206,6 +214,7 @@ class _QuadTree:
     """
 
     def __init__(self, cx: float, cy: float, half: float):
+        """Initialize _QuadTree."""
         self.cx = cx
         self.cy = cy
         self.half = half
@@ -216,6 +225,7 @@ class _QuadTree:
         self.children: list[_QuadTree] | None = None
 
     def insert(self, nid: int, x: float, y: float, mass: float = 1.0) -> None:
+        """Insert."""
         if self.mass == 0:
             # Empty cell — store directly
             self.mass = mass
@@ -242,6 +252,7 @@ class _QuadTree:
         self._insert_into_child(nid, x, y, mass)
 
     def _subdivide(self) -> None:
+        """Internal helper for subdivide."""
         h = self.half / 2
         self.children = [
             _QuadTree(self.cx - h, self.cy - h, h),
@@ -251,6 +262,7 @@ class _QuadTree:
         ]
 
     def _insert_into_child(self, nid, x, y, mass) -> None:
+        """Internal helper for insert into child."""
         idx = (1 if x >= self.cx else 0) + (2 if y >= self.cy else 0)
         self.children[idx].insert(nid, x, y, mass)
 
@@ -517,6 +529,7 @@ class GraphView:
         layout_iterations: int = 100,
         theta: float = 0.8,
     ):
+        """Initialize GraphView."""
         self._ws = workspace
         self._seed = seed
         self._size_field = node_size_field
@@ -1110,6 +1123,7 @@ class GraphView:
             # Only read from _properties so that auto-defaulted core
             # attributes (self.created = _utcnow()) don't mask "truly
             # unset" timestamps. Objects without explicit timestamps get x=-5.
+            """Internal helper for parse ts."""
             raw = obj._properties.get(time_field, "") if hasattr(obj, "_properties") else ""
             if not raw:
                 return None
@@ -1145,6 +1159,7 @@ class GraphView:
         for nid, obj in nodes.items():
 
             def _get(f, _obj=obj):
+                """Internal helper for get."""
                 v = _obj._properties.get(f)
                 if v is None and hasattr(_obj, f):
                     v = getattr(_obj, f, None)
@@ -1167,6 +1182,7 @@ class GraphView:
         relationship_types=None,
         max_nodes: int | None = None,
     ) -> tuple[dict[str, STIXBase], list[dict[str, str]]]:
+        """Internal helper for extract graph."""
         all_objects = dict(self._ws.objects)
         relationships = {
             sid: obj for sid, obj in all_objects.items() if obj.stix_type == "relationship"
@@ -1227,6 +1243,7 @@ class GraphView:
         edges: list[dict[str, str]],
         cluster_threshold: int | None = None,
     ) -> dict[str, tuple[float, float]]:
+        """Internal helper for compute layout."""
         node_ids = list(nodes.keys())
         n = len(node_ids)
         if n == 0:
@@ -1282,6 +1299,7 @@ class GraphView:
         highlight_ids: set | None = None,
         _precomputed_positions: dict[str, tuple[float, float]] | None = None,
     ) -> str:
+        """Internal helper for build sigma html."""
         if _precomputed_positions is not None:
             positions = _precomputed_positions
         else:
@@ -1521,6 +1539,7 @@ class GraphView:
         edges: list[dict[str, str]],
         title: str | None = None,
     ) -> Any:
+        """Internal helper for build plotly figure."""
         try:
             import plotly.graph_objects as go
         except ImportError:
@@ -1652,6 +1671,7 @@ class GraphView:
         edges: list[dict[str, str]],
         positions: dict[str, tuple[float, float]],
     ) -> dict:
+        """Internal helper for build graph data."""
         node_list = []
         for sid, obj in nodes.items():
             pos = positions.get(sid, (0.0, 0.0))
@@ -1691,6 +1711,7 @@ class GraphView:
     # ── Helpers ─────────────────────────────────────────────────────────────
 
     def _node_size(self, obj: STIXBase) -> int:
+        """Internal helper for node size."""
         val = obj._properties.get(self._size_field)
         if val is None:
             val = obj._properties.get("x_rf_risk_score")

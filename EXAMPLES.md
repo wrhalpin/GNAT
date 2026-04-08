@@ -12,6 +12,7 @@ Complete, end-to-end walkthroughs.
 
 - [Daily SOC Workflow](docs/tutorials/daily-soc-workflow.md) — research, curate, push EDL
 - [Production Scheduled Pipeline](docs/tutorials/production-scheduled-pipeline.md) — long-running ingest/export/report server
+- [Analyst Intelligence Workflow](docs/tutorials/analyst-intelligence-workflow.md) — cross-platform investigation → structured report → publish
 
 ---
 
@@ -30,6 +31,10 @@ Complete, end-to-end walkthroughs.
 | Generate PDF/HTML/DOCX reports | [Generate Reports](docs/how-to/generate-reports.md) |
 | Graphs, timelines, heatmaps, tables | [Visualize Data](docs/how-to/visualize-data.md) |
 | Concurrent multi-platform data gathering | [Use the Async Client](docs/how-to/use-async-client.md) |
+| Confidence scoring, TLP, correlation, gap detection | [Use the Analysis Layer](docs/how-to/use-analysis-layer.md) |
+| Cross-platform evidence graph from multiple platforms | [Build Cross-Platform Investigations](docs/how-to/build-investigations.md) |
+| Structured intelligence product lifecycle | [Create Intelligence Reports](docs/how-to/create-intelligence-reports.md) |
+| Export, webhooks, TAXII, REST gateway | [Disseminate Intelligence](docs/how-to/disseminate-intelligence.md) |
 
 ---
 
@@ -43,3 +48,7 @@ Complete, end-to-end walkthroughs.
 
 Architecture Decision Records live in
 [docs/explanation/architecture/adrs/](docs/explanation/architecture/adrs/).
+
+---
+
+*Licensed under the Apache License, Version 2.0*

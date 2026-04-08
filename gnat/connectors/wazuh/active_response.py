@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.active_response
 
@@ -41,6 +43,7 @@ class WazuhActiveResponseCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhActiveResponseCommands."""
         self._client = client
 
     def run_command(

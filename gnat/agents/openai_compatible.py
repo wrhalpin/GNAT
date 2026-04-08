@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.agents.openai_compatible
 =============================
@@ -51,6 +53,7 @@ class OpenAICompatibleProvider(LLMProvider, BaseClient):
         **kwargs: Any,
     ) -> None:
         # Set sensible defaults
+        """Initialize OpenAICompatibleProvider."""
         if provider == "grok":
             default_host = "https://api.x.ai"
             default_model = "grok-4"

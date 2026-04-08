@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.splunk.alerts
 
@@ -68,6 +70,7 @@ class SplunkAlertCommands:
     """
 
     def __init__(self, client: SplunkClient) -> None:
+        """Initialize SplunkAlertCommands."""
         self._client = client
 
     # ── Core alerts ────────────────────────────────────────────────────────
@@ -202,6 +205,7 @@ class SplunkAlertCommands:
     # ── Enterprise Security notable events ─────────────────────────────────
 
     def _require_es(self) -> None:
+        """Internal helper for require es."""
         if not self._client.config.es_enabled:
             raise SplunkThreatIntelError(
                 "Enterprise Security notable event commands require "

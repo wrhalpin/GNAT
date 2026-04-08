@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.alerts
 =====================================
@@ -12,6 +14,7 @@ class SentinelAlertCommands:
     """Alert query operations."""
 
     def __init__(self, client: SentinelClient) -> None:
+        """Initialize SentinelAlertCommands."""
         self._client = client
 
     def list_alerts(

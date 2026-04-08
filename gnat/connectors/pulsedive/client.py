@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.pulsedive.client
 ==================================
@@ -54,6 +56,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize PulseDiveClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -150,6 +153,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         return resp if isinstance(resp, dict) else {}
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("PulseDive API does not support delete operations.")
 
     # ------------------------------------------------------------------
@@ -178,11 +182,13 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
 
     @property
     def _pd_params(self) -> dict[str, str]:
+        """Internal helper for pd params."""
         if self._api_key:
             return {"key": self._api_key}
         return {}
 
     def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for indicator to stix."""
         pd_type = native.get("type", "domain")
         value = native.get("indicator", "")
         pattern = self._make_pattern(pd_type, value)
@@ -207,6 +213,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         }
 
     def _threat_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for threat to stix."""
         return {
             "type": "threat-actor",
             "id": f"threat-actor--pd-{native.get('tid', '')}",
@@ -222,6 +229,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(pd_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = (pd_type or "").lower()
         if t in ("ip",):
             return f"[ipv4-addr:value = '{value}']"
@@ -241,6 +249,7 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_to_pd_type(pattern: str) -> str:
+        """Internal helper for stix to pd type."""
         if "ipv4-addr" in pattern or "ipv6-addr" in pattern:
             return "ip"
         if "domain-name" in pattern:

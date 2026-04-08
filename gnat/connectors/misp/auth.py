@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.misp.auth
 ===============================
@@ -23,6 +25,7 @@ class MISPAuthManager:
     """Manages MISP static API key authentication."""
 
     def __init__(self, config: MISPConfig, http: urllib3.PoolManager) -> None:
+        """Initialize MISPAuthManager."""
         self._config = config
         self._http = http
 

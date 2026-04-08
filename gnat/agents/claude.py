@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.agents.claude
 ==================
@@ -29,6 +31,7 @@ class ClaudeProvider(LLMProvider, BaseClient):
         model: str = "claude-3-5-sonnet-20241022",
         **kwargs: Any,
     ) -> None:
+        """Initialize ClaudeProvider."""
         super().__init__(host="https://api.anthropic.com", **kwargs)
         self._api_key = api_key
         self.model = model

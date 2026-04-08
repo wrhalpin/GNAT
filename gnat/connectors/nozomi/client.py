@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.nozomi.client
 ================================
@@ -59,6 +61,7 @@ _STIX_NS = _uuid.UUID("d3e4f5a6-b7c8-9012-cdef-012345678901")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -92,6 +95,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         password: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize NozomiClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
         self._username = username
@@ -250,6 +254,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         return self._alert_to_stix(native)
 
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"nozomi-alert-{alert_id}"))
         severity_map = {"critical": 90, "high": 75, "medium": 50, "low": 25}
@@ -299,6 +304,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         return stix
 
     def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         cve_id = vuln.get("cve_id", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"nozomi-cve-{cve_id}"))
         ts = vuln.get("published_date", _now_ts())
@@ -326,6 +332,7 @@ class NozomiClient(BaseClient, ConnectorMixin):
         }
 
     def _node_to_stix(self, node: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for node to stix."""
         node_id = str(node.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"nozomi-node-{node_id}"))
         ts = _now_ts()

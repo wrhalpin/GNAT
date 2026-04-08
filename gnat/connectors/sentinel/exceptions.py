@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.exceptions
 =========================================
@@ -53,6 +55,7 @@ class SentinelAuthError(SentinelError):
     """
 
     def __init__(self, message: str, azure_error_code: str = "") -> None:
+        """Initialize SentinelAuthError."""
         super().__init__(message)
         self.azure_error_code = azure_error_code
 
@@ -81,6 +84,7 @@ class SentinelAPIError(SentinelError):
         azure_message: str = "",
         endpoint: str | None = None,
     ) -> None:
+        """Initialize SentinelAPIError."""
         super().__init__(message)
         self.status_code = status_code
         self.azure_error_code = azure_error_code
@@ -88,6 +92,7 @@ class SentinelAPIError(SentinelError):
         self.endpoint = endpoint
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         parts = [super().__str__()]
         if self.status_code:
             parts.append(f"HTTP {self.status_code}")

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.serve.routers.scheduler
 =============================
@@ -20,6 +22,7 @@ router = APIRouter(prefix="/api/scheduler", tags=["scheduler"])
 
 
 def _get_scheduler(request: Request):
+    """Internal helper for get scheduler."""
     sched = getattr(request.app.state, "scheduler", None)
     if sched is None:
         raise HTTPException(503, "Scheduler not configured on this server")

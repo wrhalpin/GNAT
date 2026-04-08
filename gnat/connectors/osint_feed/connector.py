@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.osint_feed.connector
 =====================================
@@ -170,6 +172,7 @@ class OsintFeedConnector(BaseClient, ConnectorMixin):
         feed_name: str = "",
         **kwargs: Any,
     ):
+        """Initialize OsintFeedConnector."""
         super().__init__(host=host, **kwargs)
         self._feed_type = feed_type.lower()
         self._taxii_path = taxii_path
@@ -510,8 +513,10 @@ class _BearerAuth:
     """
 
     def __init__(self, token: str) -> None:
+        """Initialize _BearerAuth."""
         self._token = token
 
     def __call__(self, req: Any) -> Any:
+        """Call this _BearerAuth instance."""
         req.headers["Authorization"] = f"Bearer {self._token}"
         return req

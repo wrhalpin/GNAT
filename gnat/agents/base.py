@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.agents.base
 ====================
@@ -263,6 +265,7 @@ class ParsedIntel:
         )
 
     def total_objects(self) -> int:
+        """Total objects."""
         return len(self.indicators) + len(self.ttps) + len(self.actors) + len(self.vulnerabilities)
 
 
@@ -301,6 +304,7 @@ class ClaudeClient:
     _API_VERSION = "2023-06-01"
 
     def __init__(self, config: AgentConfig):
+        """Initialize ClaudeClient."""
         self._cfg = config
 
     def complete(

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.lansweeper.client
 ================================
@@ -88,6 +90,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize LansweeperClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
@@ -234,6 +237,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         }
 
     def _asset_to_stix(self, asset: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for asset to stix."""
         now = _now_ts()
         aid = str(asset.get("id", asset.get("assetId", "")))
         return {
@@ -258,6 +262,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         }
 
     def _software_to_stix(self, sw: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for software to stix."""
         now = _now_ts()
         sid = str(sw.get("id", ""))
         return {

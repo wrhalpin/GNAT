@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.netskope.client
 ====================================
@@ -27,6 +29,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_token: str = "", **kwargs: Any):
+        """Initialize NetskopeClient."""
         super().__init__(host=host, **kwargs)
         self._api_token = api_token
 
@@ -35,10 +38,12 @@ class NetskopeClient(BaseClient, ConnectorMixin):
         self._auth_headers["Netskope-Api-Token"] = self._api_token
 
     def health_check(self) -> bool:
+        """Perform a lightweight connectivity check against the remote API."""
         self.get("/api/v2/policy/urllist", params={"limit": 1})
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         return self.get(f"/api/v2/policy/urllist/{object_id}")
 
     def list_objects(
@@ -48,6 +53,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         params: dict[str, Any] = {"limit": page_size, "skip": (page - 1) * page_size}
         if filters:
             params.update(filters)
@@ -55,15 +61,18 @@ class NetskopeClient(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         list_id = payload.pop("id", None)
         if list_id:
             return self.patch(f"/api/v2/policy/urllist/{list_id}", json=payload)
         return self.post("/api/v2/policy/urllist", json=payload)
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         self.delete(f"/api/v2/policy/urllist/{object_id}")
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Convert this object to STIX format."""
         return {
             "type": "indicator",
             "id": f"indicator--{native.get('id', '')}",
@@ -73,6 +82,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {"name": stix_dict.get("name", ""), "type": "exact", "data": {"urls": []}}
 
     # ── URL list extended operations ──────────────────────────────────────

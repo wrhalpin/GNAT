@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.elastic.es_search
 
@@ -52,6 +54,7 @@ class ElasticSearchCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize ElasticSearchCommands."""
         self._client = client
 
     # ── Cluster / health ───────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.misp.attributes
 =====================================
@@ -72,6 +74,7 @@ class MISPAttributeCommands:
     """Attribute management operations."""
 
     def __init__(self, client: MISPClient) -> None:
+        """Initialize MISPAttributeCommands."""
         self._client = client
 
     # ── Search ─────────────────────────────────────────────────────────────

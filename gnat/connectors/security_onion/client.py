@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.security_onion.client
 ==========================================
@@ -54,10 +56,12 @@ _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -87,6 +91,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         password: str = "",
         **kwargs: Any,
     ):
+        """Initialize SecurityOnionClient."""
         super().__init__(host=host, **kwargs)
         self._username = username
         self._password = password
@@ -206,6 +211,7 @@ class SecurityOnionClient(BaseClient, ConnectorMixin):
         return self.post(f"/api/alerts/{alert_id}/{action}")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Security Onion does not support alert/case deletion via the API.")
 
     # ── Domain-specific operations ────────────────────────────────────────

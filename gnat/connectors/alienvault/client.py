@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.alienvault.client
 ======================================
@@ -83,10 +85,12 @@ _PATTERNS: dict[str, str] = {
 
 
 def _det_uuid(t: str, v: str) -> str:
+    """Internal helper for det uuid."""
     return str(_uuid.uuid5(_STIX_NS, f"{t}:{v}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -108,6 +112,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_key: str = "", **kwargs: Any):
+        """Initialize AlienVaultClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -172,9 +177,11 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         )
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("AlienVault OTX is read-only — object creation is not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("AlienVault OTX is read-only — object deletion is not supported.")
 
     # ── Domain-specific operations ────────────────────────────────────────

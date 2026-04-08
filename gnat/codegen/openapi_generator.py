@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.codegen.openapi_generator
 ===================================
@@ -146,6 +148,7 @@ def generate_connector(
 
 
 def _load_spec(path: str) -> dict[str, Any]:
+    """Internal helper for load spec."""
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"OpenAPI spec not found: {path}")
@@ -166,6 +169,7 @@ def _load_spec(path: str) -> dict[str, Any]:
 
 
 def _extract_server(spec: dict[str, Any]) -> str:
+    """Internal helper for extract server."""
     servers = spec.get("servers", [])
     if servers:
         return servers[0].get("url", "https://api.example.com")
@@ -201,6 +205,7 @@ def _extract_endpoints(spec: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _extract_schemas(spec: dict[str, Any]) -> dict[str, Any]:
+    """Internal helper for extract schemas."""
     return (
         spec.get("components", {}).get("schemas", {})  # OAS 3
         or spec.get("definitions", {})  # Swagger 2
@@ -341,6 +346,7 @@ def _render_client(
 
 
 def _auth_snippet(auth_type: str) -> str:
+    """Internal helper for auth snippet."""
     if auth_type == "oauth2":
         return textwrap.indent(
             textwrap.dedent('''\
@@ -396,6 +402,7 @@ def _auth_snippet(auth_type: str) -> str:
 
 
 def _schema_field_comments(schemas: dict[str, Any]) -> str:
+    """Internal helper for schema field comments."""
     lines = []
     for schema_name, schema in list(schemas.items())[:5]:
         props = schema.get("properties", {})
@@ -405,6 +412,7 @@ def _schema_field_comments(schemas: dict[str, Any]) -> str:
 
 
 def _render_init(name: str, class_name: str) -> str:
+    """Internal helper for render init."""
     return textwrap.dedent(f'''\
         """gnat.connectors.{name} — auto-generated connector."""
         from gnat.connectors.{name}.client import {class_name}
@@ -413,6 +421,7 @@ def _render_init(name: str, class_name: str) -> str:
 
 
 def _render_tests(name: str, class_name: str) -> str:
+    """Internal helper for render tests."""
     return textwrap.dedent(f'''\
         """
         Unit tests for gnat.connectors.{name}
@@ -514,6 +523,7 @@ def _render_tests(name: str, class_name: str) -> str:
 
 
 def _main() -> None:
+    """Internal helper for main."""
     parser = argparse.ArgumentParser(description="Generate a GNAT connector from an OpenAPI spec.")
     parser.add_argument("--spec", required=True, help="Path to OpenAPI spec (JSON/YAML)")
     parser.add_argument("--name", required=True, help="Connector name (snake_case)")

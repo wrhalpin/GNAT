@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.stix_mapper
 ==========================================
@@ -215,14 +217,17 @@ class SentinelSTIXMapper:
 
 
 def _det_uuid(stix_type: str, value: str) -> str:
+    """Internal helper for det uuid."""
     return str(uuid.uuid5(_STIX_NS, f"{stix_type}:{value}"))
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
 def _make_bundle(objects: list[dict]) -> dict:
+    """Internal helper for make bundle."""
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",

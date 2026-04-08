@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.intel471.client
 ===============================
@@ -75,6 +77,7 @@ class Intel471Client(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.intel471.com", token: str = "", **kwargs: Any):
+        """Initialize Intel471Client."""
         super().__init__(host=host, **kwargs)
         self._token = token
 
@@ -94,6 +97,7 @@ class Intel471Client(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "indicator":
             return self.get(f"/v1/iocs/{object_id}")
         if stix_type == "report":
@@ -107,6 +111,7 @@ class Intel471Client(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"limit": page_size}
         params.update(filters)
@@ -119,9 +124,11 @@ class Intel471Client(BaseClient, ConnectorMixin):
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Intel 471 connector is read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Expanded Domain-specific helpers ───────────────────────────────────
@@ -201,12 +208,14 @@ class Intel471Client(BaseClient, ConnectorMixin):
         return self._actor_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Intel 471 is read-only for cybercrime threat intelligence.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _ioc_to_stix(self, ioc: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for ioc to stix."""
         now = _now_ts()
         iid = ioc.get("id", "")
         ind_id = f"indicator--{_uuid.uuid5(_STIX_NS, f'intel471:{iid}')}"
@@ -243,6 +252,7 @@ class Intel471Client(BaseClient, ConnectorMixin):
         }
 
     def _actor_to_stix(self, actor: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for actor to stix."""
         now = _now_ts()
         aid = actor.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'intel471:{aid}')}"

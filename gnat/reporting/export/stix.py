@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.reporting.export.stix
 ============================
@@ -34,10 +36,12 @@ from gnat.reporting.models import Report
 
 
 def _utcnow() -> str:
+    """Internal helper for utcnow."""
     return datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
 def _stix_id(obj_type: str, seed: str | None = None) -> str:
+    """Internal helper for stix id."""
     if seed:
         return f"{obj_type}--{_uuid.uuid5(_uuid.NAMESPACE_URL, seed)}"
     return f"{obj_type}--{_uuid.uuid4()}"

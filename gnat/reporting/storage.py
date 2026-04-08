@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.reporting.storage
 ========================
@@ -53,6 +55,7 @@ except ImportError:
 
 
 def _require_sqlalchemy() -> None:
+    """Internal helper for require sqlalchemy."""
     if not _SA_AVAILABLE:
         raise ImportError(
             "sqlalchemy is required for report persistence. "
@@ -61,12 +64,13 @@ def _require_sqlalchemy() -> None:
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(tz=timezone.utc)
 
 
 if _SA_AVAILABLE:
     class _Base(DeclarativeBase):
-        pass
+        """_Base implementation."""
 
     class ReportModel(_Base):
         """SQLAlchemy model backing :class:`~.models.Report`."""
@@ -91,11 +95,13 @@ if _SA_AVAILABLE:
         is_deleted       = Column(Boolean,     default=False, nullable=False)
 
         def to_report(self) -> Report:
+            """Convert this object to REPORT format."""
             data = json.loads(self.report_json)
             return Report.from_dict(data)
 
         @classmethod
         def from_report(cls, report: Report) -> "ReportModel":
+            """Create an instance from REPORT data."""
             return cls(
                 id                   = report.id,
                 title                = report.title,
@@ -139,6 +145,7 @@ class ReportStore:
     """
 
     def __init__(self, url: str, echo: bool = False) -> None:
+        """Initialize ReportStore."""
         _require_sqlalchemy()
         self._url = url
         self._engine = create_engine(url, echo=echo, future=True)
@@ -243,7 +250,7 @@ class ReportStore:
         _require_sqlalchemy()
         with self._Session() as session:
             q = session.query(ReportModel).filter(
-                ReportModel.is_deleted == False  # noqa: E712
+                ReportModel.is_deleted.is_(False)
             )
             if status is not None:
                 q = q.filter(ReportModel.status == status.value)
@@ -277,7 +284,7 @@ class ReportStore:
         _require_sqlalchemy()
         with self._Session() as session:
             q = session.query(ReportModel).filter(
-                ReportModel.is_deleted == False  # noqa: E712
+                ReportModel.is_deleted.is_(False)
             )
             if status is not None:
                 q = q.filter(ReportModel.status == status.value)

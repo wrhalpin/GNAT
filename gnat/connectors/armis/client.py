@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.armis.client
 ============================
@@ -72,6 +74,7 @@ class ArmisClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://ic.armis.com", api_key: str = "", **kwargs: Any):
+        """Initialize ArmisClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -91,6 +94,7 @@ class ArmisClient(BaseClient, ConnectorMixin):
         return True
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if stix_type == "report":
             return self.get(f"/api/v1/device/{object_id}")
         if stix_type == "vulnerability":
@@ -104,6 +108,7 @@ class ArmisClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 50,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         filters = dict(filters or {})
         params: dict[str, Any] = {"length": page_size, "from": (page - 1) * page_size}
         params.update(filters)
@@ -116,9 +121,11 @@ class ArmisClient(BaseClient, ConnectorMixin):
         return resp.get("results", []) if isinstance(resp, dict) else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Armis connector is primarily read-only.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not supported in this connector.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────
@@ -159,12 +166,14 @@ class ArmisClient(BaseClient, ConnectorMixin):
         return self._device_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Armis is read-only for asset and vulnerability exposure data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _device_to_stix(self, device: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for device to stix."""
         now = _now_ts()
         did = device.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'armis:{did}')}"
@@ -187,6 +196,7 @@ class ArmisClient(BaseClient, ConnectorMixin):
         }
 
     def _vuln_to_stix(self, vuln: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         now = _now_ts()
         vid = vuln.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'armis:{vid}')}"

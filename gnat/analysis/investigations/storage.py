@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.analysis.investigations.storage
 ======================================
@@ -42,7 +44,6 @@ try:
         Boolean,
         Column,
         DateTime,
-        Integer,
         String,
         Text,
         create_engine,
@@ -55,6 +56,7 @@ except ImportError:
 
 
 def _require_sqlalchemy() -> None:
+    """Internal helper for require sqlalchemy."""
     if not _SA_AVAILABLE:
         raise ImportError(
             "sqlalchemy is required for investigation persistence. "
@@ -63,12 +65,13 @@ def _require_sqlalchemy() -> None:
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(tz=timezone.utc)
 
 
 if _SA_AVAILABLE:
     class _Base(DeclarativeBase):
-        pass
+        """_Base implementation."""
 
     class InvestigationModel(_Base):
         """SQLAlchemy model backing :class:`~.models.Investigation`."""
@@ -87,11 +90,13 @@ if _SA_AVAILABLE:
         is_deleted      = Column(Boolean,     default=False, nullable=False)
 
         def to_investigation(self) -> Investigation:
+            """Convert this object to INVESTIGATION format."""
             data = json.loads(self.investigation_json)
             return Investigation.from_dict(data)
 
         @classmethod
         def from_investigation(cls, inv: Investigation) -> "InvestigationModel":
+            """Create an instance from INVESTIGATION data."""
             return cls(
                 id                 = inv.id,
                 title              = inv.title,
@@ -129,6 +134,7 @@ class InvestigationStore:
     """
 
     def __init__(self, url: str, echo: bool = False) -> None:
+        """Initialize InvestigationStore."""
         _require_sqlalchemy()
         self._url = url
         self._engine = create_engine(url, echo=echo, future=True)
@@ -262,9 +268,8 @@ class InvestigationStore:
 
         with self._Session() as session:
             q = session.query(InvestigationModel).filter(
-                InvestigationModel.is_deleted == False  # noqa: E712
+                InvestigationModel.is_deleted.is_(False)
             )
-
             # Status filter
             sv = query.status_values
             if sv:
@@ -344,7 +349,7 @@ class InvestigationStore:
         _require_sqlalchemy()
         with self._Session() as session:
             q = session.query(InvestigationModel).filter(
-                InvestigationModel.is_deleted == False  # noqa: E712
+                InvestigationModel.is_deleted.is_(False)
             )
             if status is not None:
                 q = q.filter(InvestigationModel.status == status.value)

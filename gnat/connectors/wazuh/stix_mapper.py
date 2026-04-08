@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.stix_mapper
 
@@ -605,6 +607,7 @@ class WazuhSTIXMapper:
 
 
 def _make_ipv4(value: str) -> dict:
+    """Internal helper for make ipv4."""
     return {
         "type": "ipv4-addr",
         "id": f"ipv4-addr-{_det_uuid('ipv4-addr', value)}",
@@ -614,6 +617,7 @@ def _make_ipv4(value: str) -> dict:
 
 
 def _make_user_account(user_id: str) -> dict:
+    """Internal helper for make user account."""
     return {
         "type": "user-account",
         "id": f"user-account-{_det_uuid('user-account', user_id)}",
@@ -623,6 +627,7 @@ def _make_user_account(user_id: str) -> dict:
 
 
 def _make_process(name: str) -> dict:
+    """Internal helper for make process."""
     return {
         "type": "process",
         "id": f"process-{_det_uuid('process', name)}",
@@ -632,6 +637,7 @@ def _make_process(name: str) -> dict:
 
 
 def _make_domain(value: str) -> dict:
+    """Internal helper for make domain."""
     return {
         "type": "domain-name",
         "id": f"domain-name-{_det_uuid('domain-name', value)}",
@@ -641,6 +647,7 @@ def _make_domain(value: str) -> dict:
 
 
 def _make_bundle(objects: list[dict]) -> dict:
+    """Internal helper for make bundle."""
     return {
         "type": "bundle",
         "id": f"bundle-{uuid.uuid4()}",

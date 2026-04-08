@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.dragos.client
 ===============================
@@ -62,6 +64,7 @@ _STIX_NS = _uuid.UUID("f6a7b8c9-d0e1-2345-f012-456789012345")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -94,6 +97,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         api_secret: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize DragosClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._api_secret = api_secret
@@ -164,9 +168,11 @@ class DragosClient(BaseClient, ConnectorMixin):
         )
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Dragos API is read-only — upsert not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Dragos API is read-only — delete not supported.")
 
     # ── Platform-specific helpers ──────────────────────────────────────────
@@ -249,6 +255,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         return self._ioc_to_stix(native)
 
     def _ioc_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for ioc to stix."""
         ioc_id = str(native.get("id", ""))
         value = native.get("value", ioc_id)
         ioc_type = native.get("indicator_type", native.get("type", "domain")).lower()
@@ -282,6 +289,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         }
 
     def _actor_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for actor to stix."""
         name = native.get("group_name", native.get("name", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-actor-{name}"))
         return {
@@ -303,6 +311,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         }
 
     def _vuln_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for vuln to stix."""
         cve_id = native.get("cve_id", native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-vuln-{cve_id}"))
         cvss = native.get("cvss_score", 0.0)
@@ -324,6 +333,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         }
 
     def _product_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for product to stix."""
         serial = native.get("serial", native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-product-{serial}"))
         return {
@@ -345,6 +355,7 @@ class DragosClient(BaseClient, ConnectorMixin):
         }
 
     def _threat_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for threat to stix."""
         name = native.get("threat_name", native.get("name", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"dragos-malware-{name}"))
         return {

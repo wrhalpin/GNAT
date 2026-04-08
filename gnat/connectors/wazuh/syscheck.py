@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.syscheck
 
@@ -44,6 +46,7 @@ class WazuhSyscheckCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhSyscheckCommands."""
         self._client = client
 
     # ── FIM event queries ──────────────────────────────────────────────────

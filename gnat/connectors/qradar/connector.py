@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.connector
 ==================================
@@ -56,6 +58,7 @@ class QRadarConnector(BaseClient, ConnectorMixin):
         timeout: float = 30.0,
         **kwargs,
     ) -> None:
+        """Initialize QRadarConnector."""
         super().__init__(host=host, verify_ssl=verify_ssl, timeout=timeout)
         cfg = QRadarConfig(
             host=host,

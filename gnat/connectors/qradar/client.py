@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.client
 ===================================
@@ -96,6 +98,7 @@ class QRadarClient:
     """
 
     def __init__(self, config: QRadarConfig) -> None:
+        """Initialize QRadarClient."""
         self.config = config
         self._http = self._build_pool_manager()
         self.auth = QRadarAuthManager(config, self._http)
@@ -103,9 +106,11 @@ class QRadarClient:
     # ── Context manager ───────────────────────────────────────────────────
 
     def __enter__(self) -> "QRadarClient":
+        """Enter the context manager."""
         return self
 
     def __exit__(self, *_) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.close()
 
     def close(self) -> None:
@@ -278,6 +283,7 @@ class QRadarClient:
     # ── Internal ───────────────────────────────────────────────────────────
 
     def _build_pool_manager(self) -> urllib3.PoolManager:
+        """Internal helper for build pool manager."""
         kwargs: dict = {
             "num_pools": 4,
             "maxsize": 10,
@@ -416,6 +422,7 @@ class QRadarClient:
         raise QRadarAPIError("Request failed after retries.", endpoint=url)
 
     def _parse_json_response(self, response: urllib3.HTTPResponse, url: str) -> dict | list:
+        """Internal helper for parse json response."""
         try:
             return json.loads(response.data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -426,6 +433,7 @@ class QRadarClient:
 
     @staticmethod
     def _safe_parse(data: bytes) -> dict:
+        """Internal helper for safe parse."""
         try:
             return json.loads(data.decode("utf-8"))
         except Exception:

@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.connectors.gemini.client
+=================================
+
+Client utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 import json
@@ -23,6 +31,7 @@ class GeminiClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ):
+        """Initialize GeminiClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -91,4 +100,5 @@ class GeminiClient(BaseClient, ConnectorMixin):
 
     # Implement other CRUD stubs as GNATClientError (inference-only)
     def upsert_object(self, stix_type, payload):
+        """Create or update object."""
         raise GNATClientError("Gemini is read-only research/inference.")

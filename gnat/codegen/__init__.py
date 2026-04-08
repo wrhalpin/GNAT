@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """gnat.codegen — Connector code generation utilities."""
 
 from gnat.codegen.openapi_generator import generate_connector

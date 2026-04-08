@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.schedule.scheduler
 ============================
@@ -149,6 +151,7 @@ class FeedScheduler:
         default_jitter_seconds: float = 0.0,
         on_job_error: Callable[[str, Exception], None] | None = None,
     ):
+        """Initialize FeedScheduler."""
         self._jobs: dict[str, FeedJob] = {}
         self._threads: dict[str, threading.Thread] = {}
         self._stop_events: dict[str, threading.Event] = {}
@@ -235,12 +238,15 @@ class FeedScheduler:
             )
 
     def __iter__(self) -> Iterator[FeedJob]:
+        """Iterate over items."""
         return iter(list(self._jobs.values()))
 
     def __len__(self) -> int:
+        """Return the number of items."""
         return len(self._jobs)
 
     def __contains__(self, job_id: str) -> bool:
+        """Check membership."""
         return job_id in self._jobs
 
     # ── Lifecycle ──────────────────────────────────────────────────────────
@@ -294,10 +300,12 @@ class FeedScheduler:
         logger.info("FeedScheduler: stopped")
 
     def __enter__(self) -> FeedScheduler:
+        """Enter the context manager."""
         self.start()
         return self
 
     def __exit__(self, *_: Any) -> None:
+        """Exit the context manager, handling any exceptions."""
         self.stop()
 
     # ── Manual triggers ────────────────────────────────────────────────────
@@ -355,6 +363,7 @@ class FeedScheduler:
         lock = threading.Lock()
 
         def _run(j: FeedJob) -> None:
+            """Internal helper for run."""
             rec = j.execute(scheduled_at=_utcnow())
             with lock:
                 run_results[j.job_id] = rec
@@ -477,6 +486,7 @@ class FeedScheduler:
 
             @celery_app.task(name=task_name, bind=True, max_retries=0)  # pylint: disable=cell-var-from-loop
             def _celery_task(self_task, _job_id=job.job_id, _task_name=task_name):
+                """Internal helper for celery task."""
                 j = self._jobs.get(_job_id)
                 if j:
                     return j.execute().as_dict()
@@ -684,4 +694,5 @@ class FeedScheduler:
             thread.join(timeout=join_timeout)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"FeedScheduler(jobs={sorted(self._jobs.keys())}, running={self.running})"

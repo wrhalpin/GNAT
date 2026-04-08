@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.tanium.client
 ==============================
@@ -64,6 +66,7 @@ _STIX_NS = _uuid.UUID("c3d4e5f6-a7b8-9012-cdef-123456789012")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -97,6 +100,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         password: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize TaniumClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._username = username
@@ -261,6 +265,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         return self._alert_to_stix(native)
 
     def _finding_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for finding to stix."""
         cve_id = native.get("cveId", native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"tanium-vuln-{cve_id}"))
         cvss = native.get("cvss", {})
@@ -282,6 +287,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         }
 
     def _intel_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for intel to stix."""
         doc_id = str(native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"tanium-intel-{doc_id}"))
         name = native.get("name", doc_id)
@@ -318,6 +324,7 @@ class TaniumClient(BaseClient, ConnectorMixin):
         }
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         alert_id = str(native.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"tanium-alert-{alert_id}"))
         return {

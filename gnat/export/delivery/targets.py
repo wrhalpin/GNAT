@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.export.delivery.targets
 ================================
@@ -54,11 +56,13 @@ class FileDelivery(ExportDelivery):
         atomic: bool = True,
         encoding: str = "utf-8",
     ):
+        """Initialize FileDelivery."""
         self._dir = Path(output_dir)
         self._atomic = atomic
         self._encoding = encoding
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
+        """Deliver data to the configured target."""
         self._dir.mkdir(parents=True, exist_ok=True)
         dr = DeliveryResult()
 
@@ -96,6 +100,7 @@ class FileDelivery(ExportDelivery):
         return dr
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"FileDelivery(dir={self._dir!r})"
 
 
@@ -144,6 +149,7 @@ class HTTPDelivery(ExportDelivery):
         per_payload_url: dict[str, str] | None = None,
         success_codes: list[int] | None = None,
     ):
+        """Initialize HTTPDelivery."""
         self._url = url
         self._headers = {"Content-Type": content_type, **(headers or {})}
         self._auth = auth
@@ -152,6 +158,7 @@ class HTTPDelivery(ExportDelivery):
         self._success_codes = set(success_codes or [200, 201, 204])
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
+        """Deliver data to the configured target."""
         import base64
         import urllib.error
         import urllib.request
@@ -204,6 +211,7 @@ class HTTPDelivery(ExportDelivery):
         return dr
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"HTTPDelivery(url={self._url!r})"
 
 
@@ -233,6 +241,7 @@ class EDLServer(ExportDelivery):
     """
 
     def __init__(self, host: str = "0.0.0.0", port: int = 8080):  # nosec B104 — overridable via --host flag
+        """Initialize EDLServer."""
         self._host = host
         self._port = port
         self._files: dict[str, str] = {}
@@ -241,6 +250,7 @@ class EDLServer(ExportDelivery):
         self._thread = None
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
+        """Deliver data to the configured target."""
         with self._lock:
             for name, content in result.payloads.items():
                 if isinstance(content, bytes):
@@ -263,13 +273,16 @@ class EDLServer(ExportDelivery):
         return dr
 
     def _start(self) -> None:
+        """Internal helper for start."""
         import http.server
 
         files_ref = self._files
         lock_ref = self._lock
 
         class _H(http.server.BaseHTTPRequestHandler):
+            """_H implementation."""
             def do_GET(self):
+                """Do get."""
                 path = self.path.strip("/")
                 with lock_ref:
                     content = files_ref.get(path)
@@ -285,6 +298,7 @@ class EDLServer(ExportDelivery):
                 self.wfile.write(body)
 
             def log_message(self, fmt, *args):
+                """Log message."""
                 logger.debug("EDLServer: " + fmt, *args)
 
         self._server = http.server.HTTPServer((self._host, self._port), _H)
@@ -297,15 +311,18 @@ class EDLServer(ExportDelivery):
         logger.info("EDLServer started on %s:%d", self._host, self._port)
 
     def stop(self) -> None:
+        """Stop the EDLServer."""
         if self._server:
             self._server.shutdown()
             self._server = None
 
     def url(self, filename: str = "") -> str:
+        """Url."""
         host = "localhost" if self._host in ("0.0.0.0", "") else self._host  # nosec B104 — comparing, not binding
         return f"http://{host}:{self._port}/{filename}"
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"EDLServer(port={self._port})"
 
 
@@ -329,9 +346,11 @@ class PlatformDelivery(ExportDelivery):
     """
 
     def __init__(self, client: GNATClient):
+        """Initialize PlatformDelivery."""
         self._client = client
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
+        """Deliver data to the configured target."""
         objects = result.payloads.get("objects", [])
         if not objects:
             bundle_raw = result.payloads.get("bundle.json")
@@ -356,6 +375,7 @@ class PlatformDelivery(ExportDelivery):
         return dr
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"PlatformDelivery(target={getattr(self._client, 'target', '?')!r})"
 
 
@@ -381,11 +401,13 @@ class MultiDelivery(ExportDelivery):
     """
 
     def __init__(self, *targets: ExportDelivery):
+        """Initialize MultiDelivery."""
         if len(targets) < 2:
             raise ValueError("MultiDelivery requires at least two targets")
         self._targets = list(targets)
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
+        """Deliver data to the configured target."""
         combined = DeliveryResult()
         for target in self._targets:
             dr = target.deliver(result)
@@ -398,6 +420,7 @@ class MultiDelivery(ExportDelivery):
         return combined
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return f"MultiDelivery(n={len(self._targets)})"
 
 
@@ -414,10 +437,12 @@ class LogDelivery(ExportDelivery):
     """
 
     def __init__(self, level: str = "debug", max_chars: int = 500):
+        """Initialize LogDelivery."""
         self._level = getattr(logging, level.upper(), logging.DEBUG)
         self._max = max_chars
 
     def deliver(self, result: TransformResult) -> DeliveryResult:
+        """Deliver data to the configured target."""
         dr = DeliveryResult()
         for name, content in result.payloads.items():
             if isinstance(content, bytes):
@@ -434,4 +459,5 @@ class LogDelivery(ExportDelivery):
         return dr
 
     def __repr__(self) -> str:
+        """Return unambiguous string representation."""
         return "LogDelivery()"

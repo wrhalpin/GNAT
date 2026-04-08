@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.serve.auth
 ===============
@@ -29,6 +31,7 @@ class APIKeyAuth:
     """
 
     def __init__(self, api_key: str) -> None:
+        """Initialize APIKeyAuth."""
         self._key: bytes = api_key.encode("utf-8")
 
     def __call__(

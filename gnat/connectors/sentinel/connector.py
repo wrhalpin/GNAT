@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.sentinel.connector
 =====================================
@@ -79,6 +81,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
         timeout: float = 30.0,
         **kwargs,
     ) -> None:
+        """Initialize SentinelConnector."""
         super().__init__(
             host=host or "management.azure.com",
             verify_ssl=verify_ssl,
@@ -256,7 +259,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
         ``"BenignPositive"``, ``"FalsePositive"``.
         """
         return self._incidents.close_incident(
-            incident_id, classification=classification, reason=reason
+            incident_id, classification=classification, closing_comment=reason
         )
 
     def add_incident_comment(self, incident_id: str, message: str) -> dict:

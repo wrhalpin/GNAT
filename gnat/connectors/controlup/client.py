@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.controlup.client
 =================================
@@ -81,6 +83,7 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         product: str = "dex",
         **kwargs: Any,
     ) -> None:
+        """Initialize ControlUpClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._org_id = org_id

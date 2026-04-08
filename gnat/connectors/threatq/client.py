@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.threatq.client
 ==================================
@@ -127,6 +129,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         auth_type: str = "oauth2",
         **kwargs: Any,
     ):
+        """Initialize ThreatQClient."""
         super().__init__(host=host, **kwargs)
         self._client_id = client_id
         self._client_secret = client_secret
@@ -1041,6 +1044,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _resolve_resource(self, stix_type: str) -> str:
+        """Internal helper for resolve resource."""
         resource = self.stix_type_map.get(stix_type)
         if not resource:
             raise GNATClientError(f"ThreatQ: unsupported STIX type '{stix_type}'")

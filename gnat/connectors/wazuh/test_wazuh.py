@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 tests/connectors/test_wazuh.py
 
@@ -58,12 +60,14 @@ from gnat.connectors.wazuh.vulnerabilities import WazuhVulnerabilityCommands
 
 
 def _make_config(**overrides) -> WazuhConfig:
+    """Internal helper for make config."""
     defaults = {"host": "wazuh.test.local", "username": "wazuh", "password": "Password1!"}
     defaults.update(overrides)
     return WazuhConfig(**defaults)
 
 
 def _make_response(status: int = 200, body=None) -> MagicMock:
+    """Internal helper for make response."""
     resp = MagicMock()
     resp.status = status
     payload = body if body is not None else {}
@@ -86,6 +90,7 @@ def _wazuh_ok(items: list, total: int | None = None) -> dict:
 
 
 def _make_client(config: WazuhConfig | None = None) -> tuple[WazuhClient, MagicMock]:
+    """Internal helper for make client."""
     cfg = config or _make_config()
     with patch("gnat.connectors.wazuh.client.urllib3.PoolManager") as pm_cls:
         mock_pm = MagicMock()
@@ -106,7 +111,9 @@ def _make_client(config: WazuhConfig | None = None) -> tuple[WazuhClient, MagicM
 
 
 class TestWazuhConfig(unittest.TestCase):
+    """Configuration container for test wazuh."""
     def test_minimal_config(self):
+        """Test that minimal config."""
         cfg = _make_config()
         self.assertEqual(cfg.host, "wazuh.test.local")
         self.assertEqual(cfg.port, 55000)
@@ -114,10 +121,12 @@ class TestWazuhConfig(unittest.TestCase):
         self.assertFalse(cfg.verify_ssl)
 
     def test_base_url_computed(self):
+        """Test that base url computed."""
         cfg = _make_config()
         self.assertEqual(cfg.base_url, "https://wazuh.test.local:55000")
 
     def test_endpoint_helper(self):
+        """Test that endpoint helper."""
         cfg = _make_config()
         self.assertEqual(
             cfg.endpoint("agents"),
@@ -125,10 +134,12 @@ class TestWazuhConfig(unittest.TestCase):
         )
 
     def test_indexer_url_defaults_to_host(self):
+        """Test that indexer url defaults to host."""
         cfg = _make_config(indexer_enabled=True)
         self.assertIn("wazuh.test.local", cfg.indexer_url)
 
     def test_indexer_url_custom_host(self):
+        """Test that indexer url custom host."""
         cfg = _make_config(
             indexer_enabled=True,
             indexer_host="indexer.corp",
@@ -137,32 +148,39 @@ class TestWazuhConfig(unittest.TestCase):
         self.assertIn("indexer.corp", cfg.indexer_url)
 
     def test_max_results_capped(self):
+        """Test that max results capped."""
         cfg = _make_config(max_results=9999)
         self.assertEqual(cfg.max_results, 500)
 
     def test_token_renewal_threshold(self):
+        """Test that token renewal threshold."""
         cfg = _make_config(token_expiry_secs=900)
         # 20% of 900 = 180
         self.assertEqual(cfg.token_renewal_threshold, 180.0)
 
     def test_token_renewal_threshold_minimum(self):
         # Very short expiry; minimum threshold is 60s
+        """Test that token renewal threshold minimum."""
         cfg = _make_config(token_expiry_secs=100)
         self.assertEqual(cfg.token_renewal_threshold, 60.0)
 
     def test_missing_host_raises(self):
+        """Test that missing host raises."""
         with self.assertRaises(WazuhConfigError):
             WazuhConfig(host="", username="u", password="p")
 
     def test_missing_password_raises(self):
+        """Test that missing password raises."""
         with self.assertRaises(WazuhConfigError):
             WazuhConfig(host="h", username="u", password="")
 
     def test_invalid_scheme_raises(self):
+        """Test that invalid scheme raises."""
         with self.assertRaises(WazuhConfigError):
             WazuhConfig(host="h", username="u", password="p", scheme="ftp")
 
     def test_load_from_configparser(self):
+        """Test that load from configparser."""
         parser = configparser.ConfigParser()
         parser.read_dict(
             {
@@ -182,10 +200,12 @@ class TestWazuhConfig(unittest.TestCase):
         self.assertEqual(cfg.timeout, 60)
 
     def test_load_missing_section_raises(self):
+        """Test that load missing section raises."""
         with self.assertRaises(WazuhConfigError):
             load_wazuh_config(configparser.ConfigParser())
 
     def test_load_missing_password_raises(self):
+        """Test that load missing password raises."""
         parser = configparser.ConfigParser()
         parser.read_dict({"wazuh": {"host": "h", "username": "u"}})
         with self.assertRaises(WazuhConfigError):
@@ -199,12 +219,15 @@ class TestWazuhConfig(unittest.TestCase):
 
 
 class TestWazuhAuthManager(unittest.TestCase):
+    """Unit tests for :class:`WazuhAuthManager`."""
     def _make_auth(self, config=None):
+        """Internal helper for make auth."""
         cfg = config or _make_config()
         mock_http = MagicMock()
         return WazuhAuthManager(cfg, mock_http), mock_http
 
     def test_login_success(self):
+        """Test that login success."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(
             200, {"data": {"token": "jwt-abc123"}, "error": 0}
@@ -213,6 +236,7 @@ class TestWazuhAuthManager(unittest.TestCase):
         self.assertEqual(headers, {"Authorization": "Bearer jwt-abc123"})
 
     def test_login_caches_token(self):
+        """Test that login caches token."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(
             200, {"data": {"token": "jwt-abc"}, "error": 0}
@@ -223,12 +247,14 @@ class TestWazuhAuthManager(unittest.TestCase):
         self.assertEqual(mock_http.request.call_count, 1)
 
     def test_login_401_raises_auth_error(self):
+        """Test that login 401 raises auth error."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(401)
         with self.assertRaises(WazuhAuthError):
             auth.get_auth_headers()
 
     def test_login_403_raises_auth_error(self):
+        """Test that login 403 raises auth error."""
         auth, mock_http = self._make_auth()
         mock_http.request.return_value = _make_response(403)
         with self.assertRaises(WazuhAuthError):
@@ -250,6 +276,7 @@ class TestWazuhAuthManager(unittest.TestCase):
         self.assertFalse(auth._token_is_valid())
 
     def test_invalidate_clears_token(self):
+        """Test that invalidate clears token."""
         auth, _ = self._make_auth()
         auth._token = "some-token"
         auth._token_acquired_at = time.time()
@@ -274,19 +301,23 @@ class TestWazuhAuthManager(unittest.TestCase):
 
 
 class TestWazuhClient(unittest.TestCase):
+    """HTTP API client for the TestWazuh platform."""
     def test_get_returns_parsed_json(self):
+        """Test that get returns parsed json."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(200, _wazuh_ok([]))
         result = client.get("agents")
         self.assertIsInstance(result, dict)
 
     def test_extract_items(self):
+        """Test that extract items."""
         response = _wazuh_ok([{"id": "001"}, {"id": "002"}])
         items = WazuhClient.extract_items(response)
         self.assertEqual(len(items), 2)
         self.assertEqual(items[0]["id"], "001")
 
     def test_extract_total(self):
+        """Test that extract total."""
         response = _wazuh_ok([], total=42)
         self.assertEqual(WazuhClient.extract_total(response), 42)
 
@@ -305,12 +336,14 @@ class TestWazuhClient(unittest.TestCase):
         self.assertIsInstance(result, dict)
 
     def test_401_without_expiry_raises_auth_error(self):
+        """Test that 401 without expiry raises auth error."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(401, {"error": 4001})
         with self.assertRaises(WazuhAuthError):
             client.get("agents")
 
     def test_403_raises_permission_error(self):
+        """Test that 403 raises permission error."""
         client, mock_http = _make_client()
         body = {"error": 4000, "title": "Permission Denied", "detail": "..."}
         mock_http.request.return_value = _make_response(403, body)
@@ -319,18 +352,21 @@ class TestWazuhClient(unittest.TestCase):
         self.assertEqual(ctx.exception.error_code, 4000)
 
     def test_404_raises_not_found(self):
+        """Test that 404 raises not found."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(404, {"title": "Not found"})
         with self.assertRaises(WazuhNotFoundError):
             client.get("agents/999")
 
     def test_429_retries_then_raises(self):
+        """Test that 429 retries then raises."""
         client, mock_http = _make_client()
         mock_http.request.return_value = _make_response(429)
         with patch("time.sleep"), self.assertRaises(WazuhRateLimitError):
             client.get("agents")
 
     def test_context_manager(self):
+        """Test that context manager."""
         cfg = _make_config()
         with patch("gnat.connectors.wazuh.client.urllib3.PoolManager"), WazuhClient(cfg) as client:
             self.assertIsInstance(client, WazuhClient)
@@ -355,11 +391,14 @@ class TestWazuhClient(unittest.TestCase):
 
 
 class TestWazuhAgentCommands(unittest.TestCase):
+    """Unit tests for :class:`WazuhAgentCommands`."""
     def _make_agents(self):
+        """Internal helper for make agents."""
         client, mock_http = _make_client()
         return WazuhAgentCommands(client), mock_http
 
     def test_list_agents(self):
+        """Test that list agents."""
         agents, mock_http = self._make_agents()
         mock_http.request.return_value = _make_response(
             200, _wazuh_ok([{"id": "001", "name": "host1", "status": "active"}])
@@ -369,6 +408,7 @@ class TestWazuhAgentCommands(unittest.TestCase):
         self.assertEqual(results[0]["name"], "host1")
 
     def test_get_agent_found(self):
+        """Test that get agent found."""
         agents, mock_http = self._make_agents()
         mock_http.request.return_value = _make_response(
             200, _wazuh_ok([{"id": "001", "name": "host1"}])
@@ -377,12 +417,14 @@ class TestWazuhAgentCommands(unittest.TestCase):
         self.assertEqual(agent["id"], "001")
 
     def test_get_agent_not_found(self):
+        """Test that get agent not found."""
         agents, mock_http = self._make_agents()
         mock_http.request.return_value = _make_response(200, _wazuh_ok([]))
         with self.assertRaises(WazuhNotFoundError):
             agents.get_agent("999")
 
     def test_get_agent_summary(self):
+        """Test that get agent summary."""
         agents, mock_http = self._make_agents()
         mock_http.request.return_value = _make_response(
             200,
@@ -401,6 +443,7 @@ class TestWazuhAgentCommands(unittest.TestCase):
         self.assertEqual(summary["total"], 13)
 
     def test_normalise_agent(self):
+        """Test that normalise agent."""
         raw = {
             "id": "001",
             "name": "host1",
@@ -417,12 +460,14 @@ class TestWazuhAgentCommands(unittest.TestCase):
         self.assertEqual(result["groups"], ["default", "linux"])
 
     def test_restart_agent(self):
+        """Test that restart agent."""
         agents, mock_http = self._make_agents()
         mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = agents.restart_agent("001")
         self.assertIsNotNone(result)
 
     def test_list_groups(self):
+        """Test that list groups."""
         agents, mock_http = self._make_agents()
         mock_http.request.return_value = _make_response(
             200, _wazuh_ok([{"name": "default"}, {"name": "linux"}])
@@ -438,11 +483,14 @@ class TestWazuhAgentCommands(unittest.TestCase):
 
 
 class TestWazuhAlertCommands(unittest.TestCase):
+    """Unit tests for :class:`WazuhAlertCommands`."""
     def _make_alerts_cmd(self):
+        """Internal helper for make alerts cmd."""
         client, mock_http = _make_client()
         return WazuhAlertCommands(client), mock_http
 
     def test_get_alerts(self):
+        """Test that get alerts."""
         alerts_cmd, mock_http = self._make_alerts_cmd()
         alert = {
             "id": "1234",
@@ -455,6 +503,7 @@ class TestWazuhAlertCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_normalise_alert_severity(self):
+        """Test that normalise alert severity."""
         alert = {
             "id": "1",
             "timestamp": "2024-01-01T00:00:00Z",
@@ -468,6 +517,7 @@ class TestWazuhAlertCommands(unittest.TestCase):
         self.assertEqual(result["src_ip"], "1.2.3.4")
 
     def test_level_to_severity_boundaries(self):
+        """Test that level to severity boundaries."""
         self.assertEqual(_level_to_severity(0), 0)
         self.assertEqual(_level_to_severity(3), 0)
         self.assertEqual(_level_to_severity(4), 1)
@@ -479,11 +529,13 @@ class TestWazuhAlertCommands(unittest.TestCase):
         self.assertEqual(_level_to_severity(15), 4)
 
     def test_get_alerts_by_invalid_severity_raises(self):
+        """Test that get alerts by invalid severity raises."""
         alerts_cmd, _ = self._make_alerts_cmd()
         with self.assertRaises(ValueError):
             alerts_cmd.get_alerts_by_severity("extreme")
 
     def test_get_event_stats(self):
+        """Test that get event stats."""
         alerts_cmd, mock_http = self._make_alerts_cmd()
         mock_http.request.return_value = _make_response(200, {"data": {"total_events": 12345}})
         result = alerts_cmd.get_event_stats()
@@ -497,11 +549,14 @@ class TestWazuhAlertCommands(unittest.TestCase):
 
 
 class TestWazuhSyscheckCommands(unittest.TestCase):
+    """Unit tests for :class:`WazuhSyscheckCommands`."""
     def _make_syscheck(self):
+        """Internal helper for make syscheck."""
         client, mock_http = _make_client()
         return WazuhSyscheckCommands(client), mock_http
 
     def test_get_fim_events(self):
+        """Test that get fim events."""
         syscheck, mock_http = self._make_syscheck()
         fim_event = {
             "file": "/etc/passwd",
@@ -515,6 +570,7 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
         self.assertEqual(results[0]["file"], "/etc/passwd")
 
     def test_get_last_scan_time(self):
+        """Test that get last scan time."""
         syscheck, mock_http = self._make_syscheck()
         mock_http.request.return_value = _make_response(
             200, {"data": {"start": "2024-03-10T11:00:00Z", "end": "2024-03-10T11:05:00Z"}}
@@ -523,6 +579,7 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
         self.assertIn("start", result)
 
     def test_normalise_fim_event(self):
+        """Test that normalise fim event."""
         raw = {
             "file": "/etc/shadow",
             "type": "modified",
@@ -540,6 +597,7 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
         self.assertEqual(result["owner"], "root")
 
     def test_run_syscheck_scan(self):
+        """Test that run syscheck scan."""
         syscheck, mock_http = self._make_syscheck()
         mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = syscheck.run_syscheck_scan("001")
@@ -553,11 +611,14 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
 
 
 class TestWazuhVulnerabilityCommands(unittest.TestCase):
+    """Unit tests for :class:`WazuhVulnerabilityCommands`."""
     def _make_vuln(self):
+        """Internal helper for make vuln."""
         client, mock_http = _make_client()
         return WazuhVulnerabilityCommands(client), mock_http
 
     def test_get_vulnerabilities(self):
+        """Test that get vulnerabilities."""
         vuln_cmd, mock_http = self._make_vuln()
         mock_http.request.return_value = _make_response(
             200,
@@ -577,6 +638,7 @@ class TestWazuhVulnerabilityCommands(unittest.TestCase):
         self.assertEqual(results[0]["cve"], "CVE-2021-44228")
 
     def test_normalise_vulnerability(self):
+        """Test that normalise vulnerability."""
         raw = {
             "cve": "CVE-2021-44228",
             "name": "log4j-core",
@@ -591,6 +653,7 @@ class TestWazuhVulnerabilityCommands(unittest.TestCase):
         self.assertEqual(result["cve"], "CVE-2021-44228")
 
     def test_vulnerability_summary(self):
+        """Test that vulnerability summary."""
         vuln_cmd, mock_http = self._make_vuln()
         items = (
             [{"severity": "critical"}] * 3
@@ -610,11 +673,14 @@ class TestWazuhVulnerabilityCommands(unittest.TestCase):
 
 
 class TestWazuhRulesCommands(unittest.TestCase):
+    """Unit tests for :class:`WazuhRulesCommands`."""
     def _make_rules(self):
+        """Internal helper for make rules."""
         client, mock_http = _make_client()
         return WazuhRulesCommands(client), mock_http
 
     def test_list_rules(self):
+        """Test that list rules."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200,
@@ -628,6 +694,7 @@ class TestWazuhRulesCommands(unittest.TestCase):
         self.assertEqual(results[0]["id"], "5501")
 
     def test_get_rule_found(self):
+        """Test that get rule found."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200, _wazuh_ok([{"id": "5501", "description": "test"}])
@@ -636,12 +703,14 @@ class TestWazuhRulesCommands(unittest.TestCase):
         self.assertIsNotNone(rule)
 
     def test_get_rule_not_found(self):
+        """Test that get rule not found."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(200, _wazuh_ok([]))
         result = rules_cmd.get_rule("99999")
         self.assertIsNone(result)
 
     def test_list_rule_groups(self):
+        """Test that list rule groups."""
         rules_cmd, mock_http = self._make_rules()
         mock_http.request.return_value = _make_response(
             200, _wazuh_ok(["authentication_failed", "sshd"])
@@ -657,17 +726,21 @@ class TestWazuhRulesCommands(unittest.TestCase):
 
 
 class TestWazuhActiveResponseCommands(unittest.TestCase):
+    """Unit tests for :class:`WazuhActiveResponseCommands`."""
     def _make_ar(self):
+        """Internal helper for make ar."""
         client, mock_http = _make_client()
         return WazuhActiveResponseCommands(client), mock_http
 
     def test_run_command(self):
+        """Test that run command."""
         ar, mock_http = self._make_ar()
         mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = ar.run_command("firewall-drop", ["001"])
         self.assertIsNotNone(result)
 
     def test_block_ip(self):
+        """Test that block ip."""
         ar, mock_http = self._make_ar()
         mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = ar.block_ip("1.2.3.4", ["001"])
@@ -680,6 +753,7 @@ class TestWazuhActiveResponseCommands(unittest.TestCase):
         self.assertIn("1.2.3.4", body.get("arguments", []))
 
     def test_disable_user_account(self):
+        """Test that disable user account."""
         ar, mock_http = self._make_ar()
         mock_http.request.return_value = _make_response(200, _wazuh_ok(["001"]))
         result = ar.disable_user_account("jdoe", ["001"])
@@ -693,7 +767,9 @@ class TestWazuhActiveResponseCommands(unittest.TestCase):
 
 
 class TestWazuhIndexerCommands(unittest.TestCase):
+    """Unit tests for :class:`WazuhIndexerCommands`."""
     def _make_indexer(self, enabled=True):
+        """Internal helper for make indexer."""
         cfg = _make_config(
             indexer_enabled=enabled,
             indexer_username="admin",
@@ -703,11 +779,13 @@ class TestWazuhIndexerCommands(unittest.TestCase):
         return WazuhIndexerCommands(cfg, mock_http), mock_http
 
     def test_requires_indexer_enabled(self):
+        """Test that requires indexer enabled."""
         indexer, _ = self._make_indexer(enabled=False)
         with self.assertRaises(WazuhIndexerError):
             indexer.list_alert_indices()
 
     def test_search_alerts(self):
+        """Test that search alerts."""
         indexer, mock_http = self._make_indexer()
         hits_response = {
             "hits": {
@@ -723,6 +801,7 @@ class TestWazuhIndexerCommands(unittest.TestCase):
         self.assertIn("hits", result)
 
     def test_search_alerts_by_agent(self):
+        """Test that search alerts by agent."""
         indexer, mock_http = self._make_indexer()
         mock_http.request.return_value = _make_response(
             200, {"hits": {"hits": [{"_source": {"agent": {"id": "001"}}}]}}
@@ -731,12 +810,14 @@ class TestWazuhIndexerCommands(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
     def test_count_alerts(self):
+        """Test that count alerts."""
         indexer, mock_http = self._make_indexer()
         mock_http.request.return_value = _make_response(200, {"count": 42})
         count = indexer.count_alerts()
         self.assertEqual(count, 42)
 
     def test_uses_basic_auth(self):
+        """Test that uses basic auth."""
         indexer, mock_http = self._make_indexer()
         mock_http.request.return_value = _make_response(200, {"hits": {"hits": []}})
         indexer.search_alerts()
@@ -752,12 +833,15 @@ class TestWazuhIndexerCommands(unittest.TestCase):
 
 
 class TestWazuhSTIXMapper(unittest.TestCase):
+    """STIX translation helper for test wazuh s t i x objects."""
     def setUp(self):
+        """Set up test fixtures before each test method."""
         self.mapper = WazuhSTIXMapper()
 
     # ── Alert -> STIX ──────────────────────────────────────────────────────
 
     def test_alert_to_stix_bundle_structure(self):
+        """Test that alert to stix bundle structure."""
         alert = {
             "id": "a1",
             "timestamp": "2024-03-10T12:00:00Z",
@@ -785,6 +869,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_alert_observed_data_has_extension(self):
+        """Test that alert observed data has extension."""
         alert = {
             "rule_id": "100",
             "rule_level": 5,
@@ -851,6 +936,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     # ── FIM event -> STIX ──────────────────────────────────────────────────
 
     def test_fim_event_to_stix_bundle_has_file_sco(self):
+        """Test that fim event to stix bundle has file sco."""
         fim = {
             "file": "/etc/passwd",
             "event_type": "modified",
@@ -866,6 +952,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("observed-data", types)
 
     def test_fim_observed_data_has_extension(self):
+        """Test that fim observed data has extension."""
         fim = {"file": "/tmp/test", "event_type": "added", "sha256": "abc123"}  # nosec B108
         bundle = self.mapper.fim_event_to_stix_bundle(fim, agent_id="002")
         obs = next(o for o in bundle["objects"] if o["type"] == "observed-data")
@@ -874,6 +961,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertEqual(obs["x_wazuh_fim"]["agent_id"], "002")
 
     def test_fim_file_sco_hashes(self):
+        """Test that fim file sco hashes."""
         fim = {
             "file": "/etc/shadow",
             "md5": "md5hash",
@@ -888,6 +976,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     # ── Vulnerability -> STIX ──────────────────────────────────────────────
 
     def test_vulnerability_to_stix_sdo(self):
+        """Test that vulnerability to stix sdo."""
         vuln = {
             "cve": "CVE-2021-44228",
             "title": "Log4Shell",
@@ -903,10 +992,12 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("cve", refs)
 
     def test_vulnerability_missing_cve_raises(self):
+        """Test that vulnerability missing cve raises."""
         with self.assertRaises(WazuhSTIXError):
             self.mapper.vulnerability_to_stix({"title": "Unknown"})
 
     def test_vulnerabilities_bundle_skips_no_cve(self):
+        """Test that vulnerabilities bundle skips no cve."""
         vulns = [
             {"cve": "CVE-2021-44228", "title": "Log4Shell"},
             {"title": "No CVE here"},  # should be skipped
@@ -918,6 +1009,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     # ── Agent -> STIX identity ──────────────────────────────────────────────
 
     def test_agent_to_stix_identity(self):
+        """Test that agent to stix identity."""
         agent = {
             "id": "001",
             "name": "webserver01",
@@ -943,6 +1035,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     # ── STIX indicator -> Wazuh rule ────────────────────────────────────────
 
     def test_indicator_to_wazuh_rule_ip(self):
+        """Test that indicator to wazuh rule ip."""
         indicator = {
             "type": "indicator",
             "id": "indicator--abc",
@@ -958,6 +1051,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("srcip", rule_xml)
 
     def test_indicator_to_wazuh_rule_domain(self):
+        """Test that indicator to wazuh rule domain."""
         indicator = {
             "type": "indicator",
             "id": "indicator--xyz",
@@ -971,6 +1065,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("data.hostname", rule_xml)
 
     def test_indicator_no_value_returns_comment(self):
+        """Test that indicator no value returns comment."""
         indicator = {
             "type": "indicator",
             "id": "indicator--nv",
@@ -983,6 +1078,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
     # ── Kill chain phases ──────────────────────────────────────────────────
 
     def test_build_kill_chain_phases(self):
+        """Test that build kill chain phases."""
         mitre = {"tactic": ["initial-access", "execution"]}
         phases = WazuhSTIXMapper._build_kill_chain_phases(mitre)
         self.assertEqual(len(phases), 2)
@@ -990,6 +1086,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
         self.assertIn("initial-access", phase_names)
 
     def test_build_kill_chain_phases_string_tactic(self):
+        """Test that build kill chain phases string tactic."""
         mitre = {"tactic": "lateral-movement"}
         phases = WazuhSTIXMapper._build_kill_chain_phases(mitre)
         self.assertEqual(len(phases), 1)
@@ -1003,7 +1100,9 @@ class TestWazuhSTIXMapper(unittest.TestCase):
 
 
 class TestWazuhExceptions(unittest.TestCase):
+    """Raised when a test wazuh exceptions error occurs."""
     def test_all_inherit_from_base(self):
+        """Test that all inherit from base."""
         from gnat.connectors.wazuh.exceptions import WazuhError
 
         for exc_cls in [
@@ -1019,6 +1118,7 @@ class TestWazuhExceptions(unittest.TestCase):
             self.assertTrue(issubclass(exc_cls, WazuhError))
 
     def test_api_error_str_includes_context(self):
+        """Test that api error str includes context."""
         exc = WazuhAPIError(
             "msg", status_code=403, error_code=4000, title="Permission Denied", endpoint="/agents"
         )
@@ -1028,9 +1128,11 @@ class TestWazuhExceptions(unittest.TestCase):
         self.assertIn("Permission Denied", s)
 
     def test_not_found_is_api_error(self):
+        """Test that not found is api error."""
         self.assertTrue(issubclass(WazuhNotFoundError, WazuhAPIError))
 
     def test_permission_is_api_error(self):
+        """Test that permission is api error."""
         self.assertTrue(issubclass(WazuhPermissionError, WazuhAPIError))
 
     if __name__ == "**main**":

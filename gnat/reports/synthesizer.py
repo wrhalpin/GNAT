@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.reports.synthesizer
 ============================
@@ -77,6 +79,7 @@ class ReportSynthesizer:
         agent_config: AgentConfig,
         research_library=None,
     ):
+        """Initialize ReportSynthesizer."""
         self._config = config
         self._acfg = agent_config
         self._lib = research_library
@@ -88,6 +91,7 @@ class ReportSynthesizer:
 
     @property
     def calls_made(self) -> int:
+        """Calls made."""
         return self._calls
 
     # ── Public API ─────────────────────────────────────────────────────────
@@ -127,6 +131,7 @@ class ReportSynthesizer:
     # ── Daily synthesis ────────────────────────────────────────────────────
 
     def _synthesize_daily(self, agg: ReportAggregates) -> list[ReportSection]:
+        """Internal helper for synthesize daily."""
         from gnat.reports.base import ReportSection
 
         sections = []
@@ -194,6 +199,7 @@ class ReportSynthesizer:
     # ── Trends synthesis ───────────────────────────────────────────────────
 
     def _synthesize_trends(self, agg: ReportAggregates) -> list[ReportSection]:
+        """Internal helper for synthesize trends."""
         from gnat.reports.base import ReportSection
 
         sections = []
@@ -295,6 +301,7 @@ class ReportSynthesizer:
     # ── Yearly synthesis ───────────────────────────────────────────────────
 
     def _synthesize_yearly(self, agg: ReportAggregates) -> list[ReportSection]:
+        """Internal helper for synthesize yearly."""
         from gnat.reports.base import ReportSection
 
         sections = []
@@ -457,6 +464,7 @@ class ReportSynthesizer:
     # ── System prompts ─────────────────────────────────────────────────────
 
     def _system_prompt(self, audience: str) -> str:
+        """Internal helper for system prompt."""
         org = f" for {self._config.org_name}" if self._config.org_name else ""
         sector_ctx = ""
         if self._config.sectors:
@@ -477,6 +485,7 @@ class ReportSynthesizer:
     # ── User prompts ───────────────────────────────────────────────────────
 
     def _daily_summary_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for daily summary prompt."""
         return (
             f"Write a concise executive summary (2-3 paragraphs) for a "
             f"daily threat intelligence report covering the last "
@@ -496,6 +505,7 @@ class ReportSynthesizer:
         )
 
     def _threat_highlights_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for threat highlights prompt."""
         parts = [
             "Write 1-2 paragraphs highlighting the most significant "
             "threats identified in this reporting period.\n"
@@ -518,6 +528,7 @@ class ReportSynthesizer:
         return "\n".join(parts)
 
     def _trends_summary_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for trends summary prompt."""
         pop = agg.period_over_period
         lines = [
             f"Write a 3-paragraph trends summary for a {agg.window_days}-day "
@@ -544,6 +555,7 @@ class ReportSynthesizer:
         return "\n".join(lines)
 
     def _actor_trends_prompt(self, agg: ReportAggregates, lib_ctx: str) -> str:
+        """Internal helper for actor trends prompt."""
         actor_names = [a["name"] for a in agg.top_actors[:8]]
         motivations = _fmt_dict(agg.actor_motivations, top=5)
         prompt = (
@@ -561,6 +573,7 @@ class ReportSynthesizer:
         return prompt
 
     def _vuln_trends_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for vuln trends prompt."""
         return (
             f"Write 2-3 paragraphs analysing vulnerability trends over "
             f"the past {agg.window_days} days.\n\n"
@@ -573,6 +586,7 @@ class ReportSynthesizer:
         )
 
     def _sector_trends_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for sector trends prompt."""
         sector_org = self._config.org_name or "your organisation"
         return (
             f"Write 1-2 paragraphs analysing sector targeting trends.\n\n"
@@ -584,6 +598,7 @@ class ReportSynthesizer:
         )
 
     def _year_in_review_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for year in review prompt."""
         return (
             "Write a 3-4 paragraph executive 'Year in Review' narrative "
             "for a threat intelligence annual report.\n\n"
@@ -601,6 +616,7 @@ class ReportSynthesizer:
         )
 
     def _threat_landscape_prompt(self, agg: ReportAggregates, lib_ctx: str) -> str:
+        """Internal helper for threat landscape prompt."""
         actor_names = [a["name"] for a in agg.top_actors[:8]]
         top_ttps = [t["name"] for t in agg.top_ttps[:6]]
         prompt = (
@@ -619,6 +635,7 @@ class ReportSynthesizer:
         return prompt
 
     def _vuln_year_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for vuln year prompt."""
         return (
             "Write 2-3 paragraphs summarising the vulnerability landscape "
             "for the year.\n\n"
@@ -633,6 +650,7 @@ class ReportSynthesizer:
         )
 
     def _sector_year_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for sector year prompt."""
         org = self._config.org_name or "the organisation"
         sectors = ", ".join(self._config.sectors[:5]) if self._config.sectors else "all sectors"
         return (
@@ -647,6 +665,7 @@ class ReportSynthesizer:
         )
 
     def _programme_performance_prompt(self, agg: ReportAggregates) -> str:
+        """Internal helper for programme performance prompt."""
         return (
             "Write 2-3 paragraphs evaluating the intelligence programme's "
             "performance over the year.\n\n"
@@ -661,6 +680,7 @@ class ReportSynthesizer:
         )
 
     def _recommendations_prompt(self, agg: ReportAggregates, report_type: str) -> str:
+        """Internal helper for recommendations prompt."""
         timeframe = {
             "daily": "immediate (next 24-48 hours)",
             "trends": "near-term (next 30 days)",

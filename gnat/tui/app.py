@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.tui.app
 =============
@@ -95,6 +97,7 @@ class GNATApp(App):
         db_url: str | None = None,
         **kwargs,
     ) -> None:
+        """Initialize GNATApp."""
         super().__init__(**kwargs)
         self._config_path = config_path
         self._initial_tab = initial_tab
@@ -105,6 +108,7 @@ class GNATApp(App):
         self._db_url = db_url
 
     def compose(self) -> ComposeResult:
+        """Build and return the GNATApp."""
         yield Header()
         with TabbedContent(initial=self._initial_tab):
             with TabPane("Query  F1", id="query"):

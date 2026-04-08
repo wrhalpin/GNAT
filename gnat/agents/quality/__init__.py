@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """Quality agents for GNAT connector assurance."""
 
 from .contract import ConnectorContractProfile, ContractAgent, ContractCheckResult

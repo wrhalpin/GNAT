@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.agents.copilot
 =======================
@@ -179,6 +181,7 @@ class CopilotReader(SourceReader):
         label: str = "CopilotReader",
         use_token_exchange: bool = False,
     ):
+        """Initialize CopilotReader."""
         super().__init__(source_id=label)
         if not sources:
             raise ValueError("CopilotReader: at least one source must be configured")
@@ -456,6 +459,7 @@ class CopilotReader(SourceReader):
     # ── DirectLine v3 HTTP calls (sync urllib) ─────────────────────────────
 
     def _dl_headers(self) -> dict[str, str]:
+        """Internal helper for dl headers."""
         return {
             "Authorization": f"Bearer {self._bearer()}",
             "Content-Type": "application/json",
@@ -601,10 +605,12 @@ class CopilotReader(SourceReader):
         return []
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"CopilotReader(sources={len(self._sources)}, newer_than={self._newer_than!r})"
 
 
 def _utcnow_iso() -> str:
+    """Internal helper for utcnow iso."""
     from datetime import datetime, timezone
 
     return datetime.now(timezone.utc).isoformat()

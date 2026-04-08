@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.splunk.auth
 
@@ -64,6 +66,7 @@ class SplunkAuthManager:
     """
 
     def __init__(self, config: SplunkConfig, http: urllib3.PoolManager) -> None:
+        """Initialize SplunkAuthManager."""
         self._config = config
         self._http = http
         self._session_key: str | None = None
@@ -126,6 +129,7 @@ class SplunkAuthManager:
         return self._login()
 
     def _session_is_valid(self) -> bool:
+        """Internal helper for session is valid."""
         return (
             self._session_key is not None
             and time.time() < self._session_expires_at - _SESSION_EXPIRY_BUFFER_SECONDS

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.elastic.auth
 
@@ -71,6 +73,7 @@ class ElasticAuthManager:
     """
 
     def __init__(self, config: ElasticConfig, http: urllib3.PoolManager) -> None:
+        """Initialize ElasticAuthManager."""
         self._config = config
         self._http = http
 

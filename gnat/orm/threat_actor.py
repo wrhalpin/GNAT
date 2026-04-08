@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.orm.threat_actor
 ========================
@@ -13,5 +15,6 @@ class ThreatActor(STIXBase):
     stix_type = "threat-actor"
 
     def __init__(self, client=None, **kwargs):
+        """Initialize ThreatActor."""
         kwargs.setdefault("threat_actor_types", [])
         super().__init__(client=client, **kwargs)

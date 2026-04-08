@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.greenbone.client
 ================================
@@ -77,6 +79,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         password: str = "",
         **kwargs: Any,
     ):
+        """Initialize GreenboneClient."""
         super().__init__(host=host, **kwargs)
         self._port = port
         self._username = username
@@ -109,6 +112,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         return bool(version)
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
+        """Retrieve object."""
         if not self._gmp:
             self.authenticate()
         if stix_type == "vulnerability":
@@ -125,6 +129,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         page: int = 1,
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
+        """List all objects objects."""
         if not self._gmp:
             self.authenticate()
         filters = dict(filters or {})
@@ -139,9 +144,11 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         return self._parse_reports(resp) if hasattr(resp, "findall") else []
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("Greenbone connector is read-focused for results/reports.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("Deletion not typically supported via GMP in this connector.")
 
     # ── Helpers for parsing (simplified) ───────────────────────────────────
@@ -166,12 +173,14 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         return self._report_to_stix(native)
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
+        """Create an instance from STIX data."""
         return {
             "note": "Greenbone is read-only for vulnerability scan data.",
             "stix_id": stix_dict.get("id", ""),
         }
 
     def _result_to_stix(self, result: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for result to stix."""
         now = _now_ts()
         rid = result.get("id", "")
         vul_id = f"vulnerability--{_uuid.uuid5(_STIX_NS, f'gvm:{rid}')}"
@@ -193,6 +202,7 @@ class GreenboneClient(BaseClient, ConnectorMixin):
         }
 
     def _report_to_stix(self, report: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for report to stix."""
         now = _now_ts()
         rid = report.get("id", "")
         report_id = f"report--{_uuid.uuid5(_STIX_NS, f'gvm:{rid}')}"

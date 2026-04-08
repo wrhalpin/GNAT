@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.analysis.confidence
 ========================
@@ -187,6 +189,7 @@ class ConfidenceScore:
     rationale:               str | None = field(default=None)
 
     def __post_init__(self) -> None:
+        """Post-init setup for ConfidenceScore."""
         if not 0 <= self.stix_confidence <= 100:
             raise ValueError(
                 f"stix_confidence must be 0–100, got {self.stix_confidence}"

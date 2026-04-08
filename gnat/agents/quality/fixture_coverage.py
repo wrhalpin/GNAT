@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.agents.quality.fixture_coverage
+========================================
+
+Fixture coverage utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -7,6 +15,7 @@ from pathlib import Path
 
 @dataclass(slots=True)
 class FixtureCoverageResult:
+    """FixtureCoverageResult implementation."""
     connector_name: str
     fixture_count: int
     has_error_fixture: bool
@@ -15,6 +24,7 @@ class FixtureCoverageResult:
 
     @property
     def score(self) -> int:
+        """Score."""
         score = min(self.fixture_count * 20, 60)
         if self.has_error_fixture:
             score += 20
@@ -27,9 +37,11 @@ class FixtureCoverageAgent:
     """Rates test/fixture depth for connectors and spots weak coverage."""
 
     def __init__(self, repo_root: str) -> None:
+        """Initialize FixtureCoverageAgent."""
         self.repo_root = Path(repo_root)
 
     def evaluate_connector(self, connector_name: str, fixture_globs: Sequence[str]) -> FixtureCoverageResult:
+        """Evaluate connector."""
         matched: list[Path] = []
         for pattern in fixture_globs:
             matched.extend(self.repo_root.glob(pattern))
@@ -59,4 +71,5 @@ class FixtureCoverageAgent:
         )
 
     def evaluate_many(self, registry: dict[str, Sequence[str]]) -> list[FixtureCoverageResult]:
+        """Evaluate many."""
         return [self.evaluate_connector(connector_name, globs) for connector_name, globs in registry.items()]

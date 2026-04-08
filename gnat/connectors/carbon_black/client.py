@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.carbon_black.client
 =======================================
@@ -65,6 +67,7 @@ _STIX_NS = _uuid.UUID("e4f5a6b7-c8d9-0123-defa-123456789012")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
@@ -98,6 +101,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         connector_id: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize CarbonBlackClient."""
         super().__init__(host=host, **kwargs)
         self._org_key = org_key
         self._api_key = api_key
@@ -329,6 +333,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         return self._alert_to_stix(native)
 
     def _alert_to_stix(self, alert: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         alert_id = str(alert.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"cbc-alert-{alert_id}"))
         severity_map = {10: 90, 9: 85, 8: 75, 7: 65, 6: 55, 5: 50, 4: 40, 3: 30, 2: 20, 1: 10}
@@ -379,6 +384,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         return stix
 
     def _device_to_stix(self, device: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for device to stix."""
         device_id = str(device.get("id", ""))
         uid = str(_uuid.uuid5(_STIX_NS, f"cbc-device-{device_id}"))
         ts = device.get("last_contact_time", _now_ts())
@@ -407,6 +413,7 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         }
 
     def _process_to_stix(self, process: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for process to stix."""
         proc_guid = process.get("process_guid", "")
         uid = str(_uuid.uuid5(_STIX_NS, f"cbc-process-{proc_guid}"))
         sha256 = process.get("process_sha256", "")

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.export.base
 =====================
@@ -75,6 +77,7 @@ logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(timezone.utc)
 
 
@@ -96,9 +99,11 @@ class ExportFilter(ABC):
         """Yield objects that pass this filter."""
 
     def __and__(self, other: ExportFilter) -> CompositeFilter:
+        """Internal helper for and."""
         return CompositeFilter([self, other])
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"{self.__class__.__name__}()"
 
 
@@ -106,15 +111,18 @@ class CompositeFilter(ExportFilter):
     """Chain of filters applied left-to-right (logical AND)."""
 
     def __init__(self, filters: list[ExportFilter]):
+        """Initialize CompositeFilter."""
         self._filters = filters
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this CompositeFilter instance."""
         stream: Iterable[STIXBase] = objects
         for f in self._filters:
             stream = f(stream)
         return iter(stream)
 
     def __and__(self, other: ExportFilter) -> CompositeFilter:
+        """Internal helper for and."""
         return CompositeFilter(self._filters + [other])
 
 
@@ -122,6 +130,7 @@ class PassthroughFilter(ExportFilter):
     """Identity filter — passes everything."""
 
     def __call__(self, objects: Iterable[STIXBase]) -> Iterator[STIXBase]:
+        """Call this PassthroughFilter instance."""
         return iter(objects)
 
 
@@ -147,6 +156,7 @@ class ExportTransform(ABC):
     """
 
     def __init__(self, label: str = ""):
+        """Initialize ExportTransform."""
         self.label = label or self.__class__.__name__
 
     @abstractmethod
@@ -166,6 +176,7 @@ class ExportTransform(ABC):
         """
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"{self.__class__.__name__}(label={self.label!r})"
 
 
@@ -190,9 +201,11 @@ class TransformResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def payload_names(self) -> list[str]:
+        """Payload names."""
         return list(self.payloads.keys())
 
     def total_bytes(self) -> int:
+        """Total bytes."""
         total = 0
         for v in self.payloads.values():
             if isinstance(v, bytes):
@@ -232,6 +245,7 @@ class ExportDelivery(ABC):
         """
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"{self.__class__.__name__}()"
 
 
@@ -261,6 +275,7 @@ class DeliveryResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __str__(self) -> str:  # pragma: no cover
+        """Return human-readable string representation."""
         if self.success:
             return f"DeliveryResult: {len(self.delivered)} delivered"
         return (
@@ -313,9 +328,11 @@ class ExportResult:
 
     @property
     def success(self) -> bool:
+        """Success."""
         return not self.errors and (self.delivery_result is None or self.delivery_result.success)
 
     def __str__(self) -> str:  # pragma: no cover
+        """Return human-readable string representation."""
         status = "OK" if self.success else "FAILED"
         return (
             f"ExportResult[{status}] {self.pipeline_id}: "
@@ -355,6 +372,7 @@ class ExportPipeline:
     """
 
     def __init__(self, pipeline_id: str = "export"):
+        """Initialize ExportPipeline."""
         self.pipeline_id = pipeline_id
         self._workspace: Workspace | None = None
         self._objects: list[STIXBase] | None = None
@@ -588,6 +606,7 @@ class ExportPipeline:
     # ── Internal ────────────────────────────────────────────────────────────
 
     def _collect_source(self) -> list[STIXBase]:
+        """Internal helper for collect source."""
         if self._workspace is not None:
             return list(self._workspace.objects.values())
         if self._objects is not None:
@@ -598,6 +617,7 @@ class ExportPipeline:
         )
 
     def _apply_filters(self, objects: list[STIXBase]) -> list[STIXBase]:
+        """Internal helper for apply filters."""
         if not self._filters:
             return objects
         stream: Iterable[STIXBase] = objects
@@ -606,6 +626,7 @@ class ExportPipeline:
         return list(stream)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return (
             f"ExportPipeline(id={self.pipeline_id!r}, "
             f"filters={len(self._filters)}, "

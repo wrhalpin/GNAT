@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.yeti.client
 ==============================
@@ -59,6 +61,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize YetiClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -190,6 +193,7 @@ class YetiClient(BaseClient, ConnectorMixin):
     # ------------------------------------------------------------------
 
     def _observable_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for observable to stix."""
         yeti_type = native.get("type", "ip")
         value = native.get("value", "")
         pattern = self._make_pattern(yeti_type, value)
@@ -211,6 +215,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         }
 
     def _entity_to_threat_actor(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for entity to threat actor."""
         return {
             "type": "threat-actor",
             "id": f"threat-actor--yeti-{native.get('id', '')}",
@@ -224,6 +229,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         }
 
     def _entity_to_malware(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for entity to malware."""
         return {
             "type": "malware",
             "id": f"malware--yeti-{native.get('id', '')}",
@@ -237,6 +243,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         }
 
     def _entity_to_campaign(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for entity to campaign."""
         return {
             "type": "campaign",
             "id": f"campaign--yeti-{native.get('id', '')}",
@@ -249,6 +256,7 @@ class YetiClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _make_pattern(yeti_type: str, value: str) -> str:
+        """Internal helper for make pattern."""
         t = (yeti_type or "").lower()
         if t in ("ip", "ipv4", "ipv4addr"):
             return f"[ipv4-addr:value = '{value}']"
@@ -270,6 +278,7 @@ class YetiClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _stix_to_yeti_type(pattern: str) -> str:
+        """Internal helper for stix to yeti type."""
         if "ipv4-addr" in pattern:
             return "ip"
         if "ipv6-addr" in pattern:

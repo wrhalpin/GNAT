@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.elastic.kibana_rules
 
@@ -62,6 +64,7 @@ class KibanaRulesCommands:
     """
 
     def __init__(self, client: ElasticClient) -> None:
+        """Initialize KibanaRulesCommands."""
         self._client = client
 
     # ── List and search ────────────────────────────────────────────────────

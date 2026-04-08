@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.datadog.client
 ================================
@@ -60,10 +62,12 @@ _STIX_NS = _uuid.UUID("a7b8c9d0-e1f2-3456-0123-567890123456")
 
 
 def _now_ts() -> str:
+    """Internal helper for now ts."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
 def _epoch_ms() -> int:
+    """Internal helper for epoch ms."""
     return int(datetime.now(timezone.utc).timestamp() * 1000)
 
 
@@ -94,6 +98,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
         app_key: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize DatadogClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._app_key = app_key
@@ -292,6 +297,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
         return self._signal_to_stix(native)
 
     def _signal_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for signal to stix."""
         signal_id = native.get("id", "")
         attrs = native.get("attributes", native)
         uid = str(_uuid.uuid5(_STIX_NS, f"datadog-signal-{signal_id}"))
@@ -331,6 +337,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
         }
 
     def _finding_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for finding to stix."""
         finding_id = native.get("id", "")
         attrs = native.get("attributes", native)
         uid = str(_uuid.uuid5(_STIX_NS, f"datadog-finding-{finding_id}"))
@@ -356,6 +363,7 @@ class DatadogClient(BaseClient, ConnectorMixin):
         }
 
     def _incident_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for incident to stix."""
         incident_id = native.get("id", "")
         attrs = native.get("attributes", native)
         uid = str(_uuid.uuid5(_STIX_NS, f"datadog-incident-{incident_id}"))

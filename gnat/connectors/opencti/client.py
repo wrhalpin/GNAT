@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.opencti.client
 =====================================
@@ -86,6 +88,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str, api_key: str = "", **kwargs: Any):
+        """Initialize OpenCTIClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 

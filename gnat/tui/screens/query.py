@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.tui.screens.query
 ========================
@@ -73,6 +75,7 @@ class QueryScreen(Screen):
         backend: str | None = None,
         **kwargs: Any,
     ) -> None:
+        """Initialize QueryScreen."""
         super().__init__(**kwargs)
         self._config_path = config_path
         self._platform = platform
@@ -80,6 +83,7 @@ class QueryScreen(Screen):
         self._engine = None
 
     def compose(self) -> ComposeResult:
+        """Build and return the QueryScreen."""
         yield Header()
         with Vertical():
             with Horizontal(id="query-bar"):
@@ -99,13 +103,16 @@ class QueryScreen(Screen):
         self.query_one("#query-input", Input).focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle the button pressed event."""
         if event.button.id == "query-btn":
             self._run_query()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle the input submitted event."""
         self._run_query()
 
     def action_clear_results(self) -> None:
+        """Action clear results."""
         self.query_one(STIXTable).clear()
         self.query_one("#status-label", Label).update("")
 
@@ -114,6 +121,7 @@ class QueryScreen(Screen):
     # ------------------------------------------------------------------
 
     def _run_query(self) -> None:
+        """Internal helper for run query."""
         inp = self.query_one("#query-input", Input)
         status = self.query_one("#status-label", Label)
         table = self.query_one(STIXTable)
@@ -133,6 +141,7 @@ class QueryScreen(Screen):
         status.update(f"[green]{n} result{'s' if n != 1 else ''}[/green] for: {query[:60]}")
 
     def _build_engine(self):
+        """Internal helper for build engine."""
         try:
             from gnat.nlp.parser import NLPQueryEngine
 

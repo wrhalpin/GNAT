@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.greynoise.client
 ================================
@@ -75,6 +77,7 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
     }
 
     def __init__(self, host: str = "https://api.greynoise.io", api_key: str = "", **kwargs: Any):
+        """Initialize GreyNoiseClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
 
@@ -126,9 +129,11 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
         raise GNATClientError("list_objects supports IP context or GNQL for GreyNoise")
 
     def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create or update object."""
         raise GNATClientError("GreyNoise is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
+        """Delete the object."""
         raise GNATClientError("GreyNoise is read-only — no deletion supported.")
 
     # ── Domain-specific helpers ───────────────────────────────────────────

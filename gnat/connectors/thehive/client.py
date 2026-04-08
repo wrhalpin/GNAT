@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.thehive.client
 ================================
@@ -65,6 +67,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         org: str = "",
         **kwargs: Any,
     ) -> None:
+        """Initialize TheHiveClient."""
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._org = org
@@ -274,6 +277,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _resolve_resource(stix_type: str) -> str:
+        """Internal helper for resolve resource."""
         mapping = {
             "case": "case",
             "alert": "alert",
@@ -284,6 +288,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         return mapping.get(stix_type, "case")
 
     def _case_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for case to stix."""
         return {
             "type": "observed-data",
             "id": f"observed-data--hive-{native.get('_id', '')}",
@@ -302,6 +307,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         }
 
     def _alert_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for alert to stix."""
         return {
             "type": "indicator",
             "id": f"indicator--hive-{native.get('_id', '')}",
@@ -319,6 +325,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         }
 
     def _observable_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
+        """Internal helper for observable to stix."""
         data_type = native.get("dataType", "domain")
         value = native.get("data", "")
         pattern = self._observable_pattern(data_type, value)
@@ -338,6 +345,7 @@ class TheHiveClient(BaseClient, ConnectorMixin):
 
     @staticmethod
     def _observable_pattern(data_type: str, value: str) -> str:
+        """Internal helper for observable pattern."""
         mapping = {
             "ip": f"[ipv4-addr:value = '{value}']",
             "domain": f"[domain-name:value = '{value}']",

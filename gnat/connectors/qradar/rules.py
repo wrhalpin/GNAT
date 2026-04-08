@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.rules
 ==================================
@@ -40,6 +42,7 @@ class QRadarRulesCommands:
     """
 
     def __init__(self, client: QRadarClient) -> None:
+        """Initialize QRadarRulesCommands."""
         self._client = client
 
     def list_rules(

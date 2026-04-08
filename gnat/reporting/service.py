@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.reporting.service
 ========================
@@ -271,6 +273,7 @@ class ReportService:
         changed_by: str | None,
         note:       str,
     ) -> Report:
+        """Internal helper for transition."""
         report = self.get(report_id)
         if not report.can_transition_to(new_status):
             raise ReportError(

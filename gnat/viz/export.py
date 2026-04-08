@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.viz.export
 ===================
@@ -65,6 +67,7 @@ class PowerBIExporter:
     """
 
     def __init__(self, workspace: Workspace):
+        """Initialize PowerBIExporter."""
         self._ws = workspace
 
     def to_xlsx(self, path: str) -> None:
@@ -96,6 +99,7 @@ class PowerBIExporter:
         alt_fill = PatternFill("solid", fgColor="EEF4FF")
 
         def _write_sheet(sheet_name: str, columns: list[str], rows: list[list[Any]]) -> None:
+            """Internal helper for write sheet."""
             ws = wb.create_sheet(sheet_name[:31])
             ws.append(columns)
             for cell in ws[1]:
@@ -326,9 +330,11 @@ def grafana_dashboard(
     title = title or f"GNAT: {workspace_name}"
 
     def _target(target_str, ref_id="A"):
+        """Internal helper for target."""
         return {"target": target_str, "refId": ref_id, "type": "timeserie"}
 
     def _table_target(target_str, ref_id="A"):
+        """Internal helper for table target."""
         return {"target": target_str, "refId": ref_id, "type": "table"}
 
     panels = [
@@ -541,9 +547,11 @@ def solr_dashboard(
     ds = {"type": "simplejson", "uid": datasource_name}
 
     def _tgt(target_str: str, ref_id: str = "A") -> dict:
+        """Internal helper for tgt."""
         return {"target": target_str, "refId": ref_id, "type": "timeserie"}
 
     def _tbl(target_str: str, ref_id: str = "A") -> dict:
+        """Internal helper for tbl."""
         return {"target": target_str, "refId": ref_id, "type": "table"}
 
     panels = [

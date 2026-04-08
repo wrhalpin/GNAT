@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.reports.base
 =====================
@@ -176,6 +178,7 @@ class ReportConfig:
     config_name: str = ""
 
     def __post_init__(self) -> None:
+        """Post-init setup for ReportConfig."""
         if self.window_days is None:
             self.window_days = {
                 "daily": 1,
@@ -207,6 +210,7 @@ class ReportConfig:
             )
 
         def _list(key: str, sep: str = ",") -> list[str]:
+            """Internal helper for list."""
             raw = s.get(key, "")
             return [v.strip() for v in raw.split(sep) if v.strip()] if raw else []
 
@@ -310,10 +314,12 @@ class ReportSection:
 
     @property
     def has_narrative(self) -> bool:
+        """Return True if narrative."""
         return bool(self.narrative.strip())
 
     @property
     def has_data(self) -> bool:
+        """Return True if data."""
         return bool(self.data)
 
 
@@ -352,10 +358,12 @@ class ReportDocument:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_section(self, section: ReportSection) -> None:
+        """Create a new section."""
         self.sections.append(section)
         self.sections.sort(key=lambda s: s.order)
 
     def get_section(self, title: str) -> ReportSection | None:
+        """Retrieve section."""
         for s in self.sections:
             if s.title.lower() == title.lower():
                 return s
@@ -363,6 +371,7 @@ class ReportDocument:
 
     @property
     def has_any_narrative(self) -> bool:
+        """Return True if any narrative."""
         return any(s.has_narrative for s in self.sections)
 
 
@@ -410,9 +419,11 @@ class ReportResult:
 
     @property
     def success(self) -> bool:
+        """Success."""
         return len(self.formats_rendered) > 0 and not self.errors
 
     def __str__(self) -> str:
+        """Return human-readable string representation."""
         status = "OK" if self.success else "PARTIAL"
         return (
             f"ReportResult[{status}] {self.report_type!r}: "
@@ -425,4 +436,5 @@ class ReportResult:
 
 
 def _utcnow() -> datetime:
+    """Internal helper for utcnow."""
     return datetime.now(timezone.utc)

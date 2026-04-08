@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.agents.quality.normalization_regression
 ===========================================
@@ -63,6 +65,7 @@ class RegressionPolicy:
     require_exact_list_length: bool = False
 
     def __post_init__(self) -> None:
+        """Post-init setup for RegressionPolicy."""
         if not isinstance(self.ignore_fields, set):
             self.ignore_fields = set(self.ignore_fields)
 
@@ -138,6 +141,7 @@ class RegressionResult:
 
     @property
     def summary(self) -> str:
+        """Summary."""
         if self.passed:
             return f"{self.connector_name}:{self.fixture_name} passed"
         return f"{self.connector_name}:{self.fixture_name} failed with {len(self.differences)} differences"
@@ -160,10 +164,12 @@ class NormalizationRegressionAgent:
         normalizer_registry: Mapping[str, Callable[[JsonDict], JsonDict]] | None = None,
         fixture_root: Path | str | None = None,
     ) -> None:
+        """Initialize NormalizationRegressionAgent."""
         self._registry = dict(normalizer_registry or {})
         self._fixture_root = Path(fixture_root) if fixture_root else None
 
     def register(self, connector_name: str, normalizer: Callable[[JsonDict], JsonDict]) -> None:
+        """Register."""
         self._registry[connector_name] = normalizer
 
     # ------------------------------------------------------------------
@@ -178,6 +184,7 @@ class NormalizationRegressionAgent:
         return RunResult(connector=connector or "", passed=passed, results=results)
 
     def _load_fixtures(self, connector: str | None) -> list[GoldenFixture]:
+        """Internal helper for load fixtures."""
         if self._fixture_root is None:
             return []
         fixtures: list[GoldenFixture] = []
@@ -201,6 +208,7 @@ class NormalizationRegressionAgent:
     # ------------------------------------------------------------------
 
     def run_all(self, fixtures: Iterable[RegressionFixture]) -> list[RegressionResult]:
+        """Run all."""
         return [self._run_regression_fixture(fixture) for fixture in fixtures]
 
     # ------------------------------------------------------------------
@@ -208,6 +216,7 @@ class NormalizationRegressionAgent:
     # ------------------------------------------------------------------
 
     def _run_golden_fixture(self, fixture: GoldenFixture) -> RegressionResult:
+        """Internal helper for run golden fixture."""
         try:
             actual = self._invoke_mapper(fixture)
         except Exception as exc:  # noqa: BLE001
@@ -233,6 +242,7 @@ class NormalizationRegressionAgent:
         )
 
     def _invoke_mapper(self, fixture: GoldenFixture) -> Any:
+        """Internal helper for invoke mapper."""
         if fixture.connector in self._registry:
             return self._registry[fixture.connector](copy.deepcopy(fixture.input))
         if not fixture.mapper:
@@ -245,6 +255,7 @@ class NormalizationRegressionAgent:
         return method(copy.deepcopy(fixture.input))
 
     def _run_regression_fixture(self, fixture: RegressionFixture) -> RegressionResult:
+        """Internal helper for run regression fixture."""
         if fixture.connector_name not in self._registry:
             return RegressionResult(
                 connector_name=fixture.connector_name,

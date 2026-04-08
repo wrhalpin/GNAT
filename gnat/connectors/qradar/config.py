@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.qradar.config
 ===================================
@@ -87,10 +89,12 @@ class QRadarConfig:
     base_url: str = field(init=False)
 
     def __post_init__(self) -> None:
+        """Post-init setup for QRadarConfig."""
         self.base_url = f"{self.scheme}://{self.host}/api"
         self._validate()
 
     def _validate(self) -> None:
+        """Internal helper for validate."""
         if not self.host:
             raise QRadarConfigError("'host' is required in [qradar] config.")
         if not self.token:
@@ -166,6 +170,7 @@ def load_qradar_config(
         )
 
     def _bool(v: str) -> bool:
+        """Internal helper for bool."""
         return v.strip().lower() in ("true", "1", "yes")
 
     return QRadarConfig(

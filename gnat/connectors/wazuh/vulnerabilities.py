@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.connectors.wazuh.vulnerabilities
 
@@ -51,6 +53,7 @@ class WazuhVulnerabilityCommands:
     """
 
     def __init__(self, client: WazuhClient) -> None:
+        """Initialize WazuhVulnerabilityCommands."""
         self._client = client
 
     def get_vulnerabilities(

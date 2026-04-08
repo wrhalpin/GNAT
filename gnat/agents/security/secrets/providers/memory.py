@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
+"""
+gnat.agents.security.secrets.providers.memory
+=================================================
+
+Memory utilities and helpers for the GNAT toolkit.
+"""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -16,17 +24,21 @@ from ..models import (
 
 
 class MemorySecretProvider:
+    """MemorySecretProvider implementation."""
     name = "memory"
 
     def __init__(self) -> None:
+        """Initialize MemorySecretProvider."""
         self._store: dict[tuple[str | None, str], dict[str, object]] = {}
 
     def capabilities(self) -> ProviderCapabilities:
+        """Capabilities."""
         return ProviderCapabilities(
             supports_read=True, supports_write=True, supports_versioning=True, supports_tagging=True
         )
 
     def resolve(self, ref: SecretRef) -> SecretValue:
+        """Resolve the value from available sources."""
         record = self._store.get((ref.vault, ref.path))
         if not record:
             raise SecretProviderError(f"secret not found: {ref.to_uri()}")
@@ -44,6 +56,7 @@ class MemorySecretProvider:
         )
 
     def store(self, request: StoreSecretRequest) -> SecretVersionInfo:
+        """Store."""
         now = datetime.utcnow()
         current = self._store.get((request.ref.vault, request.ref.path))
         if current and not request.allow_overwrite:
@@ -66,9 +79,11 @@ class MemorySecretProvider:
         )
 
     def describe(self, ref: SecretRef) -> SecretMetadata:
+        """Describe."""
         return self.resolve(ref).metadata
 
     def list_refs(self, prefix: str | None = None) -> list[SecretRef]:
+        """List all refs objects."""
         out = []
         for (vault, path), record in self._store.items():
             if prefix and not path.startswith(prefix):
@@ -79,4 +94,5 @@ class MemorySecretProvider:
         return out
 
     def checkout(self, ref: SecretRef) -> SecretLease | None:
+        """Checkout."""
         return None

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.client
 ==============
@@ -59,6 +61,7 @@ class GNATClient:
     """
 
     def __init__(self, config_path: Optional[str] = None):
+        """Initialize GNATClient."""
         self._config_path = config_path
         self._config: Optional[GNATConfig] = None
         self.client: Optional[BaseClient] = None
@@ -228,4 +231,5 @@ class GNATClient:
         return engine.query(query, connectors=connectors if connectors else None)
 
     def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
         return f"GNATClient(target={self.target!r}, connected={self.client is not None})"

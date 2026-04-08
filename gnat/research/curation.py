@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Bill Halpin
 """
 gnat.research.curation
 ==========================
@@ -60,10 +62,12 @@ class _CurationReader(SourceReader):
     """Internal reader that yields pending staging entries as raw records."""
 
     def __init__(self, library: ResearchLibrary):
+        """Initialize _CurationReader."""
         super().__init__(source_id="curation_reader")
         self._lib = library
 
     def _iter_records(self):
+        """Internal helper for iter records."""
         for entry in self._lib._load_all_entries(self._lib._staging_name, status="pending"):
             yield entry.to_dict()
 
@@ -76,6 +80,7 @@ class _CurationMapper(RecordMapper):
     """
 
     def __init__(self, library: ResearchLibrary, stats: dict[str, int]):
+        """Initialize _CurationMapper."""
         super().__init__()
         self._lib = library
         self._stats = stats
@@ -194,6 +199,7 @@ class CurationJob(FeedJob):
         on_failure=None,
         job_id: str = "ctmsak-curation",
     ):
+        """Initialize CurationJob."""
         self._library = library
 
         # Build dummy reader/mapper factories; execute() is overridden
