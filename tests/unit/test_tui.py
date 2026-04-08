@@ -35,6 +35,7 @@ def test_tui_screens_import():
     from gnat.tui.screens.library import LibraryScreen
     from gnat.tui.screens.query import QueryScreen
     from gnat.tui.screens.reports import ReportsScreen
+    from gnat.tui.screens.review import ReviewScreen
     from gnat.tui.screens.scheduler import SchedulerScreen
 
     assert all([QueryScreen, LibraryScreen, SchedulerScreen, ReportsScreen, InvestigationsScreen])
@@ -334,6 +335,7 @@ class TestGNATAppConstruction:
         assert "f3" in keys
         assert "f4" in keys
         assert "f5" in keys
+        assert "f6" in keys
 
     def test_app_bindings_include_quit(self):
         from gnat.tui.app import GNATApp
@@ -359,8 +361,8 @@ async def test_app_mounts_without_error():
 
 
 @pytest.mark.anyio
-async def test_app_has_five_tabs():
-    """Verify all five TabPane ids exist in the composed app."""
+async def test_app_has_six_tabs():
+    """Verify all six TabPane ids exist in the composed app."""
     from textual.widgets import TabbedContent, TabPane
 
     from gnat.tui.app import GNATApp
@@ -369,7 +371,21 @@ async def test_app_has_five_tabs():
     async with app.run_test(headless=True) as pilot:
         tc = app.query_one(TabbedContent)
         pane_ids = {p.id for p in tc.query(TabPane)}
-        assert pane_ids == {"query", "library", "scheduler", "reports", "investigations"}
+        assert pane_ids == {"query", "library", "scheduler", "reports", "investigations", "review"}
+
+
+@pytest.mark.anyio
+async def test_app_has_five_tabs():
+    """Backward-compat alias — five of the six tabs present."""
+    from textual.widgets import TabbedContent, TabPane
+
+    from gnat.tui.app import GNATApp
+
+    app = GNATApp()
+    async with app.run_test(headless=True) as pilot:
+        tc = app.query_one(TabbedContent)
+        pane_ids = {p.id for p in tc.query(TabPane)}
+        assert {"query", "library", "scheduler", "reports", "investigations"}.issubset(pane_ids)
 
 
 @pytest.mark.anyio
@@ -379,7 +395,7 @@ async def test_action_switch_tab_does_not_raise():
 
     app = GNATApp()
     async with app.run_test(headless=True) as pilot:
-        for tab_id in ("query", "library", "scheduler", "reports", "investigations"):
+        for tab_id in ("query", "library", "scheduler", "reports", "investigations", "review"):
             # Should not raise; reactive state update is async so we don't assert tc.active
             app.action_switch_tab(tab_id)
         # verify app is still running
@@ -437,13 +453,17 @@ class TestCLITuiSubcommand:
         from gnat.cli.main import _build_parser
 
         parser = _build_parser()
-        for screen in ["query", "library", "scheduler", "reports", "investigations"]:
+        for screen in ["query", "library", "scheduler", "reports", "investigations", "review"]:
             args = parser.parse_args(["tui", screen])
             assert args.screen == screen
 
     def test_tui_investigations_screen_import(self):
         from gnat.tui.screens.investigations import InvestigationsScreen
         assert InvestigationsScreen is not None
+
+    def test_tui_review_screen_import(self):
+        from gnat.tui.screens.review import ReviewScreen
+        assert ReviewScreen is not None
 
     def test_tui_missing_textual_returns_1(self, monkeypatch):
         """If textual is not installed, _cmd_tui should return exit code 1."""
