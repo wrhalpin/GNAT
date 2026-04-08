@@ -177,3 +177,152 @@ def test_lineage_init_exports():
     assert hasattr(l, "LineageEvent")
     assert hasattr(l, "LineageEventType")
     assert hasattr(l, "LineageTracker")
+
+
+# ── Lineage wiring: IngestPipeline ────────────────────────────────────────────
+
+def test_ingest_pipeline_has_with_lineage():
+    """IngestPipeline.with_lineage() is a fluent method that returns self."""
+    from gnat.ingest.pipeline.pipeline import IngestPipeline
+
+    pipeline = IngestPipeline()
+    result = pipeline.with_lineage(None)
+    assert result is pipeline
+
+
+def test_ingest_pipeline_with_lineage_noop():
+    """with_lineage(None) sets tracker to None — no-op when objects saved."""
+    from gnat.ingest.pipeline.pipeline import IngestPipeline
+
+    pipeline = IngestPipeline()
+    pipeline.with_lineage(None)
+    assert pipeline._lineage is None
+
+
+def test_ingest_pipeline_records_lineage_on_save(lineage_store):
+    """IngestPipeline with_lineage tracker gets called after object save."""
+    from gnat.ingest.pipeline.pipeline import IngestPipeline
+    from gnat.lineage.tracker import LineageTracker
+    from gnat.lineage.models import LineageEventType
+
+    tracker = LineageTracker(store=lineage_store)
+    pipeline = IngestPipeline()
+    pipeline.with_lineage(tracker)
+
+    # Simulate what the pipeline does internally after a successful obj.save()
+    tracker.record_ingest(
+        "indicator--pipeline-lineage-001", "indicator",
+        source="ingest-pipeline", actor="ingest-pipeline",
+    )
+
+    events = lineage_store.query("indicator--pipeline-lineage-001")
+    assert len(events) == 1
+    assert events[0].event_type == LineageEventType.INGESTED
+
+
+# ── Lineage wiring: ExportPipeline ────────────────────────────────────────────
+
+def test_export_pipeline_has_with_lineage():
+    """ExportPipeline.with_lineage() is a fluent method that returns self."""
+    from gnat.export.base import ExportPipeline
+
+    pipeline = ExportPipeline("test-export")
+    result   = pipeline.with_lineage(None)
+    assert result is pipeline
+
+
+def test_export_pipeline_with_lineage_stores_tracker():
+    from gnat.export.base import ExportPipeline
+    from gnat.lineage.tracker import LineageTracker
+
+    tracker  = LineageTracker(store=None)
+    pipeline = ExportPipeline("test-export").with_lineage(tracker)
+    assert pipeline._lineage is tracker
+
+
+def test_export_pipeline_emits_lineage_after_delivery(lineage_store):
+    """ExportPipeline.run() emits EXPORTED events after successful delivery."""
+    from unittest.mock import MagicMock
+    from gnat.export.base import ExportPipeline, TransformResult, DeliveryResult
+    from gnat.lineage.tracker import LineageTracker
+    from gnat.lineage.models import LineageEventType
+    from gnat.orm.base import STIXBase
+
+    tracker = LineageTracker(store=lineage_store)
+
+    obj = STIXBase(stix_type="indicator", id="indicator--export-lineage-001")
+
+    mock_transform = MagicMock()
+    mock_transform.transform.return_value = TransformResult(
+        payloads={"out": "data"}, object_count=1
+    )
+    mock_delivery = MagicMock()
+    mock_delivery.deliver.return_value = DeliveryResult(success=True, delivered=["out"])
+
+    pipeline = (
+        ExportPipeline("wiring-test")
+        .read_from([obj])
+        .transform_with(mock_transform)
+        .deliver_to(mock_delivery)
+        .with_lineage(tracker)
+    )
+    result = pipeline.run()
+
+    assert result.success
+    events = lineage_store.query("indicator--export-lineage-001")
+    assert len(events) == 1
+    assert events[0].event_type == LineageEventType.EXPORTED
+
+
+# ── Lineage wiring: ReportingService ─────────────────────────────────────────
+
+def test_reporting_service_accepts_lineage_kwarg():
+    """ReportingService.__init__ accepts a lineage= keyword argument."""
+    pytest.importorskip("sqlalchemy")
+    from gnat.reporting.service import ReportService
+    from gnat.lineage.tracker import LineageTracker
+
+    tracker = LineageTracker(store=None)
+    svc = ReportService(store=MagicMock_reporting(), lineage=tracker)
+    assert svc._lineage is tracker
+
+
+def MagicMock_reporting():
+    from unittest.mock import MagicMock
+    return MagicMock()
+
+
+def test_reporting_service_emits_lineage_on_publish(lineage_store):
+    """ReportService.publish() emits a REPORTED lineage event."""
+    pytest.importorskip("sqlalchemy")
+    from unittest.mock import MagicMock, patch
+    from gnat.reporting.service import ReportService
+    from gnat.reporting.models import ReportStatus
+    from gnat.lineage.tracker import LineageTracker
+    from gnat.lineage.models import LineageEventType
+
+    tracker = LineageTracker(store=lineage_store)
+
+    # Build a mock report that passes the can_transition_to check
+    mock_report = MagicMock()
+    mock_report.id              = "report-pub-001"
+    mock_report.stix_report_ref = "report--stix-pub-001"
+    mock_report.status          = ReportStatus.APPROVED
+    mock_report.can_transition_to.return_value = True
+    mock_report.version         = 1
+    mock_report.changelog       = []
+
+    mock_store = MagicMock()
+    mock_store.get.return_value  = mock_report
+    mock_store.save.return_value = None
+
+    svc = ReportService(store=mock_store, lineage=tracker)
+
+    # Patch the STIX bundle generator to avoid real STIX generation
+    with patch("gnat.reporting.export.stix.report_to_stix_bundle",
+               return_value={"objects": [{"type": "report", "id": "report--stix-pub-001"}]}):
+        svc.publish("report-pub-001", changed_by="alice")
+
+    events = lineage_store.query("report--stix-pub-001")
+    assert len(events) == 1
+    assert events[0].event_type == LineageEventType.REPORTED

@@ -379,6 +379,7 @@ class ExportPipeline:
         self._filters: list[ExportFilter] = []
         self._transform: ExportTransform | None = None
         self._delivery: ExportDelivery | None = None
+        self._lineage: Any | None = None
 
     # ── Builder API ────────────────────────────────────────────────────────
 
@@ -444,6 +445,16 @@ class ExportPipeline:
             ``self`` for chaining.
         """
         self._delivery = delivery
+        return self
+
+    def with_lineage(self, tracker: "Any | None" = None) -> "ExportPipeline":
+        """
+        Attach a :class:`~gnat.lineage.tracker.LineageTracker`.
+
+        When set, emits an ``EXPORTED`` event for each object after successful
+        delivery.  Pass ``None`` to clear.
+        """
+        self._lineage = tracker
         return self
 
     # ── Execution ──────────────────────────────────────────────────────────
@@ -514,6 +525,18 @@ class ExportPipeline:
                 if not dr.success:
                     for err in dr.errors:
                         result.errors.append(f"Delivery error: {err}")
+                elif self._lineage is not None:
+                    # Emit EXPORTED for each delivered object
+                    try:
+                        for obj in filtered:
+                            self._lineage.record_export(
+                                getattr(obj, "id", str(obj)),
+                                getattr(obj, "type", "unknown"),
+                                source = self.pipeline_id,
+                                actor  = "export-pipeline",
+                            )
+                    except Exception:
+                        pass
 
         except Exception as exc:  # noqa: BLE001
             result.errors.append(str(exc))

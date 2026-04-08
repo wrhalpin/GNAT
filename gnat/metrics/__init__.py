@@ -27,6 +27,7 @@ Quick start::
 
 from gnat.metrics.aggregator import MetricsAggregator
 from gnat.metrics.collector import MetricsCollector
+from gnat.metrics.hooks import register_metrics_hooks, unregister_metrics_hooks
 from gnat.metrics.models import MetricEvent, MetricType
 
 __all__ = [
@@ -34,4 +35,6 @@ __all__ = [
     "MetricsCollector",
     "MetricEvent",
     "MetricType",
+    "register_metrics_hooks",
+    "unregister_metrics_hooks",
 ]

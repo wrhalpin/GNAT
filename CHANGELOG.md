@@ -92,6 +92,41 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 - `tests/unit/test_metrics.py`: 17 tests covering model, collector (ring buffer, thread safety, snapshot filtering, since), aggregator (investigation summary, enrichment effectiveness, gap frequency, false positive rate)
 - `tests/unit/analysis/test_investigation_query.py`: 13 tests covering dataclass helpers (offset/limit/safe_sort_by), full InvestigationStore.list() integration (all filters, pagination, legacy kwargs)
 
+### Added — Integration & CLI Hardening (Phase 4)
+
+**CLI Subcommands (`gnat/cli/main.py`)**
+- `gnat investigation` subcommand group: `list` (--status, --created-by, --tag, --text, --page, --page-size), `create` (--title, --created-by, --description, --tlp, --tags), `get <id>`, `transition <id> <status>` (--note, --author), `note <id>` (--content, --author), `link <id>` (--indicators, --reports)
+- `gnat plugins` subcommand group: `list` (loads entry_points + env dirs, tabulates all registered plugins), `load <directory>` (on-demand directory scan)
+- `gnat db` subcommand group: `upgrade`, `downgrade` (-1), `current`, `history`, `revision` (-m, --autogenerate), `stamp <revision>` — all delegated to `gnat.migrations.cli.run_db_command()`
+- `gnat tui` now accepts `investigations` as a screen choice
+- DB URL resolved from `GNAT_DB_URL` env var (default `sqlite:///gnat.db`) for investigation subcommand
+- Graceful ImportError handling: missing SQLAlchemy → exit 1 with install hint; missing Alembic → exit 1 with install hint
+
+**Data Lineage Wiring**
+- `IngestPipeline.with_lineage(tracker)`: fluent builder that sets `_lineage`; after each `obj.save()` emits `tracker.record_ingest()` — exceptions never propagate
+- `ExportPipeline.with_lineage(tracker)`: fluent builder on `gnat.export.base.ExportPipeline`; after successful delivery emits `tracker.record_export()` for each delivered object
+- `ReportService.__init__` gains optional `lineage=` parameter; `publish()` emits `tracker.record_report()` after STIX bundle generation
+
+**MetricsCollector HookBus Bridge (`gnat/metrics/hooks.py`)**
+- `register_metrics_hooks(collector)`: registers closures on `HookBus.instance()` for `investigation_opened`, `investigation_closed` (+ INVESTIGATION_DURATION from `duration_seconds`), `report_published`, `gap_detected`
+- `unregister_metrics_hooks()`: removes all previously registered closures for clean test teardown
+- Exported from `gnat.metrics.__init__`
+
+**TUI Investigations Panel (`gnat/tui/screens/investigations.py`)**
+- `InvestigationsScreen(Screen)` with F5 / Ctrl+R / Ctrl+N bindings
+- `compose()`: Header, search Input, status Select, Refresh/New buttons, DataTable (id/title/status/tlp/created_by/updated), detail pane with transition Select
+- `_init_service()`: creates `InvestigationStore` + `InvestigationService` from `GNAT_DB_URL`; graceful ImportError + DB error handling with status message
+- `_load_investigations(status_filter, text)`: builds `InvestigationQuery`, populates DataTable
+- `on_data_table_row_selected()`: shows detail pane with full investigation metadata
+- `_apply_transition()`: calls `service.transition()`, refreshes table
+- `GNATApp` gains `db_url=` parameter; F5 binding added; Investigations TabPane wired into `compose()`; `run()` and `_cmd_tui()` updated
+
+**Tests**
+- `tests/unit/test_cli_phase4.py`: 25 tests — parser registration (investigation/plugins/db), investigation list/create/transition (success + error paths, missing SQLAlchemy), plugins list/load (empty + populated + error), db subcommand (upgrade/downgrade/-1/current/revision with message and autogenerate/stamp/missing alembic/runtime error)
+- `tests/unit/test_lineage.py` (extended): `with_lineage()` fluent API, IngestPipeline + ExportPipeline + ReportService lineage emission
+- `tests/unit/test_metrics.py` (extended): `register_metrics_hooks` / `unregister_metrics_hooks` — investigation_opened, investigation_closed + duration, report_published, gap_detected, unregister stops capture
+- `tests/unit/test_tui.py` (extended): InvestigationsScreen import, `db_url=` param, F5 binding, 5-tab assertion, `investigations` screen CLI choice
+
 ---
 
 ### Added — Analysis Layer (Phase 0 + 1 + 2)

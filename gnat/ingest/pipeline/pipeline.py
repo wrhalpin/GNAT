@@ -95,6 +95,7 @@ class IngestPipeline:
         self._dedup: DeduplicationCache | None = None
         self._filters: list[Callable[[STIXBase], bool]] = []
         self._transforms: list[Callable[[STIXBase], STIXBase]] = []
+        self._lineage: "Any | None" = None
 
     # ------------------------------------------------------------------
     # Fluent builder
@@ -132,6 +133,25 @@ class IngestPipeline:
             ``self`` for chaining.
         """
         self._mapper = mapper
+        return self
+
+    def with_lineage(self, tracker: "Any | None" = None) -> "IngestPipeline":
+        """
+        Attach a :class:`~gnat.lineage.tracker.LineageTracker`.
+
+        When set, the pipeline emits an ``INGESTED`` event for every object
+        successfully written to the platform.  Pass ``None`` to clear.
+
+        Parameters
+        ----------
+        tracker : LineageTracker | None
+
+        Returns
+        -------
+        IngestPipeline
+            ``self`` for chaining.
+        """
+        self._lineage = tracker
         return self
 
     def write_to(self, client: GNATClient) -> IngestPipeline:
@@ -285,6 +305,16 @@ class IngestPipeline:
                             try:
                                 obj.save()
                                 result.written_objects += 1
+                                if self._lineage is not None:
+                                    try:
+                                        self._lineage.record_ingest(
+                                            obj.id,
+                                            getattr(obj, "type", "unknown"),
+                                            source  = self._name or "ingest-pipeline",
+                                            actor   = "ingest-pipeline",
+                                        )
+                                    except Exception:
+                                        pass
                             except Exception as write_exc:  # noqa: BLE001
                                 msg = f"Write failed for {obj.id}: {write_exc}"
                                 result.errors.append(msg)
