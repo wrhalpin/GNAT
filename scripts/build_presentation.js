@@ -159,7 +159,7 @@ pres.author = "wrhalpin@gmail.com";
     color: C.muted, align: "left", margin: 0
   });
 
-  sl.addText("Version 1.3.1  ·  Python 3.9+  ·  STIX 2.1  ·  99 Platform Connectors  ·  1,500+ Tests", {
+  sl.addText("Version 1.5.0  ·  Python 3.9+  ·  STIX 2.1  ·  99 Platform Connectors  ·  2,000+ Tests", {
     x: 0.5, y: 4.95, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, align: "left", margin: 0
   });
@@ -601,13 +601,27 @@ pres.author = "wrhalpin@gmail.com";
     });
   });
 
+  // Workflow engine banner
+  sl.addShape("rect", {
+    x: 0.35, y: 3.38, w: 9.3, h: 0.52,
+    fill: { color: C.navy2 }, line: { color: C.teal, width: 1 }
+  });
+  sl.addText("\u26f6  WorkflowEngine \u2014 Sequential DAG Orchestration (v1.4+)", {
+    x: 0.55, y: 3.44, w: 5.0, h: 0.22,
+    fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.teal, margin: 0
+  });
+  sl.addText("Pre-built: PhishingTriage \u00b7 IncidentResponse \u00b7 Custom DAGs with on_success / on_failure routing \u00b7 cycle detection \u00b7 elapsed timing", {
+    x: 0.55, y: 3.64, w: 9.0, h: 0.2,
+    fontSize: 8.5, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
   // Trust model
   sl.addShape("rect", {
-    x: 0.35, y: 3.45, w: 9.3, h: 0.85,
+    x: 0.35, y: 4.0, w: 9.3, h: 0.78,
     fill: { color: C.navy2 }, line: { color: C.amber, width: 1 }
   });
   sl.addText("\u26a0  AI Trust Model \u00b7 CopilotReader", {
-    x: 0.55, y: 3.53, w: 4.5, h: 0.25,
+    x: 0.55, y: 4.07, w: 4.5, h: 0.25,
     fontSize: 10, fontFace: "Calibri", bold: true, color: C.amber, margin: 0
   });
   sl.addText(
@@ -616,7 +630,7 @@ pres.author = "wrhalpin@gmail.com";
     "which excludes AI intel until promoted. CopilotReader queries Microsoft Copilot via DirectLine (SharePoint, mailboxes, Teams) " +
     "and feeds output directly into ParsingAgent.",
     {
-      x: 0.55, y: 3.77, w: 9.0, h: 0.45,
+      x: 0.55, y: 4.3, w: 9.0, h: 0.42,
       fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
     }
   );
@@ -933,11 +947,11 @@ pres.author = "wrhalpin@gmail.com";
   sl.addShape("rect", {
     x: 0.35, y: 0.9, w: 4.55, h: 0.42, fill: { color: C.steel }, line: { width: 0 }
   });
-  sl.addText("TAXII 2.1 Server", {
+  sl.addText("TAXII 2.1 Server \u2014 Full Read + Write", {
     x: 0.47, y: 0.94, w: 4.31, h: 0.3,
     fontSize: 13, fontFace: "Calibri", bold: true, color: C.white, margin: 0
   });
-  sl.addText("Each GNAT workspace is exposed as a TAXII 2.1 collection. Full protocol compliance.", {
+  sl.addText("Each GNAT workspace is exposed as a TAXII 2.1 collection. Full protocol compliance including write endpoints.", {
     x: 0.47, y: 1.4, w: 4.31, h: 0.38,
     fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
   });
@@ -946,20 +960,21 @@ pres.author = "wrhalpin@gmail.com";
     "GET  /taxii2/  \u2014  Discovery",
     "GET  /taxii2/roots/gnat/collections/  \u2014  List",
     "GET  /taxii2/.../objects/  \u2014  Paginated bundle",
-    "POST /taxii2/.../objects/  \u2014  Ingest bundle",
+    "POST /taxii2/.../objects/  \u2014  Ingest bundle (WRITE_TAXII permission)",
+    "DELETE /taxii2/.../objects/{id}  \u2014  Soft-delete by STIX ID",
     "GET  /taxii2/.../manifest/  \u2014  Object manifest",
     "GET  /taxii2/.../objects/{oid}/versions/",
   ];
   sl.addText(endpoints.map(t => ({ text: t, options: { bullet: true, breakLine: true } })), {
-    x: 0.47, y: 1.85, w: 4.31, h: 1.8,
+    x: 0.47, y: 1.85, w: 4.31, h: 2.05,
     fontSize: 8.5, fontFace: "Calibri", color: C.offwhite
   });
 
-  codeBlock(sl, 0.47, 3.72, 4.31, 0.48,
+  codeBlock(sl, 0.47, 4.0, 4.31, 0.48,
     "gnat taxii --port 8090 --api-key s3cr3t\ngnat taxii --title \"Acme TAXII\" --port 9000"
   );
-  sl.addText("Requires gnat[serve]  \u00b7  44 unit tests", {
-    x: 0.47, y: 4.27, w: 4.31, h: 0.22,
+  sl.addText("Requires gnat[serve]  \u00b7  56 unit tests  \u00b7  TLP:AMBER + RED collections allow write", {
+    x: 0.47, y: 4.55, w: 4.31, h: 0.22,
     fontSize: 8, fontFace: "Calibri", color: C.muted, italic: true, margin: 0
   });
 
@@ -1096,28 +1111,30 @@ pres.author = "wrhalpin@gmail.com";
     ["F2  Library", "Research Library browser \u00b7 promote (Ctrl+P) / reject (Ctrl+X)"],
     ["F3  Scheduler", "Live job status \u00b7 manual trigger with Ctrl+T"],
     ["F4  Reports", "PDF/HTML/DOCX browser \u00b7 open in browser (Ctrl+O)"],
+    ["F5  Health", "Connector health monitor \u00b7 drift detection \u00b7 Ctrl+R refresh"],
+    ["F6  Review", "AI Intel Review Queue \u00b7 Approve/Reject/Modify with confidence override"],
   ];
   screens.forEach(([name, desc], i) => {
-    const y = 1.94 + i * 0.66;
+    const y = 1.94 + i * 0.44;
     sl.addShape("rect", {
-      x: 0.47, y, w: 4.28, h: 0.56,
-      fill: { color: C.steel }, line: { width: 0 }
+      x: 0.47, y, w: 4.28, h: 0.38,
+      fill: { color: i < 4 ? C.steel : C.teal }, line: { width: 0 }
     });
     sl.addText(name, {
       x: 0.6, y: y + 0.06, w: 1.2, h: 0.22,
-      fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+      fontSize: 9, fontFace: "Calibri", bold: true, color: C.white, margin: 0
     });
     sl.addText(desc, {
-      x: 1.85, y: y + 0.06, w: 2.8, h: 0.38,
-      fontSize: 8.5, fontFace: "Calibri", color: C.mint, margin: 0, valign: "middle"
+      x: 1.85, y: y + 0.06, w: 2.8, h: 0.28,
+      fontSize: 8, fontFace: "Calibri", color: C.mint, margin: 0, valign: "middle"
     });
   });
 
-  codeBlock(sl, 0.47, 4.62, 4.31, 0.45,
-    "gnat tui           # launch dashboard\ngnat tui query     # start on query screen"
+  codeBlock(sl, 0.47, 4.66, 4.31, 0.38,
+    "gnat tui           # launch dashboard\ngnat tui review    # start on review screen"
   );
-  sl.addText("pip install \"gnat[tui]\"  \u00b7  38 unit tests", {
-    x: 0.47, y: 5.12, w: 4.31, h: 0.22,
+  sl.addText("pip install \"gnat[tui]\"  \u00b7  F1\u2013F6 screens  \u00b7  38 unit tests", {
+    x: 0.47, y: 5.1, w: 4.31, h: 0.22,
     fontSize: 8, fontFace: "Calibri", color: C.muted, italic: true, margin: 0
   });
 
@@ -1470,7 +1487,383 @@ pres.author = "wrhalpin@gmail.com";
   });
 }
 
-// ── Slide 22: Key Advantages ─────────────────────────────────────────────
+// ── Slide 22: Database Migrations + Plugin System ─────────────────────────
+{
+  const sl = contentSlide(pres, "Database Migrations & Plugin System (v1.4+)");
+
+  // Left: Alembic Migrations
+  sl.addShape("rect", {
+    x: 0.35, y: 0.9, w: 4.55, h: 4.42,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", {
+    x: 0.35, y: 0.9, w: 4.55, h: 0.42, fill: { color: C.teal }, line: { width: 0 }
+  });
+  sl.addText("Database Migrations (Alembic)", {
+    x: 0.47, y: 0.94, w: 4.31, h: 0.3,
+    fontSize: 13, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+  });
+  sl.addText("Alembic 1.13 schema management. URL resolved: GNAT_DB_URL \u2192 [database] INI \u2192 default.", {
+    x: 0.47, y: 1.4, w: 4.31, h: 0.42,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
+  const migrations = [
+    ["0001_init_all_tables", "investigations, reports, workspaces,\nworkspace_objects, enrichment_log, context_globals"],
+    ["0002_add_lineage_events", "lineage_events table \u00b7 composite index on (object_id, timestamp)"],
+    ["0003_add_metrics_events", "metrics_events table \u00b7 index on (metric_type, timestamp)"],
+  ];
+  migrations.forEach(([name, desc], i) => {
+    const y = 1.92 + i * 0.72;
+    sl.addShape("rect", { x: 0.47, y, w: 4.28, h: 0.62, fill: { color: C.steel }, line: { width: 0 } });
+    sl.addText(name, { x: 0.59, y: y + 0.06, w: 4.04, h: 0.22, fontSize: 9, fontFace: "Consolas", bold: true, color: C.mint, margin: 0 });
+    sl.addText(desc, { x: 0.59, y: y + 0.3, w: 4.04, h: 0.28, fontSize: 8.5, fontFace: "Calibri", color: C.offwhite, margin: 0 });
+  });
+
+  codeBlock(sl, 0.47, 4.1, 4.31, 0.55,
+    "gnat-db upgrade head    # apply all migrations\ngnat-db current         # show current revision\ngnat-db history         # show migration history"
+  );
+  sl.addText("pip install \"gnat[migrations]\"  \u00b7  get_combined_metadata() for Alembic auto-detect", {
+    x: 0.47, y: 4.72, w: 4.31, h: 0.22,
+    fontSize: 8, fontFace: "Calibri", color: C.muted, italic: true, margin: 0
+  });
+
+  // Right: Plugin System
+  sl.addShape("rect", {
+    x: 5.1, y: 0.9, w: 4.55, h: 4.42,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", {
+    x: 5.1, y: 0.9, w: 4.55, h: 0.42, fill: { color: C.steel }, line: { width: 0 }
+  });
+  sl.addText("Plugin System (gnat.plugins)", {
+    x: 5.22, y: 0.94, w: 4.31, h: 0.3,
+    fontSize: 13, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+  });
+  sl.addText("Extensible plugin architecture with entry_points discovery, filesystem scanning, and HookBus pub/sub.", {
+    x: 5.22, y: 1.4, w: 4.31, h: 0.46,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
+  const pluginItems = [
+    ["GNATPlugin ABC", "name / version / capabilities / register(registry)"],
+    ["PluginCapability", "CONNECTOR \u00b7 READER \u00b7 MAPPER \u00b7 AGENT \u00b7 REPORTER \u00b7 HOOK"],
+    ["HookBus", "Thread-safe pub/sub \u00b7 14 built-in KNOWN_EVENTS\nasync handlers \u00b7 exceptions never propagate"],
+    ["PluginRegistry", "load/unload/get/list \u00b7 entry_points discovery\nGNAT_PLUGIN_DIRS env var \u00b7 wraps existing registries"],
+  ];
+  pluginItems.forEach(([name, desc], i) => {
+    const y = 1.96 + i * 0.62;
+    sl.addShape("rect", { x: 5.22, y, w: 4.28, h: 0.54, fill: { color: C.charcoal }, line: { color: C.steel, width: 0.5 } });
+    sl.addText(name, { x: 5.34, y: y + 0.04, w: 4.04, h: 0.22, fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.teal2, margin: 0 });
+    sl.addText(desc, { x: 5.34, y: y + 0.26, w: 4.04, h: 0.24, fontSize: 8.5, fontFace: "Calibri", color: C.muted, margin: 0 });
+  });
+
+  codeBlock(sl, 5.22, 4.4, 4.31, 0.45,
+    "[plugins]\ndirs = /opt/gnat/plugins\n# or declare in pyproject.toml entry-points: gnat.plugins"
+  );
+}
+
+// ── Slide 23: Policy Engine (RBAC) + STIX Object Validator ────────────────
+{
+  const sl = contentSlide(pres, "Policy Engine (RBAC) & STIX Object Validator (v1.4+)");
+
+  // Left: Policy Engine
+  sl.addShape("rect", {
+    x: 0.35, y: 0.9, w: 4.55, h: 4.42,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", {
+    x: 0.35, y: 0.9, w: 4.55, h: 0.42, fill: { color: C.teal }, line: { width: 0 }
+  });
+  sl.addText("Policy Engine \u2014 RBAC", {
+    x: 0.47, y: 0.94, w: 4.31, h: 0.3,
+    fontSize: 13, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+  });
+  sl.addText("Role-based access control orthogonal to TLP labels. Static permission matrix. FastAPI-native Depends.", {
+    x: 0.47, y: 1.4, w: 4.31, h: 0.46,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
+  const roles = [
+    ["VIEWER", "READ_OBJECTS, READ_REPORTS, QUERY_NLP"],
+    ["ANALYST", "+ WRITE_OBJECTS, ENRICH, PROMOTE_INTEL"],
+    ["OPERATOR", "+ MANAGE_SCHEDULES, WRITE_TAXII, EXPORT"],
+    ["ADMIN", "+ MANAGE_KEYS, MANAGE_TENANTS (all perms)"],
+  ];
+  roles.forEach(([role, perms], i) => {
+    const y = 2.0 + i * 0.56;
+    sl.addShape("rect", { x: 0.47, y, w: 4.28, h: 0.48, fill: { color: C.charcoal }, line: { color: C.steel, width: 0.5 } });
+    sl.addText(role, { x: 0.59, y: y + 0.04, w: 1.1, h: 0.22, fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.teal2, margin: 0 });
+    sl.addText(perms, { x: 1.72, y: y + 0.06, w: 2.94, h: 0.34, fontSize: 8, fontFace: "Calibri", color: C.offwhite, margin: 0 });
+  });
+
+  sl.addShape("rect", { x: 0.47, y: 4.28, w: 4.28, h: 0.42, fill: { color: C.navy2 }, line: { color: C.amber, width: 1 } });
+  sl.addText("\u26a0  Audit Middleware: every API request emits api_request HookBus event + structured log. APIKey.role field.", {
+    x: 0.59, y: 4.34, w: 4.04, h: 0.3,
+    fontSize: 8, fontFace: "Calibri", color: C.amber, margin: 0
+  });
+  codeBlock(sl, 0.47, 4.78, 4.31, 0.4,
+    "engine.require(Permission.WRITE_TAXII, key_store)  # FastAPI Depends"
+  );
+
+  // Right: STIX Object Validator
+  sl.addShape("rect", {
+    x: 5.1, y: 0.9, w: 4.55, h: 4.42,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", {
+    x: 5.1, y: 0.9, w: 4.55, h: 0.42, fill: { color: C.steel }, line: { width: 0 }
+  });
+  sl.addText("STIX Object Validator", {
+    x: 5.22, y: 0.94, w: 4.31, h: 0.3,
+    fontSize: 13, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+  });
+  sl.addText("STIXObjectValidator validates required properties, vocabularies, confidence, refs, and ID format.", {
+    x: 5.22, y: 1.4, w: 4.31, h: 0.46,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
+  const typeGroups = [
+    ["SDO  (19 types)", "indicator, malware, threat-actor, campaign, attack-pattern, course-of-action, identity, intrusion-set, tool, vulnerability, report, observed-data, note, opinion, relationship, sighting, infrastructure, malware-analysis, location"],
+    ["SCO  (16 types)", "ipv4-addr, ipv6-addr, domain-name, url, file, process, network-traffic, email-message, windows-registry-key, user-account, software, autonomous-system, directory, email-addr, mac-addr, mutex"],
+    ["SRO  (2 types)", "relationship, sighting — validates source/target ref format and relationship_type"],
+    ["Meta (4 types)", "bundle, marking-definition, language-content, extension-definition"],
+  ];
+  typeGroups.forEach(([group, desc], i) => {
+    const y = 1.96 + i * 0.78;
+    sl.addShape("rect", { x: 5.22, y, w: 4.28, h: 0.7, fill: { color: C.charcoal }, line: { color: C.steel, width: 0.5 } });
+    sl.addText(group, { x: 5.34, y: y + 0.04, w: 4.04, h: 0.22, fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.teal2, margin: 0 });
+    sl.addText(desc, { x: 5.34, y: y + 0.26, w: 4.04, h: 0.4, fontSize: 7.5, fontFace: "Calibri", color: C.muted, margin: 0, valign: "top" });
+  });
+  codeBlock(sl, 5.22, 5.1, 4.31, 0.18,
+    "from gnat.stix.object_validator import STIXObjectValidator"
+  );
+}
+
+// ── Slide 24: Agent Orchestration — Workflow DAG Engine ───────────────────
+{
+  const sl = contentSlide(pres, "Agent Orchestration \u2014 Workflow DAG Engine (v1.4+)");
+
+  // Top banner
+  sl.addShape("rect", { x: 0.35, y: 0.9, w: 9.3, h: 0.46, fill: { color: C.navy2 }, line: { color: C.teal, width: 1 } });
+  sl.addText("gnat.agents.workflow  \u00b7  Sequential DAG executor with success/failure routing, cycle detection, and elapsed timing", {
+    x: 0.55, y: 1.0, w: 9.0, h: 0.26,
+    fontSize: 9.5, fontFace: "Calibri", color: C.mint, margin: 0
+  });
+
+  // Core classes
+  const classes = [
+    ["WorkflowStep", "name, fn, on_success, on_failure\nCallable step with optional routing"],
+    ["WorkflowContext", "investigation, enriched_objects, gaps, draft,\nerrors, metadata — shared state across all steps"],
+    ["Workflow", "steps dict + entry_point\nRun: .execute(ctx) \u2192 WorkflowResult"],
+    ["WorkflowResult", "success, steps_run, errors, elapsed_ms\nFull execution trace"],
+  ];
+  classes.forEach(({ 0: name, 1: desc }, i) => {
+    const x = 0.35 + i * 2.35;
+    darkCard(sl, x, 1.47, 2.2, 1.5, C.teal, name, desc);
+  });
+
+  // Step factories
+  sl.addText("Built-in Step Factories:", {
+    x: 0.47, y: 3.1, w: 3.0, h: 0.26,
+    fontSize: 10, fontFace: "Calibri", bold: true, color: C.offwhite, margin: 0
+  });
+  const factories = ["enrich_step", "correlate_step", "gap_detect_step", "draft_report_step", "transition_step", "fn_step"];
+  factories.forEach((f, i) => {
+    sl.addShape("rect", { x: 0.35 + i * 1.56, y: 3.4, w: 1.46, h: 0.3, fill: { color: C.steel }, line: { width: 0 } });
+    sl.addText(f, { x: 0.47 + i * 1.56, y: 3.44, w: 1.22, h: 0.22, fontSize: 8.5, fontFace: "Consolas", color: C.mint, margin: 0 });
+  });
+
+  // Pre-built workflows
+  sl.addText("Pre-built Workflows:", {
+    x: 0.47, y: 3.85, w: 3.0, h: 0.26,
+    fontSize: 10, fontFace: "Calibri", bold: true, color: C.offwhite, margin: 0
+  });
+
+  const prebuilt = [
+    ["PhishingTriage", "enrich \u2192 correlate \u2192 gap_detect \u2192 draft_report \u2192 transition(IN_PROGRESS)"],
+    ["IncidentResponse", "enrich \u2192 correlate \u2192 gap_detect \u2192 draft_report \u2192 transition(REVIEW)"],
+  ];
+  prebuilt.forEach(([name, flow], i) => {
+    const y = 4.18 + i * 0.52;
+    sl.addShape("rect", { x: 0.35, y, w: 9.3, h: 0.44, fill: { color: C.charcoal }, line: { color: C.teal, width: 0.5 } });
+    sl.addText(name, { x: 0.47, y: y + 0.06, w: 1.6, h: 0.28, fontSize: 10, fontFace: "Calibri", bold: true, color: C.teal2, margin: 0 });
+    sl.addText(flow, { x: 2.12, y: y + 0.1, w: 7.4, h: 0.24, fontSize: 9, fontFace: "Calibri", color: C.offwhite, margin: 0 });
+  });
+
+  codeBlock(sl, 0.35, 5.28, 9.3, 0.3,
+    "from gnat.agents.workflows.phishing_triage import build_phishing_triage_workflow\nresult = build_phishing_triage_workflow(enricher, correlator, detector, drafter, svc).execute(ctx)"
+  );
+}
+
+// ── Slide 25: Data Lineage + Analyst Metrics ──────────────────────────────
+{
+  const sl = contentSlide(pres, "Data Lineage & Analyst Metrics (v1.4+)");
+
+  // Left: Data Lineage
+  sl.addShape("rect", {
+    x: 0.35, y: 0.9, w: 4.55, h: 4.42,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", {
+    x: 0.35, y: 0.9, w: 4.55, h: 0.42, fill: { color: C.teal }, line: { width: 0 }
+  });
+  sl.addText("Data Lineage (gnat.lineage)", {
+    x: 0.47, y: 0.94, w: 4.31, h: 0.3,
+    fontSize: 13, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+  });
+  sl.addText("Append-only event log. Zero new runtime dependencies. Optional deployment.", {
+    x: 0.47, y: 1.4, w: 4.31, h: 0.38,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
+  const lineageItems = [
+    ["LineageEventType", "INGESTED \u00b7 ENRICHED \u00b7 NORMALIZED\nLINKED \u00b7 EXPORTED \u00b7 REPORTED \u00b7 DELETED"],
+    ["LineageEvent", "UUID4 id \u00b7 timestamp \u00b7 object_id\nactor \u00b7 source \u00b7 metadata dict (immutable)"],
+    ["LineageStore", "SQLAlchemy-backed lineage_events table\nappend / query / query_by_type / count()"],
+    ["LineageTracker", "Convenience wrapper: record_ingested()\nrecord_enriched() \u2026 store=None \u2192 no-op"],
+  ];
+  lineageItems.forEach(([name, desc], i) => {
+    const y = 1.9 + i * 0.68;
+    sl.addShape("rect", { x: 0.47, y, w: 4.28, h: 0.6, fill: { color: C.charcoal }, line: { color: C.steel, width: 0.5 } });
+    sl.addText(name, { x: 0.59, y: y + 0.04, w: 4.04, h: 0.22, fontSize: 9.5, fontFace: "Calibri", bold: true, color: C.teal2, margin: 0 });
+    sl.addText(desc, { x: 0.59, y: y + 0.26, w: 4.04, h: 0.3, fontSize: 8.5, fontFace: "Calibri", color: C.muted, margin: 0 });
+  });
+  codeBlock(sl, 0.47, 4.64, 4.31, 0.38,
+    "tracker.record_ingested(\"indicator--abc\", actor=\"feed_scheduler\")\nstore.query(\"indicator--abc\")  # full audit trail"
+  );
+  sl.addText("ADR-0038: append-only log \u00b7 no runtime deps \u00b7 optional deployment", {
+    x: 0.47, y: 5.08, w: 4.31, h: 0.18,
+    fontSize: 7.5, fontFace: "Calibri", color: C.muted, italic: true, margin: 0
+  });
+
+  // Right: Analyst Metrics
+  sl.addShape("rect", {
+    x: 5.1, y: 0.9, w: 4.55, h: 4.42,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", {
+    x: 5.1, y: 0.9, w: 4.55, h: 0.42, fill: { color: C.steel }, line: { width: 0 }
+  });
+  sl.addText("Analyst Metrics (gnat.metrics)", {
+    x: 5.22, y: 0.94, w: 4.31, h: 0.3,
+    fontSize: 13, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+  });
+  sl.addText("Thread-safe ring-buffer collector with structured aggregation by type and time window.", {
+    x: 5.22, y: 1.4, w: 4.31, h: 0.38,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
+  const metricTypes = [
+    "INVESTIGATION_CREATED \u00b7 INVESTIGATION_CLOSED",
+    "ENRICHMENT_ATTEMPTED \u00b7 ENRICHMENT_SUCCESS",
+    "REPORT_PUBLISHED \u00b7 GAP_DETECTED",
+    "FALSE_POSITIVE_FLAGGED \u00b7 ANALYST_OVERRIDE \u00b7 INTEL_PROMOTED",
+  ];
+  sl.addText(metricTypes.map(t => ({ text: t, options: { bullet: true, breakLine: true } })), {
+    x: 5.22, y: 1.88, w: 4.31, h: 1.08,
+    fontSize: 9, fontFace: "Calibri", color: C.offwhite
+  });
+
+  const aggs = [
+    ["investigation_summary(days)", "Status breakdown + close rate for period"],
+    ["enrichment_effectiveness(platform, days)", "Hit rate + avg per-platform confidence"],
+    ["gap_frequency(days)", "Gap detection rate over the window"],
+    ["false_positive_rate(days)", "FP:total ratio for the window"],
+  ];
+  aggs.forEach(([method, desc], i) => {
+    const y = 3.06 + i * 0.56;
+    sl.addShape("rect", { x: 5.22, y, w: 4.28, h: 0.48, fill: { color: C.charcoal }, line: { color: C.steel, width: 0.5 } });
+    sl.addText(method, { x: 5.34, y: y + 0.04, w: 4.04, h: 0.2, fontSize: 8.5, fontFace: "Consolas", color: C.teal2, margin: 0 });
+    sl.addText(desc, { x: 5.34, y: y + 0.26, w: 4.04, h: 0.18, fontSize: 8, fontFace: "Calibri", color: C.muted, margin: 0 });
+  });
+  codeBlock(sl, 5.22, 5.32, 4.31, 0.24,
+    "collector.record(MetricType.REPORT_PUBLISHED, 1)  # anywhere in pipeline"
+  );
+}
+
+// ── Slide 26: AI Intel Review Queue ──────────────────────────────────────
+{
+  const sl = contentSlide(pres, "AI Intel Review Queue (v1.4+)");
+
+  // Top description
+  sl.addShape("rect", { x: 0.35, y: 0.9, w: 9.3, h: 0.44, fill: { color: C.navy2 }, line: { color: C.teal, width: 1 } });
+  sl.addText("Human-in-the-loop gate between AI-extracted intel and the analyst-verified workspace. Analysts approve, modify, or reject before promotion.", {
+    x: 0.55, y: 0.99, w: 9.0, h: 0.26,
+    fontSize: 9.5, fontFace: "Calibri", color: C.mint, margin: 0
+  });
+
+  // Lifecycle flow
+  const flow = ["PENDING", "\u2192", "APPROVED", "\u2192", "PROMOTED", "", "REJECTED", "", "MODIFIED"];
+  const flowColors = [C.amber, C.muted, C.green, C.muted, C.teal2, "", C.red, "", C.steel];
+  flow.forEach((step, i) => {
+    const x = 0.42 + i * 1.04;
+    if (step === "\u2192" || step === "") {
+      if (step === "\u2192") sl.addText(step, { x, y: 1.46, w: 0.6, h: 0.28, fontSize: 14, fontFace: "Calibri", color: C.muted, align: "center", margin: 0 });
+      return;
+    }
+    sl.addShape("rect", { x, y: 1.42, w: 0.92, h: 0.3, fill: { color: flowColors[i] }, line: { width: 0 } });
+    sl.addText(step, { x: x + 0.04, y: 1.44, w: 0.84, h: 0.26, fontSize: 9, fontFace: "Calibri", bold: true, color: C.white, align: "center", margin: 0 });
+  });
+
+  // Left: ReviewService methods
+  sl.addShape("rect", {
+    x: 0.35, y: 1.84, w: 4.55, h: 3.4,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", { x: 0.35, y: 1.84, w: 4.55, h: 0.36, fill: { color: C.teal }, line: { width: 0 } });
+  sl.addText("ReviewService Methods", { x: 0.47, y: 1.88, w: 4.31, h: 0.28, fontSize: 11, fontFace: "Calibri", bold: true, color: C.white, margin: 0 });
+
+  const methods = [
+    ["submit(stix_id, stix_type, stix_data, ...)", "Queue AI-extracted intel for review (PENDING)"],
+    ["approve(id, reviewer, notes, confidence)", "Set APPROVED + optional confidence override (0-100)"],
+    ["reject(id, reviewer, reason)", "Set REJECTED with reason"],
+    ["modify(id, reviewer, modified_properties)", "Capture analyst property overrides (MODIFIED)"],
+    ["promote(id, reviewer, workspace_manager)", "Merge overrides + x_source_type=analyst_verified"],
+    ["bulk_approve(ids) / bulk_reject(ids)", "Batch operations with full validation"],
+    ["stats()", "Per-status breakdown + total count"],
+  ];
+  methods.forEach(([sig, desc], i) => {
+    const y = 2.28 + i * 0.4;
+    sl.addText(sig, { x: 0.47, y, w: 4.28, h: 0.2, fontSize: 8, fontFace: "Consolas", color: C.teal2, margin: 0 });
+    sl.addText(desc, { x: 0.47, y: y + 0.2, w: 4.28, h: 0.16, fontSize: 7.5, fontFace: "Calibri", color: C.muted, margin: 0 });
+  });
+
+  // Right: REST + CLI + TUI
+  sl.addShape("rect", {
+    x: 5.1, y: 1.84, w: 4.55, h: 3.4,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", { x: 5.1, y: 1.84, w: 4.55, h: 0.36, fill: { color: C.steel }, line: { width: 0 } });
+  sl.addText("REST API  \u00b7  CLI  \u00b7  TUI", { x: 5.22, y: 1.88, w: 4.31, h: 0.28, fontSize: 11, fontFace: "Calibri", bold: true, color: C.white, margin: 0 });
+
+  const restEndpoints = [
+    "GET  /api/review  \u2014  list (status + type + submitter filters)",
+    "POST /api/review  \u2014  submit new item",
+    "GET  /api/review/stats  \u2014  per-status counts",
+    "GET  /api/review/{id}  \u2014  item detail",
+    "POST /api/review/{id}/approve  \u2014  approve",
+    "POST /api/review/{id}/reject   \u2014  reject",
+    "POST /api/review/{id}/modify   \u2014  set overrides",
+    "POST /api/review/{id}/promote  \u2014  promote to workspace",
+  ];
+  sl.addText(restEndpoints.map(t => ({ text: t, options: { bullet: true, breakLine: true } })), {
+    x: 5.22, y: 2.28, w: 4.31, h: 2.0,
+    fontSize: 8, fontFace: "Consolas", color: C.offwhite
+  });
+
+  codeBlock(sl, 5.22, 4.34, 4.31, 0.56,
+    "gnat review list --status pending --type indicator\ngnat review approve <id> --by alice --confidence 85\ngnat review stats"
+  );
+
+  sl.addShape("rect", { x: 5.22, y: 4.96, w: 4.28, h: 0.22, fill: { color: C.charcoal }, line: { width: 0 } });
+  sl.addText("TUI: F6  ReviewScreen  \u00b7  Approve/Reject/Modify with confidence input  \u00b7  Ctrl+A bulk approve", {
+    x: 5.34, y: 4.98, w: 4.04, h: 0.18,
+    fontSize: 7.5, fontFace: "Calibri", color: C.teal2, margin: 0
+  });
+}
+
+// ── Slide 27: Key Advantages ─────────────────────────────────────────────
 {
   const sl = contentSlide(pres, "The Abstraction Advantage");
 
@@ -1480,7 +1873,7 @@ pres.author = "wrhalpin@gmail.com";
     { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 99 platforms.", col: C.teal },
     { title: "Operational Coherence", body: "One scheduler, one health endpoint, one log stream. No more asking which of 15 scripts ran overnight and whether it worked. FeedScheduler.summary() answers all of that.", col: C.steel },
     { title: "Incremental Adoption", body: "Each layer is independently useful. Start with connectors only. Add ingest. Add export. Add AI. Add reports. The stack is additive \u2014 you never have to replace working parts.", col: C.teal },
-    { title: "Test Coverage", body: "1,500+ unit tests across 25+ test files. Every connector, every pipeline stage, every renderer, every scheduler behaviour. Confidence in changes without regression fear.", col: C.steel },
+    { title: "Test Coverage", body: "2,000+ unit tests across 30+ test files. Every connector, every pipeline stage, every renderer, every scheduler, every new v1.4/1.5 module. Confidence in changes without regression fear.", col: C.steel },
   ];
 
   advantages.forEach(({ title, body, col }, i) => {
@@ -1506,7 +1899,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 }
 
-// ── Slide 23: Code Safety, CI & Security ────────────────────────────────
+// ── Slide 28: Code Safety, CI & Security ────────────────────────────────
 {
   const sl = contentSlide(pres, "Code Safety, CI & Developer Security");
 
@@ -1529,7 +1922,7 @@ pres.author = "wrhalpin@gmail.com";
     {
       title: "pytest + Coverage",
       col: C.green,
-      body: "1,500+ unit tests across 25+ files\n70% minimum coverage enforced\nfail_under = 70 in pyproject.toml\nDocker integration harness (ES + Solr)",
+      body: "2,000+ unit tests across 30+ files\n70% minimum coverage enforced\nfail_under = 70 in pyproject.toml\nDocker integration harness (ES + Solr)",
     },
     {
       title: "Dependabot",
@@ -1579,17 +1972,17 @@ pres.author = "wrhalpin@gmail.com";
   );
 }
 
-// ── Slide 24: By the Numbers ─────────────────────────────────────────────
+// ── Slide 29: By the Numbers ─────────────────────────────────────────────
 {
   const sl = contentSlide(pres, "By the Numbers");
 
   const stats = [
     ["99", "Platform\nConnectors", C.teal],
-    ["1,500+", "Unit\nTests", C.steel],
-    ["150+", "Source\nFiles", C.teal],
+    ["2,000+", "Unit\nTests", C.steel],
+    ["200+", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
     ["60", "AI Confidence\nCeiling (default)", C.amber],
-    ["4 hrs", "Curation Job\nInterval", C.teal],
+    ["5", "New v1.5\nModules", C.teal],
   ];
 
   stats.forEach(([value, label, col], i) => {
@@ -1616,7 +2009,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 }
 
-// ── Slide 25: Implementation Path ────────────────────────────────────────
+// ── Slide 30: Implementation Path ────────────────────────────────────────
 {
   const sl = contentSlide(pres, "Implementation Sequence");
 
@@ -1657,11 +2050,11 @@ pres.author = "wrhalpin@gmail.com";
   });
 }
 
-// ── Slide 26: All Roadmap Complete ───────────────────────────────────────
+// ── Slide 31: All Roadmap Complete ───────────────────────────────────────
 {
   const sl = contentSlide(pres, "All Roadmap Items \u2014 Complete");
 
-  sl.addText("\u2713  Every pending item and roadmap addition has shipped", {
+  sl.addText("\u2713  Every pending item and roadmap addition has shipped through v1.5.0", {
     x: 0.4, y: 0.9, w: 9.2, h: 0.35,
     fontSize: 13, fontFace: "Calibri", italic: true,
     color: C.green, align: "left", margin: 0
@@ -1674,13 +2067,15 @@ pres.author = "wrhalpin@gmail.com";
     ["\u2705", "Copilot DirectLine token refresh"],
     ["\u2705", "CLI: gnat report run / gnat report list"],
     ["\u2705", "SectorFilter in gnat.export.filters"],
-    ["\u2705", "CHANGELOG versions 0.6.0 \u2013 1.3.1"],
     ["\u2705", "Email body: rendered HTML content"],
     ["\u2705", "NLP Query Interface (builtin + Claude)"],
     ["\u2705", "Client Capability Reflection + safe dispatch"],
     ["\u2705", "Connectors Batch 2 \u2014 11 new platforms (v1.0)"],
     ["\u2705", "XSOAR Content Pack Generator"],
     ["\u2705", "Docker containerization (3-service stack)"],
+    ["\u2705", "Database Migrations (Alembic + gnat-db CLI)"],
+    ["\u2705", "Plugin System (PluginRegistry + HookBus + 14 events)"],
+    ["\u2705", "WorkflowEngine DAG (PhishingTriage \u00b7 IncidentResponse)"],
   ];
 
   const col2 = [
@@ -1688,31 +2083,33 @@ pres.author = "wrhalpin@gmail.com";
     ["\u2705", "Web Dashboard (FastAPI, X-Api-Key, rate-limited)"],
     ["\u2705", "Connector Health + Drift Monitoring"],
     ["\u2705", "Upstream Contribution Pipeline (7-step gate)"],
-    ["\u2705", "TAXII 2.1 Server (full protocol)"],
+    ["\u2705", "TAXII 2.1 Server (full read + write protocol)"],
     ["\u2705", "STIX 2.1 Pattern Validator (two-tier)"],
     ["\u2705", "Multi-Tenant Workspace Isolation"],
     ["\u2705", "Docker Integration Test Harness"],
-    ["\u2705", "Solr/Grafana Observability Integration"],
-    ["\u2705", "13 new connectors in v1.1 \u2014 25 in v1.2 \u2014 9 in v1.3"],
+    ["\u2705", "13 new connectors v1.1 \u2014 25 in v1.2 \u2014 9 in v1.3"],
     ["\u2705", "99 connectors total in CLIENT_REGISTRY"],
     ["\u2705", "LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini (v1.3)"],
-    ["\u2705", "ComplianceMatrix programmatic connector audit"],
+    ["\u2705", "Policy Engine (RBAC \u00b7 Permission matrix \u00b7 audit hook)"],
+    ["\u2705", "Data Lineage tracking (append-only event log)"],
+    ["\u2705", "Analyst Metrics (ring-buffer \u00b7 9 metric types)"],
+    ["\u2705", "AI Intel Review Queue (submit \u2192 approve \u2192 promote)"],
   ];
 
   const renderCol = (items, x) => {
     items.forEach(([check, text], i) => {
-      const y = 1.38 + i * 0.3;
+      const y = 1.35 + i * 0.27;
       sl.addShape("rect", {
-        x, y, w: 4.45, h: 0.26,
+        x, y, w: 4.45, h: 0.24,
         fill: { color: i % 2 === 0 ? C.navy2 : C.charcoal }, line: { width: 0 }
       });
       sl.addText(check, {
-        x: x + 0.08, y: y + 0.03, w: 0.28, h: 0.22,
-        fontSize: 10, fontFace: "Calibri", color: C.green, margin: 0
+        x: x + 0.08, y: y + 0.02, w: 0.28, h: 0.2,
+        fontSize: 9.5, fontFace: "Calibri", color: C.green, margin: 0
       });
       sl.addText(text, {
-        x: x + 0.38, y: y + 0.04, w: 4.0, h: 0.2,
-        fontSize: 8.5, fontFace: "Calibri", color: C.offwhite, margin: 0
+        x: x + 0.38, y: y + 0.03, w: 4.0, h: 0.18,
+        fontSize: 8, fontFace: "Calibri", color: C.offwhite, margin: 0
       });
     });
   };
@@ -1730,7 +2127,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 }
 
-// ── Slide 27: Close ──────────────────────────────────────────────────────
+// ── Slide 32: Close ──────────────────────────────────────────────────────
 {
   const sl = pres.addSlide();
   sl.background = { color: C.navy };
@@ -1752,9 +2149,9 @@ pres.author = "wrhalpin@gmail.com";
 
   const summary = [
     "99 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines",
-    "AI agents (LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini) \u00b7 NLP queries \u00b7 Research library \u00b7 Report generation",
-    "TAXII 2.1 \u00b7 STIX validator \u00b7 TUI + Web dashboard \u00b7 Docker \u00b7 Multi-tenant",
-    "1,500+ tests \u00b7 ~$50/month Azure \u00b7 Incremental adoption \u00b7 Contribution pipeline",
+    "AI agents (LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini) \u00b7 WorkflowEngine DAG \u00b7 NLP queries \u00b7 Research library",
+    "TAXII 2.1 read+write \u00b7 STIX validator \u00b7 Policy RBAC \u00b7 Plugins \u00b7 Lineage \u00b7 Metrics \u00b7 Review Queue",
+    "2,000+ tests \u00b7 ~$50/month Azure \u00b7 Incremental adoption \u00b7 Contribution pipeline",
   ];
   sl.addText(summary.map(t => ({ text: t, options: { bullet: true, breakLine: true } })), {
     x: 0.5, y: 2.72, w: 9, h: 1.45,
@@ -1765,7 +2162,7 @@ pres.author = "wrhalpin@gmail.com";
     x: 0.5, y: 4.25, w: 8.5, h: 0,
     line: { color: C.teal, width: 1.5 }
   });
-  sl.addText("Version 1.3.1  |  Python 3.9+  |  Apache 2.0  |  EXAMPLES.md \u00b7 IMPLEMENTATION_PLAN.md \u00b7 README.md", {
+  sl.addText("Version 1.5.0  |  Python 3.9+  |  Apache 2.0  |  EXAMPLES.md \u00b7 IMPLEMENTATION_PLAN.md \u00b7 README.md", {
     x: 0.5, y: 4.4, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, margin: 0
   });
