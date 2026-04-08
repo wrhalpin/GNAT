@@ -109,6 +109,7 @@ from gnat.connectors.wiz.client import WizClient
 from gnat.connectors.xsoar.client import XSOARClient
 from gnat.connectors.yeti.client import YetiClient
 from gnat.connectors.zeek.client import ZeekClient
+from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
 from gnat.connectors.zerofox.client import ZeroFoxClient
 
 CLIENT_REGISTRY: dict = {
@@ -212,6 +213,8 @@ CLIENT_REGISTRY: dict = {
     # OSINT feed connectors
     "osint_feed": OsintFeedConnector,
     "cisco_umbrella": CiscoUmbrellaClient,
+    # Federation
+    "gnat_remote": GNATRemoteConnector,
 }
 
 __all__ = [
@@ -268,4 +271,5 @@ __all__ = [
     "ShodanClient",
     "OsintFeedConnector",
     "CiscoUmbrellaClient",
+    "GNATRemoteConnector",
 ]
