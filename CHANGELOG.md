@@ -92,6 +92,30 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 - `tests/unit/test_metrics.py`: 17 tests covering model, collector (ring buffer, thread safety, snapshot filtering, since), aggregator (investigation summary, enrichment effectiveness, gap frequency, false positive rate)
 - `tests/unit/analysis/test_investigation_query.py`: 13 tests covering dataclass helpers (offset/limit/safe_sort_by), full InvestigationStore.list() integration (all filters, pagination, legacy kwargs)
 
+### Added — Discord Bot Connector
+
+**`gnat/connectors/discord/connector.py`** — full `ConnectorMixin` implementation
+- `DiscordClient(BaseClient, ConnectorMixin)` targeting Discord REST API v10
+- `authenticate()`: sets `Authorization: Bot <token>` + `Content-Type: application/json`; normalises bare token (adds `Bot ` prefix)
+- `health_check()`: `GET /api/v10/gateway/bot`
+- `get_object("note"|"indicator", "<channel_id>:<message_id>")` → fetches message → STIX `note`
+- `get_object("observed-data", channel_id)` → fetches channel → STIX `observed-data`
+- `get_object("identity", user_id)` → fetches user → STIX `identity`
+- `list_objects("note"|"indicator", filters={"channel_id": ...})` → messages → list of STIX `note`
+- `list_objects("observed-data", filters={"thread_id": ...})` → thread messages → STIX `note` list
+- `list_objects("identity", filters={"guild_id": ...})` → guild members → STIX `identity` list
+- `upsert_object("note", {channel_id, content})` → posts message → STIX `note`
+- `delete_object("note"|"indicator", "<channel_id>:<message_id>")` → deletes message
+- Domain helpers: `post_message()`, `list_messages()`, `delete_message()`, `start_thread()`, `list_archived_threads()`, `get_channel()`, `get_message()`, `get_user()`, `list_members()`
+- STIX translation: messages → `note` (with `x_discord` extension); channels → `observed-data`; users → `identity`
+- `from_stix("note")` → Discord message payload `{content, channel_id}`
+- `guild_id` constructor param for default member listing
+- Registered as `"discord"` in `gnat.clients.CLIENT_REGISTRY`
+- `config/config.ini.example`: added `[discord]` section with `host`, `bot_token`, `guild_id`
+- 52 unit tests in `TestDiscordClient` covering all methods, STIX translation, registry registration, capability reflection, and snowflake helper
+
+---
+
 ### Added — AI Intel Review Queue
 
 **Review Package (`gnat/review/`)**
