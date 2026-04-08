@@ -134,7 +134,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const pills = [
-    ["95 Connectors", C.teal],
+    ["99 Connectors", C.teal],
     ["STIX 2.1", C.steel],
     ["AI-Powered", C.teal2],
     ["Scheduled", C.steel],
@@ -159,7 +159,7 @@ pres.author = "wrhalpin@gmail.com";
     color: C.muted, align: "left", margin: 0
   });
 
-  sl.addText("Version 1.1  ·  Python 3.9+  ·  STIX 2.1  ·  95 Platform Connectors  ·  1,500+ Tests", {
+  sl.addText("Version 1.3.1  ·  Python 3.9+  ·  STIX 2.1  ·  99 Platform Connectors  ·  1,500+ Tests", {
     x: 0.5, y: 4.95, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, align: "left", margin: 0
   });
@@ -273,7 +273,7 @@ pres.author = "wrhalpin@gmail.com";
     { label: "ANALYST / AUTOMATION LAYER", sub: "Workstations \u00b7 SOAR \u00b7 Scheduled jobs \u00b7 CLI \u00b7 TUI \u00b7 Web Dashboard", col: C.navy2, y: 0.85 },
     { label: "GNAT CORE", sub: "Ingest \u00b7 Export \u00b7 AI Agents \u00b7 Research Library \u00b7 Reports \u00b7 NLP \u00b7 TAXII 2.1 \u00b7 Solr Search", col: C.steel, y: 1.52 },
     { label: "STIX 2.1 ORM + WORKSPACE", sub: "Indicator \u00b7 ThreatActor \u00b7 Vulnerability \u00b7 AttackPattern \u00b7 Malware \u00b7 Relationship", col: C.teal, y: 2.19 },
-    { label: "CONNECTOR LAYER (95 platforms)", sub: "ThreatQ \u00b7 CrowdStrike \u00b7 Splunk \u00b7 Elastic \u00b7 Wazuh \u00b7 QRadar \u00b7 Sentinel \u00b7 VirusTotal \u00b7 Mandiant \u00b7 Orca \u00b7 Wiz \u00b7 MISP \u00b7 ...", col: C.navy2, y: 2.86 },
+    { label: "CONNECTOR LAYER (99 platforms)", sub: "ThreatQ \u00b7 CrowdStrike \u00b7 Splunk \u00b7 Elastic \u00b7 Wazuh \u00b7 QRadar \u00b7 Sentinel \u00b7 VirusTotal \u00b7 Mandiant \u00b7 Orca \u00b7 Wiz \u00b7 MISP \u00b7 ...", col: C.navy2, y: 2.86 },
     { label: "EXTERNAL PLATFORMS", sub: "TIPs \u00b7 SIEMs \u00b7 EDRs \u00b7 Vuln Scanners \u00b7 CNAPP/ASM \u00b7 SOAR \u00b7 NDR \u00b7 AI Assistants", col: "4B5563", y: 3.53 },
   ];
 
@@ -306,43 +306,43 @@ pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 5: Connectors (category layout) ─────────────────────────────
 {
-  const sl = contentSlide(pres, "95 Platform Connectors \u2014 One Interface");
+  const sl = contentSlide(pres, "99 Platform Connectors \u2014 One Interface");
 
   const categories = [
     {
       label: "THREAT INTELLIGENCE",
       col: C.teal,
-      items: "ThreatQ \u00b7 CrowdStrike \u00b7 Recorded Future \u00b7 AlienVault OTX \u00b7 VirusTotal \u00b7 ThreatConnect \u00b7 Mandiant \u00b7 MS Defender TI \u00b7 ThreatStream \u00b7 SOCRadar \u00b7 PulseDive \u00b7 FLARE \u00b7 Yeti \u00b7 CloudSEK \u00b7 Feedly \u00b7 MISP \u00b7 OpenCTI \u00b7 Group-IB \u00b7 Cyble Vision \u00b7 ZeroFox \u00b7 ShadowServer",
+      items: "ThreatQ \u00b7 CrowdStrike \u00b7 Recorded Future \u00b7 AlienVault OTX \u00b7 VirusTotal \u00b7 ThreatConnect \u00b7 Mandiant \u00b7 MS Defender TI \u00b7 ThreatStream \u00b7 SOCRadar \u00b7 PulseDive \u00b7 FLARE \u00b7 Yeti \u00b7 CloudSEK \u00b7 Feedly \u00b7 MISP \u00b7 OpenCTI \u00b7 Group-IB \u00b7 Cyble Vision \u00b7 ZeroFox \u00b7 ShadowServer \u00b7 BitSight \u00b7 Flashpoint \u00b7 HudsonRock \u00b7 Intel 471 \u00b7 UpGuard \u00b7 Shodan \u00b7 GreyNoise \u00b7 CISA KEV \u00b7 OSINT Feed",
     },
     {
       label: "SIEM & LOG ANALYTICS",
       col: C.steelLight,
-      items: "Splunk \u00b7 Elastic SIEM \u00b7 IBM QRadar \u00b7 Microsoft Sentinel \u00b7 Graylog \u00b7 OSSIM \u00b7 Security Onion \u00b7 Wazuh",
+      items: "Splunk \u00b7 Elastic SIEM \u00b7 IBM QRadar \u00b7 Microsoft Sentinel \u00b7 Graylog \u00b7 OSSIM \u00b7 Security Onion \u00b7 Wazuh \u00b7 Google Chronicle \u00b7 LogRhythm \u00b7 Datadog",
     },
     {
       label: "SOAR & INCIDENT RESPONSE",
       col: C.teal,
-      items: "Palo Alto XSOAR \u00b7 TheHive \u00b7 GreyMatter \u00b7 ServiceNow \u00b7 Jira",
+      items: "Palo Alto XSOAR \u00b7 TheHive \u00b7 GreyMatter \u00b7 ServiceNow \u00b7 Jira \u00b7 Synapse \u00b7 FortiSOAR",
     },
     {
-      label: "VULNERABILITY MANAGEMENT",
+      label: "VULNERABILITY & CLOUD SECURITY",
       col: C.steelLight,
-      items: "Rapid7 InsightVM/IDR \u00b7 Nucleus Security \u00b7 Tenable One \u00b7 Qualys VMDR \u00b7 Greenbone/OpenVAS \u00b7 DefectDojo",
-    },
-    {
-      label: "CLOUD SECURITY & ASM",
-      col: C.teal,
-      items: "Orca Security \u00b7 Wiz CNAPP \u00b7 Cortex Xpanse \u00b7 CyCognito \u00b7 RiskRecon \u00b7 Armis Centrix \u00b7 Axonius",
+      items: "Rapid7 InsightVM/IDR \u00b7 Nucleus Security \u00b7 Tenable One \u00b7 Qualys VMDR \u00b7 Greenbone/OpenVAS \u00b7 DefectDojo \u00b7 Orca Security \u00b7 Wiz CNAPP \u00b7 Cortex Xpanse \u00b7 CyCognito \u00b7 RiskRecon \u00b7 Armis Centrix \u00b7 Axonius \u00b7 Prisma Cloud \u00b7 AWS Security Hub \u00b7 JupiterOne \u00b7 SecurityScorecard \u00b7 Censys",
     },
     {
       label: "NETWORK DETECTION & ENDPOINT",
+      col: C.teal,
+      items: "Snort IDS \u00b7 Suricata \u00b7 Zeek \u00b7 SentinelOne \u00b7 Stellar Cyber \u00b7 Netskope \u00b7 ControlUp DEX \u00b7 Whistic \u00b7 Proofpoint \u00b7 Darktrace \u00b7 ExtraHop \u00b7 Lansweeper \u00b7 Vectra AI \u00b7 Sophos \u00b7 Trellix \u00b7 Carbon Black \u00b7 Tanium \u00b7 Trend Micro Vision One \u00b7 Cisco Umbrella \u00b7 Cortex XDR \u00b7 FortiEDR \u00b7 FortiSIEM",
+    },
+    {
+      label: "OT/ICS & INDUSTRY",
       col: C.steelLight,
-      items: "Snort IDS \u00b7 Suricata \u00b7 Zeek \u00b7 SentinelOne \u00b7 Stellar Cyber \u00b7 Netskope \u00b7 ControlUp DEX \u00b7 Whistic \u00b7 Proofpoint",
+      items: "Dragos Platform \u00b7 Claroty \u00b7 Nozomi Networks \u00b7 Cribl Stream",
     },
     {
       label: "AI ASSISTANTS",
       col: C.teal2,
-      items: "Microsoft Copilot for Security \u00b7 OpenAI ChatGPT \u00b7 Google Gemini \u00b7 Grok AI",
+      items: "Microsoft Copilot for Security \u00b7 OpenAI ChatGPT \u00b7 Google Gemini \u00b7 Grok AI \u00b7 Discord",
     },
     {
       label: "ITSM & TICKETING",
@@ -558,12 +558,12 @@ pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 9: AI Agents ───────────────────────────────────────────────────
 {
-  const sl = contentSlide(pres, "AI Agents \u2014 Claude-Powered Threat Research");
+  const sl = contentSlide(pres, "AI Agents \u2014 Multi-LLM Threat Research");
 
   const agents = [
     {
       title: "ResearchAgent", sub: "SourceReader",
-      body: "Topic-driven: synthesise research on threat actors, CVEs, campaigns.\nFeed-driven: monitor sources for new threat content.\nUses Claude API with web_search tool.",
+      body: "Topic-driven: synthesise research on threat actors, CVEs, campaigns.\nFeed-driven: monitor sources for new threat content.\nBacked by LLMClient (Claude / OpenAI / Grok / Gemini).",
       color: C.teal
     },
     {
@@ -572,9 +572,9 @@ pres.author = "wrhalpin@gmail.com";
       color: C.steel
     },
     {
-      title: "CopilotReader", sub: "SourceReader",
-      body: "Query Microsoft Copilot via DirectLine for M365 content.\nSources: SharePoint libraries, mailboxes, Teams channels.\nToken exchange + auto-refresh. Output feeds directly into ParsingAgent.",
-      color: C.navy2
+      title: "LLMClient", sub: "Unified Multi-LLM Facade",
+      body: "Single interface for Claude, OpenAI, Grok (xAI), and Gemini.\nAutomatic provider fallback on errors or rate limits.\nConfigured via [claude] / [openai] / [grok] / [gemini] INI sections.\nUsed by ResearchAgent, ParsingAgent, and ReportDraftingAssistant.",
+      color: C.teal2
     },
   ];
 
@@ -606,14 +606,15 @@ pres.author = "wrhalpin@gmail.com";
     x: 0.35, y: 3.45, w: 9.3, h: 0.85,
     fill: { color: C.navy2 }, line: { color: C.amber, width: 1 }
   });
-  sl.addText("\u26a0  AI Trust Model", {
-    x: 0.55, y: 3.53, w: 3.0, h: 0.25,
+  sl.addText("\u26a0  AI Trust Model \u00b7 CopilotReader", {
+    x: 0.55, y: 3.53, w: 4.5, h: 0.25,
     fontSize: 10, fontFace: "Calibri", bold: true, color: C.amber, margin: 0
   });
   sl.addText(
     "confidence_ceiling = 60 (configurable) prevents AI-extracted intel from reaching EDLs without analyst review. " +
     "All AI objects tagged x_source_type='ai_extracted'. Export pipelines default to ConfidenceFilter(min=70), " +
-    "which excludes AI intel until promoted.",
+    "which excludes AI intel until promoted. CopilotReader queries Microsoft Copilot via DirectLine (SharePoint, mailboxes, Teams) " +
+    "and feeds output directly into ParsingAgent.",
     {
       x: 0.55, y: 3.77, w: 9.0, h: 0.45,
       fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
@@ -1476,7 +1477,7 @@ pres.author = "wrhalpin@gmail.com";
   const advantages = [
     { title: "Portability", body: "Switch from ThreatQ to a new TIP? Change one config line. The pipeline, scheduler, reports, and export jobs all work unchanged. Your automation is not locked to any platform.", col: C.teal },
     { title: "Maintenance Simplicity", body: "API changes affect one connector file, not every script. Tests cover all connectors uniformly. One library version number covers the entire integration stack.", col: C.steel },
-    { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 95 platforms.", col: C.teal },
+    { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 99 platforms.", col: C.teal },
     { title: "Operational Coherence", body: "One scheduler, one health endpoint, one log stream. No more asking which of 15 scripts ran overnight and whether it worked. FeedScheduler.summary() answers all of that.", col: C.steel },
     { title: "Incremental Adoption", body: "Each layer is independently useful. Start with connectors only. Add ingest. Add export. Add AI. Add reports. The stack is additive \u2014 you never have to replace working parts.", col: C.teal },
     { title: "Test Coverage", body: "1,500+ unit tests across 25+ test files. Every connector, every pipeline stage, every renderer, every scheduler behaviour. Confidence in changes without regression fear.", col: C.steel },
@@ -1513,7 +1514,7 @@ pres.author = "wrhalpin@gmail.com";
     {
       title: "GitHub Actions CI",
       col: C.steel,
-      body: "pylint workflow on every push\nPython 3.8 / 3.9 / 3.10 matrix\nFails build on any lint error\nBadge on README signals status",
+      body: "pylint workflow on every push\nPython 3.9 / 3.10 / 3.11 / 3.12 matrix\nFails build on any lint error\nBadge on README signals status",
     },
     {
       title: "GitHub Copilot",
@@ -1583,7 +1584,7 @@ pres.author = "wrhalpin@gmail.com";
   const sl = contentSlide(pres, "By the Numbers");
 
   const stats = [
-    ["95", "Platform\nConnectors", C.teal],
+    ["99", "Platform\nConnectors", C.teal],
     ["1,500+", "Unit\nTests", C.steel],
     ["150+", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
@@ -1673,17 +1674,17 @@ pres.author = "wrhalpin@gmail.com";
     ["\u2705", "Copilot DirectLine token refresh"],
     ["\u2705", "CLI: gnat report run / gnat report list"],
     ["\u2705", "SectorFilter in gnat.export.filters"],
-    ["\u2705", "CHANGELOG versions 0.6.0 \u2013 1.1.0"],
+    ["\u2705", "CHANGELOG versions 0.6.0 \u2013 1.3.1"],
     ["\u2705", "Email body: rendered HTML content"],
     ["\u2705", "NLP Query Interface (builtin + Claude)"],
     ["\u2705", "Client Capability Reflection + safe dispatch"],
-    ["\u2705", "Connectors Batch 2 \u2014 11 new platforms"],
+    ["\u2705", "Connectors Batch 2 \u2014 11 new platforms (v1.0)"],
     ["\u2705", "XSOAR Content Pack Generator"],
     ["\u2705", "Docker containerization (3-service stack)"],
   ];
 
   const col2 = [
-    ["\u2705", "Terminal UI (Textual, SSH-safe, 4 screens)"],
+    ["\u2705", "Terminal UI (Textual, SSH-safe, F1\u2013F6 screens)"],
     ["\u2705", "Web Dashboard (FastAPI, X-Api-Key, rate-limited)"],
     ["\u2705", "Connector Health + Drift Monitoring"],
     ["\u2705", "Upstream Contribution Pipeline (7-step gate)"],
@@ -1692,9 +1693,9 @@ pres.author = "wrhalpin@gmail.com";
     ["\u2705", "Multi-Tenant Workspace Isolation"],
     ["\u2705", "Docker Integration Test Harness"],
     ["\u2705", "Solr/Grafana Observability Integration"],
-    ["\u2705", "13 additional platform connectors (v1.1)"],
-    ["\u2705", "95 connectors total in CLIENT_REGISTRY"],
-    ["\u2705", "STIX validator ORM integration (validate=True)"],
+    ["\u2705", "13 new connectors in v1.1 \u2014 25 in v1.2 \u2014 9 in v1.3"],
+    ["\u2705", "99 connectors total in CLIENT_REGISTRY"],
+    ["\u2705", "LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini (v1.3)"],
     ["\u2705", "ComplianceMatrix programmatic connector audit"],
   ];
 
@@ -1750,8 +1751,8 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const summary = [
-    "95 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines",
-    "AI agents (Claude + Copilot) \u00b7 NLP queries \u00b7 Research library \u00b7 Report generation",
+    "99 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines",
+    "AI agents (LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini) \u00b7 NLP queries \u00b7 Research library \u00b7 Report generation",
     "TAXII 2.1 \u00b7 STIX validator \u00b7 TUI + Web dashboard \u00b7 Docker \u00b7 Multi-tenant",
     "1,500+ tests \u00b7 ~$50/month Azure \u00b7 Incremental adoption \u00b7 Contribution pipeline",
   ];
@@ -1764,7 +1765,7 @@ pres.author = "wrhalpin@gmail.com";
     x: 0.5, y: 4.25, w: 8.5, h: 0,
     line: { color: C.teal, width: 1.5 }
   });
-  sl.addText("Version 1.1  |  Python 3.9+  |  Apache 2.0  |  EXAMPLES.md \u00b7 IMPLEMENTATION_PLAN.md \u00b7 README.md", {
+  sl.addText("Version 1.3.1  |  Python 3.9+  |  Apache 2.0  |  EXAMPLES.md \u00b7 IMPLEMENTATION_PLAN.md \u00b7 README.md", {
     x: 0.5, y: 4.4, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, margin: 0
   });
