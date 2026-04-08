@@ -113,6 +113,16 @@ from gnat.reports import (
     SectorFilter,
 )
 from gnat.research import CurationJob, ResearchEntry, ResearchLibrary
+from gnat.federation import (
+    FederationError,
+    FederationPeer,
+    FederationScheduler,
+    FederationTopology,
+    PeerRegistry,
+    PeerSyncService,
+    PullResult,
+    PushResult,
+)
 from gnat.schedule import FeedJob, FeedScheduler, JobRunContext, RunRecord
 from gnat.viz import (
     GraphView,
@@ -183,6 +193,15 @@ __all__ = [
     "ResearchAgent",
     "ParsingAgent",
     "CopilotReader",
+    # Federation
+    "FederationPeer",
+    "PeerRegistry",
+    "FederationError",
+    "PeerSyncService",
+    "FederationScheduler",
+    "FederationTopology",
+    "PullResult",
+    "PushResult",
     # Scheduling
     "FeedJob",
     "FeedScheduler",

@@ -147,6 +147,7 @@ class ResearchLibrary:
         ttls: dict[str, int] | None = None,
         staging_name: str = _STAGING_NAME,
         library_name: str = _LIBRARY_NAME,
+        search_index: Any | None = None,
     ):
         """Initialize ResearchLibrary."""
         self._manager = manager
@@ -154,6 +155,11 @@ class ResearchLibrary:
         self._staging_name = staging_name
         self._library_name = library_name
         self._ensure_workspaces()
+        if search_index is not None:
+            self._search_index = search_index
+        else:
+            from gnat.search.index import NullSearchIndex
+            self._search_index = NullSearchIndex()
 
     # ── Factory ────────────────────────────────────────────────────────────
 
@@ -178,7 +184,8 @@ class ResearchLibrary:
         manager = WorkspaceManager.default(config_path=config_path, db_url=db_url)
         ttls = cls._load_ttls(config_path)
         staging, library = cls._load_names(config_path)
-        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library)
+        search_index = cls._build_search_index_from_config(config_path)
+        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library, search_index=search_index)
 
     @classmethod
     def from_manager(
@@ -193,7 +200,23 @@ class ResearchLibrary:
         """
         ttls = cls._load_ttls(config_path)
         staging, library = cls._load_names(config_path)
-        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library)
+        search_index = cls._build_search_index_from_config(config_path)
+        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library, search_index=search_index)
+
+    @classmethod
+    def _build_search_index_from_config(cls, config_path: str | None = None) -> Any:
+        """Build a SearchIndex from INI config, returning NullSearchIndex on failure."""
+        try:
+            from gnat.config import GNATConfig
+            from gnat.search import build_search_index
+
+            cfg = GNATConfig(config_path) if config_path else GNATConfig()
+            return build_search_index(cfg)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Search index not configured: %s", exc)
+            from gnat.search.index import NullSearchIndex
+
+            return NullSearchIndex()
 
     # ── Promotion (personal → staging) ─────────────────────────────────────
 
@@ -281,6 +304,7 @@ class ResearchLibrary:
         entry.set_ttl(ttl_hours)
 
         self._write_entry_to_staging(entry)
+        self._index_entry_objects(entry)
         logger.info(
             "ResearchLibrary: promoted %d objects for topic %r by %r (note: %s)",
             len(stix_dicts),
@@ -339,8 +363,8 @@ class ResearchLibrary:
         """
         Search the library for entries matching a query string.
 
-        Matches against topic, note, researcher, and category fields.
-        Returns fresh entries from the curated library by default.
+        Routes through Solr when a :class:`~gnat.search.index.SolrSearchIndex`
+        is attached; falls back to in-memory scan otherwise.
 
         Parameters
         ----------
@@ -357,17 +381,31 @@ class ResearchLibrary:
         -------
         list of ResearchEntry
             Matching entries, newest first.
-
-        Examples
-        --------
-        ::
-
-            # Find all APT-related research
-            results = lib.search("APT")
-
-            # Find everything including stale entries
-            results = lib.search("phishing", include_stale=True)
         """
+        from gnat.search.index import NullSearchIndex
+
+        if not isinstance(self._search_index, NullSearchIndex):
+            return self._solr_search(
+                query,
+                include_stale=include_stale,
+                include_staging=include_staging,
+                limit=limit,
+            )
+        return self._memory_search(
+            query,
+            include_stale=include_stale,
+            include_staging=include_staging,
+            limit=limit,
+        )
+
+    def _memory_search(
+        self,
+        query: str,
+        include_stale: bool = False,
+        include_staging: bool = False,
+        limit: int = 50,
+    ) -> list[ResearchEntry]:
+        """In-memory search across topic, note, researcher, and category fields."""
         q = query.lower().strip()
         entries = self._load_all_entries(self._library_name, status="curated")
         if include_staging:
@@ -389,9 +427,59 @@ class ResearchLibrary:
             if q in searchable:
                 matched.append(entry)
 
-        # Sort newest first
         matched.sort(key=lambda e: e.promoted_at, reverse=True)
         return matched[:limit]
+
+    def _solr_search(
+        self,
+        query: str,
+        include_stale: bool = False,
+        include_staging: bool = False,
+        limit: int = 50,
+    ) -> list[ResearchEntry]:
+        """Solr-backed search: returns STIX IDs → resolves to ResearchEntry objects."""
+        stix_ids = self._search_index.search(query, limit=limit * 2)
+
+        entries: list[ResearchEntry] = []
+        for stix_id in stix_ids:
+            entry = self._entry_by_stix_id(stix_id, include_staging)
+            if entry is None:
+                continue
+            if not include_stale and not entry.is_fresh:
+                continue
+            entries.append(entry)
+            if len(entries) >= limit:
+                break
+        return entries
+
+    def _entry_by_stix_id(
+        self,
+        stix_id: str,
+        include_staging: bool,
+    ) -> ResearchEntry | None:
+        """Return the ResearchEntry containing the given STIX object ID, or None."""
+        for entry in self._load_all_entries(self._library_name, status="curated"):
+            for obj in entry.stix_objects:
+                if isinstance(obj, dict) and obj.get("id") == stix_id:
+                    return entry
+        if include_staging:
+            for entry in self._load_all_entries(self._staging_name, status="pending"):
+                for obj in entry.stix_objects:
+                    if isinstance(obj, dict) and obj.get("id") == stix_id:
+                        return entry
+        return None
+
+    def _index_entry_objects(self, entry: ResearchEntry) -> None:
+        """Index all STIX objects from a ResearchEntry into the search sidecar."""
+        for obj in entry.stix_objects:
+            try:
+                self._search_index.index(
+                    obj,
+                    source_platform="research_library",
+                    extra_fields={"research_topic": entry.topic},
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Solr index failed for object in entry %r: %s", entry.topic, exc)
 
     def list_entries(
         self,

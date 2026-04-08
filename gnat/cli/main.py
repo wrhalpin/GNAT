@@ -843,6 +843,66 @@ def _build_parser() -> argparse.ArgumentParser:
 
     rev_subs.add_parser("stats", help="Show review queue statistics")
 
+    # ── federation ───────────────────────────────────────────────────────
+    p_fed = subs.add_parser(
+        "federation",
+        help="Manage federated GNAT peer deployments",
+        description=(
+            "Commands for registering and operating federated GNAT peers.\n\n"
+            "Federation uses TAXII 2.1 to synchronise threat intelligence between\n"
+            "independent GNAT instances in either mesh or hierarchical topologies.\n"
+            "Peer configuration is read from [federation.peer.*] sections in\n"
+            "config.ini, or managed interactively via these commands."
+        ),
+    )
+    fed_subs = p_fed.add_subparsers(dest="fed_command", metavar="COMMAND")
+    fed_subs.required = True
+
+    # peers list
+    p_fed_list = fed_subs.add_parser("list", help="List all registered federation peers")
+    p_fed_list.add_argument(
+        "--enabled-only", action="store_true", help="Show only enabled peers"
+    )
+
+    # peers register
+    p_fed_reg = fed_subs.add_parser("register", help="Register a new federation peer")
+    p_fed_reg.add_argument("peer_id", metavar="PEER_ID",
+                           help="Unique peer slug (lowercase, alphanumeric, hyphens)")
+    p_fed_reg.add_argument("--taxii-url", required=True, metavar="URL",
+                           help="Remote TAXII 2.1 base URL")
+    p_fed_reg.add_argument("--api-key", required=True, metavar="KEY",
+                           help="Bearer token for the remote instance")
+    p_fed_reg.add_argument("--display-name", default="", metavar="NAME")
+    p_fed_reg.add_argument("--direction", default="pull",
+                           choices=["pull", "push", "both"],
+                           help="Sync direction (default: pull)")
+    p_fed_reg.add_argument("--max-tlp", default="green",
+                           choices=["white", "clear", "green", "amber", "amber+strict", "red"],
+                           help="Maximum TLP level to share (default: green)")
+    p_fed_reg.add_argument("--parent", default=None, metavar="PEER_ID",
+                           help="Parent peer ID (for hierarchical topology)")
+    p_fed_reg.add_argument("--workspaces", default="", metavar="WS1,WS2",
+                           help="Comma-separated workspace names to sync (required)")
+    p_fed_reg.add_argument("--interval", type=int, default=3600, metavar="SECONDS",
+                           help="Sync interval in seconds (default: 3600)")
+
+    # peers delete
+    p_fed_del = fed_subs.add_parser("delete", help="Remove a federation peer")
+    p_fed_del.add_argument("peer_id", metavar="PEER_ID")
+
+    # health
+    p_fed_health = fed_subs.add_parser("health", help="Ping a peer's TAXII discovery endpoint")
+    p_fed_health.add_argument("peer_id", metavar="PEER_ID")
+
+    # sync
+    p_fed_sync = fed_subs.add_parser("sync", help="Trigger an immediate sync from a peer")
+    p_fed_sync.add_argument("peer_id", metavar="PEER_ID")
+    p_fed_sync.add_argument("--dry-run", action="store_true",
+                            help="Fetch and filter but do not write to local workspaces")
+
+    # topology
+    fed_subs.add_parser("topology", help="Print the federation topology graph")
+
     # ── contribute ────────────────────────────────────────────────────────
     p_ctr = subs.add_parser(
         "contribute",
@@ -2008,6 +2068,163 @@ def _cmd_serve_taxii(args) -> int:
     return 0
 
 
+def _cmd_federation(args: argparse.Namespace) -> int:
+    """Handle 'gnat federation <subcommand>'."""
+    from gnat.federation.peer import PeerRegistry
+
+    config_path = getattr(args, "config", None)
+    registry = PeerRegistry()  # uses default path ~/.gnat/federation_peers.json
+
+    # If a config file is provided, merge peers from INI sections
+    if config_path:
+        try:
+            from gnat.config import GNATConfig
+            cfg = GNATConfig(config_path)
+            registry.from_config(cfg)
+        except Exception:  # noqa: BLE001
+            pass  # registry may be empty — that's ok
+
+    sub = args.fed_command
+
+    if sub == "list":
+        peers = registry.list(enabled_only=getattr(args, "enabled_only", False))
+        if not peers:
+            print(_dim("(no federation peers registered)"))
+            return 0
+        rows = [
+            {
+                "peer_id":        p.peer_id,
+                "display_name":   p.display_name or "—",
+                "direction":      p.direction,
+                "max_tlp":        p.max_tlp,
+                "enabled":        "yes" if p.enabled else "no",
+                "workspaces":     ",".join(p.workspace_filter) or "—",
+                "last_sync":      (p.last_sync_at or "never")[:19],
+                "last_status":    p.last_sync_status or "—",
+            }
+            for p in peers
+        ]
+        _print_table(rows)
+        return 0
+
+    if sub == "register":
+        workspaces = [w.strip() for w in args.workspaces.split(",") if w.strip()]
+        if not workspaces:
+            print(_red("Error: --workspaces is required (comma-separated workspace names)."),
+                  file=sys.stderr)
+            return 1
+        try:
+            peer = registry.register(
+                peer_id=args.peer_id,
+                taxii_url=args.taxii_url,
+                api_key=args.api_key,
+                display_name=getattr(args, "display_name", ""),
+                direction=args.direction,
+                max_tlp=args.max_tlp,
+                parent_peer_id=getattr(args, "parent", None),
+                sync_interval_seconds=args.interval,
+                workspace_filter=workspaces,
+            )
+        except (ValueError, TypeError) as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+        print(_green(f"✓  Registered peer {_bold(peer.peer_id)}"))
+        print(f"   TAXII URL:  {peer.taxii_url}")
+        print(f"   Direction:  {peer.direction}")
+        print(f"   Max TLP:    {peer.max_tlp}")
+        print(f"   Workspaces: {', '.join(peer.workspace_filter)}")
+        return 0
+
+    if sub == "delete":
+        removed = registry.delete(args.peer_id)
+        if removed:
+            print(_green(f"✓  Deleted peer {_bold(args.peer_id)}"))
+        else:
+            print(_yellow(f"Peer {args.peer_id!r} not found."), file=sys.stderr)
+            return 1
+        return 0
+
+    if sub == "health":
+        peer = registry.get(args.peer_id)
+        if peer is None:
+            print(_red(f"Error: peer {args.peer_id!r} not found."), file=sys.stderr)
+            return 1
+        import time
+        from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
+        host = peer.taxii_url.rstrip("/")
+        for suffix in ("/taxii2", "/taxii2/"):
+            if host.endswith(suffix):
+                host = host[: -len(suffix)]
+                break
+        connector = GNATRemoteConnector(host=host, api_key=peer.api_key)
+        connector.authenticate()
+        t0 = time.perf_counter()
+        try:
+            ok = connector.health_check()
+            latency = round((time.perf_counter() - t0) * 1000, 1)
+            status = _green("reachable") if ok else _red("unreachable")
+            print(f"Peer {_bold(args.peer_id)}: {status}  ({latency} ms)")
+        except Exception as exc:  # noqa: BLE001
+            print(_red(f"Peer {args.peer_id!r}: unreachable — {exc}"), file=sys.stderr)
+            return 1
+        return 0
+
+    if sub == "sync":
+        peer = registry.get(args.peer_id)
+        if peer is None:
+            print(_red(f"Error: peer {args.peer_id!r} not found."), file=sys.stderr)
+            return 1
+        from gnat.federation.sync import PeerSyncService, FederationError
+        svc = PeerSyncService()
+        dry_run = getattr(args, "dry_run", False)
+        if dry_run:
+            print(_yellow(f"Dry-run: fetching from peer {_bold(args.peer_id)} …"))
+        else:
+            print(f"Syncing from peer {_bold(args.peer_id)} …")
+        try:
+            result = svc.sync_from_peer(peer=peer, dry_run=dry_run)
+            registry.update_sync_status(args.peer_id, "success")
+        except FederationError as exc:
+            registry.update_sync_status(args.peer_id, "failed")
+            print(_red(f"Sync failed: {exc}"), file=sys.stderr)
+            return 1
+        action = "would accept" if dry_run else "accepted"
+        print(_green(
+            f"✓  Sync complete — {result.objects_accepted} object(s) {action} "
+            f"across {len(result.workspaces_synced)} workspace(s)"
+        ))
+        if result.errors:
+            for err in result.errors:
+                print(_yellow(f"   ⚠ {err}"), file=sys.stderr)
+        return 0
+
+    if sub == "topology":
+        from gnat.federation.topology import FederationTopology
+        import json
+        topo = FederationTopology(registry)
+        graph = topo.hierarchy_graph()
+        peers = registry.list()
+        if not peers:
+            print(_dim("(no federation peers registered)"))
+            return 0
+        print(_bold("Federation Topology"))
+        print(f"  Total peers:   {graph['total_peers']}")
+        print(f"  Enabled peers: {graph['enabled_peers']}")
+        print(f"  Hierarchy edges: {len(graph['hierarchy_edges'])}")
+        print()
+        for node in graph["nodes"]:
+            pid = node["peer_id"]
+            parent = node.get("parent_peer_id")
+            indent = "  ├─ " if parent else "  "
+            print(f"{indent}{_bold(pid)}"
+                  + (f"  ↑ {parent}" if parent else "  (root/mesh)")
+                  + f"  [{node['direction']} / TLP:{node['max_tlp']}]"
+                  + ("" if node["enabled"] else _dim("  [disabled]")))
+        return 0
+
+    return 0  # unreachable — argparse handles unknown subcommands
+
+
 def _cmd_serve(args) -> int:
     """serve subcommand — start the GNAT web dashboard."""
     try:
@@ -2043,6 +2260,32 @@ def _cmd_serve(args) -> int:
         cfg = WebUIConfig.from_ini(config_path)
         reports_dir = cfg.reports_dir
 
+    # Initialise federation components from config when available
+    federation_registry = None
+    federation_scheduler = None
+    federation_sync_service = None
+    if config_path:
+        try:
+            from gnat.config import GNATConfig
+            from gnat.federation.peer import PeerRegistry
+            from gnat.federation.sync import PeerSyncService
+            from gnat.federation.scheduler import FederationScheduler
+
+            _cfg = GNATConfig(config_path)
+            _registry = PeerRegistry.from_config(_cfg)
+            _sync_svc = PeerSyncService()
+            _scheduler = FederationScheduler(registry=_registry, sync_service=_sync_svc)
+            if _registry.list(enabled_only=True):
+                _scheduler.start()
+            federation_registry = _registry
+            federation_scheduler = _scheduler
+            federation_sync_service = _sync_svc
+        except Exception as _exc:  # noqa: BLE001
+            import logging
+            logging.getLogger(__name__).warning(
+                "Federation initialization skipped: %s", _exc
+            )
+
     url = f"http://{host}:{port}"
     print(_green(f"✓  GNAT Web Dashboard: {_bold(url)}"), file=sys.stderr)
     print(_dim("   Press Ctrl+C to stop."), file=sys.stderr)
@@ -2052,6 +2295,9 @@ def _cmd_serve(args) -> int:
         host=host,
         port=port,
         reports_dir=reports_dir,
+        federation_registry=federation_registry,
+        federation_scheduler=federation_scheduler,
+        federation_sync_service=federation_sync_service,
     )
     return 0
 
@@ -2397,6 +2643,7 @@ def main(argv: list[str] | None = None) -> int:
         "review": _cmd_review,
         "plugins": _cmd_plugins,
         "db": _cmd_db,
+        "federation": _cmd_federation,
     }
 
     handler = handlers.get(args.command)

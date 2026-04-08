@@ -178,24 +178,31 @@ class FederationScheduler:
         registry = self._registry
         sync = self._sync
         peer_id = peer.peer_id
+        # Mutable state shared between reader factory and callbacks to
+        # surface objects_accepted without going through the FeedJob pipeline.
+        _state: dict[str, Any] = {}
 
         def _reader_factory(ctx: Any) -> Any:
-            from gnat.federation.sync import _FederationReader
-            return _FederationReader(
+            reader = _FederationReader(
                 peer=registry.get(peer_id),  # re-fetch in case updated
                 sync_service=sync,
                 added_after=ctx.last_sync_iso,
             )
+            _state["reader"] = reader
+            return reader
 
         def _mapper_factory(ctx: Any) -> Any:
             return _PassthroughMapper()
 
         def _on_success(record: Any) -> None:
             registry.update_sync_status(peer_id, "success")
+            reader = _state.get("reader")
+            pull_result = getattr(reader, "_last_result", None)
+            objects_accepted = pull_result.objects_accepted if pull_result is not None else "?"
             logger.info(
-                "Federation pull from peer %r succeeded: %s objects.",
+                "Federation pull from peer %r succeeded: %s object(s) accepted.",
                 peer_id,
-                getattr(getattr(record, "result", None), "written_objects", "?"),
+                objects_accepted,
             )
 
         def _on_failure(record: Any) -> None:
@@ -237,17 +244,20 @@ class _FederationReader:
         self._peer = peer
         self._sync = sync_service
         self._added_after = added_after
+        self._last_result: Any = None  # PullResult; readable by _on_success callback
 
     def read(self) -> Any:
-        """Perform the pull and yield accepted objects as records."""
+        """Perform the pull and store the PullResult for the on_success callback."""
         if self._peer is None or not self._peer.enabled:
             return iter([])
         result = self._sync.sync_from_peer(
             peer=self._peer,
             added_after=self._added_after,
         )
-        # Objects were already written to workspaces inside sync_from_peer.
-        # Yield empty iterator so FeedJob sees zero records (counts handled separately).
+        # Objects are written to workspaces inside sync_from_peer.
+        # Store the result so the scheduler's _on_success callback can log
+        # objects_accepted without re-processing records through the FeedJob pipeline.
+        self._last_result = result
         return iter([])
 
 

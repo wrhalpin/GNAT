@@ -37,15 +37,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# TLP rank map — must match gnat.analysis.tlp._RANKS
-_TLP_RANKS: dict[str, int] = {
-    "white": 0,
-    "clear": 0,
-    "green": 1,
-    "amber": 2,
-    "amber+strict": 3,
-    "red": 4,
-}
+from gnat.analysis.tlp import TLPLevel
 
 
 class FederationError(Exception):
@@ -93,8 +85,14 @@ class PeerSyncService:
             Target peer with ``max_tlp`` attribute.
         """
         obj_tlp = str(obj.get("x_tlp") or "green").lower()
-        obj_rank = _TLP_RANKS.get(obj_tlp, 1)  # unknown → treat as GREEN
-        ceiling_rank = _TLP_RANKS.get(peer.max_tlp, 1)
+        try:
+            obj_rank = TLPLevel(obj_tlp).rank
+        except ValueError:
+            obj_rank = TLPLevel.GREEN.rank  # unknown → treat as GREEN
+        try:
+            ceiling_rank = TLPLevel(peer.max_tlp).rank
+        except ValueError:
+            ceiling_rank = TLPLevel.GREEN.rank
         return obj_rank <= ceiling_rank
 
     # ------------------------------------------------------------------
@@ -241,22 +239,16 @@ class PeerSyncService:
 
             if not dry_run and local_ws is not None:
                 try:
-                    from gnat.orm.base import STIXBase
-                    stix_obj = STIXBase.from_dict(obj)
-                    stix_obj._properties["x_federation_peer"] = peer.peer_id
-                    local_ws.objects[stix_obj.id] = stix_obj
-                    local_ws.dirty.add(stix_obj.id)
+                    local_ws._add_object(
+                        obj,
+                        source_platform=f"peer:{peer.peer_id}",
+                        mark_dirty=True,
+                    )
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Failed to ingest object %s: %s", obj_id, exc)
                     continue
 
             accepted += 1
-
-        if not dry_run and local_ws is not None and accepted > 0:
-            try:
-                local_ws.save()
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Failed to save workspace %r: %s", workspace_name, exc)
 
         return accepted
 
