@@ -10,6 +10,90 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 
 ## [1.4.0]
 
+### Added — Analyst OS Layer (Phase 3)
+
+**Database Migrations (`alembic/`)**
+- `alembic.ini` + `alembic/env.py`: Alembic 1.13 setup; URL resolved from `GNAT_DB_URL` env var → `[database]` INI section → `alembic.ini` default; unified metadata via `gnat.migrations.get_combined_metadata()`
+- `alembic/versions/0001_init_all_tables.py`: initial schema (investigations, reports, workspaces, workspace_objects, enrichment_log, context_globals)
+- `alembic/versions/0002_add_lineage_events.py`: `lineage_events` table with composite index on (object_id, timestamp)
+- `alembic/versions/0003_add_metrics_events.py`: `metrics_events` table with index on (metric_type, timestamp)
+- `gnat/migrations/__init__.py`: `get_combined_metadata()` aggregates all `_Base` objects for Alembic auto-detection
+- `gnat/migrations/cli.py`: `gnat-db` CLI entry point with upgrade/downgrade/current/history/check/revision/stamp subcommands
+- New extras: `[migrations]` (alembic + sqlalchemy); `[orchestration]` (sqlalchemy)
+- New script: `gnat-db = "gnat.migrations.cli:main"` in pyproject.toml
+
+**Plugin System (`gnat/plugins/`)**
+- `GNATPlugin` ABC: `name`, `version`, `capabilities`, `description`; requires `register(registry)` implementation
+- `PluginCapability` enum: CONNECTOR | READER | MAPPER | AGENT | REPORTER | HOOK
+- `HookBus` singleton: thread-safe pub/sub with `on()` decorator, `register/unregister/emit/clear/handlers()`; 14 built-in `KNOWN_EVENTS`; async handler support; exceptions in handlers are caught and logged, never propagated
+- `PluginRegistry`: load/unload/get/list/list_by_capability; entry_points discovery (`gnat.plugins` group); filesystem discovery via `GNAT_PLUGIN_DIRS`; `register_connector/reader/mapper()` wraps existing registries
+- `load_plugins()`: reads `[plugins]` INI section + `GNAT_PLUGIN_DIRS` env var
+- `[project.entry-points."gnat.plugins"]` section in pyproject.toml for third-party plugin declaration
+- ADR-0036: Plugin Architecture — entry_points + filesystem discovery; HookBus pub/sub; backward-compatible connector/reader/mapper registration
+
+**Policy Engine (`gnat/policy/`)**
+- `Role` enum (VIEWER → ADMIN) + `Permission` enum (10 permissions) + static `ROLE_PERMISSIONS` matrix
+- `PolicyEngine`: `evaluate(subject, permission)`, `evaluate_role(role, permission)`, `require(permission, key_store)` FastAPI `Depends` factory, `audit()` emits `policy_decision` HookBus event
+- `build_audit_middleware(key_store)`: Starlette `BaseHTTPMiddleware` that times requests, resolves actor, emits structured log + `api_request` HookBus event
+- `APIKey.role: str = "viewer"` field added; `APIKeyStore.add_key/generate_key()` gain `role=` kwarg
+- `APIKey.to_dict()` now includes `role` field
+- `build_gateway_router()` gains optional `policy_engine=` parameter; admin endpoints use `engine.require(Permission.MANAGE_KEYS)` instead of raw TLP check; old `_require_admin()` removed
+- ADR-0037: Policy Engine — RBAC orthogonal to TLP, static permission matrix, FastAPI-native Depends integration
+
+**TAXII 2.1 Write Endpoints**
+- `TAXIICollection.can_write = True` for TLP:AMBER and TLP:RED collections
+- POST `/taxii2/{api-root}/collections/{id}/objects/`: push STIX 2.1 bundle; requires `WRITE_TAXII` permission; validates `type=bundle`; routes `report` objects to `store.ingest_stix()`; returns TAXII 2.1 status record (202)
+- DELETE `/taxii2/{api-root}/collections/{id}/objects/{stix-id}`: soft-delete by STIX ID; tries `store.delete_by_stix_id()` first, falls back to scan+delete; returns 404 on not found
+- `build_taxii_router()` gains optional `policy_engine=` parameter
+- `_ingest_stix_objects()` and `_soft_delete_object()` helpers (testable independently)
+- Updated module docstring to document all 8 endpoints (6 read + 2 write)
+
+**Investigation Query DSL (`gnat/analysis/query.py`)**
+- `InvestigationQuery` dataclass: `status` list, `created_by`, `assigned_to`, `tags` list (ANY match), `classification` list, `date_from`/`date_to`, `text` (title substring), `has_hypothesis`, `has_linked_report`, `page`, `page_size`, `sort_by`, `sort_desc`
+- `InvestigationStore.list()` now accepts `query: InvestigationQuery` with full filter → SQLAlchemy WHERE chain; `has_hypothesis`/`has_linked_report` post-filtered from JSON blob; legacy kwargs preserved for backward compatibility
+- `InvestigationService.list()` accepts `InvestigationQuery` and passes it through
+- SQL injection protection: `safe_sort_by` property validates against allowlist
+
+**Serve Routers (`gnat/serve/routers/`)**
+- `gnat/serve/routers/investigations.py`: 11 REST endpoints — list (full `InvestigationQuery` filter params), create, get, update, transition, add note, add task, update task, add hypothesis, link artifacts, summary
+- `gnat/serve/routers/analysis.py`: 7 REST endpoints — graph/pivot, graph/filter, graph/shortest-path, copilot/gaps, copilot/draft, reports/{id}/export/stix, metrics/investigations, metrics/enrichment
+- `gnat/serve/app.py`: `create_app()` and `run()` gain `investigation_service`, `graph_query`, `gap_detector`, `report_drafting_assistant`, `export_service`, `metrics_aggregator` parameters; new routers registered with `_api_deps`
+
+**Agent Orchestration (`gnat/agents/`)**
+- `gnat/agents/workflow.py`: `Workflow`, `WorkflowContext`, `WorkflowStep`, `WorkflowResult` — sequential DAG executor with `on_success`/`on_failure` routing, cycle detection, elapsed timing
+- `gnat/agents/steps.py`: built-in step factories — `enrich_step`, `correlate_step`, `gap_detect_step`, `draft_report_step`, `transition_step`, `fn_step`; all accept `None` components for no-op/test mode
+- `gnat/agents/workflows/phishing_triage.py`: 5-step pre-built phishing triage workflow (enrich → correlate → gap_detect → draft_report → transition IN_PROGRESS)
+- `gnat/agents/workflows/incident_response.py`: 5-step incident response workflow (enrich → correlate → gap_detect → draft_report → transition REVIEW)
+
+**Data Lineage (`gnat/lineage/`)**
+- `LineageEventType` enum: INGESTED | ENRICHED | NORMALIZED | LINKED | EXPORTED | REPORTED | DELETED
+- `LineageEvent` dataclass: immutable append-only record with UUID4 id, timestamp, object_id, actor, source, metadata dict
+- `LineageStore` (SQLAlchemy): `lineage_events` table; `append()`, `query(object_id)`, `query_by_type()`, `query_by_actor()`, `count()`; composite index on (object_id, timestamp)
+- `LineageTracker`: convenience wrapper with one `record_*` method per event type; `store=None` → silent no-op; exceptions never propagate to callers
+- ADR-0038: Data Lineage Tracking — append-only event log; zero new runtime dependencies; optional deployment
+
+**Analyst Metrics (`gnat/metrics/`)**
+- `MetricType` enum: 9 types covering investigation lifecycle, enrichment effectiveness, report publishing, gap detection, false positives
+- `MetricEvent` dataclass with metric_type, value, labels dict, timestamp
+- `MetricsCollector`: thread-safe ring-buffer (configurable max_size); `record()`, `snapshot()`, `since(cutoff)`, `clear()`
+- `MetricsAggregator`: `investigation_summary(days)`, `enrichment_effectiveness(platform, days)`, `gap_frequency(days)`, `false_positive_rate(days)` — all return structured dicts
+
+**Architecture Decision Records**
+- ADR-0036: Plugin Architecture
+- ADR-0037: Policy Engine (RBAC)
+- ADR-0038: Data Lineage Tracking
+
+**Tests**
+- `tests/unit/test_plugins.py`: 13 tests covering capabilities, ABC enforcement, registry lifecycle, HookBus events/routing/error-swallowing, connector registration
+- `tests/unit/test_policy.py`: 13 tests covering role/permission matrix, engine evaluation (by role, subject, fallback), audit hook emission, APIKey role field, init exports
+- `tests/unit/test_taxii_write.py`: 12 tests covering collection write flags, ingest helper, soft-delete helper (direct API + fallback scan), router construction
+- `tests/unit/agents/test_workflow.py`: 18 tests covering context/step/workflow construction, success/failure/routing runs, all step factories, pre-built workflows
+- `tests/unit/test_lineage.py`: 16 tests covering event model, store append/query/count, tracker convenience methods, no-op mode
+- `tests/unit/test_metrics.py`: 17 tests covering model, collector (ring buffer, thread safety, snapshot filtering, since), aggregator (investigation summary, enrichment effectiveness, gap frequency, false positive rate)
+- `tests/unit/analysis/test_investigation_query.py`: 13 tests covering dataclass helpers (offset/limit/safe_sort_by), full InvestigationStore.list() integration (all filters, pagination, legacy kwargs)
+
+---
+
 ### Added — Analysis Layer (Phase 0 + 1 + 2)
 
 **`gnat.analysis` — Analyst-facing foundation**

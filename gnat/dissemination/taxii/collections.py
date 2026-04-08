@@ -99,6 +99,7 @@ COLLECTIONS: dict[str, TAXIICollection] = {
         description      = "Limited-distribution intelligence reports (TLP:AMBER and below).",
         tlp_level        = TLPLevel.AMBER,
         min_access_level = TLPLevel.AMBER,
+        can_write        = True,
     ),
     "tlp-red": TAXIICollection(
         id               = _cid("tlp-red"),
@@ -106,6 +107,7 @@ COLLECTIONS: dict[str, TAXIICollection] = {
         description      = "Restricted intelligence reports (TLP:RED — explicit grant required).",
         tlp_level        = TLPLevel.RED,
         min_access_level = TLPLevel.RED,
+        can_write        = True,
     ),
 }
 

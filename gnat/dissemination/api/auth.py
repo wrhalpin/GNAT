@@ -34,7 +34,7 @@ from gnat.analysis.tlp import TLPLevel
 @dataclass
 class APIKey:
     """
-    An API key with associated TLP access level.
+    An API key with associated TLP access level and RBAC role.
 
     Parameters
     ----------
@@ -44,6 +44,10 @@ class APIKey:
         Maximum TLP level this key can access.
     label : str
         Human-readable label for the key (e.g. ``"SIEM integration"``).
+    role : str
+        RBAC role string (``"viewer"``, ``"analyst"``, etc.).  The
+        :class:`~gnat.policy.engine.PolicyEngine` coerces this to a
+        :class:`~gnat.policy.models.Role` at evaluation time.
     created_at : datetime
         Creation timestamp.
     expires_at : datetime | None
@@ -57,6 +61,7 @@ class APIKey:
     token:      str
     tlp_level:  TLPLevel
     label:      str                  = ""
+    role:       str                  = "viewer"
     created_at: datetime             = field(
         default_factory=lambda: datetime.now(tz=timezone.utc)
     )
@@ -82,6 +87,7 @@ class APIKey:
             "token_hash": self.token_hash,
             "tlp_level":  self.tlp_level.value,
             "label":      self.label,
+            "role":       self.role,
             "created_at": self.created_at.isoformat(),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "enabled":    self.enabled,
@@ -113,6 +119,7 @@ class APIKeyStore:
         token:     str,
         tlp_level: TLPLevel,
         label:     str                  = "",
+        role:      str                  = "viewer",
         expires_at: datetime | None     = None,
         metadata:  dict[str, Any] | None = None,
     ) -> APIKey:
@@ -127,6 +134,9 @@ class APIKeyStore:
             Maximum access level granted.
         label : str
             Human-readable label.
+        role : str
+            RBAC role (``"viewer"``, ``"analyst"``, ``"senior_analyst"``,
+            ``"reviewer"``, ``"admin"``).  Defaults to ``"viewer"``.
         expires_at : datetime | None
             Optional expiry.
         metadata : dict | None
@@ -140,6 +150,7 @@ class APIKeyStore:
             token      = token,
             tlp_level  = tlp_level,
             label      = label,
+            role       = role,
             expires_at = expires_at,
             metadata   = metadata or {},
         )

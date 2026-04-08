@@ -39,6 +39,8 @@ schedule  = ["croniter>=2.0"]
 agents    = []
 research  = []
 fast      = []  # Install gnat-core native Rust wheel separately: pip install "gnat[fast]" + gnat-core wheel
+migrations    = ["alembic>=1.13", "sqlalchemy>=2.0"]              # Alembic DB migrations (gnat db CLI)
+orchestration = ["sqlalchemy>=2.0"]                               # Agent workflow engine + lineage
 reports   = ["reportlab>=4.0", "python-docx>=1.1"]   # PDF + DOCX (pure Python, no Node.js)
 viz    = ["plotly>=5.20", "networkx>=3.0", "openpyxl>=3.1"]
 serve          = ["fastapi>=0.111", "uvicorn>=0.30"]
@@ -61,6 +63,11 @@ all = ["pyyaml>=6.0", "taxii2-client>=2.3", "feedparser>=6.0", "httpx>=0.27", "s
 [project.scripts]
 gnat-codegen = "gnat.codegen.openapi_generator:_main"
 gnat = "gnat.cli.main:main"
+gnat-db = "gnat.migrations.cli:main"
+
+[project.entry-points."gnat.plugins"]
+# Third-party plugins declare themselves here, e.g.:
+# my-platform = "gnat_plugin_myplatform:MyPlugin"
 
 [tool.setuptools.packages.find]
 where   = ["."]

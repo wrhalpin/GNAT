@@ -160,13 +160,23 @@ class InvestigationService:
 
     def list(
         self,
+        query:      "Any | None" = None,
         status:     InvestigationStatus | None = None,
         created_by: str | None = None,
         tag:        str | None = None,
         limit:      int = 100,
         offset:     int = 0,
     ) -> list[Investigation]:
-        """List investigations with optional filters."""
+        """
+        List investigations with optional filters.
+
+        Pass an :class:`~gnat.analysis.query.InvestigationQuery` as *query*
+        for rich filtering and pagination.  Legacy keyword arguments are still
+        accepted for backward compatibility.
+        """
+        from gnat.analysis.query import InvestigationQuery
+        if isinstance(query, InvestigationQuery):
+            return self._store.list(query=query)
         return self._store.list(status=status, created_by=created_by, tag=tag,
                                 limit=limit, offset=offset)
 
