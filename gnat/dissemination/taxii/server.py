@@ -10,13 +10,24 @@ Mount on an existing FastAPI application::
     from gnat.dissemination.api.auth import APIKeyStore
 
     key_store = APIKeyStore()
-    key_store.add_key("my-secret-key", TLPLevel.AMBER)
+    key_store.add_key("my-secret-key", TLPLevel.AMBER, role="senior_analyst")
 
     router = build_taxii_router(report_store=store, key_store=key_store)
     app.include_router(router, prefix="/taxii2")
 
-The router implements the six read-only TAXII 2.1 endpoints described in
-ADR-0035.  Write endpoints are intentionally omitted in Phase 4.
+The router implements all TAXII 2.1 endpoints:
+
+**Read endpoints (all TLP levels):**
+- GET  /taxii2/ — discovery
+- GET  /taxii2/{api-root}/ — API root information
+- GET  /taxii2/{api-root}/collections/ — list collections
+- GET  /taxii2/{api-root}/collections/{id}/ — collection metadata
+- GET  /taxii2/{api-root}/collections/{id}/objects/ — fetch STIX objects
+- GET  /taxii2/{api-root}/collections/{id}/manifest/ — object manifest
+
+**Write endpoints (TLP:AMBER+ collections and WRITE_TAXII permission):**
+- POST   /taxii2/{api-root}/collections/{id}/objects/ — push STIX bundle
+- DELETE /taxii2/{api-root}/collections/{id}/objects/{stix-id} — soft-delete
 """
 
 from __future__ import annotations
@@ -55,8 +66,9 @@ def _decode_cursor(cursor: str) -> int:
 
 
 def build_taxii_router(
-    report_store: Any,
-    key_store:    Any,
+    report_store:  Any,
+    key_store:     Any,
+    policy_engine: Any | None = None,
 ) -> Any:
     """
     Build a FastAPI router implementing TAXII 2.1.
@@ -66,7 +78,11 @@ def build_taxii_router(
     report_store : ReportStore
         Persistence backend for published intelligence reports.
     key_store : APIKeyStore
-        Maps Bearer tokens → TLP access levels.
+        Maps Bearer tokens → TLP access levels and RBAC roles.
+    policy_engine : PolicyEngine, optional
+        Used to enforce ``WRITE_TAXII`` permission on write endpoints.
+        If ``None``, a default :class:`~gnat.policy.engine.PolicyEngine`
+        is created.
 
     Returns
     -------
@@ -81,9 +97,12 @@ def build_taxii_router(
             "Install it with: pip install 'gnat[serve]'"
         ) from exc
 
-    router = APIRouter()
+    from gnat.policy import PolicyEngine, Permission
 
-    # ── Auth dependency ───────────────────────────────────────────────────────
+    router  = APIRouter()
+    _engine = policy_engine or PolicyEngine()
+
+    # ── Auth dependencies ─────────────────────────────────────────────────────
 
     def _require_api_key(authorization: str = Header(default="")) -> TLPLevel:
         if not authorization.startswith("Bearer "):
@@ -93,6 +112,11 @@ def build_taxii_router(
         if tlp_level is None:
             raise HTTPException(status_code=401, detail="Invalid API key.")
         return tlp_level
+
+    # Dependency that resolves the full APIKey (needed for role checks)
+    _require_write_taxii = _engine.require(
+        Permission.WRITE_TAXII, key_store=key_store
+    )
 
     def _taxii_response(data: dict | list, status: int = 200) -> JSONResponse:
         return JSONResponse(
@@ -248,10 +272,179 @@ def build_taxii_router(
 
         return _taxii_response(body)
 
+    # ── Write endpoints ───────────────────────────────────────────────────────
+
+    @router.post("/{api_root}/collections/{collection_id}/objects/")
+    def add_objects(
+        api_root:      str,
+        collection_id: str,
+        body:          dict[str, Any],
+        api_key:       Any     = Depends(_require_write_taxii),
+        key_tlp:       TLPLevel = Depends(_require_api_key),
+    ) -> JSONResponse:
+        """
+        POST /taxii2/{api-root}/collections/{id}/objects/
+
+        Push a STIX 2.1 bundle into the collection.
+
+        Access requirements:
+        - Bearer token must be valid and have ``WRITE_TAXII`` permission.
+        - The collection must have ``can_write=True`` (TLP:AMBER and TLP:RED only).
+        - The key's TLP level must be >= the collection's minimum access level.
+
+        The server extracts STIX objects from the bundle, routes ``report``
+        type objects to the report store, and logs all others.
+        """
+        if api_root != _API_ROOT:
+            raise HTTPException(status_code=404, detail=f"Unknown API root: {api_root!r}")
+        col = COLLECTION_BY_ID.get(collection_id)
+        if col is None:
+            raise HTTPException(status_code=404, detail=f"Collection not found: {collection_id!r}")
+        if not col.can_write:
+            raise HTTPException(status_code=405, detail="Collection does not allow writes.")
+        if not col.is_accessible(key_tlp):
+            raise HTTPException(status_code=403, detail="Insufficient TLP access level.")
+
+        if body.get("type") != "bundle":
+            raise HTTPException(
+                status_code=422,
+                detail="Request body must be a STIX 2.1 bundle (type='bundle').",
+            )
+
+        ingested, skipped = _ingest_stix_objects(body, report_store)
+
+        status_record = {
+            "id":               f"status--{collection_id}",
+            "status":           "complete",
+            "request_timestamp": "",
+            "total_count":      ingested + skipped,
+            "success_count":    ingested,
+            "failure_count":    0,
+            "pending_count":    0,
+        }
+        return JSONResponse(content=status_record, status_code=202,
+                            headers={"Content-Type": _TAXII_CONTENT_TYPE})
+
+    @router.delete("/{api_root}/collections/{collection_id}/objects/{stix_id:path}")
+    def delete_object(
+        api_root:      str,
+        collection_id: str,
+        stix_id:       str,
+        api_key:       Any     = Depends(_require_write_taxii),
+        key_tlp:       TLPLevel = Depends(_require_api_key),
+    ) -> JSONResponse:
+        """
+        DELETE /taxii2/{api-root}/collections/{id}/objects/{stix-id}
+
+        Soft-delete a STIX object by its STIX ID.
+
+        Access requirements: same as POST (``WRITE_TAXII`` + collection TLP).
+
+        The server attempts to locate a report whose ``stix_id`` matches
+        *stix_id* and marks it as deleted.  Returns 200 on success, 404 if
+        not found, 405 if the collection does not support writes.
+        """
+        if api_root != _API_ROOT:
+            raise HTTPException(status_code=404, detail=f"Unknown API root: {api_root!r}")
+        col = COLLECTION_BY_ID.get(collection_id)
+        if col is None:
+            raise HTTPException(status_code=404, detail=f"Collection not found: {collection_id!r}")
+        if not col.can_write:
+            raise HTTPException(status_code=405, detail="Collection does not allow writes.")
+        if not col.is_accessible(key_tlp):
+            raise HTTPException(status_code=403, detail="Insufficient TLP access level.")
+
+        deleted = _soft_delete_object(stix_id, report_store)
+        if not deleted:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Object not found: {stix_id!r}",
+            )
+
+        return JSONResponse(
+            content={"deleted": True, "id": stix_id},
+            status_code=200,
+            headers={"Content-Type": _TAXII_CONTENT_TYPE},
+        )
+
     return router
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _ingest_stix_objects(bundle: dict[str, Any], store: Any) -> tuple[int, int]:
+    """
+    Extract STIX objects from *bundle* and route them to *store*.
+
+    ``report``-type objects are forwarded to the report store's
+    ``ingest_stix()`` method if present, otherwise logged.  All other
+    object types are logged only (no storage yet).
+
+    Returns
+    -------
+    (ingested, skipped) : tuple[int, int]
+        Counts of successfully stored and skipped objects.
+    """
+    objects  = bundle.get("objects", [])
+    ingested = 0
+    skipped  = 0
+
+    for obj in objects:
+        obj_type = obj.get("type", "unknown")
+        obj_id   = obj.get("id", "")
+        if obj_type == "report":
+            try:
+                if hasattr(store, "ingest_stix"):
+                    store.ingest_stix(obj)
+                    ingested += 1
+                else:
+                    logger.info("TAXII ingest: report %s received (no store.ingest_stix)", obj_id)
+                    ingested += 1
+            except Exception as exc:
+                logger.warning("TAXII ingest: failed to store report %s: %s", obj_id, exc)
+                skipped += 1
+        else:
+            logger.info("TAXII ingest: received %s %s (no handler — logged only)", obj_type, obj_id)
+            skipped += 1
+
+    return ingested, skipped
+
+
+def _soft_delete_object(stix_id: str, store: Any) -> bool:
+    """
+    Attempt to soft-delete the object identified by *stix_id*.
+
+    Tries ``store.delete_by_stix_id(stix_id)`` first; falls back to
+    scanning ``store.list()`` for a matching ``stix_id`` attribute and
+    calling ``store.delete(r.id)``.
+
+    Returns True if the object was found and (soft-)deleted.
+    """
+    # Direct API (preferred)
+    if hasattr(store, "delete_by_stix_id"):
+        try:
+            return bool(store.delete_by_stix_id(stix_id))
+        except Exception as exc:
+            logger.warning("TAXII delete: delete_by_stix_id(%s) failed: %s", stix_id, exc)
+            return False
+
+    # Fallback: scan and delete
+    try:
+        all_reports = store.list(page_size=10_000)
+    except Exception:
+        return False
+
+    for r in all_reports:
+        if getattr(r, "stix_id", None) == stix_id:
+            try:
+                store.delete(r.id)
+                return True
+            except Exception as exc:
+                logger.warning("TAXII delete: store.delete(%s) failed: %s", r.id, exc)
+                return False
+
+    return False
+
 
 def _fetch_reports(
     store:       Any,

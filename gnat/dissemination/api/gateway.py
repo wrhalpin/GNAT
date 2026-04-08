@@ -33,6 +33,7 @@ from typing import Any
 from gnat.analysis.tlp import TLPLevel
 from gnat.dissemination.api.auth import APIKey, APIKeyStore
 from gnat.dissemination.export import ExportFormat, ExportService
+from gnat.policy import PolicyEngine, Permission
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ def build_gateway_router(
     export_service: ExportService,
     key_store:      APIKeyStore,
     report_store:   Any | None = None,
+    policy_engine:  PolicyEngine | None = None,
 ) -> Any:
     """
     Build a FastAPI router for the GNAT dissemination REST gateway.
@@ -67,7 +69,8 @@ def build_gateway_router(
             "Install it with: pip install 'gnat[serve]'"
         ) from exc
 
-    router = APIRouter()
+    router  = APIRouter()
+    _engine = policy_engine or PolicyEngine()
 
     # ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -222,13 +225,17 @@ def build_gateway_router(
         )
 
     # ── Admin: key management ─────────────────────────────────────────────────
+    # Use PolicyEngine.require(MANAGE_KEYS) so role-based access is enforced
+    # in addition to the Bearer token check.
+    _require_manage_keys = _engine.require(
+        Permission.MANAGE_KEYS, key_store=key_store
+    )
 
     @router.get("/admin/keys")
     def list_keys(
-        api_key: APIKey = Depends(_require_api_key),
+        api_key: APIKey = Depends(_require_manage_keys),
     ) -> JSONResponse:
-        """List all API keys (RED-level admin only)."""
-        _require_admin(api_key)
+        """List all API keys (MANAGE_KEYS permission required)."""
         return JSONResponse({
             "keys": [k.to_dict() for k in key_store.list_keys()]
         })
@@ -236,7 +243,7 @@ def build_gateway_router(
     @router.post("/admin/keys")
     def create_key(
         body:    dict[str, Any],
-        api_key: APIKey = Depends(_require_api_key),
+        api_key: APIKey = Depends(_require_manage_keys),
     ) -> JSONResponse:
         """
         Create a new API key.
@@ -245,13 +252,17 @@ def build_gateway_router(
         ------------
         ``tlp_level`` : str  (e.g. ``"amber"``)
         ``label``     : str  (optional)
+        ``role``      : str  (e.g. ``"analyst"``; optional, defaults to ``"viewer"``)
         """
-        _require_admin(api_key)
         try:
             tlp = TLPLevel(body.get("tlp_level", "white").lower())
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid tlp_level.")
-        new_key = key_store.generate_key(tlp, label=body.get("label", ""))
+        new_key = key_store.generate_key(
+            tlp,
+            label = body.get("label", ""),
+            role  = body.get("role", "viewer"),
+        )
         return JSONResponse(
             {**new_key.to_dict(), "token": new_key.token},
             status_code=201,
@@ -260,10 +271,9 @@ def build_gateway_router(
     @router.delete("/admin/keys/{token_prefix}")
     def revoke_key(
         token_prefix: str,
-        api_key:      APIKey = Depends(_require_api_key),
+        api_key:      APIKey = Depends(_require_manage_keys),
     ) -> JSONResponse:
         """Revoke an API key by its full token or a unique prefix."""
-        _require_admin(api_key)
         # Find by prefix
         matches = [
             k for k in key_store.list_keys()
@@ -307,15 +317,6 @@ def _bundle_tlp_rank(bundle: dict[str, Any]) -> int:
             if "green" in ref_lower:
                 return TLPLevel.GREEN.rank
     return TLPLevel.WHITE.rank
-
-
-def _require_admin(api_key: APIKey) -> None:
-    from fastapi import HTTPException
-    if api_key.tlp_level.rank < TLPLevel.RED.rank:
-        raise HTTPException(
-            status_code=403,
-            detail="Admin endpoints require RED-level access.",
-        )
 
 
 def _safe_unlink(path: str) -> None:

@@ -32,6 +32,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from gnat.analysis.investigations.models import Investigation, InvestigationStatus
+from gnat.analysis.query import InvestigationQuery
 
 logger = logging.getLogger(__name__)
 
@@ -207,6 +208,8 @@ class InvestigationStore:
 
     def list(
         self,
+        query: InvestigationQuery | None = None,
+        # Legacy kwargs — kept for backward compatibility; prefer InvestigationQuery
         status: InvestigationStatus | None = None,
         created_by: str | None = None,
         tag: str | None = None,
@@ -216,36 +219,108 @@ class InvestigationStore:
         """
         List investigations with optional filters.
 
+        Pass an :class:`~gnat.analysis.query.InvestigationQuery` for rich
+        filtering and pagination.  Legacy keyword arguments are still accepted
+        for backward compatibility.
+
         Parameters
         ----------
+        query : InvestigationQuery, optional
+            Structured filter + pagination model.
         status : InvestigationStatus, optional
-            Filter by lifecycle status.
+            *(Legacy)* Filter by lifecycle status.
         created_by : str, optional
-            Filter by analyst identifier.
+            *(Legacy)* Filter by analyst identifier.
         tag : str, optional
-            Filter to investigations containing this tag.
+            *(Legacy)* Filter to investigations containing this tag.
         limit : int
-            Maximum number of results (default 100).
+            *(Legacy)* Maximum number of results (default 100).
         offset : int
-            Skip the first *offset* results (for pagination).
+            *(Legacy)* Skip the first *offset* results.
 
         Returns
         -------
         list of Investigation
         """
         _require_sqlalchemy()
+
+        # Build an InvestigationQuery from legacy kwargs when no query given
+        if query is None:
+            from gnat.analysis.query import InvestigationQuery as _IQ
+            query = _IQ(
+                status     = [status] if status is not None else None,
+                created_by = created_by,
+                tags       = [tag] if tag is not None else None,
+                page_size  = limit,
+            )
+            # Override offset directly (legacy callers use raw offset, not page)
+            _offset = offset
+            _limit  = limit
+        else:
+            _offset = query.offset
+            _limit  = query.limit
+
         with self._Session() as session:
             q = session.query(InvestigationModel).filter(
                 InvestigationModel.is_deleted == False  # noqa: E712
             )
-            if status is not None:
-                q = q.filter(InvestigationModel.status == status.value)
-            if created_by is not None:
-                q = q.filter(InvestigationModel.created_by == created_by)
-            if tag is not None:
-                q = q.filter(InvestigationModel.tags_csv.contains(tag))
-            rows = q.order_by(InvestigationModel.updated_at.desc()).offset(offset).limit(limit).all()
-            return [r.to_investigation() for r in rows]
+
+            # Status filter
+            sv = query.status_values
+            if sv:
+                q = q.filter(InvestigationModel.status.in_(sv))
+
+            # created_by
+            if query.created_by is not None:
+                q = q.filter(InvestigationModel.created_by == query.created_by)
+
+            # Tags — ANY match (CSV substring per tag)
+            if query.tags:
+                from sqlalchemy import or_
+                tag_clauses = [
+                    InvestigationModel.tags_csv.contains(t)
+                    for t in query.tags
+                ]
+                q = q.filter(or_(*tag_clauses))
+
+            # Classification / TLP
+            cv = query.classification_values
+            if cv:
+                q = q.filter(InvestigationModel.classification.in_(cv))
+
+            # Date range on created_at
+            if query.date_from is not None:
+                q = q.filter(InvestigationModel.created_at >= query.date_from)
+            if query.date_to is not None:
+                q = q.filter(InvestigationModel.created_at <= query.date_to)
+
+            # Text search — title substring (description is in the JSON blob)
+            if query.text:
+                q = q.filter(
+                    InvestigationModel.title.ilike(f"%{query.text}%")
+                )
+
+            # Sorting
+            sort_col = getattr(InvestigationModel, query.safe_sort_by,
+                               InvestigationModel.updated_at)
+            q = q.order_by(sort_col.desc() if query.sort_desc else sort_col.asc())
+
+            rows = q.offset(_offset).limit(_limit).all()
+            investigations = [r.to_investigation() for r in rows]
+
+        # Post-filter: has_hypothesis / has_linked_report (stored in JSON blob)
+        if query.has_hypothesis is not None:
+            investigations = [
+                inv for inv in investigations
+                if bool(inv.hypothesis) == query.has_hypothesis
+            ]
+        if query.has_linked_report is not None:
+            investigations = [
+                inv for inv in investigations
+                if bool(inv.reports) == query.has_linked_report
+            ]
+
+        return investigations
 
     def delete(self, investigation_id: str) -> bool:
         """

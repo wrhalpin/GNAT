@@ -33,7 +33,7 @@ from fastapi.responses import HTMLResponse
 
 from .auth import APIKeyAuth
 from .rate_limit import RateLimiter
-from .routers import library, reports, scheduler
+from .routers import analysis, investigations, library, reports, scheduler
 
 # ---------------------------------------------------------------------------
 # Embedded single-page dashboard
@@ -340,6 +340,12 @@ def create_app(
     library_backend=None,
     scheduler_backend=None,
     reports_dir: str | None = None,
+    investigation_service=None,
+    graph_query=None,
+    gap_detector=None,
+    report_drafting_assistant=None,
+    export_service=None,
+    metrics_aggregator=None,
 ) -> FastAPI:
     """
     Build and return the GNAT web dashboard FastAPI application.
@@ -369,9 +375,15 @@ def create_app(
     )
 
     # Store backends in app state for router access
-    app.state.library = library_backend
-    app.state.scheduler = scheduler_backend
-    app.state.reports_dir = reports_dir
+    app.state.library                   = library_backend
+    app.state.scheduler                 = scheduler_backend
+    app.state.reports_dir               = reports_dir
+    app.state.investigation_service     = investigation_service
+    app.state.graph_query               = graph_query
+    app.state.gap_detector              = gap_detector
+    app.state.report_drafting_assistant = report_drafting_assistant
+    app.state.export_service            = export_service
+    app.state.metrics_aggregator        = metrics_aggregator
 
     # ── Unauthenticated endpoints ──────────────────────────────────────────
     @app.get("/health", tags=["health"], include_in_schema=False)
@@ -384,9 +396,11 @@ def create_app(
 
     # ── Authenticated API routers ──────────────────────────────────────────
     _api_deps = [Depends(auth), Depends(limiter)]
-    app.include_router(library.router, dependencies=_api_deps)
-    app.include_router(reports.router, dependencies=_api_deps)
-    app.include_router(scheduler.router, dependencies=_api_deps)
+    app.include_router(library.router,         dependencies=_api_deps)
+    app.include_router(reports.router,         dependencies=_api_deps)
+    app.include_router(scheduler.router,       dependencies=_api_deps)
+    app.include_router(investigations.router,  dependencies=_api_deps)
+    app.include_router(analysis.router,        dependencies=_api_deps)
 
     return app
 
@@ -403,6 +417,12 @@ def run(
     library_backend=None,
     scheduler_backend=None,
     reports_dir: str | None = None,
+    investigation_service=None,
+    graph_query=None,
+    gap_detector=None,
+    report_drafting_assistant=None,
+    export_service=None,
+    metrics_aggregator=None,
 ) -> None:
     """
     Launch the GNAT web dashboard with uvicorn.
@@ -412,9 +432,15 @@ def run(
     import uvicorn  # optional dep — fastapi[standard] or uvicorn
 
     app = create_app(
-        api_key=api_key,
-        library_backend=library_backend,
-        scheduler_backend=scheduler_backend,
-        reports_dir=reports_dir,
+        api_key                   = api_key,
+        library_backend           = library_backend,
+        scheduler_backend         = scheduler_backend,
+        reports_dir               = reports_dir,
+        investigation_service     = investigation_service,
+        graph_query               = graph_query,
+        gap_detector              = gap_detector,
+        report_drafting_assistant = report_drafting_assistant,
+        export_service            = export_service,
+        metrics_aggregator        = metrics_aggregator,
     )
     uvicorn.run(app, host=host, port=port, log_level="warning")

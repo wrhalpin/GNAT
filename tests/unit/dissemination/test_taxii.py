@@ -46,10 +46,15 @@ class TestTAXIICollection:
         assert "can_write"   in d
         assert "media_types" in d
 
-    def test_can_read_true_can_write_false(self):
+    def test_can_read_true_write_enabled_for_amber_and_red(self):
+        # All collections are readable
         for col in COLLECTIONS.values():
-            assert col.can_read  is True
-            assert col.can_write is False
+            assert col.can_read is True
+        # Write is enabled only for TLP:AMBER and TLP:RED (Phase 3B)
+        assert COLLECTIONS["tlp-white"].can_write is False
+        assert COLLECTIONS["tlp-green"].can_write is False
+        assert COLLECTIONS["tlp-amber"].can_write is True
+        assert COLLECTIONS["tlp-red"].can_write   is True
 
     def test_is_accessible_white_key_sees_white_only(self):
         white_col = COLLECTIONS["tlp-white"]
