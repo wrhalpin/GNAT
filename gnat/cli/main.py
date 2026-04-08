@@ -34,6 +34,13 @@ Sub-commands
     gnat health    check
     gnat health    check --platform threatq --no-schema
     gnat health    baseline threatq
+    gnat investigation list --status open --created-by analyst@example.com
+    gnat investigation create --title "APT28 activity" --created-by analyst@example.com
+    gnat investigation transition <id> in_progress --author analyst
+    gnat plugins    list
+    gnat plugins    load ./my-plugins/
+    gnat db         upgrade
+    gnat db         current
     gnat contribute --connector myplatform --message "Add MyPlatform connector"
     gnat contribute --connector myplatform --dry-run
     gnat contribute --connector myplatform --no-pr
@@ -476,7 +483,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_tui.add_argument(
         "screen",
         nargs="?",
-        choices=["query", "library", "scheduler", "reports"],
+        choices=["query", "library", "scheduler", "reports", "investigations"],
         default="query",
         help="Screen to open on launch (default: query)",
     )
@@ -711,6 +718,89 @@ def _build_parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="Use stix2-patterns ANTLR grammar if installed"
     )
     p_val_bnd.add_argument("--fail-fast", action="store_true", help="Stop at first invalid pattern")
+
+    # ── investigation ─────────────────────────────────────────────────────
+    p_inv = subs.add_parser(
+        "investigation",
+        help="Manage investigations (create, list, view, transition, annotate)",
+    )
+    inv_subs = p_inv.add_subparsers(dest="inv_command", metavar="<subcommand>")
+    inv_subs.required = True
+
+    _p_inv_list = inv_subs.add_parser("list", help="List investigations")
+    _p_inv_list.add_argument("--status", metavar="STATUS",
+        help="Filter by status: open|in_progress|review|closed")
+    _p_inv_list.add_argument("--created-by", metavar="ANALYST",
+        help="Filter by analyst identifier")
+    _p_inv_list.add_argument("--tag", metavar="TAG", help="Filter by tag (ANY match)")
+    _p_inv_list.add_argument("--text", metavar="TEXT",
+        help="Substring search on title")
+    _p_inv_list.add_argument("--page", type=int, default=1)
+    _p_inv_list.add_argument("--page-size", type=int, default=25, dest="page_size")
+
+    p_inv_create = inv_subs.add_parser("create", help="Create a new investigation")
+    p_inv_create.add_argument("--title", required=True, metavar="TITLE")
+    p_inv_create.add_argument("--created-by", required=True, metavar="ANALYST",
+        dest="created_by")
+    p_inv_create.add_argument("--description", default="", metavar="TEXT")
+    p_inv_create.add_argument("--tlp", default="amber",
+        choices=["white", "green", "amber", "red"], metavar="LEVEL")
+    p_inv_create.add_argument("--tags", default="", metavar="TAG1,TAG2")
+
+    p_inv_get = inv_subs.add_parser("get", help="Show a single investigation by ID")
+    p_inv_get.add_argument("id", metavar="INVESTIGATION_ID")
+
+    p_inv_tr = inv_subs.add_parser("transition", help="Transition investigation status")
+    p_inv_tr.add_argument("id", metavar="INVESTIGATION_ID")
+    p_inv_tr.add_argument("status", metavar="NEW_STATUS",
+        choices=["open", "in_progress", "review", "closed"])
+    p_inv_tr.add_argument("--note", default=None, metavar="TEXT")
+    p_inv_tr.add_argument("--author", default="cli", metavar="ANALYST")
+
+    p_inv_note = inv_subs.add_parser("note", help="Add an analyst note")
+    p_inv_note.add_argument("id", metavar="INVESTIGATION_ID")
+    p_inv_note.add_argument("--content", required=True, metavar="MARKDOWN_TEXT")
+    p_inv_note.add_argument("--author", required=True, metavar="ANALYST")
+
+    p_inv_link = inv_subs.add_parser("link", help="Link artifacts to an investigation")
+    p_inv_link.add_argument("id", metavar="INVESTIGATION_ID")
+    p_inv_link.add_argument("--indicators", default="", metavar="ID1,ID2",
+        help="Comma-separated indicator STIX IDs")
+    p_inv_link.add_argument("--reports", default="", metavar="ID1,ID2",
+        help="Comma-separated report IDs")
+
+    # ── plugins ───────────────────────────────────────────────────────────
+    p_plg = subs.add_parser(
+        "plugins",
+        help="Inspect and manage GNAT plugins",
+    )
+    plg_subs = p_plg.add_subparsers(dest="plg_command", metavar="<subcommand>")
+    plg_subs.required = True
+
+    _p_plg_list = plg_subs.add_parser("list", help="List loaded plugins")
+    p_plg_load = plg_subs.add_parser("load", help="Load plugins from a directory")
+    p_plg_load.add_argument("directory", metavar="DIR",
+        help="Directory containing plugin packages")
+
+    # ── db ────────────────────────────────────────────────────────────────
+    p_db = subs.add_parser(
+        "db",
+        help="Database migration management (Alembic)",
+    )
+    db_subs = p_db.add_subparsers(dest="db_command", metavar="<subcommand>")
+    db_subs.required = True
+
+    db_subs.add_parser("upgrade",   help="Upgrade to the latest migration (head)")
+    db_subs.add_parser("downgrade", help="Downgrade one migration step")
+    db_subs.add_parser("current",   help="Show current migration revision")
+    db_subs.add_parser("history",   help="Show migration history")
+    p_db_rev = db_subs.add_parser("revision", help="Create a new migration script")
+    p_db_rev.add_argument("--message", "-m", default="auto", metavar="MSG",
+        help="Migration message")
+    p_db_rev.add_argument("--autogenerate", action="store_true",
+        help="Auto-generate from schema diff")
+    p_db_stamp = db_subs.add_parser("stamp",   help="Stamp DB at a specific revision")
+    p_db_stamp.add_argument("revision", metavar="REVISION")
 
     # ── contribute ────────────────────────────────────────────────────────
     p_ctr = subs.add_parser(
@@ -1916,6 +2006,218 @@ def _cmd_serve(args) -> int:
     return 0
 
 
+def _cmd_investigation(args: argparse.Namespace) -> int:
+    """Handle 'gnat investigation <subcommand>'."""
+    config_path = getattr(args, "config", None)
+
+    try:
+        from gnat.analysis.investigations.storage import InvestigationStore
+        from gnat.analysis.investigations.service import InvestigationService
+    except ImportError:
+        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
+              file=sys.stderr)
+        return 1
+
+    # Resolve DB URL from GNAT_DB_URL env or default
+    import os
+    db_url = os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
+    store   = InvestigationStore(db_url)
+    store.create_all()
+    service = InvestigationService(store)
+
+    sub = args.inv_command
+
+    if sub == "list":
+        from gnat.analysis.query import InvestigationQuery
+        from gnat.analysis.investigations.models import InvestigationStatus
+
+        def _parse_status(s):
+            if not s:
+                return None
+            try:
+                return [InvestigationStatus(s.strip())]
+            except ValueError:
+                print(_yellow(f"Unknown status {s!r} — ignored"), file=sys.stderr)
+                return None
+
+        q = InvestigationQuery(
+            status     = _parse_status(getattr(args, "status", None)),
+            created_by = getattr(args, "created_by", None),
+            tags       = [args.tag] if getattr(args, "tag", None) else None,
+            text       = getattr(args, "text", None),
+            page       = getattr(args, "page", 1),
+            page_size  = getattr(args, "page_size", 25),
+        )
+        investigations = service.list(query=q)
+        if not investigations:
+            print(_dim("(no investigations found)"))
+            return 0
+        rows = [
+            {
+                "id":         inv.id[:8] + "…",
+                "title":      inv.title[:40],
+                "status":     inv.status.value,
+                "tlp":        inv.classification.value,
+                "created_by": inv.created_by,
+                "updated_at": inv.updated_at.strftime("%Y-%m-%d"),
+            }
+            for inv in investigations
+        ]
+        _print_table(rows)
+        return 0
+
+    if sub == "create":
+        from gnat.analysis.tlp import TLPLevel
+        tags = [t.strip() for t in args.tags.split(",") if t.strip()]
+        try:
+            tlp = TLPLevel(args.tlp)
+        except ValueError:
+            print(_red(f"Invalid TLP level: {args.tlp!r}"), file=sys.stderr)
+            return 1
+        inv = service.create(
+            title          = args.title,
+            created_by     = args.created_by,
+            description    = args.description,
+            classification = tlp,
+            tags           = tags,
+        )
+        print(_green(f"✓  Created investigation {_bold(inv.id)}"))
+        print(f"   Title: {inv.title}")
+        print(f"   Status: {inv.status.value}")
+        return 0
+
+    if sub == "get":
+        try:
+            inv = service.get(args.id)
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        if getattr(args, "output", "table") == "json":
+            _print_json(inv.to_dict())
+        else:
+            d = inv.to_dict()
+            for k, v in d.items():
+                if isinstance(v, list) and v:
+                    print(f"  {_bold(k):20s} {len(v)} items")
+                elif v:
+                    print(f"  {_bold(k):20s} {v}")
+        return 0
+
+    if sub == "transition":
+        from gnat.analysis.investigations.models import InvestigationStatus
+        try:
+            new_status = InvestigationStatus(args.status)
+            inv = service.transition(
+                args.id, new_status,
+                note   = args.note,
+                author = args.author,
+            )
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        print(_green(f"✓  {args.id[:8]}… → {_bold(inv.status.value)}"))
+        return 0
+
+    if sub == "note":
+        try:
+            note = service.add_note(args.id,
+                content = args.content,
+                author  = args.author,
+            )
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        print(_green(f"✓  Note {note.id[:8]}… added to {args.id[:8]}…"))
+        return 0
+
+    if sub == "link":
+        indicators = [i.strip() for i in args.indicators.split(",") if i.strip()]
+        reports    = [r.strip() for r in args.reports.split(",")    if r.strip()]
+        try:
+            if indicators:
+                service.link_indicators(args.id, indicators)
+            for rid in reports:
+                service.link_report(args.id, rid)
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        print(_green(f"✓  Artifacts linked to investigation {args.id[:8]}…"))
+        return 0
+
+    print(_red(f"Unknown subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
+def _cmd_plugins(args: argparse.Namespace) -> int:
+    """Handle 'gnat plugins <subcommand>'."""
+    from gnat.plugins.registry import PluginRegistry
+    from gnat.plugins.loader import load_plugins
+
+    registry = PluginRegistry()
+    sub = args.plg_command
+
+    if sub == "list":
+        load_plugins()
+        plugins = registry.list()
+        if not plugins:
+            print(_dim("(no plugins loaded)"))
+            return 0
+        rows = [
+            {
+                "name":         p.name,
+                "version":      p.version,
+                "capabilities": ", ".join(c.value for c in p.capabilities),
+                "description":  p.description[:50] if p.description else "",
+            }
+            for p in plugins
+        ]
+        _print_table(rows)
+        return 0
+
+    if sub == "load":
+        try:
+            n = registry.load_directory(args.directory)
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        print(_green(f"✓  Loaded {n} plugin(s) from {args.directory}"))
+        return 0
+
+    print(_red(f"Unknown subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
+def _cmd_db(args: argparse.Namespace) -> int:
+    """Handle 'gnat db <subcommand>' — Alembic migration management."""
+    try:
+        from gnat.migrations.cli import run_db_command
+    except ImportError:
+        print(_red('Alembic is required.  Run: pip install "gnat[migrations]"'),
+              file=sys.stderr)
+        return 1
+
+    sub = args.db_command
+
+    # Build alembic-style args list
+    alembic_args = [sub]
+    if sub == "downgrade":
+        alembic_args.append("-1")
+    elif sub == "revision":
+        alembic_args.extend(["-m", getattr(args, "message", "auto")])
+        if getattr(args, "autogenerate", False):
+            alembic_args.append("--autogenerate")
+    elif sub == "stamp":
+        alembic_args.append(args.revision)
+
+    try:
+        run_db_command(alembic_args)
+    except Exception as exc:
+        print(_red(f"✗  {exc}"), file=sys.stderr)
+        return 1
+
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """
     Main CLI entry point.
@@ -1960,6 +2262,9 @@ def main(argv: list[str] | None = None) -> int:
         "taxii": _cmd_serve_taxii,
         "health": _cmd_health,
         "contribute": _cmd_contribute,
+        "investigation": _cmd_investigation,
+        "plugins": _cmd_plugins,
+        "db": _cmd_db,
     }
 
     handler = handlers.get(args.command)

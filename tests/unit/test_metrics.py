@@ -231,3 +231,102 @@ def test_metrics_init_exports():
     assert hasattr(m, "MetricsAggregator")
     assert hasattr(m, "MetricEvent")
     assert hasattr(m, "MetricType")
+    assert hasattr(m, "register_metrics_hooks")
+    assert hasattr(m, "unregister_metrics_hooks")
+
+
+# ── MetricsHooks (HookBus bridge) ─────────────────────────────────────────────
+
+def test_register_hooks_returns_none():
+    from gnat.metrics.collector import MetricsCollector
+    from gnat.metrics.hooks import register_metrics_hooks, unregister_metrics_hooks
+
+    col = MetricsCollector()
+    register_metrics_hooks(col)
+    unregister_metrics_hooks()  # cleanup
+
+
+def test_hooks_capture_investigation_opened():
+    from gnat.metrics.collector import MetricsCollector
+    from gnat.metrics.hooks import register_metrics_hooks, unregister_metrics_hooks
+    from gnat.metrics.models import MetricType
+    from gnat.plugins.hooks import HookBus
+
+    col = MetricsCollector()
+    register_metrics_hooks(col)
+    try:
+        HookBus.instance().emit("investigation_opened",
+                                investigation_id="inv-test", created_by="alice")
+        events = col.snapshot(MetricType.INVESTIGATION_OPENED)
+        assert len(events) == 1
+        assert events[0].labels.get("investigation_id") == "inv-test"
+    finally:
+        unregister_metrics_hooks()
+
+
+def test_hooks_capture_investigation_closed_with_duration():
+    from gnat.metrics.collector import MetricsCollector
+    from gnat.metrics.hooks import register_metrics_hooks, unregister_metrics_hooks
+    from gnat.metrics.models import MetricType
+    from gnat.plugins.hooks import HookBus
+
+    col = MetricsCollector()
+    register_metrics_hooks(col)
+    try:
+        HookBus.instance().emit("investigation_closed",
+                                investigation_id="inv-2", changed_by="bob",
+                                duration_seconds=3600.0)
+        assert len(col.snapshot(MetricType.INVESTIGATION_CLOSED)) == 1
+        dur = col.snapshot(MetricType.INVESTIGATION_DURATION)
+        assert len(dur) == 1
+        assert dur[0].value == 3600.0
+    finally:
+        unregister_metrics_hooks()
+
+
+def test_hooks_capture_report_published():
+    from gnat.metrics.collector import MetricsCollector
+    from gnat.metrics.hooks import register_metrics_hooks, unregister_metrics_hooks
+    from gnat.metrics.models import MetricType
+    from gnat.plugins.hooks import HookBus
+
+    col = MetricsCollector()
+    register_metrics_hooks(col)
+    try:
+        HookBus.instance().emit("report_published", report_id="rep-1", changed_by="carol")
+        events = col.snapshot(MetricType.REPORT_PUBLISHED)
+        assert len(events) == 1
+    finally:
+        unregister_metrics_hooks()
+
+
+def test_hooks_capture_gap_detected():
+    from gnat.metrics.collector import MetricsCollector
+    from gnat.metrics.hooks import register_metrics_hooks, unregister_metrics_hooks
+    from gnat.metrics.models import MetricType
+    from gnat.plugins.hooks import HookBus
+
+    col = MetricsCollector()
+    register_metrics_hooks(col)
+    try:
+        HookBus.instance().emit("gap_detected",
+                                investigation_id="inv-3", gap_type="missing_context")
+        events = col.snapshot(MetricType.GAP_DETECTED)
+        assert len(events) == 1
+        assert events[0].labels.get("gap_type") == "missing_context"
+    finally:
+        unregister_metrics_hooks()
+
+
+def test_unregister_stops_capture():
+    from gnat.metrics.collector import MetricsCollector
+    from gnat.metrics.hooks import register_metrics_hooks, unregister_metrics_hooks
+    from gnat.metrics.models import MetricType
+    from gnat.plugins.hooks import HookBus
+
+    col = MetricsCollector()
+    register_metrics_hooks(col)
+    unregister_metrics_hooks()
+
+    HookBus.instance().emit("investigation_opened", investigation_id="x")
+    assert len(col.snapshot(MetricType.INVESTIGATION_OPENED)) == 0

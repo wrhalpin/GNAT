@@ -3,12 +3,13 @@ gnat.tui.app
 =============
 Root Textual application for the GNAT interactive terminal UI.
 
-Provides a tabbed interface with four analyst screens:
+Provides a tabbed interface with five analyst screens:
 
-* **Query** (F1)     — NLP threat-intel query bar + STIX results table
-* **Library** (F2)   — Research library browser + staging queue
-* **Scheduler** (F3) — Feed job status + manual trigger
-* **Reports** (F4)   — Generated report list + browser open
+* **Query** (F1)          — NLP threat-intel query bar + STIX results table
+* **Library** (F2)        — Research library browser + staging queue
+* **Scheduler** (F3)      — Feed job status + manual trigger
+* **Reports** (F4)        — Generated report list + browser open
+* **Investigations** (F5) — Investigation browser, status transitions, notes
 
 Launch::
 
@@ -17,7 +18,7 @@ Launch::
 
 Or via CLI::
 
-    gnat tui [query|library|scheduler|reports]
+    gnat tui [query|library|scheduler|reports|investigations]
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.widgets import Footer, Header, TabbedContent, TabPane
 
+from gnat.tui.screens.investigations import InvestigationsScreen
 from gnat.tui.screens.library import LibraryScreen
 from gnat.tui.screens.query import QueryScreen
 from gnat.tui.screens.reports import ReportsScreen
@@ -68,6 +70,7 @@ class GNATApp(App):
         Binding("f2", "switch_tab('library')", "Library", show=True),
         Binding("f3", "switch_tab('scheduler')", "Scheduler", show=True),
         Binding("f4", "switch_tab('reports')", "Reports", show=True),
+        Binding("f5", "switch_tab('investigations')", "Investigations", show=True),
         Binding("q", "quit", "Quit", show=True),
         Binding("ctrl+c", "quit", "Quit", show=False),
     ]
@@ -89,6 +92,7 @@ class GNATApp(App):
         reports_dir: str | None = None,
         nlp_backend: str | None = None,
         nlp_platform: str | None = None,
+        db_url: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -98,6 +102,7 @@ class GNATApp(App):
         self._reports_dir = reports_dir
         self._nlp_backend = nlp_backend
         self._nlp_platform = nlp_platform
+        self._db_url = db_url
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -120,6 +125,11 @@ class GNATApp(App):
                     reports_dir=self._reports_dir,
                     config_path=self._config_path,
                 )
+            with TabPane("Investigations  F5", id="investigations"):
+                yield InvestigationsScreen(
+                    db_url=self._db_url,
+                    config_path=self._config_path,
+                )
         yield Footer()
 
     def action_switch_tab(self, tab_id: str) -> None:
@@ -135,6 +145,7 @@ def run(
     reports_dir: str | None = None,
     nlp_backend: str | None = None,
     nlp_platform: str | None = None,
+    db_url: str | None = None,
 ) -> None:
     """
     Launch the GNAT TUI.
@@ -148,4 +159,5 @@ def run(
         reports_dir=reports_dir,
         nlp_backend=nlp_backend,
         nlp_platform=nlp_platform,
+        db_url=db_url,
     ).run()

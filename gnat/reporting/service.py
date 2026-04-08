@@ -72,8 +72,9 @@ class ReportService:
         Persistence backend.
     """
 
-    def __init__(self, store: ReportStore) -> None:
-        self._store = store
+    def __init__(self, store: ReportStore, lineage: "Any | None" = None) -> None:
+        self._store   = store
+        self._lineage = lineage  # optional LineageTracker
 
     # ── Factory / CRUD ────────────────────────────────────────────────────────
 
@@ -242,6 +243,20 @@ class ReportService:
 
         self._store.save(report)
         logger.info("ReportService: published report %s (v%d)", report.id, report.version)
+
+        # Lineage: emit REPORTED event for each linked evidence object
+        if self._lineage is not None:
+            try:
+                stix_ref = report.stix_report_ref or f"report--{report.id}"
+                self._lineage.record_report(
+                    stix_ref, "report",
+                    source = "reporting-service",
+                    actor  = changed_by,
+                    report_id = report.id,
+                )
+            except Exception:
+                pass
+
         return report
 
     def archive(self, report_id: str, changed_by: str, reason: str = "") -> Report:
