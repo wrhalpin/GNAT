@@ -801,3 +801,43 @@ auth_type        = api_key
 api_key          = YOUR_FEED_API_KEY
 api_key_header   = X-Api-Key
 stix_types       = indicator
+
+# =============================================================================
+# Federation — Federated multi-GNAT deployment (TAXII 2.1 peer sync)
+# =============================================================================
+# Enable to share STIX 2.1 threat intelligence between independent GNAT
+# instances using either peer-to-peer (mesh) or hierarchical topologies.
+# Explicit workspace_filter required — empty list means nothing is shared.
+
+[federation]
+enabled  = true
+registry = ~/.gnat/federation_peers.json
+
+# --- Mesh peer example (peer-to-peer, both directions) ---
+[federation.peer.acme-east]
+taxii_url            = https://gnat-east.acme.com/taxii2/
+api_key              = Bearer peer-secret-here
+direction            = both
+max_tlp              = amber
+sync_interval        = 3600
+workspace_filter     = threats-2025,apt-tracking
+# parent_peer_id     =   (leave empty for mesh peer)
+
+# --- Hierarchical example: subsidiary → parent (healthcare) ---
+[federation.peer.hospital-a]
+taxii_url            = https://hospital-a.health-system.example/taxii2/
+api_key              = Bearer hosp-a-secret
+direction            = both
+max_tlp              = amber
+parent_peer_id       = health-system-parent
+sync_interval        = 1800
+workspace_filter     = clinical-indicators,threat-intel
+
+# Parent node (receives AMBER from children, sends GREEN down)
+[federation.peer.health-system-parent]
+taxii_url            = https://gnat.health-system.example/taxii2/
+api_key              = Bearer parent-secret
+direction            = both
+max_tlp              = green
+sync_interval        = 3600
+workspace_filter     = sector-intel,advisories
