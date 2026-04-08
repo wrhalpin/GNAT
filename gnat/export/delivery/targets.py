@@ -461,3 +461,116 @@ class LogDelivery(ExportDelivery):
     def __repr__(self) -> str:
         """Return unambiguous string representation."""
         return "LogDelivery()"
+
+
+class TAXIIPushDelivery(ExportDelivery):
+    """
+    Push STIX bundles to a remote GNAT TAXII 2.1 collection endpoint.
+
+    Wraps :class:`HTTPDelivery` with TAXII-specific Content-Type and
+    Accept headers, and serialises the ``"objects"`` payload key as a
+    proper STIX bundle.
+
+    Parameters
+    ----------
+    taxii_url : str
+        Base URL of the remote GNAT TAXII server
+        (e.g. ``"https://gnat-east.acme.com/taxii2/"``).
+    workspace : str
+        Target workspace (collection) name on the remote instance.
+    api_key : str
+        Bearer token for the remote TAXII server.
+    verify_ssl : bool
+        Verify TLS certificates.  Default ``True``.
+    timeout : int
+        Request timeout seconds.  Default ``30``.
+
+    Examples
+    --------
+    ::
+
+        delivery = TAXIIPushDelivery(
+            taxii_url="https://gnat-east.acme.com/taxii2/",
+            workspace="threats-2025",
+            api_key="Bearer peer-token",
+        )
+        result = delivery.deliver(transform_result)
+    """
+
+    _TAXII_MEDIA_TYPE = "application/taxii+json;version=2.1"
+    _STIX_MEDIA_TYPE = "application/stix+json;version=2.1"
+    _TAXII_ROOT = "/taxii2/roots/gnat"
+
+    def __init__(
+        self,
+        taxii_url: str,
+        workspace: str,
+        api_key: str,
+        verify_ssl: bool = True,
+        timeout: int = 30,
+    ) -> None:
+        """Initialize TAXIIPushDelivery."""
+        import uuid as _uuid
+
+        self._taxii_url = taxii_url.rstrip("/")
+        self._workspace = workspace
+        self._api_key = api_key.strip()
+        if self._api_key and not self._api_key.startswith("Bearer "):
+            self._api_key = f"Bearer {self._api_key}"
+        self._verify_ssl = verify_ssl
+        self._timeout = timeout
+
+    def deliver(self, result: TransformResult) -> DeliveryResult:
+        """Deliver data to the configured target."""
+        import uuid
+
+        objects = result.payloads.get("objects", [])
+        if not objects:
+            # Try to collect from all payloads that are lists of dicts
+            for payload in result.payloads.values():
+                if isinstance(payload, list):
+                    objects.extend(payload)
+
+        if not objects:
+            dr = DeliveryResult()
+            logger.debug("TAXIIPushDelivery: no objects to push to %s/%s", self._taxii_url, self._workspace)
+            return dr
+
+        bundle = {
+            "type": "bundle",
+            "id": f"bundle--{uuid.uuid4()}",
+            "spec_version": "2.1",
+            "objects": objects if isinstance(objects, list) else [objects],
+        }
+
+        # Build endpoint URL
+        host = self._taxii_url
+        for suffix in ("/taxii2", "/taxii2/"):
+            if host.endswith(suffix):
+                host = host[: -len(suffix)]
+                break
+        endpoint = f"{host}{self._TAXII_ROOT}/collections/{self._workspace}/objects/"
+
+        inner = HTTPDelivery(
+            url=endpoint,
+            headers={
+                "Authorization": self._api_key,
+                "Accept": self._TAXII_MEDIA_TYPE,
+                "Content-Type": self._STIX_MEDIA_TYPE,
+            },
+            verify_ssl=self._verify_ssl,
+            timeout=self._timeout,
+            success_codes=[200, 201, 202, 204],
+        )
+
+        inner_result = TransformResult()
+        inner_result.payloads["bundle"] = bundle
+
+        dr = inner.deliver(inner_result)
+        # Re-map payload name for clarity
+        dr.delivered = [f"{self._workspace}/bundle"] if dr.delivered else []
+        return dr
+
+    def __repr__(self) -> str:
+        """Return unambiguous string representation."""
+        return f"TAXIIPushDelivery(taxii_url={self._taxii_url!r}, workspace={self._workspace!r})"

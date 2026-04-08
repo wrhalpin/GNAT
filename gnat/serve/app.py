@@ -35,7 +35,7 @@ from fastapi.responses import HTMLResponse
 
 from .auth import APIKeyAuth
 from .rate_limit import RateLimiter
-from .routers import analysis, investigations, library, reports, review, scheduler
+from .routers import analysis, federation, investigations, library, reports, review, scheduler
 
 # ---------------------------------------------------------------------------
 # Embedded single-page dashboard
@@ -348,6 +348,9 @@ def create_app(
     report_drafting_assistant=None,
     export_service=None,
     metrics_aggregator=None,
+    federation_registry=None,
+    federation_scheduler=None,
+    federation_sync_service=None,
 ) -> FastAPI:
     """
     Build and return the GNAT web dashboard FastAPI application.
@@ -386,6 +389,9 @@ def create_app(
     app.state.report_drafting_assistant = report_drafting_assistant
     app.state.export_service            = export_service
     app.state.metrics_aggregator        = metrics_aggregator
+    app.state.federation_registry       = federation_registry
+    app.state.federation_scheduler      = federation_scheduler
+    app.state.federation_sync_service   = federation_sync_service
 
     # ── Unauthenticated endpoints ──────────────────────────────────────────
     @app.get("/health", tags=["health"], include_in_schema=False)
@@ -406,6 +412,7 @@ def create_app(
     app.include_router(investigations.router,  dependencies=_api_deps)
     app.include_router(review.router,          dependencies=_api_deps)
     app.include_router(analysis.router,        dependencies=_api_deps)
+    app.include_router(federation.router,      dependencies=_api_deps)
 
     return app
 
@@ -428,6 +435,9 @@ def run(
     report_drafting_assistant=None,
     export_service=None,
     metrics_aggregator=None,
+    federation_registry=None,
+    federation_scheduler=None,
+    federation_sync_service=None,
 ) -> None:
     """
     Launch the GNAT web dashboard with uvicorn.
@@ -447,5 +457,8 @@ def run(
         report_drafting_assistant = report_drafting_assistant,
         export_service            = export_service,
         metrics_aggregator        = metrics_aggregator,
+        federation_registry       = federation_registry,
+        federation_scheduler      = federation_scheduler,
+        federation_sync_service   = federation_sync_service,
     )
     uvicorn.run(app, host=host, port=port, log_level="warning")

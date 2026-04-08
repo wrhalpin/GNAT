@@ -8,6 +8,42 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 
 ---
 
+## [Unreleased]
+
+### Added — Federated Multi-GNAT Deployment
+
+**Federation layer (`gnat/federation/`)**
+- `FederationPeer` dataclass: models a remote GNAT peer with `peer_id`, `taxii_url`, `api_key`, `direction` (pull/push/both), `max_tlp` ceiling, optional `parent_peer_id` for hierarchical topologies, `workspace_filter` (explicit opt-in required — empty list = nothing shared), and sync state tracking (`last_sync_at`, `last_sync_status`)
+- `PeerRegistry`: JSON-backed CRUD store for peer configuration (`~/.gnat/federation_peers.json`); `from_config()` parses `[federation.peer.*]` INI sections; `update_sync_status()` persists last sync result for incremental resumption
+- `PeerSyncService`: pull and push orchestration with TLP gate (`_tlp_allowed`) enforced on every object before transmission; last-write-wins conflict resolution on STIX `modified` timestamp; `sync_from_peer()` and `push_to_peer()` with `FederationError` for unrecoverable failures; `PullResult` and `PushResult` summary classes
+- `FederationScheduler`: creates one `FeedJob` per enabled peer; `start()` / `stop()` lifecycle; `trigger(peer_id)` for immediate one-off sync; `status()` returns per-peer sync state; persists `last_sync_at` to `PeerRegistry` via `on_success` callback for incremental resumption across restarts
+- `FederationTopology`: `ancestors()`, `descendants()`, `parent()`, `children()`, `is_leaf()`, `is_root()`, cycle detection; `effective_max_tlp()` applies hierarchy defaults (AMBER up child→parent, GREEN down parent→child); `hierarchy_graph()` returns JSON topology for REST API
+
+**GNATRemoteConnector (`gnat/connectors/gnat_remote/`)**
+- `GNATRemoteConnector(BaseClient, ConnectorMixin)`: TAXII 2.1 client for remote GNAT instances; `authenticate()` sets Bearer token; `health_check()` pings discovery endpoint; `list_collections()`, `fetch_objects()`, `push_bundle()`, `list_objects()`, `get_object()`, `upsert_object()`, `delete_object()`; `to_stix()` / `from_stix()` are pass-throughs (both sides speak STIX 2.1 natively)
+- Registered as `"gnat_remote"` in `CLIENT_REGISTRY`
+
+**REST API (`gnat/serve/routers/federation.py`)**
+- `GET /api/federation/peers` — list all peers with current sync status
+- `POST /api/federation/peers` — register a new peer
+- `DELETE /api/federation/peers/{peer_id}` — remove a peer and cancel its sync job
+- `GET /api/federation/peers/{peer_id}/health` — ping remote TAXII discovery endpoint, return latency
+- `POST /api/federation/peers/{peer_id}/sync` — trigger immediate sync (uses scheduler if running, falls back to direct sync)
+- `GET /api/federation/topology` — mesh/hierarchy graph JSON (nodes, edges, hierarchy_edges)
+- `create_app()` accepts `federation_registry`, `federation_scheduler`, `federation_sync_service` parameters
+
+**Export (`gnat/export/delivery/targets.py`)**
+- `TAXIIPushDelivery`: pushes STIX 2.1 bundles to a remote TAXII collection; wraps `HTTPDelivery` with TAXII media type headers
+
+**Configuration**
+- `config/config.ini.example`: added `[federation]`, `[federation.peer.acme-east]` (mesh), `[federation.peer.hospital-a]` and `[federation.peer.health-system-parent]` (hierarchical healthcare example)
+
+**Tests**
+- `tests/unit/federation/test_federation.py`: 60 tests covering `FederationPeer`, `PeerRegistry`, `PeerSyncService` TLP gate + conflict resolution, `FederationTopology` traversal + hierarchy graph, `FederationScheduler` lifecycle
+- `tests/unit/connectors/test_gnat_remote.py`: 19 tests covering authenticate, health_check, list_collections, fetch_objects, push_bundle, CRUD operations
+
+---
+
 ## [1.4.0]
 
 ### Added — Analyst OS Layer (Phase 3)
