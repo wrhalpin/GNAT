@@ -59,7 +59,7 @@ def run_db_command(args: Sequence[str], alembic_ini: str | None = None) -> int:
     """
     try:
         from alembic.config import Config
-        from alembic import command as alembic_cmd
+        import alembic.command as alembic_cmd
     except ImportError as exc:
         logger.error("Alembic is required: pip install 'gnat[migrations]'")
         raise ImportError("alembic not installed") from exc
@@ -107,7 +107,7 @@ def run_db_command(args: Sequence[str], alembic_ini: str | None = None) -> int:
 
 
 def _run_revision(cfg, rest: list[str]) -> None:
-    from alembic import command as alembic_cmd
+    import alembic.command as alembic_cmd
     autogenerate = "--autogenerate" in rest or "-a" in rest
     message = None
     for i, arg in enumerate(rest):

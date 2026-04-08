@@ -60,22 +60,18 @@ from datetime import datetime, timezone
 
 class SnortError(Exception):
     """Raised when a snort error error occurs."""
-    pass
 
 
 class SnortConfigError(SnortError):
     """Raised when a snort config error error occurs."""
-    pass
 
 
 class SnortLogError(SnortError):
     """Raised when a snort log error error occurs."""
-    pass
 
 
 class SnortSTIXError(SnortError):
     """Raised when a snort s t i x error error occurs."""
-    pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

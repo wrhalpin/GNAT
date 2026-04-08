@@ -52,17 +52,14 @@ import urllib3
 
 class OTXError(Exception):
     """Raised when a o t x error error occurs."""
-    pass
 
 
 class OTXConfigError(OTXError):
     """Raised when a o t x config error error occurs."""
-    pass
 
 
 class OTXAuthError(OTXError):
     """Raised when a o t x auth error error occurs."""
-    pass
 
 
 class OTXAPIError(OTXError):
@@ -76,17 +73,14 @@ class OTXAPIError(OTXError):
 
 class OTXNotFoundError(OTXAPIError):
     """Raised when a o t x not found error error occurs."""
-    pass
 
 
 class OTXRateLimitError(OTXAPIError):
     """Raised when a o t x rate limit error error occurs."""
-    pass
 
 
 class OTXSTIXError(OTXError):
     """Raised when a o t x s t i x error error occurs."""
-    pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

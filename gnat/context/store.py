@@ -109,7 +109,6 @@ if _HAS_SQLALCHEMY:
 
     class _Base(DeclarativeBase):
         """_Base implementation."""
-        pass
 
     # ── Workspace ──────────────────────────────────────────────────────────
 

@@ -259,7 +259,7 @@ class SentinelConnector(BaseClient, ConnectorMixin):
         ``"BenignPositive"``, ``"FalsePositive"``.
         """
         return self._incidents.close_incident(
-            incident_id, classification=classification, reason=reason
+            incident_id, classification=classification, closing_comment=reason
         )
 
     def add_incident_comment(self, incident_id: str, message: str) -> dict:

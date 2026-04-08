@@ -216,7 +216,6 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
     def _ts_auth(self, value: dict[str, str]) -> None:
         # Setter exists so authenticate() can assign; values already stored
         """Internal helper for ts auth."""
-        pass
 
     @staticmethod
     def _make_pattern(ts_type: str, value: str) -> str:

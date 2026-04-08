@@ -40,7 +40,6 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/api/investigations", tags=["investigations"])
 

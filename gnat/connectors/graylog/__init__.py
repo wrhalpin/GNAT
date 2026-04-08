@@ -53,17 +53,14 @@ import urllib3
 
 class GraylogError(Exception):
     """Raised when a graylog error error occurs."""
-    pass
 
 
 class GraylogConfigError(GraylogError):
     """Raised when a graylog config error error occurs."""
-    pass
 
 
 class GraylogAuthError(GraylogError):
     """Raised when a graylog auth error error occurs."""
-    pass
 
 
 class GraylogAPIError(GraylogError):
@@ -77,12 +74,10 @@ class GraylogAPIError(GraylogError):
 
 class GraylogNotFoundError(GraylogAPIError):
     """Raised when a graylog not found error error occurs."""
-    pass
 
 
 class GraylogSTIXError(GraylogError):
     """Raised when a graylog s t i x error error occurs."""
-    pass
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

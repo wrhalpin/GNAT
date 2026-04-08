@@ -174,10 +174,12 @@ class BaseClient:
         data: Optional[dict[str, Any]] = None,
         params: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, str]] = None,
+        files: Optional[dict[str, Any]] = None,
     ) -> Any:
-        """Issue an HTTP POST request. Provide either *json* or *data*."""
+        """Issue an HTTP POST request. Provide either *json*, *data*, or *files*."""
         return self._request(
-            "POST", path, body=json, form_data=data, params=params, extra_headers=headers
+            "POST", path, body=json, form_data=data, params=params, extra_headers=headers,
+            files=files,
         )
 
     def put(
@@ -221,6 +223,7 @@ class BaseClient:
         body: Optional[dict[str, Any]] = None,
         form_data: Optional[dict[str, Any]] = None,
         extra_headers: Optional[dict[str, str]] = None,
+        files: Optional[dict[str, Any]] = None,
     ) -> Any:
         """
         Core request dispatcher.  Handles encoding, auth headers, and errors.
@@ -239,7 +242,20 @@ class BaseClient:
             headers.update(extra_headers)
 
         encoded_body: Optional[bytes] = None
-        if body is not None:
+        if files is not None:
+            # Multipart form upload via urllib3's encode_multipart_formdata
+            fields: dict[str, Any] = {}
+            if form_data:
+                fields.update(form_data)
+            for field_name, file_tuple in files.items():
+                if isinstance(file_tuple, tuple) and len(file_tuple) == 3:
+                    fname, fdata, ftype = file_tuple
+                    fields[field_name] = (fname, fdata, ftype)
+                else:
+                    fields[field_name] = file_tuple
+            encoded_body, content_type = urllib3.encode_multipart_formdata(fields)
+            headers["Content-Type"] = content_type
+        elif body is not None:
             encoded_body = json.dumps(body).encode("utf-8")
             headers["Content-Type"] = "application/json"
         elif form_data is not None:
