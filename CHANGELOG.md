@@ -10,6 +10,28 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 
 ## [Unreleased]
 
+### Added — AI & Connector Improvements
+
+**Google Gemini provider (`gnat/agents/gemini.py`)**
+- `GeminiProvider(LLMProvider, BaseClient)`: full Gemini 2.0/1.5 support via `POST /v1beta/models/{model}:generateContent`; auth via `x-goog-api-key` header; system messages mapped to `systemInstruction`; "assistant" → "model" role translation; `chat()` returns OpenAI-compatible `choices[0].message.content` envelope; `structured()` uses `response_mime_type: application/json` for reliable JSON output; default model `gemini-2.0-flash`
+- `LLMClient` now accepts `backend="gemini"` — previously raised `NotImplementedError`; error message updated to list `gemini` as supported
+- `ClaudeProvider` default model updated from `claude-3-5-sonnet-20241022` to `claude-sonnet-4-6`
+
+**ResearchLibrary Solr integration**
+- `ResearchLibrary.__init__` accepts optional `search_index` parameter (defaults to `NullSearchIndex`)
+- `search()` dispatches to Solr when a `SolrSearchIndex` is attached, otherwise uses the existing in-memory scan
+- `_memory_search()`: extracted from former `search()` implementation
+- `_solr_search()`: Solr path — fetches STIX IDs from index, resolves to `ResearchEntry` objects via `_entry_by_stix_id()`
+- `_entry_by_stix_id()`: reverse-lookup scan from STIX object ID → containing `ResearchEntry`
+- `_index_entry_objects()`: indexes all STIX objects in an entry into the search sidecar; called from `promote()` after staging write; failures logged, never raised
+- `default()` and `from_manager()` factories call `_build_search_index_from_config()` to auto-configure the index from `[search]` INI section
+
+**Recorded Future v3 connector hardening**
+- `list_alerts()` and `list_playbook_alerts()`: support both `data.results` and `data.alerts` response envelope keys; support both `data.nextPageToken` and `data.pagination.nextPageToken` cursor paths
+- `update_playbook_alert()`: tries PATCH first, falls back to PUT on failure (handles older RF API versions)
+- `list_playbook_alert_categories()` and `list_fusion_files()`: defensive fallback key paths
+- `get_fusion_file()`: handles raw-bytes, JSON-envelope, and embedded content responses
+
 ### Added — Federated Multi-GNAT Deployment
 
 **Federation layer (`gnat/federation/`)**

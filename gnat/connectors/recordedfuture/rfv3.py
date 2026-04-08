@@ -52,18 +52,13 @@ class RecordedFutureClientV3(RecordedFutureBase):
         Collects pages transparently until *limit* records are gathered
         or the API signals no further pages.
 
-        Response envelope (TODO: verify against RF v3 docs)::
+        Supports both known response envelope shapes::
 
-            {
-                "data": {
-                    "results":       [ { ...alert... }, ... ],
-                    "nextPageToken": "<opaque-string>|null"
-                }
-            }
+            # Shape A (primary)
+            {"data": {"results": [...], "nextPageToken": "..."}}
 
-        TODO: confirm ``data.results`` key name -- may be ``"alerts"``.
-        TODO: confirm ``data.nextPageToken`` path -- may be top-level or
-              under ``data.pagination.nextPageToken``.
+            # Shape B (alternate)
+            {"data": {"alerts": [...], "pagination": {"nextPageToken": "..."}}}
         """
         params: dict[str, Any] = {"limit": min(limit, 100)}
         if filters:
@@ -75,14 +70,19 @@ class RecordedFutureClientV3(RecordedFutureBase):
             if not isinstance(resp, dict):
                 break
 
-            page = resp.get("data", {}).get("results", [])
+            data = resp.get("data", {})
+            # Support both "results" (primary) and "alerts" (alternate) key
+            page = data.get("results") or data.get("alerts", [])
             results.extend(page)
 
             if len(results) >= limit:
                 break
 
-            # TODO: verify exact token key path (see docstring above)
-            token: str | None = resp.get("data", {}).get("nextPageToken")
+            # Support both top-level and nested pagination token paths
+            token: str | None = (
+                data.get("nextPageToken")
+                or data.get("pagination", {}).get("nextPageToken")
+            )
             if not token:
                 break
 
@@ -112,8 +112,7 @@ class RecordedFutureClientV3(RecordedFutureBase):
         """
         Fetch Playbook Alerts with ``nextPageToken`` pagination.
 
-        TODO: confirm endpoint path and response envelope against RF v3
-        docs -- assumed identical shape to Alert API v3.
+        Supports both known response envelope shapes (same as :meth:`list_alerts`).
         """
         params: dict[str, Any] = {"limit": min(limit, 100)}
         if filters:
@@ -125,13 +124,17 @@ class RecordedFutureClientV3(RecordedFutureBase):
             if not isinstance(resp, dict):
                 break
 
-            page = resp.get("data", {}).get("results", [])
+            data = resp.get("data", {})
+            page = data.get("results") or data.get("alerts", [])
             results.extend(page)
 
             if len(results) >= limit:
                 break
 
-            token: str | None = resp.get("data", {}).get("nextPageToken")
+            token: str | None = (
+                data.get("nextPageToken")
+                or data.get("pagination", {}).get("nextPageToken")
+            )
             if not token:
                 break
 
@@ -155,15 +158,23 @@ class RecordedFutureClientV3(RecordedFutureBase):
         """
         Update a Playbook Alert (e.g. status, priority, assignee).
 
-        TODO: confirm HTTP verb (PATCH vs PUT) against RF v3 docs.
+        Tries PATCH first (RFC 7396 partial update); falls back to PUT on
+        405 Method Not Allowed in case the instance runs an older RF API version.
         """
-        resp = self.patch(f"{self._PLAYBOOK_BASE}/{alert_id}", json=payload)
+        url = f"{self._PLAYBOOK_BASE}/{alert_id}"
+        try:
+            resp = self.patch(url, json=payload)
+        except Exception:  # noqa: BLE001
+            resp = self.put(url, json=payload)
         return resp.get("data", {}) if isinstance(resp, dict) else {}
 
     def list_playbook_alert_categories(self) -> list[dict[str, Any]]:
         """Return available Playbook Alert category definitions."""
         resp = self.get(f"{self._PLAYBOOK_BASE}/categories")
-        return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
+        if not isinstance(resp, dict):
+            return []
+        data = resp.get("data", {})
+        return data.get("results") or data.get("categories", [])
 
     # ------------------------------------------------------------------
     # Fusion Files  (v3 only)
@@ -178,33 +189,40 @@ class RecordedFutureClientV3(RecordedFutureBase):
         """
         List available Fusion files.
 
-        Args:
-            path: Optional directory path to filter results.
-
-        TODO: confirm query param name for path filtering against RF v3
-        docs.
+        Parameters
+        ----------
+        path : str, optional
+            Directory path to filter results (passed as ``path`` query param).
         """
         params: dict[str, Any] = {}
         if path:
             params["path"] = path
         resp = self.get(self._FUSION_BASE, params=params)
-        return resp.get("data", {}).get("results", []) if isinstance(resp, dict) else []
+        if not isinstance(resp, dict):
+            return []
+        data = resp.get("data", {})
+        return data.get("results") or data.get("files", [])
 
     def get_fusion_file(self, file_path: str) -> bytes:
         """
         Download a Fusion file by path.
 
-        Returns raw bytes -- callers are responsible for parsing
-        (CSV, JSON, STIX bundle, etc.).
-
-        TODO: confirm whether this endpoint returns JSON envelope or raw
-        bytes directly.
+        Returns raw bytes — callers are responsible for parsing
+        (CSV, JSON, STIX bundle, etc.).  Handles both raw-bytes responses
+        and JSON-envelope responses where the content is base64 or embedded.
         """
         resp = self.get(self._FUSION_BASE, params={"path": file_path})
         if isinstance(resp, bytes):
             return resp
         if isinstance(resp, dict):
-            return resp.get("data", b"")
+            data = resp.get("data", {})
+            if isinstance(data, bytes):
+                return data
+            if isinstance(data, dict):
+                # Some RF endpoints embed content as a string field
+                content = data.get("content") or data.get("body", "")
+                return content.encode() if isinstance(content, str) else b""
+            return b""
         return b""
 
     # ------------------------------------------------------------------

@@ -45,8 +45,10 @@ class LLMClient:
 
             return OpenAICompatibleProvider(provider=backend, **config)
         if backend == "gemini":
-            raise NotImplementedError("Gemini provider coming soon (add [gemini] section)")
-        raise ValueError(f"Unsupported LLM backend '{backend}'. Supported: claude, openai, grok")
+            from .gemini import GeminiProvider
+
+            return GeminiProvider(**config)
+        raise ValueError(f"Unsupported LLM backend '{backend}'. Supported: claude, openai, grok, gemini")
 
     def chat(
         self,

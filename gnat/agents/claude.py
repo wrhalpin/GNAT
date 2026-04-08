@@ -22,13 +22,13 @@ class ClaudeProvider(LLMProvider, BaseClient):
     Anthropic Claude Messages API provider.
 
     Configuration (from [claude] INI section):
-        api_key, model (default: claude-3-5-sonnet-20241022)
+        api_key, model (default: claude-sonnet-4-6)
     """
 
     def __init__(
         self,
         api_key: str,
-        model: str = "claude-3-5-sonnet-20241022",
+        model: str = "claude-sonnet-4-6",
         **kwargs: Any,
     ) -> None:
         """Initialize ClaudeProvider."""
