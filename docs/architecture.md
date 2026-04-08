@@ -2,6 +2,10 @@
 
 GNAT (CTM Toolkit) is a production-ready Python library providing a unified client interface for security and threat-intelligence platforms. This document describes the overall system architecture and links to the individual Architecture Decision Records (ADRs) that capture the rationale behind each major design choice.
 
+> **Visual diagrams:**
+> - [Architectural Diagrams](explanation/architecture/diagrams.md) — system overview, connector architecture, AI agent layer, ingestion pipeline (PNG, generated with the `diagrams` library)
+> - [Workflow Diagrams](explanation/architecture/workflow-diagrams.md) — sequence and flow diagrams for ingestion, analysis, export, scheduling, and AI agent request flows (Mermaid, compatible with [Grafly](https://grafly.io/))
+
 ---
 
 ## Layers at a Glance

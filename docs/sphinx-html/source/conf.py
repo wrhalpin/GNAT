@@ -20,6 +20,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
     "sphinx_copybutton",
+    "sphinxcontrib.mermaid",
 ]
 
 napoleon_numpy_docstring = True
