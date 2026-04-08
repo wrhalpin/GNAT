@@ -32,7 +32,6 @@ The router implements all TAXII 2.1 endpoints:
 
 from __future__ import annotations
 
-import base64
 import json
 import logging
 from typing import Any
@@ -43,25 +42,31 @@ from gnat.dissemination.taxii.collections import (
     collections_for_key,
     tlp_filter_for_collection,
 )
+from gnat.taxii._protocol import (
+    STIX_MEDIA_TYPE as _STIX_CONTENT_TYPE,
+)
+from gnat.taxii._protocol import (
+    TAXII_MEDIA_TYPE as _TAXII_CONTENT_TYPE,
+)
+from gnat.taxii._protocol import (
+    decode_cursor as _decode_cursor,
+)
+from gnat.taxii._protocol import (
+    encode_cursor as _encode_cursor,
+)
+from gnat.taxii._protocol import (
+    make_api_root_body as _make_api_root_body,
+)
+from gnat.taxii._protocol import (
+    make_discovery_body as _make_discovery_body,
+)
+from gnat.taxii._protocol import (
+    make_stix_bundle as _make_stix_bundle,
+)
 
 logger = logging.getLogger(__name__)
 
-# TAXII 2.1 media type
-_TAXII_CONTENT_TYPE = "application/taxii+json;version=2.1"
-_STIX_CONTENT_TYPE  = "application/stix+json;version=2.1"
-
 _API_ROOT = "intelligence"  # single API root name
-
-
-def _encode_cursor(offset: int) -> str:
-    return base64.urlsafe_b64encode(str(offset).encode()).decode()
-
-
-def _decode_cursor(cursor: str) -> int:
-    try:
-        return int(base64.urlsafe_b64decode(cursor.encode()).decode())
-    except Exception:
-        return 0
 
 
 def build_taxii_router(
@@ -96,7 +101,7 @@ def build_taxii_router(
             "Install it with: pip install 'gnat[serve]'"
         ) from exc
 
-    from gnat.policy import PolicyEngine, Permission
+    from gnat.policy import Permission, PolicyEngine
 
     router  = APIRouter()
     _engine = policy_engine or PolicyEngine()
@@ -131,13 +136,13 @@ def build_taxii_router(
         key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """GET /taxii2/ — Discovery endpoint."""
-        body = {
-            "title":            "GNAT Threat Intelligence TAXII Server",
-            "description":      "TAXII 2.1 feed for GNAT finished intelligence reports.",
-            "contact":          "gnat@example.com",
-            "default":          f"/taxii2/{_API_ROOT}/",
-            "api_roots":        [f"/taxii2/{_API_ROOT}/"],
-        }
+        body = _make_discovery_body(
+            title="GNAT Threat Intelligence TAXII Server",
+            description="TAXII 2.1 feed for GNAT finished intelligence reports.",
+            contact="gnat@example.com",
+            default_root=f"/taxii2/{_API_ROOT}/",
+            api_roots=[f"/taxii2/{_API_ROOT}/"],
+        )
         return _taxii_response(body)
 
     @router.get("/{api_root}/")
@@ -149,12 +154,11 @@ def build_taxii_router(
         if api_root != _API_ROOT:
             from fastapi import HTTPException as _HTTPException
             raise _HTTPException(status_code=404, detail=f"Unknown API root: {api_root!r}")
-        body = {
-            "title":       "GNAT Intelligence API Root",
-            "description": "Published finished intelligence accessible via TLP level.",
-            "versions":    ["application/taxii+json;version=2.1"],
-            "max_content_length": 10 * 1024 * 1024,
-        }
+        body = _make_api_root_body(
+            title="GNAT Intelligence API Root",
+            description="Published finished intelligence accessible via TLP level.",
+            max_content_length=10 * 1024 * 1024,
+        )
         return _taxii_response(body)
 
     @router.get("/{api_root}/collections/")
@@ -216,11 +220,7 @@ def build_taxii_router(
         if has_more:
             headers["X-TAXII-Next"] = _encode_cursor(offset + limit)
 
-        envelope = {
-            "type":    "bundle",
-            "id":      f"bundle--{collection_id}",
-            "objects": objects,
-        }
+        envelope = _make_stix_bundle(objects)
         if has_more:
             envelope["next"] = _encode_cursor(offset + limit)
 
@@ -261,7 +261,7 @@ def build_taxii_router(
                 "id":       stix_id,
                 "date_added": modified,
                 "version":  modified,
-                "media_types": ["application/stix+json;version=2.1"],
+                "media_types": [_STIX_CONTENT_TYPE],
             })
 
         body: dict[str, Any] = {"objects": manifest_entries}

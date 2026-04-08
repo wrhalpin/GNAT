@@ -33,19 +33,43 @@ upserts each object into the target workspace.
 
 from __future__ import annotations
 
-import base64
 import logging
 import uuid
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.context.workspace import WorkspaceManager
 
+from gnat.taxii._protocol import (
+    STIX_MEDIA_TYPE as _STIX_MEDIA_TYPE,
+)
+from gnat.taxii._protocol import (
+    TAXII_MEDIA_TYPE as _TAXII_MEDIA_TYPE,
+)
+from gnat.taxii._protocol import (
+    decode_cursor as _decode_cursor,
+)
+from gnat.taxii._protocol import (
+    encode_cursor as _encode_cursor,
+)
+from gnat.taxii._protocol import (
+    make_api_root_body as _make_api_root_body,
+)
+from gnat.taxii._protocol import (
+    make_discovery_body as _make_discovery_body,
+)
+from gnat.taxii._protocol import (
+    make_stix_bundle as _make_stix_bundle,
+)
+from gnat.taxii._protocol import (
+    taxii_response as _taxii_response,
+)
+from gnat.taxii._protocol import (
+    utcnow_iso as _utcnow_iso,
+)
+
 logger = logging.getLogger(__name__)
 
-# TAXII 2.1 media type (spec §3.1)
-_TAXII_MEDIA_TYPE = "application/taxii+json;version=2.1"
 _API_ROOT_ID = "gnat"
 
 # FastAPI imports at module level so `from __future__ import annotations`
@@ -74,20 +98,6 @@ def _require_fastapi() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _taxii_response(content: Any, status_code: int = 200) -> JSONResponse:
-    """Return a JSONResponse with the TAXII 2.1 media type header."""
-    return JSONResponse(
-        content=content,
-        status_code=status_code,
-        media_type=_TAXII_MEDIA_TYPE,
-    )
-
-
-def _utcnow_iso() -> str:
-    """Internal helper for utcnow iso."""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-
-
 def _workspace_to_collection(ws_meta: dict) -> dict:
     """Convert a WorkspaceManager list-entry to a TAXII collection object."""
     name = ws_meta.get("name", "")
@@ -98,21 +108,8 @@ def _workspace_to_collection(ws_meta: dict) -> dict:
         "description": desc,
         "can_read": True,
         "can_write": True,
-        "media_types": ["application/stix+json;version=2.1"],
+        "media_types": [_STIX_MEDIA_TYPE],
     }
-
-
-def _encode_cursor(offset: int) -> str:
-    """Encode a pagination offset as an opaque base64 token."""
-    return base64.urlsafe_b64encode(str(offset).encode()).decode()
-
-
-def _decode_cursor(token: str) -> int:
-    """Decode a pagination token back to an integer offset; returns 0 on error."""
-    try:
-        return int(base64.urlsafe_b64decode(token.encode()).decode())
-    except Exception:  # noqa: BLE001
-        return 0
 
 
 # ---------------------------------------------------------------------------
@@ -192,13 +189,13 @@ def build_taxii_app(
     @app.get("/taxii2/", include_in_schema=False)
     def discovery() -> JSONResponse:
         """TAXII 2.1 discovery endpoint — returns server metadata."""
-        body: dict = {
-            "title": title,
-            "description": "GNAT threat intelligence workspaces",
-            "contact": contact,
-            "default": f"/taxii2/roots/{_API_ROOT_ID}/",
-            "api_roots": [f"/taxii2/roots/{_API_ROOT_ID}/"],
-        }
+        body = _make_discovery_body(
+            title=title,
+            description="GNAT threat intelligence workspaces",
+            contact=contact,
+            default_root=f"/taxii2/roots/{_API_ROOT_ID}/",
+            api_roots=[f"/taxii2/roots/{_API_ROOT_ID}/"],
+        )
         return _taxii_response(body)
 
     # ── API Root info (unauthenticated — spec §4.2) ────────────────────────
@@ -208,12 +205,10 @@ def build_taxii_app(
     )
     def api_root_info() -> JSONResponse:
         """TAXII 2.1 API root information."""
-        body = {
-            "title": "GNAT workspaces",
-            "description": "All GNAT analyst workspaces",
-            "versions": ["application/taxii+json;version=2.1"],
-            "max_content_length": 10_485_760,  # 10 MB
-        }
+        body = _make_api_root_body(
+            title="GNAT workspaces",
+            description="All GNAT analyst workspaces",
+        )
         return _taxii_response(body)
 
     # ── Collections list ────────────────────────────────────────────────────
@@ -303,12 +298,7 @@ def build_taxii_app(
         page = all_objects[offset : offset + limit]
         more = (offset + limit) < len(all_objects)
 
-        envelope: dict = {
-            "type": "bundle",
-            "id": f"bundle--{uuid.uuid4()}",
-            "spec_version": "2.1",
-            "objects": page,
-        }
+        envelope = _make_stix_bundle(page)
         if more:
             envelope["next"] = _encode_cursor(offset + limit)
 
@@ -425,7 +415,7 @@ def build_taxii_app(
                     "id": d.get("id", ""),
                     "date_added": d.get("created", _utcnow_iso()),
                     "version": d.get("modified") or d.get("created") or _utcnow_iso(),
-                    "media_type": "application/stix+json;version=2.1",
+                    "media_type": _STIX_MEDIA_TYPE,
                 }
             )
 
@@ -459,12 +449,7 @@ def build_taxii_app(
         if obj is None:
             raise HTTPException(status_code=404, detail=f"Object {object_id!r} not found")
 
-        bundle = {
-            "type": "bundle",
-            "id": f"bundle--{uuid.uuid4()}",
-            "spec_version": "2.1",
-            "objects": [obj.to_dict()],
-        }
+        bundle = _make_stix_bundle([obj.to_dict()])
         return _taxii_response(bundle)
 
     # ── Versions (spec §5.5) ────────────────────────────────────────────────
