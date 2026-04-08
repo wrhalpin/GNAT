@@ -300,6 +300,15 @@ client_secret = YOUR_APP_CLIENT_SECRET
 auth_type     = oauth2
 
 # =============================================================================
+# Discord Bot (threat-intel channel integration)
+# =============================================================================
+[discord]
+host      = https://discord.com
+bot_token = Bot YOUR_BOT_TOKEN_HERE
+# guild_id is optional; used as default for list_members() calls
+guild_id  = YOUR_GUILD_SNOWFLAKE_ID
+
+# =============================================================================
 # TheHive 5.x SOAR / Case Management
 # =============================================================================
 [thehive]

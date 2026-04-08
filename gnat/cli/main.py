@@ -494,7 +494,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_tui.add_argument(
         "screen",
         nargs="?",
-        choices=["query", "library", "scheduler", "reports", "investigations"],
+        choices=["query", "library", "scheduler", "reports", "investigations", "review"],
         default="query",
         help="Screen to open on launch (default: query)",
     )
@@ -812,6 +812,36 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Auto-generate from schema diff")
     p_db_stamp = db_subs.add_parser("stamp",   help="Stamp DB at a specific revision")
     p_db_stamp.add_argument("revision", metavar="REVISION")
+
+    # ── review ────────────────────────────────────────────────────────────
+    p_rev = subs.add_parser(
+        "review",
+        help="Manage the AI-extracted intel review queue",
+    )
+    rev_subs = p_rev.add_subparsers(dest="rev_command", metavar="<subcommand>")
+    rev_subs.required = True
+
+    p_rev_list = rev_subs.add_parser("list", help="List review items")
+    p_rev_list.add_argument("--status", choices=["pending", "approved", "rejected", "modified"],
+        help="Filter by status (default: pending)")
+    p_rev_list.add_argument("--type", dest="stix_type", metavar="STIX_TYPE",
+        help="Filter by STIX object type")
+    p_rev_list.add_argument("--page", type=int, default=1)
+    p_rev_list.add_argument("--page-size", type=int, default=25, dest="page_size")
+
+    p_rev_approve = rev_subs.add_parser("approve", help="Approve a review item")
+    p_rev_approve.add_argument("id", metavar="ITEM_ID")
+    p_rev_approve.add_argument("--by",    metavar="ANALYST", default="cli-analyst")
+    p_rev_approve.add_argument("--notes", metavar="TEXT")
+    p_rev_approve.add_argument("--confidence", type=int, metavar="0-100",
+        dest="confidence_override")
+
+    p_rev_reject = rev_subs.add_parser("reject", help="Reject a review item")
+    p_rev_reject.add_argument("id", metavar="ITEM_ID")
+    p_rev_reject.add_argument("--by",     metavar="ANALYST", default="cli-analyst")
+    p_rev_reject.add_argument("--reason", metavar="TEXT")
+
+    rev_subs.add_parser("stats", help="Show review queue statistics")
 
     # ── contribute ────────────────────────────────────────────────────────
     p_ctr = subs.add_parser(
@@ -2238,6 +2268,87 @@ def _cmd_db(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_review(args: argparse.Namespace) -> int:
+    """Handle 'gnat review <subcommand>'."""
+    import os
+
+    db_url = os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
+    try:
+        from gnat.review.store import ReviewQueueStore
+        from gnat.review.service import ReviewService, ReviewError
+    except ImportError:
+        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
+              file=sys.stderr)
+        return 1
+
+    store = ReviewQueueStore(db_url)
+    store.create_all()
+    svc = ReviewService(store)
+    sub = args.rev_command
+
+    if sub == "list":
+        status = getattr(args, "status", None) or "pending"
+        items = svc.list(
+            status=status,
+            stix_type=getattr(args, "stix_type", None),
+            page=getattr(args, "page", 1),
+            page_size=getattr(args, "page_size", 25),
+        )
+        if not items:
+            print(_dim(f"(no {status} items)"))
+            return 0
+        rows = [
+            {
+                "id":           i.id[:8] + "…",
+                "type":         i.stix_type,
+                "stix_id":      i.stix_id[:36],
+                "submitted_by": i.submitted_by[:20],
+                "confidence":   str(i.stix_data.get("confidence", "—")),
+                "status":       i.status.value,
+                "submitted_at": i.submitted_at.strftime("%Y-%m-%d"),
+            }
+            for i in items
+        ]
+        _print_table(rows)
+        return 0
+
+    if sub == "approve":
+        try:
+            item = svc.approve(
+                args.id,
+                reviewed_by=args.by,
+                notes=getattr(args, "notes", None),
+                confidence_override=getattr(args, "confidence_override", None),
+            )
+            print(_green(f"✓  Approved {_bold(args.id[:8])}…  (status: {item.status.value})"))
+            return 0
+        except ReviewError as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+
+    if sub == "reject":
+        try:
+            item = svc.reject(
+                args.id,
+                reviewed_by=args.by,
+                reason=getattr(args, "reason", None),
+            )
+            print(_yellow(f"✗  Rejected {_bold(args.id[:8])}…"))
+            return 0
+        except ReviewError as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+
+    if sub == "stats":
+        stats = svc.stats()
+        rows = [{"status": k, "count": str(v)} for k, v in stats.items()]
+        _print_table(rows)
+        return 0
+
+    print(_red(f"Unknown subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     """
     Main CLI entry point.
@@ -2283,6 +2394,7 @@ def main(argv: list[str] | None = None) -> int:
         "health": _cmd_health,
         "contribute": _cmd_contribute,
         "investigation": _cmd_investigation,
+        "review": _cmd_review,
         "plugins": _cmd_plugins,
         "db": _cmd_db,
     }

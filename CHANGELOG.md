@@ -92,6 +92,76 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 - `tests/unit/test_metrics.py`: 17 tests covering model, collector (ring buffer, thread safety, snapshot filtering, since), aggregator (investigation summary, enrichment effectiveness, gap frequency, false positive rate)
 - `tests/unit/analysis/test_investigation_query.py`: 13 tests covering dataclass helpers (offset/limit/safe_sort_by), full InvestigationStore.list() integration (all filters, pagination, legacy kwargs)
 
+### Added — Discord Bot Connector
+
+**`gnat/connectors/discord/connector.py`** — full `ConnectorMixin` implementation
+- `DiscordClient(BaseClient, ConnectorMixin)` targeting Discord REST API v10
+- `authenticate()`: sets `Authorization: Bot <token>` + `Content-Type: application/json`; normalises bare token (adds `Bot ` prefix)
+- `health_check()`: `GET /api/v10/gateway/bot`
+- `get_object("note"|"indicator", "<channel_id>:<message_id>")` → fetches message → STIX `note`
+- `get_object("observed-data", channel_id)` → fetches channel → STIX `observed-data`
+- `get_object("identity", user_id)` → fetches user → STIX `identity`
+- `list_objects("note"|"indicator", filters={"channel_id": ...})` → messages → list of STIX `note`
+- `list_objects("observed-data", filters={"thread_id": ...})` → thread messages → STIX `note` list
+- `list_objects("identity", filters={"guild_id": ...})` → guild members → STIX `identity` list
+- `upsert_object("note", {channel_id, content})` → posts message → STIX `note`
+- `delete_object("note"|"indicator", "<channel_id>:<message_id>")` → deletes message
+- Domain helpers: `post_message()`, `list_messages()`, `delete_message()`, `start_thread()`, `list_archived_threads()`, `get_channel()`, `get_message()`, `get_user()`, `list_members()`
+- STIX translation: messages → `note` (with `x_discord` extension); channels → `observed-data`; users → `identity`
+- `from_stix("note")` → Discord message payload `{content, channel_id}`
+- `guild_id` constructor param for default member listing
+- Registered as `"discord"` in `gnat.clients.CLIENT_REGISTRY`
+- `config/config.ini.example`: added `[discord]` section with `host`, `bot_token`, `guild_id`
+- 52 unit tests in `TestDiscordClient` covering all methods, STIX translation, registry registration, capability reflection, and snowflake helper
+
+---
+
+### Added — AI Intel Review Queue
+
+**Review Package (`gnat/review/`)**
+- `ReviewStatus` enum: PENDING | APPROVED | REJECTED | MODIFIED
+- `ReviewItem` dataclass: full review lifecycle record with stix_id, stix_type, stix_data, source/target workspace, submitted_by/at, reviewer fields, confidence_override, modified_properties, promoted_at
+- `ReviewItem.to_dict()` / `from_dict()` serialization round-trip
+- `ReviewQueueStore`: SQLAlchemy-backed `review_queue` table; `save()`, `get()`, `delete()`, `list()` (status + stix_type + submitted_by filters + pagination), `count()`, `stats()` returning per-status breakdown
+- `ReviewService`: `submit()` validates STIX id/type; `approve()` validates confidence override 0-100; `reject()` records reason; `modify()` captures analyst property overrides (MODIFIED state); `promote()` merges modified_properties + confidence + x_source_type="analyst_verified" + removes x_ai_ceiling, optionally writes to target workspace via workspace_manager; `bulk_approve()`, `bulk_reject()`; `stats()` adds `total` key; `list()` with pagination
+- `ReviewError` for invalid operations (wrong status, duplicate promote, missing item)
+
+**REST Router (`gnat/serve/routers/review.py`)**
+- 8 endpoints: GET/POST `/api/review`, GET `/api/review/stats`, GET `/api/review/{id}`, POST `/api/review/{id}/approve`, POST `/api/review/{id}/reject`, POST `/api/review/{id}/modify`, POST `/api/review/{id}/promote`
+- Service resolved via `app.state.review_service`; workspace_manager via `app.state.workspace_manager`
+- Registered in `gnat/serve/app.py`
+
+**TUI Review Screen (`gnat/tui/screens/review.py`)**
+- `ReviewScreen(Screen)` with F6 / Ctrl+R / Ctrl+A / Ctrl+D bindings
+- Toolbar: search Input + status Select + stix_type Select + Refresh button
+- Stats bar showing pending/approved/rejected/modified counts
+- DataTable with id/stix_id/type/status/submitted_by/workspace columns
+- Detail pane: labels + reviewer notes Input + confidence Input + Approve/Reject buttons
+- `_init_service()`: resolves `GNAT_DB_URL`, graceful ImportError + DB error handling
+- `GNATApp` gains F6 binding and Review TabPane (sixth tab); `gnat tui review` screen choice added
+
+**CLI (`gnat review`)**
+- `gnat review list` (--status, --type, --page, --page-size)
+- `gnat review approve <id>` (--by, --notes, --confidence)
+- `gnat review reject <id>` (--by, --reason)
+- `gnat review stats`
+
+**STIX Object Validation (`gnat/stix/object_validator.py`)**
+- `STIXObjectValidator`: validates required props per SDO/SCO/SRO/meta type (19+16+2+4 types), ID format, timestamps, booleans, integers, confidence 0-100, open/closed vocabularies, `_ref`/`_refs` reference formats
+- `STIXBundleValidator`: validates bundle structure + all objects; deduplicates IDs; aggregates errors/warnings
+- `validate_object()` / `validate_bundle()` module-level convenience functions
+- `ObjectValidationResult` / `BundleValidationResult` dataclasses with valid/errors/warnings fields
+- `ObjectValidationError` exception (raised when `raise_on_error=True`)
+- Strict mode: open vocab violations become errors; custom types/extensions disallowed
+- All exported from `gnat.stix`
+
+**Tests**
+- `tests/unit/review/test_review.py`: 40 tests — ReviewStatus values, ReviewItem defaults/roundtrip/optional-fields, ReviewQueueStore CRUD/filters/stats, ReviewService submit/approve/reject/modify/promote/bulk ops/stats/pagination, package exports
+- `tests/unit/test_stix_object_validator.py`: 89 tests covering all validation paths, SDO/SCO/SRO types, vocabularies, bundle validation, strict mode, custom types, init exports
+- `tests/unit/test_tui.py` extended: ReviewScreen import, F6 binding, 6-tab assertion, `review` screen CLI choice
+
+---
+
 ### Added — Integration & CLI Hardening (Phase 4)
 
 **CLI Subcommands (`gnat/cli/main.py`)**

@@ -36,6 +36,7 @@ from gnat.connectors.darktrace.client import DarktraceClient
 from gnat.connectors.datadog.client import DatadogClient
 from gnat.connectors.defectdojo.client import DefectDojoClient
 from gnat.connectors.defenderti.client import DefenderTIClient
+from gnat.connectors.discord.connector import DiscordClient
 from gnat.connectors.dragos.client import DragosClient
 from gnat.connectors.elastic.connector import ElasticConnector
 from gnat.connectors.extrahop.client import ExtraHopClient
@@ -148,6 +149,7 @@ CLIENT_REGISTRY: dict = {
     "threatconnect": ThreatConnectClient,
     "mandiant": MandiantClient,
     "defenderti": DefenderTIClient,
+    "discord": DiscordClient,
     "thehive": TheHiveClient,
     "threatstream": ThreatStreamClient,
     "socradar": SOCRadarClient,

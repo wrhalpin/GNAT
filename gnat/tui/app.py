@@ -5,13 +5,14 @@ gnat.tui.app
 =============
 Root Textual application for the GNAT interactive terminal UI.
 
-Provides a tabbed interface with five analyst screens:
+Provides a tabbed interface with six analyst screens:
 
 * **Query** (F1)          — NLP threat-intel query bar + STIX results table
 * **Library** (F2)        — Research library browser + staging queue
 * **Scheduler** (F3)      — Feed job status + manual trigger
 * **Reports** (F4)        — Generated report list + browser open
 * **Investigations** (F5) — Investigation browser, status transitions, notes
+* **Review** (F6)         — AI-extracted intel review and promotion queue
 
 Launch::
 
@@ -20,7 +21,7 @@ Launch::
 
 Or via CLI::
 
-    gnat tui [query|library|scheduler|reports|investigations]
+    gnat tui [query|library|scheduler|reports|investigations|review]
 """
 
 from __future__ import annotations
@@ -35,6 +36,7 @@ from gnat.tui.screens.investigations import InvestigationsScreen
 from gnat.tui.screens.library import LibraryScreen
 from gnat.tui.screens.query import QueryScreen
 from gnat.tui.screens.reports import ReportsScreen
+from gnat.tui.screens.review import ReviewScreen
 from gnat.tui.screens.scheduler import SchedulerScreen
 
 _VERSION = "0.1.0"
@@ -73,6 +75,7 @@ class GNATApp(App):
         Binding("f3", "switch_tab('scheduler')", "Scheduler", show=True),
         Binding("f4", "switch_tab('reports')", "Reports", show=True),
         Binding("f5", "switch_tab('investigations')", "Investigations", show=True),
+        Binding("f6", "switch_tab('review')", "Review", show=True),
         Binding("q", "quit", "Quit", show=True),
         Binding("ctrl+c", "quit", "Quit", show=False),
     ]
@@ -131,6 +134,11 @@ class GNATApp(App):
                 )
             with TabPane("Investigations  F5", id="investigations"):
                 yield InvestigationsScreen(
+                    db_url=self._db_url,
+                    config_path=self._config_path,
+                )
+            with TabPane("Review  F6", id="review"):
+                yield ReviewScreen(
                     db_url=self._db_url,
                     config_path=self._config_path,
                 )

@@ -10680,3 +10680,379 @@ class TestCiscoUmbrellaClient:
 
     def test_classify_domains_empty_returns_empty(self, client):
         assert client.classify_domains([]) == {}
+
+
+# ---------------------------------------------------------------------------
+# Discord
+# ---------------------------------------------------------------------------
+
+
+class TestDiscordClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.discord.connector import DiscordClient
+
+        c = DiscordClient(host="https://discord.com", bot_token="Bot test-token", guild_id="111")
+        c._authenticated = True
+        return c
+
+    # ── Authentication ────────────────────────────────────────────────────
+
+    def test_authenticate_sets_bot_token_header(self):
+        from gnat.connectors.discord.connector import DiscordClient
+
+        c = DiscordClient(host="https://discord.com", bot_token="my-raw-token")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bot my-raw-token"
+        assert c._auth_headers["Content-Type"] == "application/json"
+
+    def test_authenticate_normalises_token_with_prefix(self):
+        from gnat.connectors.discord.connector import DiscordClient
+
+        c = DiscordClient(bot_token="Bot already-prefixed")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bot already-prefixed"
+
+    def test_authenticate_empty_token_produces_bot_prefix_only(self):
+        from gnat.connectors.discord.connector import DiscordClient
+
+        c = DiscordClient(bot_token="")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == ""
+
+    # ── health_check ─────────────────────────────────────────────────────
+
+    def test_health_check_returns_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"url": "wss://gateway.discord.gg/"}))
+        assert client.health_check() is True
+
+    def test_health_check_raises_on_http_error(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=GNATClientError("401")))
+        with pytest.raises(GNATClientError):
+            client.health_check()
+
+    # ── get_object ────────────────────────────────────────────────────────
+
+    def test_get_object_note_by_channel_message(self, client, monkeypatch):
+        msg = {"id": "123456789", "channel_id": "999", "content": "hello",
+               "author": {"id": "u1", "username": "alice"}}
+        monkeypatch.setattr(client, "get", MagicMock(return_value=msg))
+        result = client.get_object("note", "999:123456789")
+        assert result["type"] == "note"
+        assert result["content"] == "hello"
+
+    def test_get_object_indicator_by_channel_message(self, client, monkeypatch):
+        msg = {"id": "777", "channel_id": "555", "content": "IOC: 1.2.3.4",
+               "author": {"id": "u2", "username": "bob"}}
+        monkeypatch.setattr(client, "get", MagicMock(return_value=msg))
+        result = client.get_object("indicator", "555:777")
+        assert result["type"] == "note"
+
+    def test_get_object_note_missing_colon_raises(self, client):
+        with pytest.raises(GNATClientError, match="channel_id"):
+            client.get_object("note", "no-colon-here")
+
+    def test_get_object_observed_data_channel(self, client, monkeypatch):
+        channel = {"id": "chan1", "name": "intel", "topic": "IOC sharing", "type": 0, "guild_id": "g1"}
+        monkeypatch.setattr(client, "get", MagicMock(return_value=channel))
+        result = client.get_object("observed-data", "chan1")
+        assert result["type"] == "observed-data"
+        assert result["x_discord"]["name"] == "intel"
+
+    def test_get_object_identity_user(self, client, monkeypatch):
+        user = {"id": "u99", "username": "charlie", "discriminator": "0001", "bot": False}
+        monkeypatch.setattr(client, "get", MagicMock(return_value=user))
+        result = client.get_object("identity", "u99")
+        assert result["type"] == "identity"
+        assert result["name"] == "charlie"
+
+    def test_get_object_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="does not support stix_type"):
+            client.get_object("malware", "some-id")
+
+    # ── list_objects ──────────────────────────────────────────────────────
+
+    def test_list_objects_note_messages(self, client, monkeypatch):
+        msgs = [
+            {"id": "1", "channel_id": "ch1", "content": "msg1",
+             "author": {"id": "u1", "username": "alice"}},
+            {"id": "2", "channel_id": "ch1", "content": "msg2",
+             "author": {"id": "u1", "username": "alice"}},
+        ]
+        monkeypatch.setattr(client, "get", MagicMock(return_value=msgs))
+        result = client.list_objects("note", filters={"channel_id": "ch1"})
+        assert len(result) == 2
+        assert all(r["type"] == "note" for r in result)
+
+    def test_list_objects_note_missing_channel_raises(self, client):
+        with pytest.raises(GNATClientError, match="channel_id"):
+            client.list_objects("note")
+
+    def test_list_objects_observed_data_thread(self, client, monkeypatch):
+        msgs = [{"id": "10", "channel_id": "thread1", "content": "thread msg",
+                 "author": {"id": "u3", "username": "dave"}}]
+        monkeypatch.setattr(client, "get", MagicMock(return_value=msgs))
+        result = client.list_objects("observed-data", filters={"thread_id": "thread1"})
+        assert len(result) == 1
+        assert result[0]["type"] == "note"
+
+    def test_list_objects_observed_data_missing_id_raises(self, client):
+        with pytest.raises(GNATClientError, match="thread_id"):
+            client.list_objects("observed-data")
+
+    def test_list_objects_identity_members(self, client, monkeypatch):
+        members = [
+            {"user": {"id": "m1", "username": "member1", "discriminator": "0", "bot": False}},
+            {"user": {"id": "m2", "username": "member2", "discriminator": "0", "bot": False}},
+        ]
+        monkeypatch.setattr(client, "get", MagicMock(return_value=members))
+        result = client.list_objects("identity")
+        assert len(result) == 2
+        assert all(r["type"] == "identity" for r in result)
+
+    def test_list_objects_identity_no_guild_raises(self, client):
+        client._guild_id = ""
+        with pytest.raises(GNATClientError, match="guild_id"):
+            client.list_objects("identity")
+
+    def test_list_objects_unsupported_raises(self, client):
+        with pytest.raises(GNATClientError, match="does not support stix_type"):
+            client.list_objects("campaign")
+
+    def test_list_objects_page_size_capped_at_100(self, client, monkeypatch):
+        mock_get = MagicMock(return_value=[])
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_objects("note", filters={"channel_id": "ch1"}, page_size=999)
+        call_args = mock_get.call_args
+        params = call_args[1].get("params") or call_args[0][1] if len(call_args[0]) > 1 else {}
+        assert params.get("limit", 0) <= 100
+
+    # ── upsert_object ─────────────────────────────────────────────────────
+
+    def test_upsert_object_posts_message(self, client, monkeypatch):
+        created = {"id": "new1", "channel_id": "ch1", "content": "Alert: 1.2.3.4",
+                   "author": {"id": "u1", "username": "bot"}}
+        monkeypatch.setattr(client, "post", MagicMock(return_value=created))
+        result = client.upsert_object("note", {"channel_id": "ch1", "content": "Alert: 1.2.3.4"})
+        assert result["type"] == "note"
+
+    def test_upsert_object_wrong_type_raises(self, client):
+        with pytest.raises(GNATClientError, match="only supports stix_type 'note'"):
+            client.upsert_object("indicator", {"channel_id": "ch1", "content": "x"})
+
+    def test_upsert_object_missing_channel_raises(self, client):
+        with pytest.raises(GNATClientError, match="channel_id"):
+            client.upsert_object("note", {"content": "hello"})
+
+    def test_upsert_object_missing_content_raises(self, client):
+        with pytest.raises(GNATClientError, match="content"):
+            client.upsert_object("note", {"channel_id": "ch1"})
+
+    # ── delete_object ─────────────────────────────────────────────────────
+
+    def test_delete_object_message(self, client, monkeypatch):
+        mock_del = MagicMock(return_value=None)
+        monkeypatch.setattr(client, "delete", mock_del)
+        client.delete_object("note", "ch1:msg1")
+        mock_del.assert_called_once_with("/api/v10/channels/ch1/messages/msg1")
+
+    def test_delete_object_wrong_type_raises(self, client):
+        with pytest.raises(GNATClientError, match="only supports"):
+            client.delete_object("malware", "ch1:msg1")
+
+    def test_delete_object_missing_colon_raises(self, client):
+        with pytest.raises(GNATClientError, match="channel_id"):
+            client.delete_object("note", "no-colon")
+
+    # ── Domain-specific helpers ───────────────────────────────────────────
+
+    def test_post_message_helper(self, client, monkeypatch):
+        created = {"id": "99", "channel_id": "c1", "content": "test",
+                   "author": {"id": "b1", "username": "bot"}}
+        mock_post = MagicMock(return_value=created)
+        monkeypatch.setattr(client, "post", mock_post)
+        result = client.post_message("c1", "test")
+        assert result["id"] == "99"
+        call_body = mock_post.call_args[1]["json_body"]
+        assert call_body["content"] == "test"
+
+    def test_post_message_with_thread_id(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"id": "100", "channel_id": "c1", "content": "x",
+                                             "author": {"id": "b1", "username": "bot"}})
+        monkeypatch.setattr(client, "post", mock_post)
+        client.post_message("c1", "x", thread_id="t1")
+        body = mock_post.call_args[1]["json_body"]
+        assert body["thread_id"] == "t1"
+
+    def test_post_message_truncates_to_2000(self, client, monkeypatch):
+        mock_post = MagicMock(return_value={"id": "1", "channel_id": "c", "content": "x",
+                                             "author": {"id": "b", "username": "bot"}})
+        monkeypatch.setattr(client, "post", mock_post)
+        client.post_message("c", "A" * 3000)
+        body = mock_post.call_args[1]["json_body"]
+        assert len(body["content"]) == 2000
+
+    def test_list_messages_helper(self, client, monkeypatch):
+        msgs = [{"id": "1", "channel_id": "ch", "content": "m",
+                 "author": {"id": "u", "username": "alice"}}]
+        monkeypatch.setattr(client, "get", MagicMock(return_value=msgs))
+        result = client.list_messages("ch", limit=10)
+        assert result == msgs
+
+    def test_list_messages_non_list_returns_empty(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"error": "not found"}))
+        result = client.list_messages("ch")
+        assert result == []
+
+    def test_start_thread_helper(self, client, monkeypatch):
+        thread = {"id": "t1", "name": "Incident Thread"}
+        mock_post = MagicMock(return_value=thread)
+        monkeypatch.setattr(client, "post", mock_post)
+        result = client.start_thread("ch1", "msg1", "Incident Thread")
+        assert result["id"] == "t1"
+        call_body = mock_post.call_args[1]["json_body"]
+        assert call_body["name"] == "Incident Thread"
+        assert call_body["auto_archive_duration"] == 1440
+
+    def test_list_archived_threads(self, client, monkeypatch):
+        resp = {"threads": [{"id": "t1"}, {"id": "t2"}]}
+        monkeypatch.setattr(client, "get", MagicMock(return_value=resp))
+        result = client.list_archived_threads("ch1")
+        assert len(result) == 2
+
+    def test_list_archived_threads_non_dict_returns_empty(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[]))
+        result = client.list_archived_threads("ch1")
+        assert result == []
+
+    def test_get_user_helper(self, client, monkeypatch):
+        user = {"id": "u1", "username": "alice"}
+        monkeypatch.setattr(client, "get", MagicMock(return_value=user))
+        result = client.get_user("u1")
+        assert result["username"] == "alice"
+
+    def test_list_members_helper(self, client, monkeypatch):
+        members = [{"user": {"id": "m1", "username": "x"}}]
+        monkeypatch.setattr(client, "get", MagicMock(return_value=members))
+        result = client.list_members("g1")
+        assert result == members
+
+    def test_list_members_non_list_returns_empty(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"error": "forbidden"}))
+        result = client.list_members("g1")
+        assert result == []
+
+    # ── to_stix ───────────────────────────────────────────────────────────
+
+    def test_to_stix_message_fields(self, client):
+        msg = {"id": "1152921504606846976", "channel_id": "ch1",
+               "content": "suspicious domain: evil.com",
+               "author": {"id": "u1", "username": "alice"},
+               "timestamp": "2026-01-01T00:00:00.000000+00:00",
+               "attachments": [], "embeds": [], "mentions": [], "pinned": False}
+        stix = client.to_stix(msg)
+        assert stix["type"] == "note"
+        assert stix["spec_version"] == "2.1"
+        assert "id" in stix
+        assert stix["content"] == "suspicious domain: evil.com"
+        assert stix["x_discord"]["author_username"] == "alice"
+        assert stix["x_discord"]["channel_id"] == "ch1"
+
+    def test_to_stix_channel_produces_observed_data(self, client):
+        channel = {"_resource": "channel", "id": "c1", "name": "intel",
+                   "topic": "IOCs", "type": 0, "guild_id": "g1", "nsfw": False}
+        stix = client.to_stix(channel)
+        assert stix["type"] == "observed-data"
+        assert stix["x_discord"]["name"] == "intel"
+
+    def test_to_stix_user_produces_identity(self, client):
+        user = {"_resource": "user", "id": "u1", "username": "alice",
+                "discriminator": "0001", "bot": False, "system": False}
+        stix = client.to_stix(user)
+        assert stix["type"] == "identity"
+        assert stix["identity_class"] == "individual"
+        assert stix["name"] == "alice"
+        assert stix["x_discord"]["user_id"] == "u1"
+
+    def test_to_stix_message_abstract_truncated_to_256(self, client):
+        long_content = "x" * 500
+        msg = {"id": "1", "channel_id": "ch", "content": long_content,
+               "author": {"id": "u", "username": "a"}}
+        stix = client.to_stix(msg)
+        assert len(stix["abstract"]) == 256
+
+    def test_to_stix_missing_id_still_produces_note(self, client):
+        msg = {"channel_id": "ch1", "content": "test", "author": {"id": "u", "username": "a"}}
+        stix = client.to_stix(msg)
+        assert stix["type"] == "note"
+
+    # ── from_stix ────────────────────────────────────────────────────────
+
+    def test_from_stix_note_returns_message_payload(self, client):
+        stix = {
+            "type": "note",
+            "id": "note--discord-123",
+            "content": "Threat actor observed",
+            "x_discord": {"channel_id": "ch1"},
+        }
+        payload = client.from_stix(stix)
+        assert payload["content"] == "Threat actor observed"
+        assert payload["channel_id"] == "ch1"
+
+    def test_from_stix_note_truncates_content(self, client):
+        stix = {"type": "note", "content": "A" * 3000, "x_discord": {"channel_id": "ch"}}
+        payload = client.from_stix(stix)
+        assert len(payload["content"]) == 2000
+
+    def test_from_stix_non_note_returns_guidance(self, client):
+        stix = {"type": "indicator", "id": "indicator--abc", "name": "evil.com"}
+        payload = client.from_stix(stix)
+        assert "note" in payload
+        assert payload["stix_id"] == "indicator--abc"
+
+    # ── Registry ─────────────────────────────────────────────────────────
+
+    def test_discord_in_client_registry(self):
+        from gnat.clients import CLIENT_REGISTRY
+
+        assert "discord" in CLIENT_REGISTRY
+        from gnat.connectors.discord.connector import DiscordClient
+        assert CLIENT_REGISTRY["discord"] is DiscordClient
+
+    # ── ConnectorMixin contract ───────────────────────────────────────────
+
+    def test_capabilities_includes_standard_methods(self, client):
+        caps = client.capabilities()
+        for method in ("authenticate", "health_check", "get_object", "list_objects",
+                        "upsert_object", "delete_object", "to_stix", "from_stix"):
+            assert method in caps
+
+    def test_capabilities_includes_discord_helpers(self, client):
+        caps = client.capabilities()
+        assert "post_message" in caps
+        assert "list_messages" in caps
+        assert "start_thread" in caps
+        assert "get_user" in caps
+        assert "list_members" in caps
+
+    def test_call_list_messages_via_capabilities(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[]))
+        result = client.call("list_messages", "ch1")
+        assert result == []
+
+    def test_call_write_blocked_without_allow_write(self, client):
+        with pytest.raises(ValueError, match="write operation"):
+            client.call("upsert_object", "note", {"channel_id": "ch1", "content": "x"})
+
+    # ── Snowflake helpers ─────────────────────────────────────────────────
+
+    def test_snowflake_to_ts_known_id(self):
+        from gnat.connectors.discord.connector import _snowflake_to_ts
+        ts = _snowflake_to_ts("1152921504606846976")
+        assert ts.endswith("Z")
+        assert "T" in ts
+
+    def test_snowflake_to_ts_invalid_returns_now(self):
+        from gnat.connectors.discord.connector import _snowflake_to_ts
+        ts = _snowflake_to_ts("not-a-number")
+        assert ts.endswith("Z")

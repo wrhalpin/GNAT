@@ -35,7 +35,7 @@ from fastapi.responses import HTMLResponse
 
 from .auth import APIKeyAuth
 from .rate_limit import RateLimiter
-from .routers import analysis, investigations, library, reports, scheduler
+from .routers import analysis, investigations, library, reports, review, scheduler
 
 # ---------------------------------------------------------------------------
 # Embedded single-page dashboard
@@ -404,6 +404,7 @@ def create_app(
     app.include_router(reports.router,         dependencies=_api_deps)
     app.include_router(scheduler.router,       dependencies=_api_deps)
     app.include_router(investigations.router,  dependencies=_api_deps)
+    app.include_router(review.router,          dependencies=_api_deps)
     app.include_router(analysis.router,        dependencies=_api_deps)
 
     return app
