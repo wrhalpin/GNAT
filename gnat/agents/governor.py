@@ -273,8 +273,8 @@ class AgentGovernor:
                 target_ref=action.target_ref,
                 status=action.status,
             )
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("HookBus emit for agent_action failed: %s", exc)
 
     def rate_limit_check(
         self,

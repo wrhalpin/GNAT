@@ -337,10 +337,22 @@ def _render_client(
                 }}
 
             def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
-                """TODO: Map STIX 2.1 fields to {name} native format."""
+                """Map STIX 2.1 fields to {name} native format."""
                 return {{
                     "name": stix_dict.get("name", ""),
-                    # TODO: Map remaining fields
+                    "description": stix_dict.get("description", ""),
+                    "confidence": stix_dict.get("confidence"),
+                    "labels": stix_dict.get("labels", []),
+                    "created": stix_dict.get("created", ""),
+                    "modified": stix_dict.get("modified", ""),
+                    "valid_from": stix_dict.get("valid_from"),
+                    "valid_until": stix_dict.get("valid_until"),
+                    "pattern": stix_dict.get("pattern"),
+                    "pattern_type": stix_dict.get("pattern_type"),
+                    "external_references": stix_dict.get("external_references", []),
+                    "object_marking_refs": stix_dict.get("object_marking_refs", []),
+                    "stix_id": stix_dict.get("id", ""),
+                    "stix_type": stix_dict.get("type", ""),
                 }}
         ''')
 
@@ -458,7 +470,9 @@ def _render_tests(name: str, class_name: str) -> str:
                 c = {class_name}(host="https://fake.example.com")
                 monkeypatch.setattr(c, "_request", mock_post)
                 c.authenticate()
-                # TODO: assert the correct auth header is set
+                assert "Authorization" in c._auth_headers, (
+                    "authenticate() must populate c._auth_headers['Authorization']"
+                )
 
 
         # ---------------------------------------------------------------------------

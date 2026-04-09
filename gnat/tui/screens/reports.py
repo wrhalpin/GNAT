@@ -11,9 +11,12 @@ opens rendered HTML in the system browser via ``webbrowser.open()``.
 
 from __future__ import annotations
 
+import logging
 import webbrowser
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -179,8 +182,8 @@ class ReportsScreen(Screen):
                         d = cfg.get(section, "output_dir", fallback=None)
                         if d:
                             return d
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Could not read reports output_dir from config: %s", exc)
         return None
 
     @staticmethod

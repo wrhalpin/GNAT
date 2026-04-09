@@ -311,6 +311,6 @@ class ResearchAgent(SourceReader):
                 analysis = self._client.json_from(response) or {}
                 analysis["timestamp"] = _now_ts()
                 results.append({"feed_item": item, "analysis": analysis})
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("LLM analysis failed for feed item: %s", exc)
         return results

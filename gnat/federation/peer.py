@@ -397,7 +397,7 @@ class PeerRegistry:
             fed_cfg = config.get("federation")
             path = path or fed_cfg.get("registry")
         except (KeyError, AttributeError):
-            pass
+            logger.debug("No [federation] registry path in config; using default")
 
         registry = cls(registry_path=path)
 

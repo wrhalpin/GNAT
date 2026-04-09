@@ -14,8 +14,11 @@ URL is not set, it shows an info notice rather than crashing.
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -179,7 +182,7 @@ class InvestigationsScreen(Screen):
                 try:
                     status = [InvestigationStatus(status_filter)]
                 except ValueError:
-                    pass
+                    logger.debug("Unknown investigation status filter %r; ignoring", status_filter)
 
             q = InvestigationQuery(
                 status    = status,
@@ -286,5 +289,5 @@ class InvestigationsScreen(Screen):
     def _set_status(self, text: str) -> None:
         try:
             self.query_one("#status-label", Label).update(text)
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Failed to update investigations status label: %s", exc)
