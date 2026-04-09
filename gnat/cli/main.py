@@ -647,6 +647,31 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Directory for schema snapshots",
     )
 
+    p_hlt_fleet = hlt_subs.add_parser(
+        "fleet",
+        help="Run parallel health checks across all registered connectors",
+    )
+    p_hlt_fleet.add_argument(
+        "--connector",
+        action="append",
+        dest="fleet_connectors",
+        metavar="NAME",
+        default=None,
+        help="Restrict to these connector(s); may be repeated",
+    )
+    p_hlt_fleet.add_argument(
+        "--json",
+        action="store_true",
+        dest="fleet_json",
+        help="Output results as JSON",
+    )
+    p_hlt_fleet.add_argument(
+        "--fail-on-any",
+        action="store_true",
+        dest="fleet_fail_on_any",
+        help="Exit 1 if any connector is unhealthy",
+    )
+
     # ── tenant ────────────────────────────────────────────────────────────
     p_tnt = subs.add_parser(
         "tenant",
@@ -1865,6 +1890,40 @@ def _cmd_health(args) -> int:
             status_line += f", {_yellow(str(run.drift_count))} drift"
         print(status_line)
         return 1 if any_problem else 0
+
+    if health_cmd == "fleet":
+        import json as _json
+        from gnat.connectors.health import FleetHealthMonitor
+
+        connectors = getattr(args, "fleet_connectors", None)
+        as_json    = getattr(args, "fleet_json", False)
+        fail_any   = getattr(args, "fleet_fail_on_any", False)
+
+        print(_bold(f"Fleet health check: {len(connectors) if connectors else 'all'} connector(s) …"))
+        monitor = FleetHealthMonitor()
+        results = monitor.check_all(connectors=connectors)
+
+        if as_json:
+            print(_json.dumps([r.to_dict() for r in results], indent=2))
+        else:
+            for r in results:
+                icon    = _green("✓") if r.ok else _red("✗")
+                ms_str  = f"{r.latency_ms:.0f} ms"
+                trust   = _dim(f"[{r.trust_level}]")
+                err_str = f"  {_dim(r.error[:60])}" if r.error else ""
+                print(f"  {icon}  {_bold(r.name):<30} {ms_str:<10} {trust}{err_str}")
+            summary = monitor.summary(results)
+            healthy = summary["healthy"]
+            total   = summary["total"]
+            print()
+            if healthy == total:
+                print(_green(f"All {total} connectors healthy"))
+            else:
+                print(_red(f"{total - healthy} unhealthy") + f" / {total} total, {_green(str(healthy))} healthy")
+
+        if fail_any:
+            return 0 if all(r.ok for r in results) else 1
+        return 0
 
     if health_cmd == "baseline":
         platform = args.platform

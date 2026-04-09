@@ -457,6 +457,157 @@ class SolrSearchIndex(SearchIndex):
         return False
 
     # ------------------------------------------------------------------
+    # Analytics helpers
+    # ------------------------------------------------------------------
+
+    def facet(
+        self,
+        field: str,
+        query: str = "*:*",
+        stix_types: list[str] | None = None,
+        limit: int = 100,
+    ) -> dict[str, int]:
+        """
+        Return value counts for *field* (Solr facet.field).
+
+        Useful for building dashboard breakdowns by STIX type, platform,
+        TLP level, etc.
+
+        Parameters
+        ----------
+        field : str
+            Solr field to facet on (e.g. ``"stix_type"``, ``"source_platform"``).
+        query : str
+            Base query to restrict facet scope.  Default ``"*:*"`` (all docs).
+        stix_types : list[str], optional
+            Additional type filter applied as ``fq``.
+        limit : int
+            Maximum facet values to return.  Default ``100``.
+
+        Returns
+        -------
+        dict[str, int]
+            Maps each field value to its document count, sorted descending.
+
+        Examples
+        --------
+        >>> idx.facet("stix_type")
+        {"indicator": 12043, "malware": 3201, "threat-actor": 899, ...}
+        """
+        params: dict[str, Any] = {
+            "q": query,
+            "facet": "true",
+            "facet.field": field,
+            "facet.limit": limit,
+            "facet.mincount": 1,
+            "rows": 0,
+            "wt": "json",
+        }
+        if stix_types:
+            type_clause = " OR ".join(f'"{t}"' for t in stix_types)
+            params["fq"] = f"stix_type:({type_clause})"
+
+        url = f"{self.base_url}/select?{urlencode(params, doseq=True)}"
+        try:
+            resp = self._http.request("GET", url)
+            if resp.status != 200:
+                logger.warning("Solr facet returned HTTP %s for field %r", resp.status, field)
+                return {}
+            data = json.loads(resp.data.decode("utf-8"))
+            flat: list[Any] = (
+                data.get("facet_counts", {})
+                .get("facet_fields", {})
+                .get(field, [])
+            )
+            # Solr returns alternating [value, count, value, count, ...]
+            result: dict[str, int] = {}
+            for i in range(0, len(flat) - 1, 2):
+                result[str(flat[i])] = int(flat[i + 1])
+            return dict(sorted(result.items(), key=lambda x: x[1], reverse=True))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Solr facet failed for field %r: %s", field, exc)
+            return {}
+
+    def histogram(
+        self,
+        date_field: str = "created",
+        gap: str = "DAY",
+        query: str = "*:*",
+        stix_types: list[str] | None = None,
+        start: str | None = None,
+        end: str | None = None,
+    ) -> list[tuple[str, int]]:
+        """
+        Return a date histogram using Solr ``facet.range``.
+
+        Parameters
+        ----------
+        date_field : str
+            Date field to histogram (``"created"`` or ``"modified"``).
+        gap : str
+            Solr date math gap string: ``"DAY"``, ``"WEEK"``, ``"MONTH"``, ``"YEAR"``.
+            Prefixed with ``"+1"`` automatically.
+        query : str
+            Base query filter.  Default ``"*:*"``.
+        stix_types : list[str], optional
+            Restrict to these STIX types.
+        start : str, optional
+            ISO 8601 start date.  Defaults to ``NOW-365DAYS``.
+        end : str, optional
+            ISO 8601 end date.  Defaults to ``NOW``.
+
+        Returns
+        -------
+        list[tuple[str, int]]
+            ``(bucket_start_iso, count)`` pairs, chronological order.
+
+        Examples
+        --------
+        >>> idx.histogram("created", gap="MONTH")
+        [("2025-01-01T00:00:00Z", 341), ("2025-02-01T00:00:00Z", 289), ...]
+        """
+        solr_start = start or "NOW-365DAYS/DAY"
+        solr_end = end or "NOW+1DAY"
+        solr_gap = f"+1{gap}"
+
+        params: dict[str, Any] = {
+            "q": query,
+            "facet": "true",
+            "facet.range": date_field,
+            "facet.range.start": solr_start,
+            "facet.range.end": solr_end,
+            "facet.range.gap": solr_gap,
+            "rows": 0,
+            "wt": "json",
+        }
+        if stix_types:
+            type_clause = " OR ".join(f'"{t}"' for t in stix_types)
+            params["fq"] = f"stix_type:({type_clause})"
+
+        url = f"{self.base_url}/select?{urlencode(params, doseq=True)}"
+        try:
+            resp = self._http.request("GET", url)
+            if resp.status != 200:
+                logger.warning(
+                    "Solr histogram returned HTTP %s for field %r", resp.status, date_field
+                )
+                return []
+            data = json.loads(resp.data.decode("utf-8"))
+            range_data = (
+                data.get("facet_counts", {})
+                .get("facet_ranges", {})
+                .get(date_field, {})
+            )
+            flat: list[Any] = range_data.get("counts", [])
+            result: list[tuple[str, int]] = []
+            for i in range(0, len(flat) - 1, 2):
+                result.append((str(flat[i]), int(flat[i + 1])))
+            return result
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Solr histogram failed for field %r: %s", date_field, exc)
+            return []
+
+    # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 

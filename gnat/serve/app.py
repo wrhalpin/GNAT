@@ -30,12 +30,15 @@ Or via CLI::
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI
-from fastapi.responses import HTMLResponse
+import asyncio
+import json as _json
+
+from fastapi import Depends, FastAPI, Request as _SSERequest
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 from .auth import APIKeyAuth
 from .rate_limit import RateLimiter
-from .routers import analysis, federation, investigations, library, reports, review, scheduler
+from .routers import analysis, analytics, federation, investigations, library, reports, review, scheduler, workflows
 
 # ---------------------------------------------------------------------------
 # Embedded single-page dashboard
@@ -351,6 +354,10 @@ def create_app(
     federation_registry=None,
     federation_scheduler=None,
     federation_sync_service=None,
+    trend_detector=None,
+    workspace_stats=None,
+    search_index=None,
+    workflow_store=None,
 ) -> FastAPI:
     """
     Build and return the GNAT web dashboard FastAPI application.
@@ -392,12 +399,80 @@ def create_app(
     app.state.federation_registry       = federation_registry
     app.state.federation_scheduler      = federation_scheduler
     app.state.federation_sync_service   = federation_sync_service
+    app.state.trend_detector            = trend_detector
+    app.state.workspace_stats           = workspace_stats
+    app.state.search_index              = search_index
+    app.state.workflow_store            = workflow_store
 
     # ── Unauthenticated endpoints ──────────────────────────────────────────
     @app.get("/health", tags=["health"], include_in_schema=False)
     def health_check():
         """Perform a lightweight connectivity check against the remote API."""
         return {"status": "ok", "service": "gnat-webui"}
+
+    @app.get("/api/stream", tags=["stream"], include_in_schema=False)
+    async def sse_stream(request: _SSERequest):
+        """
+        Server-Sent Events endpoint for real-time dashboard updates.
+
+        Emits events for: ``review_pending``, ``investigation_updated``, ``job_complete``.
+        Clients should reconnect automatically (standard SSE behaviour).
+
+        Authentication: ``X-Api-Key`` header (same as other API endpoints).
+        """
+        api_key_header = request.headers.get("X-Api-Key", "")
+        # Validate API key manually since SSE can't use Depends easily
+        if api_key_header != api_key:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="Invalid API key")
+
+        async def _event_generator():
+            import time
+            yield "data: " + _json.dumps({"type": "connected", "service": "gnat-sse"}) + "\n\n"
+
+            while True:
+                if await request.is_disconnected():
+                    break
+
+                events = []
+
+                # Review pending count
+                svc = getattr(request.app.state, "investigation_service", None)
+                if svc is not None:
+                    try:
+                        from gnat.review.service import ReviewService
+                        # Only emit if review service is wired to app state
+                        review_svc = getattr(request.app.state, "review_service", None)
+                        if review_svc is not None:
+                            items = review_svc.list(status="pending", page=1, page_size=1)
+                            total = getattr(items, "total", len(items) if isinstance(items, list) else 0)
+                            events.append({"type": "review_pending", "count": total})
+                    except Exception:
+                        pass
+
+                # Scheduler job events
+                scheduler = getattr(request.app.state, "scheduler", None)
+                if scheduler is not None:
+                    try:
+                        running = [j.job_id for j in scheduler.jobs if getattr(j, "_is_running", False)]
+                        if running:
+                            events.append({"type": "job_running", "job_ids": running})
+                    except Exception:
+                        pass
+
+                for ev in events:
+                    yield "data: " + _json.dumps(ev) + "\n\n"
+
+                await asyncio.sleep(15)
+
+        return StreamingResponse(
+            _event_generator(),
+            media_type = "text/event-stream",
+            headers    = {
+                "Cache-Control":     "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     @app.get("/", include_in_schema=False)
     def dashboard():
@@ -412,7 +487,9 @@ def create_app(
     app.include_router(investigations.router,  dependencies=_api_deps)
     app.include_router(review.router,          dependencies=_api_deps)
     app.include_router(analysis.router,        dependencies=_api_deps)
+    app.include_router(analytics.router,       dependencies=_api_deps)
     app.include_router(federation.router,      dependencies=_api_deps)
+    app.include_router(workflows.router,       dependencies=_api_deps)
 
     return app
 

@@ -9,20 +9,34 @@ Each step is an arbitrary callable that receives a :class:`WorkflowContext`
 and returns any value.  Steps can be chained with ``on_success`` / ``on_failure``
 step names, forming a directed acyclic graph.
 
-The engine executes steps sequentially by default (``Workflow.run()``) but
-respects ``on_success`` / ``on_failure`` routing to implement branching logic.
+The engine supports:
+
+* **Sequential execution** — default; steps run in definition order
+* **Conditional routing** — ``on_success`` / ``on_failure`` pointer routing
+* **Branching** — ``branch_on(ctx) → step_name`` evaluator for data-driven routing
+* **Parallel fan-out** — ``parallel_steps`` list runs multiple steps concurrently;
+  fan-in waits for all to complete before continuing
+* **Retry with backoff** — ``retry`` :class:`RetryPolicy` on any step
 
 Usage::
 
-    from gnat.agents.workflow import Workflow, WorkflowContext, WorkflowStep
+    from gnat.agents.workflow import Workflow, WorkflowContext, WorkflowStep, RetryPolicy
     from gnat.agents.steps import enrich_step, gap_detect_step
 
     ctx = WorkflowContext(investigation_id="inv-123", shared={}, results={})
 
     result = (
         Workflow("phishing-triage")
-        .add_step(enrich_step(dispatcher, ["8.8.8.8", "evil.example.com"]))
-        .add_step(gap_detect_step(detector))
+        .add_step(WorkflowStep(
+            "enrich",
+            enrich_step(dispatcher, ["8.8.8.8"]),
+            retry=RetryPolicy(max_attempts=3, backoff_seconds=2),
+        ))
+        .add_step(WorkflowStep(
+            "route",
+            lambda ctx: None,
+            branch_on=lambda ctx: "high-confidence" if ctx.shared.get("score", 0) > 0.7 else "low-confidence",
+        ))
         .run(ctx)
     )
 
@@ -33,6 +47,7 @@ from __future__ import annotations
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -60,6 +75,29 @@ class WorkflowContext:
 
 
 @dataclass
+class RetryPolicy:
+    """
+    Retry configuration for a :class:`WorkflowStep`.
+
+    Parameters
+    ----------
+    max_attempts : int
+        Total number of attempts (including the first try).  Must be ≥ 1.
+    backoff_seconds : float
+        Base sleep between retries.  Doubles on each attempt (exponential
+        backoff).  E.g. ``backoff_seconds=2`` → sleeps of 2s, 4s, 8s, …
+    retryable_exceptions : tuple[type[Exception], ...]
+        Exception types that trigger a retry.  Default: any ``Exception``.
+    """
+
+    max_attempts: int = 3
+    backoff_seconds: float = 2.0
+    retryable_exceptions: tuple[type[Exception], ...] = field(
+        default_factory=lambda: (Exception,)
+    )
+
+
+@dataclass
 class WorkflowStep:
     """
     A single step in a :class:`Workflow`.
@@ -76,6 +114,17 @@ class WorkflowStep:
     on_failure : str | None
         Name of a fallback step to jump to if this step raises.
         ``None`` means abort the workflow on failure.
+    branch_on : Callable[[WorkflowContext], str] | None
+        Data-driven router called *after* ``action`` succeeds.
+        Returns the name of the next step to jump to.  Takes priority
+        over ``on_success`` when present.
+    parallel_steps : list[WorkflowStep] | None
+        Fan-out: a list of steps to run concurrently.  The engine collects
+        all results before advancing.  ``action`` is still run first (as a
+        setup step); parallel steps run after it.
+    retry : RetryPolicy | None
+        Retry policy for this step.  When set, the step is retried on
+        failure up to ``RetryPolicy.max_attempts`` times.
     timeout_seconds : int
         Wall-clock timeout (informational; not enforced by the engine —
         use thread/process pools for hard timeouts).
@@ -85,7 +134,10 @@ class WorkflowStep:
     action:          Callable[[WorkflowContext], Any]
     on_success:      str | None = None
     on_failure:      str | None = None
-    timeout_seconds: int        = 60
+    branch_on:       Callable[[WorkflowContext], str] | None = None
+    parallel_steps:  list[WorkflowStep] | None = None
+    retry:           RetryPolicy | None = None
+    timeout_seconds: int = 60
 
 
 @dataclass
@@ -167,10 +219,11 @@ class Workflow:
         Execute the workflow against *ctx*.
 
         Iterates steps in definition order (default) or follows
-        ``on_success`` / ``on_failure`` routing when set.
+        ``on_success`` / ``branch_on`` / ``on_failure`` routing.
 
-        Exceptions raised by a step are caught; execution continues to the
-        ``on_failure`` step if configured, otherwise the workflow is aborted.
+        Supports retry with exponential backoff (``WorkflowStep.retry``),
+        data-driven branching (``WorkflowStep.branch_on``), and parallel
+        fan-out (``WorkflowStep.parallel_steps``).
 
         Parameters
         ----------
@@ -181,22 +234,21 @@ class Workflow:
         -------
         WorkflowResult
         """
-        start_time      = time.monotonic()
-        completed:list[str] = []
-        failed:   list[str] = []
-        errors:   list[str] = []
-
-        # Use a pointer-based traversal to support routing
-        _remaining = list(self._steps)  # default order
-        visited   : set[str] = set()
+        start_time = time.monotonic()
+        completed: list[str] = []
+        failed: list[str] = []
+        errors: list[str] = []
+        visited: set[str] = set()
 
         step_idx = 0
         while step_idx < len(self._steps):
             step = self._steps[step_idx]
 
             if step.name in visited:
-                # Guard against cycles (shouldn't happen in a DAG)
-                logger.warning("Workflow %r: step %r already visited — skipping", self.name, step.name)
+                logger.warning(
+                    "Workflow %r: step %r already visited — skipping (cycle guard)",
+                    self.name, step.name,
+                )
                 step_idx += 1
                 continue
 
@@ -204,24 +256,26 @@ class Workflow:
             logger.debug("Workflow %r: running step %r", self.name, step.name)
 
             try:
-                result = step.action(ctx)
+                # ── Retry logic ──────────────────────────────────────────
+                result = self._run_step_with_retry(step, ctx)
                 ctx.results[step.name] = result
                 completed.append(step.name)
                 logger.debug("Workflow %r: step %r completed", self.name, step.name)
 
-                # Routing: jump to on_success step if specified
-                if step.on_success and step.on_success in self._step_map:
-                    next_name = step.on_success
-                    # Find index of next_name
-                    try:
-                        step_idx = next(
-                            i for i, s in enumerate(self._steps)
-                            if s.name == next_name
-                        )
-                    except StopIteration:
-                        step_idx += 1
-                else:
-                    step_idx += 1
+                # ── Parallel fan-out ─────────────────────────────────────
+                if step.parallel_steps:
+                    par_completed, par_failed, par_errors = self._run_parallel(
+                        step.parallel_steps, ctx
+                    )
+                    completed.extend(par_completed)
+                    failed.extend(par_failed)
+                    errors.extend(par_errors)
+                    if par_failed:
+                        break
+
+                # ── Routing: branch_on > on_success > sequential ─────────
+                next_idx = self._resolve_next(step, ctx, step_idx)
+                step_idx = next_idx
 
             except Exception as exc:
                 failed.append(step.name)
@@ -230,7 +284,6 @@ class Workflow:
                 logger.error("Workflow %r: %s", self.name, msg, exc_info=True)
 
                 if step.on_failure and step.on_failure in self._step_map:
-                    # Jump to fallback step
                     try:
                         step_idx = next(
                             i for i, s in enumerate(self._steps)
@@ -239,7 +292,6 @@ class Workflow:
                     except StopIteration:
                         break
                 else:
-                    # Abort
                     break
 
         elapsed = time.monotonic() - start_time
@@ -251,10 +303,127 @@ class Workflow:
         )
 
         return WorkflowResult(
-            success         = success,
-            steps_completed = completed,
-            steps_failed    = failed,
-            context         = ctx,
-            errors          = errors,
-            elapsed_seconds = elapsed,
+            success=success,
+            steps_completed=completed,
+            steps_failed=failed,
+            context=ctx,
+            errors=errors,
+            elapsed_seconds=elapsed,
         )
+
+    # ── Internal helpers ──────────────────────────────────────────────────────
+
+    def _run_step_with_retry(
+        self, step: WorkflowStep, ctx: WorkflowContext
+    ) -> Any:
+        """
+        Execute ``step.action`` with retry/backoff if ``step.retry`` is set.
+
+        Raises the final exception if all attempts are exhausted.
+        """
+        policy = step.retry
+        if policy is None:
+            return step.action(ctx)
+
+        last_exc: Exception | None = None
+        for attempt in range(1, policy.max_attempts + 1):
+            try:
+                return step.action(ctx)
+            except policy.retryable_exceptions as exc:
+                last_exc = exc
+                if attempt < policy.max_attempts:
+                    sleep_time = policy.backoff_seconds * (2 ** (attempt - 1))
+                    logger.warning(
+                        "Workflow %r: step %r attempt %d/%d failed (%s) — retrying in %.1fs",
+                        self.name, step.name, attempt, policy.max_attempts, exc, sleep_time,
+                    )
+                    time.sleep(sleep_time)
+                else:
+                    logger.error(
+                        "Workflow %r: step %r exhausted %d attempts",
+                        self.name, step.name, policy.max_attempts,
+                    )
+        raise last_exc  # type: ignore[misc]
+
+    def _run_parallel(
+        self,
+        steps: list[WorkflowStep],
+        ctx: WorkflowContext,
+    ) -> tuple[list[str], list[str], list[str]]:
+        """
+        Run *steps* concurrently using a ThreadPoolExecutor (fan-out).
+
+        All steps receive the same *ctx* reference.  Returns after all
+        futures complete (fan-in).
+
+        Returns
+        -------
+        tuple[completed, failed, errors]
+        """
+        completed: list[str] = []
+        failed: list[str] = []
+        errors: list[str] = []
+
+        with ThreadPoolExecutor(max_workers=min(len(steps), 8)) as pool:
+            future_to_step = {
+                pool.submit(self._run_step_with_retry, s, ctx): s
+                for s in steps
+            }
+            for future in as_completed(future_to_step):
+                step = future_to_step[future]
+                try:
+                    result = future.result()
+                    ctx.results[step.name] = result
+                    completed.append(step.name)
+                    logger.debug(
+                        "Workflow %r: parallel step %r completed", self.name, step.name
+                    )
+                except Exception as exc:
+                    failed.append(step.name)
+                    msg = f"Parallel step {step.name!r} failed: {exc}"
+                    errors.append(msg)
+                    logger.error("Workflow %r: %s", self.name, msg, exc_info=True)
+
+        return completed, failed, errors
+
+    def _resolve_next(
+        self,
+        step: WorkflowStep,
+        ctx: WorkflowContext,
+        current_idx: int,
+    ) -> int:
+        """
+        Determine the index of the next step after *step* succeeds.
+
+        Priority: ``branch_on`` > ``on_success`` > sequential.
+        """
+        # 1. branch_on (data-driven routing)
+        if step.branch_on is not None:
+            try:
+                next_name = step.branch_on(ctx)
+                if next_name and next_name in self._step_map:
+                    try:
+                        return next(
+                            i for i, s in enumerate(self._steps)
+                            if s.name == next_name
+                        )
+                    except StopIteration:
+                        pass
+            except Exception as exc:
+                logger.warning(
+                    "Workflow %r: branch_on for step %r raised %s — falling through",
+                    self.name, step.name, exc,
+                )
+
+        # 2. on_success routing
+        if step.on_success and step.on_success in self._step_map:
+            try:
+                return next(
+                    i for i, s in enumerate(self._steps)
+                    if s.name == step.on_success
+                )
+            except StopIteration:
+                pass
+
+        # 3. Sequential advance
+        return current_idx + 1

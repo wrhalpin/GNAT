@@ -558,3 +558,148 @@ class FeedJob:
 def _utcnow() -> datetime:
     """Internal helper for utcnow."""
     return datetime.now(timezone.utc)
+
+
+# ---------------------------------------------------------------------------
+# WorkflowJob — run an arbitrary workflow on a schedule
+# ---------------------------------------------------------------------------
+
+
+class WorkflowJob(FeedJob):
+    """
+    A :class:`FeedJob` that executes a GNAT :class:`~gnat.agents.workflow.Workflow`
+    on a schedule instead of running an ingest pipeline.
+
+    Parameters
+    ----------
+    job_id : str
+        Unique job identifier.
+    workflow_factory : callable
+        ``() -> Workflow`` — called each run to produce a configured workflow.
+    context_factory : callable, optional
+        ``() -> WorkflowContext`` — called each run to produce the initial context.
+        Defaults to an empty :class:`~gnat.agents.workflow.WorkflowContext`.
+    interval_seconds : int, optional
+        Run every N seconds.
+    cron : str, optional
+        Cron expression for scheduling.
+    store : WorkflowStore, optional
+        When set, completed runs are persisted via the store.
+    on_success : callable, optional
+        ``(RunRecord) -> None`` — called after successful runs.
+    on_failure : callable, optional
+        ``(RunRecord) -> None`` — called after failed runs.
+    max_history : int
+        Maximum run records to keep in memory.  Default 100.
+
+    Examples
+    --------
+    ::
+
+        from gnat.schedule.job import WorkflowJob
+        from gnat.agents.workflows.phishing_triage import build_phishing_triage_workflow
+
+        job = WorkflowJob(
+            job_id           = "phishing_triage",
+            workflow_factory = lambda: build_phishing_triage_workflow(...),
+            interval_seconds = 3600,
+        )
+        record = job.execute()
+    """
+
+    def __init__(
+        self,
+        job_id:           str,
+        workflow_factory: Callable[[], Any],
+        context_factory:  Callable[[], Any] | None = None,
+        interval_seconds: int | None = None,
+        cron:             str | None = None,
+        store:            Any | None = None,
+        on_success:       Callable | None = None,
+        on_failure:       Callable | None = None,
+        max_history:      int = 100,
+        enabled:          bool = True,
+    ) -> None:
+        """Initialize WorkflowJob."""
+        # FeedJob requires reader_factory and mapper_factory — provide no-ops
+        super().__init__(
+            job_id           = job_id,
+            reader_factory   = lambda ctx: None,
+            mapper_factory   = lambda ctx: None,
+            interval_seconds = interval_seconds,
+            cron             = cron,
+            on_success       = on_success,
+            on_failure       = on_failure,
+            max_history      = max_history,
+            enabled          = enabled,
+        )
+        self._workflow_factory = workflow_factory
+        self._context_factory  = context_factory
+        self._store            = store
+
+    def execute(self) -> Any:
+        """
+        Execute the workflow, returning a :class:`~gnat.schedule.job.RunRecord`-like
+        result dict.
+
+        This overrides :meth:`FeedJob.execute` to run a workflow instead of an
+        ingest pipeline.
+        """
+        if not self.enabled:
+            logger.debug("WorkflowJob %r disabled — skipping", self.job_id)
+            return None
+
+        if not self._running_lock.acquire(blocking=False):
+            if self.overlap_policy == "skip":
+                logger.warning("WorkflowJob %r: still running — skipping", self.job_id)
+                return None
+            self._running_lock.acquire()
+
+        self.run_count += 1
+        started_at = _utcnow()
+
+        try:
+            from gnat.agents.workflow import WorkflowContext
+            wf  = self._workflow_factory()
+            ctx = self._context_factory() if self._context_factory else WorkflowContext()
+
+            logger.info("WorkflowJob %r run #%d starting", self.job_id, self.run_count)
+            wf_result = wf.run(ctx)
+
+            if self._store is not None:
+                try:
+                    self._store.save(wf_result, workflow_name=wf.name)
+                except Exception as exc:
+                    logger.warning("WorkflowJob %r: failed to persist run: %s", self.job_id, exc)
+
+            finished_at = _utcnow()
+            duration    = (finished_at - started_at).total_seconds()
+
+            if wf_result.success:
+                self.last_success_at = finished_at
+                logger.info(
+                    "WorkflowJob %r run #%d: success (%d steps) in %.1fs",
+                    self.job_id, self.run_count,
+                    len(wf_result.steps_completed), duration,
+                )
+            else:
+                logger.warning(
+                    "WorkflowJob %r run #%d: failed steps=%s",
+                    self.job_id, self.run_count, wf_result.steps_failed,
+                )
+
+            return wf_result
+
+        except Exception as exc:
+            logger.error("WorkflowJob %r run #%d: FAILED — %s", self.job_id, self.run_count, exc)
+            raise
+
+        finally:
+            self._running_lock.release()
+
+    def __repr__(self) -> str:  # pragma: no cover
+        """Return unambiguous string representation."""
+        sched = (
+            f"every {self.interval_seconds}s" if self.interval_seconds else f"cron={self.cron!r}"
+        )
+        return f"WorkflowJob(id={self.job_id!r}, {sched}, runs={self.run_count})"

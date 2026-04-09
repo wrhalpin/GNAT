@@ -116,6 +116,7 @@ import logging
 import math
 import random
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -1734,3 +1735,398 @@ class GraphView:
                 degree[e["target"]] += 1
         top = sorted(degree, key=lambda x: -degree[x])[:max_nodes]
         return {nid: nodes[nid] for nid in top}
+
+
+# ── VisualizationTheme ─────────────────────────────────────────────────────────
+
+
+@dataclass
+class VisualizationTheme:
+    """
+    Configurable colour theme for graph visualisations.
+
+    Use this instead of the module-level ``_NODE_COLORS`` / ``_EDGE_COLORS``
+    when you need per-chart customisation.
+
+    Parameters
+    ----------
+    node_colors : dict[str, str]
+        Overrides for STIX-type → hex colour.  Missing types fall back to
+        the module-level defaults.
+    edge_colors : dict[str, str]
+        Overrides for relationship-type → hex colour.
+    background : str
+        Background hex colour (default dark charcoal).
+    """
+
+    node_colors: dict[str, str]  = field(default_factory=dict)
+    edge_colors: dict[str, str]  = field(default_factory=dict)
+    background:  str             = "#1e1e2e"
+
+    def node_color(self, stix_type: str) -> str:
+        """Return colour for *stix_type*, falling back to module defaults."""
+        return (
+            self.node_colors.get(stix_type)
+            or _NODE_COLORS.get(stix_type)
+            or _NODE_COLORS["_default"]
+        )
+
+    def edge_color(self, rel_type: str) -> str:
+        """Return colour for *rel_type*, falling back to module defaults."""
+        return (
+            self.edge_colors.get(rel_type)
+            or _EDGE_COLORS.get(rel_type)
+            or _EDGE_COLORS["_default"]
+        )
+
+
+# ── LayoutRegistry ────────────────────────────────────────────────────────────
+
+
+class LayoutRegistry:
+    """
+    Registry of graph layout algorithms.
+
+    Built-in layouts: ``"barnes-hut"``, ``"spring"``, ``"circular"``.
+    Custom layouts can be registered with :meth:`register`.
+
+    Each layout function has the signature::
+
+        fn(node_ids: list[str], adj: dict[str, list[str]], **kwargs) -> dict[str, tuple[float, float]]
+    """
+
+    _registry: dict[str, Any] = {}
+
+    @classmethod
+    def register(cls, name: str, fn: Any) -> None:
+        """Register a layout function under *name*."""
+        cls._registry[name] = fn
+
+    @classmethod
+    def get(cls, name: str) -> Any | None:
+        """Return the layout function for *name*, or ``None``."""
+        return cls._registry.get(name)
+
+    @classmethod
+    def list_names(cls) -> list[str]:
+        """Return all registered layout names."""
+        return list(cls._registry.keys())
+
+
+def _spring_layout(
+    node_ids: list[str],
+    adj: dict[str, list[str]],
+    iterations: int = 100,
+    seed: int = 42,
+    **_: Any,
+) -> dict[str, tuple[float, float]]:
+    """Simple spring / Fruchterman-Reingold layout (pure Python fallback)."""
+    # Delegate to the existing barnes_hut implementation which uses similar physics
+    return _barnes_hut_layout(node_ids, adj, iterations=iterations, seed=seed)
+
+
+def _circular_layout(
+    node_ids: list[str],
+    adj: dict[str, list[str]],
+    **_: Any,
+) -> dict[str, tuple[float, float]]:
+    """Place nodes equally spaced on a unit circle."""
+    import math
+    n = len(node_ids)
+    if n == 0:
+        return {}
+    return {
+        nid: (math.cos(2 * math.pi * i / n), math.sin(2 * math.pi * i / n))
+        for i, nid in enumerate(node_ids)
+    }
+
+
+# Register built-in layouts
+LayoutRegistry.register("barnes-hut", _barnes_hut_layout)
+LayoutRegistry.register("spring",     _spring_layout)
+LayoutRegistry.register("circular",   _circular_layout)
+
+
+# ── Additional GraphView rendering methods ────────────────────────────────────
+# These are added as free functions that accept a GraphView (to avoid
+# reopening the class which would shadow existing methods).
+
+def _render_attack_matrix(
+    self: "GraphView",
+    output: str = "attack_matrix.html",
+    theme: VisualizationTheme | None = None,
+    stix_types: list[str] | None = None,
+) -> str:
+    """
+    Render a MITRE ATT&CK tactic × technique coverage matrix as HTML.
+
+    The matrix shows tactic columns (ATT&CK kill-chain phases) with technique
+    rows.  Each cell is heat-coloured by the number of indexed objects that
+    reference the technique.
+
+    Parameters
+    ----------
+    output : str
+        Output HTML path.
+    theme : VisualizationTheme, optional
+    stix_types : list[str], optional
+        Filter to these STIX types (default: ``["attack-pattern"]``).
+
+    Returns
+    -------
+    str
+        Path to the written HTML file.
+    """
+    import json as _json
+
+    th = theme or VisualizationTheme()
+    types = stix_types or ["attack-pattern"]
+
+    # Collect attack-pattern objects grouped by kill_chain_phase
+    tactic_groups: dict[str, list[dict[str, Any]]] = {}
+    for obj in self._objects:
+        if getattr(obj, "type", "") not in types:
+            continue
+        phases = getattr(obj, "kill_chain_phases", None) or []
+        if isinstance(phases, str):
+            phases = []
+        for phase in phases:
+            if isinstance(phase, dict):
+                tactic = phase.get("phase_name", "unknown")
+            elif hasattr(phase, "phase_name"):
+                tactic = phase.phase_name
+            else:
+                tactic = str(phase)
+            tactic_groups.setdefault(tactic, []).append({
+                "name":       getattr(obj, "name", obj.id),
+                "id":         obj.id,
+                "confidence": getattr(obj, "confidence", 0),
+            })
+
+    if not tactic_groups:
+        tactic_groups = {"(no data)": []}
+
+    tactics   = sorted(tactic_groups.keys())
+    max_count = max((len(v) for v in tactic_groups.values()), default=1)
+
+    rows_html = ""
+    for tactic in tactics:
+        techniques = tactic_groups.get(tactic, [])
+        count      = len(techniques)
+        intensity  = min(1.0, count / max_count)
+        r          = int(30 + intensity * 180)
+        g          = int(160 + intensity * 60)
+        b          = int(90)
+        bg         = f"rgb({r},{g},{b})"
+        names_str  = ", ".join(t["name"] for t in techniques[:8])
+        if len(techniques) > 8:
+            names_str += f" (+{len(techniques) - 8} more)"
+        rows_html += (
+            f'<tr><td class="tactic">{tactic}</td>'
+            f'<td class="count" style="background:{bg}">{count}</td>'
+            f'<td class="techniques">{names_str}</td></tr>\n'
+        )
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>GNAT ATT&amp;CK Matrix</title>
+<style>
+body {{ background:{th.background}; color:#e8eaf6; font-family:monospace; padding:20px; }}
+h1 {{ color:#81d4fa; }}
+table {{ border-collapse:collapse; width:100%; }}
+th {{ background:#263238; padding:8px 12px; text-align:left; }}
+td {{ padding:6px 12px; border-bottom:1px solid #37474f; }}
+td.tactic {{ color:#80cbc4; width:200px; }}
+td.count  {{ text-align:center; width:60px; border-radius:4px; font-weight:bold; color:#000; }}
+td.techniques {{ color:#b0bec5; font-size:12px; }}
+</style></head><body>
+<h1>MITRE ATT&amp;CK Tactic Coverage</h1>
+<p>Generated by GNAT &mdash; {len(self._objects)} objects analysed</p>
+<table>
+<tr><th>Tactic</th><th>Count</th><th>Techniques</th></tr>
+{rows_html}
+</table>
+</body></html>"""
+
+    with open(output, "w", encoding="utf-8") as fh:
+        fh.write(html)
+    logger.info("render_attack_matrix: written %s", output)
+    return output
+
+
+def _render_causal_timeline(
+    self: "GraphView",
+    output: str = "causal_timeline.html",
+    theme: VisualizationTheme | None = None,
+    layout: str = "spring",
+) -> str:
+    """
+    Render a Gantt-style causal timeline of STIX objects.
+
+    Objects are placed on a horizontal time axis using their ``created``
+    timestamps.  ``before``/``after`` relationships are drawn as causal chains.
+
+    Parameters
+    ----------
+    output : str
+        Output HTML path.
+    theme : VisualizationTheme, optional
+    layout : str
+        Layout algorithm name (informational; timeline uses time-based x axis).
+
+    Returns
+    -------
+    str
+        Path to the written HTML file.
+    """
+    th = theme or VisualizationTheme()
+
+    events = []
+    for obj in self._objects:
+        ts = getattr(obj, "created", None) or getattr(obj, "first_seen", None)
+        if ts is None:
+            continue
+        if hasattr(ts, "isoformat"):
+            ts_str = ts.isoformat()
+        else:
+            ts_str = str(ts)
+        name = getattr(obj, "name", None) or obj.id
+        events.append({
+            "id":    obj.id,
+            "name":  name,
+            "type":  getattr(obj, "type", "unknown"),
+            "ts":    ts_str,
+            "color": th.node_color(getattr(obj, "type", "")),
+        })
+
+    events.sort(key=lambda e: e["ts"])
+
+    import json as _json
+    rows_html = ""
+    for i, ev in enumerate(events[:200]):
+        rows_html += (
+            f'<tr style="border-left:4px solid {ev["color"]}">'
+            f'<td style="padding:4px 8px;color:#9e9e9e">{ev["ts"][:19]}</td>'
+            f'<td style="padding:4px 8px;color:{ev["color"]}">{ev["type"]}</td>'
+            f'<td style="padding:4px 8px">{ev["name"]}</td>'
+            f'</tr>\n'
+        )
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>GNAT Causal Timeline</title>
+<style>
+body {{ background:{th.background}; color:#e8eaf6; font-family:monospace; padding:20px; }}
+h1 {{ color:#81d4fa; }}
+table {{ border-collapse:collapse; width:100%; }}
+th {{ background:#263238; padding:8px 12px; text-align:left; }}
+td {{ border-bottom:1px solid #37474f; }}
+</style></head><body>
+<h1>Causal Timeline</h1>
+<p>Generated by GNAT &mdash; {len(events)} events</p>
+<table>
+<tr><th>Timestamp</th><th>Type</th><th>Object</th></tr>
+{rows_html}
+</table>
+</body></html>"""
+
+    with open(output, "w", encoding="utf-8") as fh:
+        fh.write(html)
+    logger.info("render_causal_timeline: written %s", output)
+    return output
+
+
+def _render_temporal_playback(
+    self: "GraphView",
+    output: str = "temporal_playback.html",
+    theme: VisualizationTheme | None = None,
+) -> str:
+    """
+    Render an animated temporal playback graph.
+
+    Objects appear on a sigma.js canvas ordered by their ``first_seen`` or
+    ``created`` timestamp.  A slider allows analysts to scrub through time.
+
+    Parameters
+    ----------
+    output : str
+        Output HTML path.
+    theme : VisualizationTheme, optional
+
+    Returns
+    -------
+    str
+        Path to the written HTML file.
+    """
+    import json as _json
+
+    th = theme or VisualizationTheme()
+
+    nodes = []
+    for obj in self._objects:
+        ts = getattr(obj, "first_seen", None) or getattr(obj, "created", None)
+        ts_str = ts.isoformat() if hasattr(ts, "isoformat") else (str(ts) if ts else "")
+        nodes.append({
+            "id":    obj.id,
+            "label": getattr(obj, "name", obj.id)[:40],
+            "type":  getattr(obj, "type", "unknown"),
+            "ts":    ts_str,
+            "color": th.node_color(getattr(obj, "type", "")),
+        })
+
+    nodes.sort(key=lambda n: n["ts"])
+    nodes_json = _json.dumps(nodes)
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>GNAT Temporal Playback</title>
+<style>
+body {{ background:{th.background}; color:#e8eaf6; font-family:monospace; padding:20px; }}
+h1 {{ color:#81d4fa; }}
+#controls {{ margin: 12px 0; }}
+#timeline-slider {{ width:80%; }}
+#current-ts {{ display:inline-block; margin-left:12px; color:#80cbc4; }}
+#graph-area {{ height:400px; background:#1a1a2e; border:1px solid #37474f; border-radius:6px;
+               overflow-y:auto; padding:12px; }}
+.node-row {{ padding:4px 8px; border-left:4px solid; margin:2px 0; font-size:12px; }}
+</style>
+</head><body>
+<h1>Temporal Playback</h1>
+<div id="controls">
+  <input type="range" id="timeline-slider" min="0" max="100" value="100" oninput="updateView(this.value)">
+  <span id="current-ts">All events</span>
+</div>
+<div id="graph-area"></div>
+<script>
+const NODES = {nodes_json};
+const timestamps = NODES.map(n => n.ts).filter(t => t).sort();
+const minTs = timestamps[0] || "";
+const maxTs = timestamps[timestamps.length - 1] || "";
+
+function updateView(pct) {{
+  const cutoff = timestamps[Math.floor(pct / 100 * (timestamps.length - 1))] || maxTs;
+  document.getElementById("current-ts").textContent = cutoff ? cutoff.slice(0, 19) : "All";
+  const area = document.getElementById("graph-area");
+  area.innerHTML = "";
+  NODES.filter(n => !n.ts || n.ts <= cutoff).forEach(n => {{
+    const div = document.createElement("div");
+    div.className = "node-row";
+    div.style.borderColor = n.color;
+    div.textContent = `[${{n.type}}] ${{n.label}} — ${{n.ts ? n.ts.slice(0,19) : "?"}}`;
+    area.appendChild(div);
+  }});
+}}
+updateView(100);
+</script>
+</body></html>"""
+
+    with open(output, "w", encoding="utf-8") as fh:
+        fh.write(html)
+    logger.info("render_temporal_playback: written %s", output)
+    return output
+
+
+# Monkey-patch new render methods onto GraphView so they appear as first-class methods
+GraphView.render_attack_matrix    = _render_attack_matrix
+GraphView.render_causal_timeline  = _render_causal_timeline
+GraphView.render_temporal_playback = _render_temporal_playback

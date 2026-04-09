@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING
 
 from gnat.search.index import NullSearchIndex, SearchIndex, SolrSearchIndex
 from gnat.search.mixin import STIXSearchMixin
+from gnat.search.semantic import SemanticSearchIndex
 
 if TYPE_CHECKING:
     from gnat.config import GNATConfig
@@ -81,6 +82,7 @@ __all__ = [
     "SearchIndex",
     "SolrSearchIndex",
     "NullSearchIndex",
+    "SemanticSearchIndex",
     "STIXSearchMixin",
     "build_search_index",
 ]

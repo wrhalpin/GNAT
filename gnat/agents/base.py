@@ -46,9 +46,13 @@ import logging
 import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    pass  # Iterator imported above; kept for type checkers
 
 logger = logging.getLogger(__name__)
 
@@ -454,3 +458,75 @@ class LLMProvider(ABC):
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Return structured JSON output matching the supplied schema."""
+
+    def stream(self, prompt: str, **kwargs: Any) -> "Iterator[str]":
+        """
+        Yield text chunks from a streaming completion.
+
+        Default raises ``NotImplementedError``.  Override in providers that
+        support server-sent events (Claude, OpenAI).
+
+        Parameters
+        ----------
+        prompt : str
+            User message text.
+        **kwargs
+            Forwarded to the provider (temperature, max_tokens, system, etc.).
+
+        Yields
+        ------
+        str
+            Incremental text chunks as they arrive.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not support streaming")
+        yield  # make this a generator
+
+    def tool_call(
+        self,
+        prompt: str,
+        tools: list[dict[str, Any]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """
+        Invoke function / tool calling and return the first tool use result.
+
+        Default raises ``NotImplementedError``.  Override in providers that
+        support tool use (Claude ``tool_use``, OpenAI ``function_calling``).
+
+        Parameters
+        ----------
+        prompt : str
+            User message text.
+        tools : list[dict]
+            Tool definitions in Anthropic or OpenAI format.
+        **kwargs
+            Forwarded to the provider.
+
+        Returns
+        -------
+        dict
+            ``{"name": str, "input": dict}`` for the called tool.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not support tool calling")
+
+    def embed(self, texts: list[str], **kwargs: Any) -> list[list[float]]:
+        """
+        Return dense embedding vectors for each input text.
+
+        Default raises ``NotImplementedError``.  Override in providers with an
+        embeddings endpoint (OpenAI ``/v1/embeddings``, Gemini
+        ``/v1beta/models/text-embedding-004:embedContent``).
+
+        Parameters
+        ----------
+        texts : list[str]
+            Input strings to embed.
+        **kwargs
+            Forwarded to the provider (model, etc.).
+
+        Returns
+        -------
+        list[list[float]]
+            One embedding vector per input text, in the same order.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not support embeddings")

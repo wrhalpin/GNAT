@@ -80,6 +80,7 @@ from gnat.ingest.base import RawRecord, SourceReader
 
 if TYPE_CHECKING:
     from gnat.agents.base import AgentConfig
+    from gnat.agents.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -119,8 +120,28 @@ class ResearchAgent(SourceReader):
         monitored_sources: list[dict[str, Any]] | None = None,
         newer_than: str | None = None,
         max_calls_per_run: int | None = None,
+        llm_client: LLMClient | None = None,
     ) -> None:
-        """Initialize ResearchAgent."""
+        """
+        Initialize ResearchAgent.
+
+        Parameters
+        ----------
+        config : AgentConfig
+            Agent configuration (API key, model, ceiling).
+        topics : list[str], optional
+            Threat topics (topic-driven mode).
+        monitored_sources : list[dict], optional
+            Feed sources (feed-driven mode).
+        newer_than : str, optional
+            ISO 8601 cutoff for feed-driven mode.
+        max_calls_per_run : int, optional
+            Cap on API calls per iteration.
+        llm_client : LLMClient, optional
+            Pre-configured :class:`~gnat.agents.llm.LLMClient` instance.
+            When supplied the *config* API key is ignored for API calls.
+            Allows multi-backend usage and fallback chains.
+        """
         if topics and monitored_sources:
             raise ValueError(
                 "Provide topics or monitored_sources, not both."
@@ -133,10 +154,48 @@ class ResearchAgent(SourceReader):
         super().__init__(source_id="ResearchAgent")
         self._cfg = config
         self._client = ClaudeClient(config)
+        self._llm: LLMClient | None = llm_client
         self._topics: list[str] = list(topics or [])
         self._monitored_sources: list[dict[str, Any]] = list(monitored_sources or [])
         self._newer_than = newer_than
         self._max_calls = max_calls_per_run
+
+    # ── Unified completion helpers ────────────────────────────────────────
+
+    def _complete_text(self, prompt: str) -> str:
+        """Call the configured backend and return text content."""
+        if self._llm is not None:
+            resp = self._llm.chat(
+                [{"role": "user", "content": prompt}],
+                temperature=0.2,
+            )
+            # Handle both Claude format and OpenAI format
+            if "content" in resp:
+                for block in resp.get("content", []):
+                    if block.get("type") == "text":
+                        return block.get("text", "")
+            elif "choices" in resp:
+                return resp["choices"][0].get("message", {}).get("content", "")
+            return ""
+        response = self._client.complete(prompt)
+        return self._client.text_from(response)
+
+    def _complete_json(self, prompt: str) -> Any:
+        """Call the configured backend and return parsed JSON or None."""
+        import json as _json
+
+        if self._llm is not None:
+            # Use structured() which returns parsed JSON directly
+            try:
+                return self._llm.structured(
+                    prompt=prompt,
+                    output_schema={"type": "object"},
+                    temperature=0.2,
+                )
+            except Exception:
+                return None
+        response = self._client.complete(prompt)
+        return self._client.json_from(response)
 
     # ── SourceReader protocol ─────────────────────────────────────────────
 
@@ -157,16 +216,18 @@ class ResearchAgent(SourceReader):
                 break
             user_prompt = self._build_topic_prompt(topic)
             try:
-                response = self._client.complete(user_prompt)
+                parsed = self._complete_json(user_prompt)
                 calls += 1
             except Exception as exc:
                 logger.warning("ResearchAgent: topic %r failed: %s", topic, exc)
                 continue
 
-            parsed = self._client.json_from(response)
             if parsed is None:
                 # Prose fallback — yield raw text
-                text = self._client.text_from(response)
+                try:
+                    text = self._complete_text(user_prompt)
+                except Exception:
+                    text = ""
                 yield {"topic": topic, "text": text, "metadata": {"mode": "topic"}}
             else:
                 yield {
@@ -205,12 +266,10 @@ class ResearchAgent(SourceReader):
             batch = sources[i : i + _FEED_BATCH_SIZE]
             user_prompt = self._build_feed_prompt(batch)
             try:
-                response = self._client.complete(user_prompt)
+                items = self._complete_json(user_prompt) or []
             except Exception as exc:
                 logger.warning("ResearchAgent: feed batch failed: %s", exc)
                 continue
-
-            items = self._client.json_from(response) or []
             if not isinstance(items, list):
                 items = []
             for item in items:
