@@ -23,6 +23,8 @@ and STIX 2.1-compatible ORM for security platforms.
    cli
    codegen
    contexts
+   reasoning
+   agents_governance
 
 .. toctree::
    :maxdepth: 3
@@ -36,6 +38,9 @@ and STIX 2.1-compatible ORM for security platforms.
    api/connectors
    api/cli
    api/codegen
+   api/core
+   api/reasoning
+   api/agents_governance
    api/utils
 
 .. toctree::

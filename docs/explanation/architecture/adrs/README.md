@@ -44,6 +44,21 @@ subsystems.
 35. [ADR-0035: Quality Agents](0035-ADR-quality-agents.md)
 36. [ADR-0036: Security Agents Phase B](0036-ADR-security-agents-phaseb.md)
 37. [ADR-0037: Adopt Responsible Disclosure, DCO, and Apache 2.0 Compliance](0037-ADR-adopt-responsible-disclosure-dco-and-apache-2.0-compliance.md)
+38. [ADR-0038: Data Lineage Tracking](0038-data-lineage.md)
+
+### Phase 4 — Control, Reasoning, Safety
+
+39. [ADR-0039: Unified Execution Context](0039-ADR-execution-context.md)
+40. [ADR-0040: Connector Trust Model](0040-ADR-connector-trust-model.md)
+41. [ADR-0041: Idempotency and Schema Evolution](0041-ADR-idempotency-schema-evolution.md)
+42. [ADR-0042: Hypothesis Engine](0042-ADR-hypothesis-engine.md)
+43. [ADR-0043: Negative Evidence Tracking](0043-ADR-negative-evidence.md)
+44. [ADR-0044: Reasoning Engine](0044-ADR-reasoning-engine.md)
+45. [ADR-0045: Agent Governance](0045-ADR-agent-governance.md)
+46. [ADR-0046: HITL Gateway](0046-ADR-hitl-gateway.md)
+47. [ADR-0047: Workspace Isolation and Trust Boundaries](0047-ADR-workspace-isolation.md)
+48. [ADR-0048: Query Budget and Cost Model](0048-ADR-query-budget.md)
+49. [ADR-0049: Testing Framework — Simulation and Replay](0049-ADR-testing-framework.md)
 
 ---
 

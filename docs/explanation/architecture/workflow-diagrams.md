@@ -235,7 +235,209 @@ flowchart LR
 
 ---
 
-## Using These Diagrams
+## 8. ExecutionContext Propagation (Phase 4A)
+
+This diagram shows how an `ExecutionContext` is created at pipeline entry and propagated
+through all downstream operations, providing end-to-end traceability.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator
+    participant Pipeline as IngestPipeline<br/>(gnat/ingest)
+    participant Ctx as ExecutionContext<br/>(gnat/core/context.py)
+    participant Log as execution_log<br/>(Postgres)
+    participant Client as BaseClient<br/>(gnat/clients/base.py)
+    participant Budget as QueryBudget
+
+    Operator->>Pipeline: run(source, workspace_id)
+    Pipeline->>Ctx: ExecutionContext.create(initiated_by, domain, workspace_id)
+    Ctx-->>Pipeline: ctx (context_id=UUID, trust_level, is_replay=False)
+    Pipeline->>Log: INSERT INTO execution_log (ctx.to_dict())
+    Log-->>Pipeline: ack
+
+    Pipeline->>Client: connector._context = ctx
+    loop Per observable
+        Client->>Budget: budget.consume(COST_UNIT, connector_name)
+        alt Budget exhausted
+            Budget-->>Client: raise BudgetExceeded
+        else OK
+            Client-->>Pipeline: HTTP response data
+        end
+    end
+
+    Note over Pipeline,Ctx: Child context for sub-operation
+    Pipeline->>Ctx: ctx.child(initiated_by="enrichment-agent", domain="analysis")
+    Ctx-->>Pipeline: child_ctx (parent_context_id=ctx.context_id)
+    Pipeline->>Log: INSERT INTO execution_log (child_ctx.to_dict())
+```
+
+---
+
+## 9. Hypothesis Engine Lifecycle (Phase 4C)
+
+The full propose → evaluate → close lifecycle for `STIXHypothesis` objects, showing
+how Solr corroboration and trust-weighted evidence feed into confidence updates.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Analyst
+    participant Engine as HypothesisEngine<br/>(gnat/reasoning/hypothesis.py)
+    participant WS as Workspace<br/>(gnat/context/workspace.py)
+    participant Solr as SolrSearchIndex<br/>(gnat/search/index.py)
+    participant H as STIXHypothesis<br/>(x-gnat-hypothesis SDO)
+
+    Analyst->>Engine: propose("APT29 behind Q1 campaign", evidence=["rel--1"], confidence=0.2)
+    Engine->>H: STIXHypothesis(statement, confidence=0.2, status="pending")
+    H->>H: add_supporting_evidence("rel--1")
+    Engine->>WS: _add_object(h.to_dict(), mark_dirty=True)
+    WS-->>Analyst: STIXHypothesis (id, confidence=0.2, status="pending")
+
+    Analyst->>Engine: evaluate(hypothesis_id)
+    Engine->>WS: load hypothesis object
+    Engine->>Solr: search(statement, limit=20)
+    Solr-->>Engine: [corroborating_stix_ids]
+    Engine->>Engine: corroboration_boost = min(len(ids) × 0.05, 0.3)
+    Engine->>Engine: raw = (support_count / total) + corroboration_boost
+    Engine->>H: update_confidence(clamped_raw)
+    alt confidence ≥ 0.75
+        H->>H: status = "confirmed"
+    else confidence ≤ 0.15 and refute_count > 0
+        H->>H: status = "refuted"
+    end
+    Engine->>WS: _add_object(h.to_dict(), mark_dirty=True)
+    Engine-->>Analyst: STIXHypothesis (updated confidence + status)
+
+    Analyst->>Engine: close(hypothesis_id, verdict="confirmed")
+    Engine->>H: close("confirmed")
+    Engine->>WS: _add_object(h.to_dict(), mark_dirty=True)
+    Engine-->>Analyst: STIXHypothesis (status="confirmed")
+```
+
+---
+
+## 10. ReasoningEngine Observable Scoring (Phase 4C)
+
+How `ReasoningEngine.prioritize()` scores a set of observables using five weighted signals.
+
+```mermaid
+flowchart TD
+    A([observable_set, context]) --> B[ReasoningEngine.prioritize]
+
+    B --> C[Gather NegativeEvidenceRecords\nfrom workspace]
+    C --> D[For each observable...]
+
+    D --> E1[trust_weight\nfrom ExecutionContext.trust_level]
+    D --> E2[age_factor\n1.0 − 5%×age_days]
+    D --> E3[neg_penalty\n0.3 × fresh_neg_count]
+    D --> E4[corroboration_bonus\nSolr hits × 0.05]
+
+    E1 --> F[Composite Score\nscore = trust×0.4 + age×0.3\n+ corroboration×0.3 − neg×0.5]
+    E2 --> F
+    E3 --> F
+    E4 --> F
+
+    F --> G[Clamp to 0.0–1.0]
+    G --> H[Build explanation dict\nmachine-readable components]
+    H --> I{store_notes?}
+    I -- Yes --> J[Write STIX note object\nlinked to observable]
+    I -- No  --> K
+
+    J --> K[Collect results]
+    K --> L[Sort by score DESC]
+    L --> M([return list of tuple: observable, score, explanation])
+
+    style F fill:#4ea8de,color:#fff
+    style M fill:#2d7a2d,color:#fff
+```
+
+---
+
+## 11. Agent Governance & HITL Flow (Phase 4D)
+
+How every agent action passes through `AgentGovernor` and `HITLGateway` before execution.
+
+```mermaid
+flowchart TD
+    A([Agent requests action]) --> B[AgentGovernor.can_act\nagent_id, action_type, trust_level]
+
+    B --> C{Policy override\nexists?}
+    C -- Yes --> D{Override allows?}
+    C -- No  --> E{Trust-level matrix\nallows?}
+
+    D -- No  --> F([raise AgentPermissionDenied])
+    D -- Yes --> G
+
+    E -- No  --> F
+    E -- Yes --> G[Rate limit check\nsliding window]
+
+    G --> H{Within limit?}
+    H -- No  --> I([raise RateLimitExceeded])
+    H -- Yes --> J[Create AgentAction\nimpact_level assigned]
+
+    J --> K[HITLGateway.evaluate]
+
+    K --> L{impact_level?}
+    L -- low/medium --> M[Auto-approve\napproved_by = auto-policy]
+    L -- high       --> N[ReviewService.submit\nstatus = PENDING]
+    L -- critical   --> O[ReviewService.submit\n+ XSOARClient notification]
+
+    N --> P{Human reviews...}
+    O --> P
+    P -- Approved --> Q[action.status = approved\nExecute action]
+    P -- Rejected --> R([Action cancelled])
+    P -- Timeout  --> S[Auto-reject\nreviewer = system-timeout]
+
+    M --> Q
+    Q --> T[AgentGovernor.record_action\nAudit log + HookBus emit]
+    T --> U([Action complete])
+
+    style F fill:#c0392b,color:#fff
+    style I fill:#c0392b,color:#fff
+    style R fill:#c0392b,color:#fff
+    style U fill:#2d7a2d,color:#fff
+```
+
+---
+
+## 12. Workspace Trust Boundary Enforcement (Phase 4E)
+
+How `check_connector_trust()` enforces isolation boundaries before allowing connector access.
+
+```mermaid
+flowchart TD
+    A([Connector attempts workspace access]) --> B[workspace.check_connector_trust\nconnector]
+
+    B --> C[Read type connector .TRUST_LEVEL]
+    C --> D[Read workspace.trust_boundary]
+
+    D --> E{connector_rank ≥\nrequired_rank?}
+    E -- No  --> F([raise PermissionError\nConnector trust too low])
+
+    E -- Yes --> G{allowed_connector_refs\nnon-empty?}
+    G -- No  --> H[Access granted]
+    G -- Yes --> I{connector class name\nin allowlist?}
+
+    I -- No  --> J([raise PermissionError\nConnector not in allowlist])
+    I -- Yes --> H
+
+    H --> K[Proceed with read/write]
+
+    style F fill:#c0392b,color:#fff
+    style J fill:#c0392b,color:#fff
+    style H fill:#2d7a2d,color:#fff
+
+    subgraph Trust Rank Order
+        TR1[trusted_internal = 2]
+        TR2[semi_trusted = 1]
+        TR3[untrusted_external = 0]
+    end
+```
+
+---
+
+
 
 All Mermaid diagrams in this file can be:
 
