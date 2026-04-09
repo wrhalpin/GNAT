@@ -71,6 +71,10 @@ class CortexXpanseClient(BaseClient, ConnectorMixin):
         Xpanse API Key ID.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "vulnerability": "exposures",
         "report": "assets",

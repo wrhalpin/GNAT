@@ -121,6 +121,10 @@ class AWSSecurityClient(BaseClient, ConnectorMixin):
         Override for GuardDuty base URL. Defaults to same region.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "indicator": "guardduty/findings",
         "vulnerability": "securityhub/findings",

@@ -94,6 +94,10 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         TLS certificate verification.  Default ``True``.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api/now"
+
     stix_type_map: dict[str, str] = _TABLE_MAP
 
     def __init__(

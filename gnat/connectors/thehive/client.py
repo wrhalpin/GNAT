@@ -52,6 +52,10 @@ class TheHiveClient(BaseClient, ConnectorMixin):
         ``X-Organisation`` header when provided).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "case": "case",
         "alert": "alert",

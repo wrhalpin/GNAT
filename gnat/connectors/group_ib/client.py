@@ -71,6 +71,10 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         Group-IB API token (used as password).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "collections",
         "report": "collections",

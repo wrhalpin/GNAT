@@ -72,6 +72,10 @@ class ShodanClient(BaseClient, ConnectorMixin):
         Shodan API key.
     """
 
+    TRUST_LEVEL: str = "untrusted_external"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "observed-data": "host",
         "indicator": "host",

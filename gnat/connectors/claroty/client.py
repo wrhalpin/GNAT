@@ -75,6 +75,10 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         Fallback password for legacy auth.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "report": "assets",
         "observed-data": "alerts",

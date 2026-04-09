@@ -75,6 +75,10 @@ class OSSIMClient(BaseClient, ConnectorMixin):
         OSSIM API key.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api/1.0"
+
     stix_type_map: dict[str, str] = {
         "observed-data": "alarms",
     }

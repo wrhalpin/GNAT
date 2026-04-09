@@ -68,6 +68,10 @@ class ArmisClient(BaseClient, ConnectorMixin):
         Armis API secret key.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "report": "devices",
         "vulnerability": "cves",

@@ -71,6 +71,10 @@ class BitSightClient(BaseClient, ConnectorMixin):
         BitSight API token.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "vulnerability": "findings",
         "report": "companies",

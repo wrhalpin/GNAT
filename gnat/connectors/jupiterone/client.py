@@ -66,6 +66,10 @@ class JupiterOneClient(BaseClient, ConnectorMixin):
         JupiterOne account-level API key.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "report": "entities",
         "vulnerability": "findings",

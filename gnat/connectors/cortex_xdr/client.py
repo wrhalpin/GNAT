@@ -102,6 +102,10 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
         API key string.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/public_api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "alerts",
         "malware": "incidents",

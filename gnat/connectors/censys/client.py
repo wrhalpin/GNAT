@@ -67,6 +67,10 @@ class CensysClient(BaseClient, ConnectorMixin):
         Censys API secret.
     """
 
+    TRUST_LEVEL: str = "untrusted_external"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "observed-data": "hosts",
         "vulnerability": "hosts",

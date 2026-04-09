@@ -77,6 +77,10 @@ class TrendMicroVisionOneClient(BaseClient, ConnectorMixin):
         Vision One API key.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v3.0"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "indicator": "iocFilters",
         "malware": "analysisResults",

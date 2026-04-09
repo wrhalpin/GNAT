@@ -70,6 +70,10 @@ class CriblClient(BaseClient, ConnectorMixin):
         :class:`~gnat.clients.base.BaseClient`.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "course-of-action": "pipelines",
         "observed-data": "searches",

@@ -76,6 +76,10 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         Google Cloud project ID (auto-detected from key if possible).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "observed-data": "udm_events",
         "indicator": "detections",

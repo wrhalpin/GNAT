@@ -43,6 +43,10 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         ThreatStream API key.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/optic"
+
     stix_type_map: dict[str, str] = {
         "indicator": "intelligence",
         "threat-actor": "actor",

@@ -25,6 +25,10 @@ from gnat.connectors.base_connector import ConnectorMixin
 class ProofpointClient(BaseClient, ConnectorMixin):
     """HTTP client for the Proofpoint TAP v2 REST API."""
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "indicator": "threat",
         "malware": "malware",

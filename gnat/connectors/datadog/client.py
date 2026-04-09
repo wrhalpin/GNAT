@@ -85,6 +85,10 @@ class DatadogClient(BaseClient, ConnectorMixin):
         Datadog application key.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "security_monitoring/signals",
         "vulnerability": "posture_management/findings",

@@ -70,6 +70,10 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         SentinelOne API token.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v2.1"
+    API_PREFIX: str = "/web/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "threats",
         "report": "threats",  # enriched threat details

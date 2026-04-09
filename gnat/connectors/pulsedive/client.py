@@ -44,6 +44,10 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         PulseDive API key (anonymous requests are rate-limited).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "indicator",
         "threat-actor": "threat",

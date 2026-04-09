@@ -51,6 +51,10 @@ class MandiantClient(BaseClient, ConnectorMixin):
         Mandiant API secret (used as OAuth2 ``client_secret``).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v4"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = _STIX_TO_ENDPOINT
 
     def __init__(

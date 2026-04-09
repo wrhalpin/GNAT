@@ -69,6 +69,10 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
         Cyble Vision access token.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v4"
+    API_PREFIX: str = "/engine/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "iocs",
         "report": "alerts",

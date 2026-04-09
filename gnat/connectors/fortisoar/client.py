@@ -68,6 +68,10 @@ class FortiSOARClient(BaseClient, ConnectorMixin):
         Password for authentication.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "incident": "incidents",
         "observed-data": "alerts",

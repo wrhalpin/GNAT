@@ -58,6 +58,10 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         Threat Command account id (required for Threat Command).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilities",
         "indicator": "iocs",

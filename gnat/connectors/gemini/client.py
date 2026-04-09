@@ -21,6 +21,10 @@ class GeminiClient(BaseClient, ConnectorMixin):
     GNAT Connector for Google Gemini with search-to-STIX capabilities.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1beta"
+    API_PREFIX: str = ""
+
     stix_type_map = {
         "report": "generate_content",
     }

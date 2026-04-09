@@ -72,6 +72,10 @@ class AxoniusClient(BaseClient, ConnectorMixin):
         Axonius API secret.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "report": "assets",
         "vulnerability": "vulnerabilities",

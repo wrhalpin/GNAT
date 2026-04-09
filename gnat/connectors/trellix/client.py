@@ -69,6 +69,10 @@ class TrellixClient(BaseClient, ConnectorMixin):
         IAM token endpoint base URL.  Defaults to ``"https://iam.mcafee-cloud.com"``.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/mvision/epo/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "iocs",
         "malware": "detections",

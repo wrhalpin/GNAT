@@ -79,6 +79,10 @@ class HIBPClient(BaseClient, ConnectorMixin):
         HIBP API key from haveibeenpwned.com/API/Key.
     """
 
+    TRUST_LEVEL: str = "untrusted_external"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "vulnerability": "breaches",
         "identity": "pasteaccount",

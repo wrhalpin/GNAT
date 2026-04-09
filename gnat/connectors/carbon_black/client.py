@@ -87,6 +87,10 @@ class CarbonBlackClient(BaseClient, ConnectorMixin):
         Connector/API ID that accompanies the ``api_key``.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v6"
+    API_PREFIX: str = "/appservices"
+
     stix_type_map: dict[str, str] = {
         "indicator": "alerts",
         "malware": "processes",

@@ -72,6 +72,10 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
         Password for Basic Auth.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/rest"
+
     stix_type_map: dict[str, str] = {
         "observed-data": "event",
         "incident": "incident",

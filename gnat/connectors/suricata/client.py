@@ -63,6 +63,10 @@ class SuricataClient(BaseClient, ConnectorMixin):
         Path to the Suricata EVE JSON log.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "observed-data": "alerts",
     }
