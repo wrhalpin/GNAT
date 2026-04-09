@@ -36,11 +36,17 @@ https://api.controlup.io/reference
 https://support.controlup.com/docs/create-an-api-key
 """
 
+import json as _json
+import logging
 import re
 from typing import Any, Optional
 
+import urllib3
+
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+
+logger = logging.getLogger(__name__)
 
 
 class ControlUpClient(BaseClient, ConnectorMixin):
@@ -85,13 +91,24 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         api_key: str = "",
         org_id: str = "",
         product: str = "dex",
+        dal_host: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize ControlUpClient."""
+        """Initialize ControlUpClient.
+
+        Parameters
+        ----------
+        dal_host : str, optional
+            Base URL for the Data Access Layer (DAL) API.  The DAL endpoint is
+            typically served from a tenant-specific host, e.g.
+            ``https://your-tenant.controlup.com``.  When not provided, *host*
+            is reused (appropriate if pointing at a single-tenant deployment).
+        """
         super().__init__(host=host, **kwargs)
         self._api_key = api_key
         self._org_id = org_id
         self._product = product.lower()
+        self._dal_host = (dal_host or host).rstrip("/")
 
     # ── URL helpers ───────────────────────────────────────────────────────
 
@@ -113,6 +130,9 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         self._auth_headers["Authorization"] = f"Bearer {self._api_key}"
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
+        # DAL API requires org ID as a request header rather than a URL path segment
+        if self._org_id:
+            self._auth_headers["x-cu-organization-id"] = self._org_id
 
     def health_check(self) -> bool:
         """Ping the devices endpoint with page size 1."""
@@ -449,6 +469,154 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         resp = self.post(self._url("data/query"), json=body)
         return resp if isinstance(resp, dict) else {"data": [], "totalCount": 0}
 
+    def query_dal(
+        self,
+        index: str,
+        metrics: Optional[list[str]] = None,
+        filters: Optional[dict[str, Any]] = None,
+        limit: int = 100,
+    ) -> dict[str, Any]:
+        """
+        Query the ControlUp Data Access Layer (DAL) API.
+
+        The DAL uses a different endpoint and request schema from the REST API:
+        ``POST /api/dal/v1/query`` on the tenant-specific host (configured via
+        *dal_host* at construction time).  The org ID is passed as the
+        ``x-cu-organization-id`` header rather than a URL path segment.
+
+        Available indices include ``"devices"``, ``"sessions"``,
+        ``"processes"``, ``"network"``, and ``"user-experience"``.  Device
+        records expose geolocation fields: ``location.city``,
+        ``location.country``, ``location.latitude``, ``location.longitude``.
+
+        Parameters
+        ----------
+        index : str
+            DAL index name (e.g. ``"devices"``).
+        metrics : list[str], optional
+            Specific columns to return.  ``None`` returns all columns.
+        filters : dict, optional
+            Key/value filter conditions applied server-side.
+        limit : int
+            Maximum rows to return (API maximum: 1000).
+
+        Returns
+        -------
+        dict
+            DAL response with a ``"results"`` list and ``"total"`` count.
+
+        Examples
+        --------
+        >>> cu = ControlUpClient(
+        ...     host="https://api.controlup.io",
+        ...     dal_host="https://your-tenant.controlup.com",
+        ...     api_key=..., org_id=...,
+        ... )
+        >>> cu.authenticate()
+        >>> resp = cu.query_dal(
+        ...     index="devices",
+        ...     metrics=["deviceName", "location.city", "location.country",
+        ...              "location.latitude", "location.longitude"],
+        ...     limit=500,
+        ... )
+        >>> for row in resp["results"]:
+        ...     print(row["deviceName"], row.get("location.city"))
+        """
+        if not self._authenticated:
+            self.authenticate()
+            self._authenticated = True
+
+        body: dict[str, Any] = {"index": index, "limit": min(limit, 1000)}
+        if metrics:
+            body["metrics"] = metrics
+        if filters:
+            body["filters"] = filters
+
+        url = f"{self._dal_host}/api/dal/v1/query"
+        headers: dict[str, str] = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        # Merge in auth headers (Bearer token + x-cu-organization-id)
+        headers.update(self._auth_headers)
+
+        logger.debug("DAL POST %s  index=%r", url, index)
+        try:
+            resp = self._http.request(
+                "POST",
+                url,
+                body=_json.dumps(body).encode("utf-8"),
+                headers=headers,
+                timeout=urllib3.Timeout(connect=10.0, read=30.0),
+            )
+        except Exception as exc:
+            raise GNATClientError(f"DAL request failed: {exc}") from exc
+
+        if resp.status >= 400:
+            body_text = resp.data.decode("utf-8", errors="replace")
+            raise GNATClientError(
+                f"DAL HTTP {resp.status} from {url}",
+                status=resp.status,
+                body=body_text,
+            )
+
+        if not resp.data:
+            return {"results": [], "total": 0}
+
+        try:
+            return _json.loads(resp.data.decode("utf-8"))
+        except _json.JSONDecodeError:
+            return {"results": [], "total": 0}
+
+    def get_device_locations(self, limit: int = 1000) -> dict[str, dict[str, Any]]:
+        """
+        Fetch native device geolocation data from the ControlUp DAL.
+
+        Queries the ``"devices"`` index for the four location metrics and
+        returns a mapping of ``hostname → location dict``.
+
+        Parameters
+        ----------
+        limit : int
+            Maximum number of device records to retrieve.
+
+        Returns
+        -------
+        dict[str, dict]
+            ``{hostname: {"city": ..., "country": ..., "lat": ..., "lon": ...}}``
+            Values are ``None`` / empty string when ControlUp has no location
+            data for that device.
+
+        Examples
+        --------
+        >>> locations = cu.get_device_locations()
+        >>> loc = locations.get("WORKSTATION-ALICE", {})
+        >>> print(loc["city"], loc["country"], loc["lat"], loc["lon"])
+        San Jose United States 37.338 -121.886
+        """
+        resp = self.query_dal(
+            index="devices",
+            metrics=[
+                "deviceName",
+                "location.city",
+                "location.country",
+                "location.latitude",
+                "location.longitude",
+            ],
+            limit=limit,
+        )
+        result: dict[str, dict[str, Any]] = {}
+        for row in resp.get("results", []):
+            name = row.get("deviceName", "")
+            if name:
+                result[name] = {
+                    "city":    row.get("location.city", ""),
+                    "country": row.get("location.country", ""),
+                    "lat":     row.get("location.latitude"),
+                    "lon":     row.get("location.longitude"),
+                }
+        return result
+
     def get_session_statistics(self, device_id: Optional[str] = None) -> dict[str, Any]:
         """
         Retrieve aggregated session statistics.
@@ -518,6 +686,15 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         if os_family in ("windows-server", "linux", "unix"):
             infra_type = "server"
 
+        # Location data — present when the native dict comes from query_dal()
+        # (DAL uses dot-notation keys) or when REST responses include a nested
+        # "location" object.  We surface both forms to STIX extension fields.
+        loc = native.get("location", {}) if isinstance(native.get("location"), dict) else {}
+        loc_city    = loc.get("city",      native.get("location.city",      ""))
+        loc_country = loc.get("country",   native.get("location.country",   ""))
+        loc_lat     = loc.get("latitude",  native.get("location.latitude"))
+        loc_lon     = loc.get("longitude", native.get("location.longitude"))
+
         stix: dict[str, Any] = {
             "type": "infrastructure",
             "id": f"infrastructure--cu-{device_id}",
@@ -533,6 +710,10 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             "x_cu_health_score": health,
             "x_cu_tags": tags[:20],
             "x_cu_ip_addresses": ip_addrs[:10],
+            "x_cu_location_city": loc_city,
+            "x_cu_location_country": loc_country,
+            "x_cu_location_lat": loc_lat,
+            "x_cu_location_lon": loc_lon,
             "x_source_platform": "controlup",
         }
         return stix
