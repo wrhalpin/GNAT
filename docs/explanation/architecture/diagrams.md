@@ -25,14 +25,55 @@ GNAT is structured as a layered architecture:
 |-------|---------|---------------|
 | User Interfaces | `gnat/cli/`, `gnat/tui/`, `gnat/serve/` | CLI subcommands, Textual TUI, FastAPI REST + TAXII |
 | GNATClient Façade | `gnat/client.py` | Single entry point for all operations |
+| **Control & Safety (Phase 4)** | **`gnat/core/`** | **ExecutionContext, Domain boundaries, QueryBudget, trust enforcement** |
 | Core Pipelines | `gnat/ingest/`, `gnat/analysis/`, `gnat/agents/`, `gnat/research/` | Ingestion, analysis, AI, and research |
+| **Reasoning Layer (Phase 4C)** | **`gnat/reasoning/`** | **HypothesisEngine, ReasoningEngine, evidence scoring** |
+| **Agent Governance (Phase 4D)** | **`gnat/agents/governor.py`, `gnat/agents/hitl.py`** | **AgentGovernor, HITLGateway, XSOAR escalation** |
 | Intelligence Products | `gnat/reporting/`, `gnat/dissemination/` | Report lifecycle, export, webhooks |
 | Data Layer | `gnat/orm/`, `gnat/context/`, `gnat/search/` | STIX ORM, workspace persistence, Solr search |
+| **Custom SDOs (Phase 4C)** | **`gnat/stix/sdos/`** | **STIXHypothesis, NegativeEvidenceRecord** |
 | Platform Connectors | `gnat/connectors/` (99 platforms) | Bidirectional integration with external platforms |
-| HTTP Client Layer | `gnat/clients/`, `gnat/async_client/` | urllib3 (sync) + httpx (async) |
+| HTTP Client Layer | `gnat/clients/`, `gnat/async_client/` | urllib3 (sync) + httpx (async) + budget tracking |
 | Scheduling | `gnat/schedule/` | Cron-based feed scheduling |
+| **Testing Framework (Phase 4E)** | **`gnat/testing/`** | **SimulationConnector, ReplayRunner, AgentTestHarness** |
 
 → Full narrative: [`docs/architecture.md`](../../architecture.md)
+
+---
+
+## Phase 4 Control Layer
+
+Phase 4 adds a **control and safety** layer that sits above all pipelines and connectors.
+Every GNAT operation is now tagged with an `ExecutionContext` that carries its identity,
+trust level, domain, and resource budget.
+
+```mermaid
+flowchart LR
+    subgraph Control ["gnat/core/ — Control Layer"]
+        CTX[ExecutionContext\ncontext_id, trust_level\ndomain, workspace_id]
+        BDG[QueryBudget\nmax_units, consumed]
+        DOM[Domain Boundary\n@domain_boundary decorator]
+    end
+
+    subgraph Reasoning ["gnat/reasoning/ — Reasoning Layer"]
+        HE[HypothesisEngine\npropose → evaluate → close]
+        RE[ReasoningEngine\nprioritize observables]
+    end
+
+    subgraph Gov ["gnat/agents/ — Governance"]
+        AG[AgentGovernor\ncan_act, rate_limit, audit]
+        HG[HITLGateway\nevaluate impact tier]
+    end
+
+    CTX --> BDG
+    CTX --> DOM
+    CTX --> HE
+    CTX --> RE
+    CTX --> AG
+    AG --> HG
+```
+
+→ ADRs: [0039](adrs/0039-ADR-execution-context.md) · [0040](adrs/0040-ADR-connector-trust-model.md) · [0041](adrs/0041-ADR-idempotency-schema-evolution.md) · [0042](adrs/0042-ADR-hypothesis-engine.md) · [0043](adrs/0043-ADR-negative-evidence.md) · [0044](adrs/0044-ADR-reasoning-engine.md) · [0045](adrs/0045-ADR-agent-governance.md) · [0046](adrs/0046-ADR-hitl-gateway.md) · [0047](adrs/0047-ADR-workspace-isolation.md) · [0048](adrs/0048-ADR-query-budget.md) · [0049](adrs/0049-ADR-testing-framework.md)
 
 ---
 
