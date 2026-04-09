@@ -56,6 +56,34 @@ class GNATClientError(Exception):
         self.body = body
 
 
+class BudgetExceeded(GNATClientError):
+    """
+    Raised when an :class:`~gnat.core.context.ExecutionContext` query budget
+    is exhausted before the requested operation can complete.
+
+    Attributes
+    ----------
+    connector : str
+        Name of the connector that triggered the budget check.
+    cost : int
+        Cost units the connector attempted to consume.
+    remaining : int
+        Budget units remaining when the check failed (always 0 or negative).
+    """
+
+    def __init__(self, connector: str, cost: int, remaining: int) -> None:
+        """Initialize BudgetExceeded."""
+        super().__init__(
+            f"Query budget exhausted: {connector!r} requires {cost} units "
+            f"but only {remaining} remaining.",
+            status=0,
+            body="",
+        )
+        self.connector = connector
+        self.cost = cost
+        self.remaining = remaining
+
+
 class BaseClient:
     """
     urllib3-backed HTTP client base class for all GNAT connectors.
@@ -79,7 +107,26 @@ class BaseClient:
     _auth_headers : dict
         Headers injected into every request after :meth:`authenticate` runs.
         Subclasses should populate this during authentication.
+
+    Class Variables
+    ---------------
+    TRUST_LEVEL : str
+        Trust classification for this connector.  Set explicitly on each
+        subclass.  Valid values: ``"trusted_internal"``, ``"semi_trusted"``,
+        ``"untrusted_external"``.  Defaults to ``"semi_trusted"``.
+    API_VERSION : str
+        API version string (e.g. ``"v2"``).  Empty string means unversioned.
+    API_PREFIX : str
+        URL path prefix used by this connector's API version (e.g. ``"/v3"``).
+    COST_UNIT : int
+        Relative cost weight for budget accounting.  Single-object lookups
+        use 1; bulk pulls use 10; search operations use 5.
     """
+
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = ""
+    API_PREFIX: str = ""
+    COST_UNIT: int = 1
 
     def __init__(
         self,
@@ -97,6 +144,8 @@ class BaseClient:
         self.config = config or {}
         self._auth_headers: dict[str, str] = {}
         self._authenticated = False
+        # Optional ExecutionContext for budget tracking (set by callers)
+        self._context: Any = None
 
         retry = Retry(
             total=max_retries,
@@ -231,6 +280,12 @@ class BaseClient:
         if not self._authenticated:
             self.authenticate()
             self._authenticated = True
+
+        # Deduct from query budget if one is attached via ExecutionContext
+        if self._context is not None:
+            budget = getattr(self._context, "budget", None)
+            if budget is not None:
+                budget.consume(self.COST_UNIT, type(self).__name__)
 
         url = urljoin(self.host + "/", path.lstrip("/"))
         if params:

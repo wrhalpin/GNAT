@@ -102,3 +102,46 @@ def permissions_for(role: Role) -> set[Permission]:
 def roles_with(permission: Permission) -> list[Role]:
     """Return all roles that have *permission*."""
     return [r for r, perms in ROLE_PERMISSIONS.items() if permission in perms]
+
+
+# ---------------------------------------------------------------------------
+# Agent permission matrix
+# ---------------------------------------------------------------------------
+
+class AgentActionType(str, Enum):
+    """Action types that agents can request permission to perform."""
+
+    READ_STIX         = "read_stix"          # Read STIX objects from workspace
+    WRITE_STIX        = "write_stix"         # Create/modify STIX objects
+    DELETE_STIX       = "delete_stix"        # Remove STIX objects
+    ENRICH            = "enrich"             # Call connector enrichment
+    INGEST            = "ingest"             # Pull data from external sources
+    EXPORT            = "export"             # Push data to external systems
+    TRIGGER_PLAYBOOK  = "trigger_playbook"   # Fire SOAR playbook
+    MANAGE_WORKSPACE  = "manage_workspace"   # Create/delete workspaces
+    ESCALATE          = "escalate"           # Raise impact level / request human review
+    HYPOTHESIZE       = "hypothesize"        # Propose or evaluate hypotheses
+
+
+# Default permission matrix: which action types are permitted per trust level
+_TRUST_ACTION_PERMISSIONS: dict[str, set[AgentActionType]] = {
+    "trusted_internal": set(AgentActionType),  # all actions
+    "semi_trusted": {
+        AgentActionType.READ_STIX,
+        AgentActionType.WRITE_STIX,
+        AgentActionType.ENRICH,
+        AgentActionType.INGEST,
+        AgentActionType.HYPOTHESIZE,
+        AgentActionType.ESCALATE,
+    },
+    "untrusted_external": {
+        AgentActionType.READ_STIX,
+        AgentActionType.ENRICH,
+        AgentActionType.HYPOTHESIZE,
+    },
+}
+
+
+def agent_can_act(trust_level: str, action_type: AgentActionType) -> bool:
+    """Return True if *trust_level* permits *action_type* by default."""
+    return action_type in _TRUST_ACTION_PERMISSIONS.get(trust_level, set())

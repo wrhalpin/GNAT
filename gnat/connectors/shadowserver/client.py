@@ -57,6 +57,12 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
     api_secret : str
         Shadowserver API secret for HMAC signing.
     """
+    TRUST_LEVEL: str = "untrusted_external"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api-query"
+    COST_UNIT: int = 1
+
+
 
     stix_type_map: dict[str, str] = {
         "indicator": "ip",

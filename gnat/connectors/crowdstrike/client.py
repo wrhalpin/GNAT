@@ -23,6 +23,12 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 class CrowdStrikeClient(BaseClient, ConnectorMixin):
     """HTTP client for the CrowdStrike Falcon REST API."""
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/oauth2"
+    COST_UNIT: int = 1
+
+
 
     stix_type_map: dict[str, str] = {
         "indicator": "iocs",

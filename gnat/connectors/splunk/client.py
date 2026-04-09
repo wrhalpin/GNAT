@@ -85,6 +85,12 @@ class SplunkClient(BaseClient, ConnectorMixin):
     config : SplunkConfig, optional
         Fully-constructed config object (alternative to keyword args).
     """
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/services"
+    COST_UNIT: int = 10
+
+
 
     def __init__(
         self,

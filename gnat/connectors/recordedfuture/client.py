@@ -23,6 +23,11 @@ from gnat.connectors.base_connector import ConnectorMixin
 class RecordedFutureClient(BaseClient, ConnectorMixin):
     """HTTP client for the Recorded Future Connect API v2."""
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/v2"
+    COST_UNIT: int = 1
+
     stix_type_map: dict[str, str] = {
         "indicator": "ip",
         "malware": "malware",

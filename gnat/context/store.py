@@ -56,6 +56,7 @@ Schema overview
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from datetime import datetime, timezone
@@ -131,6 +132,10 @@ if _HAS_SQLALCHEMY:
         )
         # Arbitrary JSON metadata (analyst notes, tags, config overrides, etc.)
         metadata_json = Column(Text, nullable=True, default="{}")
+        # Trust boundary for workspace isolation (4E-1): minimum connector trust level
+        trust_boundary = Column(String(50), nullable=True, default="semi_trusted")
+        # JSON list of connector class names allowed to read/write this workspace
+        allowed_connector_refs = Column(Text, nullable=True, default="[]")
 
         objects = relationship(
             "WorkspaceObjectModel",
@@ -188,6 +193,8 @@ if _HAS_SQLALCHEMY:
         is_dirty = Column(Boolean, default=False, nullable=False)
         # Soft-delete — marks objects removed from workspace without DB purge
         is_deleted = Column(Boolean, default=False, nullable=False)
+        # Idempotency key for replay-safe writes: (connector_id, stix_type, external_id, content_hash)
+        idempotency_key = Column(String(255), nullable=True, unique=True)
 
         workspace = relationship("WorkspaceModel", back_populates="objects")
 
@@ -381,16 +388,75 @@ class WorkspaceStore:
 
     # ── Object CRUD ────────────────────────────────────────────────────────
 
+    @staticmethod
+    def make_idempotency_key(
+        connector_id: str,
+        stix_type: str,
+        external_id: str,
+        stix_dict: dict,
+    ) -> str:
+        """
+        Compute a stable idempotency key for a STIX object write.
+
+        Key format: ``{connector_id}:{stix_type}:{external_id}:{content_hash}``
+
+        The content hash is a SHA-1 of the serialised stix_dict so that
+        re-ingesting the identical payload produces the same key (collision
+        safe for idempotency purposes; not for security).
+        """
+        content_hash = hashlib.sha1(  # noqa: S324  # nosec — not security use
+            json.dumps(stix_dict, sort_keys=True).encode()
+        ).hexdigest()[:12]
+        return f"{connector_id}:{stix_type}:{external_id}:{content_hash}"
+
     def upsert_object(
-        self, workspace_id: int, stix_dict: dict, source_platform: str = "", is_dirty: bool = False
+        self,
+        workspace_id: int,
+        stix_dict: dict,
+        source_platform: str = "",
+        is_dirty: bool = False,
+        idempotency_key: str | None = None,
     ) -> WorkspaceObjectModel:
         """
         Insert or update a STIX object in a workspace.
 
         If an object with the same ``workspace_id`` + ``stix_id`` already
         exists it is updated in-place; otherwise a new row is inserted.
+
+        When *idempotency_key* is provided, the write is skipped silently if
+        an existing row already carries that key (indicating the same content
+        was already ingested from the same connector).  This makes pipeline
+        replay safe — re-running produces identical storage state.
+
+        Parameters
+        ----------
+        workspace_id : int
+            DB id of the target workspace.
+        stix_dict : dict
+            Full STIX 2.1 object dict; must contain ``"id"`` and ``"type"``.
+        source_platform : str
+            Originating platform/connector name.
+        is_dirty : bool
+            Mark object as modified (needs push-back to platform).
+        idempotency_key : str, optional
+            Pre-computed idempotency key.  Use :meth:`make_idempotency_key`
+            to generate.  When ``None`` no idempotency check is performed.
         """
         with self.session() as sess:
+            # Idempotency check: skip if exact same content already stored
+            if idempotency_key:
+                dup = (
+                    sess.query(WorkspaceObjectModel)
+                    .filter_by(idempotency_key=idempotency_key)
+                    .first()
+                )
+                if dup is not None:
+                    logger.debug(
+                        "upsert_object: idempotency hit for key %s — skipping write",
+                        idempotency_key,
+                    )
+                    return dup
+
             existing = (
                 sess.query(WorkspaceObjectModel)
                 .filter_by(workspace_id=workspace_id, stix_id=stix_dict["id"])
@@ -404,6 +470,8 @@ class WorkspaceStore:
                 existing.is_deleted = False
                 if source_platform:
                     existing.source_platform = source_platform
+                if idempotency_key:
+                    existing.idempotency_key = idempotency_key
                 sess.commit()
                 return existing
 
@@ -415,6 +483,7 @@ class WorkspaceStore:
                 stix_json=json.dumps(stix_dict),
                 source_platform=source_platform,
                 is_dirty=is_dirty,
+                idempotency_key=idempotency_key,
             )
             sess.add(obj)
             sess.commit()

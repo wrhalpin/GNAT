@@ -96,6 +96,12 @@ class QRadarClient:
     config : QRadarConfig
         Validated connector configuration.
     """
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+    COST_UNIT: int = 1
+
+
 
     def __init__(self, config: QRadarConfig) -> None:
         """Initialize QRadarClient."""

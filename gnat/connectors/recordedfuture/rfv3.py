@@ -34,8 +34,10 @@ from gnat.connectors.recordedfuture.client import RecordedFutureClient as Record
 class RecordedFutureClientV3(RecordedFutureBase):
     """Recorded Future Connect API v3 client."""
 
+    TRUST_LEVEL: str = "semi_trusted"
     API_VERSION = "v3"
     API_PREFIX = "/v3"
+    COST_UNIT: int = 1
 
     # ------------------------------------------------------------------
     # Alert API v3  (cursor-paginated; overrides v2 offset behaviour)
