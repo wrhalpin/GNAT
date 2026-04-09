@@ -15,7 +15,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 
 **Package name on PyPI:** `gnat`
 **Import root:** `gnat`
-**Version:** 0.1.0
+**Version:** 1.5.0
 **Python support:** 3.9, 3.10, 3.11, 3.12, 3.13
 **License:** Apache-2.0
 

@@ -8,6 +8,15 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 
 ---
 
+## [1.5.0]
+
+Consolidation release. Bumps the version tag to reflect the full Analyst OS feature set
+(Alembic migrations, Plugin System, Policy Engine, TAXII write endpoints, Workflow
+orchestration, Data Lineage, Analyst Metrics, AI Intel Review Queue, Discord connector,
+STIX Object Validator). Presentation deck rebuilt to v1.5.0 with 5 new slides covering
+all v1.4+ modules.
+
+→ Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
 ### Added — Phase 4: Control, Reasoning, Safety
