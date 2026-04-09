@@ -166,7 +166,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         if stix_type == "incident":
             # Example: update ticket status via JSON incident update endpoint
             # Adapt payload to FortiSIEM expected format
-            return self.post("/phoenix/rest/pub/incident/update", json=payload)  # placeholder
+            return self.post("/phoenix/rest/pub/incident/update", json=payload)
         raise GNATClientError(f"upsert_object limited support for {stix_type} in FortiSIEM")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:

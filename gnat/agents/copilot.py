@@ -591,7 +591,7 @@ class CopilotReader(SourceReader):
             if isinstance(data, list):
                 return data
         except json.JSONDecodeError:
-            pass
+            logger.debug("Response was not JSON; falling back to prose wrapping")
 
         # Prose fallback — wrap as single item
         if reply_text.strip():

@@ -158,22 +158,22 @@ class _ResearchLibrarySearchPatch:
 
         Returns ``None`` if the entry is not found.
         """
-        # This is the join between Solr (returns IDs) and the
-        # workspace metadata store (holds ResearchEntry objects).
-        # Implementation depends on your workspace backend.
-        # Pseudocode shown — fill in with actual store lookup:
-        #
-        #   key = f"stix_id:{stix_id}"
-        #   entry_key = self._library_ws.meta.get(key)
-        #   if entry_key is None and include_staging:
-        #       entry_key = self._staging_ws.meta.get(key)
-        #   if entry_key:
-        #       return self._get_entry(entry_key)
-        #   return None
-        raise NotImplementedError(
-            "_entry_by_stix_id must be implemented in ResearchLibrary "
-            "using your workspace metadata backend."
-        )
+        # Walk every curated entry in the library workspace and check
+        # whether any of its STIX objects carries the requested ID.
+        # Falls back to the staging workspace when include_staging=True.
+        # This scan is O(entries × objects_per_entry); for large libraries
+        # the Solr-backed path in _solr_search already over-fetches to
+        # account for evictions, so the linear scan here is acceptable.
+        for entry in self._load_all_entries(self._library_name, status="curated"):
+            for obj in entry.stix_objects:
+                if isinstance(obj, dict) and obj.get("id") == stix_id:
+                    return entry
+        if include_staging:
+            for entry in self._load_all_entries(self._staging_name, status="pending"):
+                for obj in entry.stix_objects:
+                    if isinstance(obj, dict) and obj.get("id") == stix_id:
+                        return entry
+        return None
 
     # --- Change 3: index on promote ---
 

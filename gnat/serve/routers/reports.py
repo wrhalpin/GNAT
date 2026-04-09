@@ -13,12 +13,15 @@ GET /api/reports/{report_name}      — Serve an HTML report inline or return me
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -52,8 +55,8 @@ def _scan_dir(rdir: str) -> list[dict[str, Any]]:
                     "modified": int(stat.st_mtime),
                 }
             )
-    except OSError:
-        pass
+    except OSError as exc:
+        logger.warning("Failed to scan reports directory %s: %s", reports_dir, exc)
     entries.sort(key=lambda e: e["modified"], reverse=True)
     return entries
 

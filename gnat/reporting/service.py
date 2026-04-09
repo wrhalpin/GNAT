@@ -256,8 +256,8 @@ class ReportService:
                     actor  = changed_by,
                     report_id = report.id,
                 )
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Lineage record_report failed for report %s: %s", report.id, exc)
 
         return report
 

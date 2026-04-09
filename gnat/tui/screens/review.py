@@ -14,8 +14,11 @@ unset, shows an info notice rather than crashing.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -378,11 +381,11 @@ class ReviewScreen(Screen):
                 f"Modified: {stats.get('modified', 0)}  |  "
                 f"Total: {stats.get('total', 0)}"
             )
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Failed to update review stats bar: %s", exc)
 
     def _set_status(self, text: str) -> None:
         try:
             self.query_one("#status-label", Label).update(text)
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Failed to update review status label: %s", exc)

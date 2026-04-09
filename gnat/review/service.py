@@ -376,8 +376,8 @@ class ReviewService:
         for item_id in item_ids:
             try:
                 results.append(self.reject(item_id, reviewed_by=reviewed_by, reason=reason))
-            except ReviewError:
-                pass
+            except ReviewError as exc:
+                logger.warning("reject_batch: skipping item %s — %s", item_id, exc)
         return results
 
     # ------------------------------------------------------------------

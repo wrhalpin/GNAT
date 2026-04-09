@@ -40,6 +40,7 @@ Attach a :class:`~gnat.federation.peer.PeerRegistry` and
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 try:
@@ -48,6 +49,7 @@ try:
 except ImportError:  # pragma: no cover
     raise ImportError('FastAPI is required. Run: pip install "gnat[serve]"')
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/federation", tags=["federation"])
 
@@ -162,8 +164,8 @@ def delete_peer(peer_id: str, request: Request) -> Any:
         sched = getattr(request.app.state, "federation_scheduler", None)
         if sched is not None:
             sched.remove_peer(peer_id)
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Failed to remove peer %s from scheduler: %s", peer_id, exc)
 
     registry.delete(peer_id)
     return {"deleted": peer_id}

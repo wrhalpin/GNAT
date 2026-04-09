@@ -185,5 +185,5 @@ class PolicyEngine:
                 resource   = resource,
                 granted    = granted,
             )
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Policy audit log emit failed: %s", exc)

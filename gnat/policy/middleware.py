@@ -86,8 +86,8 @@ def build_audit_middleware(key_store: Any) -> type:
                     status_code = response.status_code,
                     elapsed_ms  = elapsed_ms,
                 )
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Policy audit middleware emit failed: %s", exc)
 
             return response
 
