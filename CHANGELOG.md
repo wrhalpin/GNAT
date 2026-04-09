@@ -10,6 +10,44 @@ Detailed per-version release notes are available in [`docs/releases/`](docs/rele
 
 ## [Unreleased]
 
+### Added — Phase 4: Control, Reasoning, Safety
+
+**4A — Execution Context & Domain Boundaries**
+- `gnat/core/context.py`: `ExecutionContext` dataclass carrying `context_id` (UUID), `initiated_by`, `domain`, `trust_level`, `policy_set`, `workspace_id`, `created_at`, `parent_context_id`, `is_replay`; factory methods `create()`, `from_connector()`, `child()`
+- `gnat/core/context.py`: `QueryBudget` dataclass — finite query budget for connector calls; `consume()` raises `BudgetExceeded` when exhausted; attached to `ExecutionContext` via `max_budget_units` param on `create()`
+- `gnat/core/domains.py`: `Domain` enum (ingestion/analysis/investigation/reporting/execution); `DOMAIN_CALL_RULES` permission graph; `@domain_boundary(target_domain)` decorator with thread-local stack enforcement; `DomainBoundaryViolation` and `TrustLevelViolation` exceptions; `@require_trust_level(minimum)` decorator
+- `alembic/versions/0004_add_execution_log.py`: `execution_log` table (context_id PK, initiated_by, domain, trust_level, policy_set, workspace_id, created_at, parent_context_id, is_replay, event_type, notes)
+
+**P-1 — Connector Trust & Versioning**
+- `BaseClient`: added `TRUST_LEVEL: str = "semi_trusted"`, `API_VERSION: str = ""`, `API_PREFIX: str = ""`, `COST_UNIT: int = 1` class variables; added `_context: Any = None` attribute for budget tracking
+- `BaseClient._request()`: deducts `COST_UNIT` from `ExecutionContext.budget` when a context is attached; raises `BudgetExceeded` when exhausted
+- `BudgetExceeded(GNATClientError)`: new exception with `connector`, `cost`, `remaining` attributes
+- 16 connectors updated with explicit `TRUST_LEVEL`, `API_VERSION`, `API_PREFIX`: Splunk, XSOAR, Graylog, Security Onion, Sentinel, QRadar, Elastic, Wazuh (trusted_internal); ThreatQ, CrowdStrike, Feedly, VirusTotal, MISP, Recorded Future (semi_trusted); AlienVault, Shadowserver (untrusted_external)
+
+**4B — Idempotency & Schema Evolution**
+- `alembic/versions/0005_add_idempotency.py`: `idempotency_key VARCHAR(255)` column with partial unique index on `workspace_objects`
+- `WorkspaceObjectModel`: `idempotency_key` column added; `WorkspaceStore.make_idempotency_key()` static method computing `{connector_id}:{stix_type}:{external_id}:{sha1[:12]}`
+- `STIXBase`: `schema_version: int = 1` class variable for ORM versioning
+- `alembic/versions/0006_add_agent_tables.py`: `agent_sessions` and `agent_actions` tables
+
+**4C — Hypothesis Engine, Negative Evidence, Reasoning**
+- `gnat/stix/sdos/hypothesis.py`: `STIXHypothesis` custom SDO (`x-gnat-hypothesis`); fields: statement, confidence [0-1], status (pending/confirmed/refuted/inconclusive), supporting_evidence[], refuting_evidence[]; methods: `add_supporting_evidence()`, `add_refuting_evidence()`, `update_confidence()`, `close(verdict)`; full `to_dict()`/`from_dict()` serialization
+- `gnat/stix/sdos/negative_evidence.py`: `NegativeEvidenceRecord` custom SDO (`x-gnat-negative-evidence`); fields: target_ref, queried_connector, ttl_seconds, query_timestamp; methods: `is_expired()`, `seconds_remaining()`
+- `gnat/reasoning/hypothesis.py`: `HypothesisEngine` — `propose()`, `evaluate()` (Solr corroboration + weighted confidence), `close()`, `get()`, `list_all()`; confidence scoring: trusted_internal→0.9, semi_trusted→0.6, untrusted_external→0.3; auto-classify ≥0.75→confirmed, ≤0.15+refutation→refuted
+- `gnat/reasoning/engine.py`: `ReasoningEngine` — `prioritize(observables, context, store_notes)` returning `[(observable, score, explanation)]` sorted descending; composite score: trust_weight×0.4 + age_factor×0.3 + corroboration_bonus×0.3 − neg_penalty×0.5; structured machine-readable explanation dicts; STIX `note` objects stored per scored observable
+
+**4D — Agent Governance & HITL**
+- `gnat/policy/models.py`: `AgentActionType` enum (read_stix/write_stix/delete_stix/enrich/ingest/export/trigger_playbook/manage_workspace/escalate/hypothesize); `agent_can_act(trust_level, action_type)` matrix; `_TRUST_ACTION_PERMISSIONS` per trust level
+- `gnat/agents/governor.py`: `AgentGovernor` — `can_act()`, `require_can_act()`, `record_action()`, `rate_limit_check()` (sliding-window counter), `get_action_log()`, `set_policy_override()`; `AgentAction` dataclass with `to_dict()`; `RateLimitExceeded` and `AgentPermissionDenied` exceptions
+- `gnat/agents/hitl.py`: `HITLGateway` bridging `AgentGovernor` to existing `gnat/review/service.py`; four-tier impact model: low/medium auto-approve, high→ReviewItem PENDING, critical→PENDING + XSOAR notification via `XSOARClient.upsert_object()`; timeout auto-rejection; `evaluate()`, `submit_for_approval()`, `check_approval_status()`, `auto_approve_pending()`
+
+**4E — Isolation, Performance, Testing**
+- `alembic/versions/0007_workspace_trust_boundary.py`: `trust_boundary VARCHAR(50)` and `allowed_connector_refs TEXT` columns on `workspaces`
+- `alembic/versions/0008_query_cost_log.py`: `query_cost_log` table for per-connector cost tracking
+- `WorkspaceModel`: `trust_boundary` and `allowed_connector_refs` columns added
+- `Workspace`: `trust_boundary` and `allowed_connector_refs` attributes loaded from DB; `check_connector_trust(connector)` enforces trust rank and allowlist at connector instantiation
+- `gnat/testing/__init__.py` + `gnat/testing/simulation.py`: `SimulationConnector(BaseClient)` — canned STIX fixtures, no network; `ReplayRunner` — replays `execution_log` sequences through pipeline with assertion support; `AgentTestHarness` — mock-approves all HITL submissions for deterministic agent tests
+
 ### Added — AI & Connector Improvements
 
 **Google Gemini provider (`gnat/agents/gemini.py`)**

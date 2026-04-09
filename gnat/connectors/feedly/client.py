@@ -70,6 +70,12 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     api_token : str
         Feedly access token.
     """
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = "/v3"
+    COST_UNIT: int = 1
+
+
 
     stix_type_map: dict[str, str] = {
         "indicator": "iocFeed",

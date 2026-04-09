@@ -92,6 +92,12 @@ class XSOARClient(BaseClient, ConnectorMixin):
     verify_ssl : bool
         TLS certificate verification.  Default ``True``.
     """
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/xsoar"
+    COST_UNIT: int = 1
+
+
 
     stix_type_map: dict[str, str] = {
         "indicator":     "indicator",

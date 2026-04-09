@@ -72,6 +72,9 @@ class STIXBase:
 
     stix_type: str = "stix-object"
 
+    # Schema version for GNAT ORM evolution (increment on breaking changes)
+    schema_version: int = 1
+
     def __init__(
         self,
         client: Optional["GNATClient"] = None,

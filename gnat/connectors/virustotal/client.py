@@ -52,6 +52,12 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
     api_key : str
         VirusTotal API key.
     """
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = "/api/v3"
+    COST_UNIT: int = 1
+
+
 
     stix_type_map: dict[str, str] = {
         "indicator": "files",

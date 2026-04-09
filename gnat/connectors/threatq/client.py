@@ -111,6 +111,12 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     **kwargs
         Forwarded to :class:`~gnat.clients.base.BaseClient`.
     """
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+    COST_UNIT: int = 1
+
+
 
     stix_type_map: dict[str, str] = {
         "indicator":     "indicator",

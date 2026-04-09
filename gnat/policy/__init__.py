@@ -42,9 +42,11 @@ Quick start::
 from gnat.policy.engine import PolicyEngine
 from gnat.policy.middleware import build_audit_middleware
 from gnat.policy.models import (
+    AgentActionType,
     Permission,
     Role,
     ROLE_PERMISSIONS,
+    agent_can_act,
     permissions_for,
     roles_with,
 )
@@ -52,9 +54,11 @@ from gnat.policy.models import (
 __all__ = [
     "PolicyEngine",
     "build_audit_middleware",
+    "AgentActionType",
     "Permission",
     "Role",
     "ROLE_PERMISSIONS",
+    "agent_can_act",
     "permissions_for",
     "roles_with",
 ]

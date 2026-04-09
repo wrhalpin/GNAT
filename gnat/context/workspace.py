@@ -142,6 +142,10 @@ class Workspace:
         self._snapshot: dict[str, dict] = {}
         # Workspace DB id (WorkspaceStore only)
         self._ws_id: int | None = None
+        # Trust boundary — minimum connector trust level required (4E-1)
+        self.trust_boundary: str = "semi_trusted"
+        # Explicit connector allowlist (empty = no restriction)
+        self.allowed_connector_refs: list[str] = []
 
         self._init_store()
 
@@ -154,6 +158,14 @@ class Workspace:
         if isinstance(self._store, WorkspaceStore):
             ws_model = self._store.get_or_create_workspace(self.name, description=self.description)
             self._ws_id = ws_model.id
+            # Load trust isolation settings (4E-1)
+            self.trust_boundary = getattr(ws_model, "trust_boundary", None) or "semi_trusted"
+            import json as _json
+            raw_refs = getattr(ws_model, "allowed_connector_refs", None) or "[]"
+            try:
+                self.allowed_connector_refs = _json.loads(raw_refs)
+            except (ValueError, TypeError):
+                self.allowed_connector_refs = []
             # Re-hydrate in-memory cache from persisted objects
             for stix_dict in self._store.get_objects(self._ws_id):
                 obj = self._from_dict(stix_dict)
@@ -701,6 +713,44 @@ class Workspace:
 
         if isinstance(self._store, WorkspaceStore):
             self._store.mark_clean(self._ws_id)
+
+    # ── Trust boundary enforcement (4E-1) ──────────────────────────────────────
+
+    def check_connector_trust(self, connector: Any) -> None:
+        """
+        Verify that *connector* satisfies this workspace's trust boundary.
+
+        Raises ``PermissionError`` if the connector's ``TRUST_LEVEL`` is
+        below the workspace ``trust_boundary``, or if the connector is not
+        in the ``allowed_connector_refs`` allowlist (when the list is non-empty).
+
+        Parameters
+        ----------
+        connector : object
+            Any :class:`~gnat.clients.base.BaseClient` subclass instance.
+        """
+        _TRUST_ORDER = {"trusted_internal": 2, "semi_trusted": 1, "untrusted_external": 0}
+        connector_trust = getattr(type(connector), "TRUST_LEVEL", "semi_trusted")
+        required_trust = self.trust_boundary or "semi_trusted"
+
+        connector_rank = _TRUST_ORDER.get(connector_trust, 0)
+        required_rank = _TRUST_ORDER.get(required_trust, 1)
+
+        if connector_rank < required_rank:
+            connector_name = type(connector).__name__
+            raise PermissionError(
+                f"Connector {connector_name!r} (trust={connector_trust!r}) "
+                f"does not meet workspace {self.name!r} trust boundary "
+                f"({required_trust!r} required). Access denied."
+            )
+
+        if self.allowed_connector_refs:
+            connector_name = type(connector).__name__
+            if connector_name not in self.allowed_connector_refs:
+                raise PermissionError(
+                    f"Connector {connector_name!r} is not in the allowed connector "
+                    f"list for workspace {self.name!r}."
+                )
 
     def _resolve_source(self, name: str | None) -> GlobalContext:
         """Internal helper for resolve source."""
