@@ -67,6 +67,10 @@ class ZeekClient(BaseClient, ConnectorMixin):
         ``"tsv"`` (default Zeek) or ``"json"`` (json-logs package).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "observed-data": "notices",
     }

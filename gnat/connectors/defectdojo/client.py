@@ -69,6 +69,10 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         DefectDojo API token.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "vulnerability": "findings",
         "report": "engagements",

@@ -23,6 +23,10 @@ from gnat.connectors.base_connector import ConnectorMixin
 class NetskopeClient(BaseClient, ConnectorMixin):
     """HTTP client for the Netskope REST API v2."""
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "urllist",
         "malware": "malware",

@@ -45,6 +45,10 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         Starlight API key (generated under Settings → API Keys).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/connect/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "threat_intel",
         "observed-data": "alerts",

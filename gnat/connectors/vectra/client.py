@@ -64,6 +64,10 @@ class VectraClient(BaseClient, ConnectorMixin):
         Vectra API token (Bearer).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v2.5"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "observed-data": "detections",
         "threat-actor": "hosts",

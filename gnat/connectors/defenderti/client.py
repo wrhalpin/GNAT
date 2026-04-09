@@ -58,6 +58,10 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         Service principal client secret.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1.0"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "indicator": "tiIndicators",
         "threat-actor": "tiIndicators",

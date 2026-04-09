@@ -77,6 +77,10 @@ class JiraClient(BaseClient, ConnectorMixin):
         Request timeout in seconds.  Default ``30``.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = "/rest/api"
+
     stix_type_map: dict[str, str] = {
         "note": "issue",
         "course-of-action": "issue",

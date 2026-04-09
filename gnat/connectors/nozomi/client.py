@@ -81,6 +81,10 @@ class NozomiClient(BaseClient, ConnectorMixin):
         Optional password for Basic auth.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api/open"
+
     stix_type_map: dict[str, str] = {
         "indicator": "alerts",
         "vulnerability": "vulnerabilities",

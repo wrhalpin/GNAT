@@ -86,6 +86,10 @@ class TaniumClient(BaseClient, ConnectorMixin):
         Password for session-based auth (fallback).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "intel",
         "vulnerability": "findings",

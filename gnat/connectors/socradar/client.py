@@ -41,6 +41,10 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         SOCRadar company / tenant ID (required for attack-surface endpoints).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "ioc",
         "threat-actor": "threat_actor",

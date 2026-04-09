@@ -73,6 +73,10 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         OAuth2 client secret (for Reveal(x) 360 cloud only).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "observed-data": "detections",
         "network-traffic": "records",

@@ -71,6 +71,10 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         Password for Basic Auth.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/phoenix/rest"
+
     stix_type_map: dict[str, str] = {
         "incident": "incident",
         "observed-data": "event",

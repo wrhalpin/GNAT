@@ -71,6 +71,10 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         Qualys password (for Basic Auth).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api/2.0/fo"
+
     stix_type_map: dict[str, str] = {
         "vulnerability": "knowledge_base/vuln",
         "report": "asset/host/vm/detection",

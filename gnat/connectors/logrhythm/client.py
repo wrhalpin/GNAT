@@ -85,6 +85,10 @@ class LogRhythmClient(BaseClient, ConnectorMixin):
         OAuth2 client secret (LogRhythm Axon / cloud deployments only).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "indicator": "alarms",
         "malware": "cases",

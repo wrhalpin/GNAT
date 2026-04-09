@@ -81,6 +81,10 @@ class PrismaCloudClient(BaseClient, ConnectorMixin):
         Prisma Cloud secret key.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "indicator": "alert",
         "vulnerability": "vulnerability",

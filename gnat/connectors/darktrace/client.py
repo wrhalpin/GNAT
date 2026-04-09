@@ -99,6 +99,10 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         Darktrace API private key (used for HMAC signing).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "observed-data": "modelbreaches",
         "threat-actor": "devices",

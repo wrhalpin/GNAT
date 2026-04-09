@@ -43,6 +43,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
         CloudSEK organisation ID for multi-tenant deployments.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/xvigil"
+
     stix_type_map: dict[str, str] = {
         "indicator": "indicators",
         "observed-data": "alerts",

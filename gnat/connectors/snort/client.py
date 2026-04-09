@@ -80,6 +80,10 @@ class SnortClient(BaseClient, ConnectorMixin):
         ``"json"`` (Snort 3) or ``"fast"`` (Snort 2 fast alerts).
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "observed-data": "alerts",
     }

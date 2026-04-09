@@ -99,6 +99,10 @@ class SynapseClient(BaseClient, ConnectorMixin):
         :class:`~gnat.clients.base.BaseClient`.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         # SCOs — Vertex Synapse inet/file forms
         "ipv4-addr": "inet:ipv4",

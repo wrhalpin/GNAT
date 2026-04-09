@@ -71,6 +71,10 @@ class TenableOneClient(BaseClient, ConnectorMixin):
         Tenable secret key.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "vulnerability": "vulnerabilities",
         "report": "exposure-view",  # cards + attack paths

@@ -67,6 +67,10 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         OAuth2 client secret.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "threat-actor": "companies",
         "vulnerability": "findings",

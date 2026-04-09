@@ -72,6 +72,10 @@ class SophosClient(BaseClient, ConnectorMixin):
         Sophos tenant ID (``X-Tenant-ID`` header).  Auto-discovered if omitted.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/endpoint"
+
     stix_type_map: dict[str, str] = {
         "indicator": "blocked-items",
         "malware": "detections",

@@ -60,6 +60,10 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         Determines the URL prefix used for all requests.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/dex"
+
     stix_type_map: dict[str, str] = {
         "infrastructure": "devices",
         "observed-data": "sessions",

@@ -66,6 +66,10 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         Request timeout in seconds.  Default ``30``.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api/now"
+
     # Base path for all Table API calls
     _TABLE_BASE = "/api/now/table"
     _SI_TABLE = "sn_si_incident"

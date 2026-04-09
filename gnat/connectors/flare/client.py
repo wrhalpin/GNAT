@@ -46,6 +46,10 @@ class FlareClient(BaseClient, ConnectorMixin):
         Flare tenant ID for multi-tenant deployments.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "leaks",
         "observed-data": "events",

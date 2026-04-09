@@ -58,6 +58,10 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         ``"token"`` (default) or ``"hmac"``.
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "indicators",
         "threat-actor": "groups",

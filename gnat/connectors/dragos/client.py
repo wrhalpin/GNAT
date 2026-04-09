@@ -82,6 +82,10 @@ class DragosClient(BaseClient, ConnectorMixin):
         Dragos API secret.
     """
 
+    TRUST_LEVEL: str = "trusted_internal"
+    API_VERSION: str = "v1"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "threat-actor": "activity-groups",
         "indicator": "indicators",

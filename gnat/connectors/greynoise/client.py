@@ -70,6 +70,10 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
         GreyNoise API key (Community or Enterprise).
     """
 
+    TRUST_LEVEL: str = "untrusted_external"
+    API_VERSION: str = "v3"
+    API_PREFIX: str = ""
+
     stix_type_map: dict[str, str] = {
         "observed-data": "ip",
         "indicator": "ip",

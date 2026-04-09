@@ -47,6 +47,10 @@ class YetiClient(BaseClient, ConnectorMixin):
         Yeti API key (generated under Account → API Keys).
     """
 
+    TRUST_LEVEL: str = "semi_trusted"
+    API_VERSION: str = "v2"
+    API_PREFIX: str = "/api"
+
     stix_type_map: dict[str, str] = {
         "indicator": "observables",
         "threat-actor": "entities",
