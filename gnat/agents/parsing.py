@@ -71,6 +71,10 @@ from typing import Any
 from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel
 from gnat.agents.prompts import PARSING_SYSTEM, PARSING_USER
 from gnat.ingest.base import RawRecord, RecordMapper
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from gnat.agents.llm import LLMClient
 from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.base import STIXBase
 from gnat.orm.indicator import Indicator
@@ -177,8 +181,21 @@ class ParsingAgent(RecordMapper):
         extract_vulnerabilities: bool = True,
         always_yield_summary: bool = True,
         label: str = "ParsingAgent",
+        llm_client: LLMClient | None = None,
     ):
-        """Initialize ParsingAgent."""
+        """
+        Initialize ParsingAgent.
+
+        Parameters
+        ----------
+        config : AgentConfig
+            Claude API configuration.
+        llm_client : LLMClient, optional
+            Pre-configured :class:`~gnat.agents.llm.LLMClient` instance.
+            When supplied, routes API calls through the unified facade
+            (supporting multi-backend and fallback chains) instead of the
+            legacy ``ClaudeClient``.
+        """
         super().__init__()
         self._config = config
         self._min_conf = min_confidence
@@ -189,6 +206,7 @@ class ParsingAgent(RecordMapper):
         self._do_vulns = extract_vulnerabilities
         self._always_summary = always_yield_summary
         self._client = ClaudeClient(config)
+        self._llm: LLMClient | None = llm_client
 
     # ── RecordMapper interface ─────────────────────────────────────────────
 
@@ -240,26 +258,53 @@ class ParsingAgent(RecordMapper):
     # ── Extraction ─────────────────────────────────────────────────────────
 
     def _extract(self, text: str, source_url: str, source_topic: str) -> ParsedIntel | None:
-        """Call Claude to extract structured intel from text."""
+        """Call the configured LLM backend to extract structured intel from text."""
         user_msg = PARSING_USER.format(
             text=text,
             source_url=source_url or "(unknown)",
             source_topic=source_topic or "(unknown)",
         )
 
-        try:
-            response = self._client.complete(
-                system=PARSING_SYSTEM,
-                user=user_msg,
-                temperature=0.1,
-            )
-        except RuntimeError as exc:
-            logger.error("ParsingAgent: Claude API error: %s", exc)
-            return None
-
-        data = self._client.json_from(response)
+        if self._llm is not None:
+            # Route through unified LLMClient (multi-backend + fallback)
+            try:
+                data = self._llm.structured(
+                    prompt=user_msg,
+                    output_schema={
+                        "type": "object",
+                        "properties": {
+                            "summary": {"type": "string"},
+                            "indicators": {"type": "array"},
+                            "ttps": {"type": "array"},
+                            "actors": {"type": "array"},
+                            "vulnerabilities": {"type": "array"},
+                            "affected_products": {"type": "array"},
+                            "confidence": {"type": "number"},
+                        },
+                    },
+                    temperature=0.1,
+                    system=PARSING_SYSTEM,
+                )
+            except Exception as exc:
+                logger.error("ParsingAgent: LLMClient error: %s", exc)
+                return None
+        else:
+            # Legacy ClaudeClient path (backwards compatible)
+            try:
+                response = self._client.complete(
+                    system=PARSING_SYSTEM,
+                    user=user_msg,
+                    temperature=0.1,
+                )
+            except RuntimeError as exc:
+                logger.error("ParsingAgent: Claude API error: %s", exc)
+                return None
+            data = self._client.json_from(response)
         if not data or not isinstance(data, dict):
-            text_fallback = self._client.text_from(response)
+            # For LLMClient path, `response` may not be set; use empty fallback
+            text_fallback = ""
+            if self._llm is None:
+                text_fallback = self._client.text_from(response)  # type: ignore[arg-type]
             if text_fallback:
                 return ParsedIntel(
                     summary=text_fallback[:2000],

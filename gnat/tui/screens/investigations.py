@@ -58,6 +58,7 @@ class InvestigationsScreen(Screen):
         Binding("escape", "app.pop_screen", "Back",    show=True),
         Binding("ctrl+r", "refresh",        "Refresh", show=True),
         Binding("ctrl+n", "new_dialog",     "New",     show=True),
+        Binding("ctrl+e", "export_csv",     "Export",  show=True),
     ]
 
     CSS = """
@@ -110,10 +111,11 @@ class InvestigationsScreen(Screen):
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
-        self._db_url      = db_url or os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
-        self._config_path = config_path
-        self._service: Any = None
+        self._db_url          = db_url or os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
+        self._config_path     = config_path
+        self._service: Any    = None
         self._selected_id: str | None = None
+        self._investigations: list[Any] = []
 
     # ── Compose ────────────────────────────────────────────────────────────────
 
@@ -191,13 +193,14 @@ class InvestigationsScreen(Screen):
                 sort_desc = True,
             )
             investigations = self._service.list(query=q)
+            self._investigations = list(investigations)
         except Exception as exc:
             self._set_status(f"[red]Error loading: {exc}[/]")
             return
 
         table: DataTable = self.query_one("#inv-table", DataTable)
         table.clear()
-        for inv in investigations:
+        for inv in self._investigations:
             table.add_row(
                 inv.id[:8] + "…",
                 inv.title[:45],
@@ -264,6 +267,37 @@ class InvestigationsScreen(Screen):
         self._set_status(
             "[yellow]Enter title in search box and press Ctrl+N again to create.[/]"
         )
+
+    def action_export_csv(self) -> None:
+        """Export the current filtered investigation list as CSV."""
+        import csv
+        import os
+        from datetime import datetime
+
+        if not self._investigations:
+            self._set_status("[yellow]No investigations to export.[/]")
+            return
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path  = os.path.expanduser(f"~/gnat_investigations_{timestamp}.csv")
+        fieldnames = ["id", "title", "status", "severity", "created_by", "created_at"]
+
+        try:
+            with open(out_path, "w", newline="", encoding="utf-8") as fh:
+                writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
+                writer.writeheader()
+                for inv in self._investigations:
+                    writer.writerow({
+                        "id":         getattr(inv, "id", ""),
+                        "title":      getattr(inv, "title", ""),
+                        "status":     str(getattr(inv, "status", "")),
+                        "severity":   getattr(inv, "severity", ""),
+                        "created_by": getattr(inv, "created_by", ""),
+                        "created_at": str(getattr(inv, "created_at", "")),
+                    })
+            self._set_status(f"[green]Exported {len(self._investigations)} rows → {out_path}[/]")
+        except Exception as exc:
+            self._set_status(f"[red]Export failed: {exc}[/]")
 
     # ── Helpers ────────────────────────────────────────────────────────────────
 

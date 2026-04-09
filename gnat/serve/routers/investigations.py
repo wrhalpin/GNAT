@@ -37,11 +37,27 @@ instance via ``app.state.investigation_service``::
 
 from __future__ import annotations
 
+import csv
+import io
+import json
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/investigations", tags=["investigations"])
+
+
+class BulkTransitionRequest(BaseModel):
+    """Request body for POST /api/investigations/bulk-transition."""
+
+    ids:    list[str]
+    status: str
+    note:   str | None = None
+    author: str        = "api"
 
 
 def _get_service(request: Request):
@@ -460,3 +476,150 @@ def get_summary(request: Request, inv_id: str) -> dict[str, Any]:
         return svc.summary(inv_id)
     except Exception as exc:
         raise HTTPException(404, str(exc))
+
+
+# ── Bulk transition ───────────────────────────────────────────────────────────
+
+@router.post("/bulk-transition")
+def bulk_transition(
+    request: Request,
+    body:    BulkTransitionRequest,
+) -> dict[str, Any]:
+    """
+    Transition multiple investigations to the same target status.
+
+    Parameters
+    ----------
+    ids : list[str]
+        Investigation IDs to transition.
+    status : str
+        Target status string.
+    note : str, optional
+        Transition note appended to each investigation.
+    author : str
+        Analyst performing the bulk transition.
+
+    Returns
+    -------
+    dict
+        ``{"total": N, "succeeded": M, "failed": [...]}``
+    """
+    svc = _get_service(request)
+    succeeded = 0
+    failed: list[dict[str, str]] = []
+
+    for inv_id in body.ids:
+        try:
+            svc.transition(
+                inv_id,
+                new_status = body.status,
+                note       = body.note,
+                author     = body.author,
+            )
+            succeeded += 1
+        except Exception as exc:
+            failed.append({"id": inv_id, "error": str(exc)})
+            logger.warning("bulk_transition: %s failed — %s", inv_id, exc)
+
+    return {
+        "total":     len(body.ids),
+        "succeeded": succeeded,
+        "failed":    failed,
+    }
+
+
+# ── Export ────────────────────────────────────────────────────────────────────
+
+@router.get("/export")
+def export_investigations(
+    request:    Request,
+    format:     str        = Query("csv", description="Export format: csv | json | stix"),
+    status:     str | None = Query(None),
+    created_by: str | None = Query(None),
+    limit:      int        = Query(1000, ge=1, le=10000),
+) -> Any:
+    """
+    Export filtered investigations as CSV, JSON, or a STIX bundle.
+
+    Parameters
+    ----------
+    format : str
+        ``"csv"`` (default), ``"json"``, or ``"stix"``
+    status : str, optional
+        Comma-separated status filter.
+    created_by : str, optional
+        Filter by creator.
+    limit : int
+        Maximum records to export.
+    """
+    svc = _get_service(request)
+
+    try:
+        from gnat.analysis.investigations.service import InvestigationQuery
+        q = InvestigationQuery(
+            statuses   = [s.strip() for s in status.split(",")] if status else None,
+            created_by = created_by,
+            page       = 1,
+            page_size  = limit,
+        )
+        investigations = svc.list(q)
+    except Exception as exc:
+        raise HTTPException(400, f"Query failed: {exc}") from exc
+
+    if format.lower() == "json":
+        data = json.dumps(
+            [_inv_to_dict(inv) for inv in investigations],
+            indent=2, default=str
+        )
+        return StreamingResponse(
+            io.StringIO(data),
+            media_type   = "application/json",
+            headers      = {"Content-Disposition": "attachment; filename=investigations.json"},
+        )
+
+    if format.lower() == "stix":
+        bundle = {
+            "type":    "bundle",
+            "id":      "bundle--gnat-investigations-export",
+            "objects": [_inv_to_stix_dict(inv) for inv in investigations],
+        }
+        data = json.dumps(bundle, indent=2, default=str)
+        return StreamingResponse(
+            io.StringIO(data),
+            media_type   = "application/json",
+            headers      = {"Content-Disposition": "attachment; filename=investigations.stix.json"},
+        )
+
+    # Default: CSV
+    output = io.StringIO()
+    fieldnames = ["id", "title", "status", "severity", "created_by", "created_at", "updated_at"]
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for inv in investigations:
+        writer.writerow(_inv_to_dict(inv))
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type   = "text/csv",
+        headers      = {"Content-Disposition": "attachment; filename=investigations.csv"},
+    )
+
+
+def _inv_to_dict(inv: Any) -> dict[str, Any]:
+    """Convert an Investigation to a flat dict."""
+    return {
+        "id":         getattr(inv, "id", ""),
+        "title":      getattr(inv, "title", ""),
+        "status":     str(getattr(inv, "status", "")),
+        "severity":   getattr(inv, "severity", ""),
+        "created_by": getattr(inv, "created_by", ""),
+        "created_at": str(getattr(inv, "created_at", "")),
+        "updated_at": str(getattr(inv, "updated_at", "")),
+    }
+
+
+def _inv_to_stix_dict(inv: Any) -> dict[str, Any]:
+    """Convert an Investigation to a STIX-like dict for bundle export."""
+    d = _inv_to_dict(inv)
+    d["type"] = "x-gnat-investigation"
+    return d

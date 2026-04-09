@@ -16,7 +16,9 @@ Uses urllib3 via BaseClient (no openai SDK dependency).
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from typing import Any
+from urllib.parse import urljoin
 
 from gnat.agents.base import LLMProvider
 from gnat.clients.base import BaseClient, GNATClientError
@@ -145,6 +147,132 @@ class OpenAICompatibleProvider(LLMProvider, BaseClient):
             raise GNATClientError(
                 f"{self.provider.capitalize()} structured output failed: {e}"
             ) from e
+
+    def stream(self, prompt: str, **kwargs: Any) -> Iterator[str]:
+        """
+        Yield incremental text chunks from a streaming OpenAI-compatible completion.
+
+        Parses server-sent events line by line.  Only ``choices[0].delta.content``
+        chunks yield text; ``[DONE]`` terminates the stream.
+        """
+        self.authenticate()
+        system_text: str = kwargs.pop("system", "")
+        messages: list[dict[str, Any]] = []
+        if system_text:
+            messages.append({"role": "system", "content": system_text})
+        messages.append({"role": "user", "content": prompt})
+
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": kwargs.pop("temperature", 0.7),
+            "stream": True,
+        }
+        if "max_tokens" in kwargs:
+            payload["max_tokens"] = kwargs.pop("max_tokens")
+
+        headers: dict[str, str] = dict(self._auth_headers)
+        headers["Content-Type"] = "application/json"
+        headers["Accept"] = "text/event-stream"
+
+        url = urljoin(self.host + "/", "v1/chat/completions")
+        response = self._http.request(
+            "POST",
+            url,
+            body=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            preload_content=False,
+        )
+        try:
+            if response.status >= 400:
+                body_text = response.read().decode("utf-8", errors="replace")
+                raise GNATClientError(
+                    f"{self.provider} streaming HTTP {response.status}",
+                    status=response.status,
+                    body=body_text,
+                )
+            for raw_line in response:
+                line = raw_line.decode("utf-8").rstrip("\n\r")
+                if not line.startswith("data: "):
+                    continue
+                data_str = line[6:]
+                if data_str == "[DONE]":
+                    break
+                try:
+                    event = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                delta = event.get("choices", [{}])[0].get("delta", {})
+                text = delta.get("content")
+                if text:
+                    yield text
+        finally:
+            response.release_conn()
+
+    def tool_call(
+        self,
+        prompt: str,
+        tools: list[dict[str, Any]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """
+        Invoke OpenAI function calling and return the first function result.
+
+        Parameters
+        ----------
+        prompt : str
+            User message.
+        tools : list[dict]
+            OpenAI tool definitions with ``type: "function"`` and ``function`` key.
+
+        Returns
+        -------
+        dict
+            ``{"name": str, "input": dict}``
+        """
+        self.authenticate()
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "tools": tools,
+            "tool_choice": "auto",
+            "temperature": kwargs.get("temperature", 0.0),
+        }
+        resp = self.post("/v1/chat/completions", json=payload)
+        tool_calls = resp.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
+        if not tool_calls:
+            raise GNATClientError(
+                f"{self.provider} did not return any tool_calls — check tool definitions"
+            )
+        fn = tool_calls[0].get("function", {})
+        try:
+            arguments = json.loads(fn.get("arguments", "{}"))
+        except json.JSONDecodeError:
+            arguments = {}
+        return {"name": fn.get("name", ""), "input": arguments}
+
+    def embed(self, texts: list[str], **kwargs: Any) -> list[list[float]]:
+        """
+        Return dense embedding vectors using the OpenAI ``/v1/embeddings`` endpoint.
+
+        Parameters
+        ----------
+        texts : list[str]
+            Input strings to embed (max 2048 tokens per item for most models).
+        **kwargs
+            ``model`` override (default ``text-embedding-3-small``).
+
+        Returns
+        -------
+        list[list[float]]
+            Embedding vectors in the same order as *texts*.
+        """
+        self.authenticate()
+        embed_model = kwargs.get("model", "text-embedding-3-small")
+        payload = {"model": embed_model, "input": texts}
+        resp = self.post("/v1/embeddings", json=payload)
+        items = sorted(resp.get("data", []), key=lambda x: x.get("index", 0))
+        return [item["embedding"] for item in items]
 
     # ── Convenience methods ────────────────────────────────────────────────
 

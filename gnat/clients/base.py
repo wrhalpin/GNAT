@@ -28,6 +28,8 @@ Example (connector authors)::
 import base64
 import json
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urlencode, urljoin
 
@@ -35,6 +37,42 @@ import urllib3
 from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ConnectorHealthResult:
+    """
+    Detailed health result returned by :meth:`BaseClient.health_check_detailed`.
+
+    Parameters
+    ----------
+    ok : bool
+        ``True`` if the health check passed.
+    latency_ms : float
+        Round-trip latency in milliseconds.
+    error : str | None
+        Error message when ``ok=False``.
+    checked_at : datetime
+        UTC timestamp of the check.
+    trust_level : str
+        Connector ``TRUST_LEVEL`` value.
+    """
+
+    ok:          bool             = False
+    latency_ms:  float            = 0.0
+    error:       str | None       = None
+    checked_at:  datetime         = field(default_factory=lambda: datetime.now(timezone.utc))
+    trust_level: str              = "semi_trusted"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialise to a JSON-friendly dict."""
+        return {
+            "ok":          self.ok,
+            "latency_ms":  round(self.latency_ms, 2),
+            "error":       self.error,
+            "checked_at":  self.checked_at.isoformat(),
+            "trust_level": self.trust_level,
+        }
 
 
 class GNATClientError(Exception):
@@ -180,6 +218,42 @@ class BaseClient:
             If the subclass does not override this method.
         """
         raise NotImplementedError("Connector subclasses must implement authenticate()")
+
+    def health_check_detailed(self) -> "ConnectorHealthResult":
+        """
+        Return a detailed health result including latency timing.
+
+        Default implementation delegates to :meth:`health_check` (which
+        connectors override) and wraps the result in a
+        :class:`ConnectorHealthResult`.
+
+        Connector subclasses may override this method to return richer
+        diagnostic information.
+
+        Returns
+        -------
+        ConnectorHealthResult
+        """
+        import time
+        from datetime import datetime, timezone
+
+        start_ns = time.perf_counter_ns()
+        error: str | None = None
+        ok = False
+        try:
+            result = self.health_check()  # type: ignore[attr-defined]
+            ok     = bool(result) if result is not None else True
+        except Exception as exc:
+            error = str(exc)
+        elapsed_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
+
+        return ConnectorHealthResult(
+            ok          = ok,
+            latency_ms  = elapsed_ms,
+            error       = error,
+            checked_at  = datetime.now(timezone.utc),
+            trust_level = getattr(self, "TRUST_LEVEL", "semi_trusted"),
+        )
 
     # ------------------------------------------------------------------
     # HTTP helpers
