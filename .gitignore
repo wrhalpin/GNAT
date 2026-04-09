@@ -47,3 +47,7 @@ scripts/package-lock.json
 test_ws_*/
 test_ws_rg/
 
+# Generated example output files
+controlup_geo_report.txt
+gnat_investigations_*.csv
+
