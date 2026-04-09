@@ -14,11 +14,11 @@ Given an OpenAPI specification file (JSON or YAML) this script generates:
 
 Usage (CLI)::
 
-    python -m gnat.codegen.openapi_generator \\
-        --spec    ./specs/myplatform-openapi.json \\
-        --name    myplatform \\
-        --auth    oauth2 \\
-        --out-dir ./gnat/connectors
+    # Scaffold (no AI)
+    gnat codegen openapi --spec ./specs/myplatform.json --name myplatform --auth oauth2
+
+    # Complete implementation (requires [claude] in config.ini)
+    gnat codegen openapi --spec ./specs/myplatform.json --name myplatform --auth oauth2 --ai
 
 Usage (Python API)::
 
@@ -28,6 +28,7 @@ Usage (Python API)::
         connector_name="myplatform",
         auth_type="api_key",
         out_dir="./gnat/connectors",
+        use_ai=True,
     )
 
 The generator inspects the spec's ``paths`` and ``components/schemas`` to:
@@ -35,10 +36,15 @@ The generator inspects the spec's ``paths`` and ``components/schemas`` to:
 1. Detect CRUD-like endpoints (``GET /resource/{id}``, ``POST /resource``, etc.)
 2. Build ``stix_type_map`` from schema names heuristically.
 3. Scaffold ``to_stix`` / ``from_stix`` with all schema fields as comments.
+
+When *use_ai* is ``True`` and Claude is configured, the AI layer generates
+complete method implementations (``to_stix``, ``from_stix``, CRUD bodies,
+realistic test fixtures) by analysing the full spec in context.
 """
 
 import argparse
 import json
+import logging
 import sys
 import textwrap
 from pathlib import Path
@@ -50,6 +56,8 @@ try:
     _HAS_YAML = True
 except ImportError:
     _HAS_YAML = False
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +72,8 @@ def generate_connector(
     out_dir: str = "./gnat/connectors",
     test_dir: str = "./tests/unit/connectors",
     overwrite: bool = False,
+    use_ai: bool = False,
+    config_path: str | None = None,
 ) -> None:
     """
     Generate a GNAT connector package from an OpenAPI specification.
@@ -83,6 +93,13 @@ def generate_connector(
     overwrite : bool
         If ``False`` (default) raises ``FileExistsError`` when the connector
         directory already exists.
+    use_ai : bool
+        When ``True``, use Claude to generate complete method implementations
+        instead of scaffold stubs.  Falls back to scaffold silently when
+        Claude is not configured or the AI call fails.
+    config_path : str or None
+        Explicit path to ``config.ini`` for AI configuration lookup.
+        Defaults to the normal GNAT config search order.
 
     Raises
     ------
@@ -112,6 +129,38 @@ def generate_connector(
     host = _extract_server(spec)
     type_map = _build_type_map(schemas)
 
+    # --- Optional AI enhancement ---
+    ai_impls: dict[str, str] = {}
+    ai_fixtures: dict[str, str] = {}
+    if use_ai:
+        llm = _try_load_llm(config_path)
+        if llm is None:
+            logger.warning(
+                "AI mode requested but Claude is not configured; falling back to scaffold."
+            )
+        else:
+            try:
+                ai_impls = _ai_enhance(
+                    llm=llm,
+                    spec=spec,
+                    connector_name=name,
+                    class_name=class_name,
+                    endpoints=endpoints,
+                    schemas=schemas,
+                    type_map=type_map,
+                    auth_type=auth_type,
+                )
+                ai_fixtures = _ai_test_fixtures(
+                    llm=llm,
+                    connector_name=name,
+                    schemas=schemas,
+                    type_map=type_map,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "AI enhancement failed, falling back to scaffold: %s", exc
+                )
+
     client_code = _render_client(
         name=name,
         class_name=class_name,
@@ -121,17 +170,19 @@ def generate_connector(
         schemas=schemas,
         type_map=type_map,
         spec_path=spec_path,
+        ai_impls=ai_impls,
     )
 
     init_code = _render_init(name, class_name)
-    test_code = _render_tests(name, class_name)
+    test_code = _render_tests(name, class_name, ai_fixtures=ai_fixtures)
 
     (connector_dir / "client.py").write_text(client_code)
     (connector_dir / "__init__.py").write_text(init_code)
     test_path.parent.mkdir(parents=True, exist_ok=True)
     test_path.write_text(test_code)
 
-    print(f"✅  Connector '{name}' generated:")
+    ai_tag = " (AI-generated)" if ai_impls else ""
+    print(f"✅  Connector '{name}' generated{ai_tag}:")
     print(f"    {connector_dir / 'client.py'}")
     print(f"    {connector_dir / '__init__.py'}")
     print(f"    {test_path}")
@@ -139,7 +190,8 @@ def generate_connector(
     print("Next steps:")
     print(f"  1. Register '{name}' in gnat/clients/__init__.py CLIENT_REGISTRY")
     print(f"  2. Add [{name}] section to your config.ini")
-    print(f"  3. Implement to_stix() and from_stix() in {connector_dir / 'client.py'}")
+    if not ai_impls:
+        print(f"  3. Implement to_stix() and from_stix() in {connector_dir / 'client.py'}")
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +286,223 @@ def _build_type_map(schemas: dict[str, Any]) -> dict[str, str]:
     return result
 
 
+def _build_endpoint_table(endpoints: list[dict[str, Any]]) -> str:
+    """Format endpoints as a compact table for AI prompts."""
+    lines = []
+    for e in endpoints[:40]:
+        params = ", ".join(e["params"]) if e["params"] else ""
+        summary = e["summary"][:60] if e["summary"] else e["operation_id"]
+        lines.append(f"  {e['method']:6} {e['path']:<40} {params:<20} {summary}")
+    return "\n".join(lines)
+
+
+def _build_schema_summary(schemas: dict[str, Any]) -> str:
+    """Format schemas as a compact summary for AI prompts."""
+    lines = []
+    for schema_name, schema in list(schemas.items())[:15]:
+        props = schema.get("properties", {})
+        fields = []
+        for fname, fschema in list(props.items())[:12]:
+            ftype = fschema.get("type", fschema.get("$ref", "any"))
+            if "$ref" in fschema:
+                ftype = fschema["$ref"].split("/")[-1]
+            fields.append(f"{fname}:{ftype}")
+        lines.append(f"  {schema_name}: {', '.join(fields)}")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# AI enhancement
+# ---------------------------------------------------------------------------
+
+
+def _try_load_llm(config_path: str | None) -> Any:
+    """
+    Attempt to load LLMClient from GNAT config.
+
+    Returns ``None`` if Claude is not configured or dependencies are missing.
+    """
+    try:
+        from gnat.config import GNATConfig
+        from gnat.agents.llm import LLMClient
+
+        cfg = GNATConfig(config_path=config_path)
+        claude_cfg = cfg.get("claude")
+        return LLMClient(backend="claude", **claude_cfg)
+    except Exception:
+        return None
+
+
+def _ai_enhance(
+    llm: Any,
+    spec: dict[str, Any],
+    connector_name: str,
+    class_name: str,
+    endpoints: list[dict[str, Any]],
+    schemas: dict[str, Any],
+    type_map: dict[str, str],
+    auth_type: str,
+) -> dict[str, str]:
+    """
+    Use Claude to generate complete method implementations from the OpenAPI spec.
+
+    Returns a dict mapping method name → Python body string (8-space indented,
+    no ``def`` line).  Keys: ``to_stix``, ``from_stix``, ``get_object``,
+    ``list_objects``, ``upsert_object``, ``delete_object``, ``health_check``,
+    and optionally ``helpers`` (additional platform-specific methods).
+    """
+    endpoint_table = _build_endpoint_table(endpoints)
+    schema_summary = _build_schema_summary(schemas)
+    type_map_str = json.dumps(type_map, indent=2)
+
+    system_prompt = textwrap.dedent("""\
+        You are an expert Python developer writing GNAT security platform connector
+        implementations. GNAT connectors inherit from BaseClient which provides:
+          self.get(path, params=None, headers=None) -> dict | list
+          self.post(path, json=None, data=None, params=None, headers=None) -> dict | list
+          self.put(path, json=None, params=None, headers=None) -> dict | list
+          self.patch(path, json=None, params=None, headers=None) -> dict | list
+          self.delete(path, params=None, headers=None) -> dict | list
+        All methods return parsed JSON. Raise GNATClientError on failure.
+        NEVER use requests or urllib3 directly. NEVER call authenticate() manually.
+        Use self.stix_type_map.get(stix_type, stix_type) to resolve resource names.
+        Write idiomatic, production-quality Python 3.9+ code without TODO comments.
+    """)
+
+    user_prompt = textwrap.dedent(f"""\
+        Generate complete Python method body implementations for a GNAT connector.
+
+        Connector name: {connector_name}
+        Class name: {class_name}
+        Auth type: {auth_type}
+
+        API Endpoints:
+        {endpoint_table}
+
+        Schema definitions (field: type):
+        {schema_summary}
+
+        STIX type map (stix_type -> schema_name):
+        {type_map_str}
+
+        Return a JSON object with exactly these keys. Each value is the Python
+        function BODY ONLY (indented 8 spaces, no def line, no decorators):
+
+        {{
+          "health_check": "...",
+          "get_object": "...",
+          "list_objects": "...",
+          "upsert_object": "...",
+          "delete_object": "...",
+          "to_stix": "...",
+          "from_stix": "...",
+          "helpers": "..."
+        }}
+
+        For "helpers": include 1-3 platform-specific convenience methods as a
+        string containing the full def blocks (indented 4 spaces), or "" if none
+        are needed.
+
+        For to_stix: map all detected schema fields to appropriate STIX 2.1
+        properties. Include stix_type, id (use uuid5 of the native id), name,
+        created, modified, and any domain-specific fields.
+
+        For list_objects: detect the correct pagination scheme (offset/page/cursor)
+        from the endpoint parameters. Handle both array and object responses.
+
+        For health_check: use the most appropriate endpoint (status, health, ping,
+        or a lightweight list endpoint). Return True on success.
+    """)
+
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "health_check": {"type": "string"},
+            "get_object": {"type": "string"},
+            "list_objects": {"type": "string"},
+            "upsert_object": {"type": "string"},
+            "delete_object": {"type": "string"},
+            "to_stix": {"type": "string"},
+            "from_stix": {"type": "string"},
+            "helpers": {"type": "string"},
+        },
+        "required": [
+            "health_check", "get_object", "list_objects", "upsert_object",
+            "delete_object", "to_stix", "from_stix", "helpers",
+        ],
+    }
+
+    result = llm.structured(
+        prompt=user_prompt,
+        output_schema=output_schema,
+        system=system_prompt,
+        temperature=0.2,
+        max_tokens=4096,
+    )
+
+    # Strip empty helpers
+    if not result.get("helpers", "").strip():
+        result.pop("helpers", None)
+
+    return result
+
+
+def _ai_test_fixtures(
+    llm: Any,
+    connector_name: str,
+    schemas: dict[str, Any],
+    type_map: dict[str, str],
+) -> dict[str, str]:
+    """
+    Use Claude to generate realistic test fixture dicts for to_stix / from_stix tests.
+
+    Returns dict with keys ``native_fixture`` and ``stix_fixture`` as Python
+    dict-literal strings.
+    """
+    schema_summary = _build_schema_summary(schemas)
+    primary_schema = next(iter(schemas), "unknown")
+
+    user_prompt = textwrap.dedent(f"""\
+        Generate realistic test fixture dicts for a GNAT connector named '{connector_name}'.
+
+        Primary schema: {primary_schema}
+        Schema fields:
+        {schema_summary}
+
+        STIX type map: {json.dumps(type_map)}
+
+        Return JSON with two keys:
+        - "native_fixture": a Python dict literal string representing a realistic
+          native API response object for {primary_schema} (use plausible values,
+          not "test" or "1")
+        - "stix_fixture": a Python dict literal string representing the expected
+          STIX 2.1 output after to_stix() conversion
+
+        Example format for native_fixture:
+        '{{"id": "ioc-7f3a2b", "value": "malicious.example.com", "type": "domain", ...}}'
+    """)
+
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "native_fixture": {"type": "string"},
+            "stix_fixture": {"type": "string"},
+        },
+        "required": ["native_fixture", "stix_fixture"],
+    }
+
+    try:
+        return llm.structured(
+            prompt=user_prompt,
+            output_schema=output_schema,
+            temperature=0.2,
+            max_tokens=1024,
+        )
+    except Exception as exc:
+        logger.debug("AI fixture generation failed: %s", exc)
+        return {}
+
+
 # ---------------------------------------------------------------------------
 # Code rendering
 # ---------------------------------------------------------------------------
@@ -248,28 +517,114 @@ def _render_client(
     schemas: dict[str, Any],
     type_map: dict[str, str],
     spec_path: str,
+    ai_impls: dict[str, str] | None = None,
 ) -> str:
     """Render the client.py module source code."""
+    ai_impls = ai_impls or {}
     auth_snippet = _auth_snippet(auth_type)
     type_map_repr = repr(type_map)
     endpoint_summary = "\n".join(
         f"    # {e['method']:6s} {e['path']}  — {e['summary']}" for e in endpoints[:30]
     )
     schema_fields = _schema_field_comments(schemas)
+    ai_tag = "AI-generated" if ai_impls else "scaffold"
+
+    # Method bodies — use AI impl when available, else scaffold
+    def _body(key: str, scaffold: str) -> str:
+        if key in ai_impls:
+            return ai_impls[key]
+        return scaffold
+
+    health_check_body = _body(
+        "health_check",
+        '        """Check platform connectivity."""\n'
+        '        self.get("/health")\n'
+        '        return True',
+    )
+    get_object_body = _body(
+        "get_object",
+        f'        """TODO: Implement get_object for {name}."""\n'
+        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        '        return self.get(f"/{resource}/{object_id}")',
+    )
+    list_objects_body = _body(
+        "list_objects",
+        f'        """TODO: Implement list_objects for {name}."""\n'
+        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        '        params: Dict[str, Any] = {"limit": page_size, "page": page}\n'
+        '        if filters:\n'
+        '            params.update(filters)\n'
+        '        resp = self.get(f"/{resource}", params=params)\n'
+        '        return resp.get("data", []) if isinstance(resp, dict) else []',
+    )
+    upsert_object_body = _body(
+        "upsert_object",
+        f'        """TODO: Implement upsert_object for {name}."""\n'
+        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        '        obj_id = payload.pop("id", None)\n'
+        '        if obj_id:\n'
+        '            return self.put(f"/{resource}/{obj_id}", json=payload)\n'
+        '        return self.post(f"/{resource}", json=payload)',
+    )
+    delete_object_body = _body(
+        "delete_object",
+        f'        """TODO: Implement delete_object for {name}."""\n'
+        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        '        self.delete(f"/{resource}/{object_id}")',
+    )
+    to_stix_body = _body(
+        "to_stix",
+        f'        """\n'
+        f'        TODO: Map native {name} fields to STIX 2.1.\n\n'
+        f'        Detected schema fields:\n'
+        f'{schema_fields}\n'
+        f'        """\n'
+        '        return {\n'
+        '            "type": "indicator",\n'
+        '            "id": f"indicator--{native.get(\'id\', \'\')}",\n'
+        '            "name": native.get("name", native.get("value", "")),\n'
+        '            "pattern_type": "stix",\n'
+        '            "created": native.get("created_at", native.get("created", "")),\n'
+        '            "modified": native.get("updated_at", native.get("modified", "")),\n'
+        '        }',
+    )
+    from_stix_body = _body(
+        "from_stix",
+        '        """Map STIX 2.1 fields to native format."""\n'
+        '        return {\n'
+        '            "name": stix_dict.get("name", ""),\n'
+        '            "description": stix_dict.get("description", ""),\n'
+        '            "confidence": stix_dict.get("confidence"),\n'
+        '            "labels": stix_dict.get("labels", []),\n'
+        '            "created": stix_dict.get("created", ""),\n'
+        '            "modified": stix_dict.get("modified", ""),\n'
+        '            "valid_from": stix_dict.get("valid_from"),\n'
+        '            "valid_until": stix_dict.get("valid_until"),\n'
+        '            "pattern": stix_dict.get("pattern"),\n'
+        '            "pattern_type": stix_dict.get("pattern_type"),\n'
+        '            "external_references": stix_dict.get("external_references", []),\n'
+        '            "object_marking_refs": stix_dict.get("object_marking_refs", []),\n'
+        '            "stix_id": stix_dict.get("id", ""),\n'
+        '            "stix_type": stix_dict.get("type", ""),\n'
+        '        }',
+    )
+
+    # Optional AI-generated helpers
+    helpers_block = ""
+    if "helpers" in ai_impls and ai_impls["helpers"].strip():
+        helpers_block = f"\n    # --- Platform-specific helpers (AI-generated) ---\n\n{ai_impls['helpers']}\n"
 
     return textwrap.dedent(f'''\
         """
         gnat.connectors.{name}.client
         {"=" * (len(name) + 30)}
 
-        Auto-generated from: {spec_path}
+        Auto-generated ({ai_tag}) from: {spec_path}
         Default host:        {host}
         Auth type:           {auth_type}
 
         Detected endpoints (first 30):
         {endpoint_summary}
-
-        TODO: Implement to_stix() and from_stix() field mappings.
         """
 
         from typing import Any, Dict, List, Optional
@@ -285,76 +640,30 @@ def _render_client(
         {auth_snippet}
 
             def health_check(self) -> bool:
-                """TODO: Replace with a real ping/status endpoint."""
-                self.get("/health")
-                return True
+        {health_check_body}
 
             def get_object(self, stix_type: str, object_id: str) -> Dict[str, Any]:
-                """TODO: Implement get_object for {name}."""
-                resource = self.stix_type_map.get(stix_type, stix_type)
-                return self.get(f"/{{resource}}/{{object_id}}")
+        {get_object_body}
 
             def list_objects(
                 self, stix_type: str,
                 filters: Optional[Dict[str, Any]] = None,
                 page: int = 1, page_size: int = 100,
             ) -> List[Dict[str, Any]]:
-                """TODO: Implement list_objects for {name}."""
-                resource = self.stix_type_map.get(stix_type, stix_type)
-                params: Dict[str, Any] = {{"limit": page_size, "page": page}}
-                if filters:
-                    params.update(filters)
-                resp = self.get(f"/{{resource}}", params=params)
-                return resp.get("data", []) if isinstance(resp, dict) else []
+        {list_objects_body}
 
             def upsert_object(self, stix_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-                """TODO: Implement upsert_object for {name}."""
-                resource = self.stix_type_map.get(stix_type, stix_type)
-                obj_id = payload.pop("id", None)
-                if obj_id:
-                    return self.put(f"/{{resource}}/{{obj_id}}", json=payload)
-                return self.post(f"/{{resource}}", json=payload)
+        {upsert_object_body}
 
             def delete_object(self, stix_type: str, object_id: str) -> None:
-                """TODO: Implement delete_object for {name}."""
-                resource = self.stix_type_map.get(stix_type, stix_type)
-                self.delete(f"/{{resource}}/{{object_id}}")
+        {delete_object_body}
 
             def to_stix(self, native: Dict[str, Any]) -> Dict[str, Any]:
-                """
-                TODO: Map native {name} fields to STIX 2.1.
-
-                Detected schema fields:
-        {schema_fields}
-                """
-                return {{
-                    "type": "indicator",
-                    "id": f"indicator--{{native.get('id', '')}}",
-                    "name": native.get("name", native.get("value", "")),
-                    "pattern_type": "stix",
-                    "created": native.get("created_at", native.get("created", "")),
-                    "modified": native.get("updated_at", native.get("modified", "")),
-                }}
+        {to_stix_body}
 
             def from_stix(self, stix_dict: Dict[str, Any]) -> Dict[str, Any]:
-                """Map STIX 2.1 fields to {name} native format."""
-                return {{
-                    "name": stix_dict.get("name", ""),
-                    "description": stix_dict.get("description", ""),
-                    "confidence": stix_dict.get("confidence"),
-                    "labels": stix_dict.get("labels", []),
-                    "created": stix_dict.get("created", ""),
-                    "modified": stix_dict.get("modified", ""),
-                    "valid_from": stix_dict.get("valid_from"),
-                    "valid_until": stix_dict.get("valid_until"),
-                    "pattern": stix_dict.get("pattern"),
-                    "pattern_type": stix_dict.get("pattern_type"),
-                    "external_references": stix_dict.get("external_references", []),
-                    "object_marking_refs": stix_dict.get("object_marking_refs", []),
-                    "stix_id": stix_dict.get("id", ""),
-                    "stix_type": stix_dict.get("type", ""),
-                }}
-        ''')
+        {from_stix_body}
+        {helpers_block}''')
 
 
 def _auth_snippet(auth_type: str) -> str:
@@ -432,8 +741,34 @@ def _render_init(name: str, class_name: str) -> str:
         ''')
 
 
-def _render_tests(name: str, class_name: str) -> str:
-    """Internal helper for render tests."""
+def _render_tests(
+    name: str,
+    class_name: str,
+    ai_fixtures: dict[str, str] | None = None,
+) -> str:
+    """
+    Render the pytest test scaffold.
+
+    Parameters
+    ----------
+    name : str
+        Connector snake_case name.
+    class_name : str
+        Connector class name.
+    ai_fixtures : dict, optional
+        ``{"native_fixture": "...", "stix_fixture": "..."}`` from AI generation.
+        When present, replaces the generic placeholder dicts in STIX tests.
+    """
+    ai_fixtures = ai_fixtures or {}
+    native_fixture = ai_fixtures.get(
+        "native_fixture",
+        '{"id": "1", "name": "test", "created_at": "", "updated_at": ""}',
+    )
+    stix_fixture = ai_fixtures.get(
+        "stix_fixture",
+        '{"type": "indicator", "id": "indicator--1", "name": "test"}',
+    )
+
     return textwrap.dedent(f'''\
         """
         Unit tests for gnat.connectors.{name}
@@ -512,22 +847,28 @@ def _render_tests(name: str, class_name: str) -> str:
 
         class TestToStix:
             def test_returns_valid_stix_keys(self, client):
-                native = {{"id": "1", "name": "test", "created_at": "", "updated_at": ""}}
+                native = {native_fixture}
                 stix = client.to_stix(native)
-                assert stix.get("type") == "indicator"
+                assert "type" in stix
                 assert "id" in stix
                 assert "name" in stix
 
-            def test_id_prefix(self, client):
-                stix = client.to_stix({{"id": "42"}})
-                assert stix["id"].startswith("indicator--")
+            def test_id_has_stix_prefix(self, client):
+                native = {native_fixture}
+                stix = client.to_stix(native)
+                assert "--" in stix["id"], "STIX ID must be in format type--uuid"
 
 
         class TestFromStix:
             def test_returns_dict(self, client):
-                stix = {{"type": "indicator", "id": "indicator--1", "name": "evil.com"}}
+                stix = {stix_fixture}
                 result = client.from_stix(stix)
                 assert isinstance(result, dict)
+
+            def test_round_trip_name(self, client):
+                stix = {stix_fixture}
+                result = client.from_stix(stix)
+                assert "name" in result
         ''')
 
 
@@ -552,6 +893,17 @@ def _main() -> None:
         "--test-dir", default="./tests/unit/connectors", help="Test output directory"
     )
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing connector")
+    parser.add_argument(
+        "--ai",
+        action="store_true",
+        help="Use Claude to generate complete implementations (requires [claude] in config.ini)",
+    )
+    parser.add_argument(
+        "--config",
+        dest="config_path",
+        default=None,
+        help="Path to config.ini for AI configuration",
+    )
     args = parser.parse_args()
 
     try:
@@ -562,6 +914,8 @@ def _main() -> None:
             out_dir=args.out_dir,
             test_dir=args.test_dir,
             overwrite=args.overwrite,
+            use_ai=args.ai,
+            config_path=args.config_path,
         )
     except (FileNotFoundError, FileExistsError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

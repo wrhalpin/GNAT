@@ -307,6 +307,28 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_cg_xs.add_argument("--overwrite", action="store_true", help="Overwrite existing zip file")
 
+    p_cg_oa.add_argument("--ai", action="store_true", help="Use Claude to generate complete implementations")
+    p_cg_oa.add_argument("--config", dest="config_path", default=None, metavar="PATH", help="Path to config.ini for AI lookup")
+
+    p_cg_tests = cg_subs.add_parser("tests", help="Generate unit tests for an existing connector")
+    p_cg_tests.add_argument("--connector", required=True, metavar="NAME", help="Connector name as registered in CLIENT_REGISTRY")
+    p_cg_tests.add_argument("--out-dir", default="./tests/unit/connectors", metavar="DIR", help="Output directory (default: ./tests/unit/connectors)")
+    p_cg_tests.add_argument("--overwrite", action="store_true", help="Overwrite existing test file")
+    p_cg_tests.add_argument("--ai", action="store_true", help="Use Claude to generate realistic fixtures")
+    p_cg_tests.add_argument("--config", dest="config_path", default=None, metavar="PATH", help="Path to config.ini for AI lookup")
+
+    p_cg_reg = cg_subs.add_parser("register", help="Register connectors in CLIENT_REGISTRY")
+    p_cg_reg.add_argument("--connector", default=None, metavar="NAME", help="Register a single connector by name")
+    p_cg_reg.add_argument("--scan", action="store_true", help="Scan for all unregistered connectors")
+    p_cg_reg.add_argument("--dry-run", action="store_true", help="Print changes without writing files")
+
+    p_cg_docs = cg_subs.add_parser("config-docs", help="Regenerate connector config tables in documentation")
+    p_cg_docs.add_argument("--ini", default="config/config.ini.example", metavar="PATH", help="Source INI example file")
+    p_cg_docs.add_argument("--out", default="docs/reference/configuration.md", metavar="PATH", help="Target Markdown file")
+    p_cg_docs.add_argument("--dry-run", action="store_true", help="Print diff without writing")
+    p_cg_docs.add_argument("--ai", action="store_true", help="Use Claude for richer field descriptions")
+    p_cg_docs.add_argument("--config", dest="config_path", default=None, metavar="PATH", help="Path to config.ini for AI lookup")
+
     # ── viz ───────────────────────────────────────────────────────────────
     p_viz = subs.add_parser("viz", help="Workspace visualization")
     viz_subs = p_viz.add_subparsers(
@@ -1131,8 +1153,83 @@ def _cmd_codegen(args: argparse.Namespace) -> int:
                 out_dir=args.out_dir,
                 test_dir=args.test_dir,
                 overwrite=args.overwrite,
+                use_ai=getattr(args, "ai", False),
+                config_path=getattr(args, "config_path", None),
             )
             return 0
+        except Exception as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+
+    elif args.codegen_command == "tests":
+        from gnat.codegen.test_generator import generate_connector_tests
+
+        _info(args, f"Generating tests for {_bold(args.connector)} …")
+        try:
+            generate_connector_tests(
+                connector_name=args.connector,
+                out_dir=args.out_dir,
+                overwrite=args.overwrite,
+                use_ai=getattr(args, "ai", False),
+                config_path=getattr(args, "config_path", None),
+            )
+            return 0
+        except KeyError as exc:
+            print(_red(f"Connector not found: {exc}"), file=sys.stderr)
+            return 1
+        except FileExistsError as exc:
+            print(_red(f"File exists (use --overwrite): {exc}"), file=sys.stderr)
+            return 1
+        except Exception as exc:
+            print(_red(f"Error: {exc}"), file=sys.stderr)
+            return 1
+
+    elif args.codegen_command == "register":
+        from gnat.codegen.registry_sync import scan_unregistered, sync_registry
+
+        if args.scan:
+            gaps = scan_unregistered()
+            if not gaps:
+                print("ℹ️  All connectors are already registered.")
+                return 0
+            for gap in gaps:
+                print(f"  gap: {gap.name}  ({gap.class_name})  [{gap.client_path}]")
+            if not args.dry_run:
+                for gap in gaps:
+                    try:
+                        sync_registry(gap.name)
+                    except Exception as exc:
+                        print(_red(f"  Failed to register {gap.name}: {exc}"), file=sys.stderr)
+            else:
+                print(f"[dry-run] Would register {len(gaps)} connector(s).")
+            return 0
+        elif args.connector:
+            try:
+                sync_registry(args.connector, dry_run=args.dry_run)
+                return 0
+            except (FileNotFoundError, ValueError) as exc:
+                print(_red(f"Error: {exc}"), file=sys.stderr)
+                return 1
+        else:
+            print(_red("Specify --connector NAME or --scan"), file=sys.stderr)
+            return 1
+
+    elif args.codegen_command == "config-docs":
+        from gnat.codegen.config_docs_generator import generate_config_docs
+
+        _info(args, "Regenerating connector config documentation …")
+        try:
+            generate_config_docs(
+                ini_path=args.ini,
+                out_path=args.out,
+                dry_run=args.dry_run,
+                use_ai=getattr(args, "ai", False),
+                config_path=getattr(args, "config_path", None),
+            )
+            return 0
+        except FileNotFoundError as exc:
+            print(_red(f"File not found: {exc}"), file=sys.stderr)
+            return 1
         except Exception as exc:
             print(_red(f"Error: {exc}"), file=sys.stderr)
             return 1
