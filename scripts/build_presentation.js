@@ -302,6 +302,23 @@ pres.author = "wrhalpin@gmail.com";
     fontSize: 9.5, fontFace: "Calibri", italic: true,
     color: C.muted, align: "center", margin: 0
   });
+
+  // Why This Matters banner
+  sl.addShape("rect", {
+    x: 0.35, y: 4.7, w: 9.3, h: 0.56,
+    fill: { color: C.navy2 }, line: { color: C.teal, width: 0.5 }
+  });
+  sl.addText(
+    "Portability: swap one platform, nothing else changes  \u00b7  " +
+    "Coherence: one scheduler, one log stream, one health check  \u00b7  " +
+    "Safety: AI ceiling=60, HITL gate, RBAC, audit trail  \u00b7  " +
+    "Scale: SQLite \u2192 Postgres with one config change",
+    {
+      x: 0.47, y: 4.74, w: 9.06, h: 0.44,
+      fontSize: 9, fontFace: "Calibri", italic: true,
+      color: C.mint, align: "center", margin: 0
+    }
+  );
 }
 
 // ── Slide 5: Connectors (category layout) ─────────────────────────────
@@ -513,10 +530,10 @@ pres.author = "wrhalpin@gmail.com";
 {
   const sl = contentSlide(pres, "Scheduling \u2014 One Scheduler, All Jobs");
 
-  statBox(sl, 0.35, 0.95, 2.15, 1.35, "FeedJob", "Declarative job type", C.teal);
-  statBox(sl, 2.65, 0.95, 2.15, 1.35, "Scheduler", "FeedScheduler threading", C.steel);
-  statBox(sl, 4.95, 0.95, 2.15, 1.35, "ExportJob", "Scheduled export", C.teal);
-  statBox(sl, 7.25, 0.95, 2.45, 1.35, "ReportJob", "Scheduled reports", C.steel);
+  darkCard(sl, 0.35, 0.95, 2.15, 1.35, C.teal,  "FeedJob",       "Declarative job type\nBase class for all scheduled work");
+  darkCard(sl, 2.65, 0.95, 2.15, 1.35, C.steel, "FeedScheduler", "Thread-safe scheduler\nRuns all job types together");
+  darkCard(sl, 4.95, 0.95, 2.15, 1.35, C.teal,  "ExportJob",     "Scheduled EDL / CE export\nExtends FeedJob");
+  darkCard(sl, 7.25, 0.95, 2.45, 1.35, C.steel, "ReportJob",     "Scheduled PDF/DOCX report\nOn-success delivery hook");
 
   sl.addText("Every job type extends FeedJob and runs in the same FeedScheduler", {
     x: 0.35, y: 2.42, w: 9.3, h: 0.3,
@@ -1111,7 +1128,7 @@ pres.author = "wrhalpin@gmail.com";
     ["F2  Library", "Research Library browser \u00b7 promote (Ctrl+P) / reject (Ctrl+X)"],
     ["F3  Scheduler", "Live job status \u00b7 manual trigger with Ctrl+T"],
     ["F4  Reports", "PDF/HTML/DOCX browser \u00b7 open in browser (Ctrl+O)"],
-    ["F5  Health", "Connector health monitor \u00b7 drift detection \u00b7 Ctrl+R refresh"],
+    ["F5  Investigations", "Investigation browser \u00b7 status transitions \u00b7 Ctrl+N new \u00b7 Ctrl+R refresh"],
     ["F6  Review", "AI Intel Review Queue \u00b7 Approve/Reject/Modify with confidence override"],
   ];
   screens.forEach(([name, desc], i) => {
@@ -1217,12 +1234,16 @@ pres.author = "wrhalpin@gmail.com";
     fontSize: 9, fontFace: "Calibri", color: C.offwhite
   });
 
-  codeBlock(sl, 0.47, 4.15, 4.31, 0.72,
-    "gnat codegen xsoar --connector threatq --output ./packs/\ngnat codegen openapi --spec api.yaml --target myplatform"
+  codeBlock(sl, 0.47, 3.95, 4.31, 1.1,
+    "gnat codegen xsoar     --connector threatq --output ./packs/\n" +
+    "gnat codegen openapi   --spec api.yaml --name myplatform --ai\n" +
+    "gnat codegen tests     --connector crowdstrike --overwrite\n" +
+    "gnat codegen register  --scan\n" +
+    "gnat codegen config-docs --dry-run"
   );
-  sl.addText("40 unit tests", {
-    x: 0.47, y: 4.94, w: 4.31, h: 0.22,
-    fontSize: 8, fontFace: "Calibri", color: C.muted, italic: true, margin: 0
+  sl.addText("xsoar: 40 tests  \u00b7  openapi + tests + register + config-docs: new in v1.5  \u00b7  --ai: Claude-powered implementations", {
+    x: 0.47, y: 5.12, w: 4.31, h: 0.18,
+    fontSize: 7.5, fontFace: "Calibri", color: C.muted, italic: true, margin: 0
   });
 
   // Right: Contribution
@@ -1863,7 +1884,134 @@ pres.author = "wrhalpin@gmail.com";
   });
 }
 
-// ── Slide 27: Key Advantages ─────────────────────────────────────────────
+// ── Slide 27: Phase 4 — Control, Reasoning, Safety ───────────────────────
+{
+  const sl = contentSlide(pres, "Phase 4 \u2014 Control, Reasoning & Safety");
+
+  sl.addText("\u2713  ExecutionContext \u00b7 Domain Boundaries \u00b7 HypothesisEngine \u00b7 AgentGovernor \u00b7 HITL \u00b7 Workspace Trust  \u2014  shipped in v1.6", {
+    x: 0.4, y: 0.9, w: 9.2, h: 0.35,
+    fontSize: 12, fontFace: "Calibri", italic: true,
+    color: C.green, align: "left", margin: 0
+  });
+
+  // Left column: 5 feature cards
+  const features = [
+    {
+      title: "ExecutionContext",
+      sub: "gnat/core/context.py",
+      body: "Every operation stamped with context_id, domain, trust_level, workspace_id. Append-only execution_log (migration 0004). Full audit trail from connector call to report.",
+      col: C.teal,
+    },
+    {
+      title: "Domain Boundaries",
+      sub: "gnat/core/domains.py",
+      body: "Ingestion \u2194 Analysis \u2194 Investigation \u2194 Reporting are enforced domains. @domain_boundary decorator raises DomainBoundaryViolation on illegal cross-domain calls.",
+      col: C.steel,
+    },
+    {
+      title: "HypothesisEngine + NegativeEvidence",
+      sub: "gnat/reasoning/hypothesis.py",
+      body: "propose \u2192 evaluate \u2192 close lifecycle. Confidence scoring weighted by connector TRUST_LEVEL (0.9/0.6/0.3). NegativeEvidenceRecord suppresses redundant re-queries within TTL.",
+      col: C.teal2,
+    },
+    {
+      title: "AgentGovernor + HITL",
+      sub: "gnat/agents/governor.py  \u00b7  hitl.py",
+      body: "All agent actions routed through permission matrix ([agent_policy] INI). High/critical actions create PENDING ReviewItem via existing gnat/review/. Critical triggers XSOAR playbook.",
+      col: C.amber,
+    },
+    {
+      title: "ReasoningEngine",
+      sub: "gnat/reasoning/engine.py",
+      body: "prioritize(observable_set, context) scores each observable using trust level, hypothesis confidence, NE TTL, age, and corroboration count. Outputs structured machine-readable explanation dict.",
+      col: C.steel,
+    },
+  ];
+
+  features.forEach(({ title, sub, body, col }, i) => {
+    const y = 1.36 + i * 0.82;
+    sl.addShape("rect", {
+      x: 0.35, y, w: 5.5, h: 0.74,
+      fill: { color: C.navy2 }, line: { color: col, width: 0.5 }, shadow: makeShadow()
+    });
+    sl.addShape("rect", {
+      x: 0.35, y, w: 0.08, h: 0.74, fill: { color: col }, line: { width: 0 }
+    });
+    sl.addText(title, {
+      x: 0.55, y: y + 0.06, w: 3.6, h: 0.22,
+      fontSize: 10, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+    });
+    sl.addText(sub, {
+      x: 0.55, y: y + 0.06, w: 5.1, h: 0.22,
+      fontSize: 8, fontFace: "Calibri", italic: true, color: C.muted, align: "right", margin: 0
+    });
+    sl.addText(body, {
+      x: 0.55, y: y + 0.31, w: 5.1, h: 0.38,
+      fontSize: 8, fontFace: "Calibri", color: C.offwhite, margin: 0, valign: "top"
+    });
+  });
+
+  // Right panel: Trust Model
+  sl.addShape("rect", {
+    x: 6.05, y: 1.36, w: 3.6, h: 4.1,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }, shadow: makeShadow()
+  });
+  sl.addShape("rect", {
+    x: 6.05, y: 1.36, w: 3.6, h: 0.38, fill: { color: C.teal }, line: { width: 0 }
+  });
+  sl.addText("Connector Trust Model", {
+    x: 6.17, y: 1.4, w: 3.36, h: 0.3,
+    fontSize: 11, fontFace: "Calibri", bold: true, color: C.white, margin: 0
+  });
+  sl.addText("TRUST_LEVEL on all 99 connectors", {
+    x: 6.17, y: 1.84, w: 3.36, h: 0.22,
+    fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
+  });
+
+  const trustLevels = [
+    { level: "trusted_internal", count: "31", score: "0.9", col: C.green,
+      examples: "Splunk \u00b7 Sentinel \u00b7 QRadar\nXSOAR \u00b7 Elastic \u00b7 Wazuh" },
+    { level: "semi_trusted", count: "61", score: "0.6", col: C.amber,
+      examples: "CrowdStrike \u00b7 ThreatQ \u00b7 MISP\nVirusTotal \u00b7 Mandiant \u00b7 RF" },
+    { level: "untrusted_external", count: "7", score: "0.3", col: C.red,
+      examples: "AlienVault OTX \u00b7 CISA\nShadowServer \u00b7 OSINT" },
+  ];
+
+  trustLevels.forEach(({ level, count, score, col, examples }, i) => {
+    const y = 2.18 + i * 1.04;
+    sl.addShape("rect", {
+      x: 6.17, y, w: 3.3, h: 0.9,
+      fill: { color: C.charcoal }, line: { color: col, width: 0.5 }
+    });
+    sl.addText(count, {
+      x: 6.17, y: y + 0.08, w: 0.55, h: 0.52,
+      fontSize: 28, fontFace: "Calibri", bold: true, color: col, align: "center", margin: 0
+    });
+    sl.addText(level, {
+      x: 6.74, y: y + 0.06, w: 2.6, h: 0.22,
+      fontSize: 9, fontFace: "Calibri", bold: true, color: col, margin: 0
+    });
+    sl.addText("confidence weight: " + score, {
+      x: 6.74, y: y + 0.28, w: 2.6, h: 0.18,
+      fontSize: 8, fontFace: "Calibri", color: C.muted, margin: 0
+    });
+    sl.addText(examples, {
+      x: 6.74, y: y + 0.48, w: 2.6, h: 0.36,
+      fontSize: 7.5, fontFace: "Calibri", color: C.offwhite, margin: 0
+    });
+  });
+
+  sl.addShape("rect", {
+    x: 0.35, y: 5.3, w: 9.3, h: 0.22,
+    fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }
+  });
+  sl.addText("ADRs 0039\u20130049  \u00b7  TRUST_LEVEL on all 99 connectors  \u00b7  Alembic migrations 0004\u20130008  \u00b7  SimulationConnector \u00b7 ReplayRunner \u00b7 AgentTestHarness", {
+    x: 0.47, y: 5.32, w: 9.16, h: 0.18,
+    fontSize: 8, fontFace: "Calibri", color: C.muted, align: "center", margin: 0
+  });
+}
+
+// ── Slide 28: Key Advantages ─────────────────────────────────────────────
 {
   const sl = contentSlide(pres, "The Abstraction Advantage");
 
@@ -1978,11 +2126,11 @@ pres.author = "wrhalpin@gmail.com";
 
   const stats = [
     ["99", "Platform\nConnectors", C.teal],
-    ["2,000+", "Unit\nTests", C.steel],
+    ["3,865+", "Unit\nTests", C.steel],
     ["200+", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
     ["60", "AI Confidence\nCeiling (default)", C.amber],
-    ["5", "New v1.5\nModules", C.teal],
+    ["49", "Architecture\nDecision Records", C.teal],
   ];
 
   stats.forEach(([value, label, col], i) => {
@@ -2054,7 +2202,7 @@ pres.author = "wrhalpin@gmail.com";
 {
   const sl = contentSlide(pres, "All Roadmap Items \u2014 Complete");
 
-  sl.addText("\u2713  Every pending item and roadmap addition has shipped through v1.5.0", {
+  sl.addText("\u2713  Every pending item has shipped  \u2014  v1.5.0 complete  \u00b7  Phase 4 (v1.6) shipped", {
     x: 0.4, y: 0.9, w: 9.2, h: 0.35,
     fontSize: 13, fontFace: "Calibri", italic: true,
     color: C.green, align: "left", margin: 0
@@ -2094,13 +2242,16 @@ pres.author = "wrhalpin@gmail.com";
     ["\u2705", "Data Lineage tracking (append-only event log)"],
     ["\u2705", "Analyst Metrics (ring-buffer \u00b7 9 metric types)"],
     ["\u2705", "AI Intel Review Queue (submit \u2192 approve \u2192 promote)"],
+    ["\u2705", "Phase 4: ExecutionContext + Domain Boundaries (v1.6)"],
+    ["\u2705", "Phase 4: HypothesisEngine + NegativeEvidence + ReasoningEngine"],
+    ["\u2705", "Phase 4: AgentGovernor + HITLGateway + Workspace Trust Boundary"],
   ];
 
   const renderCol = (items, x) => {
     items.forEach(([check, text], i) => {
-      const y = 1.35 + i * 0.27;
+      const y = 1.35 + i * 0.23;
       sl.addShape("rect", {
-        x, y, w: 4.45, h: 0.24,
+        x, y, w: 4.45, h: 0.21,
         fill: { color: i % 2 === 0 ? C.navy2 : C.charcoal }, line: { width: 0 }
       });
       sl.addText(check, {
@@ -2151,7 +2302,7 @@ pres.author = "wrhalpin@gmail.com";
     "99 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines",
     "AI agents (LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini) \u00b7 WorkflowEngine DAG \u00b7 NLP queries \u00b7 Research library",
     "TAXII 2.1 read+write \u00b7 STIX validator \u00b7 Policy RBAC \u00b7 Plugins \u00b7 Lineage \u00b7 Metrics \u00b7 Review Queue",
-    "2,000+ tests \u00b7 ~$50/month Azure \u00b7 Incremental adoption \u00b7 Contribution pipeline",
+    "Phase 4: ExecutionContext \u00b7 HypothesisEngine \u00b7 AgentGovernor \u00b7 HITL  \u00b7  3,865+ tests \u00b7 ~$50/month Azure",
   ];
   sl.addText(summary.map(t => ({ text: t, options: { bullet: true, breakLine: true } })), {
     x: 0.5, y: 2.72, w: 9, h: 1.45,
