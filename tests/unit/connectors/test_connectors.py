@@ -11477,3 +11477,255 @@ class TestDynatraceClient:
     def test_stix_type_map_keys(self, client):
         for key in ("infrastructure", "vulnerability", "indicator", "observed-data", "malware"):
             assert key in client.stix_type_map
+
+
+# ---------------------------------------------------------------------------
+# IPAPIClient (ip-api.com geolocation)
+# ---------------------------------------------------------------------------
+class TestIPAPIClient:
+    _GEO_SUCCESS = {
+        "status": "success",
+        "country": "United States",
+        "countryCode": "US",
+        "region": "CA",
+        "regionName": "California",
+        "city": "Mountain View",
+        "zip": "94043",
+        "lat": 37.4192,
+        "lon": -122.0574,
+        "timezone": "America/Los_Angeles",
+        "isp": "Google LLC",
+        "org": "Google Public DNS",
+        "as": "AS15169 Google LLC",
+        "asname": "GOOGLE",
+        "proxy": False,
+        "hosting": True,
+        "query": "8.8.8.8",
+    }
+
+    @pytest.fixture()
+    def client(self):
+        from gnat.connectors.ip_api.client import IPAPIClient
+        return IPAPIClient()
+
+    @pytest.fixture()
+    def pro_client(self):
+        from gnat.connectors.ip_api.client import IPAPIClient
+        return IPAPIClient(
+            host="https://pro.ip-api.com",
+            api_key="TESTPROKEY",
+            batch_delay=0.0,
+        )
+
+    # ── Auth ──────────────────────────────────────────────────────────────
+
+    def test_authenticate_sets_accept_header(self, client):
+        client.authenticate()
+        assert client._auth_headers.get("Accept") == "application/json"
+
+    def test_no_api_key_no_key_stored(self, client):
+        assert client._api_key == ""
+
+    # ── health_check ─────────────────────────────────────────────────────
+
+    def test_health_check_returns_true_on_success(self, client, monkeypatch):
+        monkeypatch.setattr(client, "lookup_ip", MagicMock(return_value=self._GEO_SUCCESS))
+        assert client.health_check() is True
+
+    def test_health_check_returns_false_on_api_fail(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "lookup_ip", MagicMock(side_effect=GNATClientError("fail"))
+        )
+        assert client.health_check() is False
+
+    def test_health_check_returns_false_on_http_error(self, client, monkeypatch):
+        monkeypatch.setattr(client, "lookup_ip", MagicMock(side_effect=Exception("timeout")))
+        assert client.health_check() is False
+
+    # ── lookup_ip ─────────────────────────────────────────────────────────
+
+    def test_lookup_ip_returns_dict(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=self._GEO_SUCCESS))
+        result = client.lookup_ip("8.8.8.8")
+        assert result["query"] == "8.8.8.8"
+        assert result["country"] == "United States"
+
+    def test_lookup_ip_raises_on_fail_status(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"status": "fail", "message": "private range", "query": "192.168.1.1"}),
+        )
+        with pytest.raises(GNATClientError, match="private range"):
+            client.lookup_ip("192.168.1.1")
+
+    def test_lookup_ip_includes_fields_param(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=self._GEO_SUCCESS))
+        client.lookup_ip("8.8.8.8")
+        call_kwargs = client.get.call_args
+        params = call_kwargs[1].get("params") or call_kwargs[0][1]
+        assert "fields" in params
+        assert "country" in params["fields"]
+
+    def test_lookup_ip_appends_api_key_when_configured(self, pro_client, monkeypatch):
+        monkeypatch.setattr(pro_client, "get", MagicMock(return_value=self._GEO_SUCCESS))
+        pro_client.lookup_ip("8.8.8.8")
+        call_kwargs = pro_client.get.call_args
+        params = call_kwargs[1].get("params") or call_kwargs[0][1]
+        assert params.get("key") == "TESTPROKEY"
+
+    # ── lookup_batch ──────────────────────────────────────────────────────
+
+    def test_lookup_batch_posts_json_body(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value=[self._GEO_SUCCESS]))
+        client.lookup_batch(["8.8.8.8"])
+        call_kwargs = client.post.call_args
+        body = call_kwargs[1].get("json") or call_kwargs[0][1]
+        assert body == [{"query": "8.8.8.8"}]
+
+    def test_lookup_batch_returns_only_successes(self, client, monkeypatch):
+        fail_result = {"status": "fail", "message": "private range", "query": "10.0.0.1"}
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value=[self._GEO_SUCCESS, fail_result])
+        )
+        result = client.lookup_batch(["8.8.8.8", "10.0.0.1"])
+        assert len(result) == 1
+        assert result[0]["query"] == "8.8.8.8"
+
+    def test_lookup_batch_handles_empty_list(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock())
+        result = client.lookup_batch([])
+        assert result == []
+        client.post.assert_not_called()
+
+    # ── lookup_many ───────────────────────────────────────────────────────
+
+    def test_lookup_many_splits_into_chunks_of_100(self, client, monkeypatch):
+        # 150 IPs → 2 batch calls
+        ips = [f"1.2.3.{i}" for i in range(150)]
+        mock_batch = MagicMock(return_value=[])
+        monkeypatch.setattr(client, "lookup_batch", mock_batch)
+        monkeypatch.setattr("gnat.connectors.ip_api.client.time.sleep", MagicMock())
+        client.lookup_many(ips)
+        assert mock_batch.call_count == 2
+        first_chunk = mock_batch.call_args_list[0][0][0]
+        second_chunk = mock_batch.call_args_list[1][0][0]
+        assert len(first_chunk) == 100
+        assert len(second_chunk) == 50
+
+    def test_lookup_many_sleeps_between_batches(self, client, monkeypatch):
+        ips = [f"1.2.{i}.1" for i in range(200)]
+        monkeypatch.setattr(client, "lookup_batch", MagicMock(return_value=[]))
+        sleep_mock = MagicMock()
+        monkeypatch.setattr("gnat.connectors.ip_api.client.time.sleep", sleep_mock)
+        client.lookup_many(ips)
+        # 200 IPs → 2 chunks → 1 sleep between them (not after last)
+        assert sleep_mock.call_count == 1
+
+    def test_lookup_many_returns_flat_list(self, client, monkeypatch):
+        geo1 = {**self._GEO_SUCCESS, "query": "8.8.8.8"}
+        geo2 = {**self._GEO_SUCCESS, "query": "8.8.4.4"}
+        monkeypatch.setattr(client, "lookup_batch", MagicMock(side_effect=[[geo1], [geo2]]))
+        monkeypatch.setattr("gnat.connectors.ip_api.client.time.sleep", MagicMock())
+        result = client.lookup_many(["8.8.8.8"] * 100 + ["8.8.4.4"] * 100)
+        assert len(result) == 2
+
+    # ── to_stix ───────────────────────────────────────────────────────────
+
+    def test_to_stix_type_is_observed_data(self, client):
+        stix = client.to_stix(self._GEO_SUCCESS)
+        assert stix["type"] == "observed-data"
+
+    def test_to_stix_id_contains_ip(self, client):
+        stix = client.to_stix(self._GEO_SUCCESS)
+        assert "8.8.8.8" in stix["id"]
+
+    def test_to_stix_embeds_ipv4_addr_object(self, client):
+        stix = client.to_stix(self._GEO_SUCCESS)
+        ip_obj = stix["objects"]["0"]
+        assert ip_obj["type"] == "ipv4-addr"
+        assert ip_obj["value"] == "8.8.8.8"
+
+    def test_to_stix_all_x_ipapi_fields_present(self, client):
+        stix = client.to_stix(self._GEO_SUCCESS)
+        for field in (
+            "x_ipapi_country", "x_ipapi_country_code", "x_ipapi_region",
+            "x_ipapi_city", "x_ipapi_lat", "x_ipapi_lon", "x_ipapi_isp",
+            "x_ipapi_org", "x_ipapi_as", "x_ipapi_timezone", "x_ipapi_query",
+        ):
+            assert field in stix, f"Missing field: {field}"
+        assert stix["x_ipapi_country"] == "United States"
+        assert stix["x_ipapi_lat"] == 37.4192
+        assert stix["x_ipapi_query"] == "8.8.8.8"
+
+    def test_to_stix_proxy_flag_is_bool(self, client):
+        stix = client.to_stix(self._GEO_SUCCESS)
+        assert isinstance(stix["x_ipapi_proxy"], bool)
+        assert isinstance(stix["x_ipapi_hosting"], bool)
+
+    # ── from_stix ─────────────────────────────────────────────────────────
+
+    def test_from_stix_returns_query_dict(self, client):
+        stix = client.to_stix(self._GEO_SUCCESS)
+        result = client.from_stix(stix)
+        assert result == {"query": "8.8.8.8"}
+
+    def test_from_stix_falls_back_to_embedded_sco(self, client):
+        stix = {
+            "type": "observed-data",
+            "objects": {"0": {"type": "ipv4-addr", "value": "1.2.3.4"}},
+        }
+        result = client.from_stix(stix)
+        assert result == {"query": "1.2.3.4"}
+
+    # ── ConnectorMixin routing ────────────────────────────────────────────
+
+    def test_get_object_calls_lookup_ip(self, client, monkeypatch):
+        monkeypatch.setattr(client, "lookup_ip", MagicMock(return_value=self._GEO_SUCCESS))
+        result = client.get_object("observed-data", "8.8.8.8")
+        assert result["type"] == "observed-data"
+        client.lookup_ip.assert_called_once_with("8.8.8.8")
+
+    def test_get_object_wrong_stix_type_raises(self, client):
+        with pytest.raises(GNATClientError, match="observed-data"):
+            client.get_object("indicator", "8.8.8.8")
+
+    def test_list_objects_uses_ips_filter(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "lookup_many", MagicMock(return_value=[self._GEO_SUCCESS])
+        )
+        result = client.list_objects("observed-data", filters={"ips": ["8.8.8.8"]})
+        assert isinstance(result, list)
+        assert result[0]["type"] == "observed-data"
+        client.lookup_many.assert_called_once_with(["8.8.8.8"])
+
+    def test_list_objects_uses_single_ip_filter(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "lookup_many", MagicMock(return_value=[self._GEO_SUCCESS])
+        )
+        result = client.list_objects("observed-data", filters={"ip": "8.8.8.8"})
+        assert isinstance(result, list)
+        client.lookup_many.assert_called_once_with(["8.8.8.8"])
+
+    def test_list_objects_empty_filters_returns_empty(self, client):
+        result = client.list_objects("observed-data", filters={})
+        assert result == []
+
+    def test_upsert_raises_read_only(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises_read_only(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "8.8.8.8")
+
+    # ── Class-level attributes ────────────────────────────────────────────
+
+    def test_trust_level(self, client):
+        assert client.TRUST_LEVEL == "untrusted_external"
+
+    def test_default_host(self, client):
+        assert "ip-api.com" in client.host
+
+    def test_batch_delay_default(self, client):
+        assert client._batch_delay == 4.0
