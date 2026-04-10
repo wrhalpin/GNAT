@@ -598,6 +598,17 @@ verify_ssl = true
 timeout    = 30
 
 # =============================================================================
+# ip-api.com — IP Geolocation
+# =============================================================================
+[ip_api]
+host        = http://ip-api.com
+; Pro tier (HTTPS + higher rate limits): host = https://pro.ip-api.com
+; api_key   = YOUR_PRO_API_KEY
+timeout     = 30
+batch_delay = 4.0
+; batch_delay: seconds between batch calls (free tier: 15 batches/min → 4s safe)
+
+# =============================================================================
 # Datadog Security / Cloud SIEM
 # =============================================================================
 [datadog]

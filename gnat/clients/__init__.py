@@ -57,6 +57,7 @@ from gnat.connectors.grok.client import GrokClient
 from gnat.connectors.group_ib.client import GroupIBClient
 from gnat.connectors.hibp.client import HIBPClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
+from gnat.connectors.ip_api.client import IPAPIClient
 from gnat.connectors.intel471.client import Intel471Client
 from gnat.connectors.jira.client import JiraClient
 from gnat.connectors.lansweeper.client import LansweeperClient
@@ -193,6 +194,7 @@ CLIENT_REGISTRY: dict = {
     "upguard": UpGuardClient,
     "trendmicro_visionone": TrendMicroVisionOneClient,
     "hibp": HIBPClient,
+    "ip_api": IPAPIClient,
     "tanium": TaniumClient,
     "aws_security": AWSSecurityClient,
     "securityscorecard": SecurityScorecardClient,
@@ -275,4 +277,5 @@ __all__ = [
     "CiscoUmbrellaClient",
     "GNATRemoteConnector",
     "DynatraceClient",
+    "IPAPIClient",
 ]
