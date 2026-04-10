@@ -38,6 +38,7 @@ from gnat.connectors.defectdojo.client import DefectDojoClient
 from gnat.connectors.defenderti.client import DefenderTIClient
 from gnat.connectors.discord.connector import DiscordClient
 from gnat.connectors.dragos.client import DragosClient
+from gnat.connectors.dynatrace.client import DynatraceClient
 from gnat.connectors.elastic.connector import ElasticConnector
 from gnat.connectors.extrahop.client import ExtraHopClient
 from gnat.connectors.feedly.client import FeedlyClient
@@ -196,6 +197,7 @@ CLIENT_REGISTRY: dict = {
     "aws_security": AWSSecurityClient,
     "securityscorecard": SecurityScorecardClient,
     "dragos": DragosClient,
+    "dynatrace": DynatraceClient,
     "datadog": DatadogClient,
     "carbon_black": CarbonBlackClient,
     "cisa": CISAClient,
@@ -272,4 +274,5 @@ __all__ = [
     "OsintFeedConnector",
     "CiscoUmbrellaClient",
     "GNATRemoteConnector",
+    "DynatraceClient",
 ]

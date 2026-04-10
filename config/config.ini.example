@@ -576,6 +576,28 @@ api_key    = your_dragos_api_key_here
 api_secret = your_dragos_api_secret_here
 
 # =============================================================================
+# Dynatrace (Observability + AppSec)
+# =============================================================================
+[dynatrace]
+host      = https://YOUR_ENV_ID.live.dynatrace.com
+api_token = dt0c01.YOUR_API_TOKEN
+; Required Api-Token scopes: entities.read, problems.read,
+;   securityProblems.read, attacks.read, events.read, events.ingest,
+;   metrics.read, logs.read, settings.read, settings.write
+auth_type = token
+;
+; --- Grail / Platform Storage API (optional — enables DQL, log search, biz events)
+; Register an OAuth2 client at https://YOUR_ENV.apps.dynatrace.com/
+; oauth_client_id     = dt0s01.YOUR_OAUTH2_CLIENT_ID
+; oauth_client_secret = dt0s01.YOUR_OAUTH2_CLIENT_SECRET
+; oauth_token_url     = https://sso.dynatrace.com/sso/oauth2/token
+; Required OAuth2 scopes: storage:logs:read storage:events:read
+;   storage:query:execute storage:bizevents:read storage:bizevents:write
+;
+verify_ssl = true
+timeout    = 30
+
+# =============================================================================
 # Datadog Security / Cloud SIEM
 # =============================================================================
 [datadog]

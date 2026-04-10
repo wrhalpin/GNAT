@@ -11056,3 +11056,424 @@ class TestDiscordClient:
         from gnat.connectors.discord.connector import _snowflake_to_ts
         ts = _snowflake_to_ts("not-a-number")
         assert ts.endswith("Z")
+
+
+# ---------------------------------------------------------------------------
+# DynatraceClient
+# ---------------------------------------------------------------------------
+class TestDynatraceClient:
+    @pytest.fixture()
+    def client(self):
+        from gnat.connectors.dynatrace.client import DynatraceClient
+
+        return DynatraceClient(
+            host="https://abc12345.live.dynatrace.com",
+            api_token="dt0c01.TESTTOKEN",
+        )
+
+    @pytest.fixture()
+    def client_with_oauth(self):
+        from gnat.connectors.dynatrace.client import DynatraceClient
+
+        return DynatraceClient(
+            host="https://abc12345.live.dynatrace.com",
+            api_token="dt0c01.TESTTOKEN",
+            oauth_client_id="dt0s01.OAUTHCLIENTID",
+            oauth_client_secret="OAUTHSECRET",
+        )
+
+    # ── Auth ──────────────────────────────────────────────────────────────
+
+    def test_authenticate_sets_api_token_header(self, client):
+        client.authenticate()
+        assert client._auth_headers.get("Authorization") == "Api-Token dt0c01.TESTTOKEN"
+
+    def test_authenticate_does_not_set_oauth_header(self, client):
+        client.authenticate()
+        assert "Bearer" not in client._auth_headers.get("Authorization", "")
+
+    # ── health_check ─────────────────────────────────────────────────────
+
+    def test_health_check_returns_true_on_200(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"entities": []}))
+        assert client.health_check() is True
+
+    def test_health_check_returns_false_on_error(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=Exception("connection refused")))
+        assert client.health_check() is False
+
+    # ── Entities ─────────────────────────────────────────────────────────
+
+    def test_list_entities_returns_list(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"entities": [{"entityId": "HOST-1"}]})
+        )
+        result = client.list_entities(entity_type="HOST", page_size=1)
+        assert isinstance(result, list)
+        assert result[0]["entityId"] == "HOST-1"
+
+    def test_list_entities_paginates_with_next_page_key(self, client, monkeypatch):
+        page1 = {"entities": [{"entityId": "HOST-1"}], "nextPageKey": "page2key"}
+        page2 = {"entities": [{"entityId": "HOST-2"}]}
+        calls = [page1, page2]
+        monkeypatch.setattr(client, "get", MagicMock(side_effect=calls))
+        result = client.list_entities(page_size=1)
+        assert len(result) == 2
+        # Second call must only pass nextPageKey + pageSize
+        second_call_params = client.get.call_args_list[1][1].get("params") or client.get.call_args_list[1][0][1]
+        assert "entitySelector" not in second_call_params
+        assert "nextPageKey" in second_call_params
+
+    def test_get_entity_returns_dict(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"entityId": "HOST-1", "displayName": "web01"})
+        )
+        result = client.get_entity("HOST-1")
+        assert result["entityId"] == "HOST-1"
+
+    def test_tag_entity(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"appliedTags": [{"key": "gnat"}]})
+        )
+        result = client.tag_entity("entityId(HOST-1)", ["gnat"])
+        assert isinstance(result, dict)
+
+    # ── Security problems ─────────────────────────────────────────────────
+
+    def test_list_security_problems_returns_list(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"securityProblems": [{"securityProblemId": "S-1"}]}),
+        )
+        result = client.list_security_problems()
+        assert isinstance(result, list)
+
+    def test_get_security_problem_returns_dict(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"securityProblemId": "S-1", "title": "Log4Shell"}),
+        )
+        result = client.get_security_problem("S-1")
+        assert result["securityProblemId"] == "S-1"
+
+    def test_mute_security_problem(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={}))
+        client.mute_security_problem("S-1", "FALSE_POSITIVE", comment="Not applicable")
+        client.post.assert_called_once()
+
+    def test_unmute_security_problem(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={}))
+        client.unmute_security_problem("S-1", "OTHER")
+        client.post.assert_called_once()
+
+    def test_get_security_problem_affected_entities(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"entities": [{"entityId": "HOST-1"}]}),
+        )
+        result = client.get_security_problem_affected_entities("S-1")
+        assert isinstance(result, list)
+
+    def test_get_security_problem_remediation_items(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"remediationItems": [{"id": "ri-1"}]}),
+        )
+        result = client.get_security_problem_remediation_items("S-1")
+        assert isinstance(result, list)
+
+    # ── Attacks ───────────────────────────────────────────────────────────
+
+    def test_list_attacks_returns_list(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"attacks": [{"attackId": "A-1"}]}),
+        )
+        result = client.list_attacks()
+        assert isinstance(result, list)
+
+    def test_get_attack_returns_dict(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"attackId": "A-1", "type": "SQL_INJECTION"}),
+        )
+        result = client.get_attack("A-1")
+        assert result["attackId"] == "A-1"
+
+    def test_set_attack_handling(self, client, monkeypatch):
+        monkeypatch.setattr(client, "put", MagicMock(return_value={"attackId": "A-1"}))
+        result = client.set_attack_handling("A-1", "BLOCK")
+        assert isinstance(result, dict)
+
+    # ── Problems ──────────────────────────────────────────────────────────
+
+    def test_list_problems_returns_list(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"problems": [{"problemId": "P-1"}]}),
+        )
+        result = client.list_problems()
+        assert isinstance(result, list)
+
+    def test_get_problem_returns_dict(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"problemId": "P-1", "title": "High CPU"}),
+        )
+        result = client.get_problem("P-1")
+        assert result["problemId"] == "P-1"
+
+    def test_close_problem(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"problemId": "P-1"}))
+        result = client.close_problem("P-1", "Resolved by GNAT")
+        assert isinstance(result, dict)
+
+    # ── Events ────────────────────────────────────────────────────────────
+
+    def test_list_events_returns_list(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"events": [{"eventId": "E-1"}]}),
+        )
+        result = client.list_events()
+        assert isinstance(result, list)
+
+    def test_get_event_returns_dict(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"eventId": "E-1", "eventType": "CUSTOM_INFO"}),
+        )
+        result = client.get_event("E-1")
+        assert result["eventId"] == "E-1"
+
+    def test_ingest_event(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"eventIngestResults": [{"eventId": "new-e"}]})
+        )
+        result = client.ingest_event("CUSTOM_INFO", "Test event from GNAT")
+        assert isinstance(result, dict)
+
+    # ── Metrics ───────────────────────────────────────────────────────────
+
+    def test_query_metrics_returns_dict(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"resolution": "1h", "result": []}),
+        )
+        result = client.query_metrics("builtin:host.cpu.usage")
+        assert isinstance(result, dict)
+
+    # ── Settings ─────────────────────────────────────────────────────────
+
+    def test_list_settings_objects(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"items": [{"objectId": "obj-1"}]}),
+        )
+        result = client.list_settings_objects(["builtin:alerting.profile"])
+        assert isinstance(result, list)
+
+    def test_create_settings_object(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value=[{"objectId": "new-obj"}])
+        )
+        result = client.create_settings_object(
+            "builtin:alerting.profile", "environment", {"name": "GNAT Profile"}
+        )
+        assert isinstance(result, (dict, list))
+
+    # ── Grail guards (no OAuth2 creds) ───────────────────────────────────
+
+    def test_query_grail_raises_without_oauth(self, client):
+        from gnat.connectors.dynatrace.exceptions import DynatraceConfigError
+
+        with pytest.raises(DynatraceConfigError, match="OAuth2"):
+            client.query_grail("fetch logs | limit 10")
+
+    def test_export_logs_raises_without_oauth(self, client):
+        from gnat.connectors.dynatrace.exceptions import DynatraceConfigError
+
+        with pytest.raises(DynatraceConfigError, match="OAuth2"):
+            client.export_logs()
+
+    def test_ingest_bizevents_raises_without_oauth(self, client):
+        from gnat.connectors.dynatrace.exceptions import DynatraceConfigError
+
+        with pytest.raises(DynatraceConfigError, match="OAuth2"):
+            client.ingest_bizevents([{"type": "test"}])
+
+    # ── STIX mapping ──────────────────────────────────────────────────────
+
+    def test_to_stix_entity_contract(self, client):
+        entity = {
+            "entityId": "HOST-AABBCCDD12345678",
+            "displayName": "web-server-01",
+            "type": "HOST",
+            "firstSeenTms": 1704067200000,
+            "lastSeenTms": 1704153600000,
+            "tags": [{"key": "env", "value": "prod"}],
+            "managementZones": [{"name": "Production"}],
+        }
+        stix = client.to_stix(entity)
+        assert stix["type"] == "infrastructure"
+        assert stix["id"].startswith("infrastructure--dt-HOST-")
+        assert stix["name"] == "web-server-01"
+        assert stix["infrastructure_types"] == ["workstation"]
+        assert stix["x_dt_entity_type"] == "HOST"
+        assert "env" in stix["x_dt_tags"]
+        assert "Production" in stix["x_dt_management_zones"]
+
+    def test_to_stix_security_problem_contract(self, client):
+        sp = {
+            "securityProblemId": "S-AABBCCDD12345678",
+            "displayId": "S-001",
+            "title": "Log4Shell RCE",
+            "status": "OPEN",
+            "technology": "JAVA",
+            "cveIds": ["CVE-2021-44228"],
+            "riskAssessment": {"riskLevel": "CRITICAL", "baseScore": 10.0},
+            "affectedEntities": [{"entityId": "HOST-1"}],
+        }
+        stix = client.to_stix(sp)
+        assert stix["type"] == "vulnerability"
+        assert stix["id"].startswith("vulnerability--dt-")
+        assert stix["description"] == "Log4Shell RCE"
+        assert "CVE-2021-44228" in stix["x_dt_cve_ids"]
+
+    def test_to_stix_security_problem_maps_cve_ids(self, client):
+        sp = {
+            "securityProblemId": "S-2",
+            "displayId": "S-002",
+            "title": "Spring4Shell",
+            "cveIds": ["CVE-2022-22965", "CVE-2022-22963"],
+            "riskAssessment": {},
+        }
+        stix = client.to_stix(sp)
+        assert len(stix["x_dt_cve_ids"]) == 2
+        assert "CVE-2022-22965" in stix["x_dt_cve_ids"]
+
+    def test_to_stix_attack_contract(self, client):
+        attack = {
+            "attackId": "A-AABBCCDD12345678",
+            "type": "SQL_INJECTION",
+            "state": "BLOCKED",
+            "severity": "critical",
+            "timestamp": 1704067200000,
+            "attackedEntity": {"id": "SERVICE-1"},
+            "attackTarget": {"url": "https://app.example.com/login"},
+        }
+        stix = client.to_stix(attack)
+        assert stix["type"] == "indicator"
+        assert stix["id"].startswith("indicator--dt-")
+        assert "sql_injection" in stix["pattern"]
+        assert stix["x_dt_state"] == "BLOCKED"
+
+    def test_to_stix_attack_maps_severity_to_confidence(self, client):
+        for severity, expected_confidence in [
+            ("critical", 90), ("high", 75), ("medium", 55), ("low", 35)
+        ]:
+            attack = {
+                "attackId": f"A-{severity}",
+                "type": "CMD_INJECTION",
+                "severity": severity,
+                "timestamp": 1704067200000,
+            }
+            stix = client.to_stix(attack)
+            assert stix["confidence"] == expected_confidence
+
+    def test_to_stix_problem_contract(self, client):
+        problem = {
+            "problemId": "P-AABBCCDD12345678",
+            "title": "Response time degradation",
+            "impactLevel": "APPLICATION",
+            "severityLevel": "PERFORMANCE",
+            "status": "OPEN",
+            "startTime": 1704067200000,
+            "affectedEntities": [{"entityId": "SERVICE-1"}],
+        }
+        stix = client.to_stix(problem)
+        assert stix["type"] == "observed-data"
+        assert stix["id"].startswith("observed-data--dt-P-")
+        assert stix["x_dt_title"] == "Response time degradation"
+
+    def test_to_stix_event_contract(self, client):
+        event = {
+            "eventId": "E-AABBCCDD12345678",
+            "eventType": "CUSTOM_ANNOTATION",
+            "title": "Deployment complete",
+            "startTime": 1704067200000,
+            "entityId": {"entityId": "SERVICE-1"},
+        }
+        stix = client.to_stix(event)
+        assert stix["type"] == "observed-data"
+        assert stix["id"].startswith("observed-data--dt-event-")
+        assert stix["x_dt_event_type"] == "CUSTOM_ANNOTATION"
+
+    def test_from_stix_returns_event_payload(self, client):
+        stix = {
+            "type": "observed-data",
+            "x_dt_event_type": "CUSTOM_INFO",
+            "x_dt_title": "GNAT alert",
+            "x_dt_entity_id": "HOST-1",
+            "x_dt_properties": {"source": "gnat"},
+        }
+        payload = client.from_stix(stix)
+        assert payload["eventType"] == "CUSTOM_INFO"
+        assert payload["title"] == "GNAT alert"
+        assert payload["entitySelector"] == "entityId(HOST-1)"
+        assert payload["properties"]["source"] == "gnat"
+
+    # ── ConnectorMixin CRUD routing ──────────────────────────────────────
+
+    def test_get_object_routes_by_stix_type(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"entityId": "HOST-1"})
+        )
+        result = client.get_object("infrastructure", "HOST-1")
+        assert result["entityId"] == "HOST-1"
+
+    def test_list_objects_routes_by_stix_type(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"events": [{"eventId": "E-1"}]}),
+        )
+        result = client.list_objects("observed-data")
+        assert isinstance(result, list)
+
+    def test_upsert_raises_for_unsupported_types(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.upsert_object("malware", {"name": "test"})
+
+    def test_delete_mutes_security_problem(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={}))
+        client.delete_object("vulnerability", "S-1")
+        client.post.assert_called_once()
+
+    def test_delete_raises_for_unsupported_types(self, client):
+        with pytest.raises(GNATClientError, match="not supported"):
+            client.delete_object("indicator", "A-1")
+
+    # ── Class-level attributes ────────────────────────────────────────────
+
+    def test_trust_level(self, client):
+        assert client.TRUST_LEVEL == "semi_trusted"
+
+    def test_api_version(self, client):
+        assert client.API_VERSION == "v2"
+
+    def test_stix_type_map_keys(self, client):
+        for key in ("infrastructure", "vulnerability", "indicator", "observed-data", "malware"):
+            assert key in client.stix_type_map
