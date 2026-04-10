@@ -12,9 +12,8 @@ Given a set of incident IP addresses, this example:
 3. Fetches **native geolocation** for matched devices from the ControlUp
    Data Access Layer (DAL) — ``location.city``, ``location.country``,
    ``location.latitude``, ``location.longitude``.
-4. For IPs not covered by native ControlUp geo (e.g. dynamic addresses not
-   tracked by the DEX agent), falls back to the ip-api.com batch endpoint
-   (free, no API key, urllib3).
+4. For IPs not covered by native ControlUp geo (e.g. external attacker IPs),
+   falls back to the ip-api.com batch endpoint (free, no API key, urllib3).
 5. Writes a structured text report to ``controlup_geo_report.txt``.
 
 The entire flow is wrapped as a GNAT :class:`~gnat.agents.workflow.Workflow`
@@ -29,45 +28,48 @@ as the device roams.  The DAL ``"devices"`` index exposes::
 
 This is richer and more accurate than IP geolocation because it reflects the
 *physical* location of the device, not just its current egress IP.  The
-ip-api.com fallback is used for incident IPs that are *not* matched to a
-ControlUp-managed device (e.g. external attacker IPs).
+ip-api.com fallback is used only for incident IPs that are *not* matched to
+a ControlUp-managed device.
 
-Running modes
+Configuration
 -------------
-- **Simulation (default)** — No credentials needed.  Canned fixture data is
-  used for both ControlUp REST devices and DAL geo results.
+Credentials are read from the GNAT config file (INI format).  The search
+order is:
 
-- **Live** — Set credentials via environment variables and call with ``--live``.
+1. ``--config PATH`` argument
+2. ``GNAT_CONFIG`` environment variable
+3. ``~/.gnat/config.ini``
+4. ``./gnat.ini``
+
+The ``[controlup]`` section must contain::
+
+    [controlup]
+    host     = https://api.controlup.io
+    api_key  = YOUR_CONTROLUP_API_KEY
+    org_id   = YOUR_ORG_ID
+    dal_host = https://your-tenant.controlup.com   ; tenant-specific DAL URL
+
+Copy ``config/config.ini.example`` as a starting point.
+
+If no config file is found (or it has no ``[controlup]`` section), the script
+falls back to **simulation mode** automatically and prints a notice.
 
 Usage
 -----
 ::
 
-    # Simulation (no credentials needed):
+    # Auto-detect: live if [controlup] config present, else simulation:
     python examples/controlup_ip_geo_investigation.py
 
-    # Live (requires ControlUp credentials):
-    CONTROLUP_API_KEY=<key> CONTROLUP_ORG_ID=<orgId> \\
-    CONTROLUP_DAL_HOST=https://your-tenant.controlup.com \\
-    python examples/controlup_ip_geo_investigation.py --live
+    # Explicit config file:
+    python examples/controlup_ip_geo_investigation.py --config ~/my-gnat.ini
 
-    # Live, custom incident IPs:
-    CONTROLUP_API_KEY=<key> CONTROLUP_ORG_ID=<orgId> \\
-    CONTROLUP_DAL_HOST=https://your-tenant.controlup.com \\
-    python examples/controlup_ip_geo_investigation.py --live \\
+    # Force simulation even when config is present:
+    python examples/controlup_ip_geo_investigation.py --simulate
+
+    # Custom incident IPs:
+    python examples/controlup_ip_geo_investigation.py \\
         --ips 192.168.1.50 10.0.0.5 203.0.113.99
-
-Environment variables
----------------------
-``CONTROLUP_API_KEY``
-    Bearer token from app.controlup.com.
-``CONTROLUP_ORG_ID``
-    ControlUp organisation UUID.
-``CONTROLUP_HOST``
-    REST API base URL (default: ``https://api.controlup.io``).
-``CONTROLUP_DAL_HOST``
-    Tenant-specific DAL base URL, e.g. ``https://your-tenant.controlup.com``.
-    Defaults to ``CONTROLUP_HOST`` when not set.
 """
 
 from __future__ import annotations
@@ -75,7 +77,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -618,6 +619,38 @@ def build_controlup_geo_workflow(
 
 
 # ---------------------------------------------------------------------------
+# Config loading
+# ---------------------------------------------------------------------------
+
+def _load_controlup_config(config_path: str | None) -> dict[str, str] | None:
+    """
+    Load the ``[controlup]`` section from a GNAT config file.
+
+    Returns the section dict on success, or ``None`` if no config file is
+    found or the section is absent (caller falls back to simulation).
+    """
+    from gnat.config import GNATConfig
+
+    try:
+        cfg = GNATConfig(config_path=config_path)
+    except FileNotFoundError:
+        log.info("No GNAT config file found — running in simulation mode.")
+        return None
+
+    try:
+        section = cfg.get("controlup")
+    except KeyError:
+        log.info(
+            "Config file %s has no [controlup] section — running in simulation mode.",
+            cfg.config_path,
+        )
+        return None
+
+    log.info("Loaded [controlup] config from %s", cfg.config_path)
+    return section
+
+
+# ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
 
@@ -630,8 +663,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Incident IP addresses (default: demo IPs).",
     )
     parser.add_argument(
-        "--live", action="store_true",
-        help="Use live ControlUp API instead of simulation fixture data.",
+        "--config", default=None, metavar="PATH",
+        help="Path to GNAT config file (default: auto-discover ~/.gnat/config.ini etc.).",
+    )
+    parser.add_argument(
+        "--simulate", action="store_true",
+        help="Force simulation mode even when a config file is present.",
     )
     parser.add_argument(
         "--output", default="controlup_geo_report.txt", metavar="PATH",
@@ -639,26 +676,37 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    simulate = not args.live
-
+    # Resolve credentials from config file
+    cu_cfg: dict[str, str] = {}
+    simulate = args.simulate
     if not simulate:
-        api_key = os.environ.get("CONTROLUP_API_KEY", "")
-        org_id = os.environ.get("CONTROLUP_ORG_ID", "")
-        host = os.environ.get("CONTROLUP_HOST", "https://api.controlup.io")
-        dal_host = os.environ.get("CONTROLUP_DAL_HOST") or host
-        if not api_key or not org_id:
-            log.error(
-                "Live mode requires CONTROLUP_API_KEY and CONTROLUP_ORG_ID. "
-                "Set CONTROLUP_DAL_HOST for the tenant-specific DAL endpoint."
-            )
-            return 1
-    else:
-        api_key = org_id = ""
-        host = "https://api.controlup.io"
-        dal_host = host
+        loaded = _load_controlup_config(args.config)
+        if loaded is None:
+            simulate = True
+        else:
+            cu_cfg = loaded
+            missing = [k for k in ("api_key", "org_id") if not cu_cfg.get(k) or "YOUR_" in cu_cfg.get(k, "")]
+            if missing:
+                log.warning(
+                    "Config [controlup] is missing real values for: %s — "
+                    "falling back to simulation mode.",
+                    ", ".join(missing),
+                )
+                simulate = True
+
+    host     = cu_cfg.get("host", "https://api.controlup.io")
+    api_key  = cu_cfg.get("api_key", "")
+    org_id   = cu_cfg.get("org_id", "")
+    dal_host = cu_cfg.get("dal_host") or host
 
     incident_ips: list[str] = args.ips
-    log.info("Starting investigation  IPs=%s  mode=%s", incident_ips, "LIVE" if not simulate else "SIMULATION")
+    log.info(
+        "Starting investigation  IPs=%s  mode=%s",
+        incident_ips,
+        "SIMULATION" if simulate else f"LIVE ({host})",
+    )
+    if not simulate:
+        log.info("DAL host: %s", dal_host)
 
     from gnat.agents.workflow import WorkflowContext
 

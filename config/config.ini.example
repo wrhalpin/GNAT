@@ -187,7 +187,8 @@ auth_type = token
 host      = https://api.controlup.io
 api_key   = YOUR_CONTROLUP_API_KEY
 org_id    = YOUR_ORG_ID
-product   = dex         # or: vdi
+product   = dex                                # or: vdi
+dal_host  = https://your-tenant.controlup.com  # tenant-specific DAL endpoint for geolocation
 auth_type = token
 
 [servicenow]
