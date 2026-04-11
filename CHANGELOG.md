@@ -19,6 +19,86 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 1 Wave 1: Tier 1 Connector Expansion
+
+Four new connectors closing the biggest gaps in GNAT's 2026 coverage audit
+(malware-family attribution, MITRE ATT&CK framework, open-source supply chain,
+exploit intelligence). All four are read-only feeds and bring the platform
+count from 99 → 103. Built on the existing `BaseClient` + `ConnectorMixin`
+pattern with shared STIX-mapping helpers extracted to
+`gnat/utils/stix_helpers.py`.
+
+**New connectors (`gnat/connectors/`)**
+- `mitre_attack/` — `MitreAttackClient` wraps the public MITRE ATT&CK TAXII 2.1
+  server at `https://attack-taxii.mitre.org/api/v21/`. Supports all three
+  matrices (`enterprise-attack`, `mobile-attack`, `ics-attack`). Registered
+  as `"mitre_attack"`. Domain helpers: `get_technique`, `get_group`,
+  `get_software`, `list_tactics`, `list_techniques`, `list_groups`.
+- `abusech/` — `AbuseChClient` unified feed connector covering URLhaus,
+  MalwareBazaar, ThreatFox, Feodo Tracker, and SSL Blacklist. Single
+  registry entry (`"abusech"`) with per-feed dispatch via
+  `filters["feed"]` in `list_objects`, plus domain helpers
+  `query_urlhaus_url`, `query_urlhaus_host`, `query_mb_hash`,
+  `query_threatfox_ioc`, `get_feodo_blocklist`, `get_sslbl_blocklist`.
+  Optional `Auth-Key` header for higher rate-limit tier. Emits STIX
+  `indicator` objects with deterministic UUID-5 ids and per-feed
+  `x_urlhaus`/`x_malwarebazaar`/`x_threatfox`/`x_feodotracker`/`x_sslbl`
+  extensions.
+- `osv/` — `OSVClient` for the open-source vulnerability database at
+  `https://api.osv.dev`. Endpoints: `/v1/query`, `/v1/querybatch`,
+  `/v1/vulns/{id}`. Domain helpers: `query_package`, `query_batch`,
+  `get_vuln`. Emits STIX `vulnerability` objects via the shared
+  `osv_to_stix_vulnerability()` helper.
+- `vulncheck/` — `VulnCheckClient` for exploit intelligence at
+  `https://api.vulncheck.com/v3/`. Supports all six indices
+  (`vulncheck-kev`, `initial-access`, `exploits`, `canary-intelligence`,
+  `mitre-cve`, `nist-nvd2`). Domain helpers: `get_kev`, `get_exploits`,
+  `get_initial_access`, `list_indices`. Bearer-token auth.
+
+**New TAXII reader (`gnat/ingest/sources/`)**
+- `mitre_taxii_reader.py`: `MitreAttackTAXIIReader(TAXIICollectionReader)`
+  auto-discovers the enterprise/mobile/ICS matrix collections and wraps
+  every poll with a thread-safe token-bucket rate limiter matching
+  MITRE's published 10 requests / 10 minutes / source IP limit. Module
+  constants: `MITRE_TAXII_ROOT`, `MITRE_COLLECTION_IDS`.
+
+**Shared STIX helpers (`gnat/utils/stix_helpers.py`)**
+- `make_observed_data_envelope(first_observed, last_observed, …)` —
+  builds STIX 2.1 `observed-data` SDOs with deterministic UUID-5 ids
+  derived from source + observation window + object_refs. Consumed by
+  all upcoming sandbox/identity/secret-scanning connectors.
+- `osv_to_stix_vulnerability(osv_dict)` — converts OSV-schema vulnerability
+  dicts to STIX 2.1 `vulnerability` objects. Handles CVE/GHSA/OSV id
+  aliasing, CVSS severity → external references, affected package ranges
+  → `x_osv_affected`, CWE IDs → `x_cwe_ids`.
+- `cvss_to_external_reference(vector, score, version)` — builds STIX
+  `external_references` entries for CVSS v2/v3/v4 vectors.
+- `make_indicator_pattern(observable_type, value)` — centralized STIX
+  pattern builder for ipv4-addr, ipv6-addr, domain-name, url, email-addr,
+  file hashes (MD5/SHA-1/SHA-256/SHA-512), and x-cryptocurrency-wallet.
+  Escapes single quotes.
+- `x509_fingerprint_pattern(sha1, sha256, ja3, ja3s)` — STIX patterns for
+  x509 fingerprints and TLS JA3/JA3S values; multiple fingerprints joined
+  with `OR`.
+
+**Config (`config/config.ini.example`)**
+- New sections `[mitre_attack]`, `[abusech]`, `[osv]`, `[vulncheck]` at
+  the end of the file under a "Phase 1 Wave 1" banner.
+
+**Registry (`gnat/clients/__init__.py`)**
+- Added imports + `CLIENT_REGISTRY` entries + `__all__` entries for
+  `MitreAttackClient`, `AbuseChClient`, `OSVClient`, `VulnCheckClient`.
+
+**Tests**
+- `tests/unit/test_stix_helpers.py` — new file, 29 tests covering all
+  core and Phase 1 Wave 1 helpers (deterministic ids, CVSS encoding,
+  indicator pattern escaping, OSV → STIX conversion, JA3 patterns).
+- `tests/unit/connectors/test_connectors.py` — 58 new tests across four
+  new `TestXxxClient` classes + two Phase 1 Wave 1 integrity tests
+  (`test_phase1_wave1_registry_contains_new_connectors`,
+  `test_phase1_wave1_config_sections_exist`). Full suite: 1482 tests
+  passing, zero regressions.
+
 ### Added — Phase 4: Control, Reasoning, Safety
 
 **4A — Execution Context & Domain Boundaries**

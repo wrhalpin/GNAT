@@ -11729,3 +11729,544 @@ class TestIPAPIClient:
 
     def test_batch_delay_default(self, client):
         assert client._batch_delay == 4.0
+
+
+# ===========================================================================
+# Phase 1 Wave 1 — Tier 1 connector expansion
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# MITRE ATT&CK
+# ---------------------------------------------------------------------------
+
+
+class TestMitreAttackClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.mitre_attack.client import MitreAttackClient
+
+        c = MitreAttackClient(host="https://attack-taxii.mitre.org")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_taxii_accept(self):
+        from gnat.connectors.mitre_attack.client import MitreAttackClient
+
+        c = MitreAttackClient(host="https://attack-taxii.mitre.org")
+        c.authenticate()
+        assert "taxii+json" in c._auth_headers["Accept"]
+
+    def test_invalid_matrix_raises(self):
+        from gnat.connectors.mitre_attack.client import MitreAttackClient
+
+        with pytest.raises(GNATClientError, match="Invalid MITRE ATT&CK matrix"):
+            MitreAttackClient(host="https://x", matrix="windows-only")
+
+    def test_list_objects_filters_by_type(self, client):
+        client._cache = [
+            {"type": "attack-pattern", "id": "attack-pattern--a", "name": "T1"},
+            {"type": "intrusion-set", "id": "intrusion-set--b", "name": "Group A"},
+            {"type": "attack-pattern", "id": "attack-pattern--c", "name": "T2"},
+        ]
+        out = client.list_objects("attack-pattern")
+        assert len(out) == 2
+        assert all(o["type"] == "attack-pattern" for o in out)
+
+    def test_list_objects_name_contains(self, client):
+        client._cache = [
+            {"type": "attack-pattern", "id": "attack-pattern--a", "name": "Spearphish"},
+            {"type": "attack-pattern", "id": "attack-pattern--b", "name": "Credential Access"},
+        ]
+        out = client.list_objects(
+            "attack-pattern", filters={"name_contains": "phish"}
+        )
+        assert len(out) == 1
+        assert "Spearphish" in out[0]["name"]
+
+    def test_list_objects_rejects_unknown_type(self, client):
+        client._cache = []
+        with pytest.raises(GNATClientError, match="Unknown ATT&CK STIX type"):
+            client.list_objects("totally-fake")
+
+    def test_get_object_by_external_id(self, client):
+        client._cache = [
+            {
+                "type": "attack-pattern",
+                "id": "attack-pattern--aaaa",
+                "external_references": [
+                    {"source_name": "mitre-attack", "external_id": "T1055"}
+                ],
+            }
+        ]
+        obj = client.get_object("attack-pattern", "T1055")
+        assert obj["id"] == "attack-pattern--aaaa"
+
+    def test_get_object_not_found(self, client):
+        client._cache = []
+        with pytest.raises(GNATClientError, match="not found"):
+            client.get_object("attack-pattern", "T9999")
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("attack-pattern", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("attack-pattern", "T1")
+
+    def test_to_stix_passthrough(self, client):
+        native = {
+            "type": "attack-pattern",
+            "id": "attack-pattern--11111111-1111-1111-1111-111111111111",
+            "name": "Phishing",
+        }
+        stix = client.to_stix(native)
+        _assert_stix_contract(stix)
+        assert stix["spec_version"] == "2.1"
+        assert stix["x_source_platform"] == "mitre_attack"
+        assert stix["x_attack_matrix"] == "enterprise-attack"
+
+    def test_to_stix_rejects_non_dict(self, client):
+        with pytest.raises(GNATClientError):
+            client.to_stix("not a dict")  # type: ignore[arg-type]
+
+    def test_from_stix_is_noop(self, client):
+        result = client.from_stix({"id": "attack-pattern--x"})
+        assert "read-only" in result["note"]
+        assert result["stix_id"] == "attack-pattern--x"
+
+
+# ---------------------------------------------------------------------------
+# Abuse.ch (unified: URLhaus / MalwareBazaar / ThreatFox / Feodo / SSLBL)
+# ---------------------------------------------------------------------------
+
+
+class TestAbuseChClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.abusech.client import AbuseChClient
+
+        c = AbuseChClient(host="https://abuse.ch")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_accept_only_without_key(self):
+        from gnat.connectors.abusech.client import AbuseChClient
+
+        c = AbuseChClient(host="https://abuse.ch")
+        c.authenticate()
+        assert c._auth_headers["Accept"] == "application/json"
+        assert "Auth-Key" not in c._auth_headers
+
+    def test_authenticate_injects_auth_key(self):
+        from gnat.connectors.abusech.client import AbuseChClient
+
+        c = AbuseChClient(host="https://abuse.ch", auth_key="secret123")
+        c.authenticate()
+        assert c._auth_headers["Auth-Key"] == "secret123"
+
+    def test_invalid_default_feed_raises(self):
+        from gnat.connectors.abusech.client import AbuseChClient
+
+        with pytest.raises(GNATClientError, match="Invalid default_feed"):
+            AbuseChClient(host="https://abuse.ch", default_feed="nope")
+
+    def test_list_objects_threatfox(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_fetch_feed",
+            MagicMock(
+                return_value={
+                    "query_status": "ok",
+                    "data": [
+                        {
+                            "ioc": "1.2.3.4",
+                            "ioc_type": "ip",
+                            "threat_type": "botnet_cc",
+                            "malware": "TrickBot",
+                        }
+                    ],
+                }
+            ),
+        )
+        items = client.list_objects("indicator")
+        assert len(items) == 1
+        assert items[0]["_feed"] == "threatfox"
+
+    def test_list_objects_feodo(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_fetch_feed",
+            MagicMock(return_value=[{"ip_address": "9.9.9.9", "malware": "Emotet"}]),
+        )
+        items = client.list_objects("indicator", filters={"feed": "feodotracker"})
+        assert len(items) == 1
+        assert items[0]["_feed"] == "feodotracker"
+
+    def test_list_objects_rejects_unknown_feed(self, client):
+        with pytest.raises(GNATClientError, match="Unknown abuse.ch feed"):
+            client.list_objects("indicator", filters={"feed": "nope"})
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("indicator", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("indicator", "x")
+
+    def test_to_stix_urlhaus(self, client):
+        stix = client.to_stix(
+            {
+                "_feed": "urlhaus",
+                "url": "http://evil.example/malware.exe",
+                "threat": "malware_download",
+                "url_status": "online",
+                "tags": ["exe", "emotet"],
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+        assert "url:value" in stix["pattern"]
+        assert stix["x_urlhaus"]["url_status"] == "online"
+
+    def test_to_stix_malwarebazaar(self, client):
+        stix = client.to_stix(
+            {
+                "_feed": "malwarebazaar",
+                "sha256_hash": "a" * 64,
+                "sha1_hash": "b" * 40,
+                "md5_hash": "c" * 32,
+                "file_type": "exe",
+                "signature": "Emotet",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "SHA-256" in stix["pattern"]
+        assert stix["x_malwarebazaar"]["signature"] == "Emotet"
+
+    def test_to_stix_threatfox_ip(self, client):
+        stix = client.to_stix(
+            {
+                "_feed": "threatfox",
+                "ioc": "1.2.3.4:8080",
+                "ioc_type": "ip:port",
+                "threat_type": "botnet_cc",
+                "malware": "Dridex",
+                "confidence_level": 90,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "ipv4-addr:value" in stix["pattern"]
+        assert "1.2.3.4" in stix["pattern"]
+        assert stix["confidence"] == 90
+
+    def test_to_stix_feodo(self, client):
+        stix = client.to_stix(
+            {
+                "_feed": "feodotracker",
+                "ip_address": "5.6.7.8",
+                "port": 443,
+                "malware": "TrickBot",
+                "as_number": 12345,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "ipv4-addr" in stix["pattern"]
+        assert stix["x_feodotracker"]["as_number"] == 12345
+
+    def test_to_stix_sslbl(self, client):
+        stix = client.to_stix(
+            {
+                "_feed": "sslbl",
+                "SHA1": "aabbccddeeff",
+                "Listingreason": "Dridex C&C",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "x509-certificate" in stix["pattern"] or "SHA-1" in stix["pattern"]
+        assert stix["x_sslbl"]["listing_reason"] == "Dridex C&C"
+
+    def test_to_stix_infers_feed(self, client):
+        # No _feed marker; shape hints at feodo
+        stix = client.to_stix(
+            {"ip_address": "1.1.1.1", "as_number": 1, "malware": "x"}
+        )
+        assert stix["x_feodotracker"]["ip_address"] == "1.1.1.1"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "indicator--x"})
+        assert "read-only" in out["note"]
+
+    def test_health_check_uses_feodo(self, client, monkeypatch):
+        monkeypatch.setattr(client, "_fetch_feed", MagicMock(return_value=[]))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise GNATClientError("nope")
+
+        monkeypatch.setattr(client, "_fetch_feed", _boom)
+        assert client.health_check() is False
+
+
+# ---------------------------------------------------------------------------
+# OSV.dev
+# ---------------------------------------------------------------------------
+
+
+class TestOSVClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.osv.client import OSVClient
+
+        c = OSVClient(host="https://api.osv.dev")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_accept(self):
+        from gnat.connectors.osv.client import OSVClient
+
+        c = OSVClient(host="https://api.osv.dev")
+        c.authenticate()
+        assert c._auth_headers["Accept"] == "application/json"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "CVE-2021-44228"}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_object(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"id": "CVE-2021-44228", "summary": "Log4Shell"}),
+        )
+        obj = client.get_object("vulnerability", "CVE-2021-44228")
+        assert obj["id"] == "CVE-2021-44228"
+
+    def test_get_object_rejects_wrong_type(self, client):
+        with pytest.raises(GNATClientError):
+            client.get_object("indicator", "CVE-2021-44228")
+
+    def test_get_object_rejects_empty_id(self, client):
+        with pytest.raises(GNATClientError):
+            client.get_object("vulnerability", "")
+
+    def test_list_objects_empty_without_package_or_commit(self, client):
+        result = client.list_objects("vulnerability")
+        assert result == []
+
+    def test_list_objects_by_package(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={
+                    "vulns": [
+                        {"id": "GHSA-1111-2222-3333", "summary": "x"},
+                        {"id": "GHSA-4444-5555-6666", "summary": "y"},
+                    ]
+                }
+            ),
+        )
+        vulns = client.list_objects(
+            "vulnerability", filters={"ecosystem": "PyPI", "name": "django"}
+        )
+        assert len(vulns) == 2
+
+    def test_query_batch(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={
+                    "results": [
+                        {"vulns": [{"id": "CVE-1"}]},
+                        {"vulns": []},
+                    ]
+                }
+            ),
+        )
+        out = client.query_batch([{"package": {"ecosystem": "PyPI", "name": "a"}}, {}])
+        assert len(out) == 2
+        assert out[0][0]["id"] == "CVE-1"
+        assert out[1] == []
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("vulnerability", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("vulnerability", "x")
+
+    def test_to_stix(self, client):
+        stix = client.to_stix(
+            {
+                "id": "CVE-2021-44228",
+                "details": "Log4Shell RCE",
+                "aliases": ["GHSA-jfh8-c2jp-5v3q"],
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["name"] == "CVE-2021-44228"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "vulnerability--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# VulnCheck
+# ---------------------------------------------------------------------------
+
+
+class TestVulnCheckClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.vulncheck.client import VulnCheckClient
+
+        c = VulnCheckClient(host="https://api.vulncheck.com", api_key="vc_test")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_bearer(self):
+        from gnat.connectors.vulncheck.client import VulnCheckClient
+
+        c = VulnCheckClient(host="https://api.vulncheck.com", api_key="vc_test")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer vc_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.vulncheck.client import VulnCheckClient
+
+        c = VulnCheckClient(host="https://api.vulncheck.com", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_invalid_default_index_raises(self):
+        from gnat.connectors.vulncheck.client import VulnCheckClient
+
+        with pytest.raises(GNATClientError, match="Unknown VulnCheck index"):
+            VulnCheckClient(host="https://x", api_key="k", default_index="nope")
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": []}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_object(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"data": [{"cve": "CVE-2024-0001", "description": "x"}]}
+            ),
+        )
+        obj = client.get_object("vulnerability", "CVE-2024-0001")
+        assert obj["cve"] == "CVE-2024-0001"
+
+    def test_get_object_not_found(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": []}))
+        with pytest.raises(GNATClientError, match="no record"):
+            client.get_object("vulnerability", "CVE-9999-9999")
+
+    def test_list_objects(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": [
+                        {"cve": "CVE-2024-0001"},
+                        {"cve": "CVE-2024-0002"},
+                    ]
+                }
+            ),
+        )
+        items = client.list_objects("vulnerability")
+        assert len(items) == 2
+
+    def test_list_objects_rejects_unknown_index(self, client):
+        with pytest.raises(GNATClientError, match="Unknown VulnCheck index"):
+            client.list_objects("vulnerability", filters={"index": "nope"})
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("vulnerability", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("vulnerability", "x")
+
+    def test_to_stix(self, client):
+        stix = client.to_stix(
+            {
+                "cve": "CVE-2024-0001",
+                "shortDescription": "Test vuln",
+                "vendorProject": "Acme",
+                "product": "Widget",
+                "cvssBaseScore": 9.8,
+                "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "knownExploited": True,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["name"] == "CVE-2024-0001"
+        assert stix["x_vulncheck"]["known_exploited"] is True
+        sources = [r["source_name"] for r in stix["external_references"]]
+        assert "cve" in sources
+        assert "cvss" in sources
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "vulnerability--x"})
+        assert "read-only" in out["note"]
+
+    def test_get_kev_helper(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": [{"cve": "CVE-X"}]})
+        )
+        rec = client.get_kev("CVE-X")
+        assert rec["cve"] == "CVE-X"
+
+
+# ---------------------------------------------------------------------------
+# Registry integrity — Phase 1 Wave 1
+# ---------------------------------------------------------------------------
+
+
+def test_phase1_wave1_registry_contains_new_connectors():
+    from gnat.clients import CLIENT_REGISTRY
+
+    for key in ("mitre_attack", "abusech", "osv", "vulncheck"):
+        assert key in CLIENT_REGISTRY, f"Missing {key} in CLIENT_REGISTRY"
+
+
+def test_phase1_wave1_config_sections_exist():
+    import configparser
+    from pathlib import Path
+
+    cfg_path = Path(__file__).resolve().parents[3] / "config" / "config.ini.example"
+    # strict=False because the example file historically declares a couple
+    # of illustrative sections twice (e.g. ``[claude]`` and ``[copilot]``
+    # appear in both the original platform block and the LLM-provider block).
+    parser = configparser.ConfigParser(strict=False)
+    parser.read(cfg_path)
+    for section in ("mitre_attack", "abusech", "osv", "vulncheck"):
+        assert parser.has_section(section), f"Missing [{section}] in config.ini.example"

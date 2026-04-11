@@ -6,6 +6,7 @@ Pick the guide for your goal — no need to read them in order.
 | Guide | Description |
 |-------|-------------|
 | [Connect to Platforms](connect-to-platforms.md) | Authenticate and query ThreatQ, VirusTotal, ShadowServer, Rapid7, Nucleus, and more |
+| [Use Abuse.ch Feeds](use-abuse-ch-feeds.md) | Query URLhaus, MalwareBazaar, ThreatFox, Feodo Tracker, and SSLBL through the unified `abusech` connector |
 | [Work with STIX Objects](work-with-stix-objects.md) | Create, relate, and serialize STIX 2.1 objects using the GNAT ORM |
 | [Run the Ingest Pipeline](run-ingest-pipeline.md) | Pull data from blocklists, TAXII feeds, CSV files, and Splunk |
 | [Use Workspaces](use-workspaces.md) | Manage investigation workspaces and a global context registry |

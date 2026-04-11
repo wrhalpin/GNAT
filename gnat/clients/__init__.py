@@ -12,6 +12,7 @@ registered in the :data:`CLIENT_REGISTRY` dict so that
 """
 
 from gnat.clients.base import BaseClient, GNATClientError
+from gnat.connectors.abusech.client import AbuseChClient
 from gnat.connectors.alienvault.client import AlienVaultClient
 from gnat.connectors.armis.client import ArmisClient
 from gnat.connectors.aws_security.client import AWSSecurityClient
@@ -48,6 +49,7 @@ from gnat.connectors.fortiedr.client import FortiEDRClient
 from gnat.connectors.fortisiem.client import FortiSIEMClient
 from gnat.connectors.fortisoar.client import FortiSOARClient
 from gnat.connectors.gemini.client import GeminiClient
+from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
 from gnat.connectors.google_chronicle.client import GoogleChronicleClient
 from gnat.connectors.graylog.client import GraylogClient
 from gnat.connectors.greenbone.client import GreenboneClient
@@ -57,13 +59,14 @@ from gnat.connectors.grok.client import GrokClient
 from gnat.connectors.group_ib.client import GroupIBClient
 from gnat.connectors.hibp.client import HIBPClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
-from gnat.connectors.ip_api.client import IPAPIClient
 from gnat.connectors.intel471.client import Intel471Client
+from gnat.connectors.ip_api.client import IPAPIClient
 from gnat.connectors.jira.client import JiraClient
 from gnat.connectors.lansweeper.client import LansweeperClient
 from gnat.connectors.logrhythm.client import LogRhythmClient
 from gnat.connectors.mandiant.client import MandiantClient
 from gnat.connectors.misp.connector import MISPConnector
+from gnat.connectors.mitre_attack.client import MitreAttackClient
 from gnat.connectors.netskope.client import NetskopeClient
 from gnat.connectors.nozomi.client import NozomiClient
 from gnat.connectors.nucleus.client import NucleusClient
@@ -71,6 +74,7 @@ from gnat.connectors.opencti.client import OpenCTIClient
 from gnat.connectors.orca.client import OrcaClient
 from gnat.connectors.osint_feed.connector import OsintFeedConnector
 from gnat.connectors.ossim.client import OSSIMClient
+from gnat.connectors.osv.client import OSVClient
 from gnat.connectors.prisma_cloud.client import PrismaCloudClient
 from gnat.connectors.proofpoint.client import ProofpointClient
 from gnat.connectors.pulsedive.client import PulseDiveClient
@@ -105,13 +109,13 @@ from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClien
 from gnat.connectors.upguard.client import UpGuardClient
 from gnat.connectors.vectra.client import VectraClient
 from gnat.connectors.virustotal.client import VirusTotalClient
+from gnat.connectors.vulncheck.client import VulnCheckClient
 from gnat.connectors.wazuh.connector import WazuhConnector
 from gnat.connectors.whistic.client import WhisticClient
 from gnat.connectors.wiz.client import WizClient
 from gnat.connectors.xsoar.client import XSOARClient
 from gnat.connectors.yeti.client import YetiClient
 from gnat.connectors.zeek.client import ZeekClient
-from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
 from gnat.connectors.zerofox.client import ZeroFoxClient
 
 CLIENT_REGISTRY: dict = {
@@ -219,6 +223,11 @@ CLIENT_REGISTRY: dict = {
     "cisco_umbrella": CiscoUmbrellaClient,
     # Federation
     "gnat_remote": GNATRemoteConnector,
+    # Phase 1 Wave 1 — Tier 1 expansion
+    "mitre_attack": MitreAttackClient,
+    "abusech": AbuseChClient,
+    "osv": OSVClient,
+    "vulncheck": VulnCheckClient,
 }
 
 __all__ = [
@@ -278,4 +287,9 @@ __all__ = [
     "GNATRemoteConnector",
     "DynatraceClient",
     "IPAPIClient",
+    # Phase 1 Wave 1 — Tier 1 expansion
+    "MitreAttackClient",
+    "AbuseChClient",
+    "OSVClient",
+    "VulnCheckClient",
 ]

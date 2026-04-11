@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 99 security/threat intelligence platforms
+- A unified client interface for 103 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -329,6 +329,10 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Zeek Network Monitor | `gnat/connectors/zeek/` | File/Syslog |
 | ZeroFox Digital Risk Protection | `gnat/connectors/zerofox/` | Bearer |
 | ControlUp DEX | `gnat/connectors/controlup/` | Bearer token |
+| MITRE ATT&CK (TAXII 2.1) | `gnat/connectors/mitre_attack/` | None (public) |
+| Abuse.ch (URLhaus/MalwareBazaar/ThreatFox/Feodo/SSLBL) | `gnat/connectors/abusech/` | Optional Auth-Key |
+| OSV.dev (open-source vulnerabilities) | `gnat/connectors/osv/` | None (public) |
+| VulnCheck (exploit intelligence) | `gnat/connectors/vulncheck/` | Bearer token |
 
 ---
 

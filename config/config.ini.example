@@ -875,3 +875,32 @@ direction            = both
 max_tlp              = green
 sync_interval        = 3600
 workspace_filter     = sector-intel,advisories
+
+# =============================================================================
+# Phase 1 Wave 1 — Tier 1 connector expansion
+# =============================================================================
+
+# --- MITRE ATT&CK TAXII 2.1 server (public, no auth) ----------------------
+[mitre_attack]
+host   = https://attack-taxii.mitre.org
+# matrix = enterprise-attack   ; or mobile-attack, ics-attack
+matrix = enterprise-attack
+
+# --- Abuse.ch unified feed connector (URLhaus + MalwareBazaar +
+#     ThreatFox + Feodo Tracker + SSLBL).  auth_key is optional; supplying
+#     it enables the higher rate-limit tier.  default_feed picks which
+#     sub-feed list_objects() targets when filters["feed"] is not set. ---
+[abusech]
+host         = https://abuse.ch
+auth_key     =
+default_feed = threatfox
+
+# --- OSV.dev (open-source vulnerabilities; public, no auth) ----------------
+[osv]
+host = https://api.osv.dev
+
+# --- VulnCheck (vulnerability & exploit intelligence) ----------------------
+[vulncheck]
+host          = https://api.vulncheck.com
+api_key       = YOUR_VULNCHECK_API_KEY
+default_index = vulncheck-kev
