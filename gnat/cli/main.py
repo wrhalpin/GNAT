@@ -419,13 +419,80 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     sc_subs.required = True
 
-    _p_sc_list = sc_subs.add_parser("list", help="List registered jobs and status")
+    # Shared source-selection args for every schedule subcommand
+    def _add_source_args(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            "--jobs-file",
+            default=None,
+            metavar="PATH",
+            help="Override [schedule] jobs_file from config",
+        )
+        parser.add_argument(
+            "--jobs-module",
+            default=None,
+            metavar="DOTTED.PATH",
+            help="Override [schedule] jobs_module from config",
+        )
+
+    p_sc_list = sc_subs.add_parser("list", help="List registered jobs and their status")
+    _add_source_args(p_sc_list)
+
+    p_sc_status = sc_subs.add_parser(
+        "status", help="Show detailed status and recent runs for one job"
+    )
+    p_sc_status.add_argument(
+        "--job", required=True, metavar="JOB_ID", help="Job id to inspect"
+    )
+    _add_source_args(p_sc_status)
+
+    p_sc_history = sc_subs.add_parser(
+        "history", help="Show run history for one job"
+    )
+    p_sc_history.add_argument(
+        "--job", required=True, metavar="JOB_ID", help="Job id to inspect"
+    )
+    p_sc_history.add_argument(
+        "--limit",
+        type=int,
+        default=20,
+        metavar="N",
+        help="Max run records to show (default: 20)",
+    )
+    _add_source_args(p_sc_history)
+
     p_sc_run = sc_subs.add_parser("run", help="Run one or all jobs immediately")
     p_sc_run.add_argument(
         "--job", default=None, metavar="JOB_ID", help="Run a specific job (omit to run all)"
     )
     p_sc_run.add_argument("--parallel", action="store_true", help="Run all jobs in parallel")
-    _p_sc_cron = sc_subs.add_parser("crontab", help="Print crontab lines for all jobs")
+    _add_source_args(p_sc_run)
+
+    p_sc_cron = sc_subs.add_parser("crontab", help="Print crontab lines for all jobs")
+    p_sc_cron.add_argument(
+        "--command",
+        dest="cron_command",
+        default=None,
+        metavar="CMD",
+        help='Shell command to invoke per job (default: "gnat schedule run --job {id}")',
+    )
+    _add_source_args(p_sc_cron)
+
+    p_sc_validate = sc_subs.add_parser(
+        "validate",
+        help="Parse job definitions without running anything or touching credentials",
+    )
+    _add_source_args(p_sc_validate)
+
+    p_sc_start = sc_subs.add_parser(
+        "start",
+        help="Start the scheduler in the foreground (Ctrl-C to stop)",
+    )
+    p_sc_start.add_argument(
+        "--run-immediately",
+        action="store_true",
+        help="Trigger every job once before entering the normal schedule",
+    )
+    _add_source_args(p_sc_start)
 
     # ── config ────────────────────────────────────────────────────────────
     p_cfg = subs.add_parser("config", help="Show or validate configuration")
@@ -1554,20 +1621,284 @@ def _cmd_report(args) -> int:
 
 
 def _cmd_schedule(args) -> int:
-    """schedule subcommand — list, run, crontab."""
-    # Scheduler must be defined in the user's project; here we show a stub
-    # that reads job definitions from a Python module specified in config.
+    """schedule subcommand — list, status, history, run, crontab, validate, start."""
+    from gnat.config import GNATConfig
+    from gnat.schedule import ScheduleLoaderError, load_scheduler
+
     schedule_cmd = getattr(args, "schedule_command", None)
+
+    # validate is a special case: no client init, structural check only
+    skip_client = schedule_cmd == "validate"
+
+    cfg = None
+    try:
+        cfg = GNATConfig(args.config).parser
+    except Exception:  # noqa: BLE001
+        # Config is optional for schedule commands — loader will error
+        # cleanly if no source is configured from any path.
+        cfg = None
+
+    try:
+        scheduler = load_scheduler(
+            config=cfg,
+            jobs_file=getattr(args, "jobs_file", None),
+            jobs_module=getattr(args, "jobs_module", None),
+            skip_client_init=skip_client,
+        )
+    except ScheduleLoaderError as exc:
+        print(f"error: {exc}")
+        return 2
+
     if schedule_cmd == "list":
-        _info(
-            args,
-            "No scheduler configured. Define jobs in your project and "
-            "call scheduler.statuses() to list them.",
+        return _cmd_schedule_list(args, scheduler)
+    if schedule_cmd == "status":
+        return _cmd_schedule_status(args, scheduler)
+    if schedule_cmd == "history":
+        return _cmd_schedule_history(args, scheduler)
+    if schedule_cmd == "run":
+        return _cmd_schedule_run(args, scheduler)
+    if schedule_cmd == "crontab":
+        return _cmd_schedule_crontab(args, scheduler)
+    if schedule_cmd == "validate":
+        return _cmd_schedule_validate(args, scheduler)
+    if schedule_cmd == "start":
+        return _cmd_schedule_start(args, scheduler)
+
+    print(f"error: unknown schedule command: {schedule_cmd!r}")
+    return 2
+
+
+def _cmd_schedule_list(args, scheduler) -> int:
+    """gnat schedule list — one-line-per-job table."""
+    statuses = scheduler.statuses()
+    if args.output == "json":
+        _print_json(statuses)
+        return 0
+    if not statuses:
+        _info(args, "(no jobs registered)")
+        return 0
+    rows = []
+    for s in statuses:
+        rows.append(
+            {
+                "JOB_ID": s["job_id"],
+                "ENABLED": "yes" if s["enabled"] else "no",
+                "SCHEDULE": s["schedule"],
+                "HEALTH": "ok" if s["is_healthy"] else "failing",
+                "RUNS": str(s["run_count"]),
+                "LAST": (s["last_run_at"] or "—")[:19],
+                "NEXT": (s["next_run_at"] or "—")[:19],
+            }
+        )
+    _print_table(
+        rows,
+        fields=["JOB_ID", "ENABLED", "SCHEDULE", "HEALTH", "RUNS", "LAST", "NEXT"],
+    )
+    return 0
+
+
+def _cmd_schedule_status(args, scheduler) -> int:
+    """gnat schedule status --job X — detailed single-job view."""
+    try:
+        job = scheduler.get(args.job)
+    except KeyError:
+        print(f"error: no such job: {args.job!r}")
+        return 2
+    detail = job.status_dict()
+    # Add richer context
+    detail["history_count"] = len(job.history)
+    detail["last_5_runs"] = [r.as_dict() for r in job.history[-5:]]
+    if args.output == "json":
+        _print_json(detail)
+        return 0
+    print(_bold(f"Job: {detail['job_id']}"))
+    for key in (
+        "enabled",
+        "schedule",
+        "run_count",
+        "is_healthy",
+        "consecutive_failures",
+        "last_run_status",
+        "last_run_at",
+        "last_success_at",
+        "next_run_at",
+        "history_count",
+    ):
+        print(f"  {key:22s} {detail.get(key)}")
+    if detail["last_5_runs"]:
+        print()
+        print(_bold("Recent runs:"))
+        rows = [
+            {
+                "#": str(r.get("run_number", "")),
+                "STARTED": str(r.get("started_at", ""))[:19],
+                "DURATION": f"{r.get('duration_seconds') or 0:.2f}s",
+                "STATUS": str(r.get("status", "")),
+                "ERROR": str(r.get("error") or "")[:60],
+            }
+            for r in detail["last_5_runs"]
+        ]
+        _print_table(rows, fields=["#", "STARTED", "DURATION", "STATUS", "ERROR"])
+    return 0
+
+
+def _cmd_schedule_history(args, scheduler) -> int:
+    """gnat schedule history --job X — full run history table."""
+    try:
+        job = scheduler.get(args.job)
+    except KeyError:
+        print(f"error: no such job: {args.job!r}")
+        return 2
+    records = job.history[-args.limit :]
+    if args.output == "json":
+        _print_json([r.as_dict() for r in records])
+        return 0
+    if not records:
+        _info(args, "(no run history)")
+        return 0
+    rows = [
+        {
+            "#": str(r.run_number),
+            "SCHEDULED": str(r.scheduled_at)[:19],
+            "STARTED": str(r.started_at)[:19],
+            "DURATION": f"{r.duration_seconds or 0:.2f}s",
+            "STATUS": r.status,
+            "RECORDS": str(getattr(r.result, "total_records", "") if r.result else ""),
+            "ERROR": (r.error or "")[:50],
+        }
+        for r in records
+    ]
+    _print_table(
+        rows,
+        fields=["#", "SCHEDULED", "STARTED", "DURATION", "STATUS", "RECORDS", "ERROR"],
+    )
+    return 0
+
+
+def _cmd_schedule_run(args, scheduler) -> int:
+    """gnat schedule run — trigger one or all jobs immediately."""
+    if args.job:
+        try:
+            record = scheduler.run_now(args.job)
+        except KeyError:
+            print(f"error: no such job: {args.job!r}")
+            return 2
+        if args.output == "json":
+            _print_json(record.as_dict())
+        else:
+            print(
+                f"{args.job}: {record.status} "
+                f"(duration={record.duration_seconds or 0:.2f}s)"
+            )
+            if record.error:
+                print(f"  error: {record.error}")
+        return 0 if record.status in ("success", "partial") else 1
+
+    # Run all
+    results = scheduler.run_all_now(parallel=args.parallel)
+    if args.output == "json":
+        _print_json({jid: rec.as_dict() for jid, rec in results.items()})
+    else:
+        rows = [
+            {
+                "JOB_ID": jid,
+                "STATUS": rec.status,
+                "DURATION": f"{rec.duration_seconds or 0:.2f}s",
+                "ERROR": (rec.error or "")[:60],
+            }
+            for jid, rec in results.items()
+        ]
+        _print_table(rows, fields=["JOB_ID", "STATUS", "DURATION", "ERROR"])
+    any_failed = any(
+        rec.status not in ("success", "partial") for rec in results.values()
+    )
+    return 1 if any_failed else 0
+
+
+def _cmd_schedule_crontab(args, scheduler) -> int:
+    """
+    gnat schedule crontab — emit crontab lines for every job.
+
+    ``FeedScheduler.to_cron_lines(python_path, script_path)`` formats
+    each line as ``<expr>  <python_path> <script_path> --job <id>  # <id>``.
+    By default we set those to ``gnat`` / ``schedule run`` so the lines
+    are immediately usable via ``crontab -e``. Users can override with
+    ``--command`` to point at a wrapper script instead.
+    """
+    user_cmd = getattr(args, "cron_command", None)
+    if user_cmd:
+        # Split user-supplied command into exec + args for to_cron_lines
+        parts = user_cmd.strip().split(None, 1)
+        python_path = parts[0]
+        script_path = parts[1] if len(parts) > 1 else ""
+    else:
+        python_path = "gnat"
+        script_path = "schedule run"
+    text = scheduler.to_cron_lines(
+        python_path=python_path, script_path=script_path
+    )
+    lines = text.splitlines()
+    if args.output == "json":
+        _print_json(lines)
+        return 0
+    if not lines:
+        _info(args, "(no cron-style jobs)")
+        return 0
+    for line in lines:
+        print(line)
+    return 0
+
+
+def _cmd_schedule_validate(args, scheduler) -> int:
+    """gnat schedule validate — check structure without running anything."""
+    n = len(scheduler)
+    if args.output == "json":
+        _print_json(
+            {
+                "valid": True,
+                "job_count": n,
+                "jobs": [j.job_id for j in scheduler],
+            }
         )
         return 0
-    if schedule_cmd == "crontab":
-        _info(args, "No scheduler configured.")
-        return 0
+    print(_bold(f"OK: {n} job(s) parsed and class references resolved"))
+    for j in scheduler:
+        sched = (
+            f"every {j.interval_seconds}s"
+            if j.interval_seconds
+            else f"cron {j.cron!r}"
+        )
+        print(f"  {j.job_id:30s}  {sched}")
+    return 0
+
+
+def _cmd_schedule_start(args, scheduler) -> int:
+    """gnat schedule start — run scheduler in the foreground."""
+    import signal
+    import time
+
+    if len(scheduler) == 0:
+        print("error: scheduler has no jobs registered")
+        return 2
+
+    _info(args, f"Starting scheduler with {len(scheduler)} job(s) — Ctrl-C to stop")
+    scheduler.start(run_immediately=args.run_immediately)
+
+    stop_flag = {"stop": False}
+
+    def _handle_sigint(signum, frame):
+        stop_flag["stop"] = True
+
+    signal.signal(signal.SIGINT, _handle_sigint)
+    signal.signal(signal.SIGTERM, _handle_sigint)
+
+    try:
+        while not stop_flag["stop"]:
+            time.sleep(1.0)
+    finally:
+        _info(args, "Stopping scheduler...")
+        scheduler.stop()
+    _info(args, "Scheduler stopped")
     return 0
 
 
@@ -1893,6 +2224,7 @@ def _cmd_health(args) -> int:
 
     if health_cmd == "fleet":
         import json as _json
+
         from gnat.connectors.health import FleetHealthMonitor
 
         connectors = getattr(args, "fleet_connectors", None)
@@ -2306,6 +2638,7 @@ def _cmd_federation(args: argparse.Namespace) -> int:
             print(_red(f"Error: peer {args.peer_id!r} not found."), file=sys.stderr)
             return 1
         import time
+
         from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
         host = peer.taxii_url.rstrip("/")
         for suffix in ("/taxii2", "/taxii2/"):
@@ -2330,7 +2663,7 @@ def _cmd_federation(args: argparse.Namespace) -> int:
         if peer is None:
             print(_red(f"Error: peer {args.peer_id!r} not found."), file=sys.stderr)
             return 1
-        from gnat.federation.sync import PeerSyncService, FederationError
+        from gnat.federation.sync import FederationError, PeerSyncService
         svc = PeerSyncService()
         dry_run = getattr(args, "dry_run", False)
         if dry_run:
@@ -2355,8 +2688,8 @@ def _cmd_federation(args: argparse.Namespace) -> int:
         return 0
 
     if sub == "topology":
+
         from gnat.federation.topology import FederationTopology
-        import json
         topo = FederationTopology(registry)
         graph = topo.hierarchy_graph()
         peers = registry.list()
@@ -2424,8 +2757,8 @@ def _cmd_serve(args) -> int:
         try:
             from gnat.config import GNATConfig
             from gnat.federation.peer import PeerRegistry
-            from gnat.federation.sync import PeerSyncService
             from gnat.federation.scheduler import FederationScheduler
+            from gnat.federation.sync import PeerSyncService
 
             _cfg = GNATConfig(config_path)
             _registry = PeerRegistry.from_config(_cfg)
@@ -2463,8 +2796,8 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
     config_path = getattr(args, "config", None)
 
     try:
-        from gnat.analysis.investigations.storage import InvestigationStore
         from gnat.analysis.investigations.service import InvestigationService
+        from gnat.analysis.investigations.storage import InvestigationStore
     except ImportError:
         print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
               file=sys.stderr)
@@ -2480,8 +2813,8 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
     sub = args.inv_command
 
     if sub == "list":
-        from gnat.analysis.query import InvestigationQuery
         from gnat.analysis.investigations.models import InvestigationStatus
+        from gnat.analysis.query import InvestigationQuery
 
         def _parse_status(s):
             if not s:
@@ -2602,8 +2935,8 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
 
 def _cmd_plugins(args: argparse.Namespace) -> int:
     """Handle 'gnat plugins <subcommand>'."""
-    from gnat.plugins.registry import PluginRegistry
     from gnat.plugins.loader import load_plugins
+    from gnat.plugins.registry import PluginRegistry
 
     registry = PluginRegistry()
     sub = args.plg_command
@@ -2676,8 +3009,8 @@ def _cmd_review(args: argparse.Namespace) -> int:
 
     db_url = os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
     try:
+        from gnat.review.service import ReviewError, ReviewService
         from gnat.review.store import ReviewQueueStore
-        from gnat.review.service import ReviewService, ReviewError
     except ImportError:
         print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
               file=sys.stderr)

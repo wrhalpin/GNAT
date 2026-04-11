@@ -31,6 +31,7 @@ Quick start::
 """
 
 from gnat.schedule.job import FeedJob, JobRunContext, RunRecord
+from gnat.schedule.loader import ScheduleLoaderError, load_scheduler
 from gnat.schedule.scheduler import FeedScheduler
 
 __all__ = [
@@ -38,4 +39,6 @@ __all__ = [
     "FeedScheduler",
     "JobRunContext",
     "RunRecord",
+    "ScheduleLoaderError",
+    "load_scheduler",
 ]

@@ -117,6 +117,19 @@ class GNATConfig:
         """Resolved path to the active configuration file."""
         return self._path
 
+    @property
+    def parser(self) -> configparser.ConfigParser:
+        """
+        Return the underlying :class:`configparser.ConfigParser`.
+
+        Useful for consumers that need access to sections beyond the
+        per-target dict returned by :meth:`get` — for example the
+        scheduler loader at :mod:`gnat.schedule.loader` reads the
+        ``[schedule]`` section and also uses the parser to instantiate
+        connectors via ``GNATClient``.
+        """
+        return self._parser
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
