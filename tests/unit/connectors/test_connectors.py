@@ -16376,3 +16376,761 @@ def test_phase2_wave4_config_sections_exist():
         "bitdefender_iz",
     ):
         assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
+
+
+# ===========================================================================
+# Domain-helper gap-fills (existing connectors)
+#
+# These tests verify that the new domain helpers added to fill the
+# audit-identified gaps actually wire to a real HTTP call. We don't
+# re-test the entire connector — just the new code paths.
+# ===========================================================================
+
+
+class TestThreatConnectGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.threatconnect.client import ThreatConnectClient
+
+        c = ThreatConnectClient(
+            host="https://tc.example.com", access_id="x", secret_key="y"
+        )
+        c._authenticated = True
+        return c
+
+    def test_search_indicators_builds_tql(self, client, monkeypatch):
+        captured: dict = {}
+
+        def _stub(method, path, params=None, json=None):
+            captured["params"] = params
+            return {"data": [{"id": 1, "type": "Address", "summary": "1.2.3.4"}]}
+
+        monkeypatch.setattr(client, "_request_signed", _stub)
+        out = client.search_indicators(
+            query="evil", confidence_gte=50, tag="apt"
+        )
+        assert len(out) == 1
+        assert "evil" in captured["params"]["tql"]
+        assert "confidence" in captured["params"]["tql"]
+
+    def test_search_groups(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_request_signed",
+            lambda *a, **kw: {"data": [{"id": 1, "name": "APT28"}]},
+        )
+        out = client.search_groups(group_type="Adversary", name="APT")
+        assert len(out) == 1
+
+    def test_list_owners(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_request_signed",
+            lambda *a, **kw: {"data": [{"id": 1, "name": "Acme"}]},
+        )
+        owners = client.list_owners()
+        assert owners[0]["name"] == "Acme"
+
+    def test_get_associations(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_request_signed",
+            lambda *a, **kw: {"data": {"id": 1, "associatedGroups": []}},
+        )
+        out = client.get_associations("indicators", "1")
+        assert isinstance(out, dict)
+
+
+class TestProofpointGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.proofpoint.client import ProofpointClient
+
+        c = ProofpointClient(
+            host="https://tap-api-v2.proofpoint.com",
+            service_principal="sp",
+            secret="s",
+        )
+        c._authenticated = True
+        return c
+
+    def test_list_messages_delivered(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"messagesDelivered": [{"messageID": "m1"}]}),
+        )
+        out = client.list_messages_delivered(since_seconds=3600)
+        assert out[0]["messageID"] == "m1"
+
+    def test_list_messages_blocked(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"messagesBlocked": [{"messageID": "m2"}]}),
+        )
+        out = client.list_messages_blocked()
+        assert out[0]["messageID"] == "m2"
+
+    def test_list_clicks_permitted(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"clicksPermitted": [{"clickID": "c1"}]}),
+        )
+        out = client.list_clicks_permitted()
+        assert out[0]["clickID"] == "c1"
+
+    def test_list_clicks_blocked(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"clicksBlocked": [{"clickID": "c2"}]}),
+        )
+        out = client.list_clicks_blocked()
+        assert out[0]["clickID"] == "c2"
+
+    def test_list_top_clickers(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"users": [{"identity": "alice@x"}]}),
+        )
+        out = client.list_top_clickers()
+        assert out[0]["identity"] == "alice@x"
+
+    def test_decode_url(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"urls": ["http://real"]})
+        )
+        out = client.decode_url("https://urldefense.proofpoint.com/v3/__http%3A%2F%2Freal__;!!ABC$")
+        assert "urls" in out
+
+
+class TestShadowserverGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.shadowserver.client import ShadowServerClient
+
+        c = ShadowServerClient(
+            host="https://api.shadowserver.org",
+            api_key="x",
+            api_secret="y",
+        )
+        c._authenticated = True
+        return c
+
+    def test_query_ip(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_signed_post",
+            MagicMock(return_value={"ip": "1.2.3.4", "tag": "scanner"}),
+        )
+        out = client.query_ip("1.2.3.4")
+        assert out["ip"] == "1.2.3.4"
+
+    def test_query_asn(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_signed_post",
+            MagicMock(return_value={"asn": "12345", "name": "Acme"}),
+        )
+        out = client.query_asn("AS12345")
+        assert out["asn"] == "12345"
+
+    def test_query_malware_requires_param(self, client):
+        with pytest.raises(GNATClientError, match="family"):
+            client.query_malware()
+
+    def test_query_malware_by_family(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_signed_post",
+            MagicMock(return_value=[{"family": "Emotet", "sha256": "abc"}]),
+        )
+        out = client.query_malware(family="Emotet")
+        assert out[0]["family"] == "Emotet"
+
+    def test_query_botnet(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_signed_post",
+            MagicMock(return_value=[{"family": "TrickBot", "ip": "1.2.3.4"}]),
+        )
+        out = client.query_botnet(family="TrickBot")
+        assert out[0]["family"] == "TrickBot"
+
+    def test_list_report_types(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "_signed_post",
+            MagicMock(return_value=[{"name": "scan_rdp"}]),
+        )
+        out = client.list_report_types()
+        assert out[0]["name"] == "scan_rdp"
+
+
+class TestJiraGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.jira.client import JiraClient
+
+        c = JiraClient(
+            host="https://acme.atlassian.net",
+            email="x@x",
+            api_token="t",
+        )
+        c._authenticated = True
+        return c
+
+    def test_search_jql(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"issues": [{"key": "PROJ-1"}, {"key": "PROJ-2"}]}),
+        )
+        out = client.search_jql("project = PROJ")
+        assert len(out) == 2
+
+    def test_get_issue(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"key": "PROJ-1"})
+        )
+        out = client.get_issue("PROJ-1")
+        assert out["key"] == "PROJ-1"
+
+    def test_create_issue(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"key": "PROJ-99", "id": "12345"}),
+        )
+        out = client.create_issue(
+            project_key="PROJ", summary="Test", description="body"
+        )
+        assert out["key"] == "PROJ-99"
+
+    def test_update_issue(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "put", MagicMock(return_value=None)
+        )
+        out = client.update_issue("PROJ-1", {"summary": "new"})
+        assert out["status"] == "ok"
+
+    def test_list_transitions(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"transitions": [{"id": "11", "name": "Done"}]}),
+        )
+        out = client.list_transitions("PROJ-1")
+        assert out[0]["name"] == "Done"
+
+    def test_transition_issue(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value=None)
+        )
+        out = client.transition_issue("PROJ-1", "11")
+        assert out["status"] == "ok"
+
+    def test_list_projects(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"values": [{"key": "PROJ", "name": "Proj"}]}),
+        )
+        out = client.list_projects()
+        assert out[0]["key"] == "PROJ"
+
+    def test_list_issue_comments(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"comments": [{"id": "1", "body": "hi"}]}),
+        )
+        out = client.list_issue_comments("PROJ-1")
+        assert out[0]["id"] == "1"
+
+
+class TestServiceNowGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.servicenow.client import ServiceNowClient
+
+        c = ServiceNowClient(
+            host="https://acme.service-now.com", username="u", password="p"
+        )
+        c._authenticated = True
+        return c
+
+    def test_list_incidents(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "result": [
+                        {"sys_id": "abc", "number": "INC0001"},
+                        {"sys_id": "def", "number": "INC0002"},
+                    ]
+                }
+            ),
+        )
+        out = client.list_incidents(state="1")
+        assert len(out) == 2
+
+    def test_get_incident(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"result": {"sys_id": "abc", "number": "INC0001"}}),
+        )
+        out = client.get_incident("abc")
+        assert out["sys_id"] == "abc"
+
+    def test_create_incident(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"result": {"sys_id": "new", "number": "INC9999"}}),
+        )
+        out = client.create_incident("Test alert", description="body")
+        assert out["sys_id"] == "new"
+
+    def test_create_change_request(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"result": {"sys_id": "cr1"}}),
+        )
+        out = client.create_change_request("Patch deployment")
+        assert out["sys_id"] == "cr1"
+
+    def test_query_table(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"result": [{"sys_id": "x"}]}),
+        )
+        out = client.query_table("u_custom_table", sysparm_query="active=true")
+        assert len(out) == 1
+
+    def test_get_cmdb_ci(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"result": {"sys_id": "ci1", "name": "host01"}}),
+        )
+        out = client.get_cmdb_ci("ci1")
+        assert out["name"] == "host01"
+
+
+class TestQualysGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.qualys.client import QualysVMDRClient
+
+        c = QualysVMDRClient(
+            host="https://qualysapi.qg.example.com",
+            username="u",
+            password="p",
+        )
+        c._authenticated = True
+        return c
+
+    def test_list_assets(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "HOST_LIST_OUTPUT": {
+                        "RESPONSE": {
+                            "HOST_LIST": {
+                                "HOST": [
+                                    {"ID": 1, "IP": "10.0.0.1"},
+                                    {"ID": 2, "IP": "10.0.0.2"},
+                                ]
+                            }
+                        }
+                    }
+                }
+            ),
+        )
+        out = client.list_assets()
+        assert len(out) == 2
+
+    def test_list_asset_groups(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "ASSET_GROUP_LIST_OUTPUT": {
+                        "RESPONSE": {
+                            "ASSET_GROUP_LIST": {
+                                "ASSET_GROUP": [{"ID": 1, "TITLE": "Servers"}]
+                            }
+                        }
+                    }
+                }
+            ),
+        )
+        out = client.list_asset_groups()
+        assert out[0]["TITLE"] == "Servers"
+
+    def test_list_scans(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "SCAN_LIST_OUTPUT": {
+                        "RESPONSE": {
+                            "SCAN_LIST": {
+                                "SCAN": [{"REF": "scan/1", "STATE": "Finished"}]
+                            }
+                        }
+                    }
+                }
+            ),
+        )
+        out = client.list_scans(state="Finished")
+        assert out[0]["STATE"] == "Finished"
+
+    def test_launch_scan(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"SIMPLE_RETURN": {"RESPONSE": {"CODE": "0"}}}),
+        )
+        out = client.launch_scan(
+            "Daily Scan",
+            "Default Profile",
+            ip_list="10.0.0.1",
+        )
+        assert isinstance(out, dict)
+
+
+class TestYetiGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.yeti.client import YetiClient
+
+        c = YetiClient(host="https://yeti.example.com", api_key="x")
+        c._authenticated = True
+        return c
+
+    def test_search_observables(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={"observables": [{"id": "o1", "value": "1.2.3.4"}]}
+            ),
+        )
+        out = client.search_observables(value="1.2.3.4")
+        assert out[0]["value"] == "1.2.3.4"
+
+    def test_search_entities(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={"entities": [{"id": "e1", "name": "APT28"}]}
+            ),
+        )
+        out = client.search_entities(name="APT", entity_type="threat-actor")
+        assert out[0]["name"] == "APT28"
+
+    def test_get_observable(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "o1"})
+        )
+        out = client.get_observable("o1")
+        assert out["id"] == "o1"
+
+    def test_get_neighbors(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"vertices": [], "edges": []}),
+        )
+        out = client.get_neighbors("o1")
+        assert "vertices" in out
+
+    def test_link_objects(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"id": "rel1"})
+        )
+        out = client.link_objects("observables", "o1", "entities", "e1")
+        assert out["id"] == "rel1"
+
+
+class TestFortiSIEMGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.fortisiem.client import FortiSIEMClient
+
+        c = FortiSIEMClient(host="https://fortisiem.example.com", username="u", password="p")
+        c._authenticated = True
+        return c
+
+    def test_get_incident(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"incidentId": 42, "severity": "high"}),
+        )
+        out = client.get_incident("42")
+        assert out["incidentId"] == 42
+
+    def test_update_incident(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"status": "ok"})
+        )
+        out = client.update_incident("42", status=2, comments="ack")
+        assert out["status"] == "ok"
+
+    def test_list_dashboards(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"response": [{"id": "d1", "name": "SOC"}]}),
+        )
+        out = client.list_dashboards()
+        assert out[0]["name"] == "SOC"
+
+    def test_list_rules(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"response": [{"id": "r1", "name": "Brute force"}]}),
+        )
+        out = client.list_rules(enabled_only=True)
+        assert out[0]["name"] == "Brute force"
+
+    def test_list_monitored_devices(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"response": [{"id": "d1", "name": "fw01"}]}),
+        )
+        out = client.list_monitored_devices()
+        assert out[0]["name"] == "fw01"
+
+    def test_query_events(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"events": []})
+        )
+        out = client.query_events("<query/>", 0, 100)
+        assert "events" in out
+
+
+class TestPulsediveGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.pulsedive.client import PulseDiveClient
+
+        c = PulseDiveClient(host="https://pulsedive.com", api_key="x")
+        c._authenticated = True
+        return c
+
+    def test_get_indicator(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"indicator": "1.2.3.4", "risk": "high"}
+            ),
+        )
+        out = client.get_indicator("1.2.3.4")
+        assert out["risk"] == "high"
+
+    def test_get_threat(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"threat": "Emotet", "tid": 1}),
+        )
+        out = client.get_threat("Emotet")
+        assert out["threat"] == "Emotet"
+
+    def test_search_indicators(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"results": [{"indicator": "1.2.3.4", "risk": "high"}]}
+            ),
+        )
+        out = client.search_indicators(risk="high", indicator_type="ip")
+        assert out[0]["risk"] == "high"
+
+    def test_list_threats(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"results": [{"tid": 1, "threat": "Emotet"}]}),
+        )
+        out = client.list_threats()
+        assert out[0]["threat"] == "Emotet"
+
+    def test_list_feeds(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"results": [{"fid": 1, "name": "Spamhaus"}]}),
+        )
+        out = client.list_feeds()
+        assert out[0]["name"] == "Spamhaus"
+
+    def test_analyze(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "post", MagicMock(return_value={"qid": 42})
+        )
+        out = client.analyze("evil.example")
+        assert out["qid"] == 42
+
+
+class TestSOCRadarGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.socradar.client import SOCRadarClient
+
+        c = SOCRadarClient(host="https://platform.socradar.com", api_key="x")
+        c._authenticated = True
+        return c
+
+    def test_search_iocs(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"value": "1.2.3.4", "type": "ip"}]}),
+        )
+        out = client.search_iocs(ioc_type="ip", confidence_min=70)
+        assert out[0]["value"] == "1.2.3.4"
+
+    def test_list_threat_actors(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": 1, "name": "APT28"}]}),
+        )
+        out = client.list_threat_actors()
+        assert out[0]["name"] == "APT28"
+
+    def test_list_malware_families(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": 1, "name": "Emotet"}]}),
+        )
+        out = client.list_malware_families()
+        assert out[0]["name"] == "Emotet"
+
+    def test_list_dark_web_findings(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": "f1", "source": "forum"}]}),
+        )
+        out = client.list_dark_web_findings()
+        assert out[0]["source"] == "forum"
+
+    def test_list_brand_alerts(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": "a1", "type": "phish"}]}),
+        )
+        out = client.list_brand_alerts()
+        assert out[0]["type"] == "phish"
+
+    def test_list_attack_surface_alerts(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"data": [{"id": "a1", "severity": "critical"}]}
+            ),
+        )
+        out = client.list_attack_surface_alerts(severity="critical")
+        assert out[0]["severity"] == "critical"
+
+
+class TestStellarCyberGapFills:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.stellarcyber.client import StellarCyberClient
+
+        c = StellarCyberClient(
+            host="https://sc.example.com", username="u", api_key="x"
+        )
+        c._authenticated = True
+        return c
+
+    def test_list_alerts(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"data": [{"id": "a1", "severity": "high"}]}
+            ),
+        )
+        out = client.list_alerts(severity="high")
+        assert out[0]["severity"] == "high"
+
+    def test_get_alert(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "a1"})
+        )
+        out = client.get_alert("a1")
+        assert out["id"] == "a1"
+
+    def test_list_assets(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": "host1", "type": "endpoint"}]}),
+        )
+        out = client.list_assets(asset_type="endpoint")
+        assert out[0]["type"] == "endpoint"
+
+    def test_list_cases(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": "c1", "status": "open"}]}),
+        )
+        out = client.list_cases(status="open")
+        assert out[0]["status"] == "open"
+
+    def test_search_logs(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"data": [{"id": "log1"}]}),
+        )
+        out = client.search_logs("event_name=login")
+        assert out[0]["id"] == "log1"
+
+    def test_list_threat_intel(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"data": [{"id": "ti1", "type": "ip"}]}
+            ),
+        )
+        out = client.list_threat_intel(ioc_type="ip")
+        assert out[0]["type"] == "ip"
+
+    def test_list_tenants(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": [{"id": "t1", "name": "Acme"}]}),
+        )
+        out = client.list_tenants()
+        assert out[0]["name"] == "Acme"

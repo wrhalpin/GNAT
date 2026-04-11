@@ -191,6 +191,83 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         resp = self.get("/phoenix/rest/pub/incident", params=params)
         return resp.get("response", []) if isinstance(resp, dict) else []
 
+    def get_incident(self, incident_id: str) -> dict[str, Any]:
+        """Fetch a single incident by id."""
+        resp = self.get(f"/phoenix/rest/pub/incident/{incident_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def update_incident(
+        self,
+        incident_id: str,
+        status: int | None = None,
+        comments: str = "",
+        assigned_to: str = "",
+    ) -> dict[str, Any]:
+        """Update an incident's status / comments / assignee."""
+        payload: dict[str, Any] = {"incidentId": incident_id}
+        if status is not None:
+            payload["status"] = int(status)
+        if comments:
+            payload["comments"] = comments
+        if assigned_to:
+            payload["assignedTo"] = assigned_to
+        resp = self.post("/phoenix/rest/pub/incident/update", json=payload)
+        return resp if isinstance(resp, dict) else {"ok": True, "id": incident_id}
+
+    def list_monitored_devices(
+        self, page_size: int = 500
+    ) -> list[dict[str, Any]]:
+        """List all devices under FortiSIEM monitoring (CMDB inventory)."""
+        resp = self.get(
+            "/phoenix/rest/deviceInfo/monitoredDevices",
+            params={"size": int(page_size)},
+        )
+        if isinstance(resp, dict):
+            items = resp.get("response") or resp.get("devices") or []
+            if isinstance(items, list):
+                return items
+        if isinstance(resp, list):
+            return [r for r in resp if isinstance(r, dict)]
+        return []
+
+    def list_dashboards(self) -> list[dict[str, Any]]:
+        """List user / system dashboards."""
+        resp = self.get("/phoenix/rest/dashboard/list")
+        if isinstance(resp, dict):
+            items = resp.get("response") or resp.get("dashboards") or []
+            if isinstance(items, list):
+                return items
+        if isinstance(resp, list):
+            return [r for r in resp if isinstance(r, dict)]
+        return []
+
+    def list_rules(self, enabled_only: bool = False) -> list[dict[str, Any]]:
+        """List correlation rules defined in FortiSIEM."""
+        params: dict[str, Any] = {}
+        if enabled_only:
+            params["enabled"] = "true"
+        resp = self.get("/phoenix/rest/rule/list", params=params)
+        if isinstance(resp, dict):
+            items = resp.get("response") or resp.get("rules") or []
+            if isinstance(items, list):
+                return items
+        if isinstance(resp, list):
+            return [r for r in resp if isinstance(r, dict)]
+        return []
+
+    def query_events(
+        self, query_xml: str, time_from: int, time_to: int
+    ) -> dict[str, Any]:
+        """
+        Run a raw event-search query via ``/phoenix/rest/query/eventQuery``.
+        *query_xml* is the FortiSIEM native query format.
+        """
+        resp = self.post(
+            "/phoenix/rest/query/eventQuery",
+            json={"query": query_xml, "timeFrom": time_from, "timeTo": time_to},
+        )
+        return resp if isinstance(resp, dict) else {}
+
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:

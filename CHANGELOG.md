@@ -19,6 +19,92 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Connector Gap Fills + Stub Rescues
+
+Filled the audit-identified domain-helper gaps in 9 existing connectors
+and rescued the 2 audit-flagged "framework stub" connectors. No new
+connector entries; this is **breadth work** on existing connectors.
+After this commit, every connector in the registry has at least 4
+domain helpers beyond the 7-method `ConnectorMixin` contract.
+
+**Gap fills (9 existing connectors)**
+
+- `threatconnect/client.py` — added 7 helpers exposing the v3 TQL
+  filter language: `search_indicators`, `search_groups`, `list_owners`,
+  `get_indicator`, `get_group`, `list_tags`, `get_associations`. Plus a
+  module-level `_extract_tc_data()` helper for the v3 envelope shape.
+- `proofpoint/client.py` — split the catch-all `/v2/siem/all` into
+  typed event helpers: `list_messages_delivered`,
+  `list_messages_blocked`, `list_clicks_permitted`,
+  `list_clicks_blocked`, `list_issues`, `get_forensics`,
+  `list_top_clickers`, `decode_url`. Removes the audit's biggest
+  email-event-categorization gap.
+- `shadowserver/client.py` — added typed query helpers replacing the
+  generic dispatch: `query_ip`, `query_asn`, `query_cve`,
+  `query_malware`, `query_botnet`, `list_report_types`, `query_report`.
+- `jira/client.py` — added 8 issue / project / workflow helpers:
+  `search_jql`, `get_issue`, `create_issue`, `update_issue`,
+  `transition_issue`, `list_transitions`, `list_projects`,
+  `get_project`, `list_issue_comments`. Builds ADF descriptions via
+  the existing `_build_adf_paragraph` helper.
+- `servicenow/client.py` — added 8 incident / change / CMDB helpers:
+  `list_incidents`, `get_incident`, `create_incident`,
+  `list_change_requests`, `create_change_request`, `query_table`
+  (generic), `get_cmdb_ci`, `list_cmdb_ci_by_name`. Module-level
+  `_extract_sn_record()` and `_extract_sn_records()` strip the
+  ServiceNow Table API `result` envelope.
+- `qualys/client.py` — added 5 helpers for the asset / scan / report
+  flow: `list_assets`, `list_asset_groups`, `list_scans`,
+  `launch_scan`, `list_reports`. All correctly walk the deep XML→JSON
+  envelope shape Qualys returns.
+- `yeti/client.py` — added 9 helpers for the relationship-graph
+  workflow: `search_observables`, `search_entities`, `get_observable`,
+  `get_entity`, `get_neighbors` (the core graph-traversal endpoint),
+  `list_indicators`, `list_tags`, `link_objects`. Module-level
+  `_extract_yeti_list()` for the v2 envelope shape.
+- `fortisiem/client.py` — added 6 helpers beyond `fetch_incidents`:
+  `get_incident`, `update_incident`, `list_monitored_devices`,
+  `list_dashboards`, `list_rules`, `query_events`.
+- `pulsedive/client.py` — added 7 helpers beyond `enrich`:
+  `get_indicator`, `get_threat`, `search_indicators`, `list_threats`,
+  `list_feeds`, `get_feed`, `analyze`. Module-level
+  `_extract_pd_list()` helper.
+
+**Stub rescues (2 connectors)**
+
+- `socradar/client.py` — graduated from "framework stubs only" to a
+  real connector. Added 9 domain helpers across the SOCRadar
+  capability suite: `search_iocs`, `list_threat_actors`,
+  `get_threat_actor`, `list_malware_families`, `get_malware`,
+  `list_dark_web_findings`, `list_brand_alerts`,
+  `list_attack_surface_alerts`, `list_industry_threats`. Module-level
+  `_extract_socradar_list()` helper.
+- `stellarcyber/client.py` — graduated from "framework stubs only" to
+  a real Open XDR connector. Added 8 domain helpers: `list_alerts`,
+  `get_alert`, `list_assets`, `list_cases`, `get_case`, `search_logs`,
+  `list_threat_intel`, `list_tenants`. Module-level `_extract_sc_list()`
+  helper.
+
+**Tests**
+- 64 new tests across 11 new `TestXxxGapFills` classes verifying every
+  new domain helper hits the right HTTP path and parses the response
+  envelope correctly.
+- Full unit suite: 2469 tests passing, zero regressions.
+- Ruff clean across all touched files.
+
+**Coverage shift (per the audit grades)**
+- threatconnect: **Minimal → Complete** (zero → 7 helpers)
+- proofpoint: **Minimal → Complete** (zero → 8 helpers)
+- shadowserver: **Minimal → Complete** (zero → 7 helpers)
+- jira: **Minimal → Complete** (2 → 10 helpers)
+- servicenow: **Minimal → Complete** (1 → 9 helpers)
+- qualys: **Minimal → Partial/Complete** (2 → 7 helpers)
+- yeti: **Minimal → Complete** (1 → 10 helpers)
+- fortisiem: **Minimal → Complete** (1 → 7 helpers)
+- pulsedive: **Minimal → Complete** (1 → 8 helpers)
+- socradar: **Stub → Complete** (zero → 9 helpers)
+- stellarcyber: **Stub → Complete** (zero → 8 helpers)
+
 ### Added — Phase 2 Wave 4: Additional TI Vendor Feeds
 
 Five more commercial / public threat intelligence vendor feeds from the

@@ -78,6 +78,79 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         """Delete the object."""
         raise GNATClientError("Proofpoint TAP API does not support object deletion.")
 
+    # ── Domain-specific helpers ────────────────────────────────────────────
+
+    def list_messages_delivered(
+        self, since_seconds: int = 3600
+    ) -> list[dict[str, Any]]:
+        """Return messages delivered to end users within the window."""
+        resp = self.get(
+            "/v2/siem/messages/delivered",
+            params={"format": "json", "sinceSeconds": int(since_seconds)},
+        )
+        return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
+
+    def list_messages_blocked(
+        self, since_seconds: int = 3600
+    ) -> list[dict[str, Any]]:
+        """Return messages blocked by TAP within the window."""
+        resp = self.get(
+            "/v2/siem/messages/blocked",
+            params={"format": "json", "sinceSeconds": int(since_seconds)},
+        )
+        return resp.get("messagesBlocked", []) if isinstance(resp, dict) else []
+
+    def list_clicks_permitted(
+        self, since_seconds: int = 3600
+    ) -> list[dict[str, Any]]:
+        """Return URL clicks that were permitted (URL was clean at click time)."""
+        resp = self.get(
+            "/v2/siem/clicks/permitted",
+            params={"format": "json", "sinceSeconds": int(since_seconds)},
+        )
+        return resp.get("clicksPermitted", []) if isinstance(resp, dict) else []
+
+    def list_clicks_blocked(
+        self, since_seconds: int = 3600
+    ) -> list[dict[str, Any]]:
+        """Return URL clicks that were blocked by the URL Defense rewrite."""
+        resp = self.get(
+            "/v2/siem/clicks/blocked",
+            params={"format": "json", "sinceSeconds": int(since_seconds)},
+        )
+        return resp.get("clicksBlocked", []) if isinstance(resp, dict) else []
+
+    def list_issues(
+        self, since_seconds: int = 3600
+    ) -> list[dict[str, Any]]:
+        """Return all issues (delivered + clicked-permitted) in the window."""
+        resp = self.get(
+            "/v2/siem/issues",
+            params={"format": "json", "sinceSeconds": int(since_seconds)},
+        )
+        out: list[dict[str, Any]] = []
+        if isinstance(resp, dict):
+            for key in ("messagesDelivered", "clicksPermitted"):
+                val = resp.get(key, [])
+                if isinstance(val, list):
+                    out.extend(r for r in val if isinstance(r, dict))
+        return out
+
+    def get_forensics(self, threat_id: str) -> dict[str, Any]:
+        """Return forensic detail for a specific threatId."""
+        resp = self.get("/v2/forensics", params={"threatId": threat_id})
+        return resp if isinstance(resp, dict) else {}
+
+    def list_top_clickers(self, window: str = "14") -> list[dict[str, Any]]:
+        """Return the People (top clickers) report for the given window."""
+        resp = self.get("/v2/people/top-clickers", params={"window": window})
+        return resp.get("users", []) if isinstance(resp, dict) else []
+
+    def decode_url(self, url: str) -> dict[str, Any]:
+        """Decode a TAP URL Defense rewritten URL back to the original."""
+        resp = self.post("/v2/url/decode", json={"urls": [url]})
+        return resp if isinstance(resp, dict) else {}
+
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Convert this object to STIX format."""
         return {

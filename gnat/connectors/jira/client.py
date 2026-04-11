@@ -337,6 +337,103 @@ class JiraClient(BaseClient, ConnectorMixin):
         """
         return self.list_objects(jql=f'labels = "{label}" ORDER BY created DESC', limit=limit)
 
+    def search_jql(self, jql: str, limit: int = 50) -> list[dict[str, Any]]:
+        """Run an arbitrary JQL query and return the matching issues."""
+        resp = self.get(
+            f"{_API_V3}/search",
+            params={"jql": jql, "maxResults": int(limit), "fields": "*all"},
+        )
+        if isinstance(resp, dict):
+            issues = resp.get("issues", [])
+            if isinstance(issues, list):
+                return [i for i in issues if isinstance(i, dict)]
+        return []
+
+    def get_issue(self, issue_key: str) -> dict[str, Any]:
+        """Fetch a single issue by key (e.g. ``"PROJ-123"``) or numeric id."""
+        resp = self.get(f"{_API_V3}/issue/{issue_key}")
+        return resp if isinstance(resp, dict) else {}
+
+    def create_issue(
+        self,
+        project_key: str,
+        summary: str,
+        description: str = "",
+        issue_type: str = "Task",
+        labels: list[str] | None = None,
+        priority: str = "",
+        assignee_account_id: str = "",
+    ) -> dict[str, Any]:
+        """Create a new Jira issue via POST ``/rest/api/3/issue``."""
+        fields: dict[str, Any] = {
+            "project": {"key": project_key},
+            "summary": summary,
+            "issuetype": {"name": issue_type},
+        }
+        if description:
+            fields["description"] = self._build_adf_paragraph(description)
+        if labels:
+            fields["labels"] = list(labels)
+        if priority:
+            fields["priority"] = {"name": priority}
+        if assignee_account_id:
+            fields["assignee"] = {"accountId": assignee_account_id}
+        resp = self.post(f"{_API_V3}/issue", json={"fields": fields})
+        return resp if isinstance(resp, dict) else {}
+
+    def update_issue(
+        self, issue_key: str, fields: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update fields on an existing issue."""
+        resp = self.put(f"{_API_V3}/issue/{issue_key}", json={"fields": fields})
+        return resp if isinstance(resp, dict) else {"status": "ok", "key": issue_key}
+
+    def transition_issue(
+        self, issue_key: str, transition_id: str
+    ) -> dict[str, Any]:
+        """
+        Transition an issue to a new status via the workflow transition
+        identified by *transition_id*.  Use :meth:`list_transitions` to
+        discover valid ids.
+        """
+        resp = self.post(
+            f"{_API_V3}/issue/{issue_key}/transitions",
+            json={"transition": {"id": str(transition_id)}},
+        )
+        return resp if isinstance(resp, dict) else {"status": "ok", "key": issue_key}
+
+    def list_transitions(self, issue_key: str) -> list[dict[str, Any]]:
+        """Return the workflow transitions available for an issue."""
+        resp = self.get(f"{_API_V3}/issue/{issue_key}/transitions")
+        if isinstance(resp, dict):
+            trans = resp.get("transitions", [])
+            if isinstance(trans, list):
+                return [t for t in trans if isinstance(t, dict)]
+        return []
+
+    def list_projects(self) -> list[dict[str, Any]]:
+        """Return all projects visible to the caller."""
+        resp = self.get(f"{_API_V3}/project/search", params={"maxResults": 1000})
+        if isinstance(resp, dict):
+            values = resp.get("values", [])
+            if isinstance(values, list):
+                return [p for p in values if isinstance(p, dict)]
+        return []
+
+    def get_project(self, project_key: str) -> dict[str, Any]:
+        """Fetch project metadata by key or id."""
+        resp = self.get(f"{_API_V3}/project/{project_key}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_issue_comments(self, issue_key: str) -> list[dict[str, Any]]:
+        """Return all comments on an issue."""
+        resp = self.get(f"{_API_V3}/issue/{issue_key}/comment")
+        if isinstance(resp, dict):
+            comments = resp.get("comments", [])
+            if isinstance(comments, list):
+                return [c for c in comments if isinstance(c, dict)]
+        return []
+
     # ── Private helpers ───────────────────────────────────────────────────
 
     def _stix_to_jira(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
