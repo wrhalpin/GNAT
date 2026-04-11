@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A production-ready Python library for unified cyber threat intelligence and management operations across 158 security platforms.
+**GNAT's Not Another TIP** — A Python library for unified cyber threat intelligence and management operations across 158 security and data platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -11,7 +11,7 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 158 security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 158 platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, cloud security posture products, and more. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
 [ 99 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
