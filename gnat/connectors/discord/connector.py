@@ -65,6 +65,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _API_BASE = "/api/v10"
 
@@ -454,7 +455,7 @@ class DiscordClient(BaseClient, ConnectorMixin):
         return {
             "type": "note",
             "id": stix_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": ts,
             "modified": ts,
             "abstract": content[:256] if content else "",
@@ -482,7 +483,7 @@ class DiscordClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--discord-channel-{channel_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "first_observed": now,
@@ -507,7 +508,7 @@ class DiscordClient(BaseClient, ConnectorMixin):
         return {
             "type": "identity",
             "id": f"identity--discord-user-{user_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": username,

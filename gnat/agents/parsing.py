@@ -66,13 +66,12 @@ import logging
 import re
 import uuid
 from collections.abc import Iterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel
 from gnat.agents.prompts import PARSING_SYSTEM, PARSING_USER
 from gnat.ingest.base import RawRecord, RecordMapper
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from gnat.agents.llm import LLMClient
 from gnat.orm.attack_pattern import AttackPattern

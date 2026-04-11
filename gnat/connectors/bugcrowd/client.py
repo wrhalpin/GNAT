@@ -35,6 +35,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_BC = uuid.UUID("b09c20d1-0001-4a1e-9b1e-b09c20d1c0fe")
@@ -276,7 +277,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-bugcrowd-program",
                 "id": f"x-bugcrowd-program--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "program_id": program_id,
                 "name": attrs.get("name"),
                 "code": attrs.get("code"),
@@ -289,7 +290,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-bugcrowd-target",
                 "id": f"x-bugcrowd-target--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": attrs.get("name"),
                 "category": attrs.get("category"),
                 "uri": attrs.get("uri") or attrs.get("url"),
@@ -302,7 +303,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-bugcrowd-reward",
                 "id": f"x-bugcrowd-reward--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "amount": attrs.get("amount"),
                 "currency": attrs.get("currency"),
                 "severity": attrs.get("severity"),
@@ -315,7 +316,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-bugcrowd-organization",
                 "id": f"x-bugcrowd-organization--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": attrs.get("name"),
                 "x_bugcrowd": {"raw": native},
             }
@@ -326,7 +327,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-bugcrowd-report",
                 "id": f"x-bugcrowd-report--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "title": attrs.get("title"),
                 "state": attrs.get("state"),
                 "x_bugcrowd": {"raw": native},

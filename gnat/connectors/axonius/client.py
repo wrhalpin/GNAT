@@ -49,6 +49,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("c5d6e7f8-9a0b-1c2d-3e4f-5a6b7c8d9e0f")
 
@@ -189,7 +190,7 @@ class AxoniusClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"Axonius Asset: {asset.get('name', aid)}",
@@ -212,7 +213,7 @@ class AxoniusClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": vul_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": vuln.get("title", "Axonius Vulnerability"),

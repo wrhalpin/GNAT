@@ -39,6 +39,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_indicator_pattern, utcnow
 
 _NAMESPACE_FORTIGUARD = uuid.UUID("f0411164-0001-4a1e-9b1e-f0411164cafe")
@@ -231,7 +232,7 @@ class FortiGuardClient(BaseClient, ConnectorMixin):
             return {
                 "type": "indicator",
                 "id": f"indicator--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "pattern": pattern,
@@ -253,7 +254,7 @@ class FortiGuardClient(BaseClient, ConnectorMixin):
             return {
                 "type": "malware",
                 "id": f"malware--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": str(name),
@@ -269,7 +270,7 @@ class FortiGuardClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--{stix_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": native.get("published") or utcnow(),
             "modified": native.get("updated") or utcnow(),
             "name": native.get("title") or str(alert_id),

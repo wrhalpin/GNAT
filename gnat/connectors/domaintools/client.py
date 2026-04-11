@@ -47,6 +47,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_DOMAINTOOLS = uuid.UUID("d0a17007-0d00-4a17-9e57-d0a17007ab1e")
@@ -280,7 +281,7 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
             return {
                 "type": "domain-name",
                 "id": f"domain-name--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": domain,
                 "x_domaintools": {
                     "registrar": native.get("registrar"),
@@ -297,7 +298,7 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
             return {
                 "type": "ipv4-addr",
                 "id": f"ipv4-addr--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": ip,
                 "x_domaintools": {
                     "reverse_domain": native.get("domain_name") or query,

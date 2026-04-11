@@ -50,6 +50,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("a9b8c7d6-e5f4-3a2b-1c0d-9e8f7a6b5c4d")
 
@@ -234,7 +235,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": ioc.get("first_seen") or now,
             "modified": ioc.get("last_seen") or now,
             "name": f"Flashpoint IOC: {ioc_value}",
@@ -258,7 +259,7 @@ class FlashpointClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": alert.get("created_at") or now,
             "modified": alert.get("updated_at") or now,
             "name": alert.get("title", "Flashpoint Alert"),

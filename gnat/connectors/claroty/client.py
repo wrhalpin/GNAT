@@ -52,6 +52,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 def _now_ts() -> str:
@@ -207,7 +208,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--claroty-{hash(str(native)) % 10**12}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": "Claroty Record",
@@ -229,7 +230,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--claroty-asset-{asset_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": asset.get("name", "Claroty Asset"),
@@ -253,7 +254,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--claroty-alert-{alert_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": alert.get("timestamp") or now,
             "modified": now,
             "first_observed": alert.get("timestamp"),
@@ -273,7 +274,7 @@ class ClarotyClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": f"vulnerability--claroty-{cve}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": cve or "Claroty Vulnerability",

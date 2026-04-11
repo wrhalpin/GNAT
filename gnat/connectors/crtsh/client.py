@@ -31,6 +31,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import utcnow
 
 _NAMESPACE_CRTSH = uuid.UUID("c47ac111-0001-4a1e-9b1e-c47ac111c0fe")
@@ -183,7 +184,7 @@ class CrtShClient(BaseClient, ConnectorMixin):
         return {
             "type": "x509-certificate",
             "id": f"x509-certificate--{stix_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "issuer": issuer,
             "subject": subject,
             "serial_number": serial,

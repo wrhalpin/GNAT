@@ -51,6 +51,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 def _now_ts() -> str:
@@ -194,7 +195,7 @@ class GreyNoiseClient(BaseClient, ConnectorMixin):
         return {
             "type": stix_type,
             "id": f"{stix_type}--greynoise-{ip.replace('.', '-')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"GreyNoise Context for {ip}",

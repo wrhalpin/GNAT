@@ -54,6 +54,7 @@ import urllib3
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import (
     make_indicator_pattern,
     utcnow,
@@ -474,7 +475,7 @@ def _base_indicator(
     """Common base STIX indicator skeleton used by all feed mappers."""
     return {
         "type": "indicator",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "created": now,
         "modified": now,
         "pattern": pattern,

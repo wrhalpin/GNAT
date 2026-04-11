@@ -32,6 +32,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_GURUCUL = uuid.UUID("90c0c019-0001-4a1e-9b1e-90c0c019c0fe")
@@ -211,7 +212,7 @@ class GuruculClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("username"),
                 "display_name": native.get("displayName") or native.get("fullName"),
                 "account_type": "domain",
@@ -232,7 +233,7 @@ class GuruculClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-gurucul-entity",
                 "id": f"x-gurucul-entity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(ent_id),
                 "entity_type": native.get("type"),
                 "risk_score": native.get("riskScore"),
@@ -247,7 +248,7 @@ class GuruculClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-gurucul-model",
                 "id": f"x-gurucul-model--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(model_id),
                 "enabled": native.get("enabled"),
                 "x_gurucul": {"raw": native},

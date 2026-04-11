@@ -30,6 +30,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_indicator_pattern, utcnow
 
 _NAMESPACE_KASPERSKY = uuid.UUID("ca5ce1a7-0001-4a1e-9b1e-ca5ce1a7c0fe")
@@ -183,7 +184,7 @@ class KasperskyOpenTIPClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": f"indicator--{stix_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": utcnow(),
             "modified": utcnow(),
             "pattern": pattern,

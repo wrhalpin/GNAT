@@ -49,6 +49,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("f0a1b2c3-d4e5-4f6a-8b9c-0d1e2f3a4b5c")
 
@@ -180,7 +181,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": threat.get("createdAt") or now,
             "modified": now,
             "name": threat_info.get("threatName", "SentinelOne Threat"),
@@ -207,7 +208,7 @@ class SentinelOneClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"SentinelOne Agent: {agent.get('computerName', '')}",

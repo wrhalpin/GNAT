@@ -32,6 +32,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import utcnow
 
 _NAMESPACE_GCT = uuid.UUID("60061ec7-0001-4a1e-9b1e-60061ec7c0fe")
@@ -221,7 +222,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-google-ct-sth",
                 "id": f"x-google-ct-sth--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "log": self.log,
                 "tree_size": tree_size,
                 "timestamp": timestamp,
@@ -236,7 +237,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x509-certificate",
                 "id": f"x509-certificate--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "is_self_signed": True,
                 "x_google_ct": {"role": "root", "der_b64": der, "raw": native},
             }
@@ -250,7 +251,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
         return {
             "type": "x509-certificate",
             "id": f"x509-certificate--{stix_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "x_google_ct": {
                 "log": self.log,
                 "leaf_index": index,

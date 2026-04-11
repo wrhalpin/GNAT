@@ -39,6 +39,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import bas_simulation_envelope, utcnow
 
 _NAMESPACE_SAFEBREACH = uuid.UUID("5afeb1ea-c000-4a1e-9b1e-5afeb1eac0fe")
@@ -238,7 +239,7 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or str(attacker_id),

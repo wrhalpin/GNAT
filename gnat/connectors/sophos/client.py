@@ -44,6 +44,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f23456789012")
 _AUTH_URL = "https://id.sophos.com/api/v2/oauth2/token"
@@ -254,7 +255,7 @@ class SophosClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": f"indicator--{_uuid.uuid5(_STIX_NS, f'sophos:{item_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": item.get("created_at", now),
             "modified": item.get("updated_at", now),
             "name": value,
@@ -272,7 +273,7 @@ class SophosClient(BaseClient, ConnectorMixin):
         return {
             "type": "malware",
             "id": f"malware--{_uuid.uuid5(_STIX_NS, f'sophos:{det_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": detection.get("detected_at", now),
             "modified": detection.get("detected_at", now),
             "name": detection.get("name", "Unknown Sophos Detection"),

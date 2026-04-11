@@ -30,6 +30,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_indicator_pattern, utcnow
 
 _NAMESPACE_ESET = uuid.UUID("e5e7e7e0-0001-4a1e-9b1e-e5e7e7e0c0fe")
@@ -217,7 +218,7 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
             return {
                 "type": "report",
                 "id": f"report--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": native.get("published") or utcnow(),
                 "modified": native.get("updated") or utcnow(),
                 "name": native.get("title") or str(report_id),
@@ -240,7 +241,7 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
             return {
                 "type": "malware",
                 "id": f"malware--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": str(family),
@@ -272,7 +273,7 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": f"indicator--{stix_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": utcnow(),
             "modified": utcnow(),
             "pattern": pattern,

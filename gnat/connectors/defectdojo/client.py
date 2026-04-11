@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2f")
 
@@ -233,7 +234,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": vul_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": finding.get("date") or now,
             "modified": now,
             "name": finding.get("title", "DefectDojo Finding"),
@@ -273,7 +274,7 @@ class DefectDojoClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": engagement.get("target_start") or now,
             "modified": now,
             "name": engagement.get("name", "DefectDojo Engagement"),

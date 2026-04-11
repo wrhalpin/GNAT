@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
@@ -190,7 +191,7 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": vul_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": issue.get("title", "CyCognito Issue"),
@@ -214,7 +215,7 @@ class CyCognitoClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"CyCognito Asset: {asset.get('name', aid)}",

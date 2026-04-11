@@ -54,6 +54,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 class OpenCTIClient(BaseClient, ConnectorMixin):
@@ -216,7 +217,7 @@ class OpenCTIClient(BaseClient, ConnectorMixin):
         """
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [payload],
         }
         resp = self.post(

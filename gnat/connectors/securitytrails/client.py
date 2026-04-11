@@ -44,6 +44,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_SECURITYTRAILS = uuid.UUID("5ec07a71-ab1e-4c0d-9a1b-5e1c07a71bad")
@@ -299,7 +300,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
             return {
                 "type": "domain-name",
                 "id": f"domain-name--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": fqdn,
                 "x_securitytrails": {"parent": native.get("parent"), "raw": native},
             }
@@ -310,7 +311,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
             return {
                 "type": "ipv4-addr",
                 "id": f"ipv4-addr--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": ip,
                 "x_securitytrails": {"raw": native},
             }

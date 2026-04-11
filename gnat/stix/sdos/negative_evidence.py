@@ -32,6 +32,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from gnat.orm.base import STIXBase, _utcnow
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 class NegativeEvidenceRecord(STIXBase):
@@ -137,7 +138,7 @@ class NegativeEvidenceRecord(STIXBase):
             id=data.get("id"),
             created=data.get("created"),
             modified=data.get("modified"),
-            spec_version=data.get("spec_version", "2.1"),
+            spec_version=data.get("spec_version", CURRENT_SPEC_VERSION),
         )
 
     def __repr__(self) -> str:  # pragma: no cover

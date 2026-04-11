@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("d4e5f678-90ab-cdef-1234-56789abcdef0")
 
@@ -196,7 +197,7 @@ class OrcaClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": vul_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": finding.get("title", "Orca Finding"),
@@ -220,7 +221,7 @@ class OrcaClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"Orca Asset: {asset.get('name', aid)}",

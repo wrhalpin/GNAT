@@ -56,6 +56,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 from .exceptions import ElasticSTIXError
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -225,7 +227,7 @@ class ElasticSTIXMapper:
         obj: dict = {
             "type": "indicator",
             "id": stix_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": ti.get("first_seen") or now,
             "modified": ti.get("last_seen") or now,
             "name": ti.get("description") or f"{indicator_type}: {value}",
@@ -357,7 +359,7 @@ class ElasticSTIXMapper:
         if hashes:
             key = next(iter(hashes.values()))
             fid = f"file--{_det_uuid('file', key)}"
-            file_obj: dict = {"type": "file", "id": fid, "spec_version": "2.1"}
+            file_obj: dict = {"type": "file", "id": fid, "spec_version": CURRENT_SPEC_VERSION}
             if hashes:
                 file_obj["hashes"] = hashes
             if fname := file_info.get("name"):
@@ -374,7 +376,7 @@ class ElasticSTIXMapper:
             {
                 "type": "observed-data",
                 "id": obs_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "first_observed": ts,
@@ -607,7 +609,7 @@ def _ipv4(value: str) -> dict:
     return {
         "type": "ipv4-addr",
         "id": f"ipv4-addr-{_det_uuid('ipv4-addr', value)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "value": value,
     }
 
@@ -617,7 +619,7 @@ def _domain(value: str) -> dict:
     return {
         "type": "domain-name",
         "id": f"domain-name-{_det_uuid('domain-name', value)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "value": value,
     }
 
@@ -627,7 +629,7 @@ def _url(value: str) -> dict:
     return {
         "type": "url",
         "id": f"url-{_det_uuid('url', value)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "value": value,
     }
 
@@ -637,7 +639,7 @@ def _user_account(user_id: str) -> dict:
     return {
         "type": "user-account",
         "id": f"user-account-{_det_uuid('user-account', user_id)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "user_id": user_id,
     }
 
@@ -647,7 +649,7 @@ def _process(name: str) -> dict:
     return {
         "type": "process",
         "id": f"process-{_det_uuid('process', name)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "name": name,
     }
 
@@ -657,7 +659,7 @@ def _make_bundle(objects: list[dict]) -> dict:
     return {
         "type": "bundle",
         "id": f"bundle-{uuid.uuid4()}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "objects": objects,
     }
 

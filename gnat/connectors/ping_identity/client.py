@@ -45,6 +45,7 @@ import urllib3
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_PING = uuid.UUID("917e1d00-0001-4a1e-9b1e-917e1d00c0fe")
@@ -327,7 +328,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("username"),
                 "display_name": f"{name.get('given', '')} {name.get('family', '')}".strip()
                 or native.get("username"),
@@ -352,7 +353,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": native.get("createdAt") or utcnow(),
                 "modified": native.get("updatedAt") or utcnow(),
                 "name": native.get("name") or f"PingOne population {pop_id}",
@@ -373,7 +374,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-ping-application",
                 "id": f"x-ping-application--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": native.get("createdAt") or utcnow(),
                 "modified": native.get("updatedAt") or utcnow(),
                 "name": native.get("name") or app_id,
@@ -391,7 +392,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-ping-sign-on-policy",
                 "id": f"x-ping-sign-on-policy--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or pol_id,
                 "default": native.get("default"),
                 "x_ping_identity_policy": {"raw": native},

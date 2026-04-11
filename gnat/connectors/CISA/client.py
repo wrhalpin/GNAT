@@ -49,6 +49,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 def _now_ts() -> str:
@@ -184,7 +185,7 @@ class CISAClient(BaseClient, ConnectorMixin):
             return {
                 "type": "report",
                 "id": f"report--cisa-kev-catalog-{now.replace(':', '')}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "name": "CISA Known Exploited Vulnerabilities Catalog",
@@ -194,7 +195,7 @@ class CISAClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": f"vulnerability--{cve.lower()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": native.get("dateAdded") or now,
             "modified": now,
             "name": cve,

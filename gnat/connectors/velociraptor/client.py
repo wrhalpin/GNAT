@@ -46,6 +46,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_VR = uuid.UUID("0e10c1a7-0001-4a1e-9b1e-0e10c1a7c0fe")
@@ -259,7 +260,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-velociraptor-client",
                 "id": f"x-velociraptor-client--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "client_id": client_id,
                 "hostname": native.get("os_info", {}).get("hostname")
                 if isinstance(native.get("os_info"), dict)
@@ -279,7 +280,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-velociraptor-hunt",
                 "id": f"x-velociraptor-hunt--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "hunt_id": hunt_id,
                 "state": native.get("state"),
                 "creator": native.get("creator"),
@@ -298,7 +299,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-velociraptor-artifact",
                 "id": f"x-velociraptor-artifact--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": name,
                 "description": native.get("description"),
                 "x_velociraptor": {"raw": native},

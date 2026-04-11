@@ -43,6 +43,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("a7b8c9d0-e1f2-3456-0123-789012345678")
 
@@ -256,7 +257,7 @@ class CensysClient(BaseClient, ConnectorMixin):
         stix: dict[str, Any] = {
             "type": "observed-data",
             "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'censys:{ip}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": last_updated,
             "modified": last_updated,
             "first_observed": last_updated,

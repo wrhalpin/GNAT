@@ -52,6 +52,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 from .exceptions import WazuhSTIXError
 
 # ── STIX namespace for deterministic UUIDs ────────────────────────────────────
@@ -209,7 +211,7 @@ class WazuhSTIXMapper:
         observed: dict = {
             "type": "observed-data",
             "id": obs_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "first_observed": ts,
@@ -305,7 +307,7 @@ class WazuhSTIXMapper:
         observed: dict = {
             "type": "observed-data",
             "id": obs_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "first_observed": ts,
@@ -351,7 +353,7 @@ class WazuhSTIXMapper:
         return {
             "type": "vulnerability",
             "id": det_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": cve,
@@ -429,7 +431,7 @@ class WazuhSTIXMapper:
         return {
             "type": "identity",
             "id": identity_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": agent_name,
@@ -536,7 +538,7 @@ class WazuhSTIXMapper:
         obj: dict = {
             "type": "file",
             "id": file_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
         }
         if file_path:
             import posixpath
@@ -573,7 +575,7 @@ class WazuhSTIXMapper:
             obj: dict = {
                 "type": "network-traffic",
                 "id": net_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "src_ref": src_ref,
                 "dst_ref": dst_ref,
                 "protocols": [protocol.lower()] if protocol else ["tcp"],
@@ -611,7 +613,7 @@ def _make_ipv4(value: str) -> dict:
     return {
         "type": "ipv4-addr",
         "id": f"ipv4-addr-{_det_uuid('ipv4-addr', value)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "value": value,
     }
 
@@ -621,7 +623,7 @@ def _make_user_account(user_id: str) -> dict:
     return {
         "type": "user-account",
         "id": f"user-account-{_det_uuid('user-account', user_id)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "user_id": user_id,
     }
 
@@ -631,7 +633,7 @@ def _make_process(name: str) -> dict:
     return {
         "type": "process",
         "id": f"process-{_det_uuid('process', name)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "name": name,
     }
 
@@ -641,7 +643,7 @@ def _make_domain(value: str) -> dict:
     return {
         "type": "domain-name",
         "id": f"domain-name-{_det_uuid('domain-name', value)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "value": value,
     }
 
@@ -651,7 +653,7 @@ def _make_bundle(objects: list[dict]) -> dict:
     return {
         "type": "bundle",
         "id": f"bundle-{uuid.uuid4()}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "objects": objects,
     }
 

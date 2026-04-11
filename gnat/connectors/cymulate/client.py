@@ -31,6 +31,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import bas_simulation_envelope, utcnow
 
 _NAMESPACE_CYMULATE = uuid.UUID("c704a7e0-0001-4a1e-9c1e-c704a7e0c0fe")
@@ -201,7 +202,7 @@ class CymulateClient(BaseClient, ConnectorMixin):
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or str(tpl_id),

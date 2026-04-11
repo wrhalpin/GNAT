@@ -31,7 +31,6 @@ from typing import Any
 
 from gnat.agents.workflow import WorkflowContext, WorkflowStep
 
-
 # ── Enrichment step ───────────────────────────────────────────────────────────
 
 def enrich_step(

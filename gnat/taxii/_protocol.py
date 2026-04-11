@@ -64,12 +64,31 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from gnat.stix.version import (
+    CURRENT_SPEC_VERSION,
+    STIX_MEDIA_TYPE,
+    TAXII_MEDIA_TYPE,
+)
+
 # ---------------------------------------------------------------------------
-# Media-type constants (spec §3.1)
+# Media-type constants (spec §3.1) — re-exported from gnat.stix.version so
+# there is a single source of truth for the STIX version number. Bumping
+# ``CURRENT_SPEC_VERSION`` automatically updates the ``;version=...``
+# parameter on both media types.
 # ---------------------------------------------------------------------------
 
-TAXII_MEDIA_TYPE: str = "application/taxii+json;version=2.1"
-STIX_MEDIA_TYPE: str = "application/stix+json;version=2.1"
+__all__ = [
+    "CURRENT_SPEC_VERSION",
+    "STIX_MEDIA_TYPE",
+    "TAXII_MEDIA_TYPE",
+    "encode_cursor",
+    "decode_cursor",
+    "taxii_response",
+    "utcnow_iso",
+    "make_stix_bundle",
+    "make_discovery_body",
+    "make_api_root_body",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -185,7 +204,7 @@ def make_stix_bundle(objects: list[dict]) -> dict:
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "objects": objects,
     }
 

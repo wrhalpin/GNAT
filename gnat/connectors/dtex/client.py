@@ -32,6 +32,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_DTEX = uuid.UUID("d7e1c700-0001-4a1e-9b1e-d7e1c700c0fe")
@@ -210,7 +211,7 @@ class DTEXClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("username"),
                 "display_name": native.get("displayName") or native.get("fullName"),
                 "account_type": "domain",
@@ -229,7 +230,7 @@ class DTEXClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-dtex-policy",
                 "id": f"x-dtex-policy--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(pol_id),
                 "severity": native.get("severity"),
                 "enabled": native.get("enabled"),
@@ -244,7 +245,7 @@ class DTEXClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-dtex-risk-factor",
                 "id": f"x-dtex-risk-factor--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(rf_id),
                 "weight": native.get("weight"),
                 "x_dtex": {"raw": native},

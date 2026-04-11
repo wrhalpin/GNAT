@@ -50,6 +50,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 def _now_ts() -> str:
@@ -285,7 +286,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--fortisiem-cmdb-{hash(str(native)) % 10**12}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": "FortiSIEM CMDB Entry",
@@ -308,7 +309,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--fortisiem-{inc_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": inc.get("incidentFirstSeen") or now,
             "modified": now,
             "first_observed": inc.get("incidentFirstSeen"),

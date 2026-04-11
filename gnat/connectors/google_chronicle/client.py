@@ -55,6 +55,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 def _now_ts() -> str:
@@ -203,7 +204,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": f"indicator--chronicle-{hash(str(native)) % 10**12}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": native.get("name", "Chronicle Detection"),
@@ -223,7 +224,7 @@ class GoogleChronicleClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--chronicle-{event_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "first_observed": event.get("metadata", {}).get("eventTimestamp"),

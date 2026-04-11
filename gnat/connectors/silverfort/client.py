@@ -45,6 +45,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_SILVERFORT = uuid.UUID("51147e57-0001-4a1b-9ec0-51147e57ab1e")
@@ -250,7 +251,7 @@ class SilverfortClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("upn") or native.get("username"),
                 "display_name": native.get("display_name") or native.get("name"),
                 "account_type": native.get("account_type") or "domain",

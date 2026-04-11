@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("f6a7b8c9-d0e1-2345-f012-678901234567")
 _AUTH_URL = "https://id.lansweeper.com/ls/connect/token"
@@ -247,7 +248,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--{_uuid.uuid5(_STIX_NS, f'lansweeper:{aid}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": asset.get("firstSeen", now),
             "modified": asset.get("lastSeen", now),
             "name": asset.get("name", f"Asset {aid}"),
@@ -272,7 +273,7 @@ class LansweeperClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, f'lansweeper:sw:{sid}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"{sw.get('softwareName', 'Unknown')} {sw.get('softwareVersion', '')}".strip(),

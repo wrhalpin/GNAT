@@ -40,6 +40,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 # UUID namespace for deterministic observed-data IDs derived from source +
 # observation window + object_refs.  Fixed value so regenerating an ID for
 # the same logical observation yields the same UUID across runs.
@@ -52,11 +54,11 @@ def utcnow() -> str:
 
 
 def make_bundle(objects: list[dict[str, Any]]) -> dict[str, Any]:
-    """Wrap a list of STIX objects in a STIX 2.1 bundle."""
+    """Wrap a list of STIX objects in a STIX bundle."""
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "objects": objects,
     }
 
@@ -147,7 +149,7 @@ def make_observed_data_envelope(
     envelope: dict[str, Any] = {
         "type": "observed-data",
         "id": f"observed-data--{obs_uuid}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "created": now,
         "modified": now,
         "first_observed": first_observed,
@@ -431,7 +433,7 @@ def osv_to_stix_vulnerability(osv: dict[str, Any]) -> dict[str, Any]:
     stix_obj: dict[str, Any] = {
         "type": "vulnerability",
         "id": f"vulnerability--{vuln_uuid}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "created": osv.get("published") or now,
         "modified": osv.get("modified") or now,
         "name": osv_id or "unnamed-osv-vulnerability",

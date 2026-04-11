@@ -44,6 +44,7 @@ from gnat.connectors.sentinel.exceptions import (
 from gnat.connectors.sentinel.incidents import SentinelIncidentCommands
 from gnat.connectors.sentinel.stix_mapper import SentinelSTIXMapper
 from gnat.connectors.sentinel.threat_intel import SentinelThreatIntelCommands
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -654,7 +655,7 @@ class TestSentinelSTIXMapper(unittest.TestCase):
         """Test that stix bundle to ti properties list."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {
                     "type": "indicator",

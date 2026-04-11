@@ -43,6 +43,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("c3d4e5f6-a7b8-9012-cdef-345678901234")
 
@@ -230,7 +231,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'vectra:{det_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": first_ts,
             "modified": last_ts,
             "first_observed": first_ts,
@@ -256,7 +257,7 @@ class VectraClient(BaseClient, ConnectorMixin):
         return {
             "type": "threat-actor",
             "id": f"threat-actor--{_uuid.uuid5(_STIX_NS, f'vectra:{host_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": host.get("name", f"Vectra Host {host_id}"),

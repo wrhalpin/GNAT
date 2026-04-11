@@ -49,6 +49,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import (
     cvss_to_external_reference,
     make_observed_data_envelope,
@@ -351,7 +352,7 @@ def _software_to_stix(sw: dict[str, Any]) -> dict[str, Any]:
     return {
         "type": "software",
         "id": f"software--{sw_uuid}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "name": name,
         "vendor": vendor,
         "version": version,
@@ -398,7 +399,7 @@ def _vulnerability_to_stix(vuln: dict[str, Any]) -> dict[str, Any]:
     return {
         "type": "vulnerability",
         "id": f"vulnerability--{vuln_uuid}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "created": vuln.get("created_at") or now,
         "modified": vuln.get("updated_at") or now,
         "name": cve or vuln.get("name", "runzero-vulnerability"),

@@ -47,6 +47,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
@@ -266,7 +267,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
                         {
                             "type": "ipv4-addr",
                             "id": ip_id,
-                            "spec_version": "2.1",
+                            "spec_version": CURRENT_SPEC_VERSION,
                             "value": ip,
                         }
                     )
@@ -284,7 +285,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
                 nt: dict[str, Any] = {
                     "type": "network-traffic",
                     "id": nid,
-                    "spec_version": "2.1",
+                    "spec_version": CURRENT_SPEC_VERSION,
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', src_ip)}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', dst_ip)}",
                     "protocols": [str(msg.get("protocol", "tcp")).lower()],
@@ -302,7 +303,7 @@ class GraylogClient(BaseClient, ConnectorMixin):
         obs: dict[str, Any] = {
             "type": "observed-data",
             "id": obs_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "first_observed": ts,

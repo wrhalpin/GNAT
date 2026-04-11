@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("d4e5f6a7-b8c9-0123-def0-456789012345")
 
@@ -604,7 +605,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'extrahop:{det_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": start_time,
             "modified": update_time,
             "first_observed": start_time,
@@ -628,7 +629,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'extrahop:rec:{rec_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "first_observed": record.get("timestamp", now),

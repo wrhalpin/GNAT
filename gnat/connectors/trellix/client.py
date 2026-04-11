@@ -43,6 +43,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 _DEFAULT_IAM = "https://iam.mcafee-cloud.com"
@@ -262,7 +263,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": f"indicator--{_uuid.uuid5(_STIX_NS, f'trellix:{ioc_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": ioc.get("created_at", now),
             "modified": ioc.get("updated_at", now),
             "name": value,
@@ -281,7 +282,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         return {
             "type": "malware",
             "id": f"malware--{_uuid.uuid5(_STIX_NS, f'trellix:{tid}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": threat.get("detected_at", now),
             "modified": threat.get("updated_at", now),
             "name": threat.get("name", "Unknown Trellix Threat"),
@@ -303,7 +304,7 @@ class TrellixClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, f'trellix:{vid}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": vuln.get("published_at", now),
             "modified": vuln.get("updated_at", now),
             "name": vuln.get("cve_id", vuln.get("name", "Trellix Vulnerability")),

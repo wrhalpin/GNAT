@@ -45,6 +45,8 @@ import re
 import uuid
 from datetime import datetime, timezone
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 from .exceptions import MISPSTIXError
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -142,7 +144,7 @@ class MISPSTIXMapper:
         report: dict = {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": _epoch_to_stix(event.get("timestamp")) or now,
             "modified": now,
             "name": event.get("info", "MISP Event"),
@@ -284,28 +286,28 @@ class MISPSTIXMapper:
             return {
                 "type": "ipv4-addr",
                 "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip_value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": ip_value,
             }
         if stix_type == "domain-name":
             return {
                 "type": "domain-name",
                 "id": f"domain-name--{_det_uuid('domain-name', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": value,
             }
         if stix_type == "url":
             return {
                 "type": "url",
                 "id": f"url--{_det_uuid('url', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": value,
             }
         if stix_type == "email-addr":
             return {
                 "type": "email-addr",
                 "id": f"email-addr--{_det_uuid('email-addr', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": value,
             }
         if stix_type == "file":
@@ -314,7 +316,7 @@ class MISPSTIXMapper:
             obj: dict = {
                 "type": "file",
                 "id": f"file--{_det_uuid('file', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
             }
             if base_type in hash_map:
                 obj["hashes"] = {hash_map[base_type]: value}
@@ -325,7 +327,7 @@ class MISPSTIXMapper:
             return {
                 "type": "vulnerability",
                 "id": f"vulnerability--{_det_uuid('vulnerability', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": _now_ts(),
                 "modified": _now_ts(),
                 "name": value,
@@ -342,7 +344,7 @@ class MISPSTIXMapper:
                 return {
                     "type": "autonomous-system",
                     "id": f"autonomous-system--{_det_uuid('AS', value)}",
-                    "spec_version": "2.1",
+                    "spec_version": CURRENT_SPEC_VERSION,
                     "number": int(value.lstrip("AS")),
                 }
             except ValueError:
@@ -376,7 +378,7 @@ class MISPSTIXMapper:
         return {
             "type": "indicator",
             "id": f"indicator--{_det_uuid('indicator', pattern)}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": _epoch_to_stix(attr.get("timestamp")) or now,
             "modified": now,
             "name": attr.get("value", ""),
@@ -523,6 +525,6 @@ def _make_bundle(objects: list[dict]) -> dict:
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "objects": objects,
     }

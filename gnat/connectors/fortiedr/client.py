@@ -51,6 +51,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 def _now_ts() -> str:
@@ -206,7 +207,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--fortiedr-{event_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": event.get("firstSeen") or now,
             "modified": now,
             "first_observed": event.get("firstSeen"),
@@ -229,7 +230,7 @@ class FortiEDRClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--fortiedr-collector-{coll_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"FortiEDR Collector {coll_id}",
