@@ -19,6 +19,89 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 9: Certificate Transparency + DFIR + Bug Bounty
+
+Six connectors closing out Phase 2 with cert-transparency log search,
+endpoint DFIR, and bug-bounty / VDP platforms. Platform count:
+152 → 158. All six are read-only via the CRUD contract; write
+operations (where applicable) are exposed as named domain helpers.
+
+**New connectors (`gnat/connectors/`)**
+- `crtsh/` — `CrtShClient` for the public crt.sh Certificate
+  Transparency search aggregator (operated by Sectigo). No
+  authentication. The first connector to emit STIX 2.1
+  `x509-certificate` SCOs natively. Domain helpers: `search_domain`
+  (with `include_subdomains` for prefix-`%.` expansion),
+  `get_certificate`.
+- `google_ct/` — `GoogleCTClient` for the RFC 6962 read endpoints
+  exposed by Google's Argon / Xenon CT logs. Per-log path config so
+  one client can switch between logs without re-instantiation.
+  Domain helpers: `get_sth`, `get_entries`, `get_roots`,
+  `get_proof_by_hash`. Custom `x-google-ct-sth` SCO for the signed
+  tree head.
+- `velociraptor/` — `VelociraptorClient` for the open-source
+  Velociraptor DFIR server. `TRUST_LEVEL = trusted_internal`.
+  Supports either Bearer token (proxied deployments) or mTLS
+  cert/key (the OSS server's default). Dispatches across clients
+  (agents), hunts, flows, and the artifact catalog. Custom
+  `x-velociraptor-{client,hunt,artifact}` SCOs. Domain helpers:
+  `list_clients`, `get_client`, `list_hunts`, `get_hunt`,
+  `list_flows`, `list_artifacts`, `run_vql` (arbitrary VQL
+  execution), `run_hunt` (artifact-driven hunt creation).
+- `magnet_axiom/` — `MagnetAxiomClient` for Magnet AXIOM Cyber
+  remote forensic acquisition. `X-API-Key` header auth. `COST_UNIT
+  = 2` (collections are expensive). `TRUST_LEVEL = trusted_internal`.
+  Dispatches across cases, evidence sources, extracted artifacts,
+  agents, collections, and examiner accounts. Custom `x-axiom-agent`
+  and `x-axiom-collection` SCOs. Domain helpers: `list_cases`,
+  `get_case`, `list_evidence`, `list_artifacts`, `list_agents`,
+  `list_collections`, `list_users`, `create_case`,
+  `start_collection`.
+- `hackerone/` — `HackerOneClient` for HackerOne bug bounty / VDP /
+  pentest-as-a-service. HTTP Basic (api_username + api_token).
+  Dispatches across reports, programs (all + mine), structured
+  scopes (assets), and the accepted weakness taxonomy. Custom
+  `x-h1-program` and `x-h1-scope` SCOs; weaknesses map to STIX
+  `vulnerability`. Domain helpers: `list_reports`, `get_report`,
+  `list_programs`, `get_program`, `list_weaknesses`,
+  `list_structured_scopes`, `add_report_comment`,
+  `change_report_state`.
+- `bugcrowd/` — `BugcrowdClient` for Bugcrowd managed bug bounty /
+  pentest. `Authorization: Token <token>` header. Dispatches across
+  submissions, programs, in-scope targets, bounty rewards, managed
+  pentest reports, and tenant organizations. Custom
+  `x-bugcrowd-{program,target,reward,organization,report}` SCOs.
+  Domain helpers: `list_submissions`, `get_submission`,
+  `list_programs`, `list_targets`, `list_rewards`,
+  `list_pentest_reports`, `list_organizations`,
+  `add_submission_comment`, `change_submission_state` (uses HTTP
+  PATCH on the resource, not POST).
+
+**Architectural notes**
+- Project Honey Pot (Wave 8) was the first connector to bypass HTTP
+  in favor of socket-based DNS lookups. Wave 9's crt.sh and
+  google_ct are the first connectors to emit STIX `x509-certificate`
+  SCOs as their primary output type, which means the test contract
+  helper now needs to accept that type alongside the existing
+  observable / SDO checks. (`_assert_stix_contract` already accepts
+  any STIX type that has a `--<uuid>` id, so no helper changes were
+  needed.)
+- Velociraptor is the first GNAT connector to support a dual-auth
+  pattern out of the box: either an `api_token` for proxied HTTP
+  deployments or `cert_path` + `key_path` for mTLS, which is the
+  Velociraptor server's default after running its config generator.
+- Bugcrowd's `change_submission_state` is the first GNAT domain
+  helper to use HTTP PATCH (rather than POST) to mutate state on a
+  resource — using the existing `BaseClient.patch` method.
+
+**Tests**
+- 88 new tests across `TestCrtShClient` (9), `TestGoogleCTClient`
+  (13), `TestVelociraptorClient` (17), `TestMagnetAxiomClient` (16),
+  `TestHackerOneClient` (16), `TestBugcrowdClient` (15), plus two
+  Phase 2 Wave 9 integrity tests for the registry and config
+  sections. Connector suite: 2408 tests passing (was 2320).
+- Ruff clean across all new files.
+
 ### Added — Phase 2 Wave 8: Real-time OSINT + Fraud / Bot Defense
 
 Six connectors covering the real-time event intelligence and fraud /

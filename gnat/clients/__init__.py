@@ -24,6 +24,7 @@ from gnat.connectors.aws_security.client import AWSSecurityClient
 from gnat.connectors.axonius.client import AxoniusClient
 from gnat.connectors.bitdefender_iz.client import BitdefenderIntelliZoneClient
 from gnat.connectors.bitsight.client import BitSightClient
+from gnat.connectors.bugcrowd.client import BugcrowdClient
 from gnat.connectors.carbon_black.client import CarbonBlackClient
 from gnat.connectors.censys.client import CensysClient
 from gnat.connectors.chatgpt import ChatGPTClient
@@ -40,6 +41,7 @@ from gnat.connectors.cortex_xdr.client import CortexXDRClient
 from gnat.connectors.cortex_xpanse.client import CortexXpanseClient
 from gnat.connectors.cribl.client import CriblClient
 from gnat.connectors.crowdstrike.client import CrowdStrikeClient
+from gnat.connectors.crtsh.client import CrtShClient
 from gnat.connectors.cyble_vision.client import CybleVisionClient
 from gnat.connectors.cycognito.client import CyCognitoClient
 from gnat.connectors.cymulate.client import CymulateClient
@@ -70,6 +72,7 @@ from gnat.connectors.gemini.client import GeminiClient
 from gnat.connectors.gitguardian.client import GitGuardianClient
 from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
 from gnat.connectors.google_chronicle.client import GoogleChronicleClient
+from gnat.connectors.google_ct.client import GoogleCTClient
 from gnat.connectors.graylog.client import GraylogClient
 from gnat.connectors.greenbone.client import GreenboneClient
 from gnat.connectors.greymatter.client import GreyMatterClient
@@ -77,6 +80,7 @@ from gnat.connectors.greynoise.client import GreyNoiseClient
 from gnat.connectors.grok.client import GrokClient
 from gnat.connectors.group_ib.client import GroupIBClient
 from gnat.connectors.gurucul.client import GuruculClient
+from gnat.connectors.hackerone.client import HackerOneClient
 from gnat.connectors.hibp.client import HIBPClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
 from gnat.connectors.human_security.client import HumanSecurityClient
@@ -91,6 +95,7 @@ from gnat.connectors.joe_sandbox.client import JoeSandboxClient
 from gnat.connectors.kaspersky_opentip.client import KasperskyOpenTIPClient
 from gnat.connectors.lansweeper.client import LansweeperClient
 from gnat.connectors.logrhythm.client import LogRhythmClient
+from gnat.connectors.magnet_axiom.client import MagnetAxiomClient
 from gnat.connectors.mandiant.client import MandiantClient
 from gnat.connectors.mimecast.client import MimecastClient
 from gnat.connectors.misp.connector import MISPConnector
@@ -152,6 +157,7 @@ from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClien
 from gnat.connectors.trm_labs.client import TRMLabsClient
 from gnat.connectors.upguard.client import UpGuardClient
 from gnat.connectors.vectra.client import VectraClient
+from gnat.connectors.velociraptor.client import VelociraptorClient
 from gnat.connectors.virustotal.client import VirusTotalClient
 from gnat.connectors.vmray.client import VMRayClient
 from gnat.connectors.vulncheck.client import VulnCheckClient
@@ -331,6 +337,13 @@ CLIENT_REGISTRY: dict = {
     "human_security": HumanSecurityClient,
     "abuseipdb": AbuseIPDBClient,
     "project_honey_pot": ProjectHoneyPotClient,
+    # Phase 2 Wave 9 — Cert transparency + DFIR + bug bounty
+    "crtsh": CrtShClient,
+    "google_ct": GoogleCTClient,
+    "velociraptor": VelociraptorClient,
+    "magnet_axiom": MagnetAxiomClient,
+    "hackerone": HackerOneClient,
+    "bugcrowd": BugcrowdClient,
 }
 
 __all__ = [
@@ -452,4 +465,11 @@ __all__ = [
     "HumanSecurityClient",
     "AbuseIPDBClient",
     "ProjectHoneyPotClient",
+    # Phase 2 Wave 9 — Cert transparency + DFIR + bug bounty
+    "CrtShClient",
+    "GoogleCTClient",
+    "VelociraptorClient",
+    "MagnetAxiomClient",
+    "HackerOneClient",
+    "BugcrowdClient",
 ]

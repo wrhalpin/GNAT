@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 152 security/threat intelligence platforms
+- A unified client interface for 158 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -31,7 +31,7 @@ gnat/                        # Main Python package
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── stix/                    # STIX pattern validation (stix2-patterns integration)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 152 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 158 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
 ├── cli/                     # CLI entry point (gnat/cli/main.py)
@@ -379,6 +379,12 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | HUMAN Security (bot defense / ATO) | `gnat/connectors/human_security/` | OAuth2 client credentials |
 | AbuseIPDB community IP reputation | `gnat/connectors/abuseipdb/` | `Key` header |
 | Project Honey Pot http:BL | `gnat/connectors/project_honey_pot/` | http:BL access key (DNS-based) |
+| crt.sh public Certificate Transparency search | `gnat/connectors/crtsh/` | None (public) |
+| Google Certificate Transparency log API | `gnat/connectors/google_ct/` | None (public; per-log path) |
+| Velociraptor open-source DFIR | `gnat/connectors/velociraptor/` | Bearer token or mTLS cert/key |
+| Magnet AXIOM Cyber (remote forensics) | `gnat/connectors/magnet_axiom/` | `X-API-Key` header |
+| HackerOne (bug bounty / VDP) | `gnat/connectors/hackerone/` | HTTP Basic (username + token) |
+| Bugcrowd (bug bounty / pentest) | `gnat/connectors/bugcrowd/` | `Authorization: Token` header |
 
 ---
 

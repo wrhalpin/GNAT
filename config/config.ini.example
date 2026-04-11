@@ -1222,3 +1222,45 @@ api_key = YOUR_ABUSEIPDB_API_KEY
 [project_honey_pot]
 host    = dnsbl.httpbl.org
 api_key = YOUR_HTTPBL_ACCESS_KEY
+
+# =============================================================================
+# Phase 2 Wave 9 — Certificate Transparency + DFIR + Bug bounty
+# =============================================================================
+
+# --- crt.sh public Certificate Transparency search -------------------------
+# No authentication required.
+[crtsh]
+host = https://crt.sh
+
+# --- Google Certificate Transparency log API -------------------------------
+# No authentication required. ``log`` is the path to a specific CT log
+# operated by Google (Argon, Xenon, etc.).
+[google_ct]
+host = https://ct.googleapis.com
+log  = logs/eu1/xenon2026
+
+# --- Velociraptor open-source DFIR server ----------------------------------
+# Either api_token (proxied deployments) or cert_path + key_path (mTLS,
+# the default for an OSS Velociraptor server).
+[velociraptor]
+host      = https://velociraptor.example.com:8000
+api_token = YOUR_VELOCIRAPTOR_BEARER_TOKEN
+# cert_path = /etc/gnat/vr-admin.pem
+# key_path  = /etc/gnat/vr-admin.key
+
+# --- Magnet AXIOM Cyber remote forensic acquisition ------------------------
+[magnet_axiom]
+host    = https://axiom.example.com
+api_key = YOUR_AXIOM_API_KEY
+
+# --- HackerOne bug bounty / VDP --------------------------------------------
+# api_username + api_token (issued from program settings; sent as Basic).
+[hackerone]
+host         = https://api.hackerone.com
+api_username = YOUR_HACKERONE_API_USERNAME
+api_token    = YOUR_HACKERONE_API_TOKEN
+
+# --- Bugcrowd managed bug bounty / pentest ---------------------------------
+[bugcrowd]
+host      = https://api.bugcrowd.com
+api_token = YOUR_BUGCROWD_API_TOKEN
