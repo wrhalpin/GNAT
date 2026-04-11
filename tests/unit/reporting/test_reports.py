@@ -26,6 +26,9 @@ from gnat.reporting import (
 
 @pytest.fixture
 def store():
+    pytest.importorskip(
+        "sqlalchemy", reason="gnat[persist] extras not installed"
+    )
     s = ReportStore("sqlite:///:memory:")
     s.create_all()
     return s

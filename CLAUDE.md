@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 133 security/threat intelligence platforms
+- A unified client interface for 158 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -31,7 +31,7 @@ gnat/                        # Main Python package
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── stix/                    # STIX pattern validation (stix2-patterns integration)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 99 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 158 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
 ├── cli/                     # CLI entry point (gnat/cli/main.py)
@@ -363,6 +363,28 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Kaspersky OpenTIP | `gnat/connectors/kaspersky_opentip/` | Optional `x-api-key` |
 | ESET Threat Intelligence | `gnat/connectors/eset_ti/` | Bearer token |
 | Bitdefender IntelliZone | `gnat/connectors/bitdefender_iz/` | `X-API-Key` header |
+| Okta Identity Cloud | `gnat/connectors/okta/` | `Authorization: SSWS` |
+| Microsoft Entra ID (Azure AD) | `gnat/connectors/entra_id/` | OAuth2 (Graph API) |
+| Ping Identity (PingOne) | `gnat/connectors/ping_identity/` | OAuth2 client credentials |
+| Mimecast email security | `gnat/connectors/mimecast/` | OAuth2 client credentials |
+| IRONSCALES AI email security | `gnat/connectors/ironscales/` | Bearer + `X-Company-Id` header |
+| Code42 Incydr (insider risk) | `gnat/connectors/code42/` | OAuth2 client credentials (Basic → Bearer) |
+| DTEX InTERCEPT (behavioral insider threat) | `gnat/connectors/dtex/` | Bearer token |
+| Gurucul UEBA | `gnat/connectors/gurucul/` | Bearer token |
+| Exabeam Security Operations Platform | `gnat/connectors/exabeam/` | OAuth2 client credentials |
+| Securonix cloud SIEM / UEBA | `gnat/connectors/securonix/` | Username/password → session token |
+| Dataminr Pulse (real-time event intelligence) | `gnat/connectors/dataminr/` | OAuth2 client credentials → `Dmauth` token |
+| Factal verified breaking-news intelligence | `gnat/connectors/factal/` | Bearer token |
+| Samdesk global crisis detection | `gnat/connectors/samdesk/` | `X-Api-Key` header |
+| HUMAN Security (bot defense / ATO) | `gnat/connectors/human_security/` | OAuth2 client credentials |
+| AbuseIPDB community IP reputation | `gnat/connectors/abuseipdb/` | `Key` header |
+| Project Honey Pot http:BL | `gnat/connectors/project_honey_pot/` | http:BL access key (DNS-based) |
+| crt.sh public Certificate Transparency search | `gnat/connectors/crtsh/` | None (public) |
+| Google Certificate Transparency log API | `gnat/connectors/google_ct/` | None (public; per-log path) |
+| Velociraptor open-source DFIR | `gnat/connectors/velociraptor/` | Bearer token or mTLS cert/key |
+| Magnet AXIOM Cyber (remote forensics) | `gnat/connectors/magnet_axiom/` | `X-API-Key` header |
+| HackerOne (bug bounty / VDP) | `gnat/connectors/hackerone/` | HTTP Basic (username + token) |
+| Bugcrowd (bug bounty / pentest) | `gnat/connectors/bugcrowd/` | `Authorization: Token` header |
 
 ---
 

@@ -19,6 +19,334 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 9: Certificate Transparency + DFIR + Bug Bounty
+
+Six connectors closing out Phase 2 with cert-transparency log search,
+endpoint DFIR, and bug-bounty / VDP platforms. Platform count:
+152 → 158. All six are read-only via the CRUD contract; write
+operations (where applicable) are exposed as named domain helpers.
+
+**New connectors (`gnat/connectors/`)**
+- `crtsh/` — `CrtShClient` for the public crt.sh Certificate
+  Transparency search aggregator (operated by Sectigo). No
+  authentication. The first connector to emit STIX 2.1
+  `x509-certificate` SCOs natively. Domain helpers: `search_domain`
+  (with `include_subdomains` for prefix-`%.` expansion),
+  `get_certificate`.
+- `google_ct/` — `GoogleCTClient` for the RFC 6962 read endpoints
+  exposed by Google's Argon / Xenon CT logs. Per-log path config so
+  one client can switch between logs without re-instantiation.
+  Domain helpers: `get_sth`, `get_entries`, `get_roots`,
+  `get_proof_by_hash`. Custom `x-google-ct-sth` SCO for the signed
+  tree head.
+- `velociraptor/` — `VelociraptorClient` for the open-source
+  Velociraptor DFIR server. `TRUST_LEVEL = trusted_internal`.
+  Supports either Bearer token (proxied deployments) or mTLS
+  cert/key (the OSS server's default). Dispatches across clients
+  (agents), hunts, flows, and the artifact catalog. Custom
+  `x-velociraptor-{client,hunt,artifact}` SCOs. Domain helpers:
+  `list_clients`, `get_client`, `list_hunts`, `get_hunt`,
+  `list_flows`, `list_artifacts`, `run_vql` (arbitrary VQL
+  execution), `run_hunt` (artifact-driven hunt creation).
+- `magnet_axiom/` — `MagnetAxiomClient` for Magnet AXIOM Cyber
+  remote forensic acquisition. `X-API-Key` header auth. `COST_UNIT
+  = 2` (collections are expensive). `TRUST_LEVEL = trusted_internal`.
+  Dispatches across cases, evidence sources, extracted artifacts,
+  agents, collections, and examiner accounts. Custom `x-axiom-agent`
+  and `x-axiom-collection` SCOs. Domain helpers: `list_cases`,
+  `get_case`, `list_evidence`, `list_artifacts`, `list_agents`,
+  `list_collections`, `list_users`, `create_case`,
+  `start_collection`.
+- `hackerone/` — `HackerOneClient` for HackerOne bug bounty / VDP /
+  pentest-as-a-service. HTTP Basic (api_username + api_token).
+  Dispatches across reports, programs (all + mine), structured
+  scopes (assets), and the accepted weakness taxonomy. Custom
+  `x-h1-program` and `x-h1-scope` SCOs; weaknesses map to STIX
+  `vulnerability`. Domain helpers: `list_reports`, `get_report`,
+  `list_programs`, `get_program`, `list_weaknesses`,
+  `list_structured_scopes`, `add_report_comment`,
+  `change_report_state`.
+- `bugcrowd/` — `BugcrowdClient` for Bugcrowd managed bug bounty /
+  pentest. `Authorization: Token <token>` header. Dispatches across
+  submissions, programs, in-scope targets, bounty rewards, managed
+  pentest reports, and tenant organizations. Custom
+  `x-bugcrowd-{program,target,reward,organization,report}` SCOs.
+  Domain helpers: `list_submissions`, `get_submission`,
+  `list_programs`, `list_targets`, `list_rewards`,
+  `list_pentest_reports`, `list_organizations`,
+  `add_submission_comment`, `change_submission_state` (uses HTTP
+  PATCH on the resource, not POST).
+
+**Architectural notes**
+- Project Honey Pot (Wave 8) was the first connector to bypass HTTP
+  in favor of socket-based DNS lookups. Wave 9's crt.sh and
+  google_ct are the first connectors to emit STIX `x509-certificate`
+  SCOs as their primary output type, which means the test contract
+  helper now needs to accept that type alongside the existing
+  observable / SDO checks. (`_assert_stix_contract` already accepts
+  any STIX type that has a `--<uuid>` id, so no helper changes were
+  needed.)
+- Velociraptor is the first GNAT connector to support a dual-auth
+  pattern out of the box: either an `api_token` for proxied HTTP
+  deployments or `cert_path` + `key_path` for mTLS, which is the
+  Velociraptor server's default after running its config generator.
+- Bugcrowd's `change_submission_state` is the first GNAT domain
+  helper to use HTTP PATCH (rather than POST) to mutate state on a
+  resource — using the existing `BaseClient.patch` method.
+
+**Tests**
+- 88 new tests across `TestCrtShClient` (9), `TestGoogleCTClient`
+  (13), `TestVelociraptorClient` (17), `TestMagnetAxiomClient` (16),
+  `TestHackerOneClient` (16), `TestBugcrowdClient` (15), plus two
+  Phase 2 Wave 9 integrity tests for the registry and config
+  sections. Connector suite: 2408 tests passing (was 2320).
+- Ruff clean across all new files.
+
+### Added — Phase 2 Wave 8: Real-time OSINT + Fraud / Bot Defense
+
+Six connectors covering the real-time event intelligence and fraud /
+bot-defense tiers. Platform count: 143 → 152 (Wave 8 adds the fifteenth
+through twentieth Phase 2 connectors; running count includes earlier
+gap-fills). All six are read-only via the CRUD contract.
+
+**New connectors (`gnat/connectors/`)**
+- `dataminr/` — `DataminrClient` for Dataminr Pulse real-time event
+  intelligence. OAuth2 client credentials at `/auth/2/token`; uses the
+  vendor's custom `Authorization: Dmauth <token>` scheme (not Bearer).
+  Dispatches across alerts, watchlists, watchlist-scoped alerts, and
+  related-alert traversal. Custom `x-dataminr-list` SCO for watchlist
+  taxonomy. Domain helpers: `list_alerts`, `get_alert`,
+  `list_watchlists`, `list_list_alerts`, `list_related_alerts`.
+- `factal/` — `FactalClient` for Factal verified breaking-news
+  intelligence. Bearer token. Dispatches across events, topics, and
+  places. Custom `x-factal-topic` SCO; places are mapped to STIX
+  `identity` objects with `x_factal_place` extension. Domain helpers:
+  `list_events`, `get_event`, `list_topics`, `list_places`.
+- `samdesk/` — `SamdeskClient` for Samdesk global crisis detection.
+  `X-Api-Key` header auth. Dispatches across events, categories, and
+  topics. Custom `x-samdesk-category` and `x-samdesk-topic` SCOs.
+  Domain helpers: `list_events`, `get_event`, `list_categories`,
+  `list_topics`.
+- `human_security/` — `HumanSecurityClient` for HUMAN Security
+  (formerly White Ops) bot-defense, account-takeover, and
+  credential-stuffing telemetry. OAuth2 client credentials at
+  `/oauth/token`. `TRUST_LEVEL = trusted_internal`. Dispatches across
+  bot-detections, ATO events, credential-stuffing events, threats,
+  and integrations. Emits `indicator` for threat IOCs and
+  `observed-data` envelopes wrapping `ipv4-addr` + `user-account` refs
+  for events. Custom `x-human-integration` SCO. Domain helpers:
+  `list_bot_detections`, `list_account_takeover_events`,
+  `list_credential_stuffing`, `list_threats`, `list_integrations`.
+- `abuseipdb/` — `AbuseIPDBClient` for AbuseIPDB community IP
+  reputation. Custom `Key` header auth. Dispatches across single-IP
+  reputation, CIDR-block reputation, the high-confidence blacklist,
+  and historical reports. Threshold-based labeling
+  (`abuseConfidenceScore >= 50` → `malicious-activity`). Domain
+  helpers: `check_ip`, `check_block`, `get_blacklist`, `get_reports`,
+  and a `submit_report` write-side helper (CRUD upsert remains
+  read-only). Module-level `_unwrap_abuseipdb()` strips the
+  `{"data": ...}` envelope.
+- `project_honey_pot/` — `ProjectHoneyPotClient` for the Project
+  Honey Pot http:BL DNS reputation feed. The first GNAT connector to
+  use a pure DNS-based protocol — overrides the HTTP CRUD methods to
+  issue `socket.gethostbyname` lookups against
+  `<api_key>.<reversed-ip>.dnsbl.httpbl.org`, then parses the
+  `127.X.Y.Z` response into days-since-activity / threat-score /
+  visitor-type-bitfield. NXDOMAIN is handled cleanly as "not listed".
+  Domain helpers: `check_ip`, `check_ips`. `list_objects` requires an
+  explicit `ips` filter since http:BL has no native list endpoint.
+
+**Architectural notes**
+- Dataminr authenticates with the vendor's idiosyncratic
+  `Authorization: Dmauth <token>` scheme — the first connector to
+  diverge from Basic / Bearer / API key.
+- Project Honey Pot is the first connector to skip the HTTP transport
+  entirely and use the `socket` module directly, while still inheriting
+  from `BaseClient` and `ConnectorMixin` for registry and STIX
+  contract compatibility.
+- AbuseIPDB demonstrates the "domain helper for write operations"
+  pattern more cleanly than prior waves: `submit_report` is a domain
+  helper, while `upsert_object` raises `GNATClientError` to keep the
+  CRUD contract read-only.
+- Fixed a recurrence of the conditional-expression precedence trap in
+  `dataminr/client.py` `to_stix` (the `if/else` was accidentally
+  gating the whole `or` chain when extracting the `alertType` and
+  `source` names from nested dicts).
+
+**Tests**
+- 80 new tests across `TestDataminrClient` (13),
+  `TestFactalClient` (14), `TestSamdeskClient` (13),
+  `TestHumanSecurityClient` (15), `TestAbuseIPDBClient` (14),
+  `TestProjectHoneyPotClient` (14), plus two Phase 2 Wave 8 integrity
+  tests for the registry and config sections. The Project Honey Pot
+  tests stub `socket.gethostbyname` via monkeypatch to exercise both
+  listed and NXDOMAIN response paths without touching the network.
+- Ruff clean across all new files.
+
+### Added — Phase 2 Wave 7: Insider Risk / UEBA
+
+Five connectors covering the insider-risk and user/entity behavior
+analytics tier. Platform count: 138 → 143. All five are
+`trusted_internal` and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `code42/` — `Code42Client` for Code42 Incydr (file-exfiltration
+  insider risk). OAuth2 client-credentials flow via the v1/oauth
+  endpoint (Basic auth → Bearer). Dispatches across file-events
+  (v2 search), alerts, cases, users, user-risk-profiles. Custom
+  `x-code42-risk-profile` SCO for per-user risk posture. Emits
+  `observed-data` envelopes wrapping synthetic `user-account` +
+  `file` refs. Domain helpers: `search_file_events`, `list_alerts`,
+  `list_cases`, `get_case`, `list_users`, `list_user_risk_profiles`.
+- `dtex/` — `DTEXClient` for DTEX InTERCEPT behavioral insider
+  threat. Bearer auth. Dispatches across alerts, incidents,
+  activities, users, policies, risk-factors. Custom `x-dtex-policy`
+  and `x-dtex-risk-factor` SCOs. Domain helpers: `list_alerts`,
+  `list_incidents`, `list_activities`, `list_users`, `list_policies`,
+  `list_risk_factors`, `get_alert`.
+- `gurucul/` — `GuruculClient` for the Gurucul UEBA platform.
+  Bearer auth. Dispatches across incidents, anomalies, user/entity
+  risk scores, models, cases. Custom `x-gurucul-entity` and
+  `x-gurucul-model` SCOs. Domain helpers: `list_incidents`,
+  `list_anomalies`, `list_user_risk_scores`, `list_entity_risk_scores`,
+  `list_models`, `list_cases`, `get_incident`.
+- `exabeam/` — `ExabeamClient` for the Exabeam Security Operations
+  Platform (cloud UEBA). OAuth2 client-credentials via /auth/v1/token.
+  Dispatches across incidents, sessions (Smart Timeline unit),
+  alerts, cases, notable-assets, users. Domain helpers:
+  `list_incidents`, `list_sessions`, `list_alerts`, `list_cases`,
+  `list_notable_assets`, `list_users`, `get_incident`.
+- `securonix/` — `SecuronixClient` for cloud-native SIEM / UEBA.
+  Username / password exchanged for a session token via
+  `/ws/token/generate` — the token is returned as a bare string
+  which this connector handles. Dispatches across incidents,
+  violations, threats, Spotter search, users, policies. Custom
+  `x-securonix-policy` SCO. Domain helpers: `list_incidents`,
+  `get_incident`, `list_violations`, `list_threats`, `search_spotter`,
+  `list_users`, `list_policies`.
+
+**Architectural notes**
+- Code42 had the same Python conditional-expression precedence bug
+  Entra ID had (the `if/else` accidentally gating the whole `or`
+  chain in `to_stix`). Fixed with an explicit stepwise lookup.
+- Securonix is the first connector to authenticate via
+  username/password → session token (the token is then sent as
+  a ``token`` header rather than as a standard Bearer).
+
+**Tests**
+- 71 new tests across `TestCode42Client` (14),
+  `TestDTEXClient` (14), `TestGuruculClient` (14),
+  `TestExabeamClient` (15), `TestSecuronixClient` (16) plus two
+  Phase 2 Wave 7 integrity tests. Full unit suite: 2626 tests
+  passing, zero regressions.
+- Ruff clean across all new files.
+
+### Added — Phase 2 Wave 6: Advanced Email Security
+
+Two advanced email security connectors completing the email-gateway
+tier (Proofpoint TAP was already present; Abnormal Security ships in
+Phase 1 Wave 3b). Platform count: 136 → 138. Both connectors are
+`trusted_internal` and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `mimecast/` — `MimecastClient` for the Mimecast API 2.0. OAuth2
+  client-credentials flow against ``/oauth/token``. Same pattern as
+  Phase 2 Wave 5 Entra ID / Ping Identity — uses a local
+  `urllib3.PoolManager` for the token exchange before stamping the
+  Bearer token. Dispatches across six endpoint families via
+  `filters["kind"]`: `messages` (message-finder search), `url_logs`
+  (URL Protect), `attachment_logs` (Attachment Protect sandbox),
+  `impersonation_logs` (BEC / CEO fraud), `threat_intel`
+  (Mimecast TI feed), `audit_events`. Domain helpers:
+  `search_messages`, `list_url_protect_logs`,
+  `list_attachment_protect_logs`, `list_impersonation_logs`,
+  `get_threat_intel_feed`, `list_users`, `list_groups`,
+  `list_audit_events`. Module-level `_extract_mimecast_items()`
+  walks the nested `{"data": [{"messages": [...]}]}` envelope.
+- `ironscales/` — `IRONSCALESClient` for the IRONSCALES AI email
+  security platform. Per-company API key with an additional
+  `X-Company-Id` tenant-routing header — both required. Company-
+  scoped URL construction via `_company_path()` helper. Dispatches
+  across incidents, reported emails, affected mailboxes, mailboxes,
+  mitigation actions, classifications, and federation signatures
+  (community intel). Signatures map to STIX `indicator` with typed
+  patterns (URL, domain, IP, SHA-256). Custom
+  `x-ironscales-classification` SCO. Domain helpers:
+  `list_incidents`, `get_incident`, `list_affected_mailboxes`,
+  `list_reported_emails`, `list_mailboxes`, `list_mitigation_actions`,
+  `list_classifications`, `list_federation_signatures`.
+
+**Tests**
+- 35 new tests across `TestMimecastClient` (15) and
+  `TestIRONSCALESClient` (18) plus two Phase 2 Wave 6 integrity
+  tests. Full unit suite: 2555 tests passing, zero regressions.
+- Ruff clean across all new files.
+
+### Added — Phase 2 Wave 5: Identity Providers (IdP)
+
+Three IdP connectors filling the biggest remaining category gap after
+Phase 1 Wave 3b introduced the ITDR tier. ITDR (Silverfort, Semperis)
+watches identity at runtime; IdP (Okta, Entra ID, Ping) is the directory
+itself. Platform count: 133 → 136. All three are `trusted_internal`
+and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `okta/` — `OktaClient` for Okta Identity Cloud. Proprietary
+  `Authorization: SSWS <api_token>` header. Dispatches across
+  `/api/v1/users`, `/groups`, `/apps`, `/logs`, `/policies`, `/factors`.
+  Custom `x-okta-app` SCO for registered applications. Emits
+  `user-account`, `identity` (groups), `observed-data` (system-log
+  events with synthetic user + source-ip refs), plus `x-okta-app`.
+  Domain helpers: `list_users`, `get_user`, `list_groups`,
+  `list_group_members`, `list_apps`, `list_app_users`,
+  `list_system_log_events`, `list_policies`, `list_factors`.
+- `entra_id/` — `EntraIDClient` for Microsoft Entra ID (Azure AD)
+  via Microsoft Graph v1.0. OAuth2 client-credentials flow against
+  `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token` with
+  scope `https://graph.microsoft.com/.default`. Uses an ad-hoc
+  `urllib3.PoolManager` for the token endpoint since it lives on a
+  different host. Three dispatched `observed-data` kinds via
+  `filters["kind"]`: `sign_ins`, `directory_audits`, `risky_users`
+  (the last being Identity Protection ITDR signals). Custom
+  `x-entra-application` SCO for service principals and
+  `x-entra-ca-policy` for Conditional Access policies. Domain helpers:
+  `list_users`, `list_groups`, `list_group_members`,
+  `list_service_principals`, `list_sign_ins`, `list_directory_audits`,
+  `list_risky_users`, `list_conditional_access_policies`,
+  `list_organization`. Module-level `_extract_entra_value()` unwraps
+  the OData `{"value": [...]}` envelope.
+- `ping_identity/` — `PingIdentityClient` for PingOne. OAuth2
+  client-credentials against a region-aware endpoint
+  (`_AUTH_REGIONS` maps NA/EU/AP/CA to the right
+  `auth.pingone.*` domain). Environment-scoped URLs via
+  `_env_path()` helper. Dispatches across users, populations
+  (PingOne's group-equivalent), applications, sign-on policies,
+  activities, audit events. Custom `x-ping-application` SCO. Domain
+  helpers: `list_users`, `get_user`, `list_populations`,
+  `list_applications`, `list_sign_on_policies`, `list_activities`,
+  `list_audit_events`, `list_user_groups`. Module-level
+  `_extract_ping_list()` handles the HAL-style `_embedded` envelope.
+
+**Tests**
+- 51 new tests across `TestOktaClient` (15), `TestEntraIDClient` (16),
+  `TestPingIdentityClient` (18) plus two Phase 2 Wave 5 integrity
+  tests. Full unit suite: 2520 tests passing, zero regressions.
+- One bug caught during integration: Entra ID's `to_stix` had a
+  Python precedence bug in the `user_id` extraction where the
+  conditional-expression `if/else` was accidentally gating the whole
+  `or` chain. Fixed by rewriting as an explicit two-step lookup.
+
+**Architectural notes**
+- All three connectors introduce vendor-specific custom SCOs for
+  enterprise applications (`x-okta-app`, `x-entra-application`,
+  `x-ping-application`). Continues the pattern established in Phase 1
+  Wave 3b (`x-cryptocurrency-wallet` on TRM Labs) and Phase 2 Wave 2
+  (`x-huntress-agent`).
+- Entra ID and Ping Identity are the first Phase 2 connectors to issue
+  OAuth2 token requests against a hostname **other than** the main
+  API host. Both use a local `urllib3.PoolManager` for the token
+  exchange rather than the standard `self.post()` path.
+
 ### Added — Connector Gap Fills + Stub Rescues
 
 Filled the audit-identified domain-helper gaps in 9 existing connectors

@@ -14,6 +14,7 @@ registered in the :data:`CLIENT_REGISTRY` dict so that
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.abnormal.client import AbnormalClient
 from gnat.connectors.abusech.client import AbuseChClient
+from gnat.connectors.abuseipdb.client import AbuseIPDBClient
 from gnat.connectors.alienvault.client import AlienVaultClient
 from gnat.connectors.any_run.client import AnyRunClient
 from gnat.connectors.arctic_wolf.client import ArcticWolfClient
@@ -23,6 +24,7 @@ from gnat.connectors.aws_security.client import AWSSecurityClient
 from gnat.connectors.axonius.client import AxoniusClient
 from gnat.connectors.bitdefender_iz.client import BitdefenderIntelliZoneClient
 from gnat.connectors.bitsight.client import BitSightClient
+from gnat.connectors.bugcrowd.client import BugcrowdClient
 from gnat.connectors.carbon_black.client import CarbonBlackClient
 from gnat.connectors.censys.client import CensysClient
 from gnat.connectors.chatgpt import ChatGPTClient
@@ -31,6 +33,7 @@ from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
 from gnat.connectors.claroty.client import ClarotyClient
 from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
 from gnat.connectors.cloudsek.client import CloudSEKClient
+from gnat.connectors.code42.client import Code42Client
 from gnat.connectors.cofense_intel.client import CofenseIntelClient
 from gnat.connectors.controlup.client import ControlUpClient
 from gnat.connectors.copilot.client import CopilotClient
@@ -38,20 +41,26 @@ from gnat.connectors.cortex_xdr.client import CortexXDRClient
 from gnat.connectors.cortex_xpanse.client import CortexXpanseClient
 from gnat.connectors.cribl.client import CriblClient
 from gnat.connectors.crowdstrike.client import CrowdStrikeClient
+from gnat.connectors.crtsh.client import CrtShClient
 from gnat.connectors.cyble_vision.client import CybleVisionClient
 from gnat.connectors.cycognito.client import CyCognitoClient
 from gnat.connectors.cymulate.client import CymulateClient
 from gnat.connectors.darktrace.client import DarktraceClient
 from gnat.connectors.datadog.client import DatadogClient
+from gnat.connectors.dataminr.client import DataminrClient
 from gnat.connectors.defectdojo.client import DefectDojoClient
 from gnat.connectors.defenderti.client import DefenderTIClient
 from gnat.connectors.discord.connector import DiscordClient
 from gnat.connectors.domaintools.client import DomainToolsClient
 from gnat.connectors.dragos.client import DragosClient
+from gnat.connectors.dtex.client import DTEXClient
 from gnat.connectors.dynatrace.client import DynatraceClient
 from gnat.connectors.elastic.connector import ElasticConnector
+from gnat.connectors.entra_id.client import EntraIDClient
 from gnat.connectors.eset_ti.client import ESETThreatIntelClient
+from gnat.connectors.exabeam.client import ExabeamClient
 from gnat.connectors.extrahop.client import ExtraHopClient
+from gnat.connectors.factal.client import FactalClient
 from gnat.connectors.feedly.client import FeedlyClient
 from gnat.connectors.flare.client import FlareClient
 from gnat.connectors.flashpoint.client import FlashpointClient
@@ -63,30 +72,38 @@ from gnat.connectors.gemini.client import GeminiClient
 from gnat.connectors.gitguardian.client import GitGuardianClient
 from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
 from gnat.connectors.google_chronicle.client import GoogleChronicleClient
+from gnat.connectors.google_ct.client import GoogleCTClient
 from gnat.connectors.graylog.client import GraylogClient
 from gnat.connectors.greenbone.client import GreenboneClient
 from gnat.connectors.greymatter.client import GreyMatterClient
 from gnat.connectors.greynoise.client import GreyNoiseClient
 from gnat.connectors.grok.client import GrokClient
 from gnat.connectors.group_ib.client import GroupIBClient
+from gnat.connectors.gurucul.client import GuruculClient
+from gnat.connectors.hackerone.client import HackerOneClient
 from gnat.connectors.hibp.client import HIBPClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
+from gnat.connectors.human_security.client import HumanSecurityClient
 from gnat.connectors.huntress.client import HuntressClient
 from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
 from gnat.connectors.intel471.client import Intel471Client
 from gnat.connectors.intezer.client import IntezerClient
 from gnat.connectors.ip_api.client import IPAPIClient
+from gnat.connectors.ironscales.client import IRONSCALESClient
 from gnat.connectors.jira.client import JiraClient
 from gnat.connectors.joe_sandbox.client import JoeSandboxClient
 from gnat.connectors.kaspersky_opentip.client import KasperskyOpenTIPClient
 from gnat.connectors.lansweeper.client import LansweeperClient
 from gnat.connectors.logrhythm.client import LogRhythmClient
+from gnat.connectors.magnet_axiom.client import MagnetAxiomClient
 from gnat.connectors.mandiant.client import MandiantClient
+from gnat.connectors.mimecast.client import MimecastClient
 from gnat.connectors.misp.connector import MISPConnector
 from gnat.connectors.mitre_attack.client import MitreAttackClient
 from gnat.connectors.netskope.client import NetskopeClient
 from gnat.connectors.nozomi.client import NozomiClient
 from gnat.connectors.nucleus.client import NucleusClient
+from gnat.connectors.okta.client import OktaClient
 from gnat.connectors.opencti.client import OpenCTIClient
 from gnat.connectors.orca.client import OrcaClient
 from gnat.connectors.osint_feed.connector import OsintFeedConnector
@@ -94,7 +111,9 @@ from gnat.connectors.ossim.client import OSSIMClient
 from gnat.connectors.osv.client import OSVClient
 from gnat.connectors.pentera.client import PenteraClient
 from gnat.connectors.picus.client import PicusClient
+from gnat.connectors.ping_identity.client import PingIdentityClient
 from gnat.connectors.prisma_cloud.client import PrismaCloudClient
+from gnat.connectors.project_honey_pot.client import ProjectHoneyPotClient
 from gnat.connectors.proofpoint.client import ProofpointClient
 from gnat.connectors.pulsedive.client import PulseDiveClient
 from gnat.connectors.qradar.connector import QRadarConnector
@@ -105,9 +124,11 @@ from gnat.connectors.red_canary.client import RedCanaryClient
 from gnat.connectors.riskrecon.client import RiskReconClient
 from gnat.connectors.runzero.client import RunZeroClient
 from gnat.connectors.safebreach.client import SafeBreachClient
+from gnat.connectors.samdesk.client import SamdeskClient
 from gnat.connectors.security_onion.client import SecurityOnionClient
 from gnat.connectors.securityscorecard.client import SecurityScorecardClient
 from gnat.connectors.securitytrails.client import SecurityTrailsClient
+from gnat.connectors.securonix.client import SecuronixClient
 from gnat.connectors.semperis.client import SemperisClient
 from gnat.connectors.sentinel.connector import SentinelConnector
 from gnat.connectors.sentinelone.client import SentinelOneClient
@@ -136,6 +157,7 @@ from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClien
 from gnat.connectors.trm_labs.client import TRMLabsClient
 from gnat.connectors.upguard.client import UpGuardClient
 from gnat.connectors.vectra.client import VectraClient
+from gnat.connectors.velociraptor.client import VelociraptorClient
 from gnat.connectors.virustotal.client import VirusTotalClient
 from gnat.connectors.vmray.client import VMRayClient
 from gnat.connectors.vulncheck.client import VulnCheckClient
@@ -295,6 +317,33 @@ CLIENT_REGISTRY: dict = {
     "kaspersky_opentip": KasperskyOpenTIPClient,
     "eset_ti": ESETThreatIntelClient,
     "bitdefender_iz": BitdefenderIntelliZoneClient,
+    # Phase 2 Wave 5 — Identity Providers (IdP)
+    "okta": OktaClient,
+    "entra_id": EntraIDClient,
+    "ping_identity": PingIdentityClient,
+    # Phase 2 Wave 6 — Advanced Email Security
+    "mimecast": MimecastClient,
+    "ironscales": IRONSCALESClient,
+    # Phase 2 Wave 7 — Insider Risk / UEBA
+    "code42": Code42Client,
+    "dtex": DTEXClient,
+    "gurucul": GuruculClient,
+    "exabeam": ExabeamClient,
+    "securonix": SecuronixClient,
+    # Phase 2 Wave 8 — Real-time OSINT + Fraud / bot defense
+    "dataminr": DataminrClient,
+    "factal": FactalClient,
+    "samdesk": SamdeskClient,
+    "human_security": HumanSecurityClient,
+    "abuseipdb": AbuseIPDBClient,
+    "project_honey_pot": ProjectHoneyPotClient,
+    # Phase 2 Wave 9 — Cert transparency + DFIR + bug bounty
+    "crtsh": CrtShClient,
+    "google_ct": GoogleCTClient,
+    "velociraptor": VelociraptorClient,
+    "magnet_axiom": MagnetAxiomClient,
+    "hackerone": HackerOneClient,
+    "bugcrowd": BugcrowdClient,
 }
 
 __all__ = [
@@ -396,4 +445,31 @@ __all__ = [
     "KasperskyOpenTIPClient",
     "ESETThreatIntelClient",
     "BitdefenderIntelliZoneClient",
+    # Phase 2 Wave 5 — Identity Providers (IdP)
+    "OktaClient",
+    "EntraIDClient",
+    "PingIdentityClient",
+    # Phase 2 Wave 6 — Advanced Email Security
+    "MimecastClient",
+    "IRONSCALESClient",
+    # Phase 2 Wave 7 — Insider Risk / UEBA
+    "Code42Client",
+    "DTEXClient",
+    "GuruculClient",
+    "ExabeamClient",
+    "SecuronixClient",
+    # Phase 2 Wave 8 — Real-time OSINT + Fraud / bot defense
+    "DataminrClient",
+    "FactalClient",
+    "SamdeskClient",
+    "HumanSecurityClient",
+    "AbuseIPDBClient",
+    "ProjectHoneyPotClient",
+    # Phase 2 Wave 9 — Cert transparency + DFIR + bug bounty
+    "CrtShClient",
+    "GoogleCTClient",
+    "VelociraptorClient",
+    "MagnetAxiomClient",
+    "HackerOneClient",
+    "BugcrowdClient",
 ]

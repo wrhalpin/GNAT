@@ -25,6 +25,9 @@ from gnat.analysis.tlp import TLPLevel
 @pytest.fixture
 def store(tmp_path):
     """In-memory SQLite investigation store."""
+    pytest.importorskip(
+        "sqlalchemy", reason="gnat[persist] extras not installed"
+    )
     s = InvestigationStore("sqlite:///:memory:")
     s.create_all()
     return s

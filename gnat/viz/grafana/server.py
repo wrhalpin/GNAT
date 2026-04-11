@@ -102,6 +102,7 @@ def build_app(
     -------
     fastapi.FastAPI
     """
+    _require_fastapi()
     app = FastAPI(
         title="GNAT Grafana Datasource",
         description="Serves GNAT workspace data as a Grafana SimpleJSON datasource",

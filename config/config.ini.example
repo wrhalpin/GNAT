@@ -1106,3 +1106,161 @@ api_token = YOUR_ESET_TI_BEARER_TOKEN
 [bitdefender_iz]
 host    = https://intellizone.bitdefender.com
 api_key = YOUR_BITDEFENDER_INTELLIZONE_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 5 — Identity Providers (IdP)
+# =============================================================================
+
+# --- Okta Identity Cloud ---------------------------------------------------
+[okta]
+host      = https://YOUR_TENANT.okta.com
+api_token = YOUR_OKTA_API_TOKEN
+
+# --- Microsoft Entra ID (Azure AD) via Microsoft Graph ---------------------
+# OAuth2 client credentials flow.  Required Graph permissions (application):
+# User.Read.All, Group.Read.All, AuditLog.Read.All, Directory.Read.All,
+# IdentityRiskyUser.Read.All.
+[entra_id]
+host          = https://graph.microsoft.com
+tenant_id     = 00000000-0000-0000-0000-000000000000
+client_id     = 11111111-1111-1111-1111-111111111111
+client_secret = YOUR_AZURE_AD_CLIENT_SECRET
+
+# --- Ping Identity (PingOne) -----------------------------------------------
+# auth_region is NA (default), EU, AP, or CA.
+[ping_identity]
+host           = https://api.pingone.com
+environment_id = 00000000-0000-0000-0000-000000000000
+client_id      = YOUR_PING_CLIENT_ID
+client_secret  = YOUR_PING_CLIENT_SECRET
+auth_region    = NA
+
+# =============================================================================
+# Phase 2 Wave 6 — Advanced Email Security
+# =============================================================================
+
+# --- Mimecast API 2.0 (OAuth2 client credentials) --------------------------
+[mimecast]
+host          = https://api.services.mimecast.com
+client_id     = YOUR_MIMECAST_CLIENT_ID
+client_secret = YOUR_MIMECAST_CLIENT_SECRET
+
+# --- IRONSCALES AI email security ------------------------------------------
+# company_id scopes every request; Bearer token is issued per company.
+[ironscales]
+host       = https://appapi.ironscales.com
+api_key    = YOUR_IRONSCALES_API_KEY
+company_id = YOUR_IRONSCALES_COMPANY_ID
+
+# =============================================================================
+# Phase 2 Wave 7 — Insider Risk / UEBA
+# =============================================================================
+
+# --- Code42 Incydr (file exfiltration / insider risk) ----------------------
+[code42]
+host              = https://api.us.code42.com
+api_client_id     = YOUR_CODE42_API_CLIENT_ID
+api_client_secret = YOUR_CODE42_API_CLIENT_SECRET
+
+# --- DTEX InTERCEPT (behavioral insider threat) ----------------------------
+[dtex]
+host      = https://api.dtexsystems.com
+api_token = YOUR_DTEX_BEARER_TOKEN
+
+# --- Gurucul UEBA ----------------------------------------------------------
+[gurucul]
+host      = https://YOUR_TENANT.gurucul.com
+api_token = YOUR_GURUCUL_BEARER_TOKEN
+
+# --- Exabeam Security Operations Platform (cloud UEBA) ---------------------
+[exabeam]
+host          = https://api.us-west.exabeam.cloud
+client_id     = YOUR_EXABEAM_CLIENT_ID
+client_secret = YOUR_EXABEAM_CLIENT_SECRET
+
+# --- Securonix cloud-native SIEM / UEBA ------------------------------------
+[securonix]
+host     = https://YOUR_TENANT.securonix.com
+username = YOUR_SECURONIX_USERNAME
+password = YOUR_SECURONIX_PASSWORD
+
+# =============================================================================
+# Phase 2 Wave 8 — Real-time OSINT + Fraud / bot defense
+# =============================================================================
+
+# --- Dataminr Pulse (real-time event intelligence) -------------------------
+# OAuth2 client credentials at /auth/2/token; uses custom Dmauth scheme.
+[dataminr]
+host          = https://gateway.dataminr.com
+client_id     = YOUR_DATAMINR_CLIENT_ID
+client_secret = YOUR_DATAMINR_CLIENT_SECRET
+
+# --- Factal verified breaking-news intelligence ----------------------------
+[factal]
+host    = https://www.factal.com/api
+api_key = YOUR_FACTAL_BEARER_TOKEN
+
+# --- Samdesk global crisis detection ---------------------------------------
+[samdesk]
+host    = https://api.samdesk.io
+api_key = YOUR_SAMDESK_API_KEY
+
+# --- HUMAN Security (formerly White Ops) bot defense -----------------------
+# OAuth2 client credentials.
+[human_security]
+host          = https://api.humansecurity.com
+client_id     = YOUR_HUMAN_CLIENT_ID
+client_secret = YOUR_HUMAN_CLIENT_SECRET
+
+# --- AbuseIPDB community IP reputation -------------------------------------
+[abuseipdb]
+host    = https://api.abuseipdb.com
+api_key = YOUR_ABUSEIPDB_API_KEY
+
+# --- Project Honey Pot http:BL DNS reputation ------------------------------
+# 12-character lowercase access key issued at projecthoneypot.org/httpbl_api.php.
+[project_honey_pot]
+host    = dnsbl.httpbl.org
+api_key = YOUR_HTTPBL_ACCESS_KEY
+
+# =============================================================================
+# Phase 2 Wave 9 — Certificate Transparency + DFIR + Bug bounty
+# =============================================================================
+
+# --- crt.sh public Certificate Transparency search -------------------------
+# No authentication required.
+[crtsh]
+host = https://crt.sh
+
+# --- Google Certificate Transparency log API -------------------------------
+# No authentication required. ``log`` is the path to a specific CT log
+# operated by Google (Argon, Xenon, etc.).
+[google_ct]
+host = https://ct.googleapis.com
+log  = logs/eu1/xenon2026
+
+# --- Velociraptor open-source DFIR server ----------------------------------
+# Either api_token (proxied deployments) or cert_path + key_path (mTLS,
+# the default for an OSS Velociraptor server).
+[velociraptor]
+host      = https://velociraptor.example.com:8000
+api_token = YOUR_VELOCIRAPTOR_BEARER_TOKEN
+# cert_path = /etc/gnat/vr-admin.pem
+# key_path  = /etc/gnat/vr-admin.key
+
+# --- Magnet AXIOM Cyber remote forensic acquisition ------------------------
+[magnet_axiom]
+host    = https://axiom.example.com
+api_key = YOUR_AXIOM_API_KEY
+
+# --- HackerOne bug bounty / VDP --------------------------------------------
+# api_username + api_token (issued from program settings; sent as Basic).
+[hackerone]
+host         = https://api.hackerone.com
+api_username = YOUR_HACKERONE_API_USERNAME
+api_token    = YOUR_HACKERONE_API_TOKEN
+
+# --- Bugcrowd managed bug bounty / pentest ---------------------------------
+[bugcrowd]
+host      = https://api.bugcrowd.com
+api_token = YOUR_BUGCROWD_API_TOKEN
