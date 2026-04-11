@@ -19,6 +19,120 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — `gnat schedule` CLI with hybrid YAML + Python-module loader
+
+The `gnat schedule` subcommand group, which had been registered but
+stubbed since v1.4, is now fully implemented. The scheduler engine
+itself (`FeedScheduler`, `FeedJob`, `WorkflowJob`) was already feature
+complete — what was missing was a way for the CLI to **find** the
+user's job definitions. This release adds a hybrid loader that accepts
+both declarative YAML and Python modules, freely mixable in the same
+deployment.
+
+**New module: `gnat/schedule/loader.py`**
+- `load_scheduler(config, jobs_file=None, jobs_module=None, skip_client_init=False)`
+  — returns a fully-populated `FeedScheduler` ready to start. Resolution
+  order: explicit kwargs override `[schedule]` config-section values
+  override "no source" (which raises `ScheduleLoaderError`).
+- YAML schema: top-level `jobs:` list where each entry has `id`,
+  `reader: {class, args}`, `mapper: {class, args}`, either
+  `interval_seconds` or `cron`, plus optional `client`, `enabled`,
+  `confidence`, `tlp_marking`, `deduplicate`, `dedup_key_fields`,
+  `overlap_policy`, `max_history`, `description`. Classes are resolved
+  at load time via `importlib.import_module` so typos fail fast.
+- Python-module path: the loader looks for `build_jobs(config)`,
+  `build_jobs()`, a module-level `scheduler: FeedScheduler`, or a
+  module-level `jobs: list[FeedJob]` — in that order. The first match
+  wins, so the same module can start simple (plain list) and grow into
+  a factory function without breaking the loader contract.
+- Hybrid mode: set both `jobs_file` and `jobs_module` and every source's
+  jobs are merged into a single scheduler. Typical layout: put simple
+  "fetch URL every hour" feeds in YAML for ops PR review; put
+  credential-heavy or tenant-scoped jobs in the Python module.
+- Client resolution for YAML jobs: when a job specifies `client: <name>`
+  the loader instantiates the matching connector class from
+  `CLIENT_REGISTRY` using the `[<name>]` section of the passed
+  `ConfigParser` — no disk re-read, no surprise auth call. Eager
+  instantiation lets `gnat schedule validate` catch unknown-client typos
+  before the scheduler ever runs. `skip_client_init=True` short-circuits
+  this path for credential-free lint passes in CI.
+
+**New CLI subcommands (`gnat schedule ...`)**
+
+All seven share `--jobs-file PATH` / `--jobs-module DOTTED.PATH`
+overrides and honor the global `--output json` flag for machine-readable
+output:
+
+- `list` — one-line-per-job table with id, enabled flag, schedule
+  expression, health, run count, last run, next run.
+- `status --job ID` — detailed single-job view with the last 5 runs
+  from `job.history` in a sub-table.
+- `history --job ID [--limit N]` — full run-history table (default
+  last 20) showing scheduled/started/duration/status/records/error
+  per `RunRecord`.
+- `run [--job ID] [--parallel]` — trigger one or all jobs immediately.
+  Returns exit code 1 if any job failed, 0 otherwise. Uses
+  `scheduler.run_now()` / `scheduler.run_all_now(parallel=)`.
+- `crontab [--command CMD]` — emit crontab lines via
+  `scheduler.to_cron_lines()`. Defaults to `gnat schedule run --job
+  {id}` per line; override with `--command '/path/to/my-runner'` for
+  non-default wrappers.
+- `validate` — parse job definitions without instantiating any
+  `GNATClient`, catching class-path typos, cron syntax errors, and
+  missing `[schedule]` config sections. Designed for CI pre-commit
+  hooks — zero credentials required.
+- `start [--run-immediately]` — foreground scheduler loop with signal
+  handling for clean Ctrl-C / SIGTERM shutdown. The handler installs
+  `SIGINT` / `SIGTERM` handlers, drops into a 1-second `time.sleep`
+  loop, and calls `scheduler.stop()` from a `finally` block on exit.
+  Designed to sit behind systemd / Docker / supervisord; GNAT does
+  **not** implement its own daemonization.
+
+**Ancillary changes**
+- `gnat/schedule/__init__.py` — export `load_scheduler` and
+  `ScheduleLoaderError` as top-level names.
+- `gnat/config.py` — new public `GNATConfig.parser` property that
+  returns the underlying `configparser.ConfigParser`. The loader uses
+  this to read the `[schedule]` section and resolve per-connector
+  credentials consistently with the rest of the CLI.
+- `config/config.ini.example` — new commented `[schedule]` section
+  documenting the `jobs_file` and `jobs_module` keys.
+- `docs/how-to/schedule-feeds.md` — rewrote the intro to cover the
+  CLI and the two loader modes; preserved the existing
+  programmatic-API examples under a "Programmatic API (no CLI)"
+  heading.
+
+**Design decisions (captured here because there's no ADR)**
+- **Argparse quirk fixed:** the initial `--command` flag on the
+  `crontab` subparser clobbered the top-level `dest="command"` because
+  argparse's subparser actions merge dests by default. Resolved by
+  setting `dest="cron_command"` on the flag (user-facing name
+  unchanged).
+- **No built-in daemonization.** The `start` command is foreground-only
+  — any production deployment should put it behind systemd, Docker, or
+  supervisord. Reinventing PID-file handling, signal trees, zombie
+  reaping, and log rotation inside GNAT was explicitly rejected as a
+  tar pit; the how-to doc ships systemd and Docker examples instead.
+- **No `schedule add-job` CLI.** Declarative YAML *is* the job-editing
+  interface — editing YAML is cleaner than CLI-generating stateful
+  config, and it keeps jobs reviewable in PRs. The Python-module
+  escape hatch exists for everything YAML can't express.
+
+**Tests**
+- 35 new tests in `tests/unit/schedule/test_loader.py` covering YAML
+  happy paths (interval vs cron, optional fields, multiple jobs),
+  YAML error paths (missing file, bad YAML, wrong top-level key,
+  missing reader/mapper, bad class path, both interval and cron,
+  neither, non-dotted class), Python-module loader (all four export
+  styles + error paths), hybrid merge, config fallback, and client
+  resolution (skip/eager/unknown/missing-section).
+- 22 new tests in `tests/unit/schedule/test_cli_schedule.py` covering
+  every subcommand via `gnat.cli.main.main()` directly, so the tests
+  exercise the real argparse plumbing. Both table and JSON output
+  formats verified per subcommand.
+- Full unit suite: 4,678 passed, 198 skipped — +57 new tests,
+  zero regressions.
+
 ### Added — Phase 2 Wave 9: Certificate Transparency + DFIR + Bug Bounty
 
 Six connectors closing out Phase 2 with cert-transparency log search,

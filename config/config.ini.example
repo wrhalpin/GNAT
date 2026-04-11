@@ -1264,3 +1264,22 @@ api_token    = YOUR_HACKERONE_API_TOKEN
 [bugcrowd]
 host      = https://api.bugcrowd.com
 api_token = YOUR_BUGCROWD_API_TOKEN
+
+# =============================================================================
+# Scheduler (gnat schedule ...)
+# =============================================================================
+#
+# Point the CLI at job definitions via a declarative YAML file, a Python
+# module, or both. See docs/how-to/schedule-jobs.md for the full guide.
+#
+#   jobs_file   — path to a YAML file describing jobs (80% use case)
+#   jobs_module — dotted Python module path exporting build_jobs() / jobs /
+#                 scheduler (for factory closures, dynamic secret lookup, etc.)
+#
+# Both keys are optional. If both are set, jobs from both sources are merged
+# into a single FeedScheduler. The CLI loads from this section on every
+# invocation; see `gnat schedule --help` for available commands.
+#
+# [schedule]
+# jobs_file   = /etc/gnat/gnat-jobs.yaml
+# jobs_module = my_project.gnat_jobs
