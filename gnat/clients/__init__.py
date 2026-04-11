@@ -21,6 +21,7 @@ from gnat.connectors.armis.client import ArmisClient
 from gnat.connectors.attackiq.client import AttackIQClient
 from gnat.connectors.aws_security.client import AWSSecurityClient
 from gnat.connectors.axonius.client import AxoniusClient
+from gnat.connectors.bitdefender_iz.client import BitdefenderIntelliZoneClient
 from gnat.connectors.bitsight.client import BitSightClient
 from gnat.connectors.carbon_black.client import CarbonBlackClient
 from gnat.connectors.censys.client import CensysClient
@@ -49,11 +50,13 @@ from gnat.connectors.domaintools.client import DomainToolsClient
 from gnat.connectors.dragos.client import DragosClient
 from gnat.connectors.dynatrace.client import DynatraceClient
 from gnat.connectors.elastic.connector import ElasticConnector
+from gnat.connectors.eset_ti.client import ESETThreatIntelClient
 from gnat.connectors.extrahop.client import ExtraHopClient
 from gnat.connectors.feedly.client import FeedlyClient
 from gnat.connectors.flare.client import FlareClient
 from gnat.connectors.flashpoint.client import FlashpointClient
 from gnat.connectors.fortiedr.client import FortiEDRClient
+from gnat.connectors.fortiguard.client import FortiGuardClient
 from gnat.connectors.fortisiem.client import FortiSIEMClient
 from gnat.connectors.fortisoar.client import FortiSOARClient
 from gnat.connectors.gemini.client import GeminiClient
@@ -75,6 +78,7 @@ from gnat.connectors.intezer.client import IntezerClient
 from gnat.connectors.ip_api.client import IPAPIClient
 from gnat.connectors.jira.client import JiraClient
 from gnat.connectors.joe_sandbox.client import JoeSandboxClient
+from gnat.connectors.kaspersky_opentip.client import KasperskyOpenTIPClient
 from gnat.connectors.lansweeper.client import LansweeperClient
 from gnat.connectors.logrhythm.client import LogRhythmClient
 from gnat.connectors.mandiant.client import MandiantClient
@@ -120,6 +124,7 @@ from gnat.connectors.splunk.client import SplunkClient
 from gnat.connectors.stellarcyber.client import StellarCyberClient
 from gnat.connectors.suricata.client import SuricataClient
 from gnat.connectors.synapse.client import SynapseClient
+from gnat.connectors.talos.client import TalosClient
 from gnat.connectors.tanium.client import TaniumClient
 from gnat.connectors.tenable_one.client import TenableOneClient
 from gnat.connectors.thehive.client import TheHiveClient
@@ -284,6 +289,12 @@ CLIENT_REGISTRY: dict = {
     "picus": PicusClient,
     "pentera": PenteraClient,
     "xm_cyber": XMCyberClient,
+    # Phase 2 Wave 4 — Additional TI vendor feeds
+    "talos": TalosClient,
+    "fortiguard": FortiGuardClient,
+    "kaspersky_opentip": KasperskyOpenTIPClient,
+    "eset_ti": ESETThreatIntelClient,
+    "bitdefender_iz": BitdefenderIntelliZoneClient,
 }
 
 __all__ = [
@@ -379,4 +390,10 @@ __all__ = [
     "PicusClient",
     "PenteraClient",
     "XMCyberClient",
+    # Phase 2 Wave 4 — Additional TI vendor feeds
+    "TalosClient",
+    "FortiGuardClient",
+    "KasperskyOpenTIPClient",
+    "ESETThreatIntelClient",
+    "BitdefenderIntelliZoneClient",
 ]

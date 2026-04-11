@@ -19,6 +19,55 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 4: Additional TI Vendor Feeds
+
+Five more commercial / public threat intelligence vendor feeds from the
+2026 audit's "additional TI" category. These complement the tier-1
+platforms already in GNAT (ThreatQ, Mandiant, Recorded Future, etc.)
+with vendor-specific reputation and APT telemetry from the major AV
+makers and Cisco. Platform count: 128 → 133.
+
+**New connectors (`gnat/connectors/`)**
+- `talos/` — `TalosClient` for Cisco Talos public reputation lookups.
+  No auth required; sets a `User-Agent` header because Talos rejects
+  bot-like clients. IP / domain lookups via `/sb_api/query_lookup`;
+  advisories via `/feeds/advisory.xml`. Reputation string mapped to
+  STIX `labels` (``malicious-activity``/``benign``). Domain helpers:
+  `ip_reputation`, `domain_reputation`, `get_advisories`.
+- `fortiguard/` — `FortiGuardClient`. Optional Bearer auth (commercial
+  IOC service only); public outbreak alerts + IP/URL reputation +
+  virus encyclopedia work without a key. Dispatches across `/api/v1/iocs`,
+  `/outbreak-alerts`, `/ip/{ip}`, `/url`, `/encyclopedia/virus`.
+  `list_iocs` raises `GNATClientError` if called without an api_key
+  since the IOC service is commercial. Domain helpers:
+  `list_outbreak_alerts`, `list_iocs`, `ip_reputation`,
+  `url_reputation`, `get_outbreak_alert`.
+- `kaspersky_opentip/` — `KasperskyOpenTIPClient`. Optional `x-api-key`
+  header. Dispatches across `/search/ip`, `/search/domain`,
+  `/search/url`, `/search/hash`. Heuristic IOC-type guessing via
+  `_guess_ioc_type()`. Kaspersky's "Zone" field (Red/Orange/Green)
+  mapped to STIX labels. Domain helpers: `lookup_ip`, `lookup_domain`,
+  `lookup_url`, `lookup_hash`.
+- `eset_ti/` — `ESETThreatIntelClient`. Bearer token. Dispatches
+  across `/api/v1/iocs`, `/reports`, `/samples`, `/yara`, `/botnet`.
+  YARA rules get a custom `[x-eset-yara:rule = ...]` pattern. Domain
+  helpers: `list_iocs`, `list_reports`, `list_samples`, `list_yara`,
+  `list_botnet`, `get_report`, `get_sample`.
+- `bitdefender_iz/` — `BitdefenderIntelliZoneClient`. `X-API-Key`
+  header. Dispatches across `/api/v1/iocs`, `/reports`,
+  `/malware/families`, `/apt/groups`, `/samples/{sha256}`. APT groups
+  map to STIX `threat-actor` with `aliases` preserved. Domain helpers:
+  `list_iocs`, `list_reports`, `list_malware_families`,
+  `list_apt_groups`, `get_report`, `get_sample`.
+
+**Tests**
+- 59 new tests across `TestTalosClient` (11),
+  `TestFortiGuardClient` (12), `TestKasperskyOpenTIPClient` (12),
+  `TestESETThreatIntelClient` (11), `TestBitdefenderIntelliZoneClient`
+  (15) plus two Phase 2 Wave 4 integrity tests.
+- Full unit suite: 2405 tests passing, zero regressions.
+- Ruff clean across all new files.
+
 ### Added — Phase 2 Wave 3: BAS / Security Validation
 
 Six Breach-and-Attack-Simulation / continuous-security-validation

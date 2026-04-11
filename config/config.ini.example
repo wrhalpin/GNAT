@@ -1077,3 +1077,32 @@ api_token = YOUR_PENTERA_API_TOKEN
 [xm_cyber]
 host    = https://YOUR_TENANT.xmcyber.com
 api_key = YOUR_XMCYBER_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 4 — Additional TI vendor feeds
+# =============================================================================
+
+# --- Cisco Talos Intelligence (public reputation lookups) ------------------
+[talos]
+host = https://talosintelligence.com
+
+# --- FortiGuard Labs (outbreak alerts + optional commercial IOC feed) ------
+# api_key is optional; required only for the commercial IOC Service.
+[fortiguard]
+host    = https://fortiguard.com
+api_key =
+
+# --- Kaspersky OpenTIP (free public reputation; optional API key) ----------
+[kaspersky_opentip]
+host    = https://opentip.kaspersky.com
+api_key =
+
+# --- ESET Threat Intelligence (APT reports + IOC + YARA feeds) -------------
+[eset_ti]
+host      = https://eti.eset.com
+api_token = YOUR_ESET_TI_BEARER_TOKEN
+
+# --- Bitdefender IntelliZone (TI + APT groups + malware families) ----------
+[bitdefender_iz]
+host    = https://intellizone.bitdefender.com
+api_key = YOUR_BITDEFENDER_INTELLIZONE_API_KEY
