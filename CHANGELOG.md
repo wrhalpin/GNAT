@@ -19,6 +19,87 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 8: Real-time OSINT + Fraud / Bot Defense
+
+Six connectors covering the real-time event intelligence and fraud /
+bot-defense tiers. Platform count: 143 → 152 (Wave 8 adds the fifteenth
+through twentieth Phase 2 connectors; running count includes earlier
+gap-fills). All six are read-only via the CRUD contract.
+
+**New connectors (`gnat/connectors/`)**
+- `dataminr/` — `DataminrClient` for Dataminr Pulse real-time event
+  intelligence. OAuth2 client credentials at `/auth/2/token`; uses the
+  vendor's custom `Authorization: Dmauth <token>` scheme (not Bearer).
+  Dispatches across alerts, watchlists, watchlist-scoped alerts, and
+  related-alert traversal. Custom `x-dataminr-list` SCO for watchlist
+  taxonomy. Domain helpers: `list_alerts`, `get_alert`,
+  `list_watchlists`, `list_list_alerts`, `list_related_alerts`.
+- `factal/` — `FactalClient` for Factal verified breaking-news
+  intelligence. Bearer token. Dispatches across events, topics, and
+  places. Custom `x-factal-topic` SCO; places are mapped to STIX
+  `identity` objects with `x_factal_place` extension. Domain helpers:
+  `list_events`, `get_event`, `list_topics`, `list_places`.
+- `samdesk/` — `SamdeskClient` for Samdesk global crisis detection.
+  `X-Api-Key` header auth. Dispatches across events, categories, and
+  topics. Custom `x-samdesk-category` and `x-samdesk-topic` SCOs.
+  Domain helpers: `list_events`, `get_event`, `list_categories`,
+  `list_topics`.
+- `human_security/` — `HumanSecurityClient` for HUMAN Security
+  (formerly White Ops) bot-defense, account-takeover, and
+  credential-stuffing telemetry. OAuth2 client credentials at
+  `/oauth/token`. `TRUST_LEVEL = trusted_internal`. Dispatches across
+  bot-detections, ATO events, credential-stuffing events, threats,
+  and integrations. Emits `indicator` for threat IOCs and
+  `observed-data` envelopes wrapping `ipv4-addr` + `user-account` refs
+  for events. Custom `x-human-integration` SCO. Domain helpers:
+  `list_bot_detections`, `list_account_takeover_events`,
+  `list_credential_stuffing`, `list_threats`, `list_integrations`.
+- `abuseipdb/` — `AbuseIPDBClient` for AbuseIPDB community IP
+  reputation. Custom `Key` header auth. Dispatches across single-IP
+  reputation, CIDR-block reputation, the high-confidence blacklist,
+  and historical reports. Threshold-based labeling
+  (`abuseConfidenceScore >= 50` → `malicious-activity`). Domain
+  helpers: `check_ip`, `check_block`, `get_blacklist`, `get_reports`,
+  and a `submit_report` write-side helper (CRUD upsert remains
+  read-only). Module-level `_unwrap_abuseipdb()` strips the
+  `{"data": ...}` envelope.
+- `project_honey_pot/` — `ProjectHoneyPotClient` for the Project
+  Honey Pot http:BL DNS reputation feed. The first GNAT connector to
+  use a pure DNS-based protocol — overrides the HTTP CRUD methods to
+  issue `socket.gethostbyname` lookups against
+  `<api_key>.<reversed-ip>.dnsbl.httpbl.org`, then parses the
+  `127.X.Y.Z` response into days-since-activity / threat-score /
+  visitor-type-bitfield. NXDOMAIN is handled cleanly as "not listed".
+  Domain helpers: `check_ip`, `check_ips`. `list_objects` requires an
+  explicit `ips` filter since http:BL has no native list endpoint.
+
+**Architectural notes**
+- Dataminr authenticates with the vendor's idiosyncratic
+  `Authorization: Dmauth <token>` scheme — the first connector to
+  diverge from Basic / Bearer / API key.
+- Project Honey Pot is the first connector to skip the HTTP transport
+  entirely and use the `socket` module directly, while still inheriting
+  from `BaseClient` and `ConnectorMixin` for registry and STIX
+  contract compatibility.
+- AbuseIPDB demonstrates the "domain helper for write operations"
+  pattern more cleanly than prior waves: `submit_report` is a domain
+  helper, while `upsert_object` raises `GNATClientError` to keep the
+  CRUD contract read-only.
+- Fixed a recurrence of the conditional-expression precedence trap in
+  `dataminr/client.py` `to_stix` (the `if/else` was accidentally
+  gating the whole `or` chain when extracting the `alertType` and
+  `source` names from nested dicts).
+
+**Tests**
+- 80 new tests across `TestDataminrClient` (13),
+  `TestFactalClient` (14), `TestSamdeskClient` (13),
+  `TestHumanSecurityClient` (15), `TestAbuseIPDBClient` (14),
+  `TestProjectHoneyPotClient` (14), plus two Phase 2 Wave 8 integrity
+  tests for the registry and config sections. The Project Honey Pot
+  tests stub `socket.gethostbyname` via monkeypatch to exercise both
+  listed and NXDOMAIN response paths without touching the network.
+- Ruff clean across all new files.
+
 ### Added — Phase 2 Wave 7: Insider Risk / UEBA
 
 Five connectors covering the insider-risk and user/entity behavior

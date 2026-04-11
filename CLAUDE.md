@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 143 security/threat intelligence platforms
+- A unified client interface for 152 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -31,7 +31,7 @@ gnat/                        # Main Python package
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── stix/                    # STIX pattern validation (stix2-patterns integration)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 99 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 152 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
 ├── cli/                     # CLI entry point (gnat/cli/main.py)
@@ -373,6 +373,12 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Gurucul UEBA | `gnat/connectors/gurucul/` | Bearer token |
 | Exabeam Security Operations Platform | `gnat/connectors/exabeam/` | OAuth2 client credentials |
 | Securonix cloud SIEM / UEBA | `gnat/connectors/securonix/` | Username/password → session token |
+| Dataminr Pulse (real-time event intelligence) | `gnat/connectors/dataminr/` | OAuth2 client credentials → `Dmauth` token |
+| Factal verified breaking-news intelligence | `gnat/connectors/factal/` | Bearer token |
+| Samdesk global crisis detection | `gnat/connectors/samdesk/` | `X-Api-Key` header |
+| HUMAN Security (bot defense / ATO) | `gnat/connectors/human_security/` | OAuth2 client credentials |
+| AbuseIPDB community IP reputation | `gnat/connectors/abuseipdb/` | `Key` header |
+| Project Honey Pot http:BL | `gnat/connectors/project_honey_pot/` | http:BL access key (DNS-based) |
 
 ---
 

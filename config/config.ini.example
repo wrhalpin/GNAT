@@ -1183,3 +1183,42 @@ client_secret = YOUR_EXABEAM_CLIENT_SECRET
 host     = https://YOUR_TENANT.securonix.com
 username = YOUR_SECURONIX_USERNAME
 password = YOUR_SECURONIX_PASSWORD
+
+# =============================================================================
+# Phase 2 Wave 8 — Real-time OSINT + Fraud / bot defense
+# =============================================================================
+
+# --- Dataminr Pulse (real-time event intelligence) -------------------------
+# OAuth2 client credentials at /auth/2/token; uses custom Dmauth scheme.
+[dataminr]
+host          = https://gateway.dataminr.com
+client_id     = YOUR_DATAMINR_CLIENT_ID
+client_secret = YOUR_DATAMINR_CLIENT_SECRET
+
+# --- Factal verified breaking-news intelligence ----------------------------
+[factal]
+host    = https://www.factal.com/api
+api_key = YOUR_FACTAL_BEARER_TOKEN
+
+# --- Samdesk global crisis detection ---------------------------------------
+[samdesk]
+host    = https://api.samdesk.io
+api_key = YOUR_SAMDESK_API_KEY
+
+# --- HUMAN Security (formerly White Ops) bot defense -----------------------
+# OAuth2 client credentials.
+[human_security]
+host          = https://api.humansecurity.com
+client_id     = YOUR_HUMAN_CLIENT_ID
+client_secret = YOUR_HUMAN_CLIENT_SECRET
+
+# --- AbuseIPDB community IP reputation -------------------------------------
+[abuseipdb]
+host    = https://api.abuseipdb.com
+api_key = YOUR_ABUSEIPDB_API_KEY
+
+# --- Project Honey Pot http:BL DNS reputation ------------------------------
+# 12-character lowercase access key issued at projecthoneypot.org/httpbl_api.php.
+[project_honey_pot]
+host    = dnsbl.httpbl.org
+api_key = YOUR_HTTPBL_ACCESS_KEY
