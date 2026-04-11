@@ -56,6 +56,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 from .exceptions import SplunkSTIXError
 
 # ── Splunk ES intel field schemas ─────────────────────────────────────────────
@@ -312,7 +314,7 @@ class SplunkSTIXMapper:
         observed = {
             "type": "observed-data",
             "id": observed_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now_ts,
             "modified": now_ts,
             "first_observed": notable.get("timestamp") or now_ts,
@@ -330,7 +332,7 @@ class SplunkSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{str(uuid.uuid4())}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": objects,
         }
 
@@ -459,7 +461,7 @@ class SplunkSTIXMapper:
                     {
                         "type": "observed-data",
                         "id": obs_id,
-                        "spec_version": "2.1",
+                        "spec_version": CURRENT_SPEC_VERSION,
                         "created": now_ts,
                         "modified": now_ts,
                         "first_observed": fo,
@@ -474,7 +476,7 @@ class SplunkSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{str(uuid.uuid4())}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": objects,
         }
 

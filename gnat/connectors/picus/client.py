@@ -31,6 +31,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import bas_simulation_envelope, utcnow
 
 _NAMESPACE_PICUS = uuid.UUID("91cc55e1-0001-4a1e-9c1e-91cc55e1cafe")
@@ -212,7 +213,7 @@ class PicusClient(BaseClient, ConnectorMixin):
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or str(atk_id),

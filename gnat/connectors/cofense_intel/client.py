@@ -39,6 +39,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_indicator_pattern, utcnow
 
 _NAMESPACE_COFENSE = uuid.UUID("c0fe3513-0001-4d1c-9b1e-c0fe35130fff")
@@ -253,7 +254,7 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
             return {
                 "type": "indicator",
                 "id": f"indicator--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": native.get("firstPublished") or now,
                 "modified": native.get("lastUpdated") or now,
                 "pattern": pattern,
@@ -278,7 +279,7 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
             return {
                 "type": "malware",
                 "id": f"malware--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "name": native.get("familyName") or native.get("name") or str(fam_id),
@@ -294,7 +295,7 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
             return {
                 "type": "threat-actor",
                 "id": f"threat-actor--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "name": native.get("name") or str(actor_id),
@@ -308,7 +309,7 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--{stix_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": native.get("firstPublished") or now,
             "modified": native.get("lastUpdated") or now,
             "name": native.get("label") or f"Cofense threat {threat_id}",

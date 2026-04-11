@@ -53,6 +53,7 @@ from gnat.connectors.elastic.kibana_cases import KibanaCasesCommands
 from gnat.connectors.elastic.kibana_rules import KibanaRulesCommands
 from gnat.connectors.elastic.stix_mapper import ElasticSTIXMapper
 from gnat.connectors.elastic.threat_intel import ElasticThreatIntelCommands
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -849,7 +850,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         """Test that ipv4 sco to ecs."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [{"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.2.3.4"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
@@ -861,7 +862,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         """Test that ipv6 sco to ecs."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [{"type": "ipv6-addr", "id": "ipv6-addr--1", "value": "::1"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
@@ -871,7 +872,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         """Test that domain sco to ecs."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [{"type": "domain-name", "id": "domain-name--1", "value": "evil.com"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
@@ -881,7 +882,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         """Test that url sco to ecs extracts domain."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [{"type": "url", "id": "url--1", "value": "https://evil.com/path?q=1"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(bundle)
@@ -893,7 +894,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         """Test that file sco to ecs with hashes."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {
                     "type": "file",
@@ -923,7 +924,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         """Test that indicator sdo to ecs."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {
                     "type": "indicator",
@@ -959,7 +960,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
         """Test that provider and feed name applied."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [{"type": "ipv4-addr", "id": "ip--1", "value": "1.1.1.1"}],
         }
         docs = self.mapper.stix_bundle_to_ecs_indicators(

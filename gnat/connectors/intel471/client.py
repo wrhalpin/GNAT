@@ -50,6 +50,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4f")
 
@@ -238,7 +239,7 @@ class Intel471Client(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": ioc.get("first_seen") or now,
             "modified": ioc.get("last_seen") or now,
             "name": f"Intel 471 IOC: {ioc_value}",
@@ -263,7 +264,7 @@ class Intel471Client(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": actor.get("observed_at") or now,
             "modified": now,
             "name": actor.get("handle") or actor.get("name") or f"Intel 471 Actor {aid}",

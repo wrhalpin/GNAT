@@ -32,6 +32,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import bas_simulation_envelope, utcnow
 
 _NAMESPACE_XMCYBER = uuid.UUID("81c1bef0-0001-4a1e-9c1e-81c1bef0c0fe")
@@ -209,7 +210,7 @@ class XMCyberClient(BaseClient, ConnectorMixin):
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or str(ent_id),
@@ -238,7 +239,7 @@ class XMCyberClient(BaseClient, ConnectorMixin):
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or str(tech_id),

@@ -30,6 +30,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_FACTAL = uuid.UUID("fac7a100-0001-4a1e-9b1e-fac7a100c0fe")
@@ -184,7 +185,7 @@ class FactalClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-factal-topic",
                 "id": f"x-factal-topic--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(topic_id),
                 "x_factal": {"raw": native},
             }
@@ -197,7 +198,7 @@ class FactalClient(BaseClient, ConnectorMixin):
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(place_id),
                 "identity_class": "group",
                 "x_factal_place": {

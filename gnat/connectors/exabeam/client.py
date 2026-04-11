@@ -34,6 +34,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_EXABEAM = uuid.UUID("e1aba3a1-0001-4a1e-9b1e-e1aba3a1c0fe")
@@ -233,7 +234,7 @@ class ExabeamClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("username"),
                 "display_name": native.get("displayName") or native.get("fullName"),
                 "account_type": "domain",

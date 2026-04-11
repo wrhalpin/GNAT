@@ -40,6 +40,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_REDCANARY = uuid.UUID("4edca4a2-0001-4a1e-9c1b-4edca4a2c0fe")
@@ -230,7 +231,7 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": attrs.get("hostname") or f"endpoint {endpoint_id}",

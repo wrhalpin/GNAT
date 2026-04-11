@@ -47,6 +47,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c")
 
@@ -183,7 +184,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": alert.get("created_at") or now,
             "modified": now,
             "name": alert.get("title", "ZeroFox Alert"),
@@ -206,7 +207,7 @@ class ZeroFoxClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": threat.get("name", "ZeroFox Threat"),

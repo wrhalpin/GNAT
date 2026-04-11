@@ -62,6 +62,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
 
@@ -435,7 +437,7 @@ class SuricataSTIXMapper:
                 obj = {
                     "type": "ipv4-addr",
                     "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                    "spec_version": "2.1",
+                    "spec_version": CURRENT_SPEC_VERSION,
                     "value": ip,
                 }
                 if obj["id"] not in seen:
@@ -453,7 +455,7 @@ class SuricataSTIXMapper:
                 nt: dict = {
                     "type": "network-traffic",
                     "id": nid,
-                    "spec_version": "2.1",
+                    "spec_version": CURRENT_SPEC_VERSION,
                     "src_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alert['src_ip'])}",
                     "dst_ref": f"ipv4-addr--{_det_uuid('ipv4-addr', alert['dst_ip'])}",
                     "protocols": [str(alert.get("proto", "tcp")).lower()],
@@ -472,7 +474,7 @@ class SuricataSTIXMapper:
             {
                 "type": "observed-data",
                 "id": obs_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "first_observed": ts,
@@ -495,7 +497,7 @@ class SuricataSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{_uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": objects,
         }
 
@@ -511,7 +513,7 @@ class SuricataSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{_uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": all_objects,
         }
 

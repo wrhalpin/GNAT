@@ -60,6 +60,8 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 # ---------------------------------------------------------------------------
 # Known STIX 2.1 SCO and SDO object types that may appear in patterns
 # ---------------------------------------------------------------------------
@@ -731,7 +733,7 @@ def _validate_strict(pattern: str, *, tier1_result: ValidationResult) -> Validat
         return tier1_result
 
     try:
-        inspection = _stix2_validate(pattern, stix_version="2.1")
+        inspection = _stix2_validate(pattern, stix_version=CURRENT_SPEC_VERSION)
         if inspection.errors():
             errors = [str(e) for e in inspection.errors()]
             return ValidationResult(valid=False, errors=errors, strict=True)

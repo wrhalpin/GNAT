@@ -40,6 +40,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_OKTA = uuid.UUID("07c7a700-0001-4a1e-9b1e-07c7a700c0fe")
@@ -275,7 +276,7 @@ class OktaClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": profile.get("login") or native.get("login", ""),
                 "display_name": profile.get("displayName")
                 or f"{profile.get('firstName', '')} {profile.get('lastName', '')}".strip(),
@@ -303,7 +304,7 @@ class OktaClient(BaseClient, ConnectorMixin):
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": profile.get("name") or f"Okta group {group_id}",
@@ -323,7 +324,7 @@ class OktaClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-okta-app",
                 "id": f"x-okta-app--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("label") or native.get("name", ""),

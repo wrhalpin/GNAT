@@ -51,6 +51,8 @@ import re
 import uuid
 from datetime import datetime, timezone
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 from .exceptions import QRadarSTIXError
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -143,7 +145,7 @@ class QRadarSTIXMapper:
             {
                 "type": "observed-data",
                 "id": obs_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "first_observed": ts,
@@ -242,7 +244,7 @@ class QRadarSTIXMapper:
                 net_obj: dict = {
                     "type": "network-traffic",
                     "id": net_id,
-                    "spec_version": "2.1",
+                    "spec_version": CURRENT_SPEC_VERSION,
                     "src_ref": src_ref,
                     "dst_ref": dst_ref,
                     "protocols": [str(event.get("protocol", "tcp")).lower()],
@@ -271,7 +273,7 @@ class QRadarSTIXMapper:
             {
                 "type": "observed-data",
                 "id": obs_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "first_observed": ts,
@@ -426,7 +428,7 @@ def _ipv4(value: str) -> dict:
     return {
         "type": "ipv4-addr",
         "id": f"ipv4-addr--{_det_uuid('ipv4-addr', value)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "value": value,
     }
 
@@ -436,7 +438,7 @@ def _domain(value: str) -> dict:
     return {
         "type": "domain-name",
         "id": f"domain-name--{_det_uuid('domain-name', value)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "value": value,
     }
 
@@ -446,7 +448,7 @@ def _user_account(user_id: str) -> dict:
     return {
         "type": "user-account",
         "id": f"user-account--{_det_uuid('user-account', user_id)}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "user_id": user_id,
     }
 
@@ -458,7 +460,7 @@ def _network_traffic_stub(dst_port: str) -> dict | None:
         return {
             "type": "network-traffic",
             "id": nid,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "dst_port": int(dst_port),
             "protocols": ["tcp"],
         }
@@ -471,7 +473,7 @@ def _make_bundle(objects: list[dict]) -> dict:
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "objects": objects,
     }
 

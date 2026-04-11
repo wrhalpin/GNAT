@@ -47,6 +47,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 
@@ -309,7 +310,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": pulse.get("created") or now,
             "modified": pulse.get("modified") or now,
             "name": pulse.get("name", "OTX Pulse"),
@@ -348,7 +349,7 @@ class AlienVaultClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": ind.get("created") or now,
             "modified": now,
             "name": value,

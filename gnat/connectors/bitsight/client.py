@@ -50,6 +50,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c")
 
@@ -216,7 +217,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": vul_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": finding.get("date") or now,
             "modified": now,
             "name": finding.get("title", "BitSight Finding"),
@@ -238,7 +239,7 @@ class BitSightClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"BitSight Company: {company.get('name', cid)}",

@@ -48,6 +48,8 @@ from datetime import datetime, timezone
 
 import urllib3
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
 
@@ -563,7 +565,7 @@ class GraylogSTIXMapper:
                 obj = {
                     "type": "ipv4-addr",
                     "id": f"ipv4-addr--{_det_uuid('ipv4-addr', ip)}",
-                    "spec_version": "2.1",
+                    "spec_version": CURRENT_SPEC_VERSION,
                     "value": ip,
                 }
                 if obj["id"] not in seen:
@@ -576,7 +578,7 @@ class GraylogSTIXMapper:
             if uid not in seen:
                 seen.add(uid)
                 objects.append(
-                    {"type": "user-account", "id": uid, "spec_version": "2.1", "user_id": user}
+                    {"type": "user-account", "id": uid, "spec_version": CURRENT_SPEC_VERSION, "user_id": user}
                 )
             refs.append(uid)
 
@@ -585,7 +587,7 @@ class GraylogSTIXMapper:
             {
                 "type": "observed-data",
                 "id": obs_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "first_observed": ts,
@@ -604,7 +606,7 @@ class GraylogSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{_uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": objects,
         }
 
@@ -620,7 +622,7 @@ class GraylogSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{_uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": all_objects,
         }
 

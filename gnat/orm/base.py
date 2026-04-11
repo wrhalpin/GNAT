@@ -37,6 +37,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Optional
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 if TYPE_CHECKING:
     from gnat.client import GNATClient
 
@@ -84,7 +86,7 @@ class STIXBase:
         self._client = client
         # Core STIX identity fields
         self.id: str = kwargs.pop("id", f"{self.stix_type}--{uuid.uuid4()}")
-        self.spec_version: str = kwargs.pop("spec_version", "2.1")
+        self.spec_version: str = kwargs.pop("spec_version", CURRENT_SPEC_VERSION)
         self.created: str = kwargs.pop("created", _utcnow())
         self.modified: str = kwargs.pop("modified", _utcnow())
         # Additional fields stored in a generic bag
@@ -170,7 +172,7 @@ class STIXBase:
         return {
             "type": "bundle",
             "id": f"bundle--{uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [self.to_dict()],
         }
 

@@ -42,11 +42,12 @@ import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from gnat.agents.governor import AgentAction, IMPACT_LEVELS
+from gnat.agents.governor import IMPACT_LEVELS, AgentAction
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 if TYPE_CHECKING:
-    from gnat.review.service import ReviewService
     from gnat.review.models import ReviewItem, ReviewStatus
+    from gnat.review.service import ReviewService
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +241,7 @@ class HITLGateway:
         return {
             "type": "x-gnat-agent-action",
             "id": f"x-gnat-agent-action--{_uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": action.submitted_at.isoformat(),
             "modified": action.submitted_at.isoformat(),
             "agent_id": action.agent_id,
@@ -263,7 +264,7 @@ class HITLGateway:
             payload = {
                 "type": "note",
                 "id": f"note--{__import__('uuid').uuid4()}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": datetime.now(timezone.utc).isoformat(),
                 "modified": datetime.now(timezone.utc).isoformat(),
                 "abstract": f"CRITICAL agent action pending approval: {action.action_type.value}",

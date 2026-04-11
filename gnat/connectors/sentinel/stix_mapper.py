@@ -17,6 +17,8 @@ import contextlib
 import uuid
 from datetime import datetime, timezone
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 from .exceptions import SentinelSTIXError
 
 _STIX_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -58,7 +60,7 @@ class SentinelSTIXMapper:
         obj: dict = {
             "type": "indicator",
             "id": f"indicator--{_det_uuid('indicator', indicator.get('name', now))}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": props.get("created") or now,
             "modified": props.get("lastUpdatedTimeUtc") or now,
             "name": props.get("displayName", ""),
@@ -167,7 +169,7 @@ class SentinelSTIXMapper:
             {
                 "type": "observed-data",
                 "id": obs_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "first_observed": incident.get("first_activity") or ts,
@@ -231,6 +233,6 @@ def _make_bundle(objects: list[dict]) -> dict:
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "spec_version": "2.1",
+        "spec_version": CURRENT_SPEC_VERSION,
         "objects": objects,
     }

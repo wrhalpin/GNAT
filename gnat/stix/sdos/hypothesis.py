@@ -32,6 +32,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from gnat.orm.base import STIXBase, _utcnow
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 class STIXHypothesis(STIXBase):
@@ -188,7 +189,7 @@ class STIXHypothesis(STIXBase):
             id=data.get("id"),
             created=data.get("created"),
             modified=data.get("modified"),
-            spec_version=data.get("spec_version", "2.1"),
+            spec_version=data.get("spec_version", CURRENT_SPEC_VERSION),
         )
         return obj
 

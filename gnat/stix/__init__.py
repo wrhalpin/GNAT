@@ -54,8 +54,19 @@ from gnat.stix.pattern_validator import (
     ValidationResult,
     validate_pattern,
 )
+from gnat.stix.version import (
+    CURRENT_SPEC_VERSION,
+    STIX_MEDIA_TYPE,
+    SUPPORTED_SPEC_VERSIONS,
+    TAXII_MEDIA_TYPE,
+)
 
 __all__ = [
+    # Version constants
+    "CURRENT_SPEC_VERSION",
+    "SUPPORTED_SPEC_VERSIONS",
+    "STIX_MEDIA_TYPE",
+    "TAXII_MEDIA_TYPE",
     # Pattern validation
     "validate_pattern",
     "PatternValidator",

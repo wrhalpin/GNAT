@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90")
 
@@ -292,7 +293,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": vuln_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": vuln.get("TITLE", f"Qualys QID {qid}"),
@@ -314,7 +315,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": "Qualys VMDR Detection",

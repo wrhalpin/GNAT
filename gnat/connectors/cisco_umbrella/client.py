@@ -66,6 +66,7 @@ import urllib3
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -328,7 +329,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
             return {
                 "type": "course-of-action",
                 "id": _stix_id("course-of-action", f"umbrella:allow:{name}"),
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "name": f"Allow {name}",
@@ -358,7 +359,7 @@ class CiscoUmbrellaClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": _stix_id("indicator", f"umbrella:domain:{domain}"),
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": domain,

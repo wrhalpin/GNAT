@@ -38,6 +38,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_H1 = uuid.UUID("4ac9e201-0001-4a1e-9b1e-4ac9e201c0fe")
@@ -278,7 +279,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-h1-program",
                 "id": f"x-h1-program--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "handle": attrs.get("handle") or handle,
                 "name": attrs.get("name"),
                 "policy": attrs.get("policy"),
@@ -291,7 +292,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
             return {
                 "type": "vulnerability",
                 "id": f"vulnerability--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": attrs.get("name") or str(wid),
                 "description": attrs.get("description"),
                 "external_references": [
@@ -309,7 +310,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-h1-scope",
                 "id": f"x-h1-scope--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "asset_type": attrs.get("asset_type"),
                 "asset_identifier": attrs.get("asset_identifier"),
                 "eligible_for_bounty": attrs.get("eligible_for_bounty"),

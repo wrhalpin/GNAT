@@ -47,6 +47,8 @@ from datetime import datetime, timezone
 
 import urllib3
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
 
@@ -556,7 +558,7 @@ class OTXSTIXMapper:
         report: dict = {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": pulse.get("created") or now,
             "modified": pulse.get("modified") or now,
             "name": pulse.get("name", "OTX Pulse"),
@@ -579,7 +581,7 @@ class OTXSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{_uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": objects,
         }
 
@@ -608,7 +610,7 @@ class OTXSTIXMapper:
                 {
                     "type": "indicator",
                     "id": ind_id,
-                    "spec_version": "2.1",
+                    "spec_version": CURRENT_SPEC_VERSION,
                     "created": ind.get("created") or now,
                     "modified": now,
                     "name": value,
@@ -633,7 +635,7 @@ class OTXSTIXMapper:
         return {
             "type": "bundle",
             "id": f"bundle--{_uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": objects,
         }
 
@@ -644,28 +646,28 @@ class OTXSTIXMapper:
             return {
                 "type": stix_type,
                 "id": f"{stix_type}--{_det_uuid(stix_type, value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": value,
             }
         if stix_type == "domain-name":
             return {
                 "type": "domain-name",
                 "id": f"domain-name--{_det_uuid('domain-name', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": value,
             }
         if stix_type == "url":
             return {
                 "type": "url",
                 "id": f"url--{_det_uuid('url', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": value,
             }
         if stix_type == "email-addr":
             return {
                 "type": "email-addr",
                 "id": f"email-addr--{_det_uuid('email-addr', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "value": value,
             }
         if stix_type == "file":
@@ -679,14 +681,14 @@ class OTXSTIXMapper:
             return {
                 "type": "file",
                 "id": f"file--{_det_uuid('file', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "hashes": {algo: value},
             }
         if stix_type == "vulnerability":
             return {
                 "type": "vulnerability",
                 "id": f"vulnerability--{_det_uuid('vulnerability', value)}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": _now_ts(),
                 "modified": _now_ts(),
                 "name": value,

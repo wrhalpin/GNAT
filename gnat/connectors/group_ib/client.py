@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("a2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d")
 
@@ -194,7 +195,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": item.get("email") or item.get("login", "Compromised Credential"),
@@ -217,7 +218,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": ioc.get("value", "Group-IB IOC"),
@@ -241,7 +242,7 @@ class GroupIBClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": event.get("date") or now,
             "modified": now,
             "name": event.get("title", "Group-IB Event"),

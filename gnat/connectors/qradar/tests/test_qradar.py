@@ -62,6 +62,7 @@ from gnat.connectors.qradar.offenses import (
 from gnat.connectors.qradar.reference_data import QRadarReferenceDataCommands
 from gnat.connectors.qradar.rules import QRadarRulesCommands
 from gnat.connectors.qradar.stix_mapper import QRadarSTIXMapper
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -1008,7 +1009,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         """Test that stix bundle to reference sets ipv4."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.2.3.4"},
                 {"type": "ipv4-addr", "id": "ipv4-addr--2", "value": "5.6.7.8"},
@@ -1023,7 +1024,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         """Test that stix bundle to reference sets mixed."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.2.3.4"},
                 {"type": "domain-name", "id": "domain-name--1", "value": "evil.com"},
@@ -1043,7 +1044,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         """Test that stix bundle to reference sets deduplication."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.2.3.4"},
                 {"type": "ipv4-addr", "id": "ipv4-addr--2", "value": "1.2.3.4"},  # dup
@@ -1056,7 +1057,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
         """Test that stix bundle to reference sets indicator pattern."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {
                     "type": "indicator",

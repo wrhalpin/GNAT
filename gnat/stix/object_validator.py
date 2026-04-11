@@ -54,6 +54,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from gnat.stix.version import SUPPORTED_SPEC_VERSIONS
+
 # ---------------------------------------------------------------------------
 # Timestamp / identifier regexes
 # ---------------------------------------------------------------------------
@@ -344,7 +346,7 @@ _OPEN_VOCAB: dict[str, frozenset[str]] = {
 # ---------------------------------------------------------------------------
 
 _CLOSED_VOCAB: dict[str, frozenset[str]] = {
-    "spec_version": frozenset({"2.1", "2.0"}),
+    "spec_version": SUPPORTED_SPEC_VERSIONS,
     "definition_type": frozenset({"tlp", "statement"}),
 }
 

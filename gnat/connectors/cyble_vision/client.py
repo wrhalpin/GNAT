@@ -47,6 +47,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("f5e5c8b0-5e5e-4e5e-9e5e-5e5e5e5e5e5e")  # namespace for deterministic IDs
 
@@ -201,7 +202,7 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
             pattern = pattern_map.get(ioc_type, f"[x-cyble:value = '{ioc_val}']")
             return {
                 "type": "indicator",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "id": f"indicator--{_uuid.uuid5(_STIX_NS, ioc_val)}",
                 "name": ioc_val,
                 "pattern": pattern,
@@ -215,7 +216,7 @@ class CybleVisionClient(BaseClient, ConnectorMixin):
         title = obj.get("title", obj.get("event_type", "Cyble Alert"))
         return {
             "type": "report",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "id": f"report--{_uuid.uuid5(_STIX_NS, alert_id)}",
             "name": title,
             "published": obj.get("date", _now_ts()),

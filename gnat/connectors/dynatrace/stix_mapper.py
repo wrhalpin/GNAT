@@ -23,6 +23,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from gnat.stix.version import CURRENT_SPEC_VERSION
+
 from .exceptions import DynatraceSTIXError
 
 # Entity type → STIX infrastructure type mapping
@@ -116,7 +118,7 @@ class DynatraceSTIXMapper:
         return {
             "type": "infrastructure",
             "id": f"infrastructure--dt-{entity_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "name": display_name,
             "infrastructure_types": [infra_type],
             "created": first_seen,
@@ -163,7 +165,7 @@ class DynatraceSTIXMapper:
         return {
             "type": "vulnerability",
             "id": f"vulnerability--dt-{sp_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "name": sp.get("displayId", sp_id),
             "description": sp.get("title", ""),
             "created": _epoch_ms_to_iso(sp.get("firstSeenTimestamp")),
@@ -213,7 +215,7 @@ class DynatraceSTIXMapper:
         return {
             "type": "indicator",
             "id": f"indicator--dt-{attack_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "name": f"Dynatrace Attack: {attack_type}",
             "pattern": f"[domain-name:value = 'dynatrace.attack.{attack_type.lower()}']",
             "pattern_type": "stix",
@@ -265,7 +267,7 @@ class DynatraceSTIXMapper:
         return {
             "type": "observed-data",
             "id": f"observed-data--dt-{problem_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": first_obs,
             "modified": last_obs,
             "first_observed": first_obs,
@@ -316,7 +318,7 @@ class DynatraceSTIXMapper:
         return {
             "type": "observed-data",
             "id": f"observed-data--dt-event-{event_id}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": start_time,
             "modified": end_time,
             "first_observed": start_time,

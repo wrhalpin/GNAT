@@ -34,6 +34,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_SECURONIX = uuid.UUID("5ec710a1-0001-4a1e-9b1e-5ec710a1c0fe")
@@ -239,7 +240,7 @@ class SecuronixClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("username") or native.get("userId"),
                 "display_name": native.get("fullName") or native.get("firstName"),
                 "account_type": "domain",
@@ -259,7 +260,7 @@ class SecuronixClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-securonix-policy",
                 "id": f"x-securonix-policy--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(pol_id),
                 "enabled": native.get("enabled"),
                 "x_securonix": {"raw": native},

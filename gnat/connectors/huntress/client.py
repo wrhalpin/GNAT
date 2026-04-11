@@ -44,6 +44,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_HUNTRESS = uuid.UUID("81700707-0001-4a1e-9b1c-81700707c0fe")
@@ -248,7 +249,7 @@ class HuntressClient(BaseClient, ConnectorMixin):
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or f"Huntress org {org_id}",
@@ -264,7 +265,7 @@ class HuntressClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-huntress-agent",
                 "id": f"x-huntress-agent--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "hostname": native.get("hostname"),

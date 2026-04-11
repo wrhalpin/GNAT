@@ -56,6 +56,7 @@ import urllib3
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_ENTRA = uuid.UUID("e711a100-0001-4a1e-9b1e-e711a100c0fe")
@@ -367,7 +368,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("userPrincipalName"),
                 "display_name": native.get("displayName"),
                 "account_type": "azure",
@@ -390,7 +391,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": native.get("createdDateTime") or utcnow(),
                 "modified": utcnow(),
                 "name": native.get("displayName") or f"Entra group {group_id}",
@@ -414,7 +415,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-entra-application",
                 "id": f"x-entra-application--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("displayName") or sp_id,
@@ -432,7 +433,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-entra-ca-policy",
                 "id": f"x-entra-ca-policy--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("displayName") or pol_id,
                 "state": native.get("state"),
                 "x_entra_id_policy": {"raw": native},

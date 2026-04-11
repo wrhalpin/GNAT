@@ -36,6 +36,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_TRM = uuid.UUID("7a14b500-0001-4d0c-9ab1-7a14b500abcd")
@@ -243,7 +244,7 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
             return {
                 "type": "indicator",
                 "id": f"indicator--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "pattern": pattern,
@@ -271,7 +272,7 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
             return {
                 "type": "threat-actor",
                 "id": f"threat-actor--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "name": native.get("name") or native.get("entity") or str(entity_id),

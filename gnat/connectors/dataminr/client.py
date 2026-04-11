@@ -37,6 +37,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_DATAMINR = uuid.UUID("da7a0001-0001-4a1e-9b1e-da7a0001c0fe")
@@ -235,7 +236,7 @@ class DataminrClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-dataminr-list",
                 "id": f"x-dataminr-list--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(list_id),
                 "x_dataminr": {"raw": native},
             }

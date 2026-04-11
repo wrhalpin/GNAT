@@ -37,6 +37,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _API_ROOT = "/taxii2/roots/gnat"
 _TAXII_MEDIA_TYPE = "application/taxii+json;version=2.1"
@@ -204,7 +205,7 @@ class GNATRemoteConnector(BaseClient, ConnectorMixin):
             bundle = {
                 "type": "bundle",
                 "id": f"bundle--{uuid.uuid4()}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "objects": [payload],
             }
 
@@ -270,7 +271,7 @@ class GNATRemoteConnector(BaseClient, ConnectorMixin):
         bundle = {
             "type": "bundle",
             "id": f"bundle--{uuid.uuid4()}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": objects,
         }
         resp = self.post(

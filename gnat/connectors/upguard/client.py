@@ -50,6 +50,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("e8f9a0b1-c2d3-4e5f-6a7b-8c9d0e1f2a3b")
 
@@ -208,7 +209,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": vul_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": breach.get("date") or now,
             "modified": now,
             "name": breach.get("title", "UpGuard Breach"),
@@ -230,7 +231,7 @@ class UpGuardClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": f"UpGuard Vendor: {vendor.get('name', vid)}",

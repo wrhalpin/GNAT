@@ -29,6 +29,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_SAMDESK = uuid.UUID("5a40e510-0001-4a1e-9b1e-5a40e510c0fe")
@@ -180,7 +181,7 @@ class SamdeskClient(BaseClient, ConnectorMixin):
             return {
                 "type": f"x-samdesk-{kind}",
                 "id": f"x-samdesk-{kind}--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "name": native.get("name") or str(cat_id),
                 "x_samdesk": {"raw": native},
             }

@@ -43,6 +43,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 
 def _now_ts() -> str:
@@ -184,7 +185,7 @@ class CopilotClient(BaseClient, ConnectorMixin):
             return {
                 "type": "report",
                 "id": report_id,
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": now,
                 "modified": now,
                 "name": f"Copilot Analysis ({model_used})",
@@ -202,7 +203,7 @@ class CopilotClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": f"report--copilot-models-{now.replace(':', '')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": "Copilot Available Models",

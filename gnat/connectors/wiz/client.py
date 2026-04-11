@@ -44,6 +44,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("b9c8d7e6-f5a4-3b2c-1d0e-9f8a7b6c5d4e")
 
@@ -173,7 +174,7 @@ class WizClient(BaseClient, ConnectorMixin):
             name = obj.get("name", cve_id or obj_id)
             return {
                 "type": "vulnerability",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, obj_id)}",
                 "name": name,
                 "x_wiz_severity": obj.get("severity", ""),
@@ -185,7 +186,7 @@ class WizClient(BaseClient, ConnectorMixin):
         # Issue → STIX report
         return {
             "type": "report",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "id": f"report--{_uuid.uuid5(_STIX_NS, obj_id)}",
             "name": obj.get("title", obj_id),
             "published": obj.get("createdAt", _now_ts()),

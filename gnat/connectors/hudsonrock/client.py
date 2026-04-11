@@ -49,6 +49,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5e")
 
@@ -209,7 +210,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": ind_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": cred.get("breach_date") or now,
             "modified": now,
             "name": cred.get("email") or cred.get("username", "Compromised Credential"),
@@ -233,7 +234,7 @@ class HudsonRockClient(BaseClient, ConnectorMixin):
         return {
             "type": "report",
             "id": report_id,
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": breach.get("date") or now,
             "modified": now,
             "name": breach.get("title", "Hudson Rock Breach"),

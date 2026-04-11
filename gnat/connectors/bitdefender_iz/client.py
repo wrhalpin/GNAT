@@ -32,6 +32,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_indicator_pattern, utcnow
 
 _NAMESPACE_BITDEFENDER = uuid.UUID("b17de7ea-0001-4a1e-9b1e-b17de7eac0fe")
@@ -213,7 +214,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
             return {
                 "type": "report",
                 "id": f"report--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": native.get("published") or utcnow(),
                 "modified": native.get("updated") or utcnow(),
                 "name": native.get("title") or str(report_id),
@@ -230,7 +231,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
             return {
                 "type": "malware",
                 "id": f"malware--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or str(family_id),
@@ -248,7 +249,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
             return {
                 "type": "threat-actor",
                 "id": f"threat-actor--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": native.get("name") or str(actor_id),
@@ -267,7 +268,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
             return {
                 "type": "malware",
                 "id": f"malware--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
                 "name": str(family),
@@ -294,7 +295,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": f"indicator--{stix_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": utcnow(),
             "modified": utcnow(),
             "pattern": pattern,

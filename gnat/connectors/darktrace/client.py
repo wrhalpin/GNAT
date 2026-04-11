@@ -48,6 +48,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("e5f6a7b8-c9d0-1234-ef01-567890123456")
 
@@ -275,7 +276,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'darktrace:{bid}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": ts,
             "modified": ts,
             "first_observed": ts,
@@ -298,7 +299,7 @@ class DarktraceClient(BaseClient, ConnectorMixin):
         return {
             "type": "threat-actor",
             "id": f"threat-actor--{_uuid.uuid5(_STIX_NS, f'darktrace:{did}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": now,
             "modified": now,
             "name": device.get("hostname", device.get("ip", f"Device {did}")),

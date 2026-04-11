@@ -35,6 +35,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_AXIOM = uuid.UUID("a4101055-0001-4a1e-9b1e-a4101055c0fe")
@@ -264,7 +265,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-axiom-agent",
                 "id": f"x-axiom-agent--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "agent_id": agent_id,
                 "hostname": native.get("hostname") or native.get("name"),
                 "platform": native.get("platform") or native.get("os"),
@@ -278,7 +279,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
             return {
                 "type": "x-axiom-collection",
                 "id": f"x-axiom-collection--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "collection_id": col_id,
                 "case_id": native.get("case_id"),
                 "agent_id": native.get("agent_id"),
@@ -293,7 +294,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("username") or native.get("email"),
                 "display_name": native.get("name") or native.get("displayName"),
                 "account_type": "axiom_cyber",

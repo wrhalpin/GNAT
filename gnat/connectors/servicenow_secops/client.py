@@ -53,6 +53,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 _STIX_NS = _uuid.UUID("b8c9d0e1-f2a3-4567-1234-890123456789")
 
@@ -451,7 +452,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         return {
             "type": "observed-data",
             "id": f"observed-data--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": opened_at,
             "modified": record.get("sys_updated_on", opened_at),
             "first_observed": opened_at,
@@ -479,7 +480,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": f"vulnerability--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": record.get("sys_created_on", now),
             "modified": record.get("sys_updated_on", now),
             "name": cve_id or record.get("short_description", "SN Vulnerability"),
@@ -512,7 +513,7 @@ class ServiceNowSecOpsClient(BaseClient, ConnectorMixin):
         return {
             "type": "indicator",
             "id": f"indicator--{_uuid.uuid5(_STIX_NS, f'sn_secops:{sys_id}')}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": record.get("sys_created_on", now),
             "modified": record.get("sys_updated_on", now),
             "name": value,

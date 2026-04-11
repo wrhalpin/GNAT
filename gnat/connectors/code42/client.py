@@ -34,6 +34,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import make_observed_data_envelope, utcnow
 
 _NAMESPACE_CODE42 = uuid.UUID("c0de4200-0001-4a1e-9b1e-c0de4200c0fe")
@@ -232,7 +233,7 @@ class Code42Client(BaseClient, ConnectorMixin):
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "account_login": native.get("username") or native.get("email"),
                 "display_name": native.get("displayName") or native.get("name"),
                 "account_type": "cloud",
@@ -253,7 +254,7 @@ class Code42Client(BaseClient, ConnectorMixin):
             return {
                 "type": "x-code42-risk-profile",
                 "id": f"x-code42-risk-profile--{stix_uuid}",
-                "spec_version": "2.1",
+                "spec_version": CURRENT_SPEC_VERSION,
                 "user_id": user_id,
                 "username": native.get("username"),
                 "risk_score": native.get("riskScore"),

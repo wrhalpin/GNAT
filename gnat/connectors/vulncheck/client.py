@@ -44,6 +44,7 @@ from typing import Any
 
 from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.base_connector import ConnectorMixin
+from gnat.stix.version import CURRENT_SPEC_VERSION
 from gnat.utils.stix_helpers import cvss_to_external_reference, utcnow
 
 # Deterministic namespace for VulnCheck-derived STIX ids.
@@ -294,7 +295,7 @@ class VulnCheckClient(BaseClient, ConnectorMixin):
         return {
             "type": "vulnerability",
             "id": f"vulnerability--{vuln_uuid}",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "created": native.get("dateAdded") or now,
             "modified": native.get("dateLastUpdated") or now,
             "name": cve or "vulncheck-record",

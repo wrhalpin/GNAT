@@ -46,6 +46,7 @@ from gnat.connectors.misp.feeds import MISPFeedCommands
 from gnat.connectors.misp.sightings import MISPSightingCommands
 from gnat.connectors.misp.stix_mapper import MISPSTIXMapper
 from gnat.connectors.misp.tags import MISPTagCommands
+from gnat.stix.version import CURRENT_SPEC_VERSION
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -740,7 +741,7 @@ class TestMISPSTIXMapper(unittest.TestCase):
         """Test that stix bundle to misp event basic."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "9.9.9.9"},
                 {"type": "domain-name", "id": "domain-name--1", "value": "evil.com"},
@@ -757,7 +758,7 @@ class TestMISPSTIXMapper(unittest.TestCase):
         """Test that stix bundle uses report name."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {
                     "type": "report",
@@ -778,7 +779,7 @@ class TestMISPSTIXMapper(unittest.TestCase):
         """Test that stix bundle deduplication."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {"type": "ipv4-addr", "id": "ipv4-addr--1", "value": "1.2.3.4"},
                 {"type": "ipv4-addr", "id": "ipv4-addr--2", "value": "1.2.3.4"},  # dup
@@ -792,7 +793,7 @@ class TestMISPSTIXMapper(unittest.TestCase):
         """Test that stix indicator to misp attribute."""
         bundle = {
             "type": "bundle",
-            "spec_version": "2.1",
+            "spec_version": CURRENT_SPEC_VERSION,
             "objects": [
                 {
                     "type": "indicator",
