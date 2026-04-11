@@ -1040,3 +1040,40 @@ customer_id =
 [red_canary]
 host    = https://my.redcanary.co
 api_key = YOUR_RED_CANARY_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 3 — BAS / security validation
+# =============================================================================
+
+# --- SafeBreach (BAS) ------------------------------------------------------
+[safebreach]
+host       = https://api.safebreach.com
+api_token  = YOUR_SAFEBREACH_API_TOKEN
+account_id = YOUR_SAFEBREACH_ACCOUNT_ID
+
+# --- AttackIQ Security Optimization Platform -------------------------------
+[attackiq]
+host      = https://gts.attackiq.com
+api_token = YOUR_ATTACKIQ_API_TOKEN
+
+# --- Cymulate Continuous Security Validation -------------------------------
+[cymulate]
+host    = https://api.app.cymulate.com
+api_key = YOUR_CYMULATE_API_KEY
+
+# --- Picus Security Validation Platform ------------------------------------
+# refresh_token is exchanged for a short-lived access token on first request.
+[picus]
+host          = https://api.picussecurity.com
+refresh_token = YOUR_PICUS_REFRESH_TOKEN
+
+# --- Pentera automated security validation ---------------------------------
+[pentera]
+host      = https://YOUR_TENANT.pentera.io
+api_token = YOUR_PENTERA_API_TOKEN
+
+# --- XM Cyber Attack Path Management ---------------------------------------
+# api_key is exchanged for a session Bearer token on first request.
+[xm_cyber]
+host    = https://YOUR_TENANT.xmcyber.com
+api_key = YOUR_XMCYBER_API_KEY

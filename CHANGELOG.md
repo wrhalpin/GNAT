@@ -19,6 +19,71 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 3: BAS / Security Validation
+
+Six Breach-and-Attack-Simulation / continuous-security-validation
+connectors covering the top-rated BAS vendors from the 2026 audit
+(SafeBreach, AttackIQ, Cymulate, Picus Security, Pentera, XM Cyber).
+This wave pairs naturally with Phase 2 Wave 1 sandboxes: sandboxes
+tell you what malware does, BAS tells you whether your controls
+actually stop it. Platform count: 122 → 128.
+
+All six connectors are `trusted_internal` (customer's own security
+validation telemetry) and read-only.
+
+**Shared helper (`gnat/utils/stix_helpers.py`)**
+- `bas_simulation_envelope(source_name, simulation_id, …)` — builds a
+  STIX 2.1 `observed-data` envelope around a BAS simulation run with
+  deterministic UUID-5 refs to synthetic `identity` SCOs for each
+  target asset and synthetic `attack-pattern` SCOs for each MITRE
+  ATT&CK technique. Every Phase 2 Wave 3 connector consumes this
+  helper.
+
+**New connectors (`gnat/connectors/`)**
+- `safebreach/` — `SafeBreachClient`. Custom `x-apitoken` +
+  `x-accountid` header pair. Dispatches across `/api/data/v1/tests`,
+  `/tests/{id}/simulations`, `/findings`, `/config/v1/scenarios`,
+  `/config/v1/attackers`. `_acct_path()` helper centralizes the
+  account-scoped URL construction. Domain helpers: `list_tests`,
+  `list_simulations`, `list_findings`, `list_attackers`, `get_test`.
+- `attackiq/` — `AttackIQClient`. `Authorization: Token` header.
+  Dispatches across `/api/v1/assessments`, `/scenarios`, `/results`,
+  `/phases`, `/tests`. DRF-style pagination (`results` key). Domain
+  helpers: `list_assessments`, `list_results`, `list_scenarios`,
+  `get_assessment`.
+- `cymulate/` — `CymulateClient`. `x-token` header. Dispatches across
+  `/v1/assessments`, `/technical-findings`, `/templates`,
+  `/simulations`. Templates map to `attack-pattern`. Domain helpers:
+  `list_assessments`, `list_findings`, `list_templates`,
+  `list_simulations`, `get_assessment`.
+- `picus/` — `PicusClient`. Refresh token exchanged for an access
+  token on first request (`POST /v1/refresh-token`). Dispatches across
+  `/v1/attacks`, `/simulations`, `/results`, `/threat-library`. Domain
+  helpers: `list_attacks`, `list_simulations`, `list_results`,
+  `list_threat_library`, `get_simulation`, `get_attack`.
+- `pentera/` — `PenteraClient`. Bearer JWT auth (tenant-issued).
+  Dispatches across `/api/v1/tasks`, `/findings`, `/assets`,
+  `/techniques`, `/achievements`. Findings map to STIX `vulnerability`
+  with CVE external refs; tasks/assets/achievements map to
+  `observed-data` envelopes. Domain helpers: `list_tasks`,
+  `list_findings`, `list_assets`, `list_achievements`,
+  `list_techniques`, `get_task`, `get_finding`.
+- `xm_cyber/` — `XMCyberClient`. API key exchanged for a session
+  Bearer via `POST /api/v2/auth/login`. Dispatches across
+  `/api/v2/entities`, `/attack-paths`, `/critical-assets`,
+  `/techniques`. Entities and critical assets both map to STIX
+  `identity` (with `_xm_identity_class` heuristic that maps
+  user/host/cloud to STIX identity_class values). Domain helpers:
+  `list_entities`, `list_critical_assets`, `list_attack_paths`,
+  `list_techniques`, `get_entity`, `get_attack_path`.
+
+**Tests**
+- 76 new tests across six new `TestXxxClient` classes plus two
+  Phase 2 Wave 3 integrity tests plus 4 new
+  `TestBasSimulationEnvelope` tests for the shared helper.
+- Full unit suite: 2346 tests passing, zero regressions.
+- Ruff clean across all new files.
+
 ### Added — Phase 2 Wave 2: MDR Platforms
 
 Three Managed Detection & Response connectors covering the top-rated

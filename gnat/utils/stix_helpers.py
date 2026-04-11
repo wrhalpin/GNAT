@@ -24,6 +24,14 @@ Phase 2 Wave 1 additions:
   around a malware-sandbox behavioral report with synthetic file /
   process / network observable refs.  Consumed by every sandbox
   connector (Joe Sandbox, ANY.RUN, Hybrid Analysis, VMRay, Intezer).
+
+Phase 2 Wave 3 additions:
+
+* :func:`bas_simulation_envelope` — builds an ``observed-data`` envelope
+  around a Breach-and-Attack-Simulation result, wrapping the targeted
+  asset + the MITRE ATT&CK technique(s) being simulated.  Consumed by
+  every BAS connector (SafeBreach, AttackIQ, Cymulate, Picus, Pentera,
+  XM Cyber).
 """
 
 from __future__ import annotations
@@ -533,6 +541,96 @@ def sandbox_report_envelope(
         extensions[f"{source_name}_verdict"] = verdict
     if score is not None:
         extensions[f"{source_name}_score"] = score
+    if raw_report is not None:
+        extensions[f"{source_name}_raw"] = raw_report
+
+    return make_observed_data_envelope(
+        first_observed=first,
+        last_observed=last,
+        number_observed=1,
+        object_refs=refs,
+        source_name=source_name,
+        x_extensions=extensions,
+    )
+
+
+def bas_simulation_envelope(
+    source_name: str,
+    simulation_id: str,
+    target_assets: list[str] | None = None,
+    attack_techniques: list[str] | None = None,
+    result: str = "",
+    score: float | None = None,
+    first_observed: str = "",
+    last_observed: str = "",
+    raw_report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Build a STIX 2.1 ``observed-data`` envelope around a BAS simulation
+    run.
+
+    BAS platforms (SafeBreach, AttackIQ, Cymulate, Picus, Pentera, XM
+    Cyber) all emit simulation results describing "we ran attack X
+    against asset Y and the result was Z".  This helper wraps that shape
+    into a standard envelope with deterministic UUID-5 refs to:
+
+    * synthetic ``identity`` SCOs for each target asset
+    * synthetic ``attack-pattern`` SCOs for each MITRE ATT&CK technique
+
+    Parameters
+    ----------
+    source_name : str
+        BAS vendor short name (``"safebreach"``, ``"attackiq"``, …).
+    simulation_id : str
+        Vendor-assigned id of the simulation run.
+    target_assets : list of str, optional
+        Hostnames, IPs, or asset ids the simulation targeted.
+    attack_techniques : list of str, optional
+        MITRE ATT&CK technique ids (``T1055``, ``T1059.001``, …) or
+        vendor-native technique names.
+    result : str, optional
+        Simulation verdict string (``"blocked"``, ``"missed"``,
+        ``"detected"``, …).
+    score : float, optional
+        Vendor-specific numeric score (control efficacy, severity, …).
+    first_observed, last_observed : str, optional
+        Start / end timestamps of the simulation window.
+    raw_report : dict, optional
+        Original raw report preserved under ``x_<source_name>_raw``.
+
+    Returns
+    -------
+    dict
+        STIX 2.1 ``observed-data`` SDO with behavioral object_refs.
+    """
+    ns = uuid.uuid5(
+        _NAMESPACE_OBSERVED_DATA, f"bas|{source_name}|{simulation_id}"
+    )
+
+    refs: list[str] = []
+    for asset in target_assets or []:
+        if asset:
+            refs.append(f"identity--{uuid.uuid5(ns, f'identity|{asset}')}")
+    for tech in attack_techniques or []:
+        if tech:
+            refs.append(
+                f"attack-pattern--{uuid.uuid5(ns, f'attack-pattern|{tech}')}"
+            )
+
+    first = first_observed or utcnow()
+    last = last_observed or first
+
+    extensions: dict[str, Any] = {
+        f"{source_name}_simulation_id": simulation_id,
+    }
+    if result:
+        extensions[f"{source_name}_result"] = result
+    if score is not None:
+        extensions[f"{source_name}_score"] = score
+    if attack_techniques:
+        extensions[f"{source_name}_techniques"] = list(attack_techniques)
+    if target_assets:
+        extensions[f"{source_name}_targets"] = list(target_assets)
     if raw_report is not None:
         extensions[f"{source_name}_raw"] = raw_report
 
