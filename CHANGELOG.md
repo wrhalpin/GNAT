@@ -19,6 +19,47 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 6: Advanced Email Security
+
+Two advanced email security connectors completing the email-gateway
+tier (Proofpoint TAP was already present; Abnormal Security ships in
+Phase 1 Wave 3b). Platform count: 136 → 138. Both connectors are
+`trusted_internal` and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `mimecast/` — `MimecastClient` for the Mimecast API 2.0. OAuth2
+  client-credentials flow against ``/oauth/token``. Same pattern as
+  Phase 2 Wave 5 Entra ID / Ping Identity — uses a local
+  `urllib3.PoolManager` for the token exchange before stamping the
+  Bearer token. Dispatches across six endpoint families via
+  `filters["kind"]`: `messages` (message-finder search), `url_logs`
+  (URL Protect), `attachment_logs` (Attachment Protect sandbox),
+  `impersonation_logs` (BEC / CEO fraud), `threat_intel`
+  (Mimecast TI feed), `audit_events`. Domain helpers:
+  `search_messages`, `list_url_protect_logs`,
+  `list_attachment_protect_logs`, `list_impersonation_logs`,
+  `get_threat_intel_feed`, `list_users`, `list_groups`,
+  `list_audit_events`. Module-level `_extract_mimecast_items()`
+  walks the nested `{"data": [{"messages": [...]}]}` envelope.
+- `ironscales/` — `IRONSCALESClient` for the IRONSCALES AI email
+  security platform. Per-company API key with an additional
+  `X-Company-Id` tenant-routing header — both required. Company-
+  scoped URL construction via `_company_path()` helper. Dispatches
+  across incidents, reported emails, affected mailboxes, mailboxes,
+  mitigation actions, classifications, and federation signatures
+  (community intel). Signatures map to STIX `indicator` with typed
+  patterns (URL, domain, IP, SHA-256). Custom
+  `x-ironscales-classification` SCO. Domain helpers:
+  `list_incidents`, `get_incident`, `list_affected_mailboxes`,
+  `list_reported_emails`, `list_mailboxes`, `list_mitigation_actions`,
+  `list_classifications`, `list_federation_signatures`.
+
+**Tests**
+- 35 new tests across `TestMimecastClient` (15) and
+  `TestIRONSCALESClient` (18) plus two Phase 2 Wave 6 integrity
+  tests. Full unit suite: 2555 tests passing, zero regressions.
+- Ruff clean across all new files.
+
 ### Added — Phase 2 Wave 5: Identity Providers (IdP)
 
 Three IdP connectors filling the biggest remaining category gap after

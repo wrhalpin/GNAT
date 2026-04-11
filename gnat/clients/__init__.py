@@ -77,12 +77,14 @@ from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
 from gnat.connectors.intel471.client import Intel471Client
 from gnat.connectors.intezer.client import IntezerClient
 from gnat.connectors.ip_api.client import IPAPIClient
+from gnat.connectors.ironscales.client import IRONSCALESClient
 from gnat.connectors.jira.client import JiraClient
 from gnat.connectors.joe_sandbox.client import JoeSandboxClient
 from gnat.connectors.kaspersky_opentip.client import KasperskyOpenTIPClient
 from gnat.connectors.lansweeper.client import LansweeperClient
 from gnat.connectors.logrhythm.client import LogRhythmClient
 from gnat.connectors.mandiant.client import MandiantClient
+from gnat.connectors.mimecast.client import MimecastClient
 from gnat.connectors.misp.connector import MISPConnector
 from gnat.connectors.mitre_attack.client import MitreAttackClient
 from gnat.connectors.netskope.client import NetskopeClient
@@ -302,6 +304,9 @@ CLIENT_REGISTRY: dict = {
     "okta": OktaClient,
     "entra_id": EntraIDClient,
     "ping_identity": PingIdentityClient,
+    # Phase 2 Wave 6 — Advanced Email Security
+    "mimecast": MimecastClient,
+    "ironscales": IRONSCALESClient,
 }
 
 __all__ = [
@@ -407,4 +412,7 @@ __all__ = [
     "OktaClient",
     "EntraIDClient",
     "PingIdentityClient",
+    # Phase 2 Wave 6 — Advanced Email Security
+    "MimecastClient",
+    "IRONSCALESClient",
 ]

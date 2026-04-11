@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 136 security/threat intelligence platforms
+- A unified client interface for 138 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -366,6 +366,8 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Okta Identity Cloud | `gnat/connectors/okta/` | `Authorization: SSWS` |
 | Microsoft Entra ID (Azure AD) | `gnat/connectors/entra_id/` | OAuth2 (Graph API) |
 | Ping Identity (PingOne) | `gnat/connectors/ping_identity/` | OAuth2 client credentials |
+| Mimecast email security | `gnat/connectors/mimecast/` | OAuth2 client credentials |
+| IRONSCALES AI email security | `gnat/connectors/ironscales/` | Bearer + `X-Company-Id` header |
 
 ---
 

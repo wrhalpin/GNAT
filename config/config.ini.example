@@ -1134,3 +1134,20 @@ environment_id = 00000000-0000-0000-0000-000000000000
 client_id      = YOUR_PING_CLIENT_ID
 client_secret  = YOUR_PING_CLIENT_SECRET
 auth_region    = NA
+
+# =============================================================================
+# Phase 2 Wave 6 — Advanced Email Security
+# =============================================================================
+
+# --- Mimecast API 2.0 (OAuth2 client credentials) --------------------------
+[mimecast]
+host          = https://api.services.mimecast.com
+client_id     = YOUR_MIMECAST_CLIENT_ID
+client_secret = YOUR_MIMECAST_CLIENT_SECRET
+
+# --- IRONSCALES AI email security ------------------------------------------
+# company_id scopes every request; Bearer token is issued per company.
+[ironscales]
+host       = https://appapi.ironscales.com
+api_key    = YOUR_IRONSCALES_API_KEY
+company_id = YOUR_IRONSCALES_COMPANY_ID
