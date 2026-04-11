@@ -2793,8 +2793,6 @@ def _cmd_serve(args) -> int:
 
 def _cmd_investigation(args: argparse.Namespace) -> int:
     """Handle 'gnat investigation <subcommand>'."""
-    config_path = getattr(args, "config", None)
-
     try:
         from gnat.analysis.investigations.service import InvestigationService
         from gnat.analysis.investigations.storage import InvestigationStore
