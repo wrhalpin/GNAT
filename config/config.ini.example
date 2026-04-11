@@ -984,3 +984,36 @@ password = YOUR_COFENSE_PASSWORD
 [trm_labs]
 host    = https://api.trmlabs.com
 api_key = YOUR_TRM_LABS_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 1 — Malware sandboxes
+# =============================================================================
+
+# --- Joe Sandbox Cloud (dynamic malware analysis) --------------------------
+# API key is sent as a POST form field on every request.
+[joe_sandbox]
+host    = https://jbxcloud.joesecurity.org
+api_key = YOUR_JOE_SANDBOX_API_KEY
+
+# --- ANY.RUN (interactive sandbox) -----------------------------------------
+[any_run]
+host    = https://api.any.run
+api_key = YOUR_ANY_RUN_API_KEY
+
+# --- Hybrid Analysis (CrowdStrike Falcon Sandbox) --------------------------
+# User-Agent is mandatory; Hybrid Analysis rejects requests without one.
+[hybrid_analysis]
+host       = https://www.hybrid-analysis.com
+api_key    = YOUR_HYBRID_ANALYSIS_API_KEY
+user_agent = Falcon Sandbox
+
+# --- VMRay (hypervisor-level dynamic analysis) -----------------------------
+[vmray]
+host    = https://cloud.vmray.com
+api_key = YOUR_VMRAY_API_KEY
+
+# --- Intezer Analyze (binary DNA / code-reuse attribution) -----------------
+# api_key is exchanged for a short-lived JWT Bearer token on first request.
+[intezer]
+host    = https://analyze.intezer.com
+api_key = YOUR_INTEZER_API_KEY

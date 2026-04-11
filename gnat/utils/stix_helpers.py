@@ -17,6 +17,13 @@ Phase 1 additions (PR #1/#2 — Tier 1 connector expansion):
   common cyber observables (ipv4-addr, domain-name, url, file hash).
 * :func:`x509_fingerprint_pattern` — builds STIX patterns for x509 / TLS
   fingerprints including JA3/JA3S.
+
+Phase 2 Wave 1 additions:
+
+* :func:`sandbox_report_envelope` — builds an ``observed-data`` envelope
+  around a malware-sandbox behavioral report with synthetic file /
+  process / network observable refs.  Consumed by every sandbox
+  connector (Joe Sandbox, ANY.RUN, Hybrid Analysis, VMRay, Intezer).
 """
 
 from __future__ import annotations
@@ -427,3 +434,113 @@ def osv_to_stix_vulnerability(osv: dict[str, Any]) -> dict[str, Any]:
     if cwe_ids:
         stix_obj["x_cwe_ids"] = cwe_ids
     return stix_obj
+
+
+# ---------------------------------------------------------------------------
+# Sandbox report helpers (Phase 2 Wave 1)
+# ---------------------------------------------------------------------------
+
+
+def sandbox_report_envelope(
+    source_name: str,
+    analysis_id: str,
+    submitted_sha256: str = "",
+    submitted_filename: str = "",
+    submitted_url: str = "",
+    processes: list[str] | None = None,
+    contacted_ips: list[str] | None = None,
+    contacted_domains: list[str] | None = None,
+    contacted_urls: list[str] | None = None,
+    first_observed: str = "",
+    last_observed: str = "",
+    verdict: str = "",
+    score: float | None = None,
+    raw_report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Build a STIX 2.1 ``observed-data`` envelope around a sandbox behavioral
+    report.
+
+    The envelope references a synthetic ``file`` SCO for the submitted
+    sample (by SHA-256), plus ``process``, ``ipv4-addr``, ``domain-name``,
+    and ``url`` SCOs for each behavioral artifact.  All SCO ids are
+    deterministic UUID-5 derived from ``source_name`` + ``analysis_id`` +
+    the observable value, so repeat ingest is idempotent.
+
+    Parameters
+    ----------
+    source_name : str
+        Short sandbox name (``"joe_sandbox"``, ``"any_run"``, etc.)
+    analysis_id : str
+        Sandbox-assigned analysis / web / job id.
+    submitted_sha256 : str, optional
+        SHA-256 of the submitted sample, if known.
+    submitted_filename : str, optional
+        Filename at submission time.
+    submitted_url : str, optional
+        URL if the submission was a URL rather than a file.
+    processes, contacted_ips, contacted_domains, contacted_urls : list of str
+        Behavioral artifacts extracted from the sandbox report.
+    first_observed, last_observed : str
+        Start / end timestamps of the observation window.
+    verdict : str
+        Sandbox-assigned verdict string (e.g. ``"malicious"``).
+    score : float, optional
+        Numeric sandbox score (vendor-specific scale).
+    raw_report : dict, optional
+        Original raw report dict — preserved under ``x_<source_name>``.
+
+    Returns
+    -------
+    dict
+        STIX 2.1 ``observed-data`` SDO with behavioral object_refs.
+    """
+    ns = uuid.uuid5(
+        _NAMESPACE_OBSERVED_DATA, f"sandbox|{source_name}|{analysis_id}"
+    )
+
+    def _sco_ref(sco_type: str, value: str) -> str:
+        return f"{sco_type}--{uuid.uuid5(ns, f'{sco_type}|{value}')}"
+
+    refs: list[str] = []
+    if submitted_sha256:
+        refs.append(_sco_ref("file", submitted_sha256))
+    elif submitted_url:
+        refs.append(_sco_ref("url", submitted_url))
+
+    for proc in processes or []:
+        if proc:
+            refs.append(_sco_ref("process", str(proc)))
+    for ip in contacted_ips or []:
+        if ip:
+            refs.append(_sco_ref("ipv4-addr", str(ip)))
+    for dom in contacted_domains or []:
+        if dom:
+            refs.append(_sco_ref("domain-name", str(dom)))
+    for url in contacted_urls or []:
+        if url:
+            refs.append(_sco_ref("url", str(url)))
+
+    first = first_observed or utcnow()
+    last = last_observed or first
+
+    extensions: dict[str, Any] = {
+        f"{source_name}_analysis_id": analysis_id,
+    }
+    if submitted_filename:
+        extensions[f"{source_name}_filename"] = submitted_filename
+    if verdict:
+        extensions[f"{source_name}_verdict"] = verdict
+    if score is not None:
+        extensions[f"{source_name}_score"] = score
+    if raw_report is not None:
+        extensions[f"{source_name}_raw"] = raw_report
+
+    return make_observed_data_envelope(
+        first_observed=first,
+        last_observed=last,
+        number_observed=1,
+        object_refs=refs,
+        source_name=source_name,
+        x_extensions=extensions,
+    )

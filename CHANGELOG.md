@@ -19,6 +19,76 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 1: Malware Sandboxes
+
+Five dynamic-malware-analysis connectors closing the single biggest
+remaining coverage gap from the 2026 audit. Up to this point GNAT had
+zero sandbox connectors — every IOC came from static-analysis / reputation
+sources. Phase 2 Wave 1 introduces the full sandbox tier at once so
+subsequent workflows (ransomware triage, phishing chain analysis,
+malware family attribution) have behavioral telemetry to consume.
+Platform count: 114 → 119.
+
+**Shared helper (`gnat/utils/stix_helpers.py`)**
+- `sandbox_report_envelope(source_name, analysis_id, …)` — builds a
+  STIX 2.1 `observed-data` envelope around a sandbox behavioral report
+  with deterministic UUID-5 refs to synthetic `file`/`url`/`process`/
+  `ipv4-addr`/`domain-name`/`url` observables. Every Phase 2 Wave 1
+  connector consumes this helper so all five produce consistent
+  envelope shapes.
+
+**New connectors (`gnat/connectors/`)**
+- `joe_sandbox/` — `JoeSandboxClient` for Joe Sandbox Cloud. Joe's
+  "apikey as POST form field" convention is wrapped in an
+  `_authed_form()` helper. COST_UNIT=5 to reflect submission expense.
+  Domain helpers: `submit_file`, `submit_url`, `get_submission`,
+  `get_analysis`, `get_iocs`, `iocs_to_indicators`. STIX emits
+  `observed-data` (full analysis), `malware` (family attribution from
+  detection tags), and `indicator` (extracted IOCs).
+- `any_run/` — `AnyRunClient` for ANY.RUN interactive sandbox.
+  `Authorization: API-Key <key>` header. Domain helpers: `submit_file`,
+  `submit_url`, `get_analysis`, `list_environments`. Maps ANY.RUN's
+  nested `mainObject` + `network` structure to sandbox envelopes.
+- `hybrid_analysis/` — `HybridAnalysisClient` for Hybrid Analysis /
+  Falcon Sandbox. Requires both `api-key` header **and** a non-empty
+  `User-Agent` (defaults to `"Falcon Sandbox"`); the connector rejects
+  missing User-Agent at construction time. Domain helpers:
+  `submit_file`, `submit_url`, `get_report_summary`, `hash_lookup`,
+  `search_hash`. Maps `threat_level_human` to STIX `malware_types`.
+- `vmray/` — `VMRayClient` for VMRay Cloud. `Authorization: api_key
+  <key>` header. Unwraps VMRay's `{"data": ..., "result": "ok"}`
+  envelope at the HTTP boundary via `_unwrap_vmray` so downstream
+  mappers don't think about it. Domain helpers: `submit_file`,
+  `submit_url`, `get_sample`, `get_analysis`, `get_submission`,
+  `get_summary_v2` (the rich v2 behavioral summary format).
+- `intezer/` — `IntezerClient` for Intezer Analyze. POSTs to
+  `/get-access-token` on first request and caches the returned JWT as
+  a Bearer token. Unique "binary DNA" code-reuse attribution → STIX
+  `malware` with `x_intezer.code_reuse_pct`. Domain helpers:
+  `analyze_file`, `analyze_hash`, `get_analysis`, `get_sub_analyses`,
+  `get_iocs`, `get_family`, `get_file_analysis`.
+
+**Architectural notes**
+- All five sandboxes raise `GNATClientError` from
+  `upsert_object`/`delete_object` — submissions are *domain helpers*
+  (`submit_file`, `submit_url`, `analyze_file`, `analyze_hash`), not
+  STIX CRUD writes. This matches the read-only-CRUD convention
+  established in Phase 1.
+- COST_UNIT=5 on all five connectors to reflect the relative expense
+  of submitting samples vs cheap lookups in other connectors.
+
+**Tests**
+- 66 new connector tests across `TestJoeSandboxClient` (14),
+  `TestAnyRunClient` (12), `TestHybridAnalysisClient` (13),
+  `TestVMRayClient` (13), `TestIntezerClient` (14) plus two Phase 2
+  Wave 1 integrity tests.
+- 5 new tests for `sandbox_report_envelope` in
+  `tests/unit/test_stix_helpers.py` (basic file envelope, URL
+  submission, deterministic ids, raw report embedding, empty
+  artifacts).
+- Full unit suite: 2047 tests passing, zero regressions.
+- Ruff clean across all new files.
+
 ### Added — Phase 1 Wave 3b: Tier 1 Connector Expansion (Identity / Email / Finance)
 
 Five more Tier 1 connectors completing Wave 3. Per the user's "Both" vote

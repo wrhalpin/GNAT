@@ -15,6 +15,7 @@ from gnat.clients.base import BaseClient, GNATClientError
 from gnat.connectors.abnormal.client import AbnormalClient
 from gnat.connectors.abusech.client import AbuseChClient
 from gnat.connectors.alienvault.client import AlienVaultClient
+from gnat.connectors.any_run.client import AnyRunClient
 from gnat.connectors.armis.client import ArmisClient
 from gnat.connectors.aws_security.client import AWSSecurityClient
 from gnat.connectors.axonius.client import AxoniusClient
@@ -64,9 +65,12 @@ from gnat.connectors.grok.client import GrokClient
 from gnat.connectors.group_ib.client import GroupIBClient
 from gnat.connectors.hibp.client import HIBPClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
+from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
 from gnat.connectors.intel471.client import Intel471Client
+from gnat.connectors.intezer.client import IntezerClient
 from gnat.connectors.ip_api.client import IPAPIClient
 from gnat.connectors.jira.client import JiraClient
+from gnat.connectors.joe_sandbox.client import JoeSandboxClient
 from gnat.connectors.lansweeper.client import LansweeperClient
 from gnat.connectors.logrhythm.client import LogRhythmClient
 from gnat.connectors.mandiant.client import MandiantClient
@@ -120,6 +124,7 @@ from gnat.connectors.trm_labs.client import TRMLabsClient
 from gnat.connectors.upguard.client import UpGuardClient
 from gnat.connectors.vectra.client import VectraClient
 from gnat.connectors.virustotal.client import VirusTotalClient
+from gnat.connectors.vmray.client import VMRayClient
 from gnat.connectors.vulncheck.client import VulnCheckClient
 from gnat.connectors.wazuh.connector import WazuhConnector
 from gnat.connectors.whistic.client import WhisticClient
@@ -253,6 +258,12 @@ CLIENT_REGISTRY: dict = {
     "abnormal": AbnormalClient,
     "cofense_intel": CofenseIntelClient,
     "trm_labs": TRMLabsClient,
+    # Phase 2 Wave 1 — Malware sandboxes
+    "joe_sandbox": JoeSandboxClient,
+    "any_run": AnyRunClient,
+    "hybrid_analysis": HybridAnalysisClient,
+    "vmray": VMRayClient,
+    "intezer": IntezerClient,
 }
 
 __all__ = [
@@ -331,4 +342,10 @@ __all__ = [
     "AbnormalClient",
     "CofenseIntelClient",
     "TRMLabsClient",
+    # Phase 2 Wave 1 — Malware sandboxes
+    "JoeSandboxClient",
+    "AnyRunClient",
+    "HybridAnalysisClient",
+    "VMRayClient",
+    "IntezerClient",
 ]

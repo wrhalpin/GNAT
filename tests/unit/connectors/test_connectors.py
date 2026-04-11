@@ -13897,3 +13897,719 @@ def test_phase1_wave3b_config_sections_exist():
         "trm_labs",
     ):
         assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
+
+
+# ===========================================================================
+# Phase 2 Wave 1 — Malware sandboxes
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# Joe Sandbox Cloud
+# ---------------------------------------------------------------------------
+
+
+class TestJoeSandboxClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.joe_sandbox.client import JoeSandboxClient
+
+        c = JoeSandboxClient(
+            host="https://jbxcloud.joesecurity.org", api_key="jbx_test"
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_stamps_accept(self):
+        from gnat.connectors.joe_sandbox.client import JoeSandboxClient
+
+        c = JoeSandboxClient(
+            host="https://jbxcloud.joesecurity.org", api_key="jbx_test"
+        )
+        c.authenticate()
+        assert c._auth_headers["Accept"] == "application/json"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.joe_sandbox.client import JoeSandboxClient
+
+        c = JoeSandboxClient(host="https://jbxcloud.joesecurity.org", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_authed_form_injects_apikey(self, client):
+        form = client._authed_form({"webid": "42"})
+        assert form["apikey"] == "jbx_test"
+        assert form["webid"] == "42"
+        assert form["accept-tac"] == "1"
+
+    def test_cost_unit_is_high(self, client):
+        assert client.COST_UNIT >= 5
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"data": "ok"}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "post", _boom)
+        assert client.health_check() is False
+
+    def test_get_analysis(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={
+                    "data": {
+                        "webid": "42",
+                        "sha256": "abc",
+                        "filename": "x.exe",
+                        "detection": "malicious",
+                    }
+                }
+            ),
+        )
+        obj = client.get_analysis("42")
+        assert obj["_jb_webid"] == "42"
+
+    def test_list_objects_search(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={"data": {"analyses": [{"webid": "1"}, {"webid": "2"}]}}
+            ),
+        )
+        items = client.list_objects("observed-data", filters={"q": "emotet"})
+        assert len(items) == 2
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only via CRUD"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_observed_data(self, client):
+        stix = client.to_stix(
+            {
+                "webid": "42",
+                "sha256": "abc123",
+                "filename": "sample.exe",
+                "detection": "malicious",
+                "score": 95,
+                "network": {
+                    "ips": ["1.2.3.4"],
+                    "domains": ["evil.example"],
+                },
+                "processes": [{"name": "sample.exe"}],
+                "time": "2026-04-01T00:00:00Z",
+                "lastmodified": "2026-04-01T00:05:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_joe_sandbox_verdict"] == "malicious"
+
+    def test_to_stix_malware(self, client):
+        stix = client.to_stix(
+            {
+                "_jb_kind": "malware",
+                "malwarename": "Emotet",
+                "detection": "malicious",
+                "tags": ["trojan", "banker"],
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "malware"
+        assert stix["name"] == "Emotet"
+        assert "trojan" in stix["malware_types"]
+
+    def test_to_stix_indicator(self, client):
+        stix = client.to_stix(
+            {
+                "_jb_kind": "indicator",
+                "_jb_webid": "42",
+                "type": "domain",
+                "value": "evil.example",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "domain-name:value" in stix["pattern"]
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# ANY.RUN
+# ---------------------------------------------------------------------------
+
+
+class TestAnyRunClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.any_run.client import AnyRunClient
+
+        c = AnyRunClient(host="https://api.any.run", api_key="ar_test")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_api_key_header(self):
+        from gnat.connectors.any_run.client import AnyRunClient
+
+        c = AnyRunClient(host="https://api.any.run", api_key="ar_test")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "API-Key ar_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.any_run.client import AnyRunClient
+
+        c = AnyRunClient(host="https://api.any.run", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": []}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_analysis(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": {
+                        "uuid": "task-1",
+                        "mainObject": {
+                            "name": "x.exe",
+                            "hashes": {"sha256": "abc"},
+                        },
+                        "verdict": "malicious",
+                    }
+                }
+            ),
+        )
+        obj = client.get_analysis("task-1")
+        assert obj["_ar_task_id"] == "task-1"
+
+    def test_list_objects(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"data": {"tasks": [{"uuid": "1"}, {"uuid": "2"}]}}),
+        )
+        items = client.list_objects("observed-data")
+        assert len(items) == 2
+
+    def test_list_environments(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"data": [{"os": "Windows 10", "bitness": 64}]}
+            ),
+        )
+        envs = client.list_environments()
+        assert envs[0]["os"] == "Windows 10"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only via CRUD"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_observed_data(self, client):
+        stix = client.to_stix(
+            {
+                "uuid": "task-1",
+                "mainObject": {"name": "x.exe", "hashes": {"sha256": "abc"}},
+                "network": {
+                    "ipAddresses": ["1.2.3.4"],
+                    "domainNames": [{"domain": "evil.example"}],
+                },
+                "processes": [{"commandLine": "x.exe"}],
+                "creation": "2026-04-01T00:00:00Z",
+                "finish": "2026-04-01T00:05:00Z",
+                "verdict": "malicious",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_any_run_verdict"] == "malicious"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Hybrid Analysis
+# ---------------------------------------------------------------------------
+
+
+class TestHybridAnalysisClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
+
+        c = HybridAnalysisClient(
+            host="https://www.hybrid-analysis.com", api_key="ha_test"
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_headers(self):
+        from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
+
+        c = HybridAnalysisClient(
+            host="https://www.hybrid-analysis.com", api_key="ha_test"
+        )
+        c.authenticate()
+        assert c._auth_headers["api-key"] == "ha_test"
+        assert c._auth_headers["User-Agent"] == "Falcon Sandbox"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
+
+        c = HybridAnalysisClient(
+            host="https://www.hybrid-analysis.com", api_key=""
+        )
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_custom_user_agent(self):
+        from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
+
+        c = HybridAnalysisClient(
+            host="https://www.hybrid-analysis.com",
+            api_key="ha_test",
+            user_agent="Custom Agent",
+        )
+        c.authenticate()
+        assert c._auth_headers["User-Agent"] == "Custom Agent"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"status": "ok"})
+        )
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_hash_lookup(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "sha256": "abc",
+                    "threat_level_human": "malicious",
+                    "threat_score": 95,
+                    "verdict": "malicious",
+                }
+            ),
+        )
+        obj = client.hash_lookup("abc")
+        assert obj["_ha_kind"] == "malware"
+
+    def test_search_hash(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"result": [{"sha256": "abc"}]}),
+        )
+        items = client.search_hash("abc")
+        assert len(items) == 1
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only via CRUD"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_observed_data(self, client):
+        stix = client.to_stix(
+            {
+                "job_id": "job-1",
+                "sha256": "abc",
+                "submit_name": "sample.exe",
+                "hosts": ["1.2.3.4"],
+                "domains": ["evil.example"],
+                "extracted_urls": ["http://evil.example/dropper"],
+                "processes": [{"name": "sample.exe"}],
+                "verdict": "malicious",
+                "threat_score": 95,
+                "analysis_start_time": "2026-04-01T00:00:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_hybrid_analysis_verdict"] == "malicious"
+
+    def test_to_stix_malware_ransomware(self, client):
+        stix = client.to_stix(
+            {
+                "_ha_kind": "malware",
+                "verdict": "malicious",
+                "threat_level_human": "ransomware-like",
+                "vx_family": "LockBit",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "malware"
+        assert "ransomware" in stix["malware_types"]
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# VMRay
+# ---------------------------------------------------------------------------
+
+
+class TestVMRayClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.vmray.client import VMRayClient
+
+        c = VMRayClient(host="https://cloud.vmray.com", api_key="vmray_test")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_api_key_header(self):
+        from gnat.connectors.vmray.client import VMRayClient
+
+        c = VMRayClient(host="https://cloud.vmray.com", api_key="vmray_test")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "api_key vmray_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.vmray.client import VMRayClient
+
+        c = VMRayClient(host="https://cloud.vmray.com", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": {"version": "5.0"}})
+        )
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_analysis(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": {
+                        "analysis_id": 42,
+                        "sample_sha256": "abc",
+                        "analysis_verdict": "malicious",
+                    }
+                }
+            ),
+        )
+        obj = client.get_analysis("42")
+        assert obj["_vmr_kind"] == "analysis"
+
+    def test_get_sample(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": {
+                        "sample_id": 42,
+                        "sample_sha256": "abc",
+                        "sample_classifications": ["ransomware"],
+                    }
+                }
+            ),
+        )
+        obj = client.get_sample("42")
+        assert obj["_vmr_kind"] == "sample"
+
+    def test_list_objects_analyses(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"data": [{"analysis_id": 1}, {"analysis_id": 2}]}
+            ),
+        )
+        items = client.list_objects("observed-data")
+        assert len(items) == 2
+        assert all(i["_vmr_kind"] == "analysis" for i in items)
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only via CRUD"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_analysis(self, client):
+        stix = client.to_stix(
+            {
+                "_vmr_kind": "analysis",
+                "analysis_id": 42,
+                "sample_sha256": "abc",
+                "sample_filename": "sample.exe",
+                "analysis_verdict": "malicious",
+                "analysis_created": "2026-04-01T00:00:00Z",
+                "analysis_finished": "2026-04-01T00:05:00Z",
+                "network": {
+                    "ips": [{"ip_address": "1.2.3.4"}],
+                    "domains": ["evil.example"],
+                },
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_vmray_verdict"] == "malicious"
+
+    def test_to_stix_sample(self, client):
+        stix = client.to_stix(
+            {
+                "_vmr_kind": "sample",
+                "sample_id": 1,
+                "sample_classifications": ["banker"],
+                "sample_severity": "high",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "malware"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Intezer Analyze
+# ---------------------------------------------------------------------------
+
+
+class TestIntezerClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.intezer.client import IntezerClient
+
+        c = IntezerClient(
+            host="https://analyze.intezer.com", api_key="iz_test"
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_exchanges_jwt(self, monkeypatch):
+        from gnat.connectors.intezer.client import IntezerClient
+
+        c = IntezerClient(
+            host="https://analyze.intezer.com", api_key="iz_test"
+        )
+        monkeypatch.setattr(
+            c, "post", MagicMock(return_value={"result": "jwt_token_xyz"})
+        )
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer jwt_token_xyz"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.intezer.client import IntezerClient
+
+        c = IntezerClient(host="https://analyze.intezer.com", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_authenticate_raises_without_jwt(self, monkeypatch):
+        from gnat.connectors.intezer.client import IntezerClient
+
+        c = IntezerClient(
+            host="https://analyze.intezer.com", api_key="iz_test"
+        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={}))
+        with pytest.raises(GNATClientError, match="no result token"):
+            c.authenticate()
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"is_available": True})
+        )
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_analysis(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "result": {
+                        "analysis_id": "42",
+                        "sha256": "abc",
+                        "verdict": "malicious",
+                    }
+                }
+            ),
+        )
+        obj = client.get_analysis("42")
+        assert obj["_iz_kind"] == "analysis"
+
+    def test_get_family(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "result": {
+                        "family_id": "f-1",
+                        "family_name": "Emotet",
+                        "family_type": "trojan",
+                    }
+                }
+            ),
+        )
+        fam = client.get_family("f-1")
+        assert fam["_iz_kind"] == "family"
+
+    def test_get_iocs(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "result": {
+                        "network": [
+                            {"type": "domain", "ioc": "evil.example"},
+                            {"type": "ip", "ioc": "1.2.3.4"},
+                        ]
+                    }
+                }
+            ),
+        )
+        iocs = client.get_iocs("42")
+        assert len(iocs) == 2
+        assert all(i["_iz_kind"] == "ioc" for i in iocs)
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only via CRUD"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_family(self, client):
+        stix = client.to_stix(
+            {
+                "_iz_kind": "family",
+                "family_id": "f-1",
+                "family_name": "LockBit",
+                "family_type": "ransomware",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "malware"
+        assert "ransomware" in stix["malware_types"]
+
+    def test_to_stix_analysis(self, client):
+        stix = client.to_stix(
+            {
+                "_iz_kind": "analysis",
+                "analysis_id": "42",
+                "sha256": "abc",
+                "file_name": "sample.exe",
+                "verdict": "malicious",
+                "family_confidence": 0.92,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_intezer_verdict"] == "malicious"
+
+    def test_to_stix_ioc(self, client):
+        stix = client.to_stix(
+            {
+                "_iz_kind": "ioc",
+                "type": "domain",
+                "ioc": "evil.example",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "domain-name:value" in stix["pattern"]
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Registry integrity — Phase 2 Wave 1
+# ---------------------------------------------------------------------------
+
+
+def test_phase2_wave1_registry_contains_new_connectors():
+    from gnat.clients import CLIENT_REGISTRY
+
+    for key in (
+        "joe_sandbox",
+        "any_run",
+        "hybrid_analysis",
+        "vmray",
+        "intezer",
+    ):
+        assert key in CLIENT_REGISTRY, f"Missing {key} in CLIENT_REGISTRY"
+
+
+def test_phase2_wave1_config_sections_exist():
+    import configparser
+    from pathlib import Path
+
+    cfg_path = Path(__file__).resolve().parents[3] / "config" / "config.ini.example"
+    parser = configparser.ConfigParser(strict=False)
+    parser.read(cfg_path)
+    for section in (
+        "joe_sandbox",
+        "any_run",
+        "hybrid_analysis",
+        "vmray",
+        "intezer",
+    ):
+        assert parser.has_section(section), f"Missing [{section}] in config.ini.example"

@@ -12,6 +12,8 @@ additions: ``make_observed_data_envelope``, ``osv_to_stix_vulnerability``,
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from gnat.utils.stix_helpers import (
@@ -22,6 +24,7 @@ from gnat.utils.stix_helpers import (
     make_indicator_pattern,
     make_observed_data_envelope,
     osv_to_stix_vulnerability,
+    sandbox_report_envelope,
     utcnow,
     validate_stix_id,
     x509_fingerprint_pattern,
@@ -275,3 +278,85 @@ class TestOsvToStixVulnerability:
         }
         stix = osv_to_stix_vulnerability(osv)
         assert stix["x_cwe_ids"] == ["CWE-79", "CWE-352"]
+
+
+# ---------------------------------------------------------------------------
+# sandbox_report_envelope (Phase 2 Wave 1)
+# ---------------------------------------------------------------------------
+
+
+class TestSandboxReportEnvelope:
+    def test_basic_file_envelope(self):
+        env = sandbox_report_envelope(
+            source_name="joe_sandbox",
+            analysis_id="42",
+            submitted_sha256="a" * 64,
+            submitted_filename="sample.exe",
+            processes=["malware.exe -arg"],
+            contacted_ips=["1.2.3.4"],
+            contacted_domains=["evil.example"],
+            contacted_urls=["http://evil.example/payload"],
+            first_observed="2026-04-01T00:00:00Z",
+            last_observed="2026-04-01T00:05:00Z",
+            verdict="malicious",
+            score=80,
+        )
+        assert env["type"] == "observed-data"
+        assert env["x_joe_sandbox_analysis_id"] == "42"
+        assert env["x_joe_sandbox_verdict"] == "malicious"
+        assert env["x_joe_sandbox_score"] == 80
+        ref_types = {r.split("--")[0] for r in env["object_refs"]}
+        assert "file" in ref_types
+        assert "process" in ref_types
+        assert "ipv4-addr" in ref_types
+        assert "domain-name" in ref_types
+        assert "url" in ref_types
+
+    def test_url_submission_envelope(self):
+        env = sandbox_report_envelope(
+            source_name="any_run",
+            analysis_id="task-1",
+            submitted_url="http://phish.example",
+            first_observed="2026-04-01T00:00:00Z",
+            last_observed="2026-04-01T00:05:00Z",
+        )
+        # URL submission → url ref, no file ref
+        ref_types = {r.split("--")[0] for r in env["object_refs"]}
+        assert "url" in ref_types
+        assert "file" not in ref_types
+
+    def test_deterministic_ids(self):
+        kwargs: dict[str, Any] = {
+            "source_name": "vmray",
+            "analysis_id": "99",
+            "submitted_sha256": "b" * 64,
+            "contacted_ips": ["9.9.9.9"],
+            "first_observed": "2026-04-01T00:00:00Z",
+            "last_observed": "2026-04-01T00:05:00Z",
+        }
+        a = sandbox_report_envelope(**kwargs)
+        b = sandbox_report_envelope(**kwargs)
+        assert a["id"] == b["id"]
+        assert a["object_refs"] == b["object_refs"]
+
+    def test_raw_report_embedded(self):
+        env = sandbox_report_envelope(
+            source_name="intezer",
+            analysis_id="1",
+            first_observed="2026-04-01T00:00:00Z",
+            last_observed="2026-04-01T00:00:00Z",
+            raw_report={"family": "Emotet", "confidence": 0.92},
+        )
+        assert env["x_intezer_raw"]["family"] == "Emotet"
+
+    def test_empty_artifacts_still_valid(self):
+        env = sandbox_report_envelope(
+            source_name="joe_sandbox",
+            analysis_id="empty",
+            first_observed="2026-04-01T00:00:00Z",
+            last_observed="2026-04-01T00:00:00Z",
+        )
+        # No observables → empty refs list but envelope still valid STIX
+        assert env["type"] == "observed-data"
+        assert env["object_refs"] == []
+        assert validate_stix_id(env["id"])
