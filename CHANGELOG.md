@@ -19,6 +19,69 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 1 Wave 3b: Tier 1 Connector Expansion (Identity / Email / Finance)
+
+Five more Tier 1 connectors completing Wave 3. Per the user's "Both" vote
+on the ITDR vendor question, both Silverfort and Semperis ship
+simultaneously. Abnormal Security and Cofense Intelligence fill the
+advanced email / BEC gap. TRM Labs covers blockchain / cryptocurrency
+threat intelligence. Platform count: 109 → 114.
+
+**New connectors (`gnat/connectors/`)**
+- `silverfort/` — `SilverfortClient` for the ITDR platform. OAuth2
+  client-credentials auth exchanged at ``/api/v1/auth/token``, Bearer
+  cached on ``_auth_headers``. `TRUST_LEVEL = "trusted_internal"` (the
+  customer's own authentication telemetry). Emits `user-account`
+  (humans + service accounts) and `observed-data` (auth events with
+  synthetic user-account + ipv4-addr refs). Domain helpers:
+  `list_users`, `list_service_accounts`, `list_auth_events`,
+  `list_alerts`, `get_user_risk`.
+- `semperis/` — `SemperisClient` for Directory Services Protector.
+  Bearer-token auth, `TRUST_LEVEL = "trusted_internal"`. Endpoints:
+  `/IoEs`, `/IoCs`, `/Security/Evaluators`, `/Tenants/Forest/Domains`,
+  `/Security/Events`. IoE records map to STIX `indicator` with
+  `anomalous-activity` label + `[x-semperis-ioe:evaluator = ...]`
+  pattern; IoC records use `malicious-activity`. Security events map to
+  `observed-data` wrapping a user-account ref for the actor. Domain
+  helpers: `list_ioes`, `list_iocs`, `list_evaluators`,
+  `list_forest_domains`, `list_security_events`.
+- `abnormal/` — `AbnormalClient` for Abnormal Security (BEC / credential
+  phishing / vendor impersonation). Bearer-token auth,
+  `TRUST_LEVEL = "trusted_internal"`. Dispatches across `/threats`,
+  `/cases`, `/vendor-cases`, `/abusemailbox/campaigns` via
+  `filters["kind"]`. Each record maps to `observed-data` wrapping a
+  deterministic `email-message` ref and a sender `identity` ref, with
+  full `x_abnormal` context (attack_type, attack_vector, attack_strategy,
+  judgement, impersonated_party, vendor_name, case_id, subject).
+  Domain helpers: `list_threats`, `get_threat`, `get_threat_message`,
+  `list_cases`, `list_vendor_cases`, `list_abusemailbox_campaigns`.
+- `cofense_intel/` — `CofenseIntelClient` for Cofense Intelligence /
+  ThreatHQ. HTTP Basic auth (reuses `BaseClient._basic_auth`). Dispatches
+  across `/threat/search`, `/threat/{id}`, `/threat/updates`,
+  `/malware/families`, `/threat/actors`. Emits `indicator` (IPs, domains,
+  URLs, SHA-256 hashes — all tagged with `x_cofense.human_verified =
+  True`), `malware`, `threat-actor`, and `report` STIX types. Domain
+  helpers: `search_threats`, `get_threat`, `recent_threats`,
+  `list_malware_families`, `list_actors`.
+- `trm_labs/` — `TRMLabsClient` for blockchain / crypto intel. HTTP
+  Basic auth with the API key as username (empty password). Endpoints:
+  `POST /screening/addresses` (batch risk screen), `GET /entities/{id}`
+  (attribution), `GET /addresses/{chain}/{address}` (full profile).
+  STIX mapping: screening results → `indicator` with a custom
+  `[x-cryptocurrency-wallet:value = ... AND ...:chain = ...]` pattern
+  and `malicious-activity` label when risk_score >= 10; entities →
+  `threat-actor`; address profiles → `observed-data` wrapping a
+  synthetic `x-cryptocurrency-wallet` ref. Domain helpers:
+  `screen_address`, `screen_addresses_batch`, `get_entity`,
+  `get_address_profile`.
+
+**Tests**
+- 68 new tests across `TestSilverfortClient` (13),
+  `TestSemperisClient` (14), `TestAbnormalClient` (13),
+  `TestCofenseIntelClient` (14), `TestTRMLabsClient` (16) plus two
+  Wave 3b integrity tests. Full suite: 1977 tests passing, zero
+  regressions.
+
 ### Added — Phase 1 Wave 3a: Tier 1 Connector Expansion (Infrastructure Pivoting)
 
 Three infrastructure-pivoting connectors addressing the biggest 2026 audit

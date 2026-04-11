@@ -12,6 +12,7 @@ registered in the :data:`CLIENT_REGISTRY` dict so that
 """
 
 from gnat.clients.base import BaseClient, GNATClientError
+from gnat.connectors.abnormal.client import AbnormalClient
 from gnat.connectors.abusech.client import AbuseChClient
 from gnat.connectors.alienvault.client import AlienVaultClient
 from gnat.connectors.armis.client import ArmisClient
@@ -26,6 +27,7 @@ from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
 from gnat.connectors.claroty.client import ClarotyClient
 from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
 from gnat.connectors.cloudsek.client import CloudSEKClient
+from gnat.connectors.cofense_intel.client import CofenseIntelClient
 from gnat.connectors.controlup.client import ControlUpClient
 from gnat.connectors.copilot.client import CopilotClient
 from gnat.connectors.cortex_xdr.client import CortexXDRClient
@@ -90,6 +92,7 @@ from gnat.connectors.runzero.client import RunZeroClient
 from gnat.connectors.security_onion.client import SecurityOnionClient
 from gnat.connectors.securityscorecard.client import SecurityScorecardClient
 from gnat.connectors.securitytrails.client import SecurityTrailsClient
+from gnat.connectors.semperis.client import SemperisClient
 from gnat.connectors.sentinel.connector import SentinelConnector
 from gnat.connectors.sentinelone.client import SentinelOneClient
 from gnat.connectors.servicenow.client import ServiceNowClient
@@ -97,6 +100,7 @@ from gnat.connectors.servicenow_secops.client import ServiceNowSecOpsClient
 from gnat.connectors.shadowserver.client import ShadowServerClient
 from gnat.connectors.shodan.client import ShodanClient
 from gnat.connectors.silent_push.client import SilentPushClient
+from gnat.connectors.silverfort.client import SilverfortClient
 from gnat.connectors.snort.client import SnortClient
 from gnat.connectors.socradar.client import SOCRadarClient
 from gnat.connectors.sophos.client import SophosClient
@@ -112,6 +116,7 @@ from gnat.connectors.threatq.client import ThreatQClient
 from gnat.connectors.threatstream.client import ThreatStreamClient
 from gnat.connectors.trellix.client import TrellixClient
 from gnat.connectors.trendmicro_visionone.client import TrendMicroVisionOneClient
+from gnat.connectors.trm_labs.client import TRMLabsClient
 from gnat.connectors.upguard.client import UpGuardClient
 from gnat.connectors.vectra.client import VectraClient
 from gnat.connectors.virustotal.client import VirusTotalClient
@@ -242,6 +247,12 @@ CLIENT_REGISTRY: dict = {
     "securitytrails": SecurityTrailsClient,
     "domaintools": DomainToolsClient,
     "silent_push": SilentPushClient,
+    # Phase 1 Wave 3b — Tier 1 expansion (identity / email / finance)
+    "silverfort": SilverfortClient,
+    "semperis": SemperisClient,
+    "abnormal": AbnormalClient,
+    "cofense_intel": CofenseIntelClient,
+    "trm_labs": TRMLabsClient,
 }
 
 __all__ = [
@@ -314,4 +325,10 @@ __all__ = [
     "SecurityTrailsClient",
     "DomainToolsClient",
     "SilentPushClient",
+    # Phase 1 Wave 3b — Tier 1 expansion
+    "SilverfortClient",
+    "SemperisClient",
+    "AbnormalClient",
+    "CofenseIntelClient",
+    "TRMLabsClient",
 ]

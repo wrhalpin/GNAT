@@ -951,3 +951,36 @@ api_key      = YOUR_DOMAINTOOLS_API_KEY
 [silent_push]
 host    = https://api.silentpush.com
 api_key = YOUR_SILENTPUSH_API_KEY
+
+# =============================================================================
+# Phase 1 Wave 3b — Tier 1 connector expansion (identity / email / finance)
+# =============================================================================
+
+# --- Silverfort ITDR (runtime identity telemetry; OAuth2) ------------------
+[silverfort]
+host          = https://YOUR_TENANT.silverfort.com
+client_id     = YOUR_SILVERFORT_CLIENT_ID
+client_secret = YOUR_SILVERFORT_CLIENT_SECRET
+
+# --- Semperis DSP (AD / Entra posture + IoE / IoC) -------------------------
+[semperis]
+host      = https://dsp.example.com
+api_token = YOUR_SEMPERIS_BEARER_TOKEN
+
+# --- Abnormal Security (BEC / credential phishing / vendor impersonation) --
+[abnormal]
+host      = https://api.abnormalplatform.com
+api_token = YOUR_ABNORMAL_BEARER_TOKEN
+
+# --- Cofense Intelligence (human-verified phishing intel) ------------------
+# HTTP Basic auth with ThreatHQ username + password.
+[cofense_intel]
+host     = https://www.threathq.com
+username = YOUR_COFENSE_USERNAME
+password = YOUR_COFENSE_PASSWORD
+
+# --- TRM Labs (blockchain / cryptocurrency threat intel) -------------------
+# API key is used as HTTP Basic username with an empty password.
+[trm_labs]
+host    = https://api.trmlabs.com
+api_key = YOUR_TRM_LABS_API_KEY
