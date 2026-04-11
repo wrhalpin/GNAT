@@ -404,34 +404,37 @@ class TestSolrTagEndpoints(unittest.TestCase):
 
 class TestGrafanaServerWithSearchIndex(unittest.TestCase):
     def test_build_app_without_search_index(self):
+        import pytest
+
         try:
             from gnat.viz.grafana.server import build_app
-        except ImportError:
-            import pytest
 
+            manager = MagicMock()
+            manager.list.return_value = []
+            app = build_app(manager, search_index=None)
+        except ImportError:
             pytest.skip("fastapi not installed")
 
-        manager = MagicMock()
-        manager.list.return_value = []
-        app = build_app(manager, search_index=None)
         routes = [r.path for r in app.routes]
         # /solr/ routes should NOT be present
         self.assertFalse(any("/solr" in r for r in routes))
 
     def test_build_app_with_search_index_mounts_solr(self):
+        import pytest
+
         try:
             from gnat.viz.grafana.server import build_app
+
+            manager = MagicMock()
+            manager.list.return_value = []
+            idx = _make_search_index()
+
+            with patch(
+                "gnat.viz.grafana.search_endpoints._solr_get", return_value=None
+            ):
+                app = build_app(manager, search_index=idx)
         except ImportError:
-            import pytest
-
             pytest.skip("fastapi not installed")
-
-        manager = MagicMock()
-        manager.list.return_value = []
-        idx = _make_search_index()
-
-        with patch("gnat.viz.grafana.search_endpoints._solr_get", return_value=None):
-            app = build_app(manager, search_index=idx)
 
         routes = [r.path for r in app.routes]
         self.assertTrue(any("/solr" in r for r in routes))

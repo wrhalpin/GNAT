@@ -19,6 +19,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+# Skip the entire module if the optional `textual` dependency is not
+# installed — the TUI is gated behind the `gnat[tui]` extras group.
+pytest.importorskip("textual", reason="gnat[tui] extras not installed")
+
 # ---------------------------------------------------------------------------
 # Import guards
 # ---------------------------------------------------------------------------
@@ -38,7 +42,16 @@ def test_tui_screens_import():
     from gnat.tui.screens.review import ReviewScreen
     from gnat.tui.screens.scheduler import SchedulerScreen
 
-    assert all([QueryScreen, LibraryScreen, SchedulerScreen, ReportsScreen, InvestigationsScreen])
+    assert all(
+        [
+            QueryScreen,
+            LibraryScreen,
+            SchedulerScreen,
+            ReportsScreen,
+            InvestigationsScreen,
+            ReviewScreen,
+        ]
+    )
 
 
 def test_tui_widgets_import():
