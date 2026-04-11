@@ -1151,3 +1151,35 @@ client_secret = YOUR_MIMECAST_CLIENT_SECRET
 host       = https://appapi.ironscales.com
 api_key    = YOUR_IRONSCALES_API_KEY
 company_id = YOUR_IRONSCALES_COMPANY_ID
+
+# =============================================================================
+# Phase 2 Wave 7 — Insider Risk / UEBA
+# =============================================================================
+
+# --- Code42 Incydr (file exfiltration / insider risk) ----------------------
+[code42]
+host              = https://api.us.code42.com
+api_client_id     = YOUR_CODE42_API_CLIENT_ID
+api_client_secret = YOUR_CODE42_API_CLIENT_SECRET
+
+# --- DTEX InTERCEPT (behavioral insider threat) ----------------------------
+[dtex]
+host      = https://api.dtexsystems.com
+api_token = YOUR_DTEX_BEARER_TOKEN
+
+# --- Gurucul UEBA ----------------------------------------------------------
+[gurucul]
+host      = https://YOUR_TENANT.gurucul.com
+api_token = YOUR_GURUCUL_BEARER_TOKEN
+
+# --- Exabeam Security Operations Platform (cloud UEBA) ---------------------
+[exabeam]
+host          = https://api.us-west.exabeam.cloud
+client_id     = YOUR_EXABEAM_CLIENT_ID
+client_secret = YOUR_EXABEAM_CLIENT_SECRET
+
+# --- Securonix cloud-native SIEM / UEBA ------------------------------------
+[securonix]
+host     = https://YOUR_TENANT.securonix.com
+username = YOUR_SECURONIX_USERNAME
+password = YOUR_SECURONIX_PASSWORD

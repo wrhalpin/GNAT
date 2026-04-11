@@ -19,6 +19,64 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 7: Insider Risk / UEBA
+
+Five connectors covering the insider-risk and user/entity behavior
+analytics tier. Platform count: 138 → 143. All five are
+`trusted_internal` and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `code42/` — `Code42Client` for Code42 Incydr (file-exfiltration
+  insider risk). OAuth2 client-credentials flow via the v1/oauth
+  endpoint (Basic auth → Bearer). Dispatches across file-events
+  (v2 search), alerts, cases, users, user-risk-profiles. Custom
+  `x-code42-risk-profile` SCO for per-user risk posture. Emits
+  `observed-data` envelopes wrapping synthetic `user-account` +
+  `file` refs. Domain helpers: `search_file_events`, `list_alerts`,
+  `list_cases`, `get_case`, `list_users`, `list_user_risk_profiles`.
+- `dtex/` — `DTEXClient` for DTEX InTERCEPT behavioral insider
+  threat. Bearer auth. Dispatches across alerts, incidents,
+  activities, users, policies, risk-factors. Custom `x-dtex-policy`
+  and `x-dtex-risk-factor` SCOs. Domain helpers: `list_alerts`,
+  `list_incidents`, `list_activities`, `list_users`, `list_policies`,
+  `list_risk_factors`, `get_alert`.
+- `gurucul/` — `GuruculClient` for the Gurucul UEBA platform.
+  Bearer auth. Dispatches across incidents, anomalies, user/entity
+  risk scores, models, cases. Custom `x-gurucul-entity` and
+  `x-gurucul-model` SCOs. Domain helpers: `list_incidents`,
+  `list_anomalies`, `list_user_risk_scores`, `list_entity_risk_scores`,
+  `list_models`, `list_cases`, `get_incident`.
+- `exabeam/` — `ExabeamClient` for the Exabeam Security Operations
+  Platform (cloud UEBA). OAuth2 client-credentials via /auth/v1/token.
+  Dispatches across incidents, sessions (Smart Timeline unit),
+  alerts, cases, notable-assets, users. Domain helpers:
+  `list_incidents`, `list_sessions`, `list_alerts`, `list_cases`,
+  `list_notable_assets`, `list_users`, `get_incident`.
+- `securonix/` — `SecuronixClient` for cloud-native SIEM / UEBA.
+  Username / password exchanged for a session token via
+  `/ws/token/generate` — the token is returned as a bare string
+  which this connector handles. Dispatches across incidents,
+  violations, threats, Spotter search, users, policies. Custom
+  `x-securonix-policy` SCO. Domain helpers: `list_incidents`,
+  `get_incident`, `list_violations`, `list_threats`, `search_spotter`,
+  `list_users`, `list_policies`.
+
+**Architectural notes**
+- Code42 had the same Python conditional-expression precedence bug
+  Entra ID had (the `if/else` accidentally gating the whole `or`
+  chain in `to_stix`). Fixed with an explicit stepwise lookup.
+- Securonix is the first connector to authenticate via
+  username/password → session token (the token is then sent as
+  a ``token`` header rather than as a standard Bearer).
+
+**Tests**
+- 71 new tests across `TestCode42Client` (14),
+  `TestDTEXClient` (14), `TestGuruculClient` (14),
+  `TestExabeamClient` (15), `TestSecuronixClient` (16) plus two
+  Phase 2 Wave 7 integrity tests. Full unit suite: 2626 tests
+  passing, zero regressions.
+- Ruff clean across all new files.
+
 ### Added — Phase 2 Wave 6: Advanced Email Security
 
 Two advanced email security connectors completing the email-gateway

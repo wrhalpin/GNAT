@@ -31,6 +31,7 @@ from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
 from gnat.connectors.claroty.client import ClarotyClient
 from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
 from gnat.connectors.cloudsek.client import CloudSEKClient
+from gnat.connectors.code42.client import Code42Client
 from gnat.connectors.cofense_intel.client import CofenseIntelClient
 from gnat.connectors.controlup.client import ControlUpClient
 from gnat.connectors.copilot.client import CopilotClient
@@ -48,10 +49,12 @@ from gnat.connectors.defenderti.client import DefenderTIClient
 from gnat.connectors.discord.connector import DiscordClient
 from gnat.connectors.domaintools.client import DomainToolsClient
 from gnat.connectors.dragos.client import DragosClient
+from gnat.connectors.dtex.client import DTEXClient
 from gnat.connectors.dynatrace.client import DynatraceClient
 from gnat.connectors.elastic.connector import ElasticConnector
 from gnat.connectors.entra_id.client import EntraIDClient
 from gnat.connectors.eset_ti.client import ESETThreatIntelClient
+from gnat.connectors.exabeam.client import ExabeamClient
 from gnat.connectors.extrahop.client import ExtraHopClient
 from gnat.connectors.feedly.client import FeedlyClient
 from gnat.connectors.flare.client import FlareClient
@@ -70,6 +73,7 @@ from gnat.connectors.greymatter.client import GreyMatterClient
 from gnat.connectors.greynoise.client import GreyNoiseClient
 from gnat.connectors.grok.client import GrokClient
 from gnat.connectors.group_ib.client import GroupIBClient
+from gnat.connectors.gurucul.client import GuruculClient
 from gnat.connectors.hibp.client import HIBPClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
 from gnat.connectors.huntress.client import HuntressClient
@@ -113,6 +117,7 @@ from gnat.connectors.safebreach.client import SafeBreachClient
 from gnat.connectors.security_onion.client import SecurityOnionClient
 from gnat.connectors.securityscorecard.client import SecurityScorecardClient
 from gnat.connectors.securitytrails.client import SecurityTrailsClient
+from gnat.connectors.securonix.client import SecuronixClient
 from gnat.connectors.semperis.client import SemperisClient
 from gnat.connectors.sentinel.connector import SentinelConnector
 from gnat.connectors.sentinelone.client import SentinelOneClient
@@ -307,6 +312,12 @@ CLIENT_REGISTRY: dict = {
     # Phase 2 Wave 6 — Advanced Email Security
     "mimecast": MimecastClient,
     "ironscales": IRONSCALESClient,
+    # Phase 2 Wave 7 — Insider Risk / UEBA
+    "code42": Code42Client,
+    "dtex": DTEXClient,
+    "gurucul": GuruculClient,
+    "exabeam": ExabeamClient,
+    "securonix": SecuronixClient,
 }
 
 __all__ = [
@@ -415,4 +426,10 @@ __all__ = [
     # Phase 2 Wave 6 — Advanced Email Security
     "MimecastClient",
     "IRONSCALESClient",
+    # Phase 2 Wave 7 — Insider Risk / UEBA
+    "Code42Client",
+    "DTEXClient",
+    "GuruculClient",
+    "ExabeamClient",
+    "SecuronixClient",
 ]
