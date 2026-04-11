@@ -72,7 +72,7 @@ inv_service    = InvestigationService(inv_store)
 report_service = ReportService(report_store)
 workspace_manager = WorkspaceManager.from_ini()
 
-# Platform clients — initialise from gnat.ini credentials
+# Platform clients — initialize from gnat.ini credentials
 from gnat.connectors.xsoar.client import XSOARClient
 from gnat.connectors.splunk.client import SplunkClient
 from gnat.connectors.entra_id.client import EntraIDClient
@@ -623,7 +623,7 @@ for order, title, content in [
      "2026-03-25  ATTRIBUTION EvilTokens / NOIRLEGACY GROUP attribution confirmed"),
     (8, "Threat Evolution",
      "OAuth device code phishing is not new, but the EvilTokens PhaaS model "
-     "operationalises it at scale with AI-assisted lure generation.  Routing through "
+     "operationalizes it at scale with AI-assisted lure generation.  Routing through "
      "enterprise-trusted URL rewriters to defeat inspection is increasingly paired with "
      "device code phishing to bypass both email filtering and MFA."),
     (9, "Forecast",
