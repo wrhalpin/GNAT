@@ -904,3 +904,29 @@ host = https://api.osv.dev
 host          = https://api.vulncheck.com
 api_key       = YOUR_VULNCHECK_API_KEY
 default_index = vulncheck-kev
+
+# =============================================================================
+# Phase 1 Wave 2 — Tier 1 connector expansion
+# =============================================================================
+
+# --- Cloudflare Threat Intelligence API ------------------------------------
+# Requires an API Token with "Account → Intelligence: Read" permission and
+# the target account in scope.  account_id is the 32-char hex id from the
+# Cloudflare dashboard URL.
+[cloudflare_intel]
+host       = https://api.cloudflare.com
+api_token  = YOUR_CLOUDFLARE_API_TOKEN
+account_id = 00000000000000000000000000000000
+
+# --- GitGuardian (secret incident telemetry) --------------------------------
+# Personal Access Token or Service Account key; header format
+# ``Authorization: Token <key>``.
+[gitguardian]
+host    = https://api.gitguardian.com
+api_key = YOUR_GITGUARDIAN_API_KEY
+
+# --- runZero CAASM (asset / service / software / vulnerability export) -----
+# Organization Export API key from Account → API Keys → Export Token.
+[runzero]
+host         = https://console.runzero.com
+export_token = YOUR_RUNZERO_EXPORT_TOKEN

@@ -19,6 +19,58 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 1 Wave 2: Tier 1 Connector Expansion
+
+Three more Tier 1 connectors targeting the 2026 audit's "unique enterprise
+telemetry" slot: Cloudflare edge intel, GitGuardian secret incidents, and
+runZero CAASM inventory. All three have published OpenAPI specs and were
+originally slated as codegen candidates; in practice hand-writing the
+STIX mapping was faster than post-processing auto-generated stubs.
+Platform count: 103 → 106.
+
+**New connectors (`gnat/connectors/`)**
+- `cloudflare_intel/` — `CloudflareIntelClient` wraps the
+  `/client/v4/accounts/{account_id}/intel/` endpoints (domain, IP, ASN,
+  WHOIS, passive DNS, domain history). Bearer-token + `account_id`
+  required. Emits STIX `indicator` (domain / ipv4), `infrastructure`
+  (ASN), and `observed-data` (WHOIS / pDNS / history). Deterministic
+  UUID-5 ids keyed on the queried observable. Domain helpers:
+  `get_domain_intel`, `get_ip_intel`, `get_asn_intel`, `get_whois`,
+  `get_passive_dns`, `get_domain_history`. Registered as
+  `"cloudflare_intel"`.
+- `gitguardian/` — `GitGuardianClient` for the v1 REST API. Lists and
+  fetches secret incidents (`/v1/incidents/secrets`), sources, and
+  members. Ad-hoc scanning exposed via `scan_content` (POST `/v1/scan`)
+  and `scan_content_batch` (POST `/v1/multiscan`). Incidents map to
+  STIX `observed-data` envelopes wrapping file + identity observables
+  via `make_observed_data_envelope`, with full `x_gitguardian` context
+  (incident id, secret type + family, status, severity, validity,
+  assignee, repository, occurrences). Registered as `"gitguardian"`.
+- `runzero/` — `RunZeroClient` for the CAASM platform. `TRUST_LEVEL =
+  "trusted_internal"` since runZero data is the customer's own asset
+  inventory. Bulk exports via `/api/v1.0/export/org/{assets,services,
+  software,vulnerabilities}.json`, single-asset lookup via
+  `/api/v1.0/org/assets/{id}`, plus `list_sites` and `list_tasks`
+  domain helpers. STIX mapping: assets → `observed-data` with
+  `ipv4-addr` / `mac-addr` / `software` refs; software records →
+  `software` SCO; vulnerability records → `vulnerability` SDO with
+  CVSS external refs. Registered as `"runzero"`.
+
+**Config (`config/config.ini.example`)**
+- New sections `[cloudflare_intel]`, `[gitguardian]`, `[runzero]` under
+  a "Phase 1 Wave 2" banner.
+
+**Registry (`gnat/clients/__init__.py`)**
+- Added imports + `CLIENT_REGISTRY` entries + `__all__` entries for
+  `CloudflareIntelClient`, `GitGuardianClient`, `RunZeroClient`.
+
+**Tests**
+- `tests/unit/connectors/test_connectors.py` — 49 new tests across
+  three new `TestXxxClient` classes + two Wave 2 integrity tests
+  (`test_phase1_wave2_registry_contains_new_connectors`,
+  `test_phase1_wave2_config_sections_exist`). Full suite: 1866 tests
+  passing, zero regressions.
+
 ### Added — Phase 1 Wave 1: Tier 1 Connector Expansion
 
 Four new connectors closing the biggest gaps in GNAT's 2026 coverage audit

@@ -24,6 +24,7 @@ from gnat.connectors.chatgpt import ChatGPTClient
 from gnat.connectors.CISA.client import CISAClient
 from gnat.connectors.cisco_umbrella.client import CiscoUmbrellaClient
 from gnat.connectors.claroty.client import ClarotyClient
+from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
 from gnat.connectors.cloudsek.client import CloudSEKClient
 from gnat.connectors.controlup.client import ControlUpClient
 from gnat.connectors.copilot.client import CopilotClient
@@ -49,6 +50,7 @@ from gnat.connectors.fortiedr.client import FortiEDRClient
 from gnat.connectors.fortisiem.client import FortiSIEMClient
 from gnat.connectors.fortisoar.client import FortiSOARClient
 from gnat.connectors.gemini.client import GeminiClient
+from gnat.connectors.gitguardian.client import GitGuardianClient
 from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
 from gnat.connectors.google_chronicle.client import GoogleChronicleClient
 from gnat.connectors.graylog.client import GraylogClient
@@ -83,6 +85,7 @@ from gnat.connectors.qualys.client import QualysVMDRClient
 from gnat.connectors.rapid7.client import Rapid7Client
 from gnat.connectors.recordedfuture.client import RecordedFutureClient
 from gnat.connectors.riskrecon.client import RiskReconClient
+from gnat.connectors.runzero.client import RunZeroClient
 from gnat.connectors.security_onion.client import SecurityOnionClient
 from gnat.connectors.securityscorecard.client import SecurityScorecardClient
 from gnat.connectors.sentinel.connector import SentinelConnector
@@ -228,6 +231,10 @@ CLIENT_REGISTRY: dict = {
     "abusech": AbuseChClient,
     "osv": OSVClient,
     "vulncheck": VulnCheckClient,
+    # Phase 1 Wave 2 — Tier 1 expansion
+    "cloudflare_intel": CloudflareIntelClient,
+    "gitguardian": GitGuardianClient,
+    "runzero": RunZeroClient,
 }
 
 __all__ = [
@@ -292,4 +299,8 @@ __all__ = [
     "AbuseChClient",
     "OSVClient",
     "VulnCheckClient",
+    # Phase 1 Wave 2 — Tier 1 expansion
+    "CloudflareIntelClient",
+    "GitGuardianClient",
+    "RunZeroClient",
 ]

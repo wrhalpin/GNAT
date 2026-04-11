@@ -12270,3 +12270,513 @@ def test_phase1_wave1_config_sections_exist():
     parser.read(cfg_path)
     for section in ("mitre_attack", "abusech", "osv", "vulncheck"):
         assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
+
+
+# ===========================================================================
+# Phase 1 Wave 2 — Tier 1 connector expansion
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# Cloudflare Threat Intelligence
+# ---------------------------------------------------------------------------
+
+
+class TestCloudflareIntelClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
+
+        c = CloudflareIntelClient(
+            host="https://api.cloudflare.com",
+            api_token="cf_test",
+            account_id="abc123",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_bearer(self):
+        from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
+
+        c = CloudflareIntelClient(
+            host="https://api.cloudflare.com",
+            api_token="cf_test",
+            account_id="abc123",
+        )
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer cf_test"
+
+    def test_authenticate_requires_api_token(self):
+        from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
+
+        c = CloudflareIntelClient(
+            host="https://api.cloudflare.com",
+            api_token="",
+            account_id="abc",
+        )
+        with pytest.raises(GNATClientError, match="requires api_token"):
+            c.authenticate()
+
+    def test_authenticate_requires_account_id(self):
+        from gnat.connectors.cloudflare_intel.client import CloudflareIntelClient
+
+        c = CloudflareIntelClient(
+            host="https://api.cloudflare.com",
+            api_token="cf_test",
+            account_id="",
+        )
+        with pytest.raises(GNATClientError, match="requires account_id"):
+            c.authenticate()
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"result": {"id": "abc"}}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_object_domain(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "result": {
+                        "domain": "evil.example",
+                        "risk_score": 80,
+                        "risk_types": [{"name": "malware"}],
+                    }
+                }
+            ),
+        )
+        obj = client.get_object("indicator", "evil.example")
+        assert obj["domain"] == "evil.example"
+        assert obj["_cf_kind"] == "indicator"
+
+    def test_get_object_ipv4_dispatches(self, client, monkeypatch):
+        stub = MagicMock(
+            return_value={"result": {"ipv4": "1.2.3.4", "risk_score": 40}}
+        )
+        monkeypatch.setattr(client, "get", stub)
+        obj = client.get_object("indicator", "1.2.3.4")
+        assert obj["ipv4"] == "1.2.3.4"
+        # Should have hit the /intel/ip endpoint with the ipv4 param
+        call_path = stub.call_args[0][0]
+        assert "intel/ip" in call_path
+
+    def test_get_object_asn(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"result": {"asn": "AS12345", "name": "Acme"}}),
+        )
+        obj = client.get_object("infrastructure", "AS12345")
+        assert obj["asn"] == "AS12345"
+
+    def test_list_objects_indicator_requires_filter(self, client):
+        with pytest.raises(GNATClientError, match="requires a"):
+            client.list_objects("indicator")
+
+    def test_list_objects_passive_dns(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"result": [{"domain": "a.example"}, {"domain": "b.example"}]}),
+        )
+        out = client.list_objects("observed-data", filters={"ipv4": "1.2.3.4"})
+        assert len(out) == 2
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("indicator", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("indicator", "x")
+
+    def test_to_stix_domain_indicator(self, client):
+        stix = client.to_stix(
+            {
+                "_cf_kind": "indicator",
+                "_cf_query": "evil.example",
+                "domain": "evil.example",
+                "risk_score": 85,
+                "risk_types": [{"name": "malware"}],
+                "content_categories": [{"name": "Malicious Sites"}],
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "indicator"
+        assert "domain-name:value" in stix["pattern"]
+        assert "malicious-activity" in stix["labels"]
+        assert stix["x_cloudflare"]["risk_score"] == 85
+
+    def test_to_stix_ip_indicator(self, client):
+        stix = client.to_stix(
+            {
+                "_cf_kind": "indicator",
+                "_cf_query": "9.9.9.9",
+                "ipv4": "9.9.9.9",
+                "risk_score": 10,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "ipv4-addr:value" in stix["pattern"]
+        assert stix["labels"] == ["benign"]
+
+    def test_to_stix_asn_infrastructure(self, client):
+        stix = client.to_stix(
+            {
+                "_cf_kind": "infrastructure",
+                "asn": "12345",
+                "name": "Acme Networks",
+                "country": "US",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "infrastructure"
+        assert stix["name"] == "AS12345"
+        assert stix["x_cloudflare_asn"]["country"] == "US"
+
+    def test_to_stix_whois_observed_data(self, client):
+        stix = client.to_stix(
+            {
+                "_cf_kind": "observed-data",
+                "_cf_query": "example.com",
+                "registrar": "Example Registrar",
+                "creation_date": "2020-01-01T00:00:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_source_name"] == "cloudflare_intel"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "indicator--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# GitGuardian
+# ---------------------------------------------------------------------------
+
+
+class TestGitGuardianClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.gitguardian.client import GitGuardianClient
+
+        c = GitGuardianClient(host="https://api.gitguardian.com", api_key="gg_test")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_token(self):
+        from gnat.connectors.gitguardian.client import GitGuardianClient
+
+        c = GitGuardianClient(host="https://api.gitguardian.com", api_key="gg_test")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Token gg_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.gitguardian.client import GitGuardianClient
+
+        c = GitGuardianClient(host="https://api.gitguardian.com", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"status": "ok"}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_incident(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "id": 42,
+                    "status": "TRIGGERED",
+                    "severity": "high",
+                    "detector": {"name": "AWSKey", "family": "cloud"},
+                }
+            ),
+        )
+        inc = client.get_incident(42)
+        assert inc["id"] == 42
+
+    def test_list_incidents(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value=[
+                    {"id": 1, "status": "TRIGGERED"},
+                    {"id": 2, "status": "RESOLVED"},
+                ]
+            ),
+        )
+        items = client.list_incidents(status="TRIGGERED")
+        assert len(items) == 2
+
+    def test_list_objects_rejects_unknown_type(self, client):
+        with pytest.raises(GNATClientError, match="does not support"):
+            client.list_objects("totally-fake")
+
+    def test_scan_content(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value={"policy_breaks": [{"type": "AWS"}]}),
+        )
+        out = client.scan_content("AKIA...", filename="test.py")
+        assert out["policy_breaks"][0]["type"] == "AWS"
+
+    def test_scan_content_batch(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(return_value=[{"policy_breaks": []}, {"policy_breaks": [{"type": "GCP"}]}]),
+        )
+        out = client.scan_content_batch([{"document": "a"}, {"document": "b"}])
+        assert len(out) == 2
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix(self, client):
+        stix = client.to_stix(
+            {
+                "id": 42,
+                "status": "TRIGGERED",
+                "severity": "high",
+                "validity": "valid",
+                "detector": {"name": "AWSKey", "family": "cloud"},
+                "date": "2026-04-01T00:00:00Z",
+                "last_occurrence_date": "2026-04-05T00:00:00Z",
+                "occurrences": [
+                    {
+                        "filepath": "src/config.py",
+                        "author": "alice@example.com",
+                        "source": "myorg/myrepo",
+                    }
+                ],
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["first_observed"] == "2026-04-01T00:00:00Z"
+        assert stix["x_gitguardian"]["incident_id"] == "42"
+        assert stix["x_gitguardian"]["secret_type"] == "AWSKey"
+        # Should have refs for the file and author identity
+        assert any(r.startswith("file--") for r in stix["object_refs"])
+        assert any(r.startswith("identity--") for r in stix["object_refs"])
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# runZero
+# ---------------------------------------------------------------------------
+
+
+class TestRunZeroClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.runzero.client import RunZeroClient
+
+        c = RunZeroClient(
+            host="https://console.runzero.com", export_token="rZ_test"
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_bearer(self):
+        from gnat.connectors.runzero.client import RunZeroClient
+
+        c = RunZeroClient(
+            host="https://console.runzero.com", export_token="rZ_test"
+        )
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer rZ_test"
+
+    def test_authenticate_requires_token(self):
+        from gnat.connectors.runzero.client import RunZeroClient
+
+        c = RunZeroClient(host="https://console.runzero.com", export_token="")
+        with pytest.raises(GNATClientError, match="requires export_token"):
+            c.authenticate()
+
+    def test_trust_level_is_internal(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[]))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_asset(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"id": "asset-1", "addresses": ["10.0.0.1"]}),
+        )
+        obj = client.get_asset("asset-1")
+        assert obj["id"] == "asset-1"
+
+    def test_get_object_rejects_unknown_type(self, client):
+        with pytest.raises(GNATClientError, match="does not support"):
+            client.get_object("indicator", "x")
+
+    def test_list_objects_assets(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value=[
+                    {"id": "a", "addresses": ["10.0.0.1"]},
+                    {"id": "b", "addresses": ["10.0.0.2"]},
+                ]
+            ),
+        )
+        items = client.list_objects("observed-data")
+        assert len(items) == 2
+        assert all(i["_rz_kind"] == "observed-data" for i in items)
+
+    def test_list_objects_software(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value=[{"name": "nginx", "vendor": "F5", "cpe": "cpe:..."}]),
+        )
+        items = client.list_objects("software")
+        assert items[0]["_rz_kind"] == "software"
+
+    def test_list_sites(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value=[{"id": "site1", "name": "HQ"}]),
+        )
+        sites = client.list_sites()
+        assert sites[0]["name"] == "HQ"
+
+    def test_list_tasks(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value=[{"id": "task1", "status": "done"}]),
+        )
+        tasks = client.list_tasks()
+        assert len(tasks) == 1
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_asset(self, client):
+        stix = client.to_stix(
+            {
+                "_rz_kind": "observed-data",
+                "id": "asset-1",
+                "addresses": ["10.0.0.1"],
+                "macs": ["aa:bb:cc:dd:ee:ff"],
+                "os": "Ubuntu 22.04",
+                "first_seen": "2026-01-01T00:00:00Z",
+                "last_seen": "2026-04-01T00:00:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_runzero"]["asset_id"] == "asset-1"
+        # Should contain ipv4-addr and mac-addr and software refs
+        ref_types = {r.split("--")[0] for r in stix["object_refs"]}
+        assert "ipv4-addr" in ref_types
+        assert "mac-addr" in ref_types
+
+    def test_to_stix_software(self, client):
+        stix = client.to_stix(
+            {
+                "_rz_kind": "software",
+                "name": "nginx",
+                "vendor": "F5",
+                "version": "1.24.0",
+                "cpe": "cpe:2.3:a:f5:nginx:1.24.0:*:*:*:*:*:*:*",
+                "asset_count": 42,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "software"
+        assert stix["name"] == "nginx"
+        assert stix["x_runzero_software"]["asset_count"] == 42
+
+    def test_to_stix_vulnerability(self, client):
+        stix = client.to_stix(
+            {
+                "_rz_kind": "vulnerability",
+                "cve": "CVE-2024-0001",
+                "description": "Test vuln",
+                "cvss3_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "cvss3_base_score": 9.8,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "vulnerability"
+        assert stix["name"] == "CVE-2024-0001"
+        sources = [r["source_name"] for r in stix["external_references"]]
+        assert "cve" in sources
+        assert "cvss" in sources
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Registry integrity — Phase 1 Wave 2
+# ---------------------------------------------------------------------------
+
+
+def test_phase1_wave2_registry_contains_new_connectors():
+    from gnat.clients import CLIENT_REGISTRY
+
+    for key in ("cloudflare_intel", "gitguardian", "runzero"):
+        assert key in CLIENT_REGISTRY, f"Missing {key} in CLIENT_REGISTRY"
+
+
+def test_phase1_wave2_config_sections_exist():
+    import configparser
+    from pathlib import Path
+
+    cfg_path = Path(__file__).resolve().parents[3] / "config" / "config.ini.example"
+    parser = configparser.ConfigParser(strict=False)
+    parser.read(cfg_path)
+    for section in ("cloudflare_intel", "gitguardian", "runzero"):
+        assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
