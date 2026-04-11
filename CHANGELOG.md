@@ -19,6 +19,60 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 2: MDR Platforms
+
+Three Managed Detection & Response connectors covering the top-rated
+MDR vendors from the 2026 audit. This wave fills the gap between
+platform-level EDR (CrowdStrike, SentinelOne, etc., already in GNAT) and
+the managed-service delivery layer — the tier where analyst-generated
+tickets, investigations, and confirmed detections live. Platform count:
+119 → 122.
+
+All three connectors are `trusted_internal` (customer's own MDR
+telemetry) and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `huntress/` — `HuntressClient` for Huntress Managed EDR / ITDR.
+  HTTP Basic auth with `api_key_id` as username + `api_secret` as
+  password (reuses `BaseClient._basic_auth`). Endpoints: `/v1/account`,
+  `/v1/organizations`, `/v1/agents`, `/v1/incident_reports`,
+  `/v1/reports`, `/v1/signals`. Incident reports map to
+  `observed-data` envelopes with refs to the affected `identity`
+  (organization), custom `x-huntress-agent` SCO for the deployed
+  agent, and any `ipv4-addr` observables from `remote_ip`. Domain
+  helpers: `list_organizations`, `list_agents`, `list_incidents`,
+  `get_incident`. `_unwrap_huntress` helper strips Huntress's
+  single-key envelopes (e.g. `{"organization": {...}}`).
+- `arctic_wolf/` — `ArcticWolfClient` for Arctic Wolf MDR. Bearer
+  token auth with an optional `X-Arctic-Wolf-Customer` header for
+  multi-tenant MSSP deployments. Dispatches across `/v1/tickets`,
+  `/v1/tickets/{id}/comments`, `/v1/investigations`, `/v1/customer`.
+  Tickets and investigations both map to `observed-data` envelopes
+  with `filters["kind"]` selecting the endpoint. Domain helpers:
+  `list_tickets`, `list_investigations`, `get_ticket`,
+  `get_ticket_comments`, `get_customer`.
+- `red_canary/` — `RedCanaryClient` for Red Canary MDR. `X-Api-Key`
+  header auth, JSON:API response shape (`{"data": ...}`) unwrapped by
+  `_unwrap_rc`. Endpoints: `/openapi/v3/detections`, `/endpoints`,
+  `/events`, `/organization`. Detections map to `observed-data`
+  envelopes with refs to the affected endpoint as `identity` and any
+  source `ipv4-addr`. Attribute nesting (`attributes.severity` etc.)
+  is handled inline in `to_stix`. Domain helpers: `list_detections`,
+  `get_detection`, `list_endpoints`, `get_endpoint`, `list_events`.
+
+**Tests**
+- 43 new tests across `TestHuntressClient` (15),
+  `TestArcticWolfClient` (14), `TestRedCanaryClient` (14) plus two
+  Phase 2 Wave 2 integrity tests. Full unit suite: 2270 tests
+  passing, zero regressions. Ruff clean across all new files.
+
+**Architectural notes**
+- All three MDR connectors introduce a custom SCO on the Huntress side
+  (`x-huntress-agent`) for the deployed agent record. This mirrors the
+  pattern Phase 1 Wave 3b established with `x-cryptocurrency-wallet`
+  on TRM Labs — custom STIX observable types are acceptable when the
+  platform's native entity doesn't have a natural STIX analog.
+
 ### Added — Phase 2 Wave 1: Malware Sandboxes
 
 Five dynamic-malware-analysis connectors closing the single biggest

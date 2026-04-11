@@ -14613,3 +14613,493 @@ def test_phase2_wave1_config_sections_exist():
         "intezer",
     ):
         assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
+
+
+# ===========================================================================
+# Phase 2 Wave 2 — MDR platforms
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# Huntress
+# ---------------------------------------------------------------------------
+
+
+class TestHuntressClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.huntress.client import HuntressClient
+
+        c = HuntressClient(
+            host="https://api.huntress.io",
+            api_key_id="hk_test",
+            api_secret="hs_test",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_basic_auth(self):
+        from gnat.connectors.huntress.client import HuntressClient
+
+        c = HuntressClient(
+            host="https://api.huntress.io",
+            api_key_id="hk_test",
+            api_secret="hs_test",
+        )
+        c.authenticate()
+        assert c._auth_headers["Authorization"].startswith("Basic ")
+
+    def test_authenticate_requires_credentials(self):
+        from gnat.connectors.huntress.client import HuntressClient
+
+        c = HuntressClient(host="https://api.huntress.io", api_key_id="", api_secret="")
+        with pytest.raises(GNATClientError, match="api_key_id and api_secret"):
+            c.authenticate()
+
+    def test_trust_level_internal(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"account": {"id": 1}})
+        )
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_list_organizations(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "organizations": [
+                        {"id": "o1", "name": "Acme"},
+                        {"id": "o2", "name": "Globex"},
+                    ]
+                }
+            ),
+        )
+        orgs = client.list_organizations()
+        assert len(orgs) == 2
+
+    def test_list_incidents(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "incident_reports": [
+                        {
+                            "id": "i1",
+                            "status": "sent",
+                            "severity": "high",
+                            "organization_id": "o1",
+                        }
+                    ]
+                }
+            ),
+        )
+        incs = client.list_incidents(status="sent")
+        assert incs[0]["_ht_kind"] == "incident"
+
+    def test_get_incident(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "incident_report": {
+                        "id": "i1",
+                        "severity": "high",
+                        "organization_id": "o1",
+                    }
+                }
+            ),
+        )
+        inc = client.get_incident("i1")
+        assert inc["_ht_kind"] == "incident"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_incident(self, client):
+        stix = client.to_stix(
+            {
+                "_ht_kind": "incident",
+                "id": "i1",
+                "status": "sent",
+                "severity": "high",
+                "summary": "Suspicious LSASS access",
+                "organization_id": "o1",
+                "agent_id": "a1",
+                "remote_ip": "1.2.3.4",
+                "detected_at": "2026-04-01T00:00:00Z",
+                "updated_at": "2026-04-01T00:05:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        ref_types = {r.split("--")[0] for r in stix["object_refs"]}
+        assert "identity" in ref_types
+        assert "x-huntress-agent" in ref_types
+        assert "ipv4-addr" in ref_types
+        assert stix["x_huntress"]["severity"] == "high"
+
+    def test_to_stix_organization(self, client):
+        stix = client.to_stix(
+            {"_ht_kind": "organization", "id": "o1", "name": "Acme"}
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "identity"
+        assert stix["identity_class"] == "organization"
+
+    def test_to_stix_agent(self, client):
+        stix = client.to_stix(
+            {
+                "_ht_kind": "agent",
+                "id": "a1",
+                "hostname": "host01",
+                "platform": "windows",
+                "version": "0.13.0",
+                "organization_id": "o1",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "x-huntress-agent"
+        assert stix["hostname"] == "host01"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Arctic Wolf
+# ---------------------------------------------------------------------------
+
+
+class TestArcticWolfClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.arctic_wolf.client import ArcticWolfClient
+
+        c = ArcticWolfClient(
+            host="https://api.arcticwolf.com",
+            api_key="aw_test",
+            customer_id="cust-1",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_bearer_and_customer(self):
+        from gnat.connectors.arctic_wolf.client import ArcticWolfClient
+
+        c = ArcticWolfClient(
+            host="https://api.arcticwolf.com",
+            api_key="aw_test",
+            customer_id="cust-1",
+        )
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer aw_test"
+        assert c._auth_headers["X-Arctic-Wolf-Customer"] == "cust-1"
+
+    def test_authenticate_without_customer_id(self):
+        from gnat.connectors.arctic_wolf.client import ArcticWolfClient
+
+        c = ArcticWolfClient(
+            host="https://api.arcticwolf.com", api_key="aw_test"
+        )
+        c.authenticate()
+        assert "X-Arctic-Wolf-Customer" not in c._auth_headers
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.arctic_wolf.client import ArcticWolfClient
+
+        c = ArcticWolfClient(host="https://api.arcticwolf.com", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_trust_level_internal(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "cust-1"}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_list_tickets(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "tickets": [
+                        {"id": "t1", "status": "open", "severity": "high"},
+                        {"id": "t2", "status": "open", "severity": "low"},
+                    ]
+                }
+            ),
+        )
+        tickets = client.list_tickets(status="open")
+        assert len(tickets) == 2
+
+    def test_list_investigations(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"investigations": [{"id": "inv1", "status": "active"}]}
+            ),
+        )
+        invs = client.list_investigations()
+        assert invs[0]["_aw_kind"] == "investigation"
+
+    def test_get_ticket(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={"id": "t1", "status": "open", "severity": "high"}
+            ),
+        )
+        t = client.get_ticket("t1")
+        assert t["_aw_kind"] == "ticket"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_ticket(self, client):
+        stix = client.to_stix(
+            {
+                "_aw_kind": "ticket",
+                "id": "t1",
+                "title": "Unusual PowerShell execution",
+                "status": "open",
+                "severity": "high",
+                "customer_id": "cust-1",
+                "affected_ips": ["1.2.3.4"],
+                "created_at": "2026-04-01T00:00:00Z",
+                "updated_at": "2026-04-01T00:30:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_arctic_wolf"]["severity"] == "high"
+        ref_types = {r.split("--")[0] for r in stix["object_refs"]}
+        assert "identity" in ref_types
+        assert "ipv4-addr" in ref_types
+
+    def test_to_stix_customer(self, client):
+        stix = client.to_stix(
+            {"_aw_kind": "customer", "id": "cust-1", "name": "Acme"}
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "identity"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Red Canary
+# ---------------------------------------------------------------------------
+
+
+class TestRedCanaryClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.red_canary.client import RedCanaryClient
+
+        c = RedCanaryClient(
+            host="https://my.redcanary.co", api_key="rc_test"
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_x_api_key(self):
+        from gnat.connectors.red_canary.client import RedCanaryClient
+
+        c = RedCanaryClient(
+            host="https://my.redcanary.co", api_key="rc_test"
+        )
+        c.authenticate()
+        assert c._auth_headers["X-Api-Key"] == "rc_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.red_canary.client import RedCanaryClient
+
+        c = RedCanaryClient(host="https://my.redcanary.co", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_trust_level_internal(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"data": {"id": "org1"}})
+        )
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_list_detections(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": [
+                        {"id": "d1", "attributes": {"severity": "high"}},
+                        {"id": "d2", "attributes": {"severity": "low"}},
+                    ]
+                }
+            ),
+        )
+        dets = client.list_detections(severity="high")
+        assert len(dets) == 2
+        assert all(d["_rc_kind"] == "detection" for d in dets)
+
+    def test_get_detection(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": {
+                        "id": "d1",
+                        "attributes": {
+                            "severity": "high",
+                            "headline": "Suspicious PS",
+                        },
+                    }
+                }
+            ),
+        )
+        det = client.get_detection("d1")
+        assert det["_rc_kind"] == "detection"
+
+    def test_list_endpoints(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "data": [
+                        {
+                            "id": "e1",
+                            "attributes": {
+                                "hostname": "host01",
+                                "platform": "windows",
+                            },
+                        }
+                    ]
+                }
+            ),
+        )
+        eps = client.list_endpoints()
+        assert eps[0]["_rc_kind"] == "endpoint"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("observed-data", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("observed-data", "x")
+
+    def test_to_stix_detection(self, client):
+        stix = client.to_stix(
+            {
+                "_rc_kind": "detection",
+                "id": "d1",
+                "attributes": {
+                    "severity": "high",
+                    "classification": "suspicious",
+                    "headline": "Living-off-the-land binary",
+                    "confirmed": True,
+                    "endpoint_id": "e1",
+                    "ip_address": "10.0.0.5",
+                    "detected_at": "2026-04-01T00:00:00Z",
+                    "last_seen_at": "2026-04-01T00:05:00Z",
+                },
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert stix["x_red_canary"]["severity"] == "high"
+        ref_types = {r.split("--")[0] for r in stix["object_refs"]}
+        assert "identity" in ref_types
+        assert "ipv4-addr" in ref_types
+
+    def test_to_stix_endpoint(self, client):
+        stix = client.to_stix(
+            {
+                "_rc_kind": "endpoint",
+                "id": "e1",
+                "attributes": {
+                    "hostname": "host01",
+                    "platform": "windows",
+                    "operating_system": "Windows 11",
+                    "ip_address": "10.0.0.5",
+                },
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "identity"
+        assert stix["identity_class"] == "system"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Registry integrity — Phase 2 Wave 2
+# ---------------------------------------------------------------------------
+
+
+def test_phase2_wave2_registry_contains_new_connectors():
+    from gnat.clients import CLIENT_REGISTRY
+
+    for key in ("huntress", "arctic_wolf", "red_canary"):
+        assert key in CLIENT_REGISTRY, f"Missing {key} in CLIENT_REGISTRY"
+
+
+def test_phase2_wave2_config_sections_exist():
+    import configparser
+    from pathlib import Path
+
+    cfg_path = Path(__file__).resolve().parents[3] / "config" / "config.ini.example"
+    parser = configparser.ConfigParser(strict=False)
+    parser.read(cfg_path)
+    for section in ("huntress", "arctic_wolf", "red_canary"):
+        assert parser.has_section(section), f"Missing [{section}] in config.ini.example"

@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 119 security/threat intelligence platforms
+- A unified client interface for 122 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -349,6 +349,9 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Hybrid Analysis / Falcon Sandbox | `gnat/connectors/hybrid_analysis/` | API key + User-Agent header |
 | VMRay (hypervisor-level analysis) | `gnat/connectors/vmray/` | API key (`api_key` header) |
 | Intezer Analyze (binary DNA attribution) | `gnat/connectors/intezer/` | API key → JWT Bearer |
+| Huntress Managed EDR / ITDR | `gnat/connectors/huntress/` | HTTP Basic (key id + secret) |
+| Arctic Wolf MDR | `gnat/connectors/arctic_wolf/` | Bearer token (+ optional customer id) |
+| Red Canary MDR | `gnat/connectors/red_canary/` | API key (`X-Api-Key` header) |
 
 ---
 

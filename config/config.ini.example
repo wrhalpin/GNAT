@@ -1017,3 +1017,26 @@ api_key = YOUR_VMRAY_API_KEY
 [intezer]
 host    = https://analyze.intezer.com
 api_key = YOUR_INTEZER_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 2 — MDR platforms
+# =============================================================================
+
+# --- Huntress Managed EDR / ITDR -------------------------------------------
+# HTTP Basic auth with API Key ID as username and API Secret as password.
+[huntress]
+host       = https://api.huntress.io
+api_key_id = YOUR_HUNTRESS_API_KEY_ID
+api_secret = YOUR_HUNTRESS_API_SECRET
+
+# --- Arctic Wolf Managed Detection & Response ------------------------------
+# customer_id is optional; required only for multi-tenant MSSP usage.
+[arctic_wolf]
+host        = https://api.arcticwolf.com
+api_key     = YOUR_ARCTIC_WOLF_API_KEY
+customer_id =
+
+# --- Red Canary MDR --------------------------------------------------------
+[red_canary]
+host    = https://my.redcanary.co
+api_key = YOUR_RED_CANARY_API_KEY

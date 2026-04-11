@@ -16,6 +16,7 @@ from gnat.connectors.abnormal.client import AbnormalClient
 from gnat.connectors.abusech.client import AbuseChClient
 from gnat.connectors.alienvault.client import AlienVaultClient
 from gnat.connectors.any_run.client import AnyRunClient
+from gnat.connectors.arctic_wolf.client import ArcticWolfClient
 from gnat.connectors.armis.client import ArmisClient
 from gnat.connectors.aws_security.client import AWSSecurityClient
 from gnat.connectors.axonius.client import AxoniusClient
@@ -65,6 +66,7 @@ from gnat.connectors.grok.client import GrokClient
 from gnat.connectors.group_ib.client import GroupIBClient
 from gnat.connectors.hibp.client import HIBPClient
 from gnat.connectors.hudsonrock.client import HudsonRockClient
+from gnat.connectors.huntress.client import HuntressClient
 from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
 from gnat.connectors.intel471.client import Intel471Client
 from gnat.connectors.intezer.client import IntezerClient
@@ -91,6 +93,7 @@ from gnat.connectors.qradar.connector import QRadarConnector
 from gnat.connectors.qualys.client import QualysVMDRClient
 from gnat.connectors.rapid7.client import Rapid7Client
 from gnat.connectors.recordedfuture.client import RecordedFutureClient
+from gnat.connectors.red_canary.client import RedCanaryClient
 from gnat.connectors.riskrecon.client import RiskReconClient
 from gnat.connectors.runzero.client import RunZeroClient
 from gnat.connectors.security_onion.client import SecurityOnionClient
@@ -264,6 +267,10 @@ CLIENT_REGISTRY: dict = {
     "hybrid_analysis": HybridAnalysisClient,
     "vmray": VMRayClient,
     "intezer": IntezerClient,
+    # Phase 2 Wave 2 — MDR platforms
+    "huntress": HuntressClient,
+    "arctic_wolf": ArcticWolfClient,
+    "red_canary": RedCanaryClient,
 }
 
 __all__ = [
@@ -348,4 +355,8 @@ __all__ = [
     "HybridAnalysisClient",
     "VMRayClient",
     "IntezerClient",
+    # Phase 2 Wave 2 — MDR platforms
+    "HuntressClient",
+    "ArcticWolfClient",
+    "RedCanaryClient",
 ]
