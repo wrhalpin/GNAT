@@ -875,3 +875,168 @@ direction            = both
 max_tlp              = green
 sync_interval        = 3600
 workspace_filter     = sector-intel,advisories
+
+# =============================================================================
+# Phase 1 Wave 1 — Tier 1 connector expansion
+# =============================================================================
+
+# --- MITRE ATT&CK TAXII 2.1 server (public, no auth) ----------------------
+[mitre_attack]
+host   = https://attack-taxii.mitre.org
+# matrix = enterprise-attack   ; or mobile-attack, ics-attack
+matrix = enterprise-attack
+
+# --- Abuse.ch unified feed connector (URLhaus + MalwareBazaar +
+#     ThreatFox + Feodo Tracker + SSLBL).  auth_key is optional; supplying
+#     it enables the higher rate-limit tier.  default_feed picks which
+#     sub-feed list_objects() targets when filters["feed"] is not set. ---
+[abusech]
+host         = https://abuse.ch
+auth_key     =
+default_feed = threatfox
+
+# --- OSV.dev (open-source vulnerabilities; public, no auth) ----------------
+[osv]
+host = https://api.osv.dev
+
+# --- VulnCheck (vulnerability & exploit intelligence) ----------------------
+[vulncheck]
+host          = https://api.vulncheck.com
+api_key       = YOUR_VULNCHECK_API_KEY
+default_index = vulncheck-kev
+
+# =============================================================================
+# Phase 1 Wave 2 — Tier 1 connector expansion
+# =============================================================================
+
+# --- Cloudflare Threat Intelligence API ------------------------------------
+# Requires an API Token with "Account → Intelligence: Read" permission and
+# the target account in scope.  account_id is the 32-char hex id from the
+# Cloudflare dashboard URL.
+[cloudflare_intel]
+host       = https://api.cloudflare.com
+api_token  = YOUR_CLOUDFLARE_API_TOKEN
+account_id = 00000000000000000000000000000000
+
+# --- GitGuardian (secret incident telemetry) --------------------------------
+# Personal Access Token or Service Account key; header format
+# ``Authorization: Token <key>``.
+[gitguardian]
+host    = https://api.gitguardian.com
+api_key = YOUR_GITGUARDIAN_API_KEY
+
+# --- runZero CAASM (asset / service / software / vulnerability export) -----
+# Organization Export API key from Account → API Keys → Export Token.
+[runzero]
+host         = https://console.runzero.com
+export_token = YOUR_RUNZERO_EXPORT_TOKEN
+
+# =============================================================================
+# Phase 1 Wave 3a — Tier 1 connector expansion (infrastructure pivoting)
+# =============================================================================
+
+# --- SecurityTrails (historical DNS / WHOIS / subdomain discovery) ---------
+[securitytrails]
+host    = https://api.securitytrails.com
+api_key = YOUR_SECURITYTRAILS_API_KEY
+
+# --- DomainTools Iris (WHOIS / hosting history / Iris pivoting) ------------
+# Requires both an API username and API key (query-parameter auth).
+[domaintools]
+host         = https://api.domaintools.com
+api_username = YOUR_DOMAINTOOLS_USERNAME
+api_key      = YOUR_DOMAINTOOLS_API_KEY
+
+# --- Silent Push (future attack infrastructure + actor behavior) -----------
+[silent_push]
+host    = https://api.silentpush.com
+api_key = YOUR_SILENTPUSH_API_KEY
+
+# =============================================================================
+# Phase 1 Wave 3b — Tier 1 connector expansion (identity / email / finance)
+# =============================================================================
+
+# --- Silverfort ITDR (runtime identity telemetry; OAuth2) ------------------
+[silverfort]
+host          = https://YOUR_TENANT.silverfort.com
+client_id     = YOUR_SILVERFORT_CLIENT_ID
+client_secret = YOUR_SILVERFORT_CLIENT_SECRET
+
+# --- Semperis DSP (AD / Entra posture + IoE / IoC) -------------------------
+[semperis]
+host      = https://dsp.example.com
+api_token = YOUR_SEMPERIS_BEARER_TOKEN
+
+# --- Abnormal Security (BEC / credential phishing / vendor impersonation) --
+[abnormal]
+host      = https://api.abnormalplatform.com
+api_token = YOUR_ABNORMAL_BEARER_TOKEN
+
+# --- Cofense Intelligence (human-verified phishing intel) ------------------
+# HTTP Basic auth with ThreatHQ username + password.
+[cofense_intel]
+host     = https://www.threathq.com
+username = YOUR_COFENSE_USERNAME
+password = YOUR_COFENSE_PASSWORD
+
+# --- TRM Labs (blockchain / cryptocurrency threat intel) -------------------
+# API key is used as HTTP Basic username with an empty password.
+[trm_labs]
+host    = https://api.trmlabs.com
+api_key = YOUR_TRM_LABS_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 1 — Malware sandboxes
+# =============================================================================
+
+# --- Joe Sandbox Cloud (dynamic malware analysis) --------------------------
+# API key is sent as a POST form field on every request.
+[joe_sandbox]
+host    = https://jbxcloud.joesecurity.org
+api_key = YOUR_JOE_SANDBOX_API_KEY
+
+# --- ANY.RUN (interactive sandbox) -----------------------------------------
+[any_run]
+host    = https://api.any.run
+api_key = YOUR_ANY_RUN_API_KEY
+
+# --- Hybrid Analysis (CrowdStrike Falcon Sandbox) --------------------------
+# User-Agent is mandatory; Hybrid Analysis rejects requests without one.
+[hybrid_analysis]
+host       = https://www.hybrid-analysis.com
+api_key    = YOUR_HYBRID_ANALYSIS_API_KEY
+user_agent = Falcon Sandbox
+
+# --- VMRay (hypervisor-level dynamic analysis) -----------------------------
+[vmray]
+host    = https://cloud.vmray.com
+api_key = YOUR_VMRAY_API_KEY
+
+# --- Intezer Analyze (binary DNA / code-reuse attribution) -----------------
+# api_key is exchanged for a short-lived JWT Bearer token on first request.
+[intezer]
+host    = https://analyze.intezer.com
+api_key = YOUR_INTEZER_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 2 — MDR platforms
+# =============================================================================
+
+# --- Huntress Managed EDR / ITDR -------------------------------------------
+# HTTP Basic auth with API Key ID as username and API Secret as password.
+[huntress]
+host       = https://api.huntress.io
+api_key_id = YOUR_HUNTRESS_API_KEY_ID
+api_secret = YOUR_HUNTRESS_API_SECRET
+
+# --- Arctic Wolf Managed Detection & Response ------------------------------
+# customer_id is optional; required only for multi-tenant MSSP usage.
+[arctic_wolf]
+host        = https://api.arcticwolf.com
+api_key     = YOUR_ARCTIC_WOLF_API_KEY
+customer_id =
+
+# --- Red Canary MDR --------------------------------------------------------
+[red_canary]
+host    = https://my.redcanary.co
+api_key = YOUR_RED_CANARY_API_KEY

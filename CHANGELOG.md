@@ -19,6 +19,361 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 2: MDR Platforms
+
+Three Managed Detection & Response connectors covering the top-rated
+MDR vendors from the 2026 audit. This wave fills the gap between
+platform-level EDR (CrowdStrike, SentinelOne, etc., already in GNAT) and
+the managed-service delivery layer — the tier where analyst-generated
+tickets, investigations, and confirmed detections live. Platform count:
+119 → 122.
+
+All three connectors are `trusted_internal` (customer's own MDR
+telemetry) and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `huntress/` — `HuntressClient` for Huntress Managed EDR / ITDR.
+  HTTP Basic auth with `api_key_id` as username + `api_secret` as
+  password (reuses `BaseClient._basic_auth`). Endpoints: `/v1/account`,
+  `/v1/organizations`, `/v1/agents`, `/v1/incident_reports`,
+  `/v1/reports`, `/v1/signals`. Incident reports map to
+  `observed-data` envelopes with refs to the affected `identity`
+  (organization), custom `x-huntress-agent` SCO for the deployed
+  agent, and any `ipv4-addr` observables from `remote_ip`. Domain
+  helpers: `list_organizations`, `list_agents`, `list_incidents`,
+  `get_incident`. `_unwrap_huntress` helper strips Huntress's
+  single-key envelopes (e.g. `{"organization": {...}}`).
+- `arctic_wolf/` — `ArcticWolfClient` for Arctic Wolf MDR. Bearer
+  token auth with an optional `X-Arctic-Wolf-Customer` header for
+  multi-tenant MSSP deployments. Dispatches across `/v1/tickets`,
+  `/v1/tickets/{id}/comments`, `/v1/investigations`, `/v1/customer`.
+  Tickets and investigations both map to `observed-data` envelopes
+  with `filters["kind"]` selecting the endpoint. Domain helpers:
+  `list_tickets`, `list_investigations`, `get_ticket`,
+  `get_ticket_comments`, `get_customer`.
+- `red_canary/` — `RedCanaryClient` for Red Canary MDR. `X-Api-Key`
+  header auth, JSON:API response shape (`{"data": ...}`) unwrapped by
+  `_unwrap_rc`. Endpoints: `/openapi/v3/detections`, `/endpoints`,
+  `/events`, `/organization`. Detections map to `observed-data`
+  envelopes with refs to the affected endpoint as `identity` and any
+  source `ipv4-addr`. Attribute nesting (`attributes.severity` etc.)
+  is handled inline in `to_stix`. Domain helpers: `list_detections`,
+  `get_detection`, `list_endpoints`, `get_endpoint`, `list_events`.
+
+**Tests**
+- 43 new tests across `TestHuntressClient` (15),
+  `TestArcticWolfClient` (14), `TestRedCanaryClient` (14) plus two
+  Phase 2 Wave 2 integrity tests. Full unit suite: 2270 tests
+  passing, zero regressions. Ruff clean across all new files.
+
+**Architectural notes**
+- All three MDR connectors introduce a custom SCO on the Huntress side
+  (`x-huntress-agent`) for the deployed agent record. This mirrors the
+  pattern Phase 1 Wave 3b established with `x-cryptocurrency-wallet`
+  on TRM Labs — custom STIX observable types are acceptable when the
+  platform's native entity doesn't have a natural STIX analog.
+
+### Added — Phase 2 Wave 1: Malware Sandboxes
+
+Five dynamic-malware-analysis connectors closing the single biggest
+remaining coverage gap from the 2026 audit. Up to this point GNAT had
+zero sandbox connectors — every IOC came from static-analysis / reputation
+sources. Phase 2 Wave 1 introduces the full sandbox tier at once so
+subsequent workflows (ransomware triage, phishing chain analysis,
+malware family attribution) have behavioral telemetry to consume.
+Platform count: 114 → 119.
+
+**Shared helper (`gnat/utils/stix_helpers.py`)**
+- `sandbox_report_envelope(source_name, analysis_id, …)` — builds a
+  STIX 2.1 `observed-data` envelope around a sandbox behavioral report
+  with deterministic UUID-5 refs to synthetic `file`/`url`/`process`/
+  `ipv4-addr`/`domain-name`/`url` observables. Every Phase 2 Wave 1
+  connector consumes this helper so all five produce consistent
+  envelope shapes.
+
+**New connectors (`gnat/connectors/`)**
+- `joe_sandbox/` — `JoeSandboxClient` for Joe Sandbox Cloud. Joe's
+  "apikey as POST form field" convention is wrapped in an
+  `_authed_form()` helper. COST_UNIT=5 to reflect submission expense.
+  Domain helpers: `submit_file`, `submit_url`, `get_submission`,
+  `get_analysis`, `get_iocs`, `iocs_to_indicators`. STIX emits
+  `observed-data` (full analysis), `malware` (family attribution from
+  detection tags), and `indicator` (extracted IOCs).
+- `any_run/` — `AnyRunClient` for ANY.RUN interactive sandbox.
+  `Authorization: API-Key <key>` header. Domain helpers: `submit_file`,
+  `submit_url`, `get_analysis`, `list_environments`. Maps ANY.RUN's
+  nested `mainObject` + `network` structure to sandbox envelopes.
+- `hybrid_analysis/` — `HybridAnalysisClient` for Hybrid Analysis /
+  Falcon Sandbox. Requires both `api-key` header **and** a non-empty
+  `User-Agent` (defaults to `"Falcon Sandbox"`); the connector rejects
+  missing User-Agent at construction time. Domain helpers:
+  `submit_file`, `submit_url`, `get_report_summary`, `hash_lookup`,
+  `search_hash`. Maps `threat_level_human` to STIX `malware_types`.
+- `vmray/` — `VMRayClient` for VMRay Cloud. `Authorization: api_key
+  <key>` header. Unwraps VMRay's `{"data": ..., "result": "ok"}`
+  envelope at the HTTP boundary via `_unwrap_vmray` so downstream
+  mappers don't think about it. Domain helpers: `submit_file`,
+  `submit_url`, `get_sample`, `get_analysis`, `get_submission`,
+  `get_summary_v2` (the rich v2 behavioral summary format).
+- `intezer/` — `IntezerClient` for Intezer Analyze. POSTs to
+  `/get-access-token` on first request and caches the returned JWT as
+  a Bearer token. Unique "binary DNA" code-reuse attribution → STIX
+  `malware` with `x_intezer.code_reuse_pct`. Domain helpers:
+  `analyze_file`, `analyze_hash`, `get_analysis`, `get_sub_analyses`,
+  `get_iocs`, `get_family`, `get_file_analysis`.
+
+**Architectural notes**
+- All five sandboxes raise `GNATClientError` from
+  `upsert_object`/`delete_object` — submissions are *domain helpers*
+  (`submit_file`, `submit_url`, `analyze_file`, `analyze_hash`), not
+  STIX CRUD writes. This matches the read-only-CRUD convention
+  established in Phase 1.
+- COST_UNIT=5 on all five connectors to reflect the relative expense
+  of submitting samples vs cheap lookups in other connectors.
+
+**Tests**
+- 66 new connector tests across `TestJoeSandboxClient` (14),
+  `TestAnyRunClient` (12), `TestHybridAnalysisClient` (13),
+  `TestVMRayClient` (13), `TestIntezerClient` (14) plus two Phase 2
+  Wave 1 integrity tests.
+- 5 new tests for `sandbox_report_envelope` in
+  `tests/unit/test_stix_helpers.py` (basic file envelope, URL
+  submission, deterministic ids, raw report embedding, empty
+  artifacts).
+- Full unit suite: 2047 tests passing, zero regressions.
+- Ruff clean across all new files.
+
+### Added — Phase 1 Wave 3b: Tier 1 Connector Expansion (Identity / Email / Finance)
+
+Five more Tier 1 connectors completing Wave 3. Per the user's "Both" vote
+on the ITDR vendor question, both Silverfort and Semperis ship
+simultaneously. Abnormal Security and Cofense Intelligence fill the
+advanced email / BEC gap. TRM Labs covers blockchain / cryptocurrency
+threat intelligence. Platform count: 109 → 114.
+
+**New connectors (`gnat/connectors/`)**
+- `silverfort/` — `SilverfortClient` for the ITDR platform. OAuth2
+  client-credentials auth exchanged at ``/api/v1/auth/token``, Bearer
+  cached on ``_auth_headers``. `TRUST_LEVEL = "trusted_internal"` (the
+  customer's own authentication telemetry). Emits `user-account`
+  (humans + service accounts) and `observed-data` (auth events with
+  synthetic user-account + ipv4-addr refs). Domain helpers:
+  `list_users`, `list_service_accounts`, `list_auth_events`,
+  `list_alerts`, `get_user_risk`.
+- `semperis/` — `SemperisClient` for Directory Services Protector.
+  Bearer-token auth, `TRUST_LEVEL = "trusted_internal"`. Endpoints:
+  `/IoEs`, `/IoCs`, `/Security/Evaluators`, `/Tenants/Forest/Domains`,
+  `/Security/Events`. IoE records map to STIX `indicator` with
+  `anomalous-activity` label + `[x-semperis-ioe:evaluator = ...]`
+  pattern; IoC records use `malicious-activity`. Security events map to
+  `observed-data` wrapping a user-account ref for the actor. Domain
+  helpers: `list_ioes`, `list_iocs`, `list_evaluators`,
+  `list_forest_domains`, `list_security_events`.
+- `abnormal/` — `AbnormalClient` for Abnormal Security (BEC / credential
+  phishing / vendor impersonation). Bearer-token auth,
+  `TRUST_LEVEL = "trusted_internal"`. Dispatches across `/threats`,
+  `/cases`, `/vendor-cases`, `/abusemailbox/campaigns` via
+  `filters["kind"]`. Each record maps to `observed-data` wrapping a
+  deterministic `email-message` ref and a sender `identity` ref, with
+  full `x_abnormal` context (attack_type, attack_vector, attack_strategy,
+  judgement, impersonated_party, vendor_name, case_id, subject).
+  Domain helpers: `list_threats`, `get_threat`, `get_threat_message`,
+  `list_cases`, `list_vendor_cases`, `list_abusemailbox_campaigns`.
+- `cofense_intel/` — `CofenseIntelClient` for Cofense Intelligence /
+  ThreatHQ. HTTP Basic auth (reuses `BaseClient._basic_auth`). Dispatches
+  across `/threat/search`, `/threat/{id}`, `/threat/updates`,
+  `/malware/families`, `/threat/actors`. Emits `indicator` (IPs, domains,
+  URLs, SHA-256 hashes — all tagged with `x_cofense.human_verified =
+  True`), `malware`, `threat-actor`, and `report` STIX types. Domain
+  helpers: `search_threats`, `get_threat`, `recent_threats`,
+  `list_malware_families`, `list_actors`.
+- `trm_labs/` — `TRMLabsClient` for blockchain / crypto intel. HTTP
+  Basic auth with the API key as username (empty password). Endpoints:
+  `POST /screening/addresses` (batch risk screen), `GET /entities/{id}`
+  (attribution), `GET /addresses/{chain}/{address}` (full profile).
+  STIX mapping: screening results → `indicator` with a custom
+  `[x-cryptocurrency-wallet:value = ... AND ...:chain = ...]` pattern
+  and `malicious-activity` label when risk_score >= 10; entities →
+  `threat-actor`; address profiles → `observed-data` wrapping a
+  synthetic `x-cryptocurrency-wallet` ref. Domain helpers:
+  `screen_address`, `screen_addresses_batch`, `get_entity`,
+  `get_address_profile`.
+
+**Tests**
+- 68 new tests across `TestSilverfortClient` (13),
+  `TestSemperisClient` (14), `TestAbnormalClient` (13),
+  `TestCofenseIntelClient` (14), `TestTRMLabsClient` (16) plus two
+  Wave 3b integrity tests. Full suite: 1977 tests passing, zero
+  regressions.
+
+### Added — Phase 1 Wave 3a: Tier 1 Connector Expansion (Infrastructure Pivoting)
+
+Three infrastructure-pivoting connectors addressing the biggest 2026 audit
+gap outside of sandbox telemetry: passive DNS, historical WHOIS, and
+pre-weaponization attack infrastructure. Platform count: 106 → 109.
+
+Per the user's "Both" decision on the pDNS vendor question, **both**
+SecurityTrails and DomainTools are wired in; Silent Push complements them
+with future-attack infrastructure detection.
+
+**New connectors (`gnat/connectors/`)**
+- `securitytrails/` — `SecurityTrailsClient` wraps
+  `https://api.securitytrails.com/v1/` with custom `APIKEY` header auth.
+  Supports current DNS, subdomains, historical DNS by record type
+  (a/aaaa/mx/ns/soa/txt), historical WHOIS, DSL domain/IP search, and
+  reverse-IP. Emits `domain-name`, `ipv4-addr`, `observed-data` (pDNS
+  history). Domain helpers: `domain_info`, `subdomains`,
+  `historical_dns`, `historical_whois`, `search_domains`, `reverse_ip`.
+- `domaintools/` — `DomainToolsClient` for the Iris API with
+  query-parameter `api_username` + `api_key` auth. Endpoints: current
+  WHOIS, WHOIS history, Iris pivoting, hosting history, reverse-IP,
+  reputation. Emits `domain-name`, `ipv4-addr`, `observed-data`. Domain
+  helpers: `whois`, `whois_history`, `iris_investigate`, `reverse_ip`,
+  `hosting_history`, `reputation`.
+- `silent_push/` — `SilentPushClient` with `X-API-KEY` header auth.
+  Endpoints: domain/IPv4 enrich, passive DNS, IOC search, asset scan.
+  Emits `indicator` (future-attack signals) and `observed-data` (pDNS).
+  Domain helpers: `ipv4_enrich`, `domain_enrich`, `padns`, `search_iocs`,
+  `scan_asset`. Risk scores ≥50 flagged with `malicious-activity` label.
+
+**Tests**
+- 43 new tests across three new `TestXxxClient` classes +
+  `test_phase1_wave3a_registry_contains_new_connectors` and
+  `test_phase1_wave3a_config_sections_exist`. Full suite: 1909 tests
+  passing, zero regressions.
+
+### Added — Phase 1 Wave 2: Tier 1 Connector Expansion
+
+Three more Tier 1 connectors targeting the 2026 audit's "unique enterprise
+telemetry" slot: Cloudflare edge intel, GitGuardian secret incidents, and
+runZero CAASM inventory. All three have published OpenAPI specs and were
+originally slated as codegen candidates; in practice hand-writing the
+STIX mapping was faster than post-processing auto-generated stubs.
+Platform count: 103 → 106.
+
+**New connectors (`gnat/connectors/`)**
+- `cloudflare_intel/` — `CloudflareIntelClient` wraps the
+  `/client/v4/accounts/{account_id}/intel/` endpoints (domain, IP, ASN,
+  WHOIS, passive DNS, domain history). Bearer-token + `account_id`
+  required. Emits STIX `indicator` (domain / ipv4), `infrastructure`
+  (ASN), and `observed-data` (WHOIS / pDNS / history). Deterministic
+  UUID-5 ids keyed on the queried observable. Domain helpers:
+  `get_domain_intel`, `get_ip_intel`, `get_asn_intel`, `get_whois`,
+  `get_passive_dns`, `get_domain_history`. Registered as
+  `"cloudflare_intel"`.
+- `gitguardian/` — `GitGuardianClient` for the v1 REST API. Lists and
+  fetches secret incidents (`/v1/incidents/secrets`), sources, and
+  members. Ad-hoc scanning exposed via `scan_content` (POST `/v1/scan`)
+  and `scan_content_batch` (POST `/v1/multiscan`). Incidents map to
+  STIX `observed-data` envelopes wrapping file + identity observables
+  via `make_observed_data_envelope`, with full `x_gitguardian` context
+  (incident id, secret type + family, status, severity, validity,
+  assignee, repository, occurrences). Registered as `"gitguardian"`.
+- `runzero/` — `RunZeroClient` for the CAASM platform. `TRUST_LEVEL =
+  "trusted_internal"` since runZero data is the customer's own asset
+  inventory. Bulk exports via `/api/v1.0/export/org/{assets,services,
+  software,vulnerabilities}.json`, single-asset lookup via
+  `/api/v1.0/org/assets/{id}`, plus `list_sites` and `list_tasks`
+  domain helpers. STIX mapping: assets → `observed-data` with
+  `ipv4-addr` / `mac-addr` / `software` refs; software records →
+  `software` SCO; vulnerability records → `vulnerability` SDO with
+  CVSS external refs. Registered as `"runzero"`.
+
+**Config (`config/config.ini.example`)**
+- New sections `[cloudflare_intel]`, `[gitguardian]`, `[runzero]` under
+  a "Phase 1 Wave 2" banner.
+
+**Registry (`gnat/clients/__init__.py`)**
+- Added imports + `CLIENT_REGISTRY` entries + `__all__` entries for
+  `CloudflareIntelClient`, `GitGuardianClient`, `RunZeroClient`.
+
+**Tests**
+- `tests/unit/connectors/test_connectors.py` — 49 new tests across
+  three new `TestXxxClient` classes + two Wave 2 integrity tests
+  (`test_phase1_wave2_registry_contains_new_connectors`,
+  `test_phase1_wave2_config_sections_exist`). Full suite: 1866 tests
+  passing, zero regressions.
+
+### Added — Phase 1 Wave 1: Tier 1 Connector Expansion
+
+Four new connectors closing the biggest gaps in GNAT's 2026 coverage audit
+(malware-family attribution, MITRE ATT&CK framework, open-source supply chain,
+exploit intelligence). All four are read-only feeds and bring the platform
+count from 99 → 103. Built on the existing `BaseClient` + `ConnectorMixin`
+pattern with shared STIX-mapping helpers extracted to
+`gnat/utils/stix_helpers.py`.
+
+**New connectors (`gnat/connectors/`)**
+- `mitre_attack/` — `MitreAttackClient` wraps the public MITRE ATT&CK TAXII 2.1
+  server at `https://attack-taxii.mitre.org/api/v21/`. Supports all three
+  matrices (`enterprise-attack`, `mobile-attack`, `ics-attack`). Registered
+  as `"mitre_attack"`. Domain helpers: `get_technique`, `get_group`,
+  `get_software`, `list_tactics`, `list_techniques`, `list_groups`.
+- `abusech/` — `AbuseChClient` unified feed connector covering URLhaus,
+  MalwareBazaar, ThreatFox, Feodo Tracker, and SSL Blacklist. Single
+  registry entry (`"abusech"`) with per-feed dispatch via
+  `filters["feed"]` in `list_objects`, plus domain helpers
+  `query_urlhaus_url`, `query_urlhaus_host`, `query_mb_hash`,
+  `query_threatfox_ioc`, `get_feodo_blocklist`, `get_sslbl_blocklist`.
+  Optional `Auth-Key` header for higher rate-limit tier. Emits STIX
+  `indicator` objects with deterministic UUID-5 ids and per-feed
+  `x_urlhaus`/`x_malwarebazaar`/`x_threatfox`/`x_feodotracker`/`x_sslbl`
+  extensions.
+- `osv/` — `OSVClient` for the open-source vulnerability database at
+  `https://api.osv.dev`. Endpoints: `/v1/query`, `/v1/querybatch`,
+  `/v1/vulns/{id}`. Domain helpers: `query_package`, `query_batch`,
+  `get_vuln`. Emits STIX `vulnerability` objects via the shared
+  `osv_to_stix_vulnerability()` helper.
+- `vulncheck/` — `VulnCheckClient` for exploit intelligence at
+  `https://api.vulncheck.com/v3/`. Supports all six indices
+  (`vulncheck-kev`, `initial-access`, `exploits`, `canary-intelligence`,
+  `mitre-cve`, `nist-nvd2`). Domain helpers: `get_kev`, `get_exploits`,
+  `get_initial_access`, `list_indices`. Bearer-token auth.
+
+**New TAXII reader (`gnat/ingest/sources/`)**
+- `mitre_taxii_reader.py`: `MitreAttackTAXIIReader(TAXIICollectionReader)`
+  auto-discovers the enterprise/mobile/ICS matrix collections and wraps
+  every poll with a thread-safe token-bucket rate limiter matching
+  MITRE's published 10 requests / 10 minutes / source IP limit. Module
+  constants: `MITRE_TAXII_ROOT`, `MITRE_COLLECTION_IDS`.
+
+**Shared STIX helpers (`gnat/utils/stix_helpers.py`)**
+- `make_observed_data_envelope(first_observed, last_observed, …)` —
+  builds STIX 2.1 `observed-data` SDOs with deterministic UUID-5 ids
+  derived from source + observation window + object_refs. Consumed by
+  all upcoming sandbox/identity/secret-scanning connectors.
+- `osv_to_stix_vulnerability(osv_dict)` — converts OSV-schema vulnerability
+  dicts to STIX 2.1 `vulnerability` objects. Handles CVE/GHSA/OSV id
+  aliasing, CVSS severity → external references, affected package ranges
+  → `x_osv_affected`, CWE IDs → `x_cwe_ids`.
+- `cvss_to_external_reference(vector, score, version)` — builds STIX
+  `external_references` entries for CVSS v2/v3/v4 vectors.
+- `make_indicator_pattern(observable_type, value)` — centralized STIX
+  pattern builder for ipv4-addr, ipv6-addr, domain-name, url, email-addr,
+  file hashes (MD5/SHA-1/SHA-256/SHA-512), and x-cryptocurrency-wallet.
+  Escapes single quotes.
+- `x509_fingerprint_pattern(sha1, sha256, ja3, ja3s)` — STIX patterns for
+  x509 fingerprints and TLS JA3/JA3S values; multiple fingerprints joined
+  with `OR`.
+
+**Config (`config/config.ini.example`)**
+- New sections `[mitre_attack]`, `[abusech]`, `[osv]`, `[vulncheck]` at
+  the end of the file under a "Phase 1 Wave 1" banner.
+
+**Registry (`gnat/clients/__init__.py`)**
+- Added imports + `CLIENT_REGISTRY` entries + `__all__` entries for
+  `MitreAttackClient`, `AbuseChClient`, `OSVClient`, `VulnCheckClient`.
+
+**Tests**
+- `tests/unit/test_stix_helpers.py` — new file, 29 tests covering all
+  core and Phase 1 Wave 1 helpers (deterministic ids, CVSS encoding,
+  indicator pattern escaping, OSV → STIX conversion, JA3 patterns).
+- `tests/unit/connectors/test_connectors.py` — 58 new tests across four
+  new `TestXxxClient` classes + two Phase 1 Wave 1 integrity tests
+  (`test_phase1_wave1_registry_contains_new_connectors`,
+  `test_phase1_wave1_config_sections_exist`). Full suite: 1482 tests
+  passing, zero regressions.
+
 ### Added — Phase 4: Control, Reasoning, Safety
 
 **4A — Execution Context & Domain Boundaries**

@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 99 security/threat intelligence platforms
+- A unified client interface for 122 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -329,6 +329,29 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Zeek Network Monitor | `gnat/connectors/zeek/` | File/Syslog |
 | ZeroFox Digital Risk Protection | `gnat/connectors/zerofox/` | Bearer |
 | ControlUp DEX | `gnat/connectors/controlup/` | Bearer token |
+| MITRE ATT&CK (TAXII 2.1) | `gnat/connectors/mitre_attack/` | None (public) |
+| Abuse.ch (URLhaus/MalwareBazaar/ThreatFox/Feodo/SSLBL) | `gnat/connectors/abusech/` | Optional Auth-Key |
+| OSV.dev (open-source vulnerabilities) | `gnat/connectors/osv/` | None (public) |
+| VulnCheck (exploit intelligence) | `gnat/connectors/vulncheck/` | Bearer token |
+| Cloudflare Threat Intelligence | `gnat/connectors/cloudflare_intel/` | Bearer token + account_id |
+| GitGuardian (secret incidents) | `gnat/connectors/gitguardian/` | API key (`Authorization: Token`) |
+| runZero (CAASM asset inventory) | `gnat/connectors/runzero/` | Organization Export token (Bearer) |
+| SecurityTrails (passive DNS / WHOIS history) | `gnat/connectors/securitytrails/` | API key (`APIKEY` header) |
+| DomainTools Iris (WHOIS / hosting history / pivoting) | `gnat/connectors/domaintools/` | API username + API key (query params) |
+| Silent Push (future-attack infrastructure) | `gnat/connectors/silent_push/` | API key (`X-API-KEY` header) |
+| Silverfort (ITDR runtime identity telemetry) | `gnat/connectors/silverfort/` | OAuth2 client credentials |
+| Semperis DSP (AD / Entra posture + IoE/IoC) | `gnat/connectors/semperis/` | Bearer token |
+| Abnormal Security (BEC / vendor impersonation) | `gnat/connectors/abnormal/` | Bearer token |
+| Cofense Intelligence (human-verified phishing) | `gnat/connectors/cofense_intel/` | HTTP Basic (username + password) |
+| TRM Labs (blockchain / crypto intel) | `gnat/connectors/trm_labs/` | API key (Basic auth, empty password) |
+| Joe Sandbox Cloud (dynamic malware analysis) | `gnat/connectors/joe_sandbox/` | API key (form field) |
+| ANY.RUN (interactive sandbox) | `gnat/connectors/any_run/` | API key (`API-Key` header) |
+| Hybrid Analysis / Falcon Sandbox | `gnat/connectors/hybrid_analysis/` | API key + User-Agent header |
+| VMRay (hypervisor-level analysis) | `gnat/connectors/vmray/` | API key (`api_key` header) |
+| Intezer Analyze (binary DNA attribution) | `gnat/connectors/intezer/` | API key → JWT Bearer |
+| Huntress Managed EDR / ITDR | `gnat/connectors/huntress/` | HTTP Basic (key id + secret) |
+| Arctic Wolf MDR | `gnat/connectors/arctic_wolf/` | Bearer token (+ optional customer id) |
+| Red Canary MDR | `gnat/connectors/red_canary/` | API key (`X-Api-Key` header) |
 
 ---
 
