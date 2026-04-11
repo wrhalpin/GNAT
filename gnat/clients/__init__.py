@@ -39,6 +39,7 @@ from gnat.connectors.datadog.client import DatadogClient
 from gnat.connectors.defectdojo.client import DefectDojoClient
 from gnat.connectors.defenderti.client import DefenderTIClient
 from gnat.connectors.discord.connector import DiscordClient
+from gnat.connectors.domaintools.client import DomainToolsClient
 from gnat.connectors.dragos.client import DragosClient
 from gnat.connectors.dynatrace.client import DynatraceClient
 from gnat.connectors.elastic.connector import ElasticConnector
@@ -88,12 +89,14 @@ from gnat.connectors.riskrecon.client import RiskReconClient
 from gnat.connectors.runzero.client import RunZeroClient
 from gnat.connectors.security_onion.client import SecurityOnionClient
 from gnat.connectors.securityscorecard.client import SecurityScorecardClient
+from gnat.connectors.securitytrails.client import SecurityTrailsClient
 from gnat.connectors.sentinel.connector import SentinelConnector
 from gnat.connectors.sentinelone.client import SentinelOneClient
 from gnat.connectors.servicenow.client import ServiceNowClient
 from gnat.connectors.servicenow_secops.client import ServiceNowSecOpsClient
 from gnat.connectors.shadowserver.client import ShadowServerClient
 from gnat.connectors.shodan.client import ShodanClient
+from gnat.connectors.silent_push.client import SilentPushClient
 from gnat.connectors.snort.client import SnortClient
 from gnat.connectors.socradar.client import SOCRadarClient
 from gnat.connectors.sophos.client import SophosClient
@@ -235,6 +238,10 @@ CLIENT_REGISTRY: dict = {
     "cloudflare_intel": CloudflareIntelClient,
     "gitguardian": GitGuardianClient,
     "runzero": RunZeroClient,
+    # Phase 1 Wave 3a — Tier 1 expansion (infrastructure pivoting)
+    "securitytrails": SecurityTrailsClient,
+    "domaintools": DomainToolsClient,
+    "silent_push": SilentPushClient,
 }
 
 __all__ = [
@@ -303,4 +310,8 @@ __all__ = [
     "CloudflareIntelClient",
     "GitGuardianClient",
     "RunZeroClient",
+    # Phase 1 Wave 3a — Tier 1 expansion
+    "SecurityTrailsClient",
+    "DomainToolsClient",
+    "SilentPushClient",
 ]

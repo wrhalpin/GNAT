@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 106 security/threat intelligence platforms
+- A unified client interface for 109 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -336,6 +336,9 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Cloudflare Threat Intelligence | `gnat/connectors/cloudflare_intel/` | Bearer token + account_id |
 | GitGuardian (secret incidents) | `gnat/connectors/gitguardian/` | API key (`Authorization: Token`) |
 | runZero (CAASM asset inventory) | `gnat/connectors/runzero/` | Organization Export token (Bearer) |
+| SecurityTrails (passive DNS / WHOIS history) | `gnat/connectors/securitytrails/` | API key (`APIKEY` header) |
+| DomainTools Iris (WHOIS / hosting history / pivoting) | `gnat/connectors/domaintools/` | API username + API key (query params) |
+| Silent Push (future-attack infrastructure) | `gnat/connectors/silent_push/` | API key (`X-API-KEY` header) |
 
 ---
 

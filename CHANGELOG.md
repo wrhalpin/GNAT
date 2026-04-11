@@ -19,6 +19,42 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 1 Wave 3a: Tier 1 Connector Expansion (Infrastructure Pivoting)
+
+Three infrastructure-pivoting connectors addressing the biggest 2026 audit
+gap outside of sandbox telemetry: passive DNS, historical WHOIS, and
+pre-weaponization attack infrastructure. Platform count: 106 → 109.
+
+Per the user's "Both" decision on the pDNS vendor question, **both**
+SecurityTrails and DomainTools are wired in; Silent Push complements them
+with future-attack infrastructure detection.
+
+**New connectors (`gnat/connectors/`)**
+- `securitytrails/` — `SecurityTrailsClient` wraps
+  `https://api.securitytrails.com/v1/` with custom `APIKEY` header auth.
+  Supports current DNS, subdomains, historical DNS by record type
+  (a/aaaa/mx/ns/soa/txt), historical WHOIS, DSL domain/IP search, and
+  reverse-IP. Emits `domain-name`, `ipv4-addr`, `observed-data` (pDNS
+  history). Domain helpers: `domain_info`, `subdomains`,
+  `historical_dns`, `historical_whois`, `search_domains`, `reverse_ip`.
+- `domaintools/` — `DomainToolsClient` for the Iris API with
+  query-parameter `api_username` + `api_key` auth. Endpoints: current
+  WHOIS, WHOIS history, Iris pivoting, hosting history, reverse-IP,
+  reputation. Emits `domain-name`, `ipv4-addr`, `observed-data`. Domain
+  helpers: `whois`, `whois_history`, `iris_investigate`, `reverse_ip`,
+  `hosting_history`, `reputation`.
+- `silent_push/` — `SilentPushClient` with `X-API-KEY` header auth.
+  Endpoints: domain/IPv4 enrich, passive DNS, IOC search, asset scan.
+  Emits `indicator` (future-attack signals) and `observed-data` (pDNS).
+  Domain helpers: `ipv4_enrich`, `domain_enrich`, `padns`, `search_iocs`,
+  `scan_asset`. Risk scores ≥50 flagged with `malicious-activity` label.
+
+**Tests**
+- 43 new tests across three new `TestXxxClient` classes +
+  `test_phase1_wave3a_registry_contains_new_connectors` and
+  `test_phase1_wave3a_config_sections_exist`. Full suite: 1909 tests
+  passing, zero regressions.
+
 ### Added — Phase 1 Wave 2: Tier 1 Connector Expansion
 
 Three more Tier 1 connectors targeting the 2026 audit's "unique enterprise

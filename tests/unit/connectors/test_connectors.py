@@ -12780,3 +12780,415 @@ def test_phase1_wave2_config_sections_exist():
     parser.read(cfg_path)
     for section in ("cloudflare_intel", "gitguardian", "runzero"):
         assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
+
+
+# ===========================================================================
+# Phase 1 Wave 3a — Tier 1 connector expansion (infrastructure pivoting)
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# SecurityTrails
+# ---------------------------------------------------------------------------
+
+
+class TestSecurityTrailsClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.securitytrails.client import SecurityTrailsClient
+
+        c = SecurityTrailsClient(host="https://api.securitytrails.com", api_key="st_test")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_apikey_header(self):
+        from gnat.connectors.securitytrails.client import SecurityTrailsClient
+
+        c = SecurityTrailsClient(host="https://api.securitytrails.com", api_key="st_test")
+        c.authenticate()
+        assert c._auth_headers["APIKEY"] == "st_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.securitytrails.client import SecurityTrailsClient
+
+        c = SecurityTrailsClient(host="https://api.securitytrails.com", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"success": True}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_object_domain(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"hostname": "evil.example", "current_dns": {}}),
+        )
+        obj = client.get_object("domain-name", "evil.example")
+        assert obj["_st_kind"] == "domain-name"
+
+    def test_list_objects_subdomains(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"subdomains": ["dev", "api", "mail"]}),
+        )
+        items = client.list_objects("domain-name", filters={"domain": "example.com"})
+        assert len(items) == 3
+
+    def test_list_objects_historical_dns(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "records": [
+                        {"values": [{"ip": "1.2.3.4"}], "first_seen": "2020-01-01"}
+                    ]
+                }
+            ),
+        )
+        items = client.list_objects(
+            "observed-data", filters={"domain": "example.com", "record_type": "a"}
+        )
+        assert len(items) == 1
+        assert items[0]["_st_record_type"] == "a"
+
+    def test_list_objects_rejects_invalid_record_type(self, client):
+        with pytest.raises(GNATClientError, match="Invalid SecurityTrails record_type"):
+            client.list_objects(
+                "observed-data",
+                filters={"domain": "example.com", "record_type": "bogus"},
+            )
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("domain-name", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("domain-name", "x")
+
+    def test_to_stix_domain(self, client):
+        stix = client.to_stix(
+            {
+                "_st_kind": "domain-name",
+                "_st_query": "example.com",
+                "subdomain": "dev",
+                "parent": "example.com",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "domain-name"
+        assert stix["value"] == "dev.example.com"
+
+    def test_to_stix_observed_data(self, client):
+        stix = client.to_stix(
+            {
+                "_st_kind": "observed-data",
+                "_st_query": "example.com",
+                "_st_record_type": "a",
+                "values": [{"ip": "1.2.3.4"}],
+                "first_seen": "2020-01-01",
+                "last_seen": "2024-01-01",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert any(r.startswith("ipv4-addr--") for r in stix["object_refs"])
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "domain-name--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# DomainTools
+# ---------------------------------------------------------------------------
+
+
+class TestDomainToolsClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.domaintools.client import DomainToolsClient
+
+        c = DomainToolsClient(
+            host="https://api.domaintools.com",
+            api_username="user",
+            api_key="dt_test",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_accepts_credentials(self):
+        from gnat.connectors.domaintools.client import DomainToolsClient
+
+        c = DomainToolsClient(
+            host="https://api.domaintools.com",
+            api_username="user",
+            api_key="dt_test",
+        )
+        c.authenticate()
+        assert c._auth_headers["Accept"] == "application/json"
+
+    def test_authenticate_requires_username(self):
+        from gnat.connectors.domaintools.client import DomainToolsClient
+
+        c = DomainToolsClient(
+            host="https://api.domaintools.com",
+            api_username="",
+            api_key="dt_test",
+        )
+        with pytest.raises(GNATClientError, match="requires api_username"):
+            c.authenticate()
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.domaintools.client import DomainToolsClient
+
+        c = DomainToolsClient(
+            host="https://api.domaintools.com",
+            api_username="user",
+            api_key="",
+        )
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_auth_params(self, client):
+        params = client._auth_params({"foo": "bar"})
+        assert params["api_username"] == "user"
+        assert params["api_key"] == "dt_test"
+        assert params["foo"] == "bar"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"response": {}}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_object_whois(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"response": {"registrar": "Example"}}),
+        )
+        obj = client.get_object("domain-name", "example.com")
+        assert obj["_dt_kind"] == "domain-name"
+
+    def test_list_objects_reverse_ip(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "response": {
+                        "ip_addresses": [
+                            {"ip_address": "1.2.3.4", "domain_count": 42},
+                            {"ip_address": "5.6.7.8", "domain_count": 7},
+                        ]
+                    }
+                }
+            ),
+        )
+        items = client.list_objects("ipv4-addr", filters={"domain": "example.com"})
+        assert len(items) == 2
+
+    def test_list_objects_iris_requires_query(self, client):
+        with pytest.raises(GNATClientError, match="requires a 'query'"):
+            client.list_objects("domain-name")
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("domain-name", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("domain-name", "x")
+
+    def test_to_stix_domain(self, client):
+        stix = client.to_stix(
+            {
+                "_dt_kind": "domain-name",
+                "domain": "example.com",
+                "registrar": "Example Registrar",
+                "create_date": "2020-01-01",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "domain-name"
+        assert stix["value"] == "example.com"
+
+    def test_to_stix_ipv4(self, client):
+        stix = client.to_stix(
+            {"_dt_kind": "ipv4-addr", "ip_address": "1.2.3.4"}
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "ipv4-addr"
+        assert stix["value"] == "1.2.3.4"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "domain-name--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Silent Push
+# ---------------------------------------------------------------------------
+
+
+class TestSilentPushClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.silent_push.client import SilentPushClient
+
+        c = SilentPushClient(host="https://api.silentpush.com", api_key="sp_test")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_api_key_header(self):
+        from gnat.connectors.silent_push.client import SilentPushClient
+
+        c = SilentPushClient(host="https://api.silentpush.com", api_key="sp_test")
+        c.authenticate()
+        assert c._auth_headers["X-API-KEY"] == "sp_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.silent_push.client import SilentPushClient
+
+        c = SilentPushClient(host="https://api.silentpush.com", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"response": {}}))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_get_object_domain(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value={"domain": "evil.example", "sp_risk_score": 85}),
+        )
+        obj = client.get_object("indicator", "evil.example")
+        assert obj["_sp_subkind"] == "domain"
+
+    def test_get_object_ipv4_dispatches(self, client, monkeypatch):
+        stub = MagicMock(return_value={"ipv4": "9.9.9.9", "sp_risk_score": 10})
+        monkeypatch.setattr(client, "get", stub)
+        obj = client.get_object("indicator", "9.9.9.9")
+        assert obj["_sp_subkind"] == "ipv4"
+        assert "explore/ipv4" in stub.call_args[0][0]
+
+    def test_list_objects_ioc_search(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "post",
+            MagicMock(
+                return_value={"response": {"records": [{"domain": "a"}, {"domain": "b"}]}}
+            ),
+        )
+        items = client.list_objects(
+            "indicator", filters={"ioc_type": "domain", "query": {"foo": "bar"}}
+        )
+        assert len(items) == 2
+
+    def test_list_objects_padns_requires_qvalue(self, client):
+        with pytest.raises(GNATClientError, match="requires a 'qvalue'"):
+            client.list_objects("observed-data", filters={"qtype": "a"})
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("indicator", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("indicator", "x")
+
+    def test_to_stix_domain_indicator(self, client):
+        stix = client.to_stix(
+            {
+                "_sp_kind": "indicator",
+                "_sp_subkind": "domain",
+                "_sp_query": "evil.example",
+                "domain": "evil.example",
+                "sp_risk_score": 80,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "domain-name:value" in stix["pattern"]
+        assert "malicious-activity" in stix["labels"]
+
+    def test_to_stix_ipv4_indicator(self, client):
+        stix = client.to_stix(
+            {
+                "_sp_kind": "indicator",
+                "_sp_subkind": "ipv4",
+                "_sp_query": "9.9.9.9",
+                "ipv4": "9.9.9.9",
+                "sp_risk_score": 5,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "ipv4-addr:value" in stix["pattern"]
+        assert stix["labels"] == ["benign"]
+
+    def test_to_stix_padns(self, client):
+        stix = client.to_stix(
+            {
+                "_sp_kind": "observed-data",
+                "_sp_qtype": "a",
+                "_sp_query": "example.com",
+                "value": "1.2.3.4",
+                "first_seen": "2020-01-01",
+                "last_seen": "2024-01-01",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        assert any(r.startswith("ipv4-addr--") for r in stix["object_refs"])
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "indicator--x"})
+        assert "read-only" in out["note"]
+
+
+# ---------------------------------------------------------------------------
+# Registry integrity — Phase 1 Wave 3a
+# ---------------------------------------------------------------------------
+
+
+def test_phase1_wave3a_registry_contains_new_connectors():
+    from gnat.clients import CLIENT_REGISTRY
+
+    for key in ("securitytrails", "domaintools", "silent_push"):
+        assert key in CLIENT_REGISTRY, f"Missing {key} in CLIENT_REGISTRY"
+
+
+def test_phase1_wave3a_config_sections_exist():
+    import configparser
+    from pathlib import Path
+
+    cfg_path = Path(__file__).resolve().parents[3] / "config" / "config.ini.example"
+    parser = configparser.ConfigParser(strict=False)
+    parser.read(cfg_path)
+    for section in ("securitytrails", "domaintools", "silent_push"):
+        assert parser.has_section(section), f"Missing [{section}] in config.ini.example"

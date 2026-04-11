@@ -930,3 +930,24 @@ api_key = YOUR_GITGUARDIAN_API_KEY
 [runzero]
 host         = https://console.runzero.com
 export_token = YOUR_RUNZERO_EXPORT_TOKEN
+
+# =============================================================================
+# Phase 1 Wave 3a — Tier 1 connector expansion (infrastructure pivoting)
+# =============================================================================
+
+# --- SecurityTrails (historical DNS / WHOIS / subdomain discovery) ---------
+[securitytrails]
+host    = https://api.securitytrails.com
+api_key = YOUR_SECURITYTRAILS_API_KEY
+
+# --- DomainTools Iris (WHOIS / hosting history / Iris pivoting) ------------
+# Requires both an API username and API key (query-parameter auth).
+[domaintools]
+host         = https://api.domaintools.com
+api_username = YOUR_DOMAINTOOLS_USERNAME
+api_key      = YOUR_DOMAINTOOLS_API_KEY
+
+# --- Silent Push (future attack infrastructure + actor behavior) -----------
+[silent_push]
+host    = https://api.silentpush.com
+api_key = YOUR_SILENTPUSH_API_KEY
