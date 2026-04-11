@@ -115,6 +115,18 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | `hibp` | Have I Been Pwned (HIBP) | API key |
 | `synapse` | Vertex Project Synapse | API key / Bearer |
 | `osint_feed` | Generic OSINT Feed (TAXII 2.x / STIX-JSON) | None / Basic / API key / Bearer / OAuth2 |
+| `mitre_attack` | MITRE ATT&CK (TAXII 2.1) | None (public) |
+| `abusech` | Abuse.ch (URLhaus / MalwareBazaar / ThreatFox / Feodo / SSLBL) | Optional Auth-Key |
+| `cloudflare_intel` | Cloudflare Threat Intelligence | Bearer token + account_id |
+| `cofense_intel` | Cofense Intelligence (human-verified phishing) | HTTP Basic |
+| `trm_labs` | TRM Labs (blockchain / crypto intel) | API key (Basic, empty password) |
+| `talos` | Cisco Talos Intelligence | None (public reputation) |
+| `fortiguard` | Fortinet FortiGuard Labs | Optional Bearer (IOC service) |
+| `kaspersky_opentip` | Kaspersky OpenTIP | Optional `x-api-key` |
+| `eset_ti` | ESET Threat Intelligence | Bearer token |
+| `bitdefender_iz` | Bitdefender IntelliZone | `X-API-Key` header |
+| `abuseipdb` | AbuseIPDB community IP reputation | `Key` header |
+| `project_honey_pot` | Project Honey Pot http:BL | http:BL access key (DNS-based) |
 
 ### SIEMs & Log Analytics
 
@@ -169,6 +181,8 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | `qualys` | Qualys VMDR | Basic |
 | `greenbone` | Greenbone / OpenVAS | GMP username/password |
 | `defectdojo` | DefectDojo Vulnerability Management | API token |
+| `osv` | OSV.dev (open-source vulnerabilities) | None (public) |
+| `vulncheck` | VulnCheck (exploit intelligence) | Bearer token |
 
 ### Cloud Security & ASM
 
@@ -187,6 +201,11 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | `aws_security` | AWS Security Hub / GuardDuty | AWS SigV4 (access key + secret) |
 | `securityscorecard` | SecurityScorecard Security Ratings | API token |
 | `jupiterone` | JupiterOne (CAASM / Cyber Asset Graph) | Bearer (API key) |
+| `runzero` | runZero (CAASM asset inventory) | Organization Export token (Bearer) |
+| `securitytrails` | SecurityTrails (passive DNS / WHOIS history) | API key (`APIKEY` header) |
+| `domaintools` | DomainTools Iris (WHOIS / hosting history / pivoting) | API username + API key |
+| `silent_push` | Silent Push (future-attack infrastructure) | API key (`X-API-KEY` header) |
+| `ip_api` | ip-api.com IP geolocation / enrichment | None (public) |
 
 ### Asset & Endpoint Management
 
@@ -212,6 +231,106 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | `cisa` | CISA KEV Catalog (public feed) | None (public) |
 | `tanium` | Tanium Endpoint Management & Security | API token / session |
 | `trendmicro_visionone` | Trend Micro Vision One XDR | Bearer token |
+| `dynatrace` | Dynatrace Observability + App Security | API token |
+
+### Malware Sandboxes & Dynamic Analysis
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `joe_sandbox` | Joe Sandbox Cloud (dynamic malware analysis) | API key (form field) |
+| `any_run` | ANY.RUN (interactive sandbox) | API key (`API-Key` header) |
+| `hybrid_analysis` | Hybrid Analysis / Falcon Sandbox | API key + User-Agent header |
+| `vmray` | VMRay (hypervisor-level analysis) | API key (`api_key` header) |
+| `intezer` | Intezer Analyze (binary DNA attribution) | API key → JWT Bearer |
+
+### Managed Detection & Response (MDR)
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `huntress` | Huntress Managed EDR / ITDR | HTTP Basic (key id + secret) |
+| `arctic_wolf` | Arctic Wolf MDR | Bearer token (+ optional customer id) |
+| `red_canary` | Red Canary MDR | API key (`X-Api-Key` header) |
+
+### Breach & Attack Simulation / Security Validation
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `safebreach` | SafeBreach BAS | `x-apitoken` + `x-accountid` headers |
+| `attackiq` | AttackIQ Security Optimization | Token header |
+| `cymulate` | Cymulate BAS | `x-token` header |
+| `picus` | Picus Security Validation | Refresh token → Bearer |
+| `pentera` | Pentera automated validation | Bearer (tenant JWT) |
+| `xm_cyber` | XM Cyber Attack Path Management | API key → session Bearer |
+
+### Identity Providers & ITDR
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `okta` | Okta Identity Cloud | `Authorization: SSWS` |
+| `entra_id` | Microsoft Entra ID (Azure AD) | OAuth2 (Microsoft Graph) |
+| `ping_identity` | Ping Identity (PingOne) | OAuth2 client credentials |
+| `silverfort` | Silverfort (ITDR runtime identity telemetry) | OAuth2 client credentials |
+| `semperis` | Semperis DSP (AD / Entra posture + IoE/IoC) | Bearer token |
+
+### Email Security
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `mimecast` | Mimecast API 2.0 email security | OAuth2 client credentials |
+| `ironscales` | IRONSCALES AI email security | Bearer + `X-Company-Id` header |
+| `abnormal` | Abnormal Security (BEC / vendor impersonation) | Bearer token |
+
+### Insider Risk & User Behavior Analytics (UEBA)
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `code42` | Code42 Incydr (file exfiltration / insider risk) | OAuth2 client credentials |
+| `dtex` | DTEX InTERCEPT (behavioral insider threat) | Bearer token |
+| `gurucul` | Gurucul UEBA | Bearer token |
+| `exabeam` | Exabeam Security Operations Platform | OAuth2 client credentials |
+| `securonix` | Securonix cloud SIEM / UEBA | Username/password → session token |
+
+### DevSecOps & Secrets Detection
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `gitguardian` | GitGuardian (secret incidents) | API key (`Authorization: Token`) |
+
+### Real-time Event Intelligence & Crisis Feeds
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `dataminr` | Dataminr Pulse (real-time event intelligence) | OAuth2 → `Dmauth` token |
+| `factal` | Factal verified breaking-news intelligence | Bearer token |
+| `samdesk` | Samdesk global crisis detection | `X-Api-Key` header |
+| `human_security` | HUMAN Security (bot defense / ATO / credential stuffing) | OAuth2 client credentials |
+
+### Certificate Transparency
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `crtsh` | crt.sh public Certificate Transparency search | None (public) |
+| `google_ct` | Google Certificate Transparency log API | None (public; per-log path) |
+
+### Digital Forensics & Incident Response (DFIR)
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `velociraptor` | Velociraptor open-source DFIR | Bearer token or mTLS cert/key |
+| `magnet_axiom` | Magnet AXIOM Cyber (remote forensics) | `X-API-Key` header |
+
+### Bug Bounty & Vulnerability Disclosure
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `hackerone` | HackerOne (bug bounty / VDP) | HTTP Basic (username + token) |
+| `bugcrowd` | Bugcrowd (managed bug bounty / pentest) | `Authorization: Token` header |
+
+### GNAT Federation
+
+| Key | Platform | Auth |
+|-----|----------|------|
+| `gnat_remote` | Remote GNAT instance (federation / workspace sync) | Bearer token |
 
 ### AI Assistants & Collaboration
 
