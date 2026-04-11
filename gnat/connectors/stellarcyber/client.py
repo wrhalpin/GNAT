@@ -148,6 +148,87 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         self.delete(f"{_API}/{resource}/{object_id}")
 
     # ------------------------------------------------------------------
+    # Domain-specific helpers
+    # ------------------------------------------------------------------
+
+    def list_alerts(
+        self,
+        severity: str = "",
+        status: str = "",
+        since: str = "",
+        size: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List Stellar Cyber alerts."""
+        params: dict[str, Any] = {"size": int(size)}
+        if severity:
+            params["severity"] = severity
+        if status:
+            params["status"] = status
+        if since:
+            params["created_after"] = since
+        resp = self.get(f"{_API}/alerts", params=params)
+        return _extract_sc_list(resp)
+
+    def get_alert(self, alert_id: str) -> dict[str, Any]:
+        """Fetch a single alert by id."""
+        resp = self.get(f"{_API}/alerts/{alert_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_assets(
+        self, asset_type: str = "", size: int = 100
+    ) -> list[dict[str, Any]]:
+        """List discovered assets / endpoints."""
+        params: dict[str, Any] = {"size": int(size)}
+        if asset_type:
+            params["type"] = asset_type
+        resp = self.get(f"{_API}/assets", params=params)
+        return _extract_sc_list(resp)
+
+    def list_cases(
+        self, status: str = "", size: int = 100
+    ) -> list[dict[str, Any]]:
+        """List investigation cases."""
+        params: dict[str, Any] = {"size": int(size)}
+        if status:
+            params["status"] = status
+        resp = self.get(f"{_API}/cases", params=params)
+        return _extract_sc_list(resp)
+
+    def get_case(self, case_id: str) -> dict[str, Any]:
+        """Fetch a single case by id."""
+        resp = self.get(f"{_API}/cases/{case_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def search_logs(
+        self, query: str, size: int = 100, since: str = ""
+    ) -> list[dict[str, Any]]:
+        """
+        Run a free-text search across normalized records.
+
+        Wraps ``POST /connect/api/v1/data/search``.
+        """
+        body: dict[str, Any] = {"query": query, "size": int(size)}
+        if since:
+            body["since"] = since
+        resp = self.post(f"{_API}/data/search", json=body)
+        return _extract_sc_list(resp)
+
+    def list_threat_intel(
+        self, ioc_type: str = "", size: int = 100
+    ) -> list[dict[str, Any]]:
+        """List threat-intel feed entries."""
+        params: dict[str, Any] = {"size": int(size)}
+        if ioc_type:
+            params["type"] = ioc_type
+        resp = self.get(f"{_API}/threat_intel", params=params)
+        return _extract_sc_list(resp)
+
+    def list_tenants(self) -> list[dict[str, Any]]:
+        """List tenant organizations (MSSP multi-tenant deployments)."""
+        resp = self.get(f"{_API}/tenants")
+        return _extract_sc_list(resp)
+
+    # ------------------------------------------------------------------
     # STIX translation
     # ------------------------------------------------------------------
 
@@ -255,3 +336,16 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         if "SHA-256" in pattern:
             return "sha256"
         return "domain"
+
+
+def _extract_sc_list(resp: Any) -> list[dict[str, Any]]:
+    """Pull records out of a Stellar Cyber response envelope."""
+    if isinstance(resp, list):
+        return [r for r in resp if isinstance(r, dict)]
+    if not isinstance(resp, dict):
+        return []
+    for key in ("data", "results", "items", "alerts", "assets", "cases", "tenants"):
+        val = resp.get(key)
+        if isinstance(val, list):
+            return [r for r in val if isinstance(r, dict)]
+    return []

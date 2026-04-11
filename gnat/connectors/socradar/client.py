@@ -126,6 +126,89 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         raise GNATClientError("SOCRadar TI API is read-only — delete not supported.")
 
     # ------------------------------------------------------------------
+    # Domain-specific helpers
+    # ------------------------------------------------------------------
+
+    def search_iocs(
+        self,
+        value: str = "",
+        ioc_type: str = "",
+        confidence_min: int | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Search SOCRadar IOC database."""
+        params: dict[str, Any] = {"limit": int(limit)}
+        if value:
+            params["value"] = value
+        if ioc_type:
+            params["type"] = ioc_type
+        if confidence_min is not None:
+            params["confidence__gte"] = int(confidence_min)
+        resp = self.get(f"{_API}/cti/ioc/", params=params)
+        return _extract_socradar_list(resp)
+
+    def list_threat_actors(self, limit: int = 100) -> list[dict[str, Any]]:
+        """Return SOCRadar threat-actor catalog."""
+        resp = self.get(
+            f"{_API}/cti/threat_actor/", params={"limit": int(limit)}
+        )
+        return _extract_socradar_list(resp)
+
+    def get_threat_actor(self, actor_id: str) -> dict[str, Any]:
+        """Fetch a single threat actor by id."""
+        resp = self.get(f"{_API}/cti/threat_actor/{actor_id}/")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_malware_families(self, limit: int = 100) -> list[dict[str, Any]]:
+        """Return SOCRadar malware family catalog."""
+        resp = self.get(
+            f"{_API}/cti/malware/", params={"limit": int(limit)}
+        )
+        return _extract_socradar_list(resp)
+
+    def get_malware(self, malware_id: str) -> dict[str, Any]:
+        """Fetch a single malware family by id."""
+        resp = self.get(f"{_API}/cti/malware/{malware_id}/")
+        return resp if isinstance(resp, dict) else {}
+
+    def list_dark_web_findings(
+        self, since: str = "", limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """Return SOCRadar dark-web monitoring hits."""
+        params: dict[str, Any] = {"limit": int(limit)}
+        if since:
+            params["created_at__gte"] = since
+        resp = self.get(f"{_API}/dark_web/findings/", params=params)
+        return _extract_socradar_list(resp)
+
+    def list_brand_alerts(self, limit: int = 100) -> list[dict[str, Any]]:
+        """Return brand-protection / digital-risk alerts."""
+        resp = self.get(
+            f"{_API}/drps/alerts/", params={"limit": int(limit)}
+        )
+        return _extract_socradar_list(resp)
+
+    def list_attack_surface_alerts(
+        self, severity: str = "", limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """Return external attack-surface management alerts."""
+        params: dict[str, Any] = {"limit": int(limit)}
+        if severity:
+            params["severity"] = severity
+        resp = self.get(f"{_API}/asm/alerts/", params=params)
+        return _extract_socradar_list(resp)
+
+    def list_industry_threats(
+        self, industry: str = "", limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """Return SOCRadar industry-specific threat reports."""
+        params: dict[str, Any] = {"limit": int(limit)}
+        if industry:
+            params["industry"] = industry
+        resp = self.get(f"{_API}/cti/industry_threats/", params=params)
+        return _extract_socradar_list(resp)
+
+    # ------------------------------------------------------------------
     # STIX translation
     # ------------------------------------------------------------------
 
@@ -245,3 +328,16 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         if "SHA-256" in pattern:
             return "sha256"
         return "domain"
+
+
+def _extract_socradar_list(resp: Any) -> list[dict[str, Any]]:
+    """Pull records out of a SOCRadar response envelope."""
+    if isinstance(resp, list):
+        return [r for r in resp if isinstance(r, dict)]
+    if not isinstance(resp, dict):
+        return []
+    for key in ("data", "results", "items"):
+        val = resp.get(key)
+        if isinstance(val, list):
+            return [r for r in val if isinstance(r, dict)]
+    return []

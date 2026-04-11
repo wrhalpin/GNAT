@@ -163,6 +163,102 @@ class YetiClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
+    def search_observables(
+        self,
+        value: str = "",
+        observable_type: str = "",
+        tag: str = "",
+        count: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Search YETI observables by value, type, or tag."""
+        body: dict[str, Any] = {"count": int(count)}
+        if value:
+            body["value"] = value
+        if observable_type:
+            body["type"] = observable_type
+        if tag:
+            body["tags"] = [tag]
+        resp = self.post(f"{_API}/observables/search", json=body)
+        return _extract_yeti_list(resp)
+
+    def search_entities(
+        self,
+        name: str = "",
+        entity_type: str = "",
+        count: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search YETI entities (threat-actor, malware, campaign, tool).
+
+        ``entity_type`` is one of ``"threat-actor"``, ``"malware"``,
+        ``"campaign"``, ``"tool"``, ``"investigation"``.
+        """
+        body: dict[str, Any] = {"count": int(count)}
+        if name:
+            body["name"] = name
+        if entity_type:
+            body["type"] = entity_type
+        resp = self.post(f"{_API}/entities/search", json=body)
+        return _extract_yeti_list(resp)
+
+    def get_observable(self, observable_id: str) -> dict[str, Any]:
+        """Fetch a single observable by id."""
+        resp = self.get(f"{_API}/observables/{observable_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_entity(self, entity_id: str) -> dict[str, Any]:
+        """Fetch a single entity by id."""
+        resp = self.get(f"{_API}/entities/{entity_id}")
+        return resp if isinstance(resp, dict) else {}
+
+    def get_neighbors(
+        self, object_id: str, object_type: str = "observables"
+    ) -> dict[str, Any]:
+        """
+        Return the graph neighbors of an object — YETI's core
+        relationship-traversal endpoint.  ``object_type`` is one of
+        ``"observables"``, ``"entities"``, ``"indicators"``.
+        """
+        resp = self.post(
+            f"{_API}/graph/search",
+            json={"source": f"{object_type}/{object_id}", "hops": 1},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def list_indicators(
+        self, pattern_type: str = "", count: int = 100
+    ) -> list[dict[str, Any]]:
+        """List YETI indicator objects (queries/regexes tracking threats)."""
+        body: dict[str, Any] = {"count": int(count)}
+        if pattern_type:
+            body["type"] = pattern_type
+        resp = self.post(f"{_API}/indicators/search", json=body)
+        return _extract_yeti_list(resp)
+
+    def list_tags(self) -> list[dict[str, Any]]:
+        """Return all defined YETI tags."""
+        resp = self.get(f"{_API}/tags")
+        return _extract_yeti_list(resp)
+
+    def link_objects(
+        self,
+        source_type: str,
+        source_id: str,
+        target_type: str,
+        target_id: str,
+        description: str = "",
+    ) -> dict[str, Any]:
+        """Create a relationship between two YETI objects."""
+        resp = self.post(
+            f"{_API}/graph/link",
+            json={
+                "source": f"{source_type}/{source_id}",
+                "target": f"{target_type}/{target_id}",
+                "description": description,
+            },
+        )
+        return resp if isinstance(resp, dict) else {}
+
     # ------------------------------------------------------------------
     # STIX translation
     # ------------------------------------------------------------------
@@ -300,3 +396,16 @@ class YetiClient(BaseClient, ConnectorMixin):
         if "email" in pattern:
             return "email"
         return "hostname"
+
+
+def _extract_yeti_list(resp: Any) -> list[dict[str, Any]]:
+    """Pull records out of a YETI v2 response envelope."""
+    if isinstance(resp, list):
+        return [r for r in resp if isinstance(r, dict)]
+    if not isinstance(resp, dict):
+        return []
+    for key in ("observables", "entities", "indicators", "tags", "data", "results"):
+        val = resp.get(key)
+        if isinstance(val, list):
+            return [r for r in val if isinstance(r, dict)]
+    return []

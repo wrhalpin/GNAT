@@ -161,6 +161,87 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         raise GNATClientError("PulseDive API does not support delete operations.")
 
     # ------------------------------------------------------------------
+    # Domain-specific helpers
+    # ------------------------------------------------------------------
+
+    def get_indicator(self, indicator_value: str) -> dict[str, Any]:
+        """Return the full Pulsedive record for an indicator value."""
+        return self.enrich(indicator_value)
+
+    def get_threat(self, threat_name_or_id: str) -> dict[str, Any]:
+        """Return the full Pulsedive threat profile."""
+        key = (
+            {"tid": threat_name_or_id}
+            if threat_name_or_id.isdigit()
+            else {"threat": threat_name_or_id}
+        )
+        resp = self.get(
+            f"{_API}/info.php",
+            params={**self._pd_params, **key, "get": "threat"},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def search_indicators(
+        self,
+        risk: str = "",
+        indicator_type: str = "",
+        feed: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search indicators via ``/api/browse.php``.
+
+        * ``risk`` — ``"low"``/``"medium"``/``"high"``/``"critical"``
+        * ``indicator_type`` — ``"ip"``/``"domain"``/``"url"``
+        * ``feed`` — feed id or name
+        """
+        params: dict[str, Any] = {**self._pd_params, "limit": int(limit)}
+        if risk:
+            params["risk"] = risk
+        if indicator_type:
+            params["ioc"] = indicator_type
+        if feed:
+            params["feed"] = feed
+        resp = self.get(f"{_API}/browse.php", params=params)
+        return _extract_pd_list(resp)
+
+    def list_threats(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List Pulsedive threat profiles."""
+        resp = self.get(
+            f"{_API}/browse.php",
+            params={**self._pd_params, "browse": "threats", "limit": int(limit)},
+        )
+        return _extract_pd_list(resp)
+
+    def list_feeds(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List all threat-intel feeds tracked by Pulsedive."""
+        resp = self.get(
+            f"{_API}/browse.php",
+            params={**self._pd_params, "browse": "feeds", "limit": int(limit)},
+        )
+        return _extract_pd_list(resp)
+
+    def get_feed(self, feed_id: str) -> dict[str, Any]:
+        """Fetch metadata for a specific feed by id."""
+        resp = self.get(
+            f"{_API}/info.php",
+            params={**self._pd_params, "fid": feed_id, "get": "feed"},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def analyze(self, indicator_value: str) -> dict[str, Any]:
+        """
+        Trigger Pulsedive to re-scan an indicator
+        (``POST /api/analyze.php``).
+        """
+        resp = self.post(
+            f"{_API}/analyze.php",
+            params=self._pd_params,
+            json={"indicator": indicator_value},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ------------------------------------------------------------------
     # STIX translation
     # ------------------------------------------------------------------
 
@@ -263,3 +344,16 @@ class PulseDiveClient(BaseClient, ConnectorMixin):
         if "file:hashes" in pattern:
             return "hash"
         return "domain"
+
+
+def _extract_pd_list(resp: Any) -> list[dict[str, Any]]:
+    """Pull records out of a Pulsedive response envelope."""
+    if isinstance(resp, list):
+        return [r for r in resp if isinstance(r, dict)]
+    if not isinstance(resp, dict):
+        return []
+    for key in ("results", "data", "indicators", "threats", "feeds"):
+        val = resp.get(key)
+        if isinstance(val, list):
+            return [r for r in val if isinstance(r, dict)]
+    return []

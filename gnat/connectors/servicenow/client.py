@@ -246,6 +246,111 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         """
         return self._stix_to_sn(stix_dict)
 
+    # ── Domain-specific helpers ───────────────────────────────────────────
+
+    def list_incidents(
+        self,
+        state: str = "",
+        priority: str = "",
+        assigned_to: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List rows from the ``incident`` table, optionally filtered."""
+        parts: list[str] = []
+        if state:
+            parts.append(f"state={state}")
+        if priority:
+            parts.append(f"priority={priority}")
+        if assigned_to:
+            parts.append(f"assigned_to={assigned_to}")
+        params: dict[str, Any] = {"sysparm_limit": int(limit)}
+        if parts:
+            params["sysparm_query"] = "^".join(parts)
+        resp = self.get(f"{self._TABLE_BASE}/incident", params=params)
+        return _extract_sn_records(resp)
+
+    def get_incident(self, sys_id: str) -> dict[str, Any]:
+        """Fetch a single incident by sys_id."""
+        resp = self.get(f"{self._TABLE_BASE}/incident/{sys_id}")
+        return _extract_sn_record(resp)
+
+    def create_incident(
+        self,
+        short_description: str,
+        description: str = "",
+        urgency: str = "2",
+        impact: str = "2",
+        category: str = "",
+    ) -> dict[str, Any]:
+        """Create a new incident row."""
+        payload: dict[str, Any] = {
+            "short_description": short_description,
+            "description": description,
+            "urgency": urgency,
+            "impact": impact,
+        }
+        if category:
+            payload["category"] = category
+        resp = self.post(f"{self._TABLE_BASE}/incident", json=payload)
+        return _extract_sn_record(resp)
+
+    def list_change_requests(
+        self, state: str = "", limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List rows from the ``change_request`` table."""
+        params: dict[str, Any] = {"sysparm_limit": int(limit)}
+        if state:
+            params["sysparm_query"] = f"state={state}"
+        resp = self.get(f"{self._TABLE_BASE}/change_request", params=params)
+        return _extract_sn_records(resp)
+
+    def create_change_request(
+        self,
+        short_description: str,
+        description: str = "",
+        assignment_group: str = "",
+    ) -> dict[str, Any]:
+        """Create a new change_request row."""
+        payload: dict[str, Any] = {
+            "short_description": short_description,
+            "description": description,
+        }
+        if assignment_group:
+            payload["assignment_group"] = assignment_group
+        resp = self.post(f"{self._TABLE_BASE}/change_request", json=payload)
+        return _extract_sn_record(resp)
+
+    def query_table(
+        self,
+        table: str,
+        sysparm_query: str = "",
+        sysparm_fields: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Generic table query for arbitrary ServiceNow tables."""
+        params: dict[str, Any] = {"sysparm_limit": int(limit)}
+        if sysparm_query:
+            params["sysparm_query"] = sysparm_query
+        if sysparm_fields:
+            params["sysparm_fields"] = sysparm_fields
+        resp = self.get(f"{self._TABLE_BASE}/{table}", params=params)
+        return _extract_sn_records(resp)
+
+    def get_cmdb_ci(self, sys_id: str) -> dict[str, Any]:
+        """Fetch a CMDB configuration item (``cmdb_ci`` table) by sys_id."""
+        resp = self.get(f"{self._TABLE_BASE}/cmdb_ci/{sys_id}")
+        return _extract_sn_record(resp)
+
+    def list_cmdb_ci_by_name(
+        self, name: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """Find CMDB configuration items by display name substring."""
+        return self.query_table(
+            "cmdb_ci",
+            sysparm_query=f"nameLIKE{name}",
+            limit=limit,
+        )
+
     # ── Incident linking ──────────────────────────────────────────────────
 
     def annotate_incident(
@@ -314,3 +419,28 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
             "category": "threat-intelligence",
             "work_notes": f"[GNAT] Ingested from STIX {stix_dict.get('type', 'unknown')}",
         }
+
+
+def _extract_sn_record(resp: Any) -> dict[str, Any]:
+    """Pull a single record out of a ServiceNow Table API response."""
+    if isinstance(resp, dict):
+        result = resp.get("result")
+        if isinstance(result, dict):
+            return result
+        if isinstance(result, list) and result and isinstance(result[0], dict):
+            return result[0]
+        return resp
+    return {}
+
+
+def _extract_sn_records(resp: Any) -> list[dict[str, Any]]:
+    """Pull a list of records out of a ServiceNow Table API response."""
+    if isinstance(resp, list):
+        return [r for r in resp if isinstance(r, dict)]
+    if isinstance(resp, dict):
+        result = resp.get("result")
+        if isinstance(result, list):
+            return [r for r in result if isinstance(r, dict)]
+        if isinstance(result, dict):
+            return [result]
+    return []

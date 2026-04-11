@@ -163,6 +163,106 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         self._request_signed("DELETE", f"{_API}/{resource}/{object_id}")
 
     # ------------------------------------------------------------------
+    # Domain-specific helpers
+    # ------------------------------------------------------------------
+
+    def search_indicators(
+        self,
+        query: str = "",
+        confidence_gte: int | None = None,
+        rating_gte: int | None = None,
+        tag: str = "",
+        owner: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Search TC indicators with the v3 TQL filter language."""
+        tql_parts: list[str] = []
+        if query:
+            tql_parts.append(f'summary LIKE "%{query}%"')
+        if confidence_gte is not None:
+            tql_parts.append(f"confidence >= {int(confidence_gte)}")
+        if rating_gte is not None:
+            tql_parts.append(f"rating >= {int(rating_gte)}")
+        if tag:
+            tql_parts.append(f'hasTag and tag.name = "{tag}"')
+        if owner:
+            tql_parts.append(f'ownerName = "{owner}"')
+        params: dict[str, Any] = {"resultLimit": int(limit)}
+        if tql_parts:
+            params["tql"] = " AND ".join(tql_parts)
+        resp = self._request_signed(
+            "GET", f"{_API}/indicators", params=params
+        )
+        return _extract_tc_data(resp)
+
+    def search_groups(
+        self,
+        group_type: str = "",
+        name: str = "",
+        tag: str = "",
+        owner: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search TC groups (threat-actor, malware, campaign, report).
+
+        ``group_type`` is one of ``"Threat"``, ``"Adversary"``,
+        ``"Malware"``, ``"Campaign"``, ``"Report"``, ``"Incident"``.
+        """
+        tql_parts: list[str] = []
+        if group_type:
+            tql_parts.append(f'typeName = "{group_type}"')
+        if name:
+            tql_parts.append(f'name LIKE "%{name}%"')
+        if tag:
+            tql_parts.append(f'hasTag and tag.name = "{tag}"')
+        if owner:
+            tql_parts.append(f'ownerName = "{owner}"')
+        params: dict[str, Any] = {"resultLimit": int(limit)}
+        if tql_parts:
+            params["tql"] = " AND ".join(tql_parts)
+        resp = self._request_signed(
+            "GET", f"{_API}/groups", params=params
+        )
+        return _extract_tc_data(resp)
+
+    def list_owners(self) -> list[dict[str, Any]]:
+        """Return all TC organizations / communities the caller can see."""
+        resp = self._request_signed("GET", f"{_API}/security/owners")
+        return _extract_tc_data(resp)
+
+    def get_indicator(self, indicator_id: str) -> dict[str, Any]:
+        """Fetch a single indicator by numeric id."""
+        return self.get_object("indicator", indicator_id)
+
+    def get_group(self, group_id: str) -> dict[str, Any]:
+        """Fetch a single group by numeric id."""
+        return self.get_object("threat-actor", group_id)
+
+    def list_tags(self, name: str = "") -> list[dict[str, Any]]:
+        """Return TC tags, optionally filtered by name substring."""
+        params: dict[str, Any] = {"resultLimit": 1000}
+        if name:
+            params["tql"] = f'name LIKE "%{name}%"'
+        resp = self._request_signed("GET", f"{_API}/tags", params=params)
+        return _extract_tc_data(resp)
+
+    def get_associations(
+        self, object_type: str, object_id: str
+    ) -> dict[str, Any]:
+        """
+        Return the association graph for an indicator or group.
+
+        ``object_type`` is ``"indicators"`` or ``"groups"``.
+        """
+        resp = self._request_signed(
+            "GET",
+            f"{_API}/{object_type}/{object_id}",
+            params={"fields": "associatedIndicators,associatedGroups,tags"},
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    # ------------------------------------------------------------------
     # STIX translation
     # ------------------------------------------------------------------
 
@@ -277,3 +377,15 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         if "file:" in pattern:
             return "File"
         return "Host"
+
+
+def _extract_tc_data(resp: Any) -> list[dict[str, Any]]:
+    """Pull the list of records out of a ThreatConnect v3 response envelope."""
+    if isinstance(resp, list):
+        return [r for r in resp if isinstance(r, dict)]
+    if not isinstance(resp, dict):
+        return []
+    data = resp.get("data")
+    if isinstance(data, list):
+        return [r for r in data if isinstance(r, dict)]
+    return []

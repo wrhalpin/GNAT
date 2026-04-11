@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 122 security/threat intelligence platforms
+- A unified client interface for 133 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -352,6 +352,17 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Huntress Managed EDR / ITDR | `gnat/connectors/huntress/` | HTTP Basic (key id + secret) |
 | Arctic Wolf MDR | `gnat/connectors/arctic_wolf/` | Bearer token (+ optional customer id) |
 | Red Canary MDR | `gnat/connectors/red_canary/` | API key (`X-Api-Key` header) |
+| SafeBreach (BAS) | `gnat/connectors/safebreach/` | `x-apitoken` + `x-accountid` headers |
+| AttackIQ Security Optimization | `gnat/connectors/attackiq/` | Token header |
+| Cymulate (BAS) | `gnat/connectors/cymulate/` | `x-token` header |
+| Picus Security Validation | `gnat/connectors/picus/` | Refresh token → Bearer |
+| Pentera automated validation | `gnat/connectors/pentera/` | Bearer (tenant JWT) |
+| XM Cyber Attack Path Management | `gnat/connectors/xm_cyber/` | API key → session Bearer |
+| Cisco Talos Intelligence | `gnat/connectors/talos/` | None (public reputation) |
+| Fortinet FortiGuard Labs | `gnat/connectors/fortiguard/` | Optional Bearer (IOC service) |
+| Kaspersky OpenTIP | `gnat/connectors/kaspersky_opentip/` | Optional `x-api-key` |
+| ESET Threat Intelligence | `gnat/connectors/eset_ti/` | Bearer token |
+| Bitdefender IntelliZone | `gnat/connectors/bitdefender_iz/` | `X-API-Key` header |
 
 ---
 

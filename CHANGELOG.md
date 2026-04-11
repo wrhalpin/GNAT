@@ -19,6 +19,206 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Connector Gap Fills + Stub Rescues
+
+Filled the audit-identified domain-helper gaps in 9 existing connectors
+and rescued the 2 audit-flagged "framework stub" connectors. No new
+connector entries; this is **breadth work** on existing connectors.
+After this commit, every connector in the registry has at least 4
+domain helpers beyond the 7-method `ConnectorMixin` contract.
+
+**Gap fills (9 existing connectors)**
+
+- `threatconnect/client.py` — added 7 helpers exposing the v3 TQL
+  filter language: `search_indicators`, `search_groups`, `list_owners`,
+  `get_indicator`, `get_group`, `list_tags`, `get_associations`. Plus a
+  module-level `_extract_tc_data()` helper for the v3 envelope shape.
+- `proofpoint/client.py` — split the catch-all `/v2/siem/all` into
+  typed event helpers: `list_messages_delivered`,
+  `list_messages_blocked`, `list_clicks_permitted`,
+  `list_clicks_blocked`, `list_issues`, `get_forensics`,
+  `list_top_clickers`, `decode_url`. Removes the audit's biggest
+  email-event-categorization gap.
+- `shadowserver/client.py` — added typed query helpers replacing the
+  generic dispatch: `query_ip`, `query_asn`, `query_cve`,
+  `query_malware`, `query_botnet`, `list_report_types`, `query_report`.
+- `jira/client.py` — added 8 issue / project / workflow helpers:
+  `search_jql`, `get_issue`, `create_issue`, `update_issue`,
+  `transition_issue`, `list_transitions`, `list_projects`,
+  `get_project`, `list_issue_comments`. Builds ADF descriptions via
+  the existing `_build_adf_paragraph` helper.
+- `servicenow/client.py` — added 8 incident / change / CMDB helpers:
+  `list_incidents`, `get_incident`, `create_incident`,
+  `list_change_requests`, `create_change_request`, `query_table`
+  (generic), `get_cmdb_ci`, `list_cmdb_ci_by_name`. Module-level
+  `_extract_sn_record()` and `_extract_sn_records()` strip the
+  ServiceNow Table API `result` envelope.
+- `qualys/client.py` — added 5 helpers for the asset / scan / report
+  flow: `list_assets`, `list_asset_groups`, `list_scans`,
+  `launch_scan`, `list_reports`. All correctly walk the deep XML→JSON
+  envelope shape Qualys returns.
+- `yeti/client.py` — added 9 helpers for the relationship-graph
+  workflow: `search_observables`, `search_entities`, `get_observable`,
+  `get_entity`, `get_neighbors` (the core graph-traversal endpoint),
+  `list_indicators`, `list_tags`, `link_objects`. Module-level
+  `_extract_yeti_list()` for the v2 envelope shape.
+- `fortisiem/client.py` — added 6 helpers beyond `fetch_incidents`:
+  `get_incident`, `update_incident`, `list_monitored_devices`,
+  `list_dashboards`, `list_rules`, `query_events`.
+- `pulsedive/client.py` — added 7 helpers beyond `enrich`:
+  `get_indicator`, `get_threat`, `search_indicators`, `list_threats`,
+  `list_feeds`, `get_feed`, `analyze`. Module-level
+  `_extract_pd_list()` helper.
+
+**Stub rescues (2 connectors)**
+
+- `socradar/client.py` — graduated from "framework stubs only" to a
+  real connector. Added 9 domain helpers across the SOCRadar
+  capability suite: `search_iocs`, `list_threat_actors`,
+  `get_threat_actor`, `list_malware_families`, `get_malware`,
+  `list_dark_web_findings`, `list_brand_alerts`,
+  `list_attack_surface_alerts`, `list_industry_threats`. Module-level
+  `_extract_socradar_list()` helper.
+- `stellarcyber/client.py` — graduated from "framework stubs only" to
+  a real Open XDR connector. Added 8 domain helpers: `list_alerts`,
+  `get_alert`, `list_assets`, `list_cases`, `get_case`, `search_logs`,
+  `list_threat_intel`, `list_tenants`. Module-level `_extract_sc_list()`
+  helper.
+
+**Tests**
+- 64 new tests across 11 new `TestXxxGapFills` classes verifying every
+  new domain helper hits the right HTTP path and parses the response
+  envelope correctly.
+- Full unit suite: 2469 tests passing, zero regressions.
+- Ruff clean across all touched files.
+
+**Coverage shift (per the audit grades)**
+- threatconnect: **Minimal → Complete** (zero → 7 helpers)
+- proofpoint: **Minimal → Complete** (zero → 8 helpers)
+- shadowserver: **Minimal → Complete** (zero → 7 helpers)
+- jira: **Minimal → Complete** (2 → 10 helpers)
+- servicenow: **Minimal → Complete** (1 → 9 helpers)
+- qualys: **Minimal → Partial/Complete** (2 → 7 helpers)
+- yeti: **Minimal → Complete** (1 → 10 helpers)
+- fortisiem: **Minimal → Complete** (1 → 7 helpers)
+- pulsedive: **Minimal → Complete** (1 → 8 helpers)
+- socradar: **Stub → Complete** (zero → 9 helpers)
+- stellarcyber: **Stub → Complete** (zero → 8 helpers)
+
+### Added — Phase 2 Wave 4: Additional TI Vendor Feeds
+
+Five more commercial / public threat intelligence vendor feeds from the
+2026 audit's "additional TI" category. These complement the tier-1
+platforms already in GNAT (ThreatQ, Mandiant, Recorded Future, etc.)
+with vendor-specific reputation and APT telemetry from the major AV
+makers and Cisco. Platform count: 128 → 133.
+
+**New connectors (`gnat/connectors/`)**
+- `talos/` — `TalosClient` for Cisco Talos public reputation lookups.
+  No auth required; sets a `User-Agent` header because Talos rejects
+  bot-like clients. IP / domain lookups via `/sb_api/query_lookup`;
+  advisories via `/feeds/advisory.xml`. Reputation string mapped to
+  STIX `labels` (``malicious-activity``/``benign``). Domain helpers:
+  `ip_reputation`, `domain_reputation`, `get_advisories`.
+- `fortiguard/` — `FortiGuardClient`. Optional Bearer auth (commercial
+  IOC service only); public outbreak alerts + IP/URL reputation +
+  virus encyclopedia work without a key. Dispatches across `/api/v1/iocs`,
+  `/outbreak-alerts`, `/ip/{ip}`, `/url`, `/encyclopedia/virus`.
+  `list_iocs` raises `GNATClientError` if called without an api_key
+  since the IOC service is commercial. Domain helpers:
+  `list_outbreak_alerts`, `list_iocs`, `ip_reputation`,
+  `url_reputation`, `get_outbreak_alert`.
+- `kaspersky_opentip/` — `KasperskyOpenTIPClient`. Optional `x-api-key`
+  header. Dispatches across `/search/ip`, `/search/domain`,
+  `/search/url`, `/search/hash`. Heuristic IOC-type guessing via
+  `_guess_ioc_type()`. Kaspersky's "Zone" field (Red/Orange/Green)
+  mapped to STIX labels. Domain helpers: `lookup_ip`, `lookup_domain`,
+  `lookup_url`, `lookup_hash`.
+- `eset_ti/` — `ESETThreatIntelClient`. Bearer token. Dispatches
+  across `/api/v1/iocs`, `/reports`, `/samples`, `/yara`, `/botnet`.
+  YARA rules get a custom `[x-eset-yara:rule = ...]` pattern. Domain
+  helpers: `list_iocs`, `list_reports`, `list_samples`, `list_yara`,
+  `list_botnet`, `get_report`, `get_sample`.
+- `bitdefender_iz/` — `BitdefenderIntelliZoneClient`. `X-API-Key`
+  header. Dispatches across `/api/v1/iocs`, `/reports`,
+  `/malware/families`, `/apt/groups`, `/samples/{sha256}`. APT groups
+  map to STIX `threat-actor` with `aliases` preserved. Domain helpers:
+  `list_iocs`, `list_reports`, `list_malware_families`,
+  `list_apt_groups`, `get_report`, `get_sample`.
+
+**Tests**
+- 59 new tests across `TestTalosClient` (11),
+  `TestFortiGuardClient` (12), `TestKasperskyOpenTIPClient` (12),
+  `TestESETThreatIntelClient` (11), `TestBitdefenderIntelliZoneClient`
+  (15) plus two Phase 2 Wave 4 integrity tests.
+- Full unit suite: 2405 tests passing, zero regressions.
+- Ruff clean across all new files.
+
+### Added — Phase 2 Wave 3: BAS / Security Validation
+
+Six Breach-and-Attack-Simulation / continuous-security-validation
+connectors covering the top-rated BAS vendors from the 2026 audit
+(SafeBreach, AttackIQ, Cymulate, Picus Security, Pentera, XM Cyber).
+This wave pairs naturally with Phase 2 Wave 1 sandboxes: sandboxes
+tell you what malware does, BAS tells you whether your controls
+actually stop it. Platform count: 122 → 128.
+
+All six connectors are `trusted_internal` (customer's own security
+validation telemetry) and read-only.
+
+**Shared helper (`gnat/utils/stix_helpers.py`)**
+- `bas_simulation_envelope(source_name, simulation_id, …)` — builds a
+  STIX 2.1 `observed-data` envelope around a BAS simulation run with
+  deterministic UUID-5 refs to synthetic `identity` SCOs for each
+  target asset and synthetic `attack-pattern` SCOs for each MITRE
+  ATT&CK technique. Every Phase 2 Wave 3 connector consumes this
+  helper.
+
+**New connectors (`gnat/connectors/`)**
+- `safebreach/` — `SafeBreachClient`. Custom `x-apitoken` +
+  `x-accountid` header pair. Dispatches across `/api/data/v1/tests`,
+  `/tests/{id}/simulations`, `/findings`, `/config/v1/scenarios`,
+  `/config/v1/attackers`. `_acct_path()` helper centralizes the
+  account-scoped URL construction. Domain helpers: `list_tests`,
+  `list_simulations`, `list_findings`, `list_attackers`, `get_test`.
+- `attackiq/` — `AttackIQClient`. `Authorization: Token` header.
+  Dispatches across `/api/v1/assessments`, `/scenarios`, `/results`,
+  `/phases`, `/tests`. DRF-style pagination (`results` key). Domain
+  helpers: `list_assessments`, `list_results`, `list_scenarios`,
+  `get_assessment`.
+- `cymulate/` — `CymulateClient`. `x-token` header. Dispatches across
+  `/v1/assessments`, `/technical-findings`, `/templates`,
+  `/simulations`. Templates map to `attack-pattern`. Domain helpers:
+  `list_assessments`, `list_findings`, `list_templates`,
+  `list_simulations`, `get_assessment`.
+- `picus/` — `PicusClient`. Refresh token exchanged for an access
+  token on first request (`POST /v1/refresh-token`). Dispatches across
+  `/v1/attacks`, `/simulations`, `/results`, `/threat-library`. Domain
+  helpers: `list_attacks`, `list_simulations`, `list_results`,
+  `list_threat_library`, `get_simulation`, `get_attack`.
+- `pentera/` — `PenteraClient`. Bearer JWT auth (tenant-issued).
+  Dispatches across `/api/v1/tasks`, `/findings`, `/assets`,
+  `/techniques`, `/achievements`. Findings map to STIX `vulnerability`
+  with CVE external refs; tasks/assets/achievements map to
+  `observed-data` envelopes. Domain helpers: `list_tasks`,
+  `list_findings`, `list_assets`, `list_achievements`,
+  `list_techniques`, `get_task`, `get_finding`.
+- `xm_cyber/` — `XMCyberClient`. API key exchanged for a session
+  Bearer via `POST /api/v2/auth/login`. Dispatches across
+  `/api/v2/entities`, `/attack-paths`, `/critical-assets`,
+  `/techniques`. Entities and critical assets both map to STIX
+  `identity` (with `_xm_identity_class` heuristic that maps
+  user/host/cloud to STIX identity_class values). Domain helpers:
+  `list_entities`, `list_critical_assets`, `list_attack_paths`,
+  `list_techniques`, `get_entity`, `get_attack_path`.
+
+**Tests**
+- 76 new tests across six new `TestXxxClient` classes plus two
+  Phase 2 Wave 3 integrity tests plus 4 new
+  `TestBasSimulationEnvelope` tests for the shared helper.
+- Full unit suite: 2346 tests passing, zero regressions.
+- Ruff clean across all new files.
+
 ### Added — Phase 2 Wave 2: MDR Platforms
 
 Three Managed Detection & Response connectors covering the top-rated

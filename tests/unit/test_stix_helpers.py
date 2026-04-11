@@ -17,6 +17,7 @@ from typing import Any
 import pytest
 
 from gnat.utils.stix_helpers import (
+    bas_simulation_envelope,
     cvss_to_external_reference,
     extract_objects,
     filter_by_type,
@@ -357,6 +358,67 @@ class TestSandboxReportEnvelope:
             last_observed="2026-04-01T00:00:00Z",
         )
         # No observables → empty refs list but envelope still valid STIX
+        assert env["type"] == "observed-data"
+        assert env["object_refs"] == []
+        assert validate_stix_id(env["id"])
+
+
+# ---------------------------------------------------------------------------
+# bas_simulation_envelope (Phase 2 Wave 3)
+# ---------------------------------------------------------------------------
+
+
+class TestBasSimulationEnvelope:
+    def test_basic_envelope(self):
+        env = bas_simulation_envelope(
+            source_name="safebreach",
+            simulation_id="sim-42",
+            target_assets=["host01", "host02"],
+            attack_techniques=["T1059.001", "T1055"],
+            result="blocked",
+            score=75,
+            first_observed="2026-04-01T00:00:00Z",
+            last_observed="2026-04-01T00:05:00Z",
+        )
+        assert env["type"] == "observed-data"
+        assert env["x_safebreach_simulation_id"] == "sim-42"
+        assert env["x_safebreach_result"] == "blocked"
+        assert env["x_safebreach_score"] == 75
+        ref_types = {r.split("--")[0] for r in env["object_refs"]}
+        assert "identity" in ref_types
+        assert "attack-pattern" in ref_types
+
+    def test_deterministic_ids(self):
+        kwargs: dict[str, Any] = {
+            "source_name": "picus",
+            "simulation_id": "99",
+            "target_assets": ["host01"],
+            "attack_techniques": ["T1059"],
+            "first_observed": "2026-04-01T00:00:00Z",
+            "last_observed": "2026-04-01T00:00:00Z",
+        }
+        a = bas_simulation_envelope(**kwargs)
+        b = bas_simulation_envelope(**kwargs)
+        assert a["id"] == b["id"]
+        assert a["object_refs"] == b["object_refs"]
+
+    def test_raw_report_embedded(self):
+        env = bas_simulation_envelope(
+            source_name="cymulate",
+            simulation_id="1",
+            first_observed="2026-04-01T00:00:00Z",
+            last_observed="2026-04-01T00:00:00Z",
+            raw_report={"result": "blocked", "control": "Defender"},
+        )
+        assert env["x_cymulate_raw"]["result"] == "blocked"
+
+    def test_empty_artifacts_still_valid(self):
+        env = bas_simulation_envelope(
+            source_name="attackiq",
+            simulation_id="empty",
+            first_observed="2026-04-01T00:00:00Z",
+            last_observed="2026-04-01T00:00:00Z",
+        )
         assert env["type"] == "observed-data"
         assert env["object_refs"] == []
         assert validate_stix_id(env["id"])

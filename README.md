@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A production-ready Python library for unified cyber threat intelligence and management operations across 122 security platforms.
+**GNAT's Not Another TIP** — A production-ready Python library for unified cyber threat intelligence and management operations across 133 security platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -11,7 +11,7 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 122 security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 133 security platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, and cloud security posture products. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
 [ 99 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
@@ -1032,7 +1032,7 @@ gnat/
 ├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based config (GNAT_CONFIG → ~/.gnat/config.ini → ./gnat.ini)
 ├── clients/
-│   ├── __init__.py          # CLIENT_REGISTRY (122 connectors)
+│   ├── __init__.py          # CLIENT_REGISTRY (133 connectors)
 │   └── base.py              # urllib3 BaseClient + GNATClientError
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types + observables)
 ├── connectors/              # 99 platform connectors — each: BaseClient + ConnectorMixin
@@ -1206,7 +1206,7 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
-                        │     CONNECTOR LAYER (122 platforms)     │
+                        │     CONNECTOR LAYER (133 platforms)     │
                         │  BaseClient + ConnectorMixin            │
                         │  authenticate · health_check            │
                         │  get/list/upsert/delete · to/from_stix  │

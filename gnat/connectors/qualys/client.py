@@ -178,6 +178,97 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/2.0/fo/asset/host/vm/detection/", params=params)
         return resp.get("HOST_LIST", {}).get("HOST", []) if isinstance(resp, dict) else []
 
+    def list_assets(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List hosts from the Qualys asset inventory."""
+        params: dict[str, Any] = {"action": "list", "limit": int(limit)}
+        resp = self.get("/api/2.0/fo/asset/host/", params=params)
+        if isinstance(resp, dict):
+            host_list = resp.get("HOST_LIST_OUTPUT", {}).get(
+                "RESPONSE", {}
+            ).get("HOST_LIST", {}).get("HOST", [])
+            if isinstance(host_list, list):
+                return host_list
+            if isinstance(host_list, dict):
+                return [host_list]
+        return []
+
+    def list_asset_groups(self) -> list[dict[str, Any]]:
+        """List defined Qualys asset groups."""
+        resp = self.get(
+            "/api/2.0/fo/asset/group/", params={"action": "list"}
+        )
+        if isinstance(resp, dict):
+            groups = (
+                resp.get("ASSET_GROUP_LIST_OUTPUT", {})
+                .get("RESPONSE", {})
+                .get("ASSET_GROUP_LIST", {})
+                .get("ASSET_GROUP", [])
+            )
+            if isinstance(groups, list):
+                return groups
+            if isinstance(groups, dict):
+                return [groups]
+        return []
+
+    def list_scans(
+        self, state: str = "", limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """List VM scans, optionally filtered by state (``Finished``/``Running``)."""
+        params: dict[str, Any] = {"action": "list"}
+        if state:
+            params["state"] = state
+        resp = self.get("/api/2.0/fo/scan/", params=params)
+        if isinstance(resp, dict):
+            scans = (
+                resp.get("SCAN_LIST_OUTPUT", {})
+                .get("RESPONSE", {})
+                .get("SCAN_LIST", {})
+                .get("SCAN", [])
+            )
+            if isinstance(scans, list):
+                return scans[: int(limit)]
+            if isinstance(scans, dict):
+                return [scans]
+        return []
+
+    def launch_scan(
+        self,
+        scan_title: str,
+        option_title: str,
+        ip_list: str = "",
+        asset_group_ids: str = "",
+    ) -> dict[str, Any]:
+        """Launch a new VM scan via ``POST /api/2.0/fo/scan/``."""
+        payload: dict[str, Any] = {
+            "action": "launch",
+            "scan_title": scan_title,
+            "option_title": option_title,
+        }
+        if ip_list:
+            payload["ip"] = ip_list
+        if asset_group_ids:
+            payload["asset_group_ids"] = asset_group_ids
+        resp = self.post("/api/2.0/fo/scan/", data=payload)
+        return resp if isinstance(resp, dict) else {"raw": resp}
+
+    def list_reports(self, limit: int = 100) -> list[dict[str, Any]]:
+        """List generated Qualys reports."""
+        resp = self.get(
+            "/api/2.0/fo/report/", params={"action": "list"}
+        )
+        if isinstance(resp, dict):
+            reports = (
+                resp.get("REPORT_LIST_OUTPUT", {})
+                .get("RESPONSE", {})
+                .get("REPORT_LIST", {})
+                .get("REPORT", [])
+            )
+            if isinstance(reports, list):
+                return reports[: int(limit)]
+            if isinstance(reports, dict):
+                return [reports]
+        return []
+
     # ── STIX translation ──────────────────────────────────────────────────
 
     def to_stix(self, native_object: dict[str, Any]) -> dict[str, Any]:

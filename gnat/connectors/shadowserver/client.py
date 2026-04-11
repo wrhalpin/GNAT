@@ -155,6 +155,86 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         """Delete the object."""
         raise GNATClientError("Shadowserver API is read-only — delete not supported.")
 
+    # ── Domain-specific helpers ────────────────────────────────────────────
+
+    def query_ip(self, ip: str) -> dict[str, Any]:
+        """Look up Shadowserver reputation for a single IP."""
+        resp = self._signed_post("/api/ip/query", {"ip": ip})
+        return resp if isinstance(resp, dict) else {}
+
+    def query_asn(self, asn: int | str) -> dict[str, Any]:
+        """Look up Shadowserver reputation / rank data for an ASN."""
+        resp = self._signed_post(
+            "/api/asn/query", {"asn": str(asn).upper().removeprefix("AS")}
+        )
+        return resp if isinstance(resp, dict) else {}
+
+    def query_cve(self, cve: str) -> dict[str, Any]:
+        """Look up Shadowserver data for a specific CVE."""
+        resp = self._signed_post("/api/cve/query", {"cve": cve})
+        return resp if isinstance(resp, dict) else {}
+
+    def query_malware(
+        self, family: str = "", sha256: str = ""
+    ) -> list[dict[str, Any]]:
+        """
+        Query the Shadowserver malware index.
+
+        Pass either a ``family`` name or a ``sha256`` hash.
+        """
+        payload: dict[str, Any] = {}
+        if family:
+            payload["family"] = family
+        if sha256:
+            payload["sha256"] = sha256
+        if not payload:
+            raise GNATClientError(
+                "query_malware requires a 'family' or 'sha256' parameter"
+            )
+        resp = self._signed_post("/api/malware/query", payload)
+        if isinstance(resp, list):
+            return [r for r in resp if isinstance(r, dict)]
+        if isinstance(resp, dict):
+            return [resp]
+        return []
+
+    def query_botnet(self, family: str = "", date: str = "") -> list[dict[str, Any]]:
+        """Query Shadowserver botnet tracking for a family / date."""
+        payload: dict[str, Any] = {}
+        if family:
+            payload["family"] = family
+        if date:
+            payload["date"] = date
+        resp = self._signed_post("/api/botnet/query", payload)
+        if isinstance(resp, list):
+            return [r for r in resp if isinstance(r, dict)]
+        if isinstance(resp, dict):
+            return [resp]
+        return []
+
+    def list_report_types(self) -> list[dict[str, Any]]:
+        """Return the list of report types this account can query."""
+        resp = self._signed_post("/api/reports/types", {})
+        if isinstance(resp, list):
+            return [r for r in resp if isinstance(r, dict)]
+        if isinstance(resp, dict):
+            return [resp]
+        return []
+
+    def query_report(
+        self, report: str, date: str = "", limit: int = 1000
+    ) -> list[dict[str, Any]]:
+        """Query a specific Shadowserver report by name + date."""
+        payload: dict[str, Any] = {"report": report, "limit": int(limit)}
+        if date:
+            payload["date"] = date
+        resp = self._signed_post("/api/report/query", payload)
+        if isinstance(resp, list):
+            return [r for r in resp if isinstance(r, dict)]
+        if isinstance(resp, dict):
+            return [resp]
+        return []
+
     # ── STIX translation ───────────────────────────────────────────────────
 
     def to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
