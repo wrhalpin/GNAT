@@ -17059,6 +17059,655 @@ class TestSOCRadarGapFills:
         assert out[0]["severity"] == "critical"
 
 
+# ===========================================================================
+# Phase 2 Wave 5 — Identity Providers (IdP)
+# ===========================================================================
+
+
+class TestOktaClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.okta.client import OktaClient
+
+        c = OktaClient(host="https://acme.okta.com", api_token="okta_test")
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_ssws_header(self):
+        from gnat.connectors.okta.client import OktaClient
+
+        c = OktaClient(host="https://acme.okta.com", api_token="okta_test")
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "SSWS okta_test"
+
+    def test_authenticate_requires_api_token(self):
+        from gnat.connectors.okta.client import OktaClient
+
+        c = OktaClient(host="https://acme.okta.com", api_token="")
+        with pytest.raises(GNATClientError, match="requires api_token"):
+            c.authenticate()
+
+    def test_trust_level_internal(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=[]))
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_list_users(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value=[
+                    {
+                        "id": "u1",
+                        "status": "ACTIVE",
+                        "profile": {
+                            "login": "alice@acme",
+                            "firstName": "Alice",
+                            "lastName": "A",
+                            "email": "alice@acme",
+                        },
+                    }
+                ]
+            ),
+        )
+        users = client.list_users()
+        assert users[0]["_okta_kind"] == "user"
+
+    def test_list_groups(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value=[
+                    {
+                        "id": "g1",
+                        "profile": {"name": "Admins", "description": "admins"},
+                        "type": "OKTA_GROUP",
+                    }
+                ]
+            ),
+        )
+        groups = client.list_groups()
+        assert groups[0]["_okta_kind"] == "group"
+
+    def test_list_system_log_events(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value=[
+                    {
+                        "uuid": "evt1",
+                        "eventType": "user.session.start",
+                        "actor": {"id": "u1", "alternateId": "alice@acme"},
+                        "client": {"ipAddress": "1.2.3.4"},
+                        "published": "2026-04-01T00:00:00Z",
+                    }
+                ]
+            ),
+        )
+        events = client.list_system_log_events(since="2026-04-01T00:00:00Z")
+        assert events[0]["_okta_kind"] == "event"
+
+    def test_list_apps(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value=[
+                    {"id": "app1", "label": "Salesforce", "status": "ACTIVE"}
+                ]
+            ),
+        )
+        apps = client.list_apps()
+        assert apps[0]["_okta_kind"] == "app"
+
+    def test_list_policies(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(return_value=[{"id": "pol1", "type": "MFA_ENROLL"}]),
+        )
+        pols = client.list_policies(policy_type="MFA_ENROLL")
+        assert pols[0]["id"] == "pol1"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("user-account", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("user-account", "x")
+
+    def test_to_stix_user(self, client):
+        stix = client.to_stix(
+            {
+                "_okta_kind": "user",
+                "id": "u1",
+                "status": "ACTIVE",
+                "profile": {
+                    "login": "alice@acme",
+                    "displayName": "Alice A",
+                    "email": "alice@acme",
+                    "title": "Engineer",
+                    "department": "Platform",
+                },
+                "lastLogin": "2026-04-01T00:00:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "user-account"
+        assert stix["account_login"] == "alice@acme"
+        assert stix["x_okta"]["department"] == "Platform"
+
+    def test_to_stix_group(self, client):
+        stix = client.to_stix(
+            {
+                "_okta_kind": "group",
+                "id": "g1",
+                "profile": {"name": "Admins", "description": "admins"},
+                "type": "OKTA_GROUP",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "identity"
+        assert stix["identity_class"] == "group"
+
+    def test_to_stix_event(self, client):
+        stix = client.to_stix(
+            {
+                "_okta_kind": "event",
+                "uuid": "evt1",
+                "eventType": "user.session.start",
+                "outcome": {"result": "SUCCESS"},
+                "actor": {"id": "u1", "alternateId": "alice@acme"},
+                "client": {
+                    "ipAddress": "1.2.3.4",
+                    "userAgent": {"rawUserAgent": "Chrome"},
+                },
+                "published": "2026-04-01T00:00:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        ref_types = {r.split("--")[0] for r in stix["object_refs"]}
+        assert "user-account" in ref_types
+        assert "ipv4-addr" in ref_types
+
+    def test_to_stix_app(self, client):
+        stix = client.to_stix(
+            {
+                "_okta_kind": "app",
+                "id": "app1",
+                "label": "Salesforce",
+                "status": "ACTIVE",
+                "signOnMode": "SAML_2_0",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "x-okta-app"
+        assert stix["name"] == "Salesforce"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "user-account--x"})
+        assert "read-only" in out["note"]
+
+
+class TestEntraIDClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.entra_id.client import EntraIDClient
+
+        c = EntraIDClient(
+            host="https://graph.microsoft.com",
+            tenant_id="ten",
+            client_id="cli",
+            client_secret="sec",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_requires_all_three_creds(self):
+        from gnat.connectors.entra_id.client import EntraIDClient
+
+        c = EntraIDClient(
+            host="https://graph.microsoft.com",
+            tenant_id="",
+            client_id="",
+            client_secret="",
+        )
+        with pytest.raises(
+            GNATClientError, match="tenant_id, client_id, and client_secret"
+        ):
+            c.authenticate()
+
+    def test_trust_level_internal(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"value": [{"id": "org1"}]})
+        )
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_list_users(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "value": [
+                        {
+                            "id": "u1",
+                            "userPrincipalName": "alice@tenant.onmicrosoft.com",
+                            "displayName": "Alice A",
+                            "mail": "alice@tenant.com",
+                        }
+                    ]
+                }
+            ),
+        )
+        users = client.list_users()
+        assert users[0]["_entra_kind"] == "user"
+
+    def test_list_groups(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "value": [
+                        {
+                            "id": "g1",
+                            "displayName": "Admins",
+                            "securityEnabled": True,
+                        }
+                    ]
+                }
+            ),
+        )
+        groups = client.list_groups()
+        assert groups[0]["_entra_kind"] == "group"
+
+    def test_list_sign_ins(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "value": [
+                        {
+                            "id": "evt1",
+                            "userId": "u1",
+                            "userPrincipalName": "alice@tenant",
+                            "appDisplayName": "SharePoint",
+                            "ipAddress": "1.2.3.4",
+                            "createdDateTime": "2026-04-01T00:00:00Z",
+                        }
+                    ]
+                }
+            ),
+        )
+        events = client.list_sign_ins()
+        assert events[0]["_entra_kind"] == "sign_in"
+
+    def test_list_risky_users(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "value": [
+                        {"id": "ru1", "riskLevel": "high", "userId": "u1"}
+                    ]
+                }
+            ),
+        )
+        risky = client.list_risky_users(risk_level="high")
+        assert risky[0]["_entra_kind"] == "risky_user"
+
+    def test_list_service_principals(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "value": [
+                        {"id": "sp1", "displayName": "MyApp", "appId": "00000"}
+                    ]
+                }
+            ),
+        )
+        sps = client.list_service_principals()
+        assert sps[0]["_entra_kind"] == "service_principal"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("user-account", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("user-account", "x")
+
+    def test_to_stix_user(self, client):
+        stix = client.to_stix(
+            {
+                "_entra_kind": "user",
+                "id": "u1",
+                "userPrincipalName": "alice@tenant",
+                "displayName": "Alice A",
+                "mail": "alice@tenant.com",
+                "jobTitle": "Engineer",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "user-account"
+        assert stix["account_login"] == "alice@tenant"
+
+    def test_to_stix_group(self, client):
+        stix = client.to_stix(
+            {
+                "_entra_kind": "group",
+                "id": "g1",
+                "displayName": "Admins",
+                "securityEnabled": True,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "identity"
+        assert stix["identity_class"] == "group"
+
+    def test_to_stix_sign_in(self, client):
+        stix = client.to_stix(
+            {
+                "_entra_kind": "sign_in",
+                "id": "evt1",
+                "userId": "u1",
+                "appDisplayName": "SharePoint",
+                "clientAppUsed": "Browser",
+                "ipAddress": "1.2.3.4",
+                "createdDateTime": "2026-04-01T00:00:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        ref_types = {r.split("--")[0] for r in stix["object_refs"]}
+        assert "user-account" in ref_types
+        assert "ipv4-addr" in ref_types
+
+    def test_to_stix_service_principal(self, client):
+        stix = client.to_stix(
+            {
+                "_entra_kind": "service_principal",
+                "id": "sp1",
+                "displayName": "MyApp",
+                "appId": "00000",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "x-entra-application"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "user-account--x"})
+        assert "read-only" in out["note"]
+
+
+class TestPingIdentityClient:
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.ping_identity.client import PingIdentityClient
+
+        c = PingIdentityClient(
+            host="https://api.pingone.com",
+            environment_id="env1",
+            client_id="cli",
+            client_secret="sec",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_requires_all_creds(self):
+        from gnat.connectors.ping_identity.client import PingIdentityClient
+
+        c = PingIdentityClient(
+            host="https://api.pingone.com",
+            environment_id="",
+            client_id="",
+            client_secret="",
+        )
+        with pytest.raises(
+            GNATClientError, match="environment_id, client_id"
+        ):
+            c.authenticate()
+
+    def test_trust_level_internal(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"
+
+    def test_health_check_true(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"id": "env1"})
+        )
+        assert client.health_check() is True
+
+    def test_health_check_false_on_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    def test_list_users(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "_embedded": {
+                        "users": [
+                            {
+                                "id": "u1",
+                                "username": "alice",
+                                "name": {"given": "Alice", "family": "A"},
+                                "email": "alice@acme",
+                                "enabled": True,
+                            }
+                        ]
+                    }
+                }
+            ),
+        )
+        users = client.list_users()
+        assert users[0]["_ping_kind"] == "user"
+
+    def test_list_populations(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "_embedded": {
+                        "populations": [
+                            {"id": "p1", "name": "Employees", "userCount": 42}
+                        ]
+                    }
+                }
+            ),
+        )
+        pops = client.list_populations()
+        assert pops[0]["_ping_kind"] == "population"
+
+    def test_list_applications(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "_embedded": {
+                        "applications": [
+                            {
+                                "id": "app1",
+                                "name": "Salesforce",
+                                "enabled": True,
+                                "protocol": "SAML",
+                            }
+                        ]
+                    }
+                }
+            ),
+        )
+        apps = client.list_applications()
+        assert apps[0]["_ping_kind"] == "application"
+
+    def test_list_activities(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "_embedded": {
+                        "activities": [
+                            {
+                                "id": "act1",
+                                "action": "USER.AUTHENTICATED",
+                                "result": "SUCCESS",
+                                "actors": [{"id": "u1", "type": "USER"}],
+                                "ipAddress": "1.2.3.4",
+                                "createdAt": "2026-04-01T00:00:00Z",
+                            }
+                        ]
+                    }
+                }
+            ),
+        )
+        acts = client.list_activities()
+        assert acts[0]["_ping_kind"] == "activity"
+
+    def test_list_sign_on_policies(self, client, monkeypatch):
+        monkeypatch.setattr(
+            client,
+            "get",
+            MagicMock(
+                return_value={
+                    "_embedded": {
+                        "signOnPolicies": [
+                            {"id": "p1", "name": "Default", "default": True}
+                        ]
+                    }
+                }
+            ),
+        )
+        pols = client.list_sign_on_policies()
+        assert pols[0]["_ping_kind"] == "sign_on_policy"
+
+    def test_upsert_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.upsert_object("user-account", {})
+
+    def test_delete_raises(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("user-account", "x")
+
+    def test_to_stix_user(self, client):
+        stix = client.to_stix(
+            {
+                "_ping_kind": "user",
+                "id": "u1",
+                "username": "alice",
+                "name": {"given": "Alice", "family": "A"},
+                "email": "alice@acme",
+                "enabled": True,
+                "population": {"id": "pop1"},
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "user-account"
+        assert stix["account_login"] == "alice"
+        assert stix["x_ping_identity"]["population_id"] == "pop1"
+
+    def test_to_stix_population(self, client):
+        stix = client.to_stix(
+            {
+                "_ping_kind": "population",
+                "id": "pop1",
+                "name": "Employees",
+                "userCount": 42,
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "identity"
+        assert stix["name"] == "Employees"
+
+    def test_to_stix_activity(self, client):
+        stix = client.to_stix(
+            {
+                "_ping_kind": "activity",
+                "id": "act1",
+                "action": "USER.AUTHENTICATED",
+                "result": "SUCCESS",
+                "actors": [{"id": "u1", "type": "USER"}],
+                "ipAddress": "1.2.3.4",
+                "createdAt": "2026-04-01T00:00:00Z",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+        ref_types = {r.split("--")[0] for r in stix["object_refs"]}
+        assert "user-account" in ref_types
+        assert "ipv4-addr" in ref_types
+
+    def test_to_stix_application(self, client):
+        stix = client.to_stix(
+            {
+                "_ping_kind": "application",
+                "id": "app1",
+                "name": "Salesforce",
+                "enabled": True,
+                "protocol": "SAML",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "x-ping-application"
+
+    def test_from_stix_is_noop(self, client):
+        out = client.from_stix({"id": "user-account--x"})
+        assert "read-only" in out["note"]
+
+
+def test_phase2_wave5_registry_contains_new_connectors():
+    from gnat.clients import CLIENT_REGISTRY
+
+    for key in ("okta", "entra_id", "ping_identity"):
+        assert key in CLIENT_REGISTRY, f"Missing {key} in CLIENT_REGISTRY"
+
+
+def test_phase2_wave5_config_sections_exist():
+    import configparser
+    from pathlib import Path
+
+    cfg_path = Path(__file__).resolve().parents[3] / "config" / "config.ini.example"
+    parser = configparser.ConfigParser(strict=False)
+    parser.read(cfg_path)
+    for section in ("okta", "entra_id", "ping_identity"):
+        assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
+
+
 class TestStellarCyberGapFills:
     @pytest.fixture
     def client(self):

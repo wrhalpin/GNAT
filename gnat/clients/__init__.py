@@ -50,6 +50,7 @@ from gnat.connectors.domaintools.client import DomainToolsClient
 from gnat.connectors.dragos.client import DragosClient
 from gnat.connectors.dynatrace.client import DynatraceClient
 from gnat.connectors.elastic.connector import ElasticConnector
+from gnat.connectors.entra_id.client import EntraIDClient
 from gnat.connectors.eset_ti.client import ESETThreatIntelClient
 from gnat.connectors.extrahop.client import ExtraHopClient
 from gnat.connectors.feedly.client import FeedlyClient
@@ -87,6 +88,7 @@ from gnat.connectors.mitre_attack.client import MitreAttackClient
 from gnat.connectors.netskope.client import NetskopeClient
 from gnat.connectors.nozomi.client import NozomiClient
 from gnat.connectors.nucleus.client import NucleusClient
+from gnat.connectors.okta.client import OktaClient
 from gnat.connectors.opencti.client import OpenCTIClient
 from gnat.connectors.orca.client import OrcaClient
 from gnat.connectors.osint_feed.connector import OsintFeedConnector
@@ -94,6 +96,7 @@ from gnat.connectors.ossim.client import OSSIMClient
 from gnat.connectors.osv.client import OSVClient
 from gnat.connectors.pentera.client import PenteraClient
 from gnat.connectors.picus.client import PicusClient
+from gnat.connectors.ping_identity.client import PingIdentityClient
 from gnat.connectors.prisma_cloud.client import PrismaCloudClient
 from gnat.connectors.proofpoint.client import ProofpointClient
 from gnat.connectors.pulsedive.client import PulseDiveClient
@@ -295,6 +298,10 @@ CLIENT_REGISTRY: dict = {
     "kaspersky_opentip": KasperskyOpenTIPClient,
     "eset_ti": ESETThreatIntelClient,
     "bitdefender_iz": BitdefenderIntelliZoneClient,
+    # Phase 2 Wave 5 — Identity Providers (IdP)
+    "okta": OktaClient,
+    "entra_id": EntraIDClient,
+    "ping_identity": PingIdentityClient,
 }
 
 __all__ = [
@@ -396,4 +403,8 @@ __all__ = [
     "KasperskyOpenTIPClient",
     "ESETThreatIntelClient",
     "BitdefenderIntelliZoneClient",
+    # Phase 2 Wave 5 — Identity Providers (IdP)
+    "OktaClient",
+    "EntraIDClient",
+    "PingIdentityClient",
 ]

@@ -19,6 +19,71 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Phase 2 Wave 5: Identity Providers (IdP)
+
+Three IdP connectors filling the biggest remaining category gap after
+Phase 1 Wave 3b introduced the ITDR tier. ITDR (Silverfort, Semperis)
+watches identity at runtime; IdP (Okta, Entra ID, Ping) is the directory
+itself. Platform count: 133 → 136. All three are `trusted_internal`
+and read-only.
+
+**New connectors (`gnat/connectors/`)**
+- `okta/` — `OktaClient` for Okta Identity Cloud. Proprietary
+  `Authorization: SSWS <api_token>` header. Dispatches across
+  `/api/v1/users`, `/groups`, `/apps`, `/logs`, `/policies`, `/factors`.
+  Custom `x-okta-app` SCO for registered applications. Emits
+  `user-account`, `identity` (groups), `observed-data` (system-log
+  events with synthetic user + source-ip refs), plus `x-okta-app`.
+  Domain helpers: `list_users`, `get_user`, `list_groups`,
+  `list_group_members`, `list_apps`, `list_app_users`,
+  `list_system_log_events`, `list_policies`, `list_factors`.
+- `entra_id/` — `EntraIDClient` for Microsoft Entra ID (Azure AD)
+  via Microsoft Graph v1.0. OAuth2 client-credentials flow against
+  `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token` with
+  scope `https://graph.microsoft.com/.default`. Uses an ad-hoc
+  `urllib3.PoolManager` for the token endpoint since it lives on a
+  different host. Three dispatched `observed-data` kinds via
+  `filters["kind"]`: `sign_ins`, `directory_audits`, `risky_users`
+  (the last being Identity Protection ITDR signals). Custom
+  `x-entra-application` SCO for service principals and
+  `x-entra-ca-policy` for Conditional Access policies. Domain helpers:
+  `list_users`, `list_groups`, `list_group_members`,
+  `list_service_principals`, `list_sign_ins`, `list_directory_audits`,
+  `list_risky_users`, `list_conditional_access_policies`,
+  `list_organization`. Module-level `_extract_entra_value()` unwraps
+  the OData `{"value": [...]}` envelope.
+- `ping_identity/` — `PingIdentityClient` for PingOne. OAuth2
+  client-credentials against a region-aware endpoint
+  (`_AUTH_REGIONS` maps NA/EU/AP/CA to the right
+  `auth.pingone.*` domain). Environment-scoped URLs via
+  `_env_path()` helper. Dispatches across users, populations
+  (PingOne's group-equivalent), applications, sign-on policies,
+  activities, audit events. Custom `x-ping-application` SCO. Domain
+  helpers: `list_users`, `get_user`, `list_populations`,
+  `list_applications`, `list_sign_on_policies`, `list_activities`,
+  `list_audit_events`, `list_user_groups`. Module-level
+  `_extract_ping_list()` handles the HAL-style `_embedded` envelope.
+
+**Tests**
+- 51 new tests across `TestOktaClient` (15), `TestEntraIDClient` (16),
+  `TestPingIdentityClient` (18) plus two Phase 2 Wave 5 integrity
+  tests. Full unit suite: 2520 tests passing, zero regressions.
+- One bug caught during integration: Entra ID's `to_stix` had a
+  Python precedence bug in the `user_id` extraction where the
+  conditional-expression `if/else` was accidentally gating the whole
+  `or` chain. Fixed by rewriting as an explicit two-step lookup.
+
+**Architectural notes**
+- All three connectors introduce vendor-specific custom SCOs for
+  enterprise applications (`x-okta-app`, `x-entra-application`,
+  `x-ping-application`). Continues the pattern established in Phase 1
+  Wave 3b (`x-cryptocurrency-wallet` on TRM Labs) and Phase 2 Wave 2
+  (`x-huntress-agent`).
+- Entra ID and Ping Identity are the first Phase 2 connectors to issue
+  OAuth2 token requests against a hostname **other than** the main
+  API host. Both use a local `urllib3.PoolManager` for the token
+  exchange rather than the standard `self.post()` path.
+
 ### Added — Connector Gap Fills + Stub Rescues
 
 Filled the audit-identified domain-helper gaps in 9 existing connectors

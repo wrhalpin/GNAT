@@ -1106,3 +1106,31 @@ api_token = YOUR_ESET_TI_BEARER_TOKEN
 [bitdefender_iz]
 host    = https://intellizone.bitdefender.com
 api_key = YOUR_BITDEFENDER_INTELLIZONE_API_KEY
+
+# =============================================================================
+# Phase 2 Wave 5 — Identity Providers (IdP)
+# =============================================================================
+
+# --- Okta Identity Cloud ---------------------------------------------------
+[okta]
+host      = https://YOUR_TENANT.okta.com
+api_token = YOUR_OKTA_API_TOKEN
+
+# --- Microsoft Entra ID (Azure AD) via Microsoft Graph ---------------------
+# OAuth2 client credentials flow.  Required Graph permissions (application):
+# User.Read.All, Group.Read.All, AuditLog.Read.All, Directory.Read.All,
+# IdentityRiskyUser.Read.All.
+[entra_id]
+host          = https://graph.microsoft.com
+tenant_id     = 00000000-0000-0000-0000-000000000000
+client_id     = 11111111-1111-1111-1111-111111111111
+client_secret = YOUR_AZURE_AD_CLIENT_SECRET
+
+# --- Ping Identity (PingOne) -----------------------------------------------
+# auth_region is NA (default), EU, AP, or CA.
+[ping_identity]
+host           = https://api.pingone.com
+environment_id = 00000000-0000-0000-0000-000000000000
+client_id      = YOUR_PING_CLIENT_ID
+client_secret  = YOUR_PING_CLIENT_SECRET
+auth_region    = NA
