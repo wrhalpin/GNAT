@@ -32,7 +32,7 @@ GNAT (CTM Toolkit) is a production-ready Python library providing a unified clie
 ├────────────────────┴────────────────────┴───────────────────────────┤
 │                     STIX 2.1 ORM  (gnat/orm/)                       │
 ├──────────────────────────────────┬──────────────────────────────────┤
-│   99 Platform Connectors         │  Export Pipeline                 │
+│  158 Platform Connectors         │  Export Pipeline                 │
 │   gnat/connectors/               │  gnat/export/                   │
 ├──────────────────────────────────┴──────────────────────────────────┤
 │          HTTP Client Layer  (gnat/clients/  ·  gnat/async_client/)  │
@@ -133,7 +133,7 @@ finished intelligence.
 ---
 
 ### Connector Architecture
-Each connector uses dual inheritance — `BaseClient` (HTTP) and `ConnectorMixin` (STIX contract). Every connector must implement `authenticate()`, `to_stix()`, `from_stix()`, `health_check()`, and the four CRUD methods. Connectors are registered in `CLIENT_REGISTRY` in `gnat/clients/__init__.py`. The library ships with 99 connectors covering SIEM, XDR, TIP, ASM, OT/IoT, vulnerability management, and AI platforms.
+Each connector uses dual inheritance — `BaseClient` (HTTP) and `ConnectorMixin` (STIX contract). Every connector must implement `authenticate()`, `to_stix()`, `from_stix()`, `health_check()`, and the four CRUD methods. Connectors are registered in `CLIENT_REGISTRY` in `gnat/clients/__init__.py`. The library ships with 158 connectors covering SIEM, XDR, TIP, ASM, OT/IoT, vulnerability management, sandboxes, MDR, identity/ITDR, email security, insider risk/UEBA, BAS, DFIR, certificate transparency, bug bounty, and AI platforms.
 
 → [ADR-0003: Connector Architecture](explanation/architecture/adrs/0003-connector-architecture.md)
 

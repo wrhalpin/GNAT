@@ -87,7 +87,7 @@ with Diagram(
         with Cluster("Search Sidecar\ngnat/search"):
             search = Vault("Solr Index")
 
-    with Cluster("Platform Connectors\ngnat/connectors  (99 platforms)"):
+    with Cluster("Platform Connectors\ngnat/connectors  (158 platforms)"):
         connectors = Switch("ConnectorMixin")
 
     with Cluster("HTTP Client Layer"):
