@@ -11,6 +11,12 @@ Diamond Model formalization, kill-chain tracking, infrastructure
 classification, and competing-attribution hypothesis management.
 """
 
+from gnat.analysis.attribution.actor_profile import ActorProfile
+from gnat.analysis.attribution.hypothesis import (
+    AttributionEngine,
+    AttributionEvidence,
+    AttributionHypothesis,
+)
 from gnat.analysis.attribution.models import (
     CampaignProfile,
     CampaignStatus,
@@ -20,6 +26,10 @@ from gnat.analysis.attribution.service import CampaignService
 from gnat.analysis.attribution.storage import CampaignStore
 
 __all__ = [
+    "ActorProfile",
+    "AttributionEngine",
+    "AttributionEvidence",
+    "AttributionHypothesis",
     "CampaignProfile",
     "CampaignQuery",
     "CampaignService",
