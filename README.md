@@ -1295,17 +1295,17 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌─────────────────┬▼─────────────────────┐
-                        │  ANALYSIS LAYER  │   REPORTING LAYER    │
-                        │  Confidence/TLP  │ Report lifecycle     │
-                        │  Investigations  │ STIX SDO export      │
-                        │  Correlation     │ AI drafting assist   │
-                        │  Timeline/Graph  │                      │
+                        │  ANALYSIS LAYER │   REPORTING LAYER    │
+                        │  Confidence/TLP │ Report lifecycle     │
+                        │  Investigations │ STIX SDO export      │
+                        │  Correlation    │ AI drafting assist   │
+                        │  Timeline/Graph │                      │
                         └─────────────────┴──────────┬───────────┘
-                                                      │
+                                                     │
                         ┌─────────────────────────────▼───────────┐
-                        │  INVESTIGATION BUILDER (cross-platform)  │
-                        │  5-step: seed→expand→normalise→          │
-                        │          correlate→materialise           │
+                        │  INVESTIGATION BUILDER (cross-platform) │
+                        │  5-step: seed→expand→normalise→         │
+                        │          correlate→materialise          │
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
@@ -1333,7 +1333,7 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                                            │
                         ┌──────────────────▼──────────────────────┐
                         │          EXTERNAL PLATFORMS             │
-                        │  TIPs · SIEMs · EDRs · VulnMgmt        │
+                        │  TIPs · SIEMs · EDRs · VulnMgmt         │
                         │  CNAPP/ASM · SOAR · NDR · AI APIs       │
                         └─────────────────────────────────────────┘
 
