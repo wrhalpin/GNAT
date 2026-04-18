@@ -894,6 +894,86 @@ def _build_parser() -> argparse.ArgumentParser:
     p_inv_link.add_argument("--reports", default="", metavar="ID1,ID2",
         help="Comma-separated report IDs")
 
+    # ── campaign ─────────────────────────────────────────────────────────
+    p_camp = subs.add_parser(
+        "campaign",
+        help="Manage campaigns (create, list, attribute, track kill-chain)",
+    )
+    camp_subs = p_camp.add_subparsers(dest="camp_command", metavar="<subcommand>")
+    camp_subs.required = True
+
+    _p_camp_list = camp_subs.add_parser("list", help="List campaigns")
+    _p_camp_list.add_argument("--status", metavar="STATUS",
+        help="Filter: suspected|active|dormant|concluded")
+    _p_camp_list.add_argument("--actor", metavar="ACTOR_ID",
+        help="Filter by attributed threat actor ID")
+    _p_camp_list.add_argument("--tag", metavar="TAG", help="Filter by tag")
+
+    p_camp_create = camp_subs.add_parser("create", help="Create a new campaign")
+    p_camp_create.add_argument("--name", required=True, metavar="NAME")
+    p_camp_create.add_argument("--description", default="", metavar="TEXT")
+    p_camp_create.add_argument("--objective", default="", metavar="TEXT")
+    p_camp_create.add_argument("--actor", default=None, metavar="ACTOR_ID",
+        help="Primary attributed threat actor ID")
+    p_camp_create.add_argument("--parent", default=None, metavar="CAMPAIGN_ID",
+        help="Parent campaign ID for sub-campaigns")
+    p_camp_create.add_argument("--tags", default="", metavar="TAG1,TAG2")
+
+    p_camp_show = camp_subs.add_parser("show", help="Show campaign details")
+    p_camp_show.add_argument("id", metavar="CAMPAIGN_ID")
+
+    p_camp_transition = camp_subs.add_parser("transition", help="Change campaign status")
+    p_camp_transition.add_argument("id", metavar="CAMPAIGN_ID")
+    p_camp_transition.add_argument("status", metavar="NEW_STATUS",
+        choices=["suspected", "active", "dormant", "concluded"])
+
+    p_camp_link = camp_subs.add_parser("link", help="Link indicator to campaign")
+    p_camp_link.add_argument("id", metavar="CAMPAIGN_ID")
+    p_camp_link.add_argument("--indicator", required=True, metavar="INDICATOR_ID")
+
+    p_camp_attr = camp_subs.add_parser("attribute", help="Propose attribution")
+    p_camp_attr.add_argument("id", metavar="CAMPAIGN_ID")
+    p_camp_attr.add_argument("--actor", required=True, metavar="ACTOR_ID")
+    p_camp_attr.add_argument("--rationale", default="", metavar="TEXT")
+
+    p_camp_promote = camp_subs.add_parser("promote-cluster",
+        help="Promote a cluster to a campaign")
+    p_camp_promote.add_argument("cluster_json", metavar="CLUSTER_JSON",
+        help="Path to a JSON file containing a Cluster.to_dict() payload")
+
+    # ── actor ────────────────────────────────────────────────────────────
+    p_actor = subs.add_parser(
+        "actor",
+        help="Manage threat actor profiles",
+    )
+    actor_subs = p_actor.add_subparsers(dest="actor_command", metavar="<subcommand>")
+    actor_subs.required = True
+
+    _p_actor_list = actor_subs.add_parser("list", help="List actor profiles")
+    _p_actor_list.add_argument("--type", metavar="TYPE",
+        help="Filter: nation-state|criminal|hacktivist")
+
+    p_actor_create = actor_subs.add_parser("create", help="Create an actor profile")
+    p_actor_create.add_argument("--name", required=True, metavar="NAME")
+    p_actor_create.add_argument("--type", default="unknown", metavar="TYPE",
+        dest="actor_type")
+    p_actor_create.add_argument("--mitre-group", default=None, metavar="G0034",
+        dest="mitre_group")
+
+    p_actor_show = actor_subs.add_parser("show", help="Show actor profile")
+    p_actor_show.add_argument("id", metavar="ACTOR_ID")
+
+    p_actor_alias = actor_subs.add_parser("alias", help="Add alias to actor")
+    p_actor_alias.add_argument("id", metavar="ACTOR_ID")
+    p_actor_alias.add_argument("--add", required=True, metavar="ALIAS")
+    p_actor_alias.add_argument("--source", default="analyst", metavar="SOURCE")
+
+    p_actor_cap = actor_subs.add_parser("capability", help="Add ATT&CK capability")
+    p_actor_cap.add_argument("id", metavar="ACTOR_ID")
+    p_actor_cap.add_argument("--technique", required=True, metavar="T1059.003")
+    p_actor_cap.add_argument("--proficiency", default="observed",
+        choices=["observed", "proficient", "expert"])
+
     # ── plugins ───────────────────────────────────────────────────────────
     p_plg = subs.add_parser(
         "plugins",
@@ -2931,6 +3011,284 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_campaign(args: argparse.Namespace) -> int:
+    """Handle 'gnat campaign <subcommand>'."""
+    import json as _json
+    import os
+
+    db_url = os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
+    try:
+        from gnat.analysis.attribution.models import CampaignStatus
+        from gnat.analysis.attribution.query import CampaignQuery
+        from gnat.analysis.attribution.service import CampaignService, CampaignServiceError
+        from gnat.analysis.attribution.storage import CampaignStore
+    except ImportError:
+        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
+              file=sys.stderr)
+        return 1
+
+    store = CampaignStore(db_url)
+    store.create_all()
+    svc = CampaignService(store)
+    sub = args.camp_command
+
+    if sub == "list":
+        status = None
+        if getattr(args, "status", None):
+            status = [CampaignStatus(args.status)]
+        tags = [getattr(args, "tag", None)] if getattr(args, "tag", None) else None
+        q = CampaignQuery(
+            status=status,
+            threat_actor_id=getattr(args, "actor", None),
+            tags=tags,
+        )
+        campaigns = svc.list(q)
+        if args.output == "json":
+            _print_json([c.to_dict() for c in campaigns])
+            return 0
+        if not campaigns:
+            print(_dim("(no campaigns)"))
+            return 0
+        rows = [
+            {
+                "ID": c.id[:20] + "...",
+                "NAME": c.name[:30],
+                "STATUS": c.status.value,
+                "ACTOR": (c.threat_actor_id or "—")[:25],
+                "INDICATORS": str(len(c.indicator_ids)),
+            }
+            for c in campaigns
+        ]
+        _print_table(rows, fields=["ID", "NAME", "STATUS", "ACTOR", "INDICATORS"])
+        return 0
+
+    if sub == "create":
+        try:
+            tags = [t.strip() for t in args.tags.split(",") if t.strip()] if args.tags else []
+            c = svc.create(
+                name=args.name,
+                description=args.description,
+                objective=args.objective,
+                threat_actor_id=getattr(args, "actor", None),
+                parent_campaign_id=getattr(args, "parent", None),
+                tags=tags,
+            )
+        except CampaignServiceError as exc:
+            print(_red(f"error: {exc}"), file=sys.stderr)
+            return 1
+        if args.output == "json":
+            _print_json(c.to_dict())
+        else:
+            print(_bold(f"Created campaign {c.id}"))
+            print(f"  name: {c.name}")
+        return 0
+
+    if sub == "show":
+        try:
+            c = svc.get(args.id)
+        except CampaignServiceError as exc:
+            print(_red(f"error: {exc}"), file=sys.stderr)
+            return 2
+        if args.output == "json":
+            _print_json(c.to_dict())
+        else:
+            print(_bold(f"Campaign: {c.name}"))
+            for key in ("id", "status", "threat_actor_id", "classification",
+                        "created_by", "created_at"):
+                print(f"  {key:20s} {getattr(c, key)}")
+            print(f"  {'indicators':20s} {len(c.indicator_ids)}")
+            print(f"  {'clusters':20s} {len(c.cluster_ids)}")
+            if c.tags:
+                print(f"  {'tags':20s} {', '.join(c.tags)}")
+        return 0
+
+    if sub == "transition":
+        try:
+            c = svc.transition(args.id, CampaignStatus(args.status))
+        except CampaignServiceError as exc:
+            print(_red(f"error: {exc}"), file=sys.stderr)
+            return 1
+        print(f"Campaign {args.id} → {c.status.value}")
+        return 0
+
+    if sub == "link":
+        try:
+            c = svc.link_indicator(args.id, args.indicator)
+        except CampaignServiceError as exc:
+            print(_red(f"error: {exc}"), file=sys.stderr)
+            return 1
+        print(f"Linked {args.indicator} to {c.name} ({len(c.indicator_ids)} total)")
+        return 0
+
+    if sub == "attribute":
+        from gnat.analysis.attribution.hypothesis import AttributionEngine, AttributionEvidence
+
+        engine = AttributionEngine()
+        h = engine.propose(
+            campaign_id=args.id,
+            threat_actor_id=args.actor,
+            rationale=args.rationale,
+            evidence=[
+                AttributionEvidence(
+                    evidence_type="analyst_assessment",
+                    description=args.rationale or "CLI attribution",
+                    weight=50,
+                ),
+            ] if args.rationale else [],
+        )
+        if args.output == "json":
+            _print_json(h.to_dict())
+        else:
+            print(_bold("Attribution hypothesis created"))
+            print(f"  campaign:   {args.id}")
+            print(f"  actor:      {args.actor}")
+            print(f"  confidence: {h.stix_confidence}")
+            print(f"  status:     {h.status.value}")
+        return 0
+
+    if sub == "promote-cluster":
+        from gnat.analysis.attribution.builder import CampaignBuilder
+
+        path = args.cluster_json
+        try:
+            with open(path) as f:
+                cluster = _json.load(f)
+        except (FileNotFoundError, _json.JSONDecodeError) as exc:
+            print(_red(f"error: {exc}"), file=sys.stderr)
+            return 1
+        campaign = CampaignBuilder.from_cluster(cluster)
+        store.save(campaign)
+        if args.output == "json":
+            _print_json(campaign.to_dict())
+        else:
+            print(_bold(f"Promoted cluster → campaign {campaign.id}"))
+            print(f"  name:       {campaign.name}")
+            print(f"  indicators: {len(campaign.indicator_ids)}")
+        return 0
+
+    print(_red(f"Unknown campaign subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
+def _cmd_actor(args: argparse.Namespace) -> int:
+    """Handle 'gnat actor <subcommand>'."""
+    import json as _json
+    import os
+
+    from gnat.analysis.attribution.actor_profile import ActorProfile
+
+    sub = args.actor_command
+
+    # In-memory actor store for Phase 5 — will move to Postgres in a
+    # later phase via ActorStore (mirrors CampaignStore pattern).
+    # For now, actors are serialized to/from a JSON file.
+    actor_dir = os.path.expanduser("~/.gnat/actors")
+    os.makedirs(actor_dir, exist_ok=True)
+
+    def _load(actor_id: str) -> ActorProfile | None:
+        path = os.path.join(actor_dir, f"{actor_id.replace('/', '_')}.json")
+        if not os.path.exists(path):
+            return None
+        with open(path) as f:
+            return ActorProfile.from_dict(_json.load(f))
+
+    def _save(profile: ActorProfile) -> None:
+        path = os.path.join(actor_dir, f"{profile.id.replace('/', '_')}.json")
+        with open(path, "w") as f:
+            _json.dump(profile.to_dict(), f, indent=2, default=str)
+
+    def _list_all() -> list[ActorProfile]:
+        profiles = []
+        if os.path.isdir(actor_dir):
+            for fname in sorted(os.listdir(actor_dir)):
+                if fname.endswith(".json"):
+                    with open(os.path.join(actor_dir, fname)) as f:
+                        profiles.append(ActorProfile.from_dict(_json.load(f)))
+        return profiles
+
+    if sub == "list":
+        profiles = _list_all()
+        actor_type = getattr(args, "type", None)
+        if actor_type:
+            profiles = [p for p in profiles if actor_type in p.threat_actor_types]
+        if args.output == "json":
+            _print_json([p.to_dict() for p in profiles])
+            return 0
+        if not profiles:
+            print(_dim("(no actor profiles)"))
+            return 0
+        rows = [
+            {
+                "ID": p.id[:25] + "...",
+                "NAME": p.name[:25],
+                "TYPE": ", ".join(p.threat_actor_types[:2]) or "—",
+                "MITRE": p.mitre_group_id or "—",
+                "CAPS": str(len(p.capabilities)),
+            }
+            for p in profiles
+        ]
+        _print_table(rows, fields=["ID", "NAME", "TYPE", "MITRE", "CAPS"])
+        return 0
+
+    if sub == "create":
+        profile = ActorProfile(
+            name=args.name,
+            threat_actor_types=[args.actor_type] if args.actor_type != "unknown" else [],
+            mitre_group_id=getattr(args, "mitre_group", None),
+        )
+        _save(profile)
+        if args.output == "json":
+            _print_json(profile.to_dict())
+        else:
+            print(_bold(f"Created actor profile {profile.id}"))
+            print(f"  name: {profile.name}")
+        return 0
+
+    if sub == "show":
+        profile = _load(args.id)
+        if profile is None:
+            print(_red(f"Actor {args.id!r} not found"), file=sys.stderr)
+            return 2
+        if args.output == "json":
+            _print_json(profile.to_dict())
+        else:
+            print(_bold(f"Actor: {profile.name}"))
+            for key in ("id", "sophistication_level", "mitre_group_id"):
+                print(f"  {key:25s} {getattr(profile, key)}")
+            if profile.threat_actor_types:
+                print(f"  {'types':25s} {', '.join(profile.threat_actor_types)}")
+            if profile.aliases:
+                print(f"  {'aliases':25s} {', '.join(a.alias for a in profile.aliases)}")
+            if profile.capabilities:
+                print(f"  {'capabilities':25s} {len(profile.capabilities)} techniques")
+            if profile.target_sectors:
+                print(f"  {'target_sectors':25s} {', '.join(profile.target_sectors)}")
+        return 0
+
+    if sub == "alias":
+        profile = _load(args.id)
+        if profile is None:
+            print(_red(f"Actor {args.id!r} not found"), file=sys.stderr)
+            return 2
+        profile.add_alias(args.add, source=args.source)
+        _save(profile)
+        print(f"Added alias {args.add!r} to {profile.name}")
+        return 0
+
+    if sub == "capability":
+        profile = _load(args.id)
+        if profile is None:
+            print(_red(f"Actor {args.id!r} not found"), file=sys.stderr)
+            return 2
+        profile.update_capability(args.technique, proficiency=args.proficiency)
+        _save(profile)
+        print(f"Added {args.technique} ({args.proficiency}) to {profile.name}")
+        return 0
+
+    print(_red(f"Unknown actor subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
 def _cmd_plugins(args: argparse.Namespace) -> int:
     """Handle 'gnat plugins <subcommand>'."""
     from gnat.plugins.loader import load_plugins
@@ -3127,6 +3485,8 @@ def main(argv: list[str] | None = None) -> int:
         "health": _cmd_health,
         "contribute": _cmd_contribute,
         "investigation": _cmd_investigation,
+        "campaign": _cmd_campaign,
+        "actor": _cmd_actor,
         "review": _cmd_review,
         "plugins": _cmd_plugins,
         "db": _cmd_db,
