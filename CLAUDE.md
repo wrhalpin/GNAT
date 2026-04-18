@@ -33,6 +33,7 @@ gnat/                        # Main Python package
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
 ├── connectors/              # 158 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
+│   └── telemetry/           # High-volume sensor ingestion (Kafka reader, Redis dedup, campaign auto-link)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
 ├── cli/                     # CLI entry point (gnat/cli/main.py)
 ├── tui/                     # Terminal UI (Textual-based interactive interface)
@@ -45,6 +46,8 @@ gnat/                        # Main Python package
 ├── viz/                     # Visualization (Tabular, Graph, Grafana, Power BI)
 ├── codegen/                 # OpenAPI → connector scaffolding
 ├── async_client/            # Async variant (httpx)
+├── analysis/attribution/    # Campaign tracking, Diamond Model, kill-chain, infrastructure classification, attribution hypotheses
+├── plugins/huntgnat/        # STIX → detection rule translation (Sigma, YARA, Suricata, Snort), hunt packages, ATT&CK coverage, validation
 ├── serve/                   # FastAPI HTTP server + TAXII endpoint
 ├── search/                  # Solr full-text search sidecar (SearchMixin, indexer, ORM integration)
 └── utils/                   # Misc helpers (stix_helpers.py)
@@ -415,9 +418,9 @@ batch_size  = 100
 
 ## Ingest Sources & Mappers
 
-**14 Source Readers:** PlainText, CSV, JSON, JSONL, STIXBundle, TAXIICollection, SQL, MISP, Syslog, RSS, Email, OpenIOC, Splunk, Elastic
+**15 Source Readers:** PlainText, CSV, JSON, JSONL, STIXBundle, TAXIICollection, SQL, MISP, Syslog, RSS, Email, OpenIOC, Splunk, Elastic, Kafka (telemetry)
 
-**12 Record Mappers:** FlatIOC, STIXPassthrough, MISP, CEF, SQLRow, CSV, RSSEntry, Email, OpenIOC, Splunk, Elastic, NVDCVE
+**13 Record Mappers:** FlatIOC, STIXPassthrough, MISP, CEF, SQLRow, CSV, RSSEntry, Email, OpenIOC, Splunk, Elastic, NVDCVE, Telemetry
 
 ---
 
@@ -440,6 +443,8 @@ pip install "gnat[serve]"              # HTTP server (fastapi, uvicorn)
 pip install "gnat[tui]"               # Terminal UI (textual)
 pip install "gnat[nlp]"               # NLP/IOC extraction (builtin; claude backend reuses agents)
 pip install "gnat[stix-validate]"      # Full STIX pattern validation (stix2-patterns ANTLR grammar)
+pip install "gnat[telemetry]"         # High-volume sensor ingestion (kafka-python-ng + redis)
+pip install "gnat[analysis]"          # Attribution & campaign tracking persistence (sqlalchemy)
 pip install "gnat[fast]"              # Rust native extension (install gnat-core wheel separately)
 pip install "gnat[all]"               # Everything
 pip install "gnat[dev]"               # All + dev tools

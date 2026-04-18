@@ -19,6 +19,147 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Sensor/telemetry ingestion module (`gnat[telemetry]`)
+
+New `gnat/ingest/telemetry/` package for high-volume honeypot, netflow,
+IDS alert, and DNS log ingestion. Install with `pip install "gnat[telemetry]"`.
+
+- `KafkaSourceReader` — `SourceReader` subclass consuming JSON-encoded
+  messages from Kafka topics. Supports `max_messages` cap, configurable
+  consumer group, and extra `consumer_config` kwargs. Kafka metadata
+  (`_kafka_topic`, `_kafka_partition`, `_kafka_offset`) attached to each
+  raw record.
+- `SensorSchema` — normalises five sensor types (honeypot, netflow,
+  IDS alert, DNS log, generic) into a common `SensorEvent` dataclass.
+  Supports both common field names (`src_ip`) and vendor-specific names
+  (e.g. `IPV4_SRC_ADDR` for NetFlow).
+- `TelemetryMapper` — `RecordMapper` producing STIX Indicators for
+  source IPs, destination IPs (opt-in), domains, URLs, and file hashes
+  (MD5/SHA-1/SHA-256 auto-detected by length). Filters RFC 1918 private
+  addresses. Severity gating for IDS alerts (`min_severity` parameter).
+  Attaches `x_gnat_sensor_type`, `x_gnat_sensor_id`, and `x_gnat_signature`
+  custom properties.
+- `RedisDeduplicationCache` — SHA-256 fingerprint dedup via Redis SET
+  operations with TTL-based expiry. Falls back to in-memory set when
+  Redis is unavailable (`fallback_to_memory=True` default).
+- `CampaignLinker` — pipeline transform (`IngestPipeline.transform()`)
+  that auto-links ingested indicators to active campaigns by matching
+  IOC values against a pre-built reverse index. Builds the index lazily
+  from `CampaignService.list(status=ACTIVE)` on first call.
+- `pyproject.toml` — new `[telemetry]` extras group:
+  `kafka-python-ng>=2.2, redis>=5.0`.
+- 37 new tests in `tests/unit/ingest/test_telemetry.py`.
+
+### Added — Infrastructure graph labels on EvidenceGraph
+
+Wires the existing `InfrastructureClassifier` into the evidence graph
+correlator to automatically label OBSERVABLE nodes with infrastructure
+roles (C2, staging, exfiltration, delivery, proxy, credential_harvest).
+
+- `EvidenceNode.infrastructure_roles` — new `list[str]` field on
+  evidence nodes, analogous to `campaign_labels`.
+- `EvidenceGraph.by_infra_role` — new correlation index mapping
+  role string → list of node IDs, following the `by_ioc`/`by_campaign`
+  pattern.
+- `classify_infrastructure(graph)` — walks OBSERVABLE nodes, extracts
+  IOC type/kill-chain/port hints from STIX dicts, delegates to
+  `InfrastructureClassifier.classify()`, populates node fields and
+  graph index. Auto-called at the end of `correlate()`.
+- `GraphQuery.filter(infra_roles=...)` — new optional parameter
+  retaining only nodes with matching infrastructure roles.
+- `GraphContext.to_dict()` — includes `infrastructure_roles` in
+  serialised node output when present.
+- `POST /api/graph/infrastructure` — new FastAPI endpoint returning
+  role-to-node-ID mapping and counts.
+- `EvidenceGraph.summary()` — includes `infrastructure_roles` counts.
+- 30 new tests across `test_correlator_infra.py`, `test_graph.py`,
+  and `test_graph_infra_endpoint.py`.
+
+### Added — HuntGNAT: STIX → detection rule translation (Phases 1–4)
+
+New `gnat/plugins/huntgnat/` plugin providing end-to-end STIX indicator
+pattern to platform-native detection rule translation, hunt package
+management, ATT&CK coverage analysis, deployment tracking, and
+validation scoring.
+
+**Phase 1 — Pattern parser + translators**
+- Recursive descent STIX pattern parser producing typed AST (ObjectPath,
+  Comparison, ComparisonExpr, Observation, CompoundObservation).
+- `SigmaTranslator` — logsource-aware YAML rules with field-name
+  resolution and detection logic mapping.
+- `YaraHashTranslator` — hash-based file detection rules for
+  MD5/SHA-1/SHA-256 indicators.
+- `SuricataTranslator` — network alert rules; rejects host-only
+  patterns via `UntranslatableError`.
+- `SnortTranslator` — Snort 3 IPS rules.
+- `translate()` / `translate_all()` dispatch API.
+- `RuleLanguage` enum, `TranslationResult` dataclass with SHA-256
+  rule hash, `UntranslatableError` contract.
+- 53 tests in `tests/unit/plugins/test_huntgnat.py`.
+
+**Phase 2 — Hunt packages + ATT&CK coverage**
+- `HuntPackage` — STIX Grouping (`context="x-huntgnat-hunt-package"`)
+  with lifecycle state machine (DRAFT → PEER_REVIEWED → ACTIVE →
+  RETIRED). Links hypotheses, evidence, indicators, attack patterns,
+  campaign, rules, and techniques.
+- `CoverageAnalyzer` — builds ATT&CK technique × rule coverage
+  matrices from hunt package collections. `find_gaps(platform=)` for
+  platform-specific gap analysis.
+
+**Phase 3 — Deployment tracking + drift detection**
+- `Deployment` — tracks rule deployments to platforms (Splunk,
+  Sentinel, CrowdStrike, Elastic).
+- `DriftDetector` — SHA-256 hash comparison of canonical vs
+  on-platform rule bodies. Produces `DriftEvent` on divergence.
+- `Sighting` — STIX Sighting SDO for detection firing events.
+
+**Phase 4 — Validation**
+- `ValidationRun` — executes ATT&CK techniques against lab
+  infrastructure and scores rule firings as
+  FIRED/MISSED/TIMEOUT/ERROR/SKIPPED.
+- `RuleValidationResult` with pass rate computation.
+- 30 tests in `tests/unit/plugins/test_huntgnat_phases234.py`.
+
+### Added — Attribution & campaign tracking (core extension)
+
+New `gnat/analysis/attribution/` package providing formal campaign
+management, competing attribution hypotheses, Diamond Model analysis,
+kill-chain tracking, infrastructure classification, and actor profiles.
+
+- `Campaign` ORM (`gnat/orm/campaign.py`) — STIX `campaign` SDO.
+- `CampaignProfile` — enriched analytical wrapper with status lifecycle
+  (SUSPECTED → ACTIVE → DORMANT → CONCLUDED), indicator/cluster/
+  investigation linkage, and full to_dict/from_dict roundtrip.
+- `CampaignService` — CRUD + status transitions + indicator/cluster/
+  investigation linking.
+- `CampaignStore` — SQLAlchemy persistence (indexed metadata + JSON
+  blob pattern).
+- `AttributionHypothesis` + `AttributionEngine` — competing
+  attributions with NATO Admiralty Scale confidence scoring,
+  evidence tracking, confidence history snapshots, and AI confidence
+  ceiling at 60.
+- `ActorProfile` — capability matrix (technique × proficiency),
+  targeting history, alias management with source+confidence per alias,
+  infrastructure pattern signatures, MITRE group ID cross-reference.
+- `DiamondVertex` + `DiamondAnalyzer` — formal ACIV
+  (Adversary-Capability-Infrastructure-Victim) tuples with pivot point
+  detection for shared infrastructure.
+- `KillChainProgression` + `KillChainTracker` — 14-phase ATT&CK tactic
+  ordering with coverage percentage, deepest phase reached, and gap
+  analysis.
+- `InfrastructureRole` enum + `InfrastructureClassifier` — rule-based
+  classification (C2/staging/exfiltration/delivery/proxy/credential
+  harvest) from kill-chain phases, STIX infrastructure_types, and port
+  heuristics.
+- `CampaignBuilder` — promotes `ClusterDetector` clusters to formal
+  campaigns with automatic indicator/technique linkage.
+- `gnat campaign` CLI (7 subcommands: list, create, show, transition,
+  link, attribute, promote-cluster).
+- `gnat actor` CLI (5 subcommands: list, create, show, alias,
+  capability).
+- 142 new tests across 4 test files (attribution, hypothesis,
+  diamond/killchain/infra, campaign builder, CLI).
+
 ### Added — `gnat schedule` CLI with hybrid YAML + Python-module loader
 
 The `gnat schedule` subcommand group, which had been registered but

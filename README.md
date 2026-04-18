@@ -54,7 +54,7 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 |-------|-------------|
 | **158 Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
 | **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
-| **Ingest Pipelines** | 14 source readers × 12 mappers; pull from any platform, file, feed, or database |
+| **Ingest Pipelines** | 15 source readers × 13 mappers; pull from any platform, file, feed, database, or Kafka topic |
 | **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
 | **FeedScheduler** | Drift-corrected cron scheduling for all job types; APScheduler/Celery adapters |
 | **AI Agents** | ResearchAgent (Claude), ParsingAgent (STIX extraction from text), CopilotReader (M365); quality/, security/, and repo_maintenance/ sub-agent packages |
@@ -62,8 +62,11 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | **Research Library** | Team knowledge base with staging/curation workflow, TTL management, and deduplication |
 | **Automated Reports** | PDF, HTML, DOCX, Markdown; daily/weekly/annual; AI-assisted synthesis; email + SharePoint delivery |
 | **Sector Intelligence** | `x_target_sectors` normalized across all connectors with alias expansion and composable filters |
-| **Analysis Layer** | NATO Admiralty Scale confidence scoring, TLP 2.0, analyst investigations, cross-platform correlation, timeline reconstruction, evidence graph queries, and LLM-backed gap detection + report drafting |
+| **Analysis Layer** | NATO Admiralty Scale confidence scoring, TLP 2.0, analyst investigations, cross-platform correlation, timeline reconstruction, evidence graph queries, infrastructure role classification, and LLM-backed gap detection + report drafting |
+| **Attribution & Campaigns** | Campaign lifecycle (SUSPECTED → ACTIVE → DORMANT → CONCLUDED), Diamond Model (ACIV), kill-chain progression tracking, competing attribution hypotheses with Admiralty Scale scoring, actor profiles with capability matrices, cluster-to-campaign promotion |
 | **Investigation Builder** | Five-step cross-platform evidence graph pipeline (seed → incident expansion → normalise → correlate → materialise) from any combination of connected platforms |
+| **HuntGNAT** | STIX pattern → detection rule translation (Sigma, YARA, Suricata, Snort), hunt packages with lifecycle management, ATT&CK coverage matrix, deployment tracking with drift detection, validation scoring |
+| **Telemetry Ingestion** | High-volume sensor ingestion from Kafka topics (honeypot, netflow, IDS alert, DNS log); Redis-backed deduplication; automatic campaign linking of ingested indicators |
 | **Intelligence Reports** | Structured finished-intelligence products with five-state lifecycle (DRAFT → PUBLISHED), STIX 2.1 SDO export on publish, versioning, and attribution |
 | **Dissemination** | ExportService (STIX/JSON/PDF), webhook fan-out with HMAC signing, TAXII 2.1 server, bearer-token REST gateway |
 | **Solr Search** | Full-text search sidecar; auto-indexes on write; Grafana SimpleJSON dashboards |
@@ -78,7 +81,7 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | **XSOAR Pack Generator** | Generate XSOAR 6 content pack zips from any connector via `gnat codegen xsoar` |
 | **Contribution Pipeline** | 7-step compliance gate → draft GitHub PR via `gnat contribute` |
 | **Rust Extension** | Optional `gnat._core` for hot-path IOC classify/defang/refang/extract_pattern_value |
-| **1,500+ Tests** | 70% minimum coverage enforced; Docker integration harness for Elasticsearch + Solr |
+| **5,100+ Tests** | 70% minimum coverage enforced; Docker integration harness for Elasticsearch + Solr |
 
 ---
 
@@ -360,6 +363,8 @@ pip install "gnat[serve]"              # Web dashboard + TAXII 2.1 server (fasta
 pip install "gnat[tui]"                # Interactive terminal UI (textual)
 pip install "gnat[nlp]"                # NLP query engine (zero deps for builtin; Claude backend requires [agents])
 pip install "gnat[stix-validate]"      # Tier-2 STIX pattern validation (stix2-patterns / ANTLR)
+pip install "gnat[telemetry]"          # High-volume sensor ingestion (kafka-python-ng + redis)
+pip install "gnat[analysis]"           # Attribution & campaign tracking (sqlalchemy)
 pip install "gnat[fast]"               # Rust IOC hot-path extension (maturin wheel)
 pip install "gnat[all]"                # Core extras (yaml, taxii, ingest, async, persist, schedule, reports, viz, serve)
 pip install "gnat[dev]"                # All + ruff, mypy, pytest, httpx, sqlalchemy
