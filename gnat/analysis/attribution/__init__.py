@@ -12,10 +12,20 @@ classification, and competing-attribution hypothesis management.
 """
 
 from gnat.analysis.attribution.actor_profile import ActorProfile
+from gnat.analysis.attribution.diamond import DiamondAnalyzer, DiamondVertex
 from gnat.analysis.attribution.hypothesis import (
     AttributionEngine,
     AttributionEvidence,
     AttributionHypothesis,
+)
+from gnat.analysis.attribution.infrastructure import (
+    InfrastructureClassifier,
+    InfrastructureNode,
+    InfrastructureRole,
+)
+from gnat.analysis.attribution.killchain import (
+    KillChainProgression,
+    KillChainTracker,
 )
 from gnat.analysis.attribution.models import (
     CampaignProfile,
@@ -35,4 +45,11 @@ __all__ = [
     "CampaignService",
     "CampaignStatus",
     "CampaignStore",
+    "DiamondAnalyzer",
+    "DiamondVertex",
+    "InfrastructureClassifier",
+    "InfrastructureNode",
+    "InfrastructureRole",
+    "KillChainProgression",
+    "KillChainTracker",
 ]
