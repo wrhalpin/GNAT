@@ -4,6 +4,7 @@
 
 from gnat.orm.attack_pattern import AttackPattern
 from gnat.orm.base import STIXBase
+from gnat.orm.campaign import Campaign
 from gnat.orm.indicator import Indicator
 from gnat.orm.malware import Malware
 from gnat.orm.observable import URL, DomainName, EmailAddress, FileObject, IPv4Address, Observable
@@ -13,6 +14,7 @@ from gnat.orm.vulnerability import Vulnerability
 
 __all__ = [
     "STIXBase",
+    "Campaign",
     "Indicator",
     "ThreatActor",
     "Malware",
