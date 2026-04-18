@@ -91,6 +91,8 @@ intelligence products. It provides:
 
 → [ADR-0031: Analysis Layer Architecture](explanation/architecture/adrs/0031-ADR-analysis-layer-architecture.md)
 → [ADR-0033: Confidence Scoring Model](explanation/architecture/adrs/0033-ADR-confidence-scoring.md)
+→ [ADR-0051: Attribution & Campaign Tracking](explanation/architecture/adrs/0051-ADR-attribution-campaign-tracking.md)
+→ [ADR-0053: Infrastructure Graph Labels](explanation/architecture/adrs/0053-ADR-infrastructure-graph-labels.md)
 → [How-to: Use the Analysis Layer](how-to/use-analysis-layer.md)
 
 ---
@@ -123,6 +125,8 @@ into STIX Grouping objects with a lifecycle (DRAFT → PEER_REVIEWED → ACTIVE 
 on-platform copies diverge from canonical versions. `ValidationRun` scores whether rules
 actually fire during Atomic Red Team-style test executions.
 
+→ [ADR-0050: HuntGNAT — Detection Rule Translation](explanation/architecture/adrs/0050-ADR-huntgnat-detection-translation.md)
+
 ---
 
 ### Telemetry Ingestion
@@ -138,6 +142,8 @@ actually fire during Atomic Red Team-style test executions.
 - **`CampaignLinker`** — pipeline transform that auto-links ingested indicators to active campaigns
 
 Install with `pip install "gnat[telemetry]"` (kafka-python-ng + redis).
+
+→ [ADR-0052: Telemetry Ingestion](explanation/architecture/adrs/0052-ADR-telemetry-ingestion.md)
 
 ---
 

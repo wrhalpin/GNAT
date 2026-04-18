@@ -60,6 +60,13 @@ subsystems.
 48. [ADR-0048: Query Budget and Cost Model](0048-ADR-query-budget.md)
 49. [ADR-0049: Testing Framework — Simulation and Replay](0049-ADR-testing-framework.md)
 
+### Detection, Attribution & Telemetry
+
+50. [ADR-0050: HuntGNAT — Detection Rule Translation](0050-ADR-huntgnat-detection-translation.md)
+51. [ADR-0051: Attribution & Campaign Tracking](0051-ADR-attribution-campaign-tracking.md)
+52. [ADR-0052: Telemetry Ingestion](0052-ADR-telemetry-ingestion.md)
+53. [ADR-0053: Infrastructure Graph Labels](0053-ADR-infrastructure-graph-labels.md)
+
 ---
 
 ## Quick Reference: Adding a New Connector
