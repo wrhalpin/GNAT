@@ -79,7 +79,13 @@ intelligence products. It provides:
 - **Timeline reconstruction** — `TimelineBuilder` assembles chronological event sequences from
   investigations, evidence graphs, or raw platform records.
 - **Graph queries** — `GraphQuery` provides BFS pivot/expand/filter over `EvidenceGraph` objects
-  without a separate graph database.
+  without a separate graph database. The `infra_roles` filter enables querying by infrastructure
+  classification (C2, staging, exfiltration, delivery, proxy, credential harvest).
+- **Attribution & campaigns** — `CampaignService` manages campaign lifecycles (SUSPECTED → ACTIVE →
+  DORMANT → CONCLUDED), `AttributionEngine` tracks competing hypotheses with Admiralty Scale
+  scoring, `DiamondAnalyzer` constructs ACIV tuples, `KillChainTracker` monitors ATT&CK tactic
+  progression, `InfrastructureClassifier` labels indicators by operational role, and
+  `CampaignBuilder` promotes `ClusterDetector` output to formal campaigns.
 - **Analyst assistance** — `GapDetector` surfaces missing evidence via rule-based gap analysis;
   `ReportDraftingAssistant` generates LLM-backed executive summaries and key-findings narratives.
 
@@ -98,6 +104,40 @@ and `Relationship` SROs. Works with any subset of connected platform clients.
 
 → [ADR-0031: Analysis Layer Architecture](explanation/architecture/adrs/0031-ADR-analysis-layer-architecture.md)
 → [How-to: Build Cross-Platform Investigations](how-to/build-investigations.md)
+
+---
+
+### HuntGNAT (Detection Rule Translation)
+`gnat.plugins.huntgnat` translates STIX indicator patterns into platform-native detection rules.
+A recursive descent parser produces a typed AST from STIX patterns, which four translators consume:
+
+- **Sigma** — log-source-aware YAML rules with field-name resolution
+- **YARA** — hash-based file detection rules
+- **Suricata** — network alert rules (rejects host-only patterns via `UntranslatableError`)
+- **Snort** — Snort 3 IPS rules
+
+Hunt packages (`HuntPackage`) bundle hypotheses, evidence, detection rules, and ATT&CK coverage
+into STIX Grouping objects with a lifecycle (DRAFT → PEER_REVIEWED → ACTIVE → RETIRED).
+`CoverageAnalyzer` builds ATT&CK technique × rule coverage matrices and identifies gaps.
+`DeploymentTracker` monitors where rules are deployed and `DriftDetector` identifies when
+on-platform copies diverge from canonical versions. `ValidationRun` scores whether rules
+actually fire during Atomic Red Team-style test executions.
+
+---
+
+### Telemetry Ingestion
+`gnat.ingest.telemetry` provides high-volume sensor event ingestion for lab infrastructure:
+
+- **`KafkaSourceReader`** — `SourceReader` subclass consuming JSON events from Kafka topics
+- **`SensorSchema`** — normalises five sensor types (honeypot, netflow, IDS alert, DNS log, generic)
+  into a common `SensorEvent` intermediate format
+- **`TelemetryMapper`** — `RecordMapper` subclass producing STIX Indicators for IPs, domains, URLs,
+  and file hashes with private-IP filtering and severity gating
+- **`RedisDeduplicationCache`** — SHA-256 fingerprint dedup via Redis SET operations with automatic
+  in-memory fallback when Redis is unavailable
+- **`CampaignLinker`** — pipeline transform that auto-links ingested indicators to active campaigns
+
+Install with `pip install "gnat[telemetry]"` (kafka-python-ng + redis).
 
 ---
 

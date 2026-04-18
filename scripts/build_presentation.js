@@ -159,7 +159,7 @@ pres.author = "wrhalpin@gmail.com";
     color: C.muted, align: "left", margin: 0
   });
 
-  sl.addText("Version 1.5.0  ·  Python 3.9+  ·  STIX 2.1  ·  158 Platform Connectors  ·  4,600+ Tests", {
+  sl.addText("Version 1.5.0  ·  Python 3.9+  ·  STIX 2.1  ·  158 Platform Connectors  ·  5,100+ Tests", {
     x: 0.5, y: 4.95, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, align: "left", margin: 0
   });
@@ -2041,7 +2041,7 @@ pres.author = "wrhalpin@gmail.com";
     { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 158 platforms.", col: C.teal },
     { title: "Operational Coherence", body: "One scheduler, one health endpoint, one log stream. No more asking which of 15 scripts ran overnight and whether it worked. FeedScheduler.summary() answers all of that.", col: C.steel },
     { title: "Incremental Adoption", body: "Each layer is independently useful. Start with connectors only. Add ingest. Add export. Add AI. Add reports. The stack is additive \u2014 you never have to replace working parts.", col: C.teal },
-    { title: "Test Coverage", body: "4,600+ unit tests across 40+ test files. Every connector, every pipeline stage, every renderer, every scheduler, every new v1.4/1.5 module. Confidence in changes without regression fear.", col: C.steel },
+    { title: "Test Coverage", body: "5,100+ unit tests across 40+ test files. Every connector, every pipeline stage, every renderer, every scheduler, every new v1.4/1.5 module. Confidence in changes without regression fear.", col: C.steel },
   ];
 
   advantages.forEach(({ title, body, col }, i) => {
@@ -2090,7 +2090,7 @@ pres.author = "wrhalpin@gmail.com";
     {
       title: "pytest + Coverage",
       col: C.green,
-      body: "4,600+ unit tests across 40+ files\n70% minimum coverage enforced\nfail_under = 70 in pyproject.toml\nDocker integration harness (ES + Solr)",
+      body: "5,100+ unit tests across 40+ files\n70% minimum coverage enforced\nfail_under = 70 in pyproject.toml\nDocker integration harness (ES + Solr)",
     },
     {
       title: "Dependabot",
@@ -2146,7 +2146,7 @@ pres.author = "wrhalpin@gmail.com";
 
   const stats = [
     ["158", "Platform\nConnectors", C.teal],
-    ["4,600+", "Unit\nTests", C.steel],
+    ["5,100+", "Unit\nTests", C.steel],
     ["250+", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
     ["60", "AI Confidence\nCeiling (default)", C.amber],
@@ -2319,10 +2319,10 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const summary = [
-    "158 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines",
-    "AI agents (LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini) \u00b7 WorkflowEngine DAG \u00b7 NLP queries \u00b7 Research library",
-    "TAXII 2.1 read+write \u00b7 STIX validator \u00b7 Policy RBAC \u00b7 Plugins \u00b7 Lineage \u00b7 Metrics \u00b7 Review Queue",
-    "Phase 4: ExecutionContext \u00b7 HypothesisEngine \u00b7 AgentGovernor \u00b7 HITL  \u00b7  4,600+ tests \u00b7 ~$50/month Azure",
+    "158 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines \u00b7 Kafka telemetry ingestion",
+    "HuntGNAT: STIX \u2192 Sigma/YARA/Suricata/Snort \u00b7 Hunt packages \u00b7 ATT&CK coverage \u00b7 Drift detection",
+    "Attribution: Campaign tracking \u00b7 Diamond Model \u00b7 Kill-chain \u00b7 Actor profiles \u00b7 Infrastructure classification",
+    "AI agents (Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini) \u00b7 TAXII 2.1 \u00b7 Policy RBAC  \u00b7  5,100+ tests \u00b7 ~$50/month Azure",
   ];
   sl.addText(summary.map(t => ({ text: t, options: { bullet: true, breakLine: true } })), {
     x: 0.5, y: 2.72, w: 9, h: 1.45,
