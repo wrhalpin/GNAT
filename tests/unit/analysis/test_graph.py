@@ -4,9 +4,10 @@ Unit tests for gnat.analysis.graph (GraphQuery / GraphContext)
 
 from __future__ import annotations
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
+
+import pytest
 
 from gnat.analysis.graph import GraphContext, GraphQuery
 
@@ -183,3 +184,39 @@ class TestGraphQuery:
         filtered = q.filter(ctx, date_from=_dt(7))
         assert "n1" in filtered.nodes
         assert "n2" not in filtered.nodes
+
+    def test_filter_by_infra_roles(self):
+        g = _make_graph("n1", "n2")
+        g.nodes["n1"].infrastructure_roles = ["c2"]
+        g.nodes["n2"].infrastructure_roles = ["delivery"]
+        ctx = GraphContext(nodes=g.nodes, edges=[], seed_ids=[])
+        q = GraphQuery(g)
+        filtered = q.filter(ctx, infra_roles=["c2"])
+        assert "n1" in filtered.nodes
+        assert "n2" not in filtered.nodes
+
+    def test_filter_by_infra_roles_none_passes_all(self):
+        g = _make_graph("n1", "n2")
+        g.nodes["n1"].infrastructure_roles = ["c2"]
+        g.nodes["n2"].infrastructure_roles = []
+        ctx = GraphContext(nodes=g.nodes, edges=[], seed_ids=[])
+        q = GraphQuery(g)
+        filtered = q.filter(ctx, infra_roles=None)
+        assert "n1" in filtered.nodes
+        assert "n2" in filtered.nodes
+
+    def test_context_to_dict_includes_infra_roles(self):
+        n = _node("n1")
+        n.infrastructure_roles = ["c2", "staging"]
+        n.stix = {"id": "n1", "type": "indicator"}
+        ctx = GraphContext(nodes={"n1": n}, edges=[], seed_ids=["n1"])
+        d = ctx.to_dict()
+        assert d["nodes"]["n1"]["infrastructure_roles"] == ["c2", "staging"]
+
+    def test_context_to_dict_omits_empty_infra_roles(self):
+        n = _node("n1")
+        n.infrastructure_roles = []
+        n.stix = {"id": "n1", "type": "indicator"}
+        ctx = GraphContext(nodes={"n1": n}, edges=[], seed_ids=["n1"])
+        d = ctx.to_dict()
+        assert "infrastructure_roles" not in d["nodes"]["n1"]

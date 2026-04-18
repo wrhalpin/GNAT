@@ -117,6 +117,28 @@ def graph_shortest_path(request: Request, body: dict[str, Any]) -> dict[str, Any
     return {"source": source, "target": target, "path": path}
 
 
+@router.post("/graph/infrastructure")
+def graph_infrastructure(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    """
+    Return infrastructure role summary for the evidence graph.
+
+    Response
+    --------
+    ``roles``  : dict mapping role name → list of node IDs
+    ``counts`` : dict mapping role name → count
+    """
+    gq = getattr(request.app.state, "graph_query", None)
+    if gq is None:
+        raise HTTPException(503, "GraphQuery not configured on this server")
+
+    graph = gq._graph
+    by_infra = getattr(graph, "by_infra_role", {})
+    return {
+        "roles": {role: list(nids) for role, nids in by_infra.items()},
+        "counts": {role: len(nids) for role, nids in by_infra.items()},
+    }
+
+
 # ── Copilot ───────────────────────────────────────────────────────────────────
 
 @router.post("/copilot/gaps")

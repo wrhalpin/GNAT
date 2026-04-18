@@ -132,6 +132,7 @@ class EvidenceNode:
     usernames: list[str]      = field(default_factory=list)
     campaign_labels: list[str] = field(default_factory=list)
     ticket_refs: list[str]    = field(default_factory=list)
+    infrastructure_roles: list[str] = field(default_factory=list)
     time_window: tuple[str, str] | None = None
 
 
@@ -204,6 +205,7 @@ class EvidenceGraph:
     by_username: dict[str, list[str]] = field(default_factory=dict)
     by_campaign: dict[str, list[str]] = field(default_factory=dict)
     by_ticket:   dict[str, list[str]] = field(default_factory=dict)
+    by_infra_role: dict[str, list[str]] = field(default_factory=dict)
 
     # ── Convenience helpers ───────────────────────────────────────────────
 
@@ -231,4 +233,7 @@ class EvidenceGraph:
             "shared_iocs":        sum(1 for v in self.by_ioc.values() if len(v) > 1),
             "shared_hosts":       sum(1 for v in self.by_hostname.values() if len(v) > 1),
             "shared_campaigns":   sum(1 for v in self.by_campaign.values() if len(v) > 1),
+            "infrastructure_roles": {
+                role: len(nids) for role, nids in self.by_infra_role.items()
+            },
         }
