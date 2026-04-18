@@ -27,7 +27,8 @@ Usage::
 
 from __future__ import annotations
 
-from gnat.investigations.model import EvidenceEdge, EvidenceGraph
+from gnat.analysis.attribution.infrastructure import InfrastructureClassifier
+from gnat.investigations.model import EvidenceEdge, EvidenceGraph, NodeType
 
 
 def correlate(graph: EvidenceGraph) -> None:
@@ -87,6 +88,9 @@ def correlate(graph: EvidenceGraph) -> None:
     _add_edges(graph, graph.by_campaign, "same-campaign", "campaign label")
     _add_edges(graph, graph.by_ticket,   "same-ticket",   "ticket")
 
+    # ── Infrastructure classification ─────────────────────────────────────
+    classify_infrastructure(graph)
+
 
 def _add_edges(
     graph: EvidenceGraph,
@@ -128,3 +132,62 @@ def _add_edges(
                     confidence        = 0.9,
                     reasoning         = f"Shared {label}: {key}",
                 ))
+
+
+def classify_infrastructure(graph: EvidenceGraph) -> None:
+    """
+    Classify OBSERVABLE nodes by infrastructure role and populate the
+    ``by_infra_role`` index on *graph*.
+
+    Extracts IOC type, kill-chain phases, and ports from each node's
+    STIX dict and delegates to
+    :func:`~gnat.analysis.attribution.infrastructure.InfrastructureClassifier.classify`.
+    """
+    for node in graph.nodes.values():
+        nt = node.node_type
+        nt_val = nt.value if hasattr(nt, "value") else str(nt)
+        if nt_val != NodeType.OBSERVABLE.value:
+            continue
+
+        stix = node.stix or {}
+        ioc_type = stix.get("x_gnat_ioc_type", "")
+        if not ioc_type:
+            stix_type = stix.get("type", "")
+            if stix_type == "indicator":
+                ioc_type = "indicator"
+            elif stix_type in ("ipv4-addr", "ipv6-addr", "domain-name", "url", "email-addr"):
+                ioc_type = stix_type
+        ioc_value = ""
+        for val in node.ioc_values:
+            ioc_value = val
+            break
+
+        if not ioc_value:
+            continue
+
+        kill_chain_phases = []
+        for kcp in stix.get("kill_chain_phases", []):
+            if isinstance(kcp, dict):
+                kill_chain_phases.append(kcp.get("phase_name", ""))
+            else:
+                kill_chain_phases.append(str(kcp))
+
+        ports = stix.get("x_gnat_ports", [])
+        infra_types = stix.get("x_gnat_infrastructure_types", [])
+
+        role = InfrastructureClassifier.classify(
+            ioc_type,
+            ioc_value,
+            kill_chain_phases=kill_chain_phases or None,
+            infrastructure_types=infra_types or None,
+            ports=ports or None,
+        )
+
+        role_str = role.value
+        if role_str != "unknown" and role_str not in node.infrastructure_roles:
+            node.infrastructure_roles.append(role_str)
+
+        for r in node.infrastructure_roles:
+            graph.by_infra_role.setdefault(r, [])
+            if node.node_id not in graph.by_infra_role[r]:
+                graph.by_infra_role[r].append(node.node_id)

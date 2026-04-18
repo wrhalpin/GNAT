@@ -86,7 +86,14 @@ class GraphContext:
             "edge_count":  self.edge_count,
             "seed_ids":    self.seed_ids,
             "platforms":   self.platforms(),
-            "nodes":       {nid: n.stix for nid, n in self.nodes.items()},
+            "nodes":       {
+                nid: {
+                    **(n.stix if isinstance(n.stix, dict) else {"id": nid}),
+                    **({"infrastructure_roles": n.infrastructure_roles}
+                       if getattr(n, "infrastructure_roles", None) else {}),
+                }
+                for nid, n in self.nodes.items()
+            },
             "edges":       [
                 {
                     "source": e.source_id,
@@ -193,6 +200,7 @@ class GraphQuery:
         date_from:      datetime | None       = None,
         date_to:        datetime | None       = None,
         node_types:     list[str] | None      = None,
+        infra_roles:    list[str] | None      = None,
     ) -> GraphContext:
         """
         Apply filters to a :class:`GraphContext`, returning a narrowed context.
@@ -246,6 +254,11 @@ class GraphQuery:
                         continue
                     if date_to and ts > date_to:
                         continue
+            # Infrastructure role filter
+            if infra_roles is not None:
+                node_roles = getattr(node, "infrastructure_roles", [])
+                if not set(infra_roles) & set(node_roles):
+                    continue
             filtered_nodes[nid] = node
 
         filtered_edges = [
