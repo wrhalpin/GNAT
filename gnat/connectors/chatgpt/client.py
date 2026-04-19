@@ -70,6 +70,7 @@ class ChatGPTClient(BaseClient, ConnectorMixin):
     """
 
     TRUST_LEVEL: str = "semi_trusted"
+    IS_AI_CONNECTOR: bool = True
     API_VERSION: str = "v1"
     API_PREFIX: str = ""
 
