@@ -20466,3 +20466,280 @@ def test_phase2_wave9_config_sections_exist():
         "bugcrowd",
     ):
         assert parser.has_section(section), f"Missing [{section}] in config.ini.example"
+
+
+# ---------------------------------------------------------------------------
+# Cuckoo Sandbox / CAPEv2
+# ---------------------------------------------------------------------------
+
+
+class TestCuckooClient:
+    @pytest.fixture
+    def client_v3(self):
+        from gnat.connectors.cuckoo.client import CuckooClient
+
+        c = CuckooClient(
+            host="https://cuckoo.lab.internal",
+            api_key="ck_test",
+            api_version="3",
+        )
+        c._authenticated = True
+        return c
+
+    @pytest.fixture
+    def client_v2(self):
+        from gnat.connectors.cuckoo.client import CuckooClient
+
+        c = CuckooClient(
+            host="https://cuckoo.lab.internal",
+            api_key="ck_test",
+            api_version="2",
+        )
+        c._authenticated = True
+        return c
+
+    def test_authenticate_sets_bearer(self):
+        from gnat.connectors.cuckoo.client import CuckooClient
+
+        c = CuckooClient(
+            host="https://cuckoo.lab.internal",
+            api_key="ck_test",
+            api_version="3",
+        )
+        c.authenticate()
+        assert c._auth_headers["Authorization"] == "Bearer ck_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.cuckoo.client import CuckooClient
+
+        c = CuckooClient(host="https://cuckoo.lab.internal", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_authenticate_v3_autodetect(self):
+        from gnat.connectors.cuckoo.client import CuckooClient
+
+        c = CuckooClient(
+            host="https://cuckoo.lab.internal", api_key="ck_test"
+        )
+        c._auth_headers["Authorization"] = "Bearer ck_test"
+        c.get = MagicMock(return_value={"version": "CAPEv2"})
+        c._detect_version()
+        assert c._api_version == "3"
+        assert c._prefix == "/apiv2"
+
+    def test_authenticate_v2_fallback(self):
+        from gnat.connectors.cuckoo.client import CuckooClient
+
+        c = CuckooClient(
+            host="https://cuckoo.lab.internal", api_key="ck_test"
+        )
+        c._auth_headers["Authorization"] = "Bearer ck_test"
+
+        def _fail_then_ok(url, *a, **kw):
+            if "/apiv2/" in url:
+                raise RuntimeError("404")
+            return {"version": "2.0.7"}
+
+        c.get = MagicMock(side_effect=_fail_then_ok)
+        c._detect_version()
+        assert c._api_version == "2"
+        assert c._prefix == "/api"
+
+    def test_authenticate_explicit_version(self):
+        from gnat.connectors.cuckoo.client import CuckooClient
+
+        c = CuckooClient(
+            host="https://cuckoo.lab.internal",
+            api_key="ck_test",
+            api_version="2",
+        )
+        c.authenticate()
+        assert c._api_version == "2"
+        assert c._prefix == "/api"
+
+    def test_health_check_true(self, client_v3, monkeypatch):
+        monkeypatch.setattr(
+            client_v3, "get", MagicMock(return_value={"hostname": "cuckoo"})
+        )
+        assert client_v3.health_check() is True
+
+    def test_health_check_false(self, client_v3, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("nope")
+
+        monkeypatch.setattr(client_v3, "get", _boom)
+        assert client_v3.health_check() is False
+
+    def test_list_objects_v3(self, client_v3, monkeypatch):
+        monkeypatch.setattr(
+            client_v3,
+            "get",
+            MagicMock(return_value={"data": [{"id": 1}, {"id": 2}]}),
+        )
+        items = client_v3.list_objects("observed-data")
+        assert len(items) == 2
+        assert items[0]["_cuckoo_kind"] == "observed-data"
+
+    def test_get_report_v3(self, client_v3, monkeypatch):
+        report = {
+            "info": {"id": 42, "score": 8.5},
+            "target": {"file": {"sha256": "abc", "name": "sample.exe"}},
+            "network": {"hosts": ["1.2.3.4"]},
+        }
+        monkeypatch.setattr(
+            client_v3, "get", MagicMock(return_value=report)
+        )
+        obj = client_v3.get_object("observed-data", "42")
+        assert obj["_cuckoo_task_id"] == "42"
+        assert obj["_cuckoo_kind"] == "observed-data"
+
+    def test_submit_file_v2(self, client_v2, monkeypatch, tmp_path):
+        f = tmp_path / "malware.exe"
+        f.write_bytes(b"MZ\x90\x00")
+        monkeypatch.setattr(
+            client_v2, "post", MagicMock(return_value={"task_id": 99})
+        )
+        result = client_v2.submit_file(str(f))
+        assert result["task_id"] == 99
+        call_url = client_v2.post.call_args[0][0]
+        assert "/api/tasks/create/file" in call_url
+        assert "/apiv2/" not in call_url
+
+    def test_submit_file_v3(self, client_v3, monkeypatch, tmp_path):
+        f = tmp_path / "malware.exe"
+        f.write_bytes(b"MZ\x90\x00")
+        monkeypatch.setattr(
+            client_v3, "post", MagicMock(return_value={"task_id": 99})
+        )
+        client_v3.submit_file(str(f))
+        call_url = client_v3.post.call_args[0][0]
+        assert "/apiv2/tasks/create/file/" in call_url
+
+    def test_submit_url(self, client_v3, monkeypatch):
+        monkeypatch.setattr(
+            client_v3, "post", MagicMock(return_value={"task_id": 100})
+        )
+        result = client_v3.submit_url("http://evil.com/payload")
+        assert result["task_id"] == 100
+
+    def test_upsert_raises(self, client_v3):
+        with pytest.raises(GNATClientError, match="read-only via CRUD"):
+            client_v3.upsert_object("observed-data", {})
+
+    def test_to_stix_observed_data(self, client_v3):
+        stix = client_v3.to_stix(
+            {
+                "_cuckoo_task_id": "42",
+                "info": {"id": 42, "score": 8.5, "started": "2026-04-01T00:00:00Z"},
+                "target": {"file": {"sha256": "abc123", "name": "sample.exe"}},
+                "network": {
+                    "hosts": ["1.2.3.4"],
+                    "domains": [{"domain": "evil.example"}],
+                    "http": [{"uri": "http://evil.example/c2"}],
+                },
+                "behavior": {"processes": [{"process_name": "sample.exe"}]},
+                "dropped": [{"sha256": "def456"}],
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "observed-data"
+
+    def test_to_stix_malware(self, client_v3):
+        stix = client_v3.to_stix(
+            {
+                "_cuckoo_kind": "malware",
+                "_cuckoo_task_id": "42",
+                "info": {"score": 9.0},
+                "target": {"file": {"name": "emotet.exe"}},
+                "malfamily": "Emotet",
+                "signatures": [{"name": "trojan_emotet"}],
+            }
+        )
+        _assert_stix_contract(stix)
+        assert stix["type"] == "malware"
+        assert stix["name"] == "Emotet"
+        assert "trojan" in stix["malware_types"]
+
+    def test_to_stix_indicator(self, client_v3):
+        stix = client_v3.to_stix(
+            {
+                "_cuckoo_kind": "indicator",
+                "_cuckoo_task_id": "42",
+                "type": "domain",
+                "value": "evil.example",
+            }
+        )
+        _assert_stix_contract(stix)
+        assert "domain-name:value" in stix["pattern"]
+
+    def test_ioc_extraction(self, client_v3, monkeypatch):
+        report = {
+            "_cuckoo_kind": "observed-data",
+            "_cuckoo_task_id": "42",
+            "network": {
+                "hosts": ["1.2.3.4", "5.6.7.8"],
+                "domains": [{"domain": "evil.com"}],
+                "http": [{"uri": "http://evil.com/c2"}],
+                "dns": [{"answers": [{"data": "9.9.9.9"}]}],
+            },
+            "dropped": [{"sha256": "aabbcc"}],
+            "signatures": [{"marks": [{"ioc": "suspicious.dll"}]}],
+            "info": {},
+            "target": {},
+        }
+        monkeypatch.setattr(
+            client_v3, "get", MagicMock(return_value=report)
+        )
+        iocs = client_v3.get_iocs("42")
+        types = {i["type"] for i in iocs}
+        assert "ipv4" in types
+        assert "domain" in types
+        assert "url" in types
+        assert "sha256" in types
+        values = {i["value"] for i in iocs}
+        assert "1.2.3.4" in values
+        assert "evil.com" in values
+        assert "aabbcc" in values
+        assert "9.9.9.9" in values
+
+    def test_ioc_extraction_deduplicates(self, client_v3, monkeypatch):
+        report = {
+            "_cuckoo_kind": "observed-data",
+            "_cuckoo_task_id": "42",
+            "network": {
+                "hosts": ["1.2.3.4", "1.2.3.4"],
+                "domains": [],
+                "http": [],
+            },
+            "dropped": [],
+            "signatures": [],
+            "info": {},
+            "target": {},
+        }
+        monkeypatch.setattr(
+            client_v3, "get", MagicMock(return_value=report)
+        )
+        iocs = client_v3.get_iocs("42")
+        assert sum(1 for i in iocs if i["value"] == "1.2.3.4") == 1
+
+    def test_score_to_verdict(self):
+        from gnat.connectors.cuckoo.client import _score_to_verdict
+
+        assert _score_to_verdict(2) == "clean"
+        assert _score_to_verdict(5) == "suspicious"
+        assert _score_to_verdict(8) == "malicious"
+        assert _score_to_verdict(None) == "unknown"
+        assert _score_to_verdict("bad") == "unknown"
+
+    def test_from_stix_is_noop(self, client_v3):
+        out = client_v3.from_stix({"id": "observed-data--x"})
+        assert "read-only" in out["note"]
+
+    def test_cost_unit_is_high(self, client_v3):
+        assert client_v3.COST_UNIT >= 5
+
+    def test_stix_type_map_keys(self, client_v3):
+        assert "observed-data" in client_v3.stix_type_map
+        assert "malware" in client_v3.stix_type_map
+        assert "indicator" in client_v3.stix_type_map

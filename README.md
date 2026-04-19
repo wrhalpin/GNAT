@@ -52,7 +52,7 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 
 | Layer | What it does |
 |-------|-------------|
-| **158 Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
+| **159 Connectors** | Uniform CRUD + bidirectional STIX 2.1 translation for every supported platform |
 | **STIX 2.1 ORM** | Indicator, ThreatActor, Vulnerability, Malware, AttackPattern, Relationship, Observables |
 | **Ingest Pipelines** | 15 source readers × 13 mappers; pull from any platform, file, feed, database, or Kafka topic |
 | **Export Pipelines** | EDL files, Netskope CE, STIX bundles, CSV; configurable filters + transforms + delivery |
@@ -245,6 +245,7 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | `hybrid_analysis` | Hybrid Analysis / Falcon Sandbox | API key + User-Agent header |
 | `vmray` | VMRay (hypervisor-level analysis) | API key (`api_key` header) |
 | `intezer` | Intezer Analyze (binary DNA attribution) | API key → JWT Bearer |
+| `cuckoo` | Cuckoo Sandbox / CAPEv2 (dynamic malware analysis) | Bearer token |
 
 ### Managed Detection & Response (MDR)
 

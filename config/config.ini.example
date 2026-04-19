@@ -1232,6 +1232,13 @@ api_key = YOUR_HTTPBL_ACCESS_KEY
 [crtsh]
 host = https://crt.sh
 
+# --- Cuckoo Sandbox / CAPEv2 (dynamic malware analysis) --------------------
+# Supports both Cuckoo 2.x and CAPEv2/3.x APIs (auto-detected).
+[cuckoo]
+host        = https://cuckoo.lab.internal
+api_key     = <your-cuckoo-api-key>
+# api_version = 3     ; optional — auto-detected if omitted
+
 # --- Google Certificate Transparency log API -------------------------------
 # No authentication required. ``log`` is the path to a specific CT log
 # operated by Google (Argon, Xenon, etc.).
