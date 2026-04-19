@@ -66,6 +66,7 @@ subsystems.
 51. [ADR-0051: Attribution & Campaign Tracking](0051-ADR-attribution-campaign-tracking.md)
 52. [ADR-0052: Telemetry Ingestion](0052-ADR-telemetry-ingestion.md)
 53. [ADR-0053: Infrastructure Graph Labels](0053-ADR-infrastructure-graph-labels.md)
+54. [ADR-0054: Analysis Rule Engine](0054-ADR-analysis-rule-engine.md)
 
 ---
 

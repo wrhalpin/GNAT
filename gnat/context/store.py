@@ -586,6 +586,39 @@ class WorkspaceStore:
                 .count()
             )
 
+    def get_source_platform(
+        self, workspace_id: int, stix_id: str
+    ) -> str | None:
+        """Return the source_platform for a stix_id in a workspace, or None."""
+        with self.session() as sess:
+            row = (
+                sess.query(WorkspaceObjectModel.source_platform)
+                .filter_by(workspace_id=workspace_id, stix_id=stix_id, is_deleted=False)
+                .first()
+            )
+            return row[0] if row else None
+
+    def get_source_platforms_bulk(
+        self, workspace_id: int, stix_ids: list[str]
+    ) -> dict[str, str | None]:
+        """Batch resolve many STIX IDs to source_platform in one query."""
+        if not stix_ids:
+            return {}
+        with self.session() as sess:
+            rows = (
+                sess.query(
+                    WorkspaceObjectModel.stix_id,
+                    WorkspaceObjectModel.source_platform,
+                )
+                .filter(
+                    WorkspaceObjectModel.workspace_id == workspace_id,
+                    WorkspaceObjectModel.stix_id.in_(stix_ids),
+                    WorkspaceObjectModel.is_deleted == False,  # noqa: E712
+                )
+                .all()
+            )
+            return dict(rows)
+
     def __repr__(self) -> str:  # pragma: no cover
         """Return unambiguous string representation."""
         return f"WorkspaceStore(url={self._url!r})"
