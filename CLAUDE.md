@@ -31,7 +31,7 @@ gnat/                        # Main Python package
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types)
 ├── stix/                    # STIX pattern validation (stix2-patterns integration)
 ├── clients/                 # HTTP client layer (urllib3 BaseClient + CLIENT_REGISTRY)
-├── connectors/              # 158 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
+├── connectors/              # 159 platform connectors (ThreatQ, CrowdStrike, Splunk, etc.)
 ├── ingest/                  # Multi-source ingestion pipeline (14 readers, 12 mappers)
 │   └── telemetry/           # High-volume sensor ingestion (Kafka reader, Redis dedup, campaign auto-link)
 ├── export/                  # Export pipeline (EDL, Netskope CE delivery targets)
@@ -352,6 +352,7 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | Hybrid Analysis / Falcon Sandbox | `gnat/connectors/hybrid_analysis/` | API key + User-Agent header |
 | VMRay (hypervisor-level analysis) | `gnat/connectors/vmray/` | API key (`api_key` header) |
 | Intezer Analyze (binary DNA attribution) | `gnat/connectors/intezer/` | API key → JWT Bearer |
+| Cuckoo Sandbox / CAPEv2 (dynamic malware analysis) | `gnat/connectors/cuckoo/` | Bearer token |
 | Huntress Managed EDR / ITDR | `gnat/connectors/huntress/` | HTTP Basic (key id + secret) |
 | Arctic Wolf MDR | `gnat/connectors/arctic_wolf/` | Bearer token (+ optional customer id) |
 | Red Canary MDR | `gnat/connectors/red_canary/` | API key (`X-Api-Key` header) |

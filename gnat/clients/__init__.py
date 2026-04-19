@@ -42,6 +42,7 @@ from gnat.connectors.cortex_xpanse.client import CortexXpanseClient
 from gnat.connectors.cribl.client import CriblClient
 from gnat.connectors.crowdstrike.client import CrowdStrikeClient
 from gnat.connectors.crtsh.client import CrtShClient
+from gnat.connectors.cuckoo.client import CuckooClient
 from gnat.connectors.cyble_vision.client import CybleVisionClient
 from gnat.connectors.cycognito.client import CyCognitoClient
 from gnat.connectors.cymulate.client import CymulateClient
@@ -339,6 +340,7 @@ CLIENT_REGISTRY: dict = {
     "project_honey_pot": ProjectHoneyPotClient,
     # Phase 2 Wave 9 — Cert transparency + DFIR + bug bounty
     "crtsh": CrtShClient,
+    "cuckoo": CuckooClient,
     "google_ct": GoogleCTClient,
     "velociraptor": VelociraptorClient,
     "magnet_axiom": MagnetAxiomClient,

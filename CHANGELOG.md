@@ -19,6 +19,33 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Cuckoo Sandbox / CAPEv2 connector
+
+New `gnat/connectors/cuckoo/` connector for dynamic malware analysis.
+Supports both the legacy Cuckoo 2.x API (`/api/`) and CAPEv2/3.x
+(`/apiv2/`) with auto-detection at `authenticate()` time. Platform
+count: 158 → 159.
+
+- `CuckooClient` — Bearer token auth. STIX type map: observed-data,
+  malware, indicator. Version-specific endpoint routing via
+  `self._prefix`. Auto-detection probes `/apiv2/cuckoo/status/` first
+  (CAPEv2 is more common); falls back to v2 on failure. Optional
+  `api_version` constructor override skips detection.
+- Domain helpers: `submit_file()`, `submit_url()`, `get_report()`,
+  `get_task_view()`, `get_iocs()`, `iocs_to_indicators()`,
+  `list_machines()`, `get_pcap()`.
+- IOC extraction: walks `network.hosts` (IPs), `network.domains`
+  (domains), `network.http` (URLs), `dropped` (SHA-256 hashes),
+  `network.dns.answers` (resolved IPs), and CAPEv2
+  `signatures[*].marks[*].ioc` (signature-extracted IOCs).
+  Deduplicates by type+value.
+- STIX mapping: `sandbox_report_envelope()` for observed-data with
+  processes, contacted IPs/domains/URLs, verdict from score mapping
+  (0-3→clean, 4-6→suspicious, 7+→malicious). Malware SDO from
+  `malfamily`/`detections` fields. Indicator SDOs via
+  `make_indicator_pattern()`.
+- 22 new tests in `TestCuckooClient`.
+
 ### Added — Sensor/telemetry ingestion module (`gnat[telemetry]`)
 
 New `gnat/ingest/telemetry/` package for high-volume honeypot, netflow,
