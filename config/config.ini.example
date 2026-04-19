@@ -1290,3 +1290,22 @@ api_token = YOUR_BUGCROWD_API_TOKEN
 # [schedule]
 # jobs_file   = /etc/gnat/gnat-jobs.yaml
 # jobs_module = my_project.gnat_jobs
+
+# ──────────────────────────────────────────────────────────────────────
+# Analysis rule engine (gnat/analysis/rules/)
+#
+# The rule engine evaluates Hypothesis objects and can automatically
+# transition them between statuses (OPEN → SUPPORTED, etc.) based on
+# analyst-authored .hy rule files.
+#
+# The engine is OFF BY DEFAULT. Enable only after rule files exist
+# and have been reviewed. Requires: pip install "gnat[rules]"
+# ──────────────────────────────────────────────────────────────────────
+# [rules]
+# enabled = false
+# rules_dir = rules
+# ai_confidence_ceiling = 60
+# minimum_evidence_for_support = 3
+# stale_days_default = 30
+# fresh_days_default = 7
+# allow_dirty_rules = false
