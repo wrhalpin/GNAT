@@ -19,6 +19,40 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Analysis rule engine for hypothesis evaluation
+
+New `gnat/analysis/rules/` package implementing a declarative Hy-based
+rule engine that evaluates `analysis.Hypothesis` objects and returns
+status transition decisions (OPEN → SUPPORTED, REFUTED, INCONCLUSIVE).
+
+- `AnalysisRuleEngine.evaluate()` — priority-sorted rule evaluation
+  with phase gates, transition-slot semantics, dirty-tree refusal in
+  production, exception logging (never halts). Returns decisions
+  without mutating state.
+- `RuleOrchestrator` — bridges engine to InvestigationService with
+  audit-first pattern. Writes all firing records before applying the
+  primary decision.
+- `AuditWriter` — rule_firing_audit table (alembic 0010) with git SHA
+  capture, in-memory fallback when SQLAlchemy unavailable.
+- `EvidenceResolver` — batch-resolves STIX IDs to source_platform and
+  TRUST_LEVEL via WorkspaceStore + CLIENT_REGISTRY. Per-eval cache.
+- `RuleEnginePolicy` — 7-field config from INI `[rules]` section with
+  `GNAT_ALLOW_DIRTY_RULES=1` env override. Feature flag default OFF.
+- 26 helper functions in 6 modules: evidence (counts, ratio),
+  confidence (Admiralty Scale, band), temporal (staleness, freshness),
+  status, policy (AI-60 ceiling), source (trust levels, AI-only).
+- `defrule` Hy macro + `set-status`/`annotate`/`no-op` constructors.
+- Hy helper surface re-exporting all Python helpers with Lisp naming.
+- `RuleLoader` with directory walking, priority sort, stat-on-call
+  hot reload, graceful fallback when Hy not installed.
+- `RuleEngineProtocol` (typing.Protocol) + `create_engine()` factory.
+- `IS_AI_CONNECTOR = True` added to ChatGPT and Copilot connectors.
+- 3 production reference rules + 4 examples in `rules/` directory.
+- ADR-0054 documenting all architectural decisions.
+- 4 Diataxis docs: tutorial, how-to, spec, explanation.
+- pyproject.toml `[rules]` extras group (`hy>=1.0`).
+- 123 tests, all passing.
+
 ### Added — Cuckoo Sandbox / CAPEv2 connector
 
 New `gnat/connectors/cuckoo/` connector for dynamic malware analysis.

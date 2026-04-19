@@ -67,6 +67,7 @@ GNAT provides a single, consistent abstraction layer over 158 platforms — thre
 | **Investigation Builder** | Five-step cross-platform evidence graph pipeline (seed → incident expansion → normalise → correlate → materialise) from any combination of connected platforms |
 | **HuntGNAT** | STIX pattern → detection rule translation (Sigma, YARA, Suricata, Snort), hunt packages with lifecycle management, ATT&CK coverage matrix, deployment tracking with drift detection, validation scoring |
 | **Telemetry Ingestion** | High-volume sensor ingestion from Kafka topics (honeypot, netflow, IDS alert, DNS log); Redis-backed deduplication; automatic campaign linking of ingested indicators |
+| **Rule Engine** | Hy/Lisp declarative rule engine for automated hypothesis evaluation; 26 analyst-authorable helper predicates; priority-based first-match with audit trail; AI-60 confidence ceiling; feature flag OFF by default |
 | **Intelligence Reports** | Structured finished-intelligence products with five-state lifecycle (DRAFT → PUBLISHED), STIX 2.1 SDO export on publish, versioning, and attribution |
 | **Dissemination** | ExportService (STIX/JSON/PDF), webhook fan-out with HMAC signing, TAXII 2.1 server, bearer-token REST gateway |
 | **Solr Search** | Full-text search sidecar; auto-indexes on write; Grafana SimpleJSON dashboards |
@@ -365,6 +366,7 @@ pip install "gnat[tui]"                # Interactive terminal UI (textual)
 pip install "gnat[nlp]"                # NLP query engine (zero deps for builtin; Claude backend requires [agents])
 pip install "gnat[stix-validate]"      # Tier-2 STIX pattern validation (stix2-patterns / ANTLR)
 pip install "gnat[telemetry]"          # High-volume sensor ingestion (kafka-python-ng + redis)
+pip install "gnat[rules]"             # Analysis rule engine for hypothesis evaluation (hy)
 pip install "gnat[analysis]"           # Attribution & campaign tracking (sqlalchemy)
 pip install "gnat[fast]"               # Rust IOC hot-path extension (maturin wheel)
 pip install "gnat[all]"                # Core extras (yaml, taxii, ingest, async, persist, schedule, reports, viz, serve)
