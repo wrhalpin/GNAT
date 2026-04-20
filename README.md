@@ -1,6 +1,6 @@
 # GNAT 🪰
 
-**GNAT's Not Another TIP** — A Python library for unified cyber threat intelligence and management operations across 158 security and data platforms.
+**GNAT's Not Another TIP** — A Python library for unified cyber threat intelligence and management operations across 159 security and data platforms.
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -11,10 +11,10 @@
 
 ---
 
-GNAT provides a single, consistent abstraction layer over 158 platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, cloud security posture products, and more. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+GNAT provides a single, consistent abstraction layer over 159 platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, cloud security posture products, and more. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
 
 ```
-[ 158 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
+[ 159 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
 ```
 
 ---
@@ -1159,10 +1159,10 @@ gnat/
 ├── client.py                # GNATClient — top-level facade
 ├── config.py                # INI-based config (GNAT_CONFIG → ~/.gnat/config.ini → ./gnat.ini)
 ├── clients/
-│   ├── __init__.py          # CLIENT_REGISTRY (158 connectors)
+│   ├── __init__.py          # CLIENT_REGISTRY (159 connectors)
 │   └── base.py              # urllib3 BaseClient + GNATClientError
 ├── orm/                     # STIX 2.1 ORM (STIXBase + 8 object types + observables)
-├── connectors/              # 158 platform connectors — each: BaseClient + ConnectorMixin
+├── connectors/              # 159 platform connectors — each: BaseClient + ConnectorMixin
 │   └── base_connector.py    # ConnectorMixin (8-method contract + capabilities() + call())
 ├── ingest/                  # SourceReaders (14), RecordMappers (12), IngestPipeline
 │   └── _ioc_classifier.py   # RUST_AVAILABLE shim for optional Rust hot-path
@@ -1333,7 +1333,7 @@ make docs             # Sphinx HTML docs (docs/build/html/)
                         └──────────────────┬──────────────────────┘
                                            │
                         ┌──────────────────▼──────────────────────┐
-                        │     CONNECTOR LAYER (158 platforms)     │
+                        │     CONNECTOR LAYER (159 platforms)     │
                         │  BaseClient + ConnectorMixin            │
                         │  authenticate · health_check            │
                         │  get/list/upsert/delete · to/from_stix  │

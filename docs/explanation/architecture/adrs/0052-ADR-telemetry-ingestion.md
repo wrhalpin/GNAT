@@ -8,7 +8,7 @@ pipeline transform. All external dependencies gated behind a
 `[telemetry]` extras group (ADR-0015).
 
 **Problem statement:**
-GNAT ingests threat intelligence from 158 platform APIs but has no
+GNAT ingests threat intelligence from 159 platform APIs but has no
 path for high-volume sensor telemetry (honeypot captures, netflow
 records, IDS alerts, passive DNS logs). With campaign tracking now
 in place (ADR-0051), telemetry from lab infrastructure needs a way

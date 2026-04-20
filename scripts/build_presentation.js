@@ -134,7 +134,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const pills = [
-    ["158 Connectors", C.teal],
+    ["159 Connectors", C.teal],
     ["STIX 2.1", C.steel],
     ["AI-Powered", C.teal2],
     ["Scheduled", C.steel],
@@ -159,7 +159,7 @@ pres.author = "wrhalpin@gmail.com";
     color: C.muted, align: "left", margin: 0
   });
 
-  sl.addText("Version 1.5.0  ·  Python 3.9+  ·  STIX 2.1  ·  158 Platform Connectors  ·  5,100+ Tests", {
+  sl.addText("Version 1.9.0  ·  Python 3.9+  ·  STIX 2.1  ·  159 Platform Connectors  ·  5,100+ Tests", {
     x: 0.5, y: 4.95, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, align: "left", margin: 0
   });
@@ -273,7 +273,7 @@ pres.author = "wrhalpin@gmail.com";
     { label: "ANALYST / AUTOMATION LAYER", sub: "Workstations \u00b7 SOAR \u00b7 Scheduled jobs \u00b7 CLI \u00b7 TUI \u00b7 Web Dashboard", col: C.navy2, y: 0.85 },
     { label: "GNAT CORE", sub: "Ingest \u00b7 Export \u00b7 AI Agents \u00b7 Research Library \u00b7 Reports \u00b7 NLP \u00b7 TAXII 2.1 \u00b7 Solr Search", col: C.steel, y: 1.52 },
     { label: "STIX 2.1 ORM + WORKSPACE", sub: "Indicator \u00b7 ThreatActor \u00b7 Vulnerability \u00b7 AttackPattern \u00b7 Malware \u00b7 Relationship", col: C.teal, y: 2.19 },
-    { label: "CONNECTOR LAYER (158 platforms)", sub: "ThreatQ \u00b7 CrowdStrike \u00b7 Splunk \u00b7 Sentinel \u00b7 VirusTotal \u00b7 Mandiant \u00b7 Orca \u00b7 Wiz \u00b7 MISP \u00b7 MITRE ATT&CK \u00b7 Joe Sandbox \u00b7 Velociraptor \u00b7 Code42 \u00b7 Okta \u00b7 Entra ID \u00b7 Dataminr \u00b7 HackerOne \u00b7 ...", col: C.navy2, y: 2.86 },
+    { label: "CONNECTOR LAYER (159 platforms)", sub: "ThreatQ \u00b7 CrowdStrike \u00b7 Splunk \u00b7 Sentinel \u00b7 VirusTotal \u00b7 Mandiant \u00b7 Orca \u00b7 Wiz \u00b7 MISP \u00b7 MITRE ATT&CK \u00b7 Joe Sandbox \u00b7 Velociraptor \u00b7 Code42 \u00b7 Okta \u00b7 Entra ID \u00b7 Dataminr \u00b7 HackerOne \u00b7 ...", col: C.navy2, y: 2.86 },
     { label: "EXTERNAL PLATFORMS", sub: "TIPs \u00b7 SIEMs \u00b7 EDRs \u00b7 Vuln Scanners \u00b7 CNAPP/ASM \u00b7 SOAR \u00b7 NDR \u00b7 AI Assistants", col: "4B5563", y: 3.53 },
   ];
 
@@ -323,7 +323,7 @@ pres.author = "wrhalpin@gmail.com";
 
 // ── Slide 5: Connectors (category layout) ─────────────────────────────
 {
-  const sl = contentSlide(pres, "158 Platform Connectors \u2014 One Interface");
+  const sl = contentSlide(pres, "159 Platform Connectors \u2014 One Interface");
 
   const categories = [
     {
@@ -1983,7 +1983,7 @@ pres.author = "wrhalpin@gmail.com";
     x: 6.17, y: 1.4, w: 3.36, h: 0.3,
     fontSize: 11, fontFace: "Calibri", bold: true, color: C.white, margin: 0
   });
-  sl.addText("TRUST_LEVEL on all 158 connectors", {
+  sl.addText("TRUST_LEVEL on all 159 connectors", {
     x: 6.17, y: 1.84, w: 3.36, h: 0.22,
     fontSize: 9, fontFace: "Calibri", color: C.muted, margin: 0
   });
@@ -2025,7 +2025,7 @@ pres.author = "wrhalpin@gmail.com";
     x: 0.35, y: 5.3, w: 9.3, h: 0.22,
     fill: { color: C.navy2 }, line: { color: C.steel, width: 0.5 }
   });
-  sl.addText("ADRs 0039\u20130049  \u00b7  TRUST_LEVEL on all 158 connectors  \u00b7  Alembic migrations 0004\u20130008  \u00b7  SimulationConnector \u00b7 ReplayRunner \u00b7 AgentTestHarness", {
+  sl.addText("ADRs 0039\u20130049  \u00b7  TRUST_LEVEL on all 159 connectors  \u00b7  Alembic migrations 0004\u20130008  \u00b7  SimulationConnector \u00b7 ReplayRunner \u00b7 AgentTestHarness", {
     x: 0.47, y: 5.32, w: 9.16, h: 0.18,
     fontSize: 8, fontFace: "Calibri", color: C.muted, align: "center", margin: 0
   });
@@ -2038,7 +2038,7 @@ pres.author = "wrhalpin@gmail.com";
   const advantages = [
     { title: "Portability", body: "Switch from ThreatQ to a new TIP? Change one config line. The pipeline, scheduler, reports, and export jobs all work unchanged. Your automation is not locked to any platform.", col: C.teal },
     { title: "Maintenance Simplicity", body: "API changes affect one connector file, not every script. Tests cover all connectors uniformly. One library version number covers the entire integration stack.", col: C.steel },
-    { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 158 platforms.", col: C.teal },
+    { title: "Interface Consistency", body: "Every platform exposes get_object(), list_objects(), upsert_object(), to_stix(), from_stix(). Analysts learn one mental model once and it works across 159 platforms.", col: C.teal },
     { title: "Operational Coherence", body: "One scheduler, one health endpoint, one log stream. No more asking which of 15 scripts ran overnight and whether it worked. FeedScheduler.summary() answers all of that.", col: C.steel },
     { title: "Incremental Adoption", body: "Each layer is independently useful. Start with connectors only. Add ingest. Add export. Add AI. Add reports. The stack is additive \u2014 you never have to replace working parts.", col: C.teal },
     { title: "Test Coverage", body: "5,100+ unit tests across 40+ test files. Every connector, every pipeline stage, every renderer, every scheduler, every new v1.4/1.5 module. Confidence in changes without regression fear.", col: C.steel },
@@ -2145,7 +2145,7 @@ pres.author = "wrhalpin@gmail.com";
   const sl = contentSlide(pres, "By the Numbers");
 
   const stats = [
-    ["158", "Platform\nConnectors", C.teal],
+    ["159", "Platform\nConnectors", C.teal],
     ["5,100+", "Unit\nTests", C.steel],
     ["250+", "Source\nFiles", C.teal],
     ["~$50", "Monthly Azure\nVM Cost", C.steel],
@@ -2222,7 +2222,7 @@ pres.author = "wrhalpin@gmail.com";
 {
   const sl = contentSlide(pres, "All Roadmap Items \u2014 Complete");
 
-  sl.addText("\u2713  Every pending item has shipped  \u2014  v1.5.0 complete  \u00b7  Phase 4 (v1.6) shipped", {
+  sl.addText("\u2713  Every pending item has shipped  \u2014  v1.9.0 complete  \u00b7  Phase 4 (v1.6) shipped", {
     x: 0.4, y: 0.9, w: 9.2, h: 0.35,
     fontSize: 13, fontFace: "Calibri", italic: true,
     color: C.green, align: "left", margin: 0
@@ -2256,7 +2256,7 @@ pres.author = "wrhalpin@gmail.com";
     ["\u2705", "Multi-Tenant Workspace Isolation"],
     ["\u2705", "Docker Integration Test Harness"],
     ["\u2705", "13 new connectors v1.1 \u2014 25 in v1.2 \u2014 9 in v1.3"],
-    ["\u2705", "158 connectors total in CLIENT_REGISTRY"],
+    ["\u2705", "159 connectors total in CLIENT_REGISTRY"],
     ["\u2705", "LLMClient: Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini (v1.3)"],
     ["\u2705", "Policy Engine (RBAC \u00b7 Permission matrix \u00b7 audit hook)"],
     ["\u2705", "Data Lineage tracking (append-only event log)"],
@@ -2319,7 +2319,7 @@ pres.author = "wrhalpin@gmail.com";
   });
 
   const summary = [
-    "158 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines \u00b7 Kafka telemetry ingestion",
+    "159 connectors \u00b7 STIX 2.1 ORM \u00b7 Ingest + Export pipelines \u00b7 Kafka telemetry ingestion",
     "HuntGNAT: STIX \u2192 Sigma/YARA/Suricata/Snort \u00b7 Hunt packages \u00b7 ATT&CK coverage \u00b7 Drift detection",
     "Attribution: Campaign tracking \u00b7 Diamond Model \u00b7 Kill-chain \u00b7 Actor profiles \u00b7 Infrastructure classification",
     "AI agents (Claude \u00b7 OpenAI \u00b7 Grok \u00b7 Gemini) \u00b7 TAXII 2.1 \u00b7 Policy RBAC  \u00b7  5,100+ tests \u00b7 ~$50/month Azure",
@@ -2333,7 +2333,7 @@ pres.author = "wrhalpin@gmail.com";
     x: 0.5, y: 4.25, w: 8.5, h: 0,
     line: { color: C.teal, width: 1.5 }
   });
-  sl.addText("Version 1.5.0  |  Python 3.9+  |  Apache 2.0  |  EXAMPLES.md \u00b7 IMPLEMENTATION_PLAN.md \u00b7 README.md", {
+  sl.addText("Version 1.9.0  |  Python 3.9+  |  Apache 2.0  |  EXAMPLES.md \u00b7 IMPLEMENTATION_PLAN.md \u00b7 README.md", {
     x: 0.5, y: 4.4, w: 9, h: 0.3,
     fontSize: 10, fontFace: "Calibri", color: C.muted, margin: 0
   });

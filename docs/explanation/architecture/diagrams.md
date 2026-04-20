@@ -32,7 +32,7 @@ GNAT is structured as a layered architecture:
 | Intelligence Products | `gnat/reporting/`, `gnat/dissemination/` | Report lifecycle, export, webhooks |
 | Data Layer | `gnat/orm/`, `gnat/context/`, `gnat/search/` | STIX ORM, workspace persistence, Solr search |
 | **Custom SDOs (Phase 4C)** | **`gnat/stix/sdos/`** | **STIXHypothesis, NegativeEvidenceRecord** |
-| Platform Connectors | `gnat/connectors/` (158 platforms) | Bidirectional integration with external platforms |
+| Platform Connectors | `gnat/connectors/` (159 platforms) | Bidirectional integration with external platforms |
 | HTTP Client Layer | `gnat/clients/`, `gnat/async_client/` | urllib3 (sync) + httpx (async) + budget tracking |
 | Scheduling | `gnat/schedule/` | Cron-based feed scheduling |
 | **Testing Framework (Phase 4E)** | **`gnat/testing/`** | **SimulationConnector, ReplayRunner, AgentTestHarness** |
@@ -79,7 +79,7 @@ flowchart LR
 
 ## Connector Architecture
 
-The diagram below illustrates how the 158 platform connectors plug into GNAT via the
+The diagram below illustrates how the 159 platform connectors plug into GNAT via the
 `ConnectorMixin` contract and the `CLIENT_REGISTRY`.
 
 ![Connector Architecture](img/connector_architecture.png)
