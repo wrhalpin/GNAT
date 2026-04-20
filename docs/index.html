@@ -1,161 +1,93 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GNAT -- Cyber Threat Intel Made Simple</title>
-  <meta name="description" content="GNAT (GNAT's Not A TIP) -- A production-ready Python library for unified cyber threat intelligence across 159 platforms with STIX 2.1 ORM, AI agents, and detection rule translation.">
-  <meta property="og:title" content="GNAT -- Python Cyber Threat Intel Made Simple">
-  <meta property="og:description" content="One library. Every platform. Total control. 159 connectors, STIX 2.1 ORM, AI agents, HuntGNAT detection rules, campaign tracking, and telemetry ingestion.">
-  <meta property="og:image" content="assets/images/og-image.png">
-  <meta property="og:type" content="website">
-  <link rel="icon" href="assets/images/favicon.ico">
-  <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="utf-8">
+  <title>GNAT — Cyber Threat Intel Made Simple</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GNAT is the core platform in the GNAT-o-sphere: connector abstraction, STIX 2.1 modeling, reporting, investigations, and workflow automation.">
+  <link rel="stylesheet" href="./gnat-theme.css">
 </head>
 <body>
-
-<!-- Nav -->
-<nav>
-  <div class="container">
-    <a href="#" class="brand">
-      <img src="assets/images/gnat-logo-64.png" alt="GNAT Logo">
-      GNAT
-    </a>
-    <ul>
-      <li><a href="#features">Features</a></li>
-      <li><a href="#platforms">Platforms</a></li>
-      <li><a href="#install">Install</a></li>
-      <li><a href="https://github.com/wrhalpin/gnat">GitHub</a></li>
-    </ul>
-  </div>
-</nav>
-
-<!-- Hero -->
-<section class="hero">
-  <div class="container">
-    <img src="assets/images/gnat-logo-full.png" alt="GNAT Mascot">
-    <h1>GNAT</h1>
-    <p class="tagline">One library. Every platform. Total control.</p>
-    <p class="subtitle">Cyber Threat Intel Made Simple</p>
-    <div class="badges">
-      <span class="badge teal">159 Connectors</span>
-      <span class="badge green">5,100+ Tests</span>
-      <span class="badge teal">STIX 2.1</span>
-      <span class="badge amber">Python 3.9+</span>
-      <span class="badge teal">Apache 2.0</span>
-    </div>
-  </div>
-</section>
-
-<!-- Stats -->
-<section>
-  <div class="container">
-    <div class="stats">
-      <div class="stat"><div class="number">159</div><div class="label">Platform Connectors</div></div>
-      <div class="stat"><div class="number">5,100+</div><div class="label">Unit Tests</div></div>
-      <div class="stat"><div class="number">55</div><div class="label">Architecture Decision Records</div></div>
-      <div class="stat"><div class="number">15</div><div class="label">Ingest Readers</div></div>
-      <div class="stat"><div class="number">26</div><div class="label">Rule Engine Helpers</div></div>
-      <div class="stat"><div class="number">4</div><div class="label">Detection Rule Translators</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- Features -->
-<section id="features">
-  <div class="container">
-    <h2>Key Capabilities</h2>
-    <div class="features">
-      <div class="card">
-        <h3>159 Platform Connectors</h3>
-        <p>Uniform CRUD + bidirectional STIX 2.1 translation. ThreatQ, CrowdStrike, Splunk, Sentinel, MISP, VirusTotal, Mandiant, and 152 more.</p>
-      </div>
-      <div class="card">
-        <h3>STIX 2.1 ORM</h3>
-        <p>Property-bag ORM for Indicators, ThreatActors, Malware, Vulnerabilities, Campaigns, AttackPatterns, Relationships, and Observables.</p>
-      </div>
-      <div class="card">
-        <h3>HuntGNAT Detection Rules</h3>
-        <p>Translate STIX patterns to Sigma, YARA, Suricata, and Snort rules. Hunt packages, ATT&amp;CK coverage matrix, deployment drift detection.</p>
-      </div>
-      <div class="card">
-        <h3>Attribution &amp; Campaigns</h3>
-        <p>Diamond Model, kill-chain progression, competing hypotheses with Admiralty Scale scoring, actor profiles, cluster-to-campaign promotion.</p>
-      </div>
-      <div class="card">
-        <h3>Analysis Rule Engine</h3>
-        <p>Hy/Lisp declarative rules for automated hypothesis evaluation. 26 helpers, audit trail, AI-60 confidence ceiling, priority first-match.</p>
-      </div>
-      <div class="card">
-        <h3>Telemetry Ingestion</h3>
-        <p>Kafka consumer for honeypot, netflow, IDS, and DNS sensor data. Redis dedup, automatic campaign linking, severity gating.</p>
-      </div>
-      <div class="card">
-        <h3>AI Agents</h3>
-        <p>Unified LLMClient (Claude, OpenAI, Grok, Gemini). ResearchAgent, ParsingAgent, quality and security sub-agents.</p>
-      </div>
-      <div class="card">
-        <h3>Investigation Builder</h3>
-        <p>Five-step cross-platform evidence graph: seed &rarr; expand &rarr; normalise &rarr; correlate &rarr; materialise. Infrastructure role classification.</p>
-      </div>
-      <div class="card">
-        <h3>Reports &amp; Dissemination</h3>
-        <p>PDF, DOCX, HTML, Markdown. TAXII 2.1 server, webhook fan-out with HMAC signing, STIX bundle export.</p>
+  <header class="hero">
+    <div class="wrap">
+      <p class="kicker">GNAT-o-sphere / core platform</p>
+      <h1>GNAT</h1>
+      <p><strong>GNAT’s Not A TIP</strong><br><strong>Cyber Threat Intel Made Simple</strong></p>
+      <p>
+        GNAT gives security teams a stable way to ingest, model, enrich, export, automate, and investigate intelligence across a large connector surface without rebuilding around every vendor.
+      </p>
+      <div>
+        <span class="badge">159 connectors</span>
+        <span class="badge">STIX 2.1 native</span>
+        <span class="badge">reports + investigations</span>
+        <span class="badge">workflow portability</span>
       </div>
     </div>
-  </div>
-</section>
+  </header>
 
-<!-- Platforms -->
-<section id="platforms">
-  <div class="container">
-    <h2>159 Supported Platforms</h2>
-    <div class="platforms">
-      <span>ThreatQ</span><span>CrowdStrike</span><span>Splunk</span><span>Sentinel</span>
-      <span>VirusTotal</span><span>Mandiant</span><span>MISP</span><span>OpenCTI</span>
-      <span>Elastic SIEM</span><span>QRadar</span><span>Cortex XDR</span><span>SentinelOne</span>
-      <span>Palo Alto XSOAR</span><span>Wiz</span><span>Orca Security</span><span>Okta</span>
-      <span>Entra ID</span><span>CrowdStrike</span><span>Recorded Future</span><span>AlienVault OTX</span>
-      <span>Shodan</span><span>GreyNoise</span><span>Censys</span><span>Joe Sandbox</span>
-      <span>ANY.RUN</span><span>Hybrid Analysis</span><span>Cuckoo / CAPEv2</span><span>VMRay</span>
-      <span>Darktrace</span><span>Vectra AI</span><span>ExtraHop</span><span>Carbon Black</span>
-      <span>Proofpoint TAP</span><span>Mimecast</span><span>Abnormal Security</span><span>IRONSCALES</span>
-      <span>ServiceNow</span><span>Jira</span><span>TheHive</span><span>Velociraptor</span>
-      <span>HackerOne</span><span>Bugcrowd</span><span>AbuseIPDB</span><span>MITRE ATT&amp;CK</span>
-      <span>CISA KEV</span><span>Dataminr</span><span>Flashpoint</span><span>Intel 471</span>
-      <span>+ 111 more...</span>
+  <main class="wrap">
+    <section>
+      <h2>Why GNAT exists</h2>
+      <p>
+        Most security teams are forced to keep rebuilding the same automation, enrichment, and reporting logic around slightly different APIs and data models. GNAT exists to reduce that churn by standardizing the integration surface and keeping intelligence workflows portable.
+      </p>
+    </section>
+
+    <section>
+      <h2>What GNAT does</h2>
+      <div class="grid">
+        <div class="card"><h3>Normalize</h3><p>Unify many data sources behind one operating model.</p></div>
+        <div class="card"><h3>Translate</h3><p>Use STIX 2.1 as the stable contract between tools and workflows.</p></div>
+        <div class="card"><h3>Support analysis</h3><p>Build investigations, reports, and reusable workflows rather than isolated lookups.</p></div>
+        <div class="card"><h3>Anchor the ecosystem</h3><p>Provide the hub platform that SandGNAT and RedGNAT plug into.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Documentation by intent</h2>
+      <p>GNAT uses the <strong>Diátaxis</strong> model so readers can go directly to the kind of material they need.</p>
+      <table class="quadrants">
+        <tr>
+          <th></th>
+          <th>Action (doing)</th>
+          <th>Study (reading)</th>
+        </tr>
+        <tr>
+          <th>Learning</th>
+          <td><a href="../docs/tutorials/">Tutorials</a><br>Guided, newcomer-safe walkthroughs.</td>
+          <td><a href="../docs/explanation/">Explanation</a><br>Architecture, rationale, and design choices.</td>
+        </tr>
+        <tr>
+          <th>Working</th>
+          <td><a href="../docs/how-to/">How-to guides</a><br>Task-focused procedures and recipes.</td>
+          <td><a href="../docs/reference/">Reference</a><br>Exact technical behavior, config, and interfaces.</td>
+        </tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Start here by role</h2>
+      <div class="grid">
+        <div class="card"><h3>Analysts</h3><p>Use GNAT when you need to correlate intelligence across multiple systems and keep the output portable.</p></div>
+        <div class="card"><h3>Investigators</h3><p>Use GNAT when you need a repeatable path from seed indicators to evidence and report output.</p></div>
+        <div class="card"><h3>Engineers</h3><p>Use GNAT when integration churn is the real bottleneck.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>The GNAT-o-sphere</h2>
+      <div class="grid">
+        <div class="card"><h3><a href="https://wrhalpin.github.io/SandGNAT/">SandGNAT</a></h3><p>Automated malware sandbox addon for GNAT.</p></div>
+        <div class="card"><h3><a href="https://wrhalpin.github.io/RedGNAT/">RedGNAT</a></h3><p>CART addon for GNAT with explicit safety boundaries.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p><strong>GNAT</strong> — GNAT’s Not A TIP</p>
+      <p><a href="https://github.com/wrhalpin/GNAT">GitHub</a> · Apache 2.0</p>
     </div>
-  </div>
-</section>
-
-<!-- Install -->
-<section id="install">
-  <div class="container">
-    <h2>Get Started</h2>
-    <div class="install-block">
-      <div>pip install gnat</div>
-      <div style="color: var(--muted); margin-top: 12px;"># Optional extras</div>
-      <div>pip install "gnat[telemetry]"&nbsp;&nbsp;&nbsp;# Kafka + Redis</div>
-      <div>pip install "gnat[rules]"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Hy rule engine</div>
-      <div>pip install "gnat[analysis]"&nbsp;&nbsp;&nbsp;&nbsp;# Campaign tracking</div>
-      <div>pip install "gnat[serve]"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Web dashboard</div>
-      <div>pip install "gnat[all]"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Everything</div>
-    </div>
-  </div>
-</section>
-
-<!-- Footer -->
-<footer>
-  <div class="container">
-    <p>GNAT &mdash; GNAT's Not A TIP &mdash; Version 1.9.0</p>
-    <p style="margin-top: 8px;">
-      <a href="https://github.com/wrhalpin/gnat">GitHub</a> &middot;
-      Apache License 2.0 &middot;
-      Python 3.9 &ndash; 3.13
-    </p>
-  </div>
-</footer>
-
+  </footer>
 </body>
 </html>
