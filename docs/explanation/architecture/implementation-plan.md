@@ -40,7 +40,7 @@ with one library, one configuration file, and one operational model.
 │  STIX 2.1 ORM · ConnectorMixin · BaseClient                      │
 ├─────────────────────────────────────────────────────────────────┤
 │  Connector Layer                                                 │
-│  158 platform connectors across SIEM, TIP, EDR, ASM, VM,        │
+│  159 platform connectors across SIEM, TIP, EDR, ASM, VM,        │
 │  SOAR, IDS/IPS, MDR, ITDR, Email, UEBA, BAS, DFIR, Sandboxes,   │
 │  Cert Transparency, Bug Bounty, OSINT, and AI categories        │
 └─────────────────────────────────────────────────────────────────┘
@@ -63,7 +63,7 @@ by changing one string in the config file.
 gnat/
 ├── orm/                    STIX 2.1 ORM (Indicator, ThreatActor, Vulnerability, ...)
 ├── clients/                BaseClient (urllib3), CLIENT_REGISTRY
-├── connectors/             158 platform connectors
+├── connectors/             159 platform connectors
 ├── ingest/                 SourceReaders (14), RecordMappers (12), IngestPipeline
 ├── export/                 ExportFilters, Transforms (EDL, Netskope), Delivery, ExportJob
 ├── schedule/               FeedJob, FeedScheduler, APScheduler/Celery adapters
@@ -483,7 +483,7 @@ All near-term and medium-term roadmap items have shipped:
 | Solr/Grafana observability (`gnat/viz/grafana/`) | ✅ Done |
 | Multi-tenant workspace isolation (`gnat/context/tenant.py`) | ✅ Done |
 | Rust native extension (`rust_core/`, `gnat[fast]`) | ✅ Done |
-| Expanded connector coverage (158 connectors) | ✅ Done |
+| Expanded connector coverage (159 connectors) | ✅ Done |
 
 ### In progress / Near term
 - All near-term items have shipped. See completed list above.

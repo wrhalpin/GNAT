@@ -7,7 +7,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 ## Project Overview
 
 **GNAT** (CTM Toolkit) is a production-ready Python library providing:
-- A unified client interface for 158 security/threat intelligence platforms
+- A unified client interface for 159 security/threat intelligence platforms
 - A STIX 2.1-compatible ORM for threat intelligence objects
 - Ingestion, export, scheduling, visualization, and reporting pipelines
 - AI agent integration (Claude, OpenAI, Grok via unified LLMClient)
@@ -15,7 +15,7 @@ This file provides context for AI assistants (Claude Code and similar) working i
 
 **Package name on PyPI:** `gnat`
 **Import root:** `gnat`
-**Version:** 1.5.0
+**Version:** 1.9.0
 **Python support:** 3.9, 3.10, 3.11, 3.12, 3.13
 **License:** Apache-2.0
 
