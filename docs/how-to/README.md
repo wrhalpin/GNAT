@@ -21,6 +21,7 @@ Pick the guide for your goal — no need to read them in order.
 | [Build Cross-Platform Investigations](build-investigations.md) | Collect and correlate evidence from multiple platforms into a unified evidence graph |
 | [Create Intelligence Reports](create-intelligence-reports.md) | Author structured intelligence products with a formal lifecycle and STIX 2.1 export |
 | [Disseminate Intelligence](disseminate-intelligence.md) | Export, webhook notifications, TAXII 2.1 serving, and REST API gateway |
+| [Incident to Campaign Intelligence](incident-to-campaign-intelligence.md) | Triage XSOAR incidents, enrich with Splunk, Entra ID, CrowdStrike, Shodan, VirusTotal, Recorded Future, and ThreatQ, correlate incidents into a campaign, and publish a structured report |
 | **Phase 4 — Control, Reasoning, Safety** | |
 | [Use the Execution Context](use-execution-context.md) | Create and propagate `ExecutionContext`; enforce domain boundaries and trust levels; track query budgets |
 | [Use the Reasoning Engine](use-reasoning-engine.md) | Score and rank observables; propose, evaluate, and close hypotheses; track negative evidence |
