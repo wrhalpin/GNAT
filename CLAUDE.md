@@ -48,6 +48,7 @@ gnat/                        # Main Python package
 ├── async_client/            # Async variant (httpx)
 ├── analysis/attribution/    # Campaign tracking, Diamond Model, kill-chain, infrastructure classification, attribution hypotheses
 ├── analysis/rules/          # Hy-based rule engine for hypothesis evaluation (26 helpers, audit trail, feature flag OFF)
+│                            # Also supports YAML declarative rules and Prolog logic rules via [rules] engine config
 ├── plugins/huntgnat/        # STIX → detection rule translation (Sigma, YARA, Suricata, Snort), hunt packages, ATT&CK coverage, validation
 ├── serve/                   # FastAPI HTTP server + TAXII endpoint
 ├── search/                  # Solr full-text search sidecar (SearchMixin, indexer, ORM integration)
@@ -446,7 +447,8 @@ pip install "gnat[tui]"               # Terminal UI (textual)
 pip install "gnat[nlp]"               # NLP/IOC extraction (builtin; claude backend reuses agents)
 pip install "gnat[stix-validate]"      # Full STIX pattern validation (stix2-patterns ANTLR grammar)
 pip install "gnat[telemetry]"         # High-volume sensor ingestion (kafka-python-ng + redis)
-pip install "gnat[rules]"            # Hy-based analysis rule engine for hypothesis evaluation
+pip install "gnat[rules]"            # Hy + YAML analysis rule engines for hypothesis evaluation
+pip install "gnat[rules-prolog]"     # Prolog rule engine (requires SWI-Prolog system install)
 pip install "gnat[analysis]"          # Attribution & campaign tracking persistence (sqlalchemy)
 pip install "gnat[fast]"              # Rust native extension (install gnat-core wheel separately)
 pip install "gnat[all]"               # Everything

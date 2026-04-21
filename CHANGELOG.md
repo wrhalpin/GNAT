@@ -50,8 +50,26 @@ status transition decisions (OPEN → SUPPORTED, REFUTED, INCONCLUSIVE).
 - 3 production reference rules + 4 examples in `rules/` directory.
 - ADR-0054 documenting all architectural decisions.
 - 4 Diataxis docs: tutorial, how-to, spec, explanation.
-- pyproject.toml `[rules]` extras group (`hy>=1.0`).
-- 123 tests, all passing.
+- pyproject.toml `[rules]` extras group (`hy>=1.0, pyyaml>=6.0`).
+- pyproject.toml `[rules-prolog]` extras group (`pyswip>=0.2.11`).
+- 154 tests, all passing.
+
+### Added — YAML and Prolog rule engine implementations
+
+Two alternative rule engines alongside the existing Hy engine, selectable
+via `[rules] engine = yaml|prolog|hy` in config.
+
+- **YAML engine** (`yaml_engine.py`, `yaml_condition.py`): declarative
+  rules without code authoring. Conditions reference the 26 Python
+  helpers by name with comparison operators (`eq`/`neq`/`gt`/`gte`/
+  `lt`/`lte`), boolean combinators (`all`/`any`/`not`), and special
+  args (`{days: N}` for temporal helpers). 4 example YAML rules.
+- **Prolog engine** (`prolog_engine.py`, `prolog_helpers.pl`): SWI-Prolog
+  logic rules via pyswip. Hypothesis facts asserted into KB before each
+  evaluation and retracted after. 15 pre-loaded helper predicates.
+  3 example Prolog rules. Graceful skip without pyswip.
+- Factory updated: `create_engine()` dispatches to correct engine.
+- 31 new tests (YAML condition + engine), 154 total passing.
 
 ### Added — Cuckoo Sandbox / CAPEv2 connector
 

@@ -116,6 +116,31 @@ Add metadata without affecting the transition slot:
 | 50–99 | Secondary rules (guards, gates) |
 | 1–49 | Annotations, informational |
 
+## YAML alternative
+
+All patterns above can be expressed in YAML without code. Set
+`engine = yaml` in `[rules]` config. Example:
+
+```yaml
+rules:
+  - name: promote-on-evidence
+    phase: open
+    priority: 100
+    when:
+      all:
+        - supporting_count: { gte: 3 }
+        - has_refutation: false
+        - reliability_at_least: "B"
+        - within_ai_ceiling: true
+    then:
+      set_status:
+        target: supported
+        reason: "Strong evidence"
+```
+
+See [Rule Engine Spec](../reference/rule-engine-spec.md) for the full
+YAML condition DSL and Prolog syntax.
+
 ## Helper reference
 
 Run `gnat rules list-helpers` for the complete helper catalog, or see

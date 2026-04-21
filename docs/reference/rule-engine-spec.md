@@ -172,10 +172,63 @@ Environment override: `GNAT_ALLOW_DIRTY_RULES=1` forces `allow_dirty_rules=true`
 
 ---
 
-## 6. Error Handling
+## 6. Alternative Engines
+
+Three engines are available, selectable via `[rules] engine`:
+
+### YAML Engine (`engine = yaml`)
+
+Rules authored as `.yaml`/`.yml` files with a structured condition DSL.
+No code authoring required — conditions reference helpers by name.
+
+```yaml
+rules:
+  - name: support-on-strong-evidence
+    phase: open
+    priority: 100
+    when:
+      all:
+        - supporting_count: { gte: 3 }
+        - has_refutation: false
+        - reliability_at_least: "B"
+        - within_ai_ceiling: true
+    then:
+      set_status:
+        target: supported
+        reason: "Strong evidence"
+```
+
+**Condition operators**: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`
+**Boolean combinators**: `all` (AND), `any` (OR), `not` (negate)
+**Special args**: `{ days: N }` for temporal helpers (`stale`, `fresh`)
+
+Install: `pip install "gnat[rules]"` (includes pyyaml)
+
+### Prolog Engine (`engine = prolog`)
+
+Rules authored as `.pl` files using SWI-Prolog syntax. Best for
+complex inference chains and backward-chaining reasoning.
+
+```prolog
+rule(my_rule, [phase(open), priority(100)]).
+when(my_rule) :- supporting_count(N), N >= 3, \+ has_refutation.
+then(my_rule, set_status(supported, 'Strong evidence')).
+```
+
+Hypothesis facts are asserted into the Prolog KB before each evaluation
+and retracted after. Pre-loaded helper predicates in `prolog_helpers.pl`
+mirror the Python helper library.
+
+Install: `pip install "gnat[rules-prolog]"` (requires SWI-Prolog system install)
+
+---
+
+## 7. Error Handling
 
 - **Rule load failure**: Logged, file skipped, other rules still load.
 - **Rule evaluation exception**: Logged, added to `result.errors`, next rule evaluated.
-- **Hy not installed**: Loader returns empty list, logs warning.
+- **Hy not installed**: Hy loader returns empty list, logs warning.
+- **pyyaml not installed**: YAML loader returns empty list, logs warning.
+- **pyswip not installed**: Prolog loader returns empty list, logs warning.
 - **Git unavailable**: `rule_file_sha` returns None, `git_file_is_clean` returns False (fail closed).
 - **Service mutation failure**: Audit row recorded with `error_message`, `applied=false`.

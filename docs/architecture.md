@@ -147,6 +147,23 @@ Install with `pip install "gnat[telemetry]"` (kafka-python-ng + redis).
 
 ---
 
+### Analysis Rule Engine
+`gnat.analysis.rules` provides automated hypothesis evaluation via declarative rules.
+Three engine implementations are available, selectable via `[rules] engine` in config:
+
+- **Hy** (default) — Lisp/S-expression rules via `defrule` macro
+- **YAML** — declarative condition DSL referencing 26 helpers by name
+- **Prolog** — SWI-Prolog logic rules via pyswip for complex inference
+
+All engines share the evaluation pipeline: `RuleContext`, `Decision` types, `AuditWriter`,
+`RuleOrchestrator`, and 26 helper functions (evidence, confidence, temporal, status, policy,
+source/trust). Rules are advisors — they return decisions without mutating state. The
+orchestrator applies decisions via `InvestigationService`. Feature flag default: OFF.
+
+→ [ADR-0054: Analysis Rule Engine](explanation/architecture/adrs/0054-ADR-analysis-rule-engine.md)
+
+---
+
 ### Reporting Layer
 `gnat.reporting` provides first-class intelligence report objects with a formal five-state
 lifecycle (DRAFT → REVIEW → APPROVED → PUBLISHED → ARCHIVED). `ReportService` enforces the state
