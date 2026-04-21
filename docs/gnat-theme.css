@@ -1,11 +1,11 @@
 :root{
-  --brand:#c3362b;
-  --brand-dark:#8f1f19;
-  --surface:#fff8f3;
-  --surface-2:#f6ece5;
-  --ink:#1f1715;
-  --muted:#604942;
-  --line:#e4ccc0;
+  --brand:#C41E2A;
+  --brand-dark:#9B1820;
+  --surface:#1A1A1A;
+  --surface-2:#242424;
+  --ink:#E0E0E0;
+  --muted:#9E9E9E;
+  --line:#3A3A3A;
 }
 body{
   margin:0;
@@ -14,7 +14,7 @@ body{
   background:var(--surface);
   line-height:1.6;
 }
-a{color:var(--brand-dark);}
+a{color:var(--brand);}
 header.hero{
   background: linear-gradient(180deg,var(--surface) 0%, var(--surface-2) 100%);
   border-bottom:1px solid var(--line);
@@ -33,11 +33,12 @@ header.hero{
 .badge{
   display:inline-block;
   border:1px solid var(--line);
-  background:#fff;
+  background:var(--surface-2);
   border-radius:999px;
   padding:.35rem .75rem;
   margin:.15rem;
   font-size:.95rem;
+  color:var(--ink);
 }
 .grid{
   display:grid;
@@ -45,7 +46,7 @@ header.hero{
   gap:1rem;
 }
 .card{
-  background:#fff;
+  background:var(--surface-2);
   border:1px solid var(--line);
   border-radius:16px;
   padding:1rem 1.1rem;
@@ -53,7 +54,7 @@ header.hero{
 .quadrants{
   border-collapse:collapse;
   width:100%;
-  background:#fff;
+  background:var(--surface-2);
 }
 .quadrants td,.quadrants th{
   border:1px solid var(--line);
