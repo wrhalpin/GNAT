@@ -37,52 +37,61 @@ from typing import Any
 from gnat.analysis.confidence import ConfidenceScore
 from gnat.analysis.tlp import TLPLevel
 
-
 # ── Enumerations ──────────────────────────────────────────────────────────────
+
 
 class InvestigationStatus(str, Enum):
     """Life-cycle status of an Investigation."""
-    OPEN        = "open"
+
+    OPEN = "open"
     IN_PROGRESS = "in_progress"
-    REVIEW      = "review"
-    CLOSED      = "closed"
+    REVIEW = "review"
+    CLOSED = "closed"
 
 
 class HypothesisStatus(str, Enum):
     """Evaluation status of a Hypothesis."""
-    OPEN         = "open"
-    SUPPORTED    = "supported"
-    REFUTED      = "refuted"
+
+    OPEN = "open"
+    SUPPORTED = "supported"
+    REFUTED = "refuted"
     INCONCLUSIVE = "inconclusive"
 
 
 class TaskStatus(str, Enum):
     """Kanban-style status for an InvestigationTask."""
-    TODO        = "todo"
+
+    TODO = "todo"
     IN_PROGRESS = "in_progress"
-    DONE        = "done"
-    BLOCKED     = "blocked"
+    DONE = "done"
+    BLOCKED = "blocked"
 
 
 class TaskPriority(str, Enum):
     """Priority level for an InvestigationTask."""
-    LOW      = "low"
-    MEDIUM   = "medium"
-    HIGH     = "high"
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
     CRITICAL = "critical"
 
 
 # ── Valid state machine transitions ───────────────────────────────────────────
 
 INVESTIGATION_TRANSITIONS: dict[InvestigationStatus, frozenset[InvestigationStatus]] = {
-    InvestigationStatus.OPEN:        frozenset({InvestigationStatus.IN_PROGRESS}),
-    InvestigationStatus.IN_PROGRESS: frozenset({InvestigationStatus.REVIEW, InvestigationStatus.CLOSED}),
-    InvestigationStatus.REVIEW:      frozenset({InvestigationStatus.IN_PROGRESS, InvestigationStatus.CLOSED}),
-    InvestigationStatus.CLOSED:      frozenset(),  # terminal
+    InvestigationStatus.OPEN: frozenset({InvestigationStatus.IN_PROGRESS}),
+    InvestigationStatus.IN_PROGRESS: frozenset(
+        {InvestigationStatus.REVIEW, InvestigationStatus.CLOSED}
+    ),
+    InvestigationStatus.REVIEW: frozenset(
+        {InvestigationStatus.IN_PROGRESS, InvestigationStatus.CLOSED}
+    ),
+    InvestigationStatus.CLOSED: frozenset(),  # terminal
 }
 
 
 # ── Helper ────────────────────────────────────────────────────────────────────
+
 
 def _now() -> datetime:
     """Internal helper for now."""
@@ -95,6 +104,7 @@ def _uuid() -> str:
 
 
 # ── Dataclasses ───────────────────────────────────────────────────────────────
+
 
 @dataclass
 class InvestigationScope:
@@ -117,36 +127,40 @@ class InvestigationScope:
         Free-text keywords used during automated seed expansion.
     """
 
-    date_range_start:    datetime | None = None
-    date_range_end:      datetime | None = None
-    target_sectors:      list[str]       = field(default_factory=list)
-    target_geographies:  list[str]       = field(default_factory=list)
-    ioc_types:           list[str]       = field(default_factory=list)
-    keywords:            list[str]       = field(default_factory=list)
+    date_range_start: datetime | None = None
+    date_range_end: datetime | None = None
+    target_sectors: list[str] = field(default_factory=list)
+    target_geographies: list[str] = field(default_factory=list)
+    ioc_types: list[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
-            "date_range_start":   self.date_range_start.isoformat() if self.date_range_start else None,
-            "date_range_end":     self.date_range_end.isoformat() if self.date_range_end else None,
-            "target_sectors":     self.target_sectors,
+            "date_range_start": self.date_range_start.isoformat()
+            if self.date_range_start
+            else None,
+            "date_range_end": self.date_range_end.isoformat() if self.date_range_end else None,
+            "target_sectors": self.target_sectors,
             "target_geographies": self.target_geographies,
-            "ioc_types":          self.ioc_types,
-            "keywords":           self.keywords,
+            "ioc_types": self.ioc_types,
+            "keywords": self.keywords,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "InvestigationScope":
+    def from_dict(cls, data: dict[str, Any]) -> InvestigationScope:
         """Create an instance from DICT data."""
         return cls(
-            date_range_start    = datetime.fromisoformat(data["date_range_start"])
-                                  if data.get("date_range_start") else None,
-            date_range_end      = datetime.fromisoformat(data["date_range_end"])
-                                  if data.get("date_range_end") else None,
-            target_sectors      = data.get("target_sectors", []),
-            target_geographies  = data.get("target_geographies", []),
-            ioc_types           = data.get("ioc_types", []),
-            keywords            = data.get("keywords", []),
+            date_range_start=datetime.fromisoformat(data["date_range_start"])
+            if data.get("date_range_start")
+            else None,
+            date_range_end=datetime.fromisoformat(data["date_range_end"])
+            if data.get("date_range_end")
+            else None,
+            target_sectors=data.get("target_sectors", []),
+            target_geographies=data.get("target_geographies", []),
+            ioc_types=data.get("ioc_types", []),
+            keywords=data.get("keywords", []),
         )
 
 
@@ -175,41 +189,42 @@ class Hypothesis:
     updated_at : datetime
     """
 
-    statement:           str
-    id:                  str                  = field(default_factory=_uuid)
-    confidence:          ConfidenceScore | None = None
-    status:              HypothesisStatus     = HypothesisStatus.OPEN
-    supporting_evidence: list[str]            = field(default_factory=list)
-    refuting_evidence:   list[str]            = field(default_factory=list)
-    created_at:          datetime             = field(default_factory=_now)
-    updated_at:          datetime             = field(default_factory=_now)
+    statement: str
+    id: str = field(default_factory=_uuid)
+    confidence: ConfidenceScore | None = None
+    status: HypothesisStatus = HypothesisStatus.OPEN
+    supporting_evidence: list[str] = field(default_factory=list)
+    refuting_evidence: list[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=_now)
+    updated_at: datetime = field(default_factory=_now)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
-            "id":                  self.id,
-            "statement":           self.statement,
-            "confidence":          self.confidence.to_dict() if self.confidence else None,
-            "status":              self.status.value,
+            "id": self.id,
+            "statement": self.statement,
+            "confidence": self.confidence.to_dict() if self.confidence else None,
+            "status": self.status.value,
             "supporting_evidence": self.supporting_evidence,
-            "refuting_evidence":   self.refuting_evidence,
-            "created_at":          self.created_at.isoformat(),
-            "updated_at":          self.updated_at.isoformat(),
+            "refuting_evidence": self.refuting_evidence,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Hypothesis":
+    def from_dict(cls, data: dict[str, Any]) -> Hypothesis:
         """Create an instance from DICT data."""
         return cls(
-            id                  = data["id"],
-            statement           = data["statement"],
-            confidence          = ConfidenceScore.from_dict(data["confidence"])
-                                  if data.get("confidence") else None,
-            status              = HypothesisStatus(data.get("status", "open")),
-            supporting_evidence = data.get("supporting_evidence", []),
-            refuting_evidence   = data.get("refuting_evidence", []),
-            created_at          = datetime.fromisoformat(data["created_at"]),
-            updated_at          = datetime.fromisoformat(data["updated_at"]),
+            id=data["id"],
+            statement=data["statement"],
+            confidence=ConfidenceScore.from_dict(data["confidence"])
+            if data.get("confidence")
+            else None,
+            status=HypothesisStatus(data.get("status", "open")),
+            supporting_evidence=data.get("supporting_evidence", []),
+            refuting_evidence=data.get("refuting_evidence", []),
+            created_at=datetime.fromisoformat(data["created_at"]),
+            updated_at=datetime.fromisoformat(data["updated_at"]),
         )
 
 
@@ -231,31 +246,31 @@ class AnalystNote:
         Optional artifact IDs this note annotates.
     """
 
-    content:          str
-    author:           str
-    id:               str        = field(default_factory=_uuid)
-    created_at:       datetime   = field(default_factory=_now)
-    linked_artifacts: list[str]  = field(default_factory=list)
+    content: str
+    author: str
+    id: str = field(default_factory=_uuid)
+    created_at: datetime = field(default_factory=_now)
+    linked_artifacts: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
-            "id":               self.id,
-            "content":          self.content,
-            "author":           self.author,
-            "created_at":       self.created_at.isoformat(),
+            "id": self.id,
+            "content": self.content,
+            "author": self.author,
+            "created_at": self.created_at.isoformat(),
             "linked_artifacts": self.linked_artifacts,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "AnalystNote":
+    def from_dict(cls, data: dict[str, Any]) -> AnalystNote:
         """Create an instance from DICT data."""
         return cls(
-            id               = data["id"],
-            content          = data["content"],
-            author           = data["author"],
-            created_at       = datetime.fromisoformat(data["created_at"]),
-            linked_artifacts = data.get("linked_artifacts", []),
+            id=data["id"],
+            content=data["content"],
+            author=data["author"],
+            created_at=datetime.fromisoformat(data["created_at"]),
+            linked_artifacts=data.get("linked_artifacts", []),
         )
 
 
@@ -284,43 +299,43 @@ class InvestigationTask:
     updated_at : datetime
     """
 
-    title:        str
-    id:           str              = field(default_factory=_uuid)
-    description:  str              = ""
-    status:       TaskStatus       = TaskStatus.TODO
-    priority:     TaskPriority     = TaskPriority.MEDIUM
-    assigned_to:  str | None       = None
-    due_date:     datetime | None  = None
-    created_at:   datetime         = field(default_factory=_now)
-    updated_at:   datetime         = field(default_factory=_now)
+    title: str
+    id: str = field(default_factory=_uuid)
+    description: str = ""
+    status: TaskStatus = TaskStatus.TODO
+    priority: TaskPriority = TaskPriority.MEDIUM
+    assigned_to: str | None = None
+    due_date: datetime | None = None
+    created_at: datetime = field(default_factory=_now)
+    updated_at: datetime = field(default_factory=_now)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
-            "id":          self.id,
-            "title":       self.title,
+            "id": self.id,
+            "title": self.title,
             "description": self.description,
-            "status":      self.status.value,
-            "priority":    self.priority.value,
+            "status": self.status.value,
+            "priority": self.priority.value,
             "assigned_to": self.assigned_to,
-            "due_date":    self.due_date.isoformat() if self.due_date else None,
-            "created_at":  self.created_at.isoformat(),
-            "updated_at":  self.updated_at.isoformat(),
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "InvestigationTask":
+    def from_dict(cls, data: dict[str, Any]) -> InvestigationTask:
         """Create an instance from DICT data."""
         return cls(
-            id          = data["id"],
-            title       = data["title"],
-            description = data.get("description", ""),
-            status      = TaskStatus(data.get("status", "todo")),
-            priority    = TaskPriority(data.get("priority", "medium")),
-            assigned_to = data.get("assigned_to"),
-            due_date    = datetime.fromisoformat(data["due_date"]) if data.get("due_date") else None,
-            created_at  = datetime.fromisoformat(data["created_at"]),
-            updated_at  = datetime.fromisoformat(data["updated_at"]),
+            id=data["id"],
+            title=data["title"],
+            description=data.get("description", ""),
+            status=TaskStatus(data.get("status", "todo")),
+            priority=TaskPriority(data.get("priority", "medium")),
+            assigned_to=data.get("assigned_to"),
+            due_date=datetime.fromisoformat(data["due_date"]) if data.get("due_date") else None,
+            created_at=datetime.fromisoformat(data["created_at"]),
+            updated_at=datetime.fromisoformat(data["updated_at"]),
         )
 
 
@@ -388,27 +403,27 @@ class Investigation:
     <InvestigationStatus.OPEN: 'open'>
     """
 
-    title:             str
-    created_by:        str
-    id:                str                    = field(default_factory=_uuid)
-    description:       str                    = ""
-    status:            InvestigationStatus    = InvestigationStatus.OPEN
-    classification:    TLPLevel               = TLPLevel.AMBER
-    assigned_to:       list[str]              = field(default_factory=list)
-    scope:             InvestigationScope     = field(default_factory=InvestigationScope)
-    hypothesis:        list[Hypothesis]       = field(default_factory=list)
-    notes:             list[AnalystNote]      = field(default_factory=list)
-    tasks:             list[InvestigationTask] = field(default_factory=list)
-    indicators:        list[str]              = field(default_factory=list)
-    observables:       list[str]              = field(default_factory=list)
-    threat_actors:     list[str]              = field(default_factory=list)
-    campaigns:         list[str]              = field(default_factory=list)
-    reports:           list[str]              = field(default_factory=list)
-    tags:              list[str]              = field(default_factory=list)
-    source_connectors: list[str]              = field(default_factory=list)
-    stix_bundle_ref:   str | None             = None
-    created_at:        datetime               = field(default_factory=_now)
-    updated_at:        datetime               = field(default_factory=_now)
+    title: str
+    created_by: str
+    id: str = field(default_factory=_uuid)
+    description: str = ""
+    status: InvestigationStatus = InvestigationStatus.OPEN
+    classification: TLPLevel = TLPLevel.AMBER
+    assigned_to: list[str] = field(default_factory=list)
+    scope: InvestigationScope = field(default_factory=InvestigationScope)
+    hypothesis: list[Hypothesis] = field(default_factory=list)
+    notes: list[AnalystNote] = field(default_factory=list)
+    tasks: list[InvestigationTask] = field(default_factory=list)
+    indicators: list[str] = field(default_factory=list)
+    observables: list[str] = field(default_factory=list)
+    threat_actors: list[str] = field(default_factory=list)
+    campaigns: list[str] = field(default_factory=list)
+    reports: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    source_connectors: list[str] = field(default_factory=list)
+    stix_bundle_ref: str | None = None
+    created_at: datetime = field(default_factory=_now)
+    updated_at: datetime = field(default_factory=_now)
 
     def can_transition_to(self, new_status: InvestigationStatus) -> bool:
         """Return True if a transition from current status to *new_status* is valid."""
@@ -417,52 +432,52 @@ class Investigation:
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict suitable for JSON storage."""
         return {
-            "id":                self.id,
-            "title":             self.title,
-            "description":       self.description,
-            "status":            self.status.value,
-            "classification":    self.classification.value,
-            "created_by":        self.created_by,
-            "assigned_to":       self.assigned_to,
-            "scope":             self.scope.to_dict(),
-            "hypothesis":        [h.to_dict() for h in self.hypothesis],
-            "notes":             [n.to_dict() for n in self.notes],
-            "tasks":             [t.to_dict() for t in self.tasks],
-            "indicators":        self.indicators,
-            "observables":       self.observables,
-            "threat_actors":     self.threat_actors,
-            "campaigns":         self.campaigns,
-            "reports":           self.reports,
-            "tags":              self.tags,
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "status": self.status.value,
+            "classification": self.classification.value,
+            "created_by": self.created_by,
+            "assigned_to": self.assigned_to,
+            "scope": self.scope.to_dict(),
+            "hypothesis": [h.to_dict() for h in self.hypothesis],
+            "notes": [n.to_dict() for n in self.notes],
+            "tasks": [t.to_dict() for t in self.tasks],
+            "indicators": self.indicators,
+            "observables": self.observables,
+            "threat_actors": self.threat_actors,
+            "campaigns": self.campaigns,
+            "reports": self.reports,
+            "tags": self.tags,
             "source_connectors": self.source_connectors,
-            "stix_bundle_ref":   self.stix_bundle_ref,
-            "created_at":        self.created_at.isoformat(),
-            "updated_at":        self.updated_at.isoformat(),
+            "stix_bundle_ref": self.stix_bundle_ref,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Investigation":
+    def from_dict(cls, data: dict[str, Any]) -> Investigation:
         """Deserialise from a plain dict produced by :meth:`to_dict`."""
         return cls(
-            id                = data["id"],
-            title             = data["title"],
-            description       = data.get("description", ""),
-            status            = InvestigationStatus(data.get("status", "open")),
-            classification    = TLPLevel(data.get("classification", "amber")),
-            created_by        = data.get("created_by", ""),
-            assigned_to       = data.get("assigned_to", []),
-            scope             = InvestigationScope.from_dict(data.get("scope", {})),
-            hypothesis        = [Hypothesis.from_dict(h) for h in data.get("hypothesis", [])],
-            notes             = [AnalystNote.from_dict(n) for n in data.get("notes", [])],
-            tasks             = [InvestigationTask.from_dict(t) for t in data.get("tasks", [])],
-            indicators        = data.get("indicators", []),
-            observables       = data.get("observables", []),
-            threat_actors     = data.get("threat_actors", []),
-            campaigns         = data.get("campaigns", []),
-            reports           = data.get("reports", []),
-            tags              = data.get("tags", []),
-            source_connectors = data.get("source_connectors", []),
-            stix_bundle_ref   = data.get("stix_bundle_ref"),
-            created_at        = datetime.fromisoformat(data["created_at"]),
-            updated_at        = datetime.fromisoformat(data["updated_at"]),
+            id=data["id"],
+            title=data["title"],
+            description=data.get("description", ""),
+            status=InvestigationStatus(data.get("status", "open")),
+            classification=TLPLevel(data.get("classification", "amber")),
+            created_by=data.get("created_by", ""),
+            assigned_to=data.get("assigned_to", []),
+            scope=InvestigationScope.from_dict(data.get("scope", {})),
+            hypothesis=[Hypothesis.from_dict(h) for h in data.get("hypothesis", [])],
+            notes=[AnalystNote.from_dict(n) for n in data.get("notes", [])],
+            tasks=[InvestigationTask.from_dict(t) for t in data.get("tasks", [])],
+            indicators=data.get("indicators", []),
+            observables=data.get("observables", []),
+            threat_actors=data.get("threat_actors", []),
+            campaigns=data.get("campaigns", []),
+            reports=data.get("reports", []),
+            tags=data.get("tags", []),
+            source_connectors=data.get("source_connectors", []),
+            stix_bundle_ref=data.get("stix_bundle_ref"),
+            created_at=datetime.fromisoformat(data["created_at"]),
+            updated_at=datetime.fromisoformat(data["updated_at"]),
         )

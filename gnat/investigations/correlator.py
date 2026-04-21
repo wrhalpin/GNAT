@@ -82,11 +82,11 @@ def correlate(graph: EvidenceGraph) -> None:
                     graph.by_ticket[key].append(node.node_id)
 
     # ── Emit cross-platform edges ──────────────────────────────────────────
-    _add_edges(graph, graph.by_ioc,      "same-ioc",      "IOC")
-    _add_edges(graph, graph.by_hostname, "same-host",     "hostname")
-    _add_edges(graph, graph.by_username, "same-user",     "username")
+    _add_edges(graph, graph.by_ioc, "same-ioc", "IOC")
+    _add_edges(graph, graph.by_hostname, "same-host", "hostname")
+    _add_edges(graph, graph.by_username, "same-user", "username")
     _add_edges(graph, graph.by_campaign, "same-campaign", "campaign label")
-    _add_edges(graph, graph.by_ticket,   "same-ticket",   "ticket")
+    _add_edges(graph, graph.by_ticket, "same-ticket", "ticket")
 
     # ── Infrastructure classification ─────────────────────────────────────
     classify_infrastructure(graph)
@@ -100,8 +100,7 @@ def _add_edges(
 ) -> None:
     """Emit cross-platform edges for every multi-node entry in *index*."""
     existing: set[tuple[str, str, str]] = {
-        (e.source_id, e.target_id, e.relationship_type)
-        for e in graph.edges
+        (e.source_id, e.target_id, e.relationship_type) for e in graph.edges
     }
 
     for key, node_ids in index.items():
@@ -114,7 +113,7 @@ def _add_edges(
             continue
 
         for i, a in enumerate(node_ids):
-            for b in node_ids[i + 1:]:
+            for b in node_ids[i + 1 :]:
                 if a not in graph.nodes or b not in graph.nodes:
                     continue
                 if graph.nodes[a].platform == graph.nodes[b].platform:
@@ -125,13 +124,15 @@ def _add_edges(
                 if sig in existing:
                     continue
                 existing.add(sig)
-                graph.edges.append(EvidenceEdge(
-                    source_id         = src,
-                    target_id         = tgt,
-                    relationship_type = relationship_type,
-                    confidence        = 0.9,
-                    reasoning         = f"Shared {label}: {key}",
-                ))
+                graph.edges.append(
+                    EvidenceEdge(
+                        source_id=src,
+                        target_id=tgt,
+                        relationship_type=relationship_type,
+                        confidence=0.9,
+                        reasoning=f"Shared {label}: {key}",
+                    )
+                )
 
 
 def classify_infrastructure(graph: EvidenceGraph) -> None:

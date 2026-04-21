@@ -39,29 +39,31 @@ logger = logging.getLogger(__name__)
 
 class TimelineEventType(str, Enum):
     """Classification of timeline event origin and significance."""
-    INDICATOR_FIRST_SEEN  = "indicator_first_seen"
-    INDICATOR_LAST_SEEN   = "indicator_last_seen"
-    ATTACK_PHASE          = "attack_phase"
-    VICTIM_IDENTIFIED     = "victim_identified"
-    INCIDENT_OPENED       = "incident_opened"
-    INCIDENT_CLOSED       = "incident_closed"
-    INVESTIGATION_OPENED  = "investigation_opened"
-    INVESTIGATION_CLOSED  = "investigation_closed"
-    ANALYST_NOTE          = "analyst_note"
-    TASK_COMPLETED        = "task_completed"
-    REPORT_PUBLISHED      = "report_published"
-    ALERT                 = "alert"
-    OBSERVABLE            = "observable"
-    OTHER                 = "other"
+
+    INDICATOR_FIRST_SEEN = "indicator_first_seen"
+    INDICATOR_LAST_SEEN = "indicator_last_seen"
+    ATTACK_PHASE = "attack_phase"
+    VICTIM_IDENTIFIED = "victim_identified"
+    INCIDENT_OPENED = "incident_opened"
+    INCIDENT_CLOSED = "incident_closed"
+    INVESTIGATION_OPENED = "investigation_opened"
+    INVESTIGATION_CLOSED = "investigation_closed"
+    ANALYST_NOTE = "analyst_note"
+    TASK_COMPLETED = "task_completed"
+    REPORT_PUBLISHED = "report_published"
+    ALERT = "alert"
+    OBSERVABLE = "observable"
+    OTHER = "other"
 
 
 class TimestampPrecision(str, Enum):
     """Precision of a timeline timestamp (for uncertain historical dates)."""
-    EXACT  = "exact"
-    HOUR   = "hour"
-    DAY    = "day"
-    MONTH  = "month"
-    YEAR   = "year"
+
+    EXACT = "exact"
+    HOUR = "hour"
+    DAY = "day"
+    MONTH = "month"
+    YEAR = "year"
 
 
 @dataclass
@@ -91,42 +93,43 @@ class TimelineEvent:
         Confidence in this event's timing or attribution.
     """
 
-    timestamp:         datetime
-    title:             str
-    event_type:        TimelineEventType   = TimelineEventType.OTHER
-    id:                str                 = field(default_factory=lambda: str(uuid.uuid4()))
-    precision:         TimestampPrecision  = TimestampPrecision.EXACT
-    description:       str                 = ""
-    linked_artifacts:  list[str]           = field(default_factory=list)
-    source:            str                 = ""
-    confidence:        ConfidenceScore | None = None
+    timestamp: datetime
+    title: str
+    event_type: TimelineEventType = TimelineEventType.OTHER
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    precision: TimestampPrecision = TimestampPrecision.EXACT
+    description: str = ""
+    linked_artifacts: list[str] = field(default_factory=list)
+    source: str = ""
+    confidence: ConfidenceScore | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "id":                self.id,
-            "timestamp":         self.timestamp.isoformat(),
-            "precision":         self.precision.value,
-            "title":             self.title,
-            "event_type":        self.event_type.value,
-            "description":       self.description,
-            "linked_artifacts":  self.linked_artifacts,
-            "source":            self.source,
-            "confidence":        self.confidence.to_dict() if self.confidence else None,
+            "id": self.id,
+            "timestamp": self.timestamp.isoformat(),
+            "precision": self.precision.value,
+            "title": self.title,
+            "event_type": self.event_type.value,
+            "description": self.description,
+            "linked_artifacts": self.linked_artifacts,
+            "source": self.source,
+            "confidence": self.confidence.to_dict() if self.confidence else None,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "TimelineEvent":
+    def from_dict(cls, data: dict[str, Any]) -> TimelineEvent:
         return cls(
-            id               = data["id"],
-            timestamp        = datetime.fromisoformat(data["timestamp"]),
-            precision        = TimestampPrecision(data.get("precision", "exact")),
-            title            = data["title"],
-            event_type       = TimelineEventType(data.get("event_type", "other")),
-            description      = data.get("description", ""),
-            linked_artifacts = data.get("linked_artifacts", []),
-            source           = data.get("source", ""),
-            confidence       = ConfidenceScore.from_dict(data["confidence"])
-                               if data.get("confidence") else None,
+            id=data["id"],
+            timestamp=datetime.fromisoformat(data["timestamp"]),
+            precision=TimestampPrecision(data.get("precision", "exact")),
+            title=data["title"],
+            event_type=TimelineEventType(data.get("event_type", "other")),
+            description=data.get("description", ""),
+            linked_artifacts=data.get("linked_artifacts", []),
+            source=data.get("source", ""),
+            confidence=ConfidenceScore.from_dict(data["confidence"])
+            if data.get("confidence")
+            else None,
         )
 
 
@@ -168,44 +171,53 @@ class TimelineBuilder:
         events: list[TimelineEvent] = []
 
         # Investigation opened
-        events.append(TimelineEvent(
-            timestamp   = investigation.created_at,
-            title       = f"Investigation opened: {investigation.title}",
-            event_type  = TimelineEventType.INVESTIGATION_OPENED,
-            source      = investigation.created_by,
-            description = investigation.description or "",
-        ))
+        events.append(
+            TimelineEvent(
+                timestamp=investigation.created_at,
+                title=f"Investigation opened: {investigation.title}",
+                event_type=TimelineEventType.INVESTIGATION_OPENED,
+                source=investigation.created_by,
+                description=investigation.description or "",
+            )
+        )
 
         # Analyst notes
         for note in investigation.notes:
-            events.append(TimelineEvent(
-                timestamp   = note.created_at,
-                title       = f"Analyst note by {note.author}",
-                event_type  = TimelineEventType.ANALYST_NOTE,
-                source      = note.author,
-                description = note.content,
-                linked_artifacts = note.linked_artifacts,
-            ))
+            events.append(
+                TimelineEvent(
+                    timestamp=note.created_at,
+                    title=f"Analyst note by {note.author}",
+                    event_type=TimelineEventType.ANALYST_NOTE,
+                    source=note.author,
+                    description=note.content,
+                    linked_artifacts=note.linked_artifacts,
+                )
+            )
 
         # Completed tasks
         for task in investigation.tasks:
             if hasattr(task, "updated_at") and task.status.value == "done":
-                events.append(TimelineEvent(
-                    timestamp   = task.updated_at,
-                    title       = f"Task completed: {task.title}",
-                    event_type  = TimelineEventType.TASK_COMPLETED,
-                    source      = task.assigned_to or "unassigned",
-                ))
+                events.append(
+                    TimelineEvent(
+                        timestamp=task.updated_at,
+                        title=f"Task completed: {task.title}",
+                        event_type=TimelineEventType.TASK_COMPLETED,
+                        source=task.assigned_to or "unassigned",
+                    )
+                )
 
         # Investigation closed
         from gnat.analysis.investigations.models import InvestigationStatus
+
         if investigation.status == InvestigationStatus.CLOSED:
-            events.append(TimelineEvent(
-                timestamp   = investigation.updated_at,
-                title       = f"Investigation closed: {investigation.title}",
-                event_type  = TimelineEventType.INVESTIGATION_CLOSED,
-                source      = investigation.created_by,
-            ))
+            events.append(
+                TimelineEvent(
+                    timestamp=investigation.updated_at,
+                    title=f"Investigation closed: {investigation.title}",
+                    event_type=TimelineEventType.INVESTIGATION_CLOSED,
+                    source=investigation.created_by,
+                )
+            )
 
         return sorted(events, key=lambda e: e.timestamp)
 
@@ -244,28 +256,27 @@ class TimelineBuilder:
                 continue
 
             stix = node.stix or {}
-            name = (
-                stix.get("name")
-                or stix.get("value")
-                or getattr(node, "node_id", "")
-            )
+            name = stix.get("name") or stix.get("value") or getattr(node, "node_id", "")
 
             from gnat.investigations.model import NodeType
+
             etype = {
-                NodeType.INCIDENT:        TimelineEventType.INCIDENT_OPENED,
-                NodeType.OBSERVABLE:      TimelineEventType.INDICATOR_FIRST_SEEN,
-                NodeType.FINDING:         TimelineEventType.ALERT,
-                NodeType.TASK:            TimelineEventType.TASK_COMPLETED,
-                NodeType.TIMELINE_EVENT:  TimelineEventType.OTHER,
+                NodeType.INCIDENT: TimelineEventType.INCIDENT_OPENED,
+                NodeType.OBSERVABLE: TimelineEventType.INDICATOR_FIRST_SEEN,
+                NodeType.FINDING: TimelineEventType.ALERT,
+                NodeType.TASK: TimelineEventType.TASK_COMPLETED,
+                NodeType.TIMELINE_EVENT: TimelineEventType.OTHER,
             }.get(node.node_type, TimelineEventType.OTHER)
 
-            events.append(TimelineEvent(
-                timestamp  = ts,
-                title      = str(name),
-                event_type = etype,
-                source     = node.platform,
-                linked_artifacts = list(node.ioc_values or []),
-            ))
+            events.append(
+                TimelineEvent(
+                    timestamp=ts,
+                    title=str(name),
+                    event_type=etype,
+                    source=node.platform,
+                    linked_artifacts=list(node.ioc_values or []),
+                )
+            )
 
         return sorted(events, key=lambda e: e.timestamp)
 
@@ -273,8 +284,8 @@ class TimelineBuilder:
         self,
         records: list[dict[str, Any]],
         timestamp_field: str = "timestamp",
-        title_field:     str = "title",
-        source:          str = "unknown",
+        title_field: str = "title",
+        source: str = "unknown",
     ) -> list[TimelineEvent]:
         """
         Build a timeline from a list of raw dicts.
@@ -302,11 +313,13 @@ class TimelineBuilder:
                 ts = datetime.fromisoformat(str(ts_str).replace("Z", "+00:00"))
             except (ValueError, TypeError):
                 continue
-            events.append(TimelineEvent(
-                timestamp  = ts,
-                title      = str(rec.get(title_field, "Event")),
-                event_type = TimelineEventType.OTHER,
-                source     = source,
-                description = str(rec.get("description", "")),
-            ))
+            events.append(
+                TimelineEvent(
+                    timestamp=ts,
+                    title=str(rec.get(title_field, "Event")),
+                    event_type=TimelineEventType.OTHER,
+                    source=source,
+                    description=str(rec.get("description", "")),
+                )
+            )
         return sorted(events, key=lambda e: e.timestamp)

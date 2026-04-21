@@ -29,15 +29,9 @@ class CampaignServiceError(Exception):
 
 
 _VALID_TRANSITIONS: dict[CampaignStatus, frozenset[CampaignStatus]] = {
-    CampaignStatus.SUSPECTED: frozenset(
-        {CampaignStatus.ACTIVE, CampaignStatus.CONCLUDED}
-    ),
-    CampaignStatus.ACTIVE: frozenset(
-        {CampaignStatus.DORMANT, CampaignStatus.CONCLUDED}
-    ),
-    CampaignStatus.DORMANT: frozenset(
-        {CampaignStatus.ACTIVE, CampaignStatus.CONCLUDED}
-    ),
+    CampaignStatus.SUSPECTED: frozenset({CampaignStatus.ACTIVE, CampaignStatus.CONCLUDED}),
+    CampaignStatus.ACTIVE: frozenset({CampaignStatus.DORMANT, CampaignStatus.CONCLUDED}),
+    CampaignStatus.DORMANT: frozenset({CampaignStatus.ACTIVE, CampaignStatus.CONCLUDED}),
     CampaignStatus.CONCLUDED: frozenset(),
 }
 
@@ -77,9 +71,7 @@ class CampaignService:
         if parent_campaign_id:
             parent = self._store.get(parent_campaign_id)
             if parent is None:
-                raise CampaignServiceError(
-                    f"parent campaign {parent_campaign_id!r} not found"
-                )
+                raise CampaignServiceError(f"parent campaign {parent_campaign_id!r} not found")
 
         campaign = CampaignProfile(
             name=name,
@@ -119,9 +111,7 @@ class CampaignService:
 
     # ── Update ────────────────────────────────────────────────────────────
 
-    def transition(
-        self, campaign_id: str, new_status: CampaignStatus
-    ) -> CampaignProfile:
+    def transition(self, campaign_id: str, new_status: CampaignStatus) -> CampaignProfile:
         """Change campaign status with transition validation."""
         campaign = self.get(campaign_id)
         old_status = campaign.status
@@ -146,9 +136,7 @@ class CampaignService:
         )
         return campaign
 
-    def link_indicator(
-        self, campaign_id: str, indicator_id: str
-    ) -> CampaignProfile:
+    def link_indicator(self, campaign_id: str, indicator_id: str) -> CampaignProfile:
         """Link an indicator to a campaign (deduplicated)."""
         campaign = self.get(campaign_id)
         if indicator_id not in campaign.indicator_ids:
@@ -156,9 +144,7 @@ class CampaignService:
             self._store.save(campaign)
         return campaign
 
-    def unlink_indicator(
-        self, campaign_id: str, indicator_id: str
-    ) -> CampaignProfile:
+    def unlink_indicator(self, campaign_id: str, indicator_id: str) -> CampaignProfile:
         """Remove an indicator link from a campaign."""
         campaign = self.get(campaign_id)
         if indicator_id in campaign.indicator_ids:
@@ -166,9 +152,7 @@ class CampaignService:
             self._store.save(campaign)
         return campaign
 
-    def link_investigation(
-        self, campaign_id: str, investigation_id: str
-    ) -> CampaignProfile:
+    def link_investigation(self, campaign_id: str, investigation_id: str) -> CampaignProfile:
         """Link an investigation to a campaign (deduplicated)."""
         campaign = self.get(campaign_id)
         if investigation_id not in campaign.investigation_ids:
@@ -176,9 +160,7 @@ class CampaignService:
             self._store.save(campaign)
         return campaign
 
-    def link_cluster(
-        self, campaign_id: str, cluster_id: str
-    ) -> CampaignProfile:
+    def link_cluster(self, campaign_id: str, cluster_id: str) -> CampaignProfile:
         """Link a cluster to a campaign (deduplicated)."""
         campaign = self.get(campaign_id)
         if cluster_id not in campaign.cluster_ids:
@@ -186,9 +168,7 @@ class CampaignService:
             self._store.save(campaign)
         return campaign
 
-    def set_threat_actor(
-        self, campaign_id: str, threat_actor_id: str
-    ) -> CampaignProfile:
+    def set_threat_actor(self, campaign_id: str, threat_actor_id: str) -> CampaignProfile:
         """Set the primary attributed threat actor."""
         campaign = self.get(campaign_id)
         campaign.threat_actor_id = threat_actor_id
@@ -237,6 +217,4 @@ class CampaignService:
 
     def get_sub_campaigns(self, campaign_id: str) -> list[CampaignProfile]:
         """Return direct sub-campaigns of a campaign."""
-        return self._store.list(
-            CampaignQuery(parent_campaign_id=campaign_id)
-        )
+        return self._store.list(CampaignQuery(parent_campaign_id=campaign_id))

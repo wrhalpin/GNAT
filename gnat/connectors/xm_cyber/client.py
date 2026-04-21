@@ -67,12 +67,8 @@ class XMCyberClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange the API key for a session bearer token."""
         if not self.api_key:
-            raise GNATClientError(
-                "XM Cyber connector requires api_key in config."
-            )
-        resp = self.post(
-            "/api/v2/auth/login", json={"apiKey": self.api_key}
-        )
+            raise GNATClientError("XM Cyber connector requires api_key in config.")
+        resp = self.post("/api/v2/auth/login", json={"apiKey": self.api_key})
         token = ""
         if isinstance(resp, dict):
             token = (
@@ -82,9 +78,7 @@ class XMCyberClient(BaseClient, ConnectorMixin):
                 or ""
             )
         if not token:
-            raise GNATClientError(
-                "XM Cyber authentication failed — no token in response"
-            )
+            raise GNATClientError("XM Cyber authentication failed — no token in response")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -112,13 +106,9 @@ class XMCyberClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v2/techniques/{object_id}")
             kind = "technique"
         else:
-            raise GNATClientError(
-                f"XM Cyber get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"XM Cyber get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"XM Cyber returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"XM Cyber returned unexpected payload for {object_id!r}")
         data = resp.get("data") if isinstance(resp.get("data"), dict) else resp
         return dict(data, _xm_kind=kind)
 
@@ -148,24 +138,16 @@ class XMCyberClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v2/techniques", params=params)
             tag = "technique"
         else:
-            raise GNATClientError(
-                f"XM Cyber list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"XM Cyber list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _xm_kind=tag) for r in _extract_xm_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """XM Cyber connector is read-only."""
-        raise GNATClientError(
-            "XM Cyber connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("XM Cyber connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """XM Cyber connector is read-only."""
-        raise GNATClientError(
-            "XM Cyber connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("XM Cyber connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -175,9 +157,7 @@ class XMCyberClient(BaseClient, ConnectorMixin):
 
     def list_critical_assets(self) -> list[dict[str, Any]]:
         """Return crown-jewel assets defined in XM Cyber."""
-        return self.list_objects(
-            "identity", filters={"kind": "critical-assets"}, page_size=1000
-        )
+        return self.list_objects("identity", filters={"kind": "critical-assets"}, page_size=1000)
 
     def list_attack_paths(self) -> list[dict[str, Any]]:
         """Return attack paths discovered between entities."""
@@ -218,8 +198,7 @@ class XMCyberClient(BaseClient, ConnectorMixin):
                 "description": native.get("description") or "",
                 "x_xm_cyber": {
                     "entity_type": native.get("type"),
-                    "is_critical": kind == "critical_asset"
-                    or native.get("isCritical"),
+                    "is_critical": kind == "critical_asset" or native.get("isCritical"),
                     "compromise_score": native.get("compromiseScore"),
                     "raw": native,
                 },
@@ -228,14 +207,10 @@ class XMCyberClient(BaseClient, ConnectorMixin):
         if kind == "technique":
             tech_id = native.get("id") or native.get("name", "unknown")
             mitre = native.get("mitreId") or native.get("mitreTechnique", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_XMCYBER, f"attack-pattern|{tech_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_XMCYBER, f"attack-pattern|{tech_id}")
             external_refs = []
             if mitre:
-                external_refs.append(
-                    {"source_name": "mitre-attack", "external_id": mitre}
-                )
+                external_refs.append({"source_name": "mitre-attack", "external_id": mitre})
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
@@ -249,17 +224,13 @@ class XMCyberClient(BaseClient, ConnectorMixin):
             }
 
         # attack-path → observed-data envelope
-        path_id = str(
-            native.get("id") or native.get("pathId") or native.get("uuid", "")
-        )
+        path_id = str(native.get("id") or native.get("pathId") or native.get("uuid", ""))
         targets = _values(
             native.get("targets")
             or native.get("destinationEntities")
             or native.get("criticalAssets")
         )
-        techniques = _values(
-            native.get("techniques") or native.get("mitreTechniques")
-        )
+        techniques = _values(native.get("techniques") or native.get("mitreTechniques"))
         return bas_simulation_envelope(
             source_name="xm_cyber",
             simulation_id=path_id,

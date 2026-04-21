@@ -115,8 +115,7 @@ class MitreAttackClient(BaseClient, ConnectorMixin):
         """Initialize MitreAttackClient."""
         if matrix not in _VALID_MATRICES:
             raise GNATClientError(
-                f"Invalid MITRE ATT&CK matrix {matrix!r}. "
-                f"Valid values: {_VALID_MATRICES}"
+                f"Invalid MITRE ATT&CK matrix {matrix!r}. Valid values: {_VALID_MATRICES}"
             )
         super().__init__(host=host, **kwargs)
         self.matrix = matrix
@@ -174,9 +173,7 @@ class MitreAttackClient(BaseClient, ConnectorMixin):
         or an ATT&CK identifier (``T1055``, ``G0007``, ``S0002``, etc.).
         """
         if stix_type not in _ATTACK_STIX_TYPES:
-            raise GNATClientError(
-                f"Unknown ATT&CK STIX type {stix_type!r}"
-            )
+            raise GNATClientError(f"Unknown ATT&CK STIX type {stix_type!r}")
         target = object_id.strip()
         for obj in self._fetch_all():
             if obj.get("type") != stix_type:
@@ -184,9 +181,7 @@ class MitreAttackClient(BaseClient, ConnectorMixin):
             if obj.get("id") == target:
                 return obj
             for ref in obj.get("external_references", []) or []:
-                if ref.get("source_name") == "mitre-attack" and ref.get(
-                    "external_id"
-                ) == target:
+                if ref.get("source_name") == "mitre-attack" and ref.get("external_id") == target:
                     return obj
         raise GNATClientError(
             f"{stix_type} {object_id!r} not found in MITRE ATT&CK matrix {self.matrix}"
@@ -206,26 +201,20 @@ class MitreAttackClient(BaseClient, ConnectorMixin):
         a case-insensitive substring match against the object ``name``.
         """
         if stix_type not in _ATTACK_STIX_TYPES:
-            raise GNATClientError(
-                f"Unknown ATT&CK STIX type {stix_type!r}"
-            )
+            raise GNATClientError(f"Unknown ATT&CK STIX type {stix_type!r}")
         objects = [o for o in self._fetch_all() if o.get("type") == stix_type]
 
         filters = dict(filters or {})
         name_contains = filters.get("name_contains", "")
         if name_contains:
             needle = str(name_contains).lower()
-            objects = [
-                o for o in objects if needle in str(o.get("name", "")).lower()
-            ]
+            objects = [o for o in objects if needle in str(o.get("name", "")).lower()]
 
         start = max(0, (int(page) - 1) * int(page_size))
         end = start + int(page_size)
         return objects[start:end]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """MITRE ATT&CK is read-only — no write operations supported."""
         raise GNATClientError(
             "MITRE ATT&CK connector is read-only — no write operations supported."

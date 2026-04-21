@@ -190,9 +190,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         params: dict[str, Any] = {"resultLimit": int(limit)}
         if tql_parts:
             params["tql"] = " AND ".join(tql_parts)
-        resp = self._request_signed(
-            "GET", f"{_API}/indicators", params=params
-        )
+        resp = self._request_signed("GET", f"{_API}/indicators", params=params)
         return _extract_tc_data(resp)
 
     def search_groups(
@@ -221,9 +219,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         params: dict[str, Any] = {"resultLimit": int(limit)}
         if tql_parts:
             params["tql"] = " AND ".join(tql_parts)
-        resp = self._request_signed(
-            "GET", f"{_API}/groups", params=params
-        )
+        resp = self._request_signed("GET", f"{_API}/groups", params=params)
         return _extract_tc_data(resp)
 
     def list_owners(self) -> list[dict[str, Any]]:
@@ -247,9 +243,7 @@ class ThreatConnectClient(BaseClient, ConnectorMixin):
         resp = self._request_signed("GET", f"{_API}/tags", params=params)
         return _extract_tc_data(resp)
 
-    def get_associations(
-        self, object_type: str, object_id: str
-    ) -> dict[str, Any]:
+    def get_associations(self, object_type: str, object_id: str) -> dict[str, Any]:
         """
         Return the association graph for an indicator or group.
 

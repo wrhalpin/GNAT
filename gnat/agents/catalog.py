@@ -60,18 +60,18 @@ class CatalogEntry:
         Dependency names required by this workflow (informational).
     """
 
-    name:          str
-    factory:       Callable[..., Any]
-    description:   str                   = ""
-    tags:          list[str]             = field(default_factory=list)
-    required_deps: list[str]             = field(default_factory=list)
+    name: str
+    factory: Callable[..., Any]
+    description: str = ""
+    tags: list[str] = field(default_factory=list)
+    required_deps: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise metadata to a JSON-friendly dict (no factory function)."""
         return {
-            "name":          self.name,
-            "description":   self.description,
-            "tags":          self.tags,
+            "name": self.name,
+            "description": self.description,
+            "tags": self.tags,
             "required_deps": self.required_deps,
         }
 
@@ -89,10 +89,10 @@ class WorkflowCatalog:
     @classmethod
     def register(
         cls,
-        name:          str,
-        factory:       Callable[..., Any],
-        description:   str = "",
-        tags:          list[str] | None = None,
+        name: str,
+        factory: Callable[..., Any],
+        description: str = "",
+        tags: list[str] | None = None,
         required_deps: list[str] | None = None,
     ) -> None:
         """
@@ -110,11 +110,11 @@ class WorkflowCatalog:
         required_deps : list[str], optional
         """
         cls._registry[name] = CatalogEntry(
-            name          = name,
-            factory       = factory,
-            description   = description,
-            tags          = tags or [],
-            required_deps = required_deps or [],
+            name=name,
+            factory=factory,
+            description=description,
+            tags=tags or [],
+            required_deps=required_deps or [],
         )
         logger.debug("WorkflowCatalog.register: %r", name)
 
@@ -147,8 +147,7 @@ class WorkflowCatalog:
         entry = cls._registry.get(name)
         if entry is None:
             raise KeyError(
-                f"Workflow {name!r} not found in catalog. "
-                f"Available: {list(cls._registry.keys())}"
+                f"Workflow {name!r} not found in catalog. Available: {list(cls._registry.keys())}"
             )
         return entry.factory(**kwargs)
 
@@ -172,10 +171,7 @@ class WorkflowCatalog:
         """
         entries = list(cls._registry.values())
         if tags:
-            entries = [
-                e for e in entries
-                if all(t in e.tags for t in tags)
-            ]
+            entries = [e for e in entries if all(t in e.tags for t in tags)]
         return sorted(entries, key=lambda e: e.name)
 
     @classmethod
@@ -186,41 +182,45 @@ class WorkflowCatalog:
 
 # ── Register built-in workflows ───────────────────────────────────────────────
 
+
 def _phishing_factory(**kwargs: Any) -> Any:
     from gnat.agents.workflows.phishing_triage import build_phishing_triage_workflow
+
     return build_phishing_triage_workflow(**kwargs)
 
 
 def _incident_factory(**kwargs: Any) -> Any:
     from gnat.agents.workflows.incident_response import build_incident_response_workflow
+
     return build_incident_response_workflow(**kwargs)
 
 
 def _auto_investigation_factory(**kwargs: Any) -> Any:
     from gnat.agents.workflows.auto_investigation import build_auto_investigation_workflow
+
     return build_auto_investigation_workflow(**kwargs)
 
 
 WorkflowCatalog.register(
-    name          = "phishing-triage",
-    factory       = _phishing_factory,
-    description   = "Enrich IOCs from a phishing sample, detect gaps, draft report, transition investigation.",
-    tags          = ["triage", "phishing", "automated"],
-    required_deps = ["dispatcher", "resolver", "scorer", "detector", "assistant", "service"],
+    name="phishing-triage",
+    factory=_phishing_factory,
+    description="Enrich IOCs from a phishing sample, detect gaps, draft report, transition investigation.",
+    tags=["triage", "phishing", "automated"],
+    required_deps=["dispatcher", "resolver", "scorer", "detector", "assistant", "service"],
 )
 
 WorkflowCatalog.register(
-    name          = "incident-response",
-    factory       = _incident_factory,
-    description   = "Incident response: enrich, correlate, hypothesise, escalate, contain.",
-    tags          = ["incident", "response", "automated"],
-    required_deps = ["dispatcher", "resolver", "scorer", "detector", "assistant", "service"],
+    name="incident-response",
+    factory=_incident_factory,
+    description="Incident response: enrich, correlate, hypothesise, escalate, contain.",
+    tags=["incident", "response", "automated"],
+    required_deps=["dispatcher", "resolver", "scorer", "detector", "assistant", "service"],
 )
 
 WorkflowCatalog.register(
-    name          = "auto-investigation",
-    factory       = _auto_investigation_factory,
-    description   = "Autonomous investigation pipeline: alert → enrich → score → route → open or review.",
-    tags          = ["autonomous", "investigation", "triage"],
-    required_deps = ["dispatcher", "resolver", "scorer", "detector", "llm_client", "inv_service"],
+    name="auto-investigation",
+    factory=_auto_investigation_factory,
+    description="Autonomous investigation pipeline: alert → enrich → score → route → open or review.",
+    tags=["autonomous", "investigation", "triage"],
+    required_deps=["dispatcher", "resolver", "scorer", "detector", "llm_client", "inv_service"],
 )

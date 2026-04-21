@@ -429,9 +429,7 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
             manager.list.return_value = []
             idx = _make_search_index()
 
-            with patch(
-                "gnat.viz.grafana.search_endpoints._solr_get", return_value=None
-            ):
+            with patch("gnat.viz.grafana.search_endpoints._solr_get", return_value=None):
                 app = build_app(manager, search_index=idx)
         except ImportError:
             pytest.skip("fastapi not installed")

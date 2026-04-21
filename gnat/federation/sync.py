@@ -29,15 +29,14 @@ dropped (logged at DEBUG level).
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import TYPE_CHECKING, Any
+
+from gnat.analysis.tlp import TLPLevel
 
 if TYPE_CHECKING:
     from gnat.federation.peer import FederationPeer
 
 logger = logging.getLogger(__name__)
-
-from gnat.analysis.tlp import TLPLevel
 
 
 class FederationError(Exception):
@@ -70,7 +69,7 @@ class PeerSyncService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _tlp_allowed(obj: dict[str, Any], peer: "FederationPeer") -> bool:
+    def _tlp_allowed(obj: dict[str, Any], peer: FederationPeer) -> bool:
         """
         Return True if *obj* may be shared with *peer*.
 
@@ -101,10 +100,10 @@ class PeerSyncService:
 
     def sync_from_peer(
         self,
-        peer: "FederationPeer",
+        peer: FederationPeer,
         added_after: str | None = None,
         dry_run: bool = False,
-    ) -> "PullResult":
+    ) -> PullResult:
         """
         Pull new objects from a remote GNAT peer into local workspaces.
 
@@ -177,7 +176,9 @@ class PeerSyncService:
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "Sync from peer %r workspace %r failed: %s",
-                    peer.peer_id, workspace_name, exc,
+                    peer.peer_id,
+                    workspace_name,
+                    exc,
                 )
                 result.errors.append(f"{workspace_name}: {exc}")
 
@@ -193,7 +194,7 @@ class PeerSyncService:
     def _pull_workspace(
         self,
         connector: Any,
-        peer: "FederationPeer",
+        peer: FederationPeer,
         workspace_name: str,
         added_after: str | None,
         dry_run: bool,
@@ -218,7 +219,10 @@ class PeerSyncService:
             if not self._tlp_allowed(obj, peer):
                 logger.debug(
                     "Dropped object %s from peer %r — TLP %s exceeds ceiling %s",
-                    obj.get("id", "?"), peer.peer_id, obj.get("x_tlp", "green"), peer.max_tlp,
+                    obj.get("id", "?"),
+                    peer.peer_id,
+                    obj.get("x_tlp", "green"),
+                    peer.max_tlp,
                 )
                 continue
 
@@ -233,7 +237,9 @@ class PeerSyncService:
                     if existing_modified and obj_modified <= existing_modified:
                         logger.debug(
                             "Skipping %s — local modified %s >= incoming %s",
-                            obj_id, existing_modified, obj_modified,
+                            obj_id,
+                            existing_modified,
+                            obj_modified,
                         )
                         continue
 
@@ -258,10 +264,10 @@ class PeerSyncService:
 
     def push_to_peer(
         self,
-        peer: "FederationPeer",
+        peer: FederationPeer,
         objects: list[dict[str, Any]],
         workspace_name: str,
-    ) -> "PushResult":
+    ) -> PushResult:
         """
         Push a list of STIX objects to a remote GNAT peer.
 
@@ -303,7 +309,10 @@ class PeerSyncService:
         if dropped:
             logger.debug(
                 "Dropped %d/%d objects before push to peer %r (TLP ceiling: %s)",
-                dropped, len(objects), peer.peer_id, peer.max_tlp,
+                dropped,
+                len(objects),
+                peer.peer_id,
+                peer.max_tlp,
             )
         result.objects_dropped_tlp = dropped
 
@@ -315,16 +324,23 @@ class PeerSyncService:
             connector = self._make_connector(peer, workspace=workspace_name)
             status = connector.push_bundle(workspace=workspace_name, objects=allowed)
             result.objects_pushed = len(allowed)
-            result.remote_status = status.get("status", "unknown") if isinstance(status, dict) else "unknown"
+            result.remote_status = (
+                status.get("status", "unknown") if isinstance(status, dict) else "unknown"
+            )
             logger.info(
                 "Pushed %d objects to peer %r workspace %r — status: %s",
-                len(allowed), peer.peer_id, workspace_name, result.remote_status,
+                len(allowed),
+                peer.peer_id,
+                workspace_name,
+                result.remote_status,
             )
         except Exception as exc:
             result.error = str(exc)
             logger.error(
                 "Push to peer %r workspace %r failed: %s",
-                peer.peer_id, workspace_name, exc,
+                peer.peer_id,
+                workspace_name,
+                exc,
             )
 
         return result
@@ -333,7 +349,7 @@ class PeerSyncService:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _make_connector(self, peer: "FederationPeer", workspace: str = "") -> Any:
+    def _make_connector(self, peer: FederationPeer, workspace: str = "") -> Any:
         """Create and authenticate a GNATRemoteConnector for *peer*."""
         from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
 

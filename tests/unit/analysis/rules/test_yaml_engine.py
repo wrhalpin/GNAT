@@ -119,6 +119,7 @@ rules:
         assert loader.reload_if_changed() is False
         f.write_text(ANNOTATE_RULE_YAML)
         import os
+
         os.utime(f, (f.stat().st_mtime + 1, f.stat().st_mtime + 1))
         assert loader.reload_if_changed() is True
 

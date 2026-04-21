@@ -182,7 +182,9 @@ class ClaudeProvider(LLMProvider, BaseClient):
             if response.status >= 400:
                 body_text = response.read().decode("utf-8", errors="replace")
                 raise GNATClientError(
-                    f"Claude streaming HTTP {response.status}", status=response.status, body=body_text
+                    f"Claude streaming HTTP {response.status}",
+                    status=response.status,
+                    body=body_text,
                 )
             for raw_line in response:
                 line = raw_line.decode("utf-8").rstrip("\n\r")

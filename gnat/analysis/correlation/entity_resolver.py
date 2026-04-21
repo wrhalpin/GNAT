@@ -77,15 +77,15 @@ class IndicatorRecord:
         Platform tags.
     """
 
-    platform:   str
-    value:      str
-    ioc_type:   str
-    source_id:  str
-    raw:        dict[str, Any]  = field(default_factory=dict)
-    first_seen: str | None      = None
-    last_seen:  str | None      = None
-    confidence: int             = 50
-    tags:       list[str]       = field(default_factory=list)
+    platform: str
+    value: str
+    ioc_type: str
+    source_id: str
+    raw: dict[str, Any] = field(default_factory=dict)
+    first_seen: str | None = None
+    last_seen: str | None = None
+    confidence: int = 50
+    tags: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -108,11 +108,11 @@ class EntityGroup:
         All platform records in this group.
     """
 
-    canonical_id:    str
-    canonical_key:   str
-    ioc_type:        str
+    canonical_id: str
+    canonical_key: str
+    ioc_type: str
     canonical_value: str
-    records:         list[IndicatorRecord] = field(default_factory=list)
+    records: list[IndicatorRecord] = field(default_factory=list)
 
     @property
     def platforms(self) -> list[str]:
@@ -136,10 +136,16 @@ class EntityGroup:
         scored = [r.confidence for r in self.records if r.confidence is not None]
         if not scored:
             return None
-        return max(scored, key=lambda c: (
-            c.stix_confidence if hasattr(c, "stix_confidence") else
-            c.numeric if hasattr(c, "numeric") else 0
-        ))
+        return max(
+            scored,
+            key=lambda c: (
+                c.stix_confidence
+                if hasattr(c, "stix_confidence")
+                else c.numeric
+                if hasattr(c, "numeric")
+                else 0
+            ),
+        )
 
     @property
     def all_tags(self) -> list[str]:
@@ -202,10 +208,10 @@ class EntityResolver:
             if key not in groups:
                 canonical_id = str(uuid.uuid5(uuid.NAMESPACE_URL, key))
                 groups[key] = EntityGroup(
-                    canonical_id    = canonical_id,
-                    canonical_key   = key,
-                    ioc_type        = record.ioc_type,
-                    canonical_value = norm_value,
+                    canonical_id=canonical_id,
+                    canonical_key=key,
+                    ioc_type=record.ioc_type,
+                    canonical_value=norm_value,
                 )
             groups[key].records.append(record)
 
@@ -295,9 +301,9 @@ class EntityResolver:
         try:
             parsed = urlparse(value)
             scheme = parsed.scheme.lower()
-            host   = parsed.netloc.lower()
-            path   = parsed.path if self._case_sensitive_paths else parsed.path.lower()
-            query  = parsed.query
+            host = parsed.netloc.lower()
+            path = parsed.path if self._case_sensitive_paths else parsed.path.lower()
+            query = parsed.query
             return f"{scheme}://{host}{path}" + (f"?{query}" if query else "")
         except Exception:
             return value.lower()

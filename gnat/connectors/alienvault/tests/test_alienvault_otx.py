@@ -96,6 +96,7 @@ _PULSE = {
 
 class TestOTXConfig(unittest.TestCase):
     """Configuration container for test o t x."""
+
     def test_basic(self):
         """Test that basic."""
         cfg = _cfg()
@@ -127,6 +128,7 @@ class TestOTXConfig(unittest.TestCase):
 
 class TestOTXClient(unittest.TestCase):
     """HTTP API client for the TestOTX platform."""
+
     def test_get_sends_api_key_header(self):
         """Test that get sends api key header."""
         c, mock_http = _make_client()
@@ -180,6 +182,7 @@ class TestOTXClient(unittest.TestCase):
 
 class TestOTXPulseCommands(unittest.TestCase):
     """Unit tests for :class:`OTXPulseCommands`."""
+
     def _make_pulses(self):
         """Internal helper for make pulses."""
         c, mock_http = _make_client()
@@ -219,6 +222,7 @@ class TestOTXPulseCommands(unittest.TestCase):
 
 class TestOTXIndicatorCommands(unittest.TestCase):
     """Unit tests for :class:`OTXIndicatorCommands`."""
+
     def _make_inds(self):
         """Internal helper for make inds."""
         c, mock_http = _make_client()
@@ -263,6 +267,7 @@ class TestOTXIndicatorCommands(unittest.TestCase):
 
 class TestOTXSTIXMapper(unittest.TestCase):
     """STIX translation helper for test o t x s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = OTXSTIXMapper()
@@ -332,6 +337,7 @@ class TestOTXSTIXMapper(unittest.TestCase):
 
 class TestOTXExceptions(unittest.TestCase):
     """Raised when a test o t x exceptions error occurs."""
+
     def test_hierarchy(self):
         """Test that hierarchy."""
         for cls in [OTXConfigError, OTXAuthError, OTXAPIError, OTXNotFoundError, OTXRateLimitError]:

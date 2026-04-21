@@ -52,6 +52,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -252,9 +253,7 @@ class PeerRegistry:
             If *peer_id* is invalid or already registered.
         """
         if peer_id in self._peers:
-            raise ValueError(
-                f"Peer {peer_id!r} is already registered. Use update() to modify it."
-            )
+            raise ValueError(f"Peer {peer_id!r} is already registered. Use update() to modify it.")
         peer = FederationPeer(
             peer_id=peer_id,
             display_name=display_name,
@@ -376,7 +375,7 @@ class PeerRegistry:
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_config(cls, config: Any, registry_path: str | None = None) -> "PeerRegistry":
+    def from_config(cls, config: Any, registry_path: str | None = None) -> PeerRegistry:
         """
         Build a ``PeerRegistry`` from a :class:`~gnat.config.GNATConfig` instance.
 
@@ -406,7 +405,7 @@ class PeerRegistry:
         for section in config.sections:
             if not section.startswith(peer_prefix):
                 continue
-            peer_id = section[len(peer_prefix):]
+            peer_id = section[len(peer_prefix) :]
             if not peer_id:
                 continue
             try:
@@ -436,6 +435,6 @@ class PeerRegistry:
         return registry
 
     @classmethod
-    def default(cls) -> "PeerRegistry":
+    def default(cls) -> PeerRegistry:
         """Return a PeerRegistry using the default path."""
         return cls()

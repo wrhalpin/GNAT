@@ -159,6 +159,7 @@ class ResearchLibrary:
             self._search_index = search_index
         else:
             from gnat.search.index import NullSearchIndex
+
             self._search_index = NullSearchIndex()
 
     # ── Factory ────────────────────────────────────────────────────────────
@@ -185,7 +186,13 @@ class ResearchLibrary:
         ttls = cls._load_ttls(config_path)
         staging, library = cls._load_names(config_path)
         search_index = cls._build_search_index_from_config(config_path)
-        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library, search_index=search_index)
+        return cls(
+            manager=manager,
+            ttls=ttls,
+            staging_name=staging,
+            library_name=library,
+            search_index=search_index,
+        )
 
     @classmethod
     def from_manager(
@@ -201,7 +208,13 @@ class ResearchLibrary:
         ttls = cls._load_ttls(config_path)
         staging, library = cls._load_names(config_path)
         search_index = cls._build_search_index_from_config(config_path)
-        return cls(manager=manager, ttls=ttls, staging_name=staging, library_name=library, search_index=search_index)
+        return cls(
+            manager=manager,
+            ttls=ttls,
+            staging_name=staging,
+            library_name=library,
+            search_index=search_index,
+        )
 
     @classmethod
     def _build_search_index_from_config(cls, config_path: str | None = None) -> Any:

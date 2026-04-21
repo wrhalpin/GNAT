@@ -47,12 +47,12 @@ class TLPLevel(str, Enum):
         Restricted to specific individuals; not for distribution.
     """
 
-    WHITE        = "white"
-    CLEAR        = "clear"
-    GREEN        = "green"
-    AMBER        = "amber"
+    WHITE = "white"
+    CLEAR = "clear"
+    GREEN = "green"
+    AMBER = "amber"
     AMBER_STRICT = "amber+strict"
-    RED          = "red"
+    RED = "red"
 
     @property
     def label(self) -> str:
@@ -85,21 +85,21 @@ class TLPLevel(str, Enum):
 
 
 _COLOURS: dict[TLPLevel, str] = {
-    TLPLevel.WHITE:        "#FFFFFF",
-    TLPLevel.CLEAR:        "#FFFFFF",
-    TLPLevel.GREEN:        "#33FF00",
-    TLPLevel.AMBER:        "#FFA500",
+    TLPLevel.WHITE: "#FFFFFF",
+    TLPLevel.CLEAR: "#FFFFFF",
+    TLPLevel.GREEN: "#33FF00",
+    TLPLevel.AMBER: "#FFA500",
     TLPLevel.AMBER_STRICT: "#FFA500",
-    TLPLevel.RED:          "#FF0000",
+    TLPLevel.RED: "#FF0000",
 }
 
 _RANKS: dict[TLPLevel, int] = {
-    TLPLevel.WHITE:        0,
-    TLPLevel.CLEAR:        0,
-    TLPLevel.GREEN:        1,
-    TLPLevel.AMBER:        2,
+    TLPLevel.WHITE: 0,
+    TLPLevel.CLEAR: 0,
+    TLPLevel.GREEN: 1,
+    TLPLevel.AMBER: 2,
     TLPLevel.AMBER_STRICT: 3,
-    TLPLevel.RED:          4,
+    TLPLevel.RED: 4,
 }
 
 # Well-known STIX 2.1 marking definition IDs (FIRST registered)
@@ -108,5 +108,5 @@ _STIX_MARKING_IDS: dict[TLPLevel, str] = {
     TLPLevel.CLEAR: "marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9",
     TLPLevel.GREEN: "marking-definition--34098fce-860f-48ae-8e50-ebd3cc5e41da",
     TLPLevel.AMBER: "marking-definition--f88d31f6-1088-400b-8ce4-c732f945ee31",
-    TLPLevel.RED:   "marking-definition--5e57c739-391a-4eb3-b6be-7d15ca92d5ed",
+    TLPLevel.RED: "marking-definition--5e57c739-391a-4eb3-b6be-7d15ca92d5ed",
 }

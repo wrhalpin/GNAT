@@ -69,9 +69,9 @@ class WorkflowContext:
         Per-step return values keyed by step name.
     """
 
-    investigation_id: str | None     = None
-    shared:           dict[str, Any] = field(default_factory=dict)
-    results:          dict[str, Any] = field(default_factory=dict)
+    investigation_id: str | None = None
+    shared: dict[str, Any] = field(default_factory=dict)
+    results: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -92,9 +92,7 @@ class RetryPolicy:
 
     max_attempts: int = 3
     backoff_seconds: float = 2.0
-    retryable_exceptions: tuple[type[Exception], ...] = field(
-        default_factory=lambda: (Exception,)
-    )
+    retryable_exceptions: tuple[type[Exception], ...] = field(default_factory=lambda: (Exception,))
 
 
 @dataclass
@@ -130,13 +128,13 @@ class WorkflowStep:
         use thread/process pools for hard timeouts).
     """
 
-    name:            str
-    action:          Callable[[WorkflowContext], Any]
-    on_success:      str | None = None
-    on_failure:      str | None = None
-    branch_on:       Callable[[WorkflowContext], str] | None = None
-    parallel_steps:  list[WorkflowStep] | None = None
-    retry:           RetryPolicy | None = None
+    name: str
+    action: Callable[[WorkflowContext], Any]
+    on_success: str | None = None
+    on_failure: str | None = None
+    branch_on: Callable[[WorkflowContext], str] | None = None
+    parallel_steps: list[WorkflowStep] | None = None
+    retry: RetryPolicy | None = None
     timeout_seconds: int = 60
 
 
@@ -161,11 +159,11 @@ class WorkflowResult:
         Total wall-clock time for the run.
     """
 
-    success:         bool
+    success: bool
     steps_completed: list[str]
-    steps_failed:    list[str]
-    context:         WorkflowContext
-    errors:          list[str]
+    steps_failed: list[str]
+    context: WorkflowContext
+    errors: list[str]
     elapsed_seconds: float = 0.0
 
 
@@ -190,14 +188,14 @@ class Workflow:
     """
 
     def __init__(self, name: str) -> None:
-        self.name  = name
+        self.name = name
         self._steps: list[WorkflowStep] = []
         self._step_map: dict[str, WorkflowStep] = {}
 
     def __repr__(self) -> str:
         return f"Workflow({self.name}, {len(self._steps)} steps)"
 
-    def add_step(self, step: WorkflowStep) -> "Workflow":
+    def add_step(self, step: WorkflowStep) -> Workflow:
         """
         Append a step to the workflow.  Returns self for fluent chaining.
 
@@ -247,7 +245,8 @@ class Workflow:
             if step.name in visited:
                 logger.warning(
                     "Workflow %r: step %r already visited — skipping (cycle guard)",
-                    self.name, step.name,
+                    self.name,
+                    step.name,
                 )
                 step_idx += 1
                 continue
@@ -286,8 +285,7 @@ class Workflow:
                 if step.on_failure and step.on_failure in self._step_map:
                     try:
                         step_idx = next(
-                            i for i, s in enumerate(self._steps)
-                            if s.name == step.on_failure
+                            i for i, s in enumerate(self._steps) if s.name == step.on_failure
                         )
                     except StopIteration:
                         break
@@ -299,7 +297,10 @@ class Workflow:
 
         logger.info(
             "Workflow %r finished in %.2fs: %d completed, %d failed",
-            self.name, elapsed, len(completed), len(failed),
+            self.name,
+            elapsed,
+            len(completed),
+            len(failed),
         )
 
         return WorkflowResult(
@@ -313,9 +314,7 @@ class Workflow:
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 
-    def _run_step_with_retry(
-        self, step: WorkflowStep, ctx: WorkflowContext
-    ) -> Any:
+    def _run_step_with_retry(self, step: WorkflowStep, ctx: WorkflowContext) -> Any:
         """
         Execute ``step.action`` with retry/backoff if ``step.retry`` is set.
 
@@ -335,13 +334,20 @@ class Workflow:
                     sleep_time = policy.backoff_seconds * (2 ** (attempt - 1))
                     logger.warning(
                         "Workflow %r: step %r attempt %d/%d failed (%s) — retrying in %.1fs",
-                        self.name, step.name, attempt, policy.max_attempts, exc, sleep_time,
+                        self.name,
+                        step.name,
+                        attempt,
+                        policy.max_attempts,
+                        exc,
+                        sleep_time,
                     )
                     time.sleep(sleep_time)
                 else:
                     logger.error(
                         "Workflow %r: step %r exhausted %d attempts",
-                        self.name, step.name, policy.max_attempts,
+                        self.name,
+                        step.name,
+                        policy.max_attempts,
                     )
         raise last_exc  # type: ignore[misc]
 
@@ -365,19 +371,14 @@ class Workflow:
         errors: list[str] = []
 
         with ThreadPoolExecutor(max_workers=min(len(steps), 8)) as pool:
-            future_to_step = {
-                pool.submit(self._run_step_with_retry, s, ctx): s
-                for s in steps
-            }
+            future_to_step = {pool.submit(self._run_step_with_retry, s, ctx): s for s in steps}
             for future in as_completed(future_to_step):
                 step = future_to_step[future]
                 try:
                     result = future.result()
                     ctx.results[step.name] = result
                     completed.append(step.name)
-                    logger.debug(
-                        "Workflow %r: parallel step %r completed", self.name, step.name
-                    )
+                    logger.debug("Workflow %r: parallel step %r completed", self.name, step.name)
                 except Exception as exc:
                     failed.append(step.name)
                     msg = f"Parallel step {step.name!r} failed: {exc}"
@@ -403,25 +404,21 @@ class Workflow:
                 next_name = step.branch_on(ctx)
                 if next_name and next_name in self._step_map:
                     try:
-                        return next(
-                            i for i, s in enumerate(self._steps)
-                            if s.name == next_name
-                        )
+                        return next(i for i, s in enumerate(self._steps) if s.name == next_name)
                     except StopIteration:
                         pass
             except Exception as exc:
                 logger.warning(
                     "Workflow %r: branch_on for step %r raised %s — falling through",
-                    self.name, step.name, exc,
+                    self.name,
+                    step.name,
+                    exc,
                 )
 
         # 2. on_success routing
         if step.on_success and step.on_success in self._step_map:
             try:
-                return next(
-                    i for i, s in enumerate(self._steps)
-                    if s.name == step.on_success
-                )
+                return next(i for i, s in enumerate(self._steps) if s.name == step.on_success)
             except StopIteration:
                 pass
 

@@ -62,11 +62,11 @@ class CustomSection(SectionSpec):
         When set, overrides default rendering.
     """
 
-    stix_type:         str                         = ""
-    filters:           dict[str, Any]              = field(default_factory=dict)
-    aggregator_method: str                         = ""
-    prompt_hint:       str                         = ""
-    custom_renderer:   Callable | None             = None
+    stix_type: str = ""
+    filters: dict[str, Any] = field(default_factory=dict)
+    aggregator_method: str = ""
+    prompt_hint: str = ""
+    custom_renderer: Callable | None = None
 
     def render(
         self,
@@ -95,12 +95,12 @@ class CustomSection(SectionSpec):
 
         # Build section data
         data: dict[str, Any] = {
-            "section_id":   self.id,
+            "section_id": self.id,
             "section_title": self.title,
-            "stix_type":    self.stix_type,
-            "filters":      self.filters,
+            "stix_type": self.stix_type,
+            "filters": self.filters,
             "object_count": len(filtered_objects),
-            "objects":      [
+            "objects": [
                 self._summarise_object(obj)
                 for obj in filtered_objects[:50]  # cap for prompt safety
             ],
@@ -112,8 +112,12 @@ class CustomSection(SectionSpec):
                 method = getattr(aggregates, self.aggregator_method)
                 data["aggregated"] = method() if callable(method) else method
             except Exception as exc:
-                logger.warning("CustomSection %r: aggregator_method %r failed: %s",
-                               self.id, self.aggregator_method, exc)
+                logger.warning(
+                    "CustomSection %r: aggregator_method %r failed: %s",
+                    self.id,
+                    self.aggregator_method,
+                    exc,
+                )
 
         # Custom renderer takes precedence
         if self.custom_renderer is not None:
@@ -199,8 +203,8 @@ class CustomSection(SectionSpec):
             lines.append("| Name | Type | Confidence |")
             lines.append("|------|------|-----------|")
             for obj in objects[:25]:
-                name  = obj.get("name", obj.get("id", "—"))
-                typ   = obj.get("type", "—")
-                conf  = obj.get("confidence", "—")
+                name = obj.get("name", obj.get("id", "—"))
+                typ = obj.get("type", "—")
+                conf = obj.get("confidence", "—")
                 lines.append(f"| {name} | {typ} | {conf} |")
         return "\n".join(lines)

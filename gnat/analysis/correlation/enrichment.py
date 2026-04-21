@@ -57,10 +57,10 @@ class EnrichmentResult:
     """
 
     platform: str
-    value:    str
+    value: str
     ioc_type: str
-    records:  list[dict[str, Any]] = field(default_factory=list)
-    error:    str | None           = None
+    records: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
 
     @property
     def success(self) -> bool:
@@ -89,17 +89,17 @@ class EnrichmentDispatcher:
 
     def __init__(
         self,
-        connectors:               dict[str, Any],
-        timeout_sec:              int = 15,
+        connectors: dict[str, Any],
+        timeout_sec: int = 15,
         max_results_per_platform: int = 50,
     ) -> None:
-        self._connectors               = connectors
-        self._timeout                  = timeout_sec
-        self._max_results              = max_results_per_platform
+        self._connectors = connectors
+        self._timeout = timeout_sec
+        self._max_results = max_results_per_platform
 
     def enrich(
         self,
-        value:    str,
+        value: str,
         ioc_type: str = "indicator",
         platforms: list[str] | None = None,
     ) -> dict[str, EnrichmentResult]:
@@ -120,10 +120,7 @@ class EnrichmentDispatcher:
         dict
             Mapping of platform name → :class:`EnrichmentResult`.
         """
-        targets = {
-            k: v for k, v in self._connectors.items()
-            if platforms is None or k in platforms
-        }
+        targets = {k: v for k, v in self._connectors.items() if platforms is None or k in platforms}
 
         results: dict[str, EnrichmentResult] = {}
         for platform, connector in targets.items():
@@ -132,14 +129,16 @@ class EnrichmentDispatcher:
         total = sum(r.count for r in results.values())
         logger.info(
             "EnrichmentDispatcher: enriched %r across %d platforms → %d total records",
-            value, len(targets), total,
+            value,
+            len(targets),
+            total,
         )
         return results
 
     def enrich_batch(
         self,
-        values:    list[str],
-        ioc_type:  str = "indicator",
+        values: list[str],
+        ioc_type: str = "indicator",
         platforms: list[str] | None = None,
     ) -> dict[str, dict[str, EnrichmentResult]]:
         """
@@ -158,36 +157,35 @@ class EnrichmentDispatcher:
             "platforms_queried": len(results),
             "platforms_succeeded": sum(1 for r in results.values() if r.success),
             "total_records": sum(r.count for r in results.values()),
-            "by_platform": {p: {"count": r.count, "success": r.success}
-                            for p, r in results.items()},
+            "by_platform": {
+                p: {"count": r.count, "success": r.success} for p, r in results.items()
+            },
         }
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
     def _query_one(
         self,
-        platform:  str,
+        platform: str,
         connector: Any,
-        value:     str,
-        ioc_type:  str,
+        value: str,
+        ioc_type: str,
     ) -> EnrichmentResult:
         try:
             records = self._search(connector, value, ioc_type)
             return EnrichmentResult(
-                platform = platform,
-                value    = value,
-                ioc_type = ioc_type,
-                records  = records[: self._max_results],
+                platform=platform,
+                value=value,
+                ioc_type=ioc_type,
+                records=records[: self._max_results],
             )
         except Exception as exc:  # noqa: BLE001
-            logger.debug(
-                "EnrichmentDispatcher: %s failed for %r: %s", platform, value, exc
-            )
+            logger.debug("EnrichmentDispatcher: %s failed for %r: %s", platform, value, exc)
             return EnrichmentResult(
-                platform = platform,
-                value    = value,
-                ioc_type = ioc_type,
-                error    = str(exc),
+                platform=platform,
+                value=value,
+                ioc_type=ioc_type,
+                error=str(exc),
             )
 
     @staticmethod

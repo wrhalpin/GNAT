@@ -70,12 +70,11 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     api_token : str
         Feedly access token.
     """
+
     TRUST_LEVEL: str = "semi_trusted"
     API_VERSION: str = "v3"
     API_PREFIX: str = "/v3"
     COST_UNIT: int = 1
-
-
 
     stix_type_map: dict[str, str] = {
         "indicator": "iocFeed",
@@ -436,6 +435,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def unsubscribe_from_feed(self, feed_id: str) -> None:
         """Remove a feed subscription."""
         import urllib.parse as _up
+
         encoded = _up.quote(feed_id, safe="")
         self.delete(f"/v3/subscriptions/{encoded}")
 
@@ -449,6 +449,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def get_board(self, board_id: str) -> dict[str, Any]:
         """Retrieve a board by ID."""
         import urllib.parse as _up
+
         encoded = _up.quote(board_id, safe="")
         resp = self.get(f"/v3/boards/{encoded}")
         return resp if isinstance(resp, dict) else {}
@@ -464,6 +465,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def delete_board(self, board_id: str) -> None:
         """Delete a board by ID."""
         import urllib.parse as _up
+
         encoded = _up.quote(board_id, safe="")
         self.delete(f"/v3/boards/{encoded}")
 
@@ -480,6 +482,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         Returns a dict with ``items`` (list) and optional ``continuation`` cursor.
         """
         import urllib.parse as _up
+
         encoded = _up.quote(board_id, safe="")
         params: dict[str, Any] = {"count": count}
         if newer_than:
@@ -492,12 +495,14 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def save_article_to_board(self, board_id: str, entry_id: str) -> None:
         """Save an article (entry) to a board."""
         import urllib.parse as _up
+
         encoded = _up.quote(board_id, safe="")
         self.put(f"/v3/boards/{encoded}/entries/{entry_id}")
 
     def remove_article_from_board(self, board_id: str, entry_id: str) -> None:
         """Remove an article from a board."""
         import urllib.parse as _up
+
         encoded = _up.quote(board_id, safe="")
         self.delete(f"/v3/boards/{encoded}/entries/{entry_id}")
 
@@ -527,6 +532,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
             Filter to unread articles only.
         """
         import urllib.parse as _up
+
         encoded = _up.quote(stream_id, safe="")
         params: dict[str, Any] = {"count": count, "ranked": ranked}
         if newer_than:
@@ -548,6 +554,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     ) -> dict[str, Any]:
         """Fetch only article IDs from a stream (lightweight, no content)."""
         import urllib.parse as _up
+
         encoded = _up.quote(stream_id, safe="")
         params: dict[str, Any] = {"count": count}
         if newer_than:
@@ -564,6 +571,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def get_article(self, entry_id: str) -> dict[str, Any]:
         """Fetch a single article by Feedly entry ID."""
         import urllib.parse as _up
+
         encoded = _up.quote(entry_id, safe="")
         resp = self.get(f"/v3/entries/{encoded}")
         return resp if isinstance(resp, dict) else {}
@@ -594,12 +602,14 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def tag_entries(self, tag_id: str, entry_ids: list[str]) -> None:
         """Apply a tag to one or more entries."""
         import urllib.parse as _up
+
         encoded = _up.quote(tag_id, safe="")
         self.put(f"/v3/tags/{encoded}", json={"entryIds": entry_ids})
 
     def untag_entry(self, tag_id: str, entry_id: str) -> None:
         """Remove a tag from an entry."""
         import urllib.parse as _up
+
         t_enc = _up.quote(tag_id, safe="")
         e_enc = _up.quote(entry_id, safe="")
         self.delete(f"/v3/tags/{t_enc}/{e_enc}")
@@ -607,6 +617,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     def delete_tag(self, tag_id: str) -> None:
         """Delete a tag entirely."""
         import urllib.parse as _up
+
         encoded = _up.quote(tag_id, safe="")
         self.delete(f"/v3/tags/{encoded}")
 
@@ -643,6 +654,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
         e.g. ``"nlp/f/entity/nlp%2Ff%2Fentity%2FKEXzSA..."``.
         """
         import urllib.parse as _up
+
         encoded = _up.quote(entity_id, safe="")
         resp = self.get(f"/v3/entities/{encoded}")
         return resp if isinstance(resp, dict) else {}
@@ -655,6 +667,7 @@ class FeedlyClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List articles mentioning a specific Feedly AI entity."""
         import urllib.parse as _up
+
         encoded = _up.quote(entity_id, safe="")
         params: dict[str, Any] = {"count": count}
         if newer_than:

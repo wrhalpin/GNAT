@@ -100,8 +100,7 @@ class VulnCheckClient(BaseClient, ConnectorMixin):
         self.api_key = api_key
         if default_index not in _VALID_INDICES:
             raise GNATClientError(
-                f"Unknown VulnCheck index {default_index!r}. "
-                f"Valid: {sorted(_VALID_INDICES)}"
+                f"Unknown VulnCheck index {default_index!r}. Valid: {sorted(_VALID_INDICES)}"
             )
         self.default_index = default_index
 
@@ -110,9 +109,7 @@ class VulnCheckClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Bearer header from the configured API key."""
         if not self.api_key:
-            raise GNATClientError(
-                "VulnCheck connector requires api_key in config."
-            )
+            raise GNATClientError("VulnCheck connector requires api_key in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_key}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -134,9 +131,7 @@ class VulnCheckClient(BaseClient, ConnectorMixin):
         a helper that specifies another index.
         """
         if stix_type not in ("vulnerability", "indicator", "malware"):
-            raise GNATClientError(
-                f"VulnCheck get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"VulnCheck get_object does not support stix_type={stix_type!r}")
         if not object_id:
             raise GNATClientError("VulnCheck get_object requires a non-empty id")
         resp = self.get(
@@ -189,19 +184,13 @@ class VulnCheckClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/v3/index/{index}", params=params)
         return _extract_items(resp)
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """VulnCheck connector is read-only."""
-        raise GNATClientError(
-            "VulnCheck connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("VulnCheck connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """VulnCheck connector is read-only."""
-        raise GNATClientError(
-            "VulnCheck connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("VulnCheck connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -210,9 +199,7 @@ class VulnCheckClient(BaseClient, ConnectorMixin):
         resp = self.get("/v3/index/vulncheck-kev", params={"cve": cve_id})
         items = _extract_items(resp)
         if not items:
-            raise GNATClientError(
-                f"VulnCheck KEV: no record for {cve_id!r}"
-            )
+            raise GNATClientError(f"VulnCheck KEV: no record for {cve_id!r}")
         return items[0]
 
     def get_exploits(self, cve_id: str) -> list[dict[str, Any]]:

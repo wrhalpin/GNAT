@@ -161,6 +161,7 @@ class Workspace:
             # Load trust isolation settings (4E-1)
             self.trust_boundary = getattr(ws_model, "trust_boundary", None) or "semi_trusted"
             import json as _json
+
             raw_refs = getattr(ws_model, "allowed_connector_refs", None) or "[]"
             try:
                 self.allowed_connector_refs = _json.loads(raw_refs)

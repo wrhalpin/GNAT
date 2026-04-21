@@ -38,47 +38,55 @@ from typing import Any
 from gnat.analysis.confidence import ConfidenceScore
 from gnat.analysis.tlp import TLPLevel
 
-
 # ── Enumerations ──────────────────────────────────────────────────────────────
+
 
 class ReportType(str, Enum):
     """Intelligence product type."""
-    INCIDENT_REPORT         = "incident_report"
-    THREAT_ACTOR_PROFILE    = "threat_actor_profile"
-    CAMPAIGN_ANALYSIS       = "campaign_analysis"
-    DAILY_BRIEF             = "daily_brief"
-    VULNERABILITY_ADVISORY  = "vulnerability_advisory"
-    FINISHED_INTELLIGENCE   = "finished_intelligence"
+
+    INCIDENT_REPORT = "incident_report"
+    THREAT_ACTOR_PROFILE = "threat_actor_profile"
+    CAMPAIGN_ANALYSIS = "campaign_analysis"
+    DAILY_BRIEF = "daily_brief"
+    VULNERABILITY_ADVISORY = "vulnerability_advisory"
+    FINISHED_INTELLIGENCE = "finished_intelligence"
 
 
 class ReportStatus(str, Enum):
     """Lifecycle state of a Report."""
-    DRAFT     = "draft"
-    REVIEW    = "review"
-    APPROVED  = "approved"
+
+    DRAFT = "draft"
+    REVIEW = "review"
+    APPROVED = "approved"
     PUBLISHED = "published"
-    ARCHIVED  = "archived"
+    ARCHIVED = "archived"
 
 
 class EvidenceLinkType(str, Enum):
     """How an artifact relates to a statement."""
-    SUPPORTS       = "supports"
-    CONTRADICTS    = "contradicts"
+
+    SUPPORTS = "supports"
+    CONTRADICTS = "contradicts"
     CONTEXTUALIZES = "contextualizes"
 
 
 # ── Valid state machine transitions ───────────────────────────────────────────
 
 REPORT_TRANSITIONS: dict[ReportStatus, frozenset[ReportStatus]] = {
-    ReportStatus.DRAFT:     frozenset({ReportStatus.REVIEW, ReportStatus.ARCHIVED}),
-    ReportStatus.REVIEW:    frozenset({ReportStatus.DRAFT, ReportStatus.APPROVED, ReportStatus.ARCHIVED}),
-    ReportStatus.APPROVED:  frozenset({ReportStatus.PUBLISHED, ReportStatus.DRAFT, ReportStatus.ARCHIVED}),
+    ReportStatus.DRAFT: frozenset({ReportStatus.REVIEW, ReportStatus.ARCHIVED}),
+    ReportStatus.REVIEW: frozenset(
+        {ReportStatus.DRAFT, ReportStatus.APPROVED, ReportStatus.ARCHIVED}
+    ),
+    ReportStatus.APPROVED: frozenset(
+        {ReportStatus.PUBLISHED, ReportStatus.DRAFT, ReportStatus.ARCHIVED}
+    ),
     ReportStatus.PUBLISHED: frozenset({ReportStatus.ARCHIVED}),
-    ReportStatus.ARCHIVED:  frozenset(),  # terminal
+    ReportStatus.ARCHIVED: frozenset(),  # terminal
 }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _now() -> datetime:
     """Internal helper for now."""
@@ -91,6 +99,7 @@ def _uuid() -> str:
 
 
 # ── Dataclasses ───────────────────────────────────────────────────────────────
+
 
 @dataclass
 class EvidenceLink:
@@ -115,38 +124,39 @@ class EvidenceLink:
         Confidence for this specific evidence link.
     """
 
-    statement:       str
-    artifact_type:   str
-    artifact_id:     str
+    statement: str
+    artifact_type: str
+    artifact_id: str
     artifact_source: str
-    id:              str               = field(default_factory=_uuid)
-    link_type:       EvidenceLinkType  = EvidenceLinkType.SUPPORTS
-    confidence:      ConfidenceScore | None = None
+    id: str = field(default_factory=_uuid)
+    link_type: EvidenceLinkType = EvidenceLinkType.SUPPORTS
+    confidence: ConfidenceScore | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
-            "id":              self.id,
-            "statement":       self.statement,
-            "artifact_type":   self.artifact_type,
-            "artifact_id":     self.artifact_id,
+            "id": self.id,
+            "statement": self.statement,
+            "artifact_type": self.artifact_type,
+            "artifact_id": self.artifact_id,
             "artifact_source": self.artifact_source,
-            "link_type":       self.link_type.value,
-            "confidence":      self.confidence.to_dict() if self.confidence else None,
+            "link_type": self.link_type.value,
+            "confidence": self.confidence.to_dict() if self.confidence else None,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "EvidenceLink":
+    def from_dict(cls, data: dict[str, Any]) -> EvidenceLink:
         """Create an instance from DICT data."""
         return cls(
-            id              = data["id"],
-            statement       = data["statement"],
-            artifact_type   = data["artifact_type"],
-            artifact_id     = data["artifact_id"],
-            artifact_source = data["artifact_source"],
-            link_type       = EvidenceLinkType(data.get("link_type", "supports")),
-            confidence      = ConfidenceScore.from_dict(data["confidence"])
-                              if data.get("confidence") else None,
+            id=data["id"],
+            statement=data["statement"],
+            artifact_type=data["artifact_type"],
+            artifact_id=data["artifact_id"],
+            artifact_source=data["artifact_source"],
+            link_type=EvidenceLinkType(data.get("link_type", "supports")),
+            confidence=ConfidenceScore.from_dict(data["confidence"])
+            if data.get("confidence")
+            else None,
         )
 
 
@@ -169,32 +179,33 @@ class Finding:
         ATT&CK technique IDs relevant to this finding (e.g. ``["T1059.003"]``).
     """
 
-    statement:           str
-    id:                  str                  = field(default_factory=_uuid)
-    confidence:          ConfidenceScore | None = None
-    supporting_evidence: list[str]            = field(default_factory=list)
-    mitre_techniques:    list[str]            = field(default_factory=list)
+    statement: str
+    id: str = field(default_factory=_uuid)
+    confidence: ConfidenceScore | None = None
+    supporting_evidence: list[str] = field(default_factory=list)
+    mitre_techniques: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
-            "id":                  self.id,
-            "statement":           self.statement,
-            "confidence":          self.confidence.to_dict() if self.confidence else None,
+            "id": self.id,
+            "statement": self.statement,
+            "confidence": self.confidence.to_dict() if self.confidence else None,
             "supporting_evidence": self.supporting_evidence,
-            "mitre_techniques":    self.mitre_techniques,
+            "mitre_techniques": self.mitre_techniques,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Finding":
+    def from_dict(cls, data: dict[str, Any]) -> Finding:
         """Create an instance from DICT data."""
         return cls(
-            id                  = data["id"],
-            statement           = data["statement"],
-            confidence          = ConfidenceScore.from_dict(data["confidence"])
-                                  if data.get("confidence") else None,
-            supporting_evidence = data.get("supporting_evidence", []),
-            mitre_techniques    = data.get("mitre_techniques", []),
+            id=data["id"],
+            statement=data["statement"],
+            confidence=ConfidenceScore.from_dict(data["confidence"])
+            if data.get("confidence")
+            else None,
+            supporting_evidence=data.get("supporting_evidence", []),
+            mitre_techniques=data.get("mitre_techniques", []),
         )
 
 
@@ -218,30 +229,30 @@ class Attribution:
     """
 
     threat_actor_name: str
-    confidence:        ConfidenceScore
-    rationale:         str
-    threat_actor_id:   str | None = None
-    mitre_group_id:    str | None = None
+    confidence: ConfidenceScore
+    rationale: str
+    threat_actor_id: str | None = None
+    mitre_group_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
             "threat_actor_name": self.threat_actor_name,
-            "confidence":        self.confidence.to_dict(),
-            "rationale":         self.rationale,
-            "threat_actor_id":   self.threat_actor_id,
-            "mitre_group_id":    self.mitre_group_id,
+            "confidence": self.confidence.to_dict(),
+            "rationale": self.rationale,
+            "threat_actor_id": self.threat_actor_id,
+            "mitre_group_id": self.mitre_group_id,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Attribution":
+    def from_dict(cls, data: dict[str, Any]) -> Attribution:
         """Create an instance from DICT data."""
         return cls(
-            threat_actor_name = data["threat_actor_name"],
-            confidence        = ConfidenceScore.from_dict(data["confidence"]),
-            rationale         = data.get("rationale", ""),
-            threat_actor_id   = data.get("threat_actor_id"),
-            mitre_group_id    = data.get("mitre_group_id"),
+            threat_actor_name=data["threat_actor_name"],
+            confidence=ConfidenceScore.from_dict(data["confidence"]),
+            rationale=data.get("rationale", ""),
+            threat_actor_id=data.get("threat_actor_id"),
+            mitre_group_id=data.get("mitre_group_id"),
         )
 
 
@@ -260,21 +271,21 @@ class ReportSection:
         Display order (lower = earlier in document).
     """
 
-    title:   str
-    content: str   = ""
-    order:   int   = 0
+    title: str
+    content: str = ""
+    order: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {"title": self.title, "content": self.content, "order": self.order}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ReportSection":
+    def from_dict(cls, data: dict[str, Any]) -> ReportSection:
         """Create an instance from DICT data."""
         return cls(
-            title   = data["title"],
-            content = data.get("content", ""),
-            order   = data.get("order", 0),
+            title=data["title"],
+            content=data.get("content", ""),
+            order=data.get("order", 0),
         )
 
 
@@ -294,28 +305,28 @@ class ChangelogEntry:
         Short description of what changed.
     """
 
-    version:    int
+    version: int
     changed_by: str
-    summary:    str
+    summary: str
     changed_at: datetime = field(default_factory=_now)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert this object to DICT format."""
         return {
-            "version":    self.version,
+            "version": self.version,
             "changed_by": self.changed_by,
-            "summary":    self.summary,
+            "summary": self.summary,
             "changed_at": self.changed_at.isoformat(),
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ChangelogEntry":
+    def from_dict(cls, data: dict[str, Any]) -> ChangelogEntry:
         """Create an instance from DICT data."""
         return cls(
-            version    = data["version"],
-            changed_by = data["changed_by"],
-            summary    = data.get("summary", ""),
-            changed_at = datetime.fromisoformat(data["changed_at"]),
+            version=data["version"],
+            changed_by=data["changed_by"],
+            summary=data.get("summary", ""),
+            changed_at=datetime.fromisoformat(data["changed_at"]),
         )
 
 
@@ -391,31 +402,31 @@ class Report:
     True
     """
 
-    title:                str
-    report_type:          ReportType
-    id:                   str                    = field(default_factory=_uuid)
-    status:               ReportStatus           = ReportStatus.DRAFT
-    classification:       TLPLevel               = TLPLevel.AMBER
-    authors:              list[str]              = field(default_factory=list)
-    reviewers:            list[str]              = field(default_factory=list)
-    executive_summary:    str                    = ""
-    key_findings:         list[Finding]          = field(default_factory=list)
-    body_sections:        list[ReportSection]    = field(default_factory=list)
-    recommendations:      list[str]              = field(default_factory=list)
-    attribution:          Attribution | None     = None
-    overall_confidence:   ConfidenceScore | None = None
-    evidence_links:       list[EvidenceLink]     = field(default_factory=list)
-    linked_investigation: str | None             = None
-    version:              int                    = 1
-    changelog:            list[ChangelogEntry]   = field(default_factory=list)
-    parent_report_id:     str | None             = None
-    distribution_list:    list[str]              = field(default_factory=list)
-    tags:                 list[str]              = field(default_factory=list)
-    stix_report_ref:      str | None             = None
-    stix_bundle_json:     str | None             = None
-    published_at:         datetime | None        = None
-    created_at:           datetime               = field(default_factory=_now)
-    updated_at:           datetime               = field(default_factory=_now)
+    title: str
+    report_type: ReportType
+    id: str = field(default_factory=_uuid)
+    status: ReportStatus = ReportStatus.DRAFT
+    classification: TLPLevel = TLPLevel.AMBER
+    authors: list[str] = field(default_factory=list)
+    reviewers: list[str] = field(default_factory=list)
+    executive_summary: str = ""
+    key_findings: list[Finding] = field(default_factory=list)
+    body_sections: list[ReportSection] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
+    attribution: Attribution | None = None
+    overall_confidence: ConfidenceScore | None = None
+    evidence_links: list[EvidenceLink] = field(default_factory=list)
+    linked_investigation: str | None = None
+    version: int = 1
+    changelog: list[ChangelogEntry] = field(default_factory=list)
+    parent_report_id: str | None = None
+    distribution_list: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    stix_report_ref: str | None = None
+    stix_bundle_json: str | None = None
+    published_at: datetime | None = None
+    created_at: datetime = field(default_factory=_now)
+    updated_at: datetime = field(default_factory=_now)
 
     @property
     def is_published(self) -> bool:
@@ -434,63 +445,68 @@ class Report:
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict suitable for JSON storage."""
         return {
-            "id":                   self.id,
-            "title":                self.title,
-            "report_type":          self.report_type.value,
-            "status":               self.status.value,
-            "classification":       self.classification.value,
-            "authors":              self.authors,
-            "reviewers":            self.reviewers,
-            "executive_summary":    self.executive_summary,
-            "key_findings":         [f.to_dict() for f in self.key_findings],
-            "body_sections":        [s.to_dict() for s in self.body_sections],
-            "recommendations":      self.recommendations,
-            "attribution":          self.attribution.to_dict() if self.attribution else None,
-            "overall_confidence":   self.overall_confidence.to_dict() if self.overall_confidence else None,
-            "evidence_links":       [e.to_dict() for e in self.evidence_links],
+            "id": self.id,
+            "title": self.title,
+            "report_type": self.report_type.value,
+            "status": self.status.value,
+            "classification": self.classification.value,
+            "authors": self.authors,
+            "reviewers": self.reviewers,
+            "executive_summary": self.executive_summary,
+            "key_findings": [f.to_dict() for f in self.key_findings],
+            "body_sections": [s.to_dict() for s in self.body_sections],
+            "recommendations": self.recommendations,
+            "attribution": self.attribution.to_dict() if self.attribution else None,
+            "overall_confidence": self.overall_confidence.to_dict()
+            if self.overall_confidence
+            else None,
+            "evidence_links": [e.to_dict() for e in self.evidence_links],
             "linked_investigation": self.linked_investigation,
-            "version":              self.version,
-            "changelog":            [c.to_dict() for c in self.changelog],
-            "parent_report_id":     self.parent_report_id,
-            "distribution_list":    self.distribution_list,
-            "tags":                 self.tags,
-            "stix_report_ref":      self.stix_report_ref,
-            "stix_bundle_json":     self.stix_bundle_json,
-            "published_at":         self.published_at.isoformat() if self.published_at else None,
-            "created_at":           self.created_at.isoformat(),
-            "updated_at":           self.updated_at.isoformat(),
+            "version": self.version,
+            "changelog": [c.to_dict() for c in self.changelog],
+            "parent_report_id": self.parent_report_id,
+            "distribution_list": self.distribution_list,
+            "tags": self.tags,
+            "stix_report_ref": self.stix_report_ref,
+            "stix_bundle_json": self.stix_bundle_json,
+            "published_at": self.published_at.isoformat() if self.published_at else None,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Report":
+    def from_dict(cls, data: dict[str, Any]) -> Report:
         """Deserialise from a plain dict produced by :meth:`to_dict`."""
         return cls(
-            id                   = data["id"],
-            title                = data["title"],
-            report_type          = ReportType(data["report_type"]),
-            status               = ReportStatus(data.get("status", "draft")),
-            classification       = TLPLevel(data.get("classification", "amber")),
-            authors              = data.get("authors", []),
-            reviewers            = data.get("reviewers", []),
-            executive_summary    = data.get("executive_summary", ""),
-            key_findings         = [Finding.from_dict(f) for f in data.get("key_findings", [])],
-            body_sections        = [ReportSection.from_dict(s) for s in data.get("body_sections", [])],
-            recommendations      = data.get("recommendations", []),
-            attribution          = Attribution.from_dict(data["attribution"])
-                                   if data.get("attribution") else None,
-            overall_confidence   = ConfidenceScore.from_dict(data["overall_confidence"])
-                                   if data.get("overall_confidence") else None,
-            evidence_links       = [EvidenceLink.from_dict(e) for e in data.get("evidence_links", [])],
-            linked_investigation = data.get("linked_investigation"),
-            version              = data.get("version", 1),
-            changelog            = [ChangelogEntry.from_dict(c) for c in data.get("changelog", [])],
-            parent_report_id     = data.get("parent_report_id"),
-            distribution_list    = data.get("distribution_list", []),
-            tags                 = data.get("tags", []),
-            stix_report_ref      = data.get("stix_report_ref"),
-            stix_bundle_json     = data.get("stix_bundle_json"),
-            published_at         = datetime.fromisoformat(data["published_at"])
-                                   if data.get("published_at") else None,
-            created_at           = datetime.fromisoformat(data["created_at"]),
-            updated_at           = datetime.fromisoformat(data["updated_at"]),
+            id=data["id"],
+            title=data["title"],
+            report_type=ReportType(data["report_type"]),
+            status=ReportStatus(data.get("status", "draft")),
+            classification=TLPLevel(data.get("classification", "amber")),
+            authors=data.get("authors", []),
+            reviewers=data.get("reviewers", []),
+            executive_summary=data.get("executive_summary", ""),
+            key_findings=[Finding.from_dict(f) for f in data.get("key_findings", [])],
+            body_sections=[ReportSection.from_dict(s) for s in data.get("body_sections", [])],
+            recommendations=data.get("recommendations", []),
+            attribution=Attribution.from_dict(data["attribution"])
+            if data.get("attribution")
+            else None,
+            overall_confidence=ConfidenceScore.from_dict(data["overall_confidence"])
+            if data.get("overall_confidence")
+            else None,
+            evidence_links=[EvidenceLink.from_dict(e) for e in data.get("evidence_links", [])],
+            linked_investigation=data.get("linked_investigation"),
+            version=data.get("version", 1),
+            changelog=[ChangelogEntry.from_dict(c) for c in data.get("changelog", [])],
+            parent_report_id=data.get("parent_report_id"),
+            distribution_list=data.get("distribution_list", []),
+            tags=data.get("tags", []),
+            stix_report_ref=data.get("stix_report_ref"),
+            stix_bundle_json=data.get("stix_bundle_json"),
+            published_at=datetime.fromisoformat(data["published_at"])
+            if data.get("published_at")
+            else None,
+            created_at=datetime.fromisoformat(data["created_at"]),
+            updated_at=datetime.fromisoformat(data["updated_at"]),
         )

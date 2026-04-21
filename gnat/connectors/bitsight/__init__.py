@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.bitsight`` package.
 
 Exports: ``BitSightClient``.
 """
+
 from .client import BitSightClient
 
 __all__ = ["BitSightClient"]

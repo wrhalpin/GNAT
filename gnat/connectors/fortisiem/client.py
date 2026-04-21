@@ -215,9 +215,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
         resp = self.post("/phoenix/rest/pub/incident/update", json=payload)
         return resp if isinstance(resp, dict) else {"ok": True, "id": incident_id}
 
-    def list_monitored_devices(
-        self, page_size: int = 500
-    ) -> list[dict[str, Any]]:
+    def list_monitored_devices(self, page_size: int = 500) -> list[dict[str, Any]]:
         """List all devices under FortiSIEM monitoring (CMDB inventory)."""
         resp = self.get(
             "/phoenix/rest/deviceInfo/monitoredDevices",
@@ -256,9 +254,7 @@ class FortiSIEMClient(BaseClient, ConnectorMixin):
             return [r for r in resp if isinstance(r, dict)]
         return []
 
-    def query_events(
-        self, query_xml: str, time_from: int, time_to: int
-    ) -> dict[str, Any]:
+    def query_events(self, query_xml: str, time_from: int, time_to: int) -> dict[str, Any]:
         """
         Run a raw event-search query via ``/phoenix/rest/query/eventQuery``.
         *query_xml* is the FortiSIEM native query format.

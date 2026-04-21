@@ -108,18 +108,11 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         """Exchange client credentials for a PingOne API access token."""
-        if (
-            not self.environment_id
-            or not self.client_id
-            or not self.client_secret
-        ):
+        if not self.environment_id or not self.client_id or not self.client_secret:
             raise GNATClientError(
-                "Ping Identity connector requires environment_id, client_id, "
-                "and client_secret."
+                "Ping Identity connector requires environment_id, client_id, and client_secret."
             )
-        region_base = _AUTH_REGIONS.get(
-            self.auth_region.upper(), _AUTH_REGIONS["NA"]
-        )
+        region_base = _AUTH_REGIONS.get(self.auth_region.upper(), _AUTH_REGIONS["NA"])
         token_url = f"{region_base}/{self.environment_id}/as/token"
         body = (
             f"grant_type=client_credentials"
@@ -141,20 +134,15 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
                 },
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise GNATClientError(
-                f"Ping Identity token request failed: {exc}"
-            ) from exc
+            raise GNATClientError(f"Ping Identity token request failed: {exc}") from exc
         if resp.status >= 400:
             raise GNATClientError(
-                f"Ping Identity token request returned HTTP {resp.status}: "
-                f"{resp.data[:200]!r}"
+                f"Ping Identity token request returned HTTP {resp.status}: {resp.data[:200]!r}"
             )
         try:
             data = json.loads(resp.data.decode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
-            raise GNATClientError(
-                f"Ping Identity token response was not JSON: {exc}"
-            ) from exc
+            raise GNATClientError(f"Ping Identity token response was not JSON: {exc}") from exc
         token = data.get("access_token") or ""
         if not token:
             raise GNATClientError(
@@ -198,9 +186,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
                 f"Ping Identity get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Ping Identity returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Ping Identity returned unexpected payload for {object_id!r}")
         return dict(resp, _ping_kind=kind)
 
     def list_objects(
@@ -240,9 +226,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _ping_kind=kind) for r in _extract_ping_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Ping Identity connector is read-only."""
         raise GNATClientError(
             "Ping Identity connector is read-only — no write operations supported."
@@ -278,39 +262,26 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
     def list_sign_on_policies(self) -> list[dict[str, Any]]:
         """Return sign-on policy definitions."""
         resp = self.get(self._env_path("signOnPolicies"))
-        return [
-            dict(r, _ping_kind="sign_on_policy")
-            for r in _extract_ping_list(resp)
-        ]
+        return [dict(r, _ping_kind="sign_on_policy") for r in _extract_ping_list(resp)]
 
-    def list_activities(
-        self, filter_expr: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_activities(self, filter_expr: str = "") -> list[dict[str, Any]]:
         """Return authentication activity events."""
         filters: dict[str, Any] = {"kind": "activities"}
         if filter_expr:
             filters["filter"] = filter_expr
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=500
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=500)
 
-    def list_audit_events(
-        self, filter_expr: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_audit_events(self, filter_expr: str = "") -> list[dict[str, Any]]:
         """Return administrative audit events."""
         filters: dict[str, Any] = {"kind": "audit_events"}
         if filter_expr:
             filters["filter"] = filter_expr
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=500
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=500)
 
     def list_user_groups(self, user_id: str) -> list[dict[str, Any]]:
         """Return the populations/groups a specific user belongs to."""
         resp = self.get(self._env_path(f"users/{user_id}/groupMemberships"))
-        return [
-            dict(r, _ping_kind="population") for r in _extract_ping_list(resp)
-        ]
+        return [dict(r, _ping_kind="population") for r in _extract_ping_list(resp)]
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
 
@@ -347,9 +318,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
 
         if kind == "population":
             pop_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_PING, f"identity|population|{pop_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_PING, f"identity|population|{pop_id}")
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
@@ -368,9 +337,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
 
         if kind == "application":
             app_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_PING, f"x-ping-application|{app_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_PING, f"x-ping-application|{app_id}")
             return {
                 "type": "x-ping-application",
                 "id": f"x-ping-application--{stix_uuid}",
@@ -386,9 +353,7 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
 
         if kind == "sign_on_policy":
             pol_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_PING, f"x-ping-sign-on-policy|{pol_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_PING, f"x-ping-sign-on-policy|{pol_id}")
             return {
                 "type": "x-ping-sign-on-policy",
                 "id": f"x-ping-sign-on-policy--{stix_uuid}",
@@ -408,18 +373,17 @@ class PingIdentityClient(BaseClient, ConnectorMixin):
                 user_id = actor.get("id")
                 break
         if not user_id:
-            user_id = (native.get("actor") or {}).get("id") if isinstance(
-                native.get("actor"), dict
-            ) else None
-        if user_id:
-            user_uuid = uuid.uuid5(
-                _NAMESPACE_PING, f"user-account|{user_id}"
+            user_id = (
+                (native.get("actor") or {}).get("id")
+                if isinstance(native.get("actor"), dict)
+                else None
             )
+        if user_id:
+            user_uuid = uuid.uuid5(_NAMESPACE_PING, f"user-account|{user_id}")
             refs.append(f"user-account--{user_uuid}")
 
         ip = (
-            native.get("ipAddress")
-            or (native.get("client") or {}).get("ip")
+            native.get("ipAddress") or (native.get("client") or {}).get("ip")
             if isinstance(native.get("client"), dict)
             else native.get("ipAddress")
         )

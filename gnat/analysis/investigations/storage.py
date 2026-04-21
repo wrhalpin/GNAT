@@ -70,6 +70,7 @@ def _utcnow() -> datetime:
 
 
 if _SA_AVAILABLE:
+
     class _Base(DeclarativeBase):
         """_Base implementation."""
 
@@ -78,16 +79,18 @@ if _SA_AVAILABLE:
 
         __tablename__ = "investigations"
 
-        id              = Column(String(36),  primary_key=True)
-        title           = Column(String(512), nullable=False, index=True)
-        status          = Column(String(32),  nullable=False, index=True, default="open")
-        classification  = Column(String(32),  nullable=False, default="amber")
-        created_by      = Column(String(256), nullable=False, index=True)
-        tags_csv        = Column(Text,        nullable=True,  default="")
-        investigation_json = Column(Text,     nullable=False)
-        created_at      = Column(DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
-        updated_at      = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)
-        is_deleted      = Column(Boolean,     default=False, nullable=False)
+        id = Column(String(36), primary_key=True)
+        title = Column(String(512), nullable=False, index=True)
+        status = Column(String(32), nullable=False, index=True, default="open")
+        classification = Column(String(32), nullable=False, default="amber")
+        created_by = Column(String(256), nullable=False, index=True)
+        tags_csv = Column(Text, nullable=True, default="")
+        investigation_json = Column(Text, nullable=False)
+        created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
+        updated_at = Column(
+            DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False
+        )
+        is_deleted = Column(Boolean, default=False, nullable=False)
 
         def to_investigation(self) -> Investigation:
             """Convert this object to INVESTIGATION format."""
@@ -95,19 +98,19 @@ if _SA_AVAILABLE:
             return Investigation.from_dict(data)
 
         @classmethod
-        def from_investigation(cls, inv: Investigation) -> "InvestigationModel":
+        def from_investigation(cls, inv: Investigation) -> InvestigationModel:
             """Create an instance from INVESTIGATION data."""
             return cls(
-                id                 = inv.id,
-                title              = inv.title,
-                status             = inv.status.value,
-                classification     = inv.classification.value,
-                created_by         = inv.created_by,
-                tags_csv           = ",".join(inv.tags),
-                investigation_json = json.dumps(inv.to_dict()),
-                created_at         = inv.created_at,
-                updated_at         = inv.updated_at,
-                is_deleted         = False,
+                id=inv.id,
+                title=inv.title,
+                status=inv.status.value,
+                classification=inv.classification.value,
+                created_by=inv.created_by,
+                tags_csv=",".join(inv.tags),
+                investigation_json=json.dumps(inv.to_dict()),
+                created_at=inv.created_at,
+                updated_at=inv.updated_at,
+                is_deleted=False,
             )
 
 
@@ -141,11 +144,11 @@ class InvestigationStore:
         self._Session = sessionmaker(bind=self._engine, expire_on_commit=False)
 
     @classmethod
-    def from_engine(cls, engine: Any) -> "InvestigationStore":
+    def from_engine(cls, engine: Any) -> InvestigationStore:
         """Create a store reusing an existing SQLAlchemy engine."""
         _require_sqlalchemy()
         instance = cls.__new__(cls)
-        instance._url    = str(engine.url)
+        instance._url = str(engine.url)
         instance._engine = engine
         instance._Session = sessionmaker(bind=engine, expire_on_commit=False)
         return instance
@@ -181,18 +184,19 @@ class InvestigationStore:
         """
         _require_sqlalchemy()
         from datetime import timezone as _tz
+
         investigation.updated_at = datetime.now(tz=_tz.utc)
 
         with self._Session() as session:
             existing = session.get(InvestigationModel, investigation.id)
             if existing:
-                existing.title              = investigation.title
-                existing.status             = investigation.status.value
-                existing.classification     = investigation.classification.value
-                existing.created_by         = investigation.created_by
-                existing.tags_csv           = ",".join(investigation.tags)
+                existing.title = investigation.title
+                existing.status = investigation.status.value
+                existing.classification = investigation.classification.value
+                existing.created_by = investigation.created_by
+                existing.tags_csv = ",".join(investigation.tags)
                 existing.investigation_json = json.dumps(investigation.to_dict())
-                existing.updated_at         = investigation.updated_at
+                existing.updated_at = investigation.updated_at
             else:
                 session.add(InvestigationModel.from_investigation(investigation))
             session.commit()
@@ -253,23 +257,22 @@ class InvestigationStore:
         # Build an InvestigationQuery from legacy kwargs when no query given
         if query is None:
             from gnat.analysis.query import InvestigationQuery as _IQ
+
             query = _IQ(
-                status     = [status] if status is not None else None,
-                created_by = created_by,
-                tags       = [tag] if tag is not None else None,
-                page_size  = limit,
+                status=[status] if status is not None else None,
+                created_by=created_by,
+                tags=[tag] if tag is not None else None,
+                page_size=limit,
             )
             # Override offset directly (legacy callers use raw offset, not page)
             _offset = offset
-            _limit  = limit
+            _limit = limit
         else:
             _offset = query.offset
-            _limit  = query.limit
+            _limit = query.limit
 
         with self._Session() as session:
-            q = session.query(InvestigationModel).filter(
-                InvestigationModel.is_deleted.is_(False)
-            )
+            q = session.query(InvestigationModel).filter(InvestigationModel.is_deleted.is_(False))
             # Status filter
             sv = query.status_values
             if sv:
@@ -282,10 +285,8 @@ class InvestigationStore:
             # Tags — ANY match (CSV substring per tag)
             if query.tags:
                 from sqlalchemy import or_
-                tag_clauses = [
-                    InvestigationModel.tags_csv.contains(t)
-                    for t in query.tags
-                ]
+
+                tag_clauses = [InvestigationModel.tags_csv.contains(t) for t in query.tags]
                 q = q.filter(or_(*tag_clauses))
 
             # Classification / TLP
@@ -301,13 +302,12 @@ class InvestigationStore:
 
             # Text search — title substring (description is in the JSON blob)
             if query.text:
-                q = q.filter(
-                    InvestigationModel.title.ilike(f"%{query.text}%")
-                )
+                q = q.filter(InvestigationModel.title.ilike(f"%{query.text}%"))
 
             # Sorting
-            sort_col = getattr(InvestigationModel, query.safe_sort_by,
-                               InvestigationModel.updated_at)
+            sort_col = getattr(
+                InvestigationModel, query.safe_sort_by, InvestigationModel.updated_at
+            )
             q = q.order_by(sort_col.desc() if query.sort_desc else sort_col.asc())
 
             rows = q.offset(_offset).limit(_limit).all()
@@ -316,13 +316,11 @@ class InvestigationStore:
         # Post-filter: has_hypothesis / has_linked_report (stored in JSON blob)
         if query.has_hypothesis is not None:
             investigations = [
-                inv for inv in investigations
-                if bool(inv.hypothesis) == query.has_hypothesis
+                inv for inv in investigations if bool(inv.hypothesis) == query.has_hypothesis
             ]
         if query.has_linked_report is not None:
             investigations = [
-                inv for inv in investigations
-                if bool(inv.reports) == query.has_linked_report
+                inv for inv in investigations if bool(inv.reports) == query.has_linked_report
             ]
 
         return investigations
@@ -348,9 +346,7 @@ class InvestigationStore:
         """Return the count of non-deleted investigations, optionally filtered by status."""
         _require_sqlalchemy()
         with self._Session() as session:
-            q = session.query(InvestigationModel).filter(
-                InvestigationModel.is_deleted.is_(False)
-            )
+            q = session.query(InvestigationModel).filter(InvestigationModel.is_deleted.is_(False))
             if status is not None:
                 q = q.filter(InvestigationModel.status == status.value)
             return q.count()

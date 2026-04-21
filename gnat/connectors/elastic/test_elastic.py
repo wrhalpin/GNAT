@@ -108,6 +108,7 @@ def _make_client(config: ElasticConfig | None = None) -> tuple[ElasticClient, Ma
 
 class TestElasticConfig(unittest.TestCase):
     """Configuration container for test elastic."""
+
     def test_minimal_config(self):
         """Test that minimal config."""
         cfg = _make_config()
@@ -244,6 +245,7 @@ class TestElasticConfig(unittest.TestCase):
 
 class TestElasticAuthManager(unittest.TestCase):
     """Unit tests for :class:`ElasticAuthManager`."""
+
     def _make_auth(self, config=None):
         """Internal helper for make auth."""
         cfg = config or _make_config()
@@ -310,6 +312,7 @@ class TestElasticAuthManager(unittest.TestCase):
 
 class TestElasticClient(unittest.TestCase):
     """HTTP API client for the TestElastic platform."""
+
     def test_es_get_returns_dict(self):
         """Test that es get returns dict."""
         client, mock_http = _make_client()
@@ -439,6 +442,7 @@ class TestElasticClient(unittest.TestCase):
 
 class TestElasticSearchCommands(unittest.TestCase):
     """Unit tests for :class:`ElasticSearchCommands`."""
+
     def _make_search_cmd(self):
         """Internal helper for make search cmd."""
         client, mock_http = _make_client()
@@ -532,6 +536,7 @@ class TestElasticSearchCommands(unittest.TestCase):
 
 class TestKibanaRulesCommands(unittest.TestCase):
     """Unit tests for :class:`KibanaRulesCommands`."""
+
     def _make_rules(self):
         """Internal helper for make rules."""
         client, mock_http = _make_client()
@@ -630,6 +635,7 @@ class TestKibanaRulesCommands(unittest.TestCase):
 
 class TestKibanaAlertsCommands(unittest.TestCase):
     """Unit tests for :class:`KibanaAlertsCommands`."""
+
     def _make_alerts_cmd(self):
         """Internal helper for make alerts cmd."""
         client, mock_http = _make_client()
@@ -719,6 +725,7 @@ class TestKibanaAlertsCommands(unittest.TestCase):
 
 class TestKibanaCasesCommands(unittest.TestCase):
     """Unit tests for :class:`KibanaCasesCommands`."""
+
     def _make_cases(self):
         """Internal helper for make cases."""
         client, mock_http = _make_client()
@@ -767,6 +774,7 @@ class TestKibanaCasesCommands(unittest.TestCase):
 
 class TestElasticThreatIntelCommands(unittest.TestCase):
     """Unit tests for :class:`ElasticThreatIntelCommands`."""
+
     def _make_ti(self):
         """Internal helper for make ti."""
         client, mock_http = _make_client()
@@ -840,6 +848,7 @@ class TestElasticThreatIntelCommands(unittest.TestCase):
 
 class TestElasticSTIXMapper(unittest.TestCase):
     """STIX translation helper for test elastic s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = ElasticSTIXMapper()
@@ -1103,6 +1112,7 @@ class TestElasticSTIXMapper(unittest.TestCase):
 
 class TestElasticExceptions(unittest.TestCase):
     """Raised when a test elastic exceptions error occurs."""
+
     def test_all_inherit_from_base(self):
         """Test that all inherit from base."""
         from gnat.connectors.elastic.exceptions import ElasticError

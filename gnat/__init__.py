@@ -67,6 +67,16 @@ from gnat.context import (
 )
 from gnat.export import ExportPipeline, ExportResult
 from gnat.export.jobs import ExportJob
+from gnat.federation import (
+    FederationError,
+    FederationPeer,
+    FederationScheduler,
+    FederationTopology,
+    PeerRegistry,
+    PeerSyncService,
+    PullResult,
+    PushResult,
+)
 from gnat.ingest import IngestPipeline
 from gnat.ingest.mappers import (
     CEFMapper,
@@ -113,16 +123,6 @@ from gnat.reports import (
     SectorFilter,
 )
 from gnat.research import CurationJob, ResearchEntry, ResearchLibrary
-from gnat.federation import (
-    FederationError,
-    FederationPeer,
-    FederationScheduler,
-    FederationTopology,
-    PeerRegistry,
-    PeerSyncService,
-    PullResult,
-    PushResult,
-)
 from gnat.schedule import FeedJob, FeedScheduler, JobRunContext, RunRecord
 from gnat.viz import (
     GraphView,

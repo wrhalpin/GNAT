@@ -53,9 +53,9 @@ class GraphContext:
         Node IDs that seeded this context.
     """
 
-    nodes:    dict[str, Any]  = field(default_factory=dict)
-    edges:    list[Any]       = field(default_factory=list)
-    seed_ids: list[str]       = field(default_factory=list)
+    nodes: dict[str, Any] = field(default_factory=dict)
+    edges: list[Any] = field(default_factory=list)
+    seed_ids: list[str] = field(default_factory=list)
 
     @property
     def node_count(self) -> int:
@@ -82,23 +82,26 @@ class GraphContext:
     def to_dict(self) -> dict[str, Any]:
         """Serialise context to a plain dict (for API responses)."""
         return {
-            "node_count":  self.node_count,
-            "edge_count":  self.edge_count,
-            "seed_ids":    self.seed_ids,
-            "platforms":   self.platforms(),
-            "nodes":       {
+            "node_count": self.node_count,
+            "edge_count": self.edge_count,
+            "seed_ids": self.seed_ids,
+            "platforms": self.platforms(),
+            "nodes": {
                 nid: {
                     **(n.stix if isinstance(n.stix, dict) else {"id": nid}),
-                    **({"infrastructure_roles": n.infrastructure_roles}
-                       if getattr(n, "infrastructure_roles", None) else {}),
+                    **(
+                        {"infrastructure_roles": n.infrastructure_roles}
+                        if getattr(n, "infrastructure_roles", None)
+                        else {}
+                    ),
                 }
                 for nid, n in self.nodes.items()
             },
-            "edges":       [
+            "edges": [
                 {
                     "source": e.source_id,
                     "target": e.target_id,
-                    "type":   e.relationship_type,
+                    "type": e.relationship_type,
                     "confidence": e.confidence,
                 }
                 for e in self.edges
@@ -194,13 +197,13 @@ class GraphQuery:
 
     def filter(
         self,
-        context:        GraphContext,
-        min_confidence: float | None          = None,
-        platforms:      list[str] | None      = None,
-        date_from:      datetime | None       = None,
-        date_to:        datetime | None       = None,
-        node_types:     list[str] | None      = None,
-        infra_roles:    list[str] | None      = None,
+        context: GraphContext,
+        min_confidence: float | None = None,
+        platforms: list[str] | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        node_types: list[str] | None = None,
+        infra_roles: list[str] | None = None,
     ) -> GraphContext:
         """
         Apply filters to a :class:`GraphContext`, returning a narrowed context.
@@ -229,9 +232,8 @@ class GraphQuery:
         for nid, node in context.nodes.items():
             # Platform filter — support both node.platform and node.platforms
             if platforms is not None:
-                node_platforms = (
-                    getattr(node, "platforms", None)
-                    or ({getattr(node, "platform", None)} if getattr(node, "platform", None) else set())
+                node_platforms = getattr(node, "platforms", None) or (
+                    {getattr(node, "platform", None)} if getattr(node, "platform", None) else set()
                 )
                 if not set(platforms) & set(node_platforms):
                     continue
@@ -262,14 +264,15 @@ class GraphQuery:
             filtered_nodes[nid] = node
 
         filtered_edges = [
-            e for e in context.edges
+            e
+            for e in context.edges
             if e.source_id in filtered_nodes and e.target_id in filtered_nodes
         ]
 
         return GraphContext(
-            nodes    = filtered_nodes,
-            edges    = filtered_edges,
-            seed_ids = context.seed_ids,
+            nodes=filtered_nodes,
+            edges=filtered_edges,
+            seed_ids=context.seed_ids,
         )
 
     def neighbours(self, node_id: str) -> list[str]:
@@ -314,12 +317,8 @@ class GraphQuery:
         return adj
 
     def _build_context(self, node_ids: set[str], seed_ids: list[str]) -> GraphContext:
-        nodes = {nid: self._graph.nodes[nid]
-                 for nid in node_ids if nid in self._graph.nodes}
-        edges = [
-            e for e in self._graph.edges
-            if e.source_id in nodes and e.target_id in nodes
-        ]
+        nodes = {nid: self._graph.nodes[nid] for nid in node_ids if nid in self._graph.nodes}
+        edges = [e for e in self._graph.edges if e.source_id in nodes and e.target_id in nodes]
         return GraphContext(nodes=nodes, edges=edges, seed_ids=seed_ids)
 
     @staticmethod
@@ -327,9 +326,7 @@ class GraphQuery:
         """Extract a comparable datetime from a node's time_window or stix."""
         if node.time_window and node.time_window[0]:
             try:
-                return datetime.fromisoformat(
-                    node.time_window[0].replace("Z", "+00:00")
-                )
+                return datetime.fromisoformat(node.time_window[0].replace("Z", "+00:00"))
             except (ValueError, TypeError):
                 pass
         if node.stix:

@@ -16,31 +16,37 @@ def _dt(days_ago: int = 0) -> datetime:
     return datetime.now(tz=timezone.utc) - timedelta(days=days_ago)
 
 
-def _node(node_id: str, node_type: str = "indicator", platform: str = "p1",
-          confidence: float = 80.0, observed_at: datetime | None = None) -> MagicMock:
+def _node(
+    node_id: str,
+    node_type: str = "indicator",
+    platform: str = "p1",
+    confidence: float = 80.0,
+    observed_at: datetime | None = None,
+) -> MagicMock:
     n = MagicMock()
-    n.id           = node_id
-    n.node_type    = node_type
-    n.label        = node_id
-    n.platforms    = {platform}
-    n.confidence   = confidence
-    n.observed_at  = observed_at or _dt(5)
-    n.stix_object  = {"id": node_id, "type": "indicator"}
+    n.id = node_id
+    n.node_type = node_type
+    n.label = node_id
+    n.platforms = {platform}
+    n.confidence = confidence
+    n.observed_at = observed_at or _dt(5)
+    n.stix_object = {"id": node_id, "type": "indicator"}
     # Set time_window and stix to None to avoid MagicMock auto-attribute interference
     ts_iso = (observed_at or _dt(5)).isoformat()
-    n.time_window  = (ts_iso, ts_iso)
-    n.stix         = {"first_observed": ts_iso}
+    n.time_window = (ts_iso, ts_iso)
+    n.stix = {"first_observed": ts_iso}
     return n
 
 
-def _edge(source: str, target: str, rel_type: str = "related-to",
-          confidence: float = 70.0) -> MagicMock:
+def _edge(
+    source: str, target: str, rel_type: str = "related-to", confidence: float = 70.0
+) -> MagicMock:
     e = MagicMock()
-    e.source_id    = source
-    e.target_id    = target
+    e.source_id = source
+    e.target_id = target
     e.relationship = rel_type
-    e.confidence   = confidence
-    e.platforms    = {"p1"}
+    e.confidence = confidence
+    e.platforms = {"p1"}
     return e
 
 
@@ -70,8 +76,8 @@ class TestGraphQuery:
     def test_pivot_two_hops_reaches_further(self):
         e1 = _edge("n1", "n2")
         e2 = _edge("n2", "n3")
-        g  = _make_graph("n1", "n2", "n3", edges=[e1, e2])
-        q  = GraphQuery(g)
+        g = _make_graph("n1", "n2", "n3", edges=[e1, e2])
+        q = GraphQuery(g)
         ctx = q.pivot("n1", hops=2)
         assert "n3" in ctx.nodes
 
@@ -84,22 +90,22 @@ class TestGraphQuery:
     def test_expand_adds_neighbors(self):
         e = _edge("n1", "n2")
         g = _make_graph("n1", "n2", "n3", edges=[e])
-        q  = GraphQuery(g)
+        q = GraphQuery(g)
         ctx = q.pivot("n1", hops=0)
         ctx = q.expand(ctx, ["n1"])
         assert "n2" in ctx.nodes
 
     def test_filter_by_min_confidence(self):
-        g      = _make_graph("n1", "n2", "n3")
+        g = _make_graph("n1", "n2", "n3")
         g.nodes["n1"].confidence = 90.0
         g.nodes["n2"].confidence = 30.0
         g.nodes["n3"].confidence = 70.0
         ctx = GraphContext(
-            nodes    = g.nodes,
-            edges    = [],
-            seed_ids = ["n1"],
+            nodes=g.nodes,
+            edges=[],
+            seed_ids=["n1"],
         )
-        q   = GraphQuery(g)
+        q = GraphQuery(g)
         filtered = q.filter(ctx, min_confidence=70.0)
         assert "n1" in filtered.nodes
         assert "n3" in filtered.nodes
@@ -110,7 +116,7 @@ class TestGraphQuery:
         g.nodes["n1"].platforms = {"xsoar"}
         g.nodes["n2"].platforms = {"threatq"}
         ctx = GraphContext(nodes=g.nodes, edges=[], seed_ids=["n1"])
-        q   = GraphQuery(g)
+        q = GraphQuery(g)
         filtered = q.filter(ctx, platforms={"xsoar"})
         assert "n1" in filtered.nodes
         assert "n2" not in filtered.nodes
@@ -120,7 +126,7 @@ class TestGraphQuery:
         g.nodes["n1"].node_type = "indicator"
         g.nodes["n2"].node_type = "threat-actor"
         ctx = GraphContext(nodes=g.nodes, edges=[], seed_ids=[])
-        q   = GraphQuery(g)
+        q = GraphQuery(g)
         filtered = q.filter(ctx, node_types={"indicator"})
         assert "n1" in filtered.nodes
         assert "n2" not in filtered.nodes
@@ -135,8 +141,8 @@ class TestGraphQuery:
     def test_shortest_path_two_hops(self):
         e1 = _edge("n1", "n2")
         e2 = _edge("n2", "n3")
-        g  = _make_graph("n1", "n2", "n3", edges=[e1, e2])
-        q  = GraphQuery(g)
+        g = _make_graph("n1", "n2", "n3", edges=[e1, e2])
+        q = GraphQuery(g)
         path = q.shortest_path("n1", "n3")
         assert path is not None
         assert path[0] == "n1"
@@ -156,9 +162,9 @@ class TestGraphQuery:
 
     def test_graph_context_to_dict(self):
         ctx = GraphContext(
-            nodes    = {"n1": _node("n1")},
-            edges    = [_edge("n1", "n2")],
-            seed_ids = ["n1"],
+            nodes={"n1": _node("n1")},
+            edges=[_edge("n1", "n2")],
+            seed_ids=["n1"],
         )
         d = ctx.to_dict()
         assert "nodes" in d
@@ -180,7 +186,7 @@ class TestGraphQuery:
         g.nodes["n1"].stix = None
         g.nodes["n2"].stix = None
         ctx = GraphContext(nodes=g.nodes, edges=[], seed_ids=[])
-        q   = GraphQuery(g)
+        q = GraphQuery(g)
         filtered = q.filter(ctx, date_from=_dt(7))
         assert "n1" in filtered.nodes
         assert "n2" not in filtered.nodes

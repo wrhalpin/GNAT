@@ -130,7 +130,7 @@ class ReviewItem:
         }
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "ReviewItem":
+    def from_dict(cls, d: dict[str, Any]) -> ReviewItem:
         """Deserialise from a plain dict."""
 
         def _dt(v: str | None) -> datetime | None:

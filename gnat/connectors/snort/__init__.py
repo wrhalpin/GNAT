@@ -82,6 +82,7 @@ class SnortSTIXError(SnortError):
 @dataclass
 class SnortConfig:
     """Configuration container for snort."""
+
     alert_log_path: str = "/var/log/snort/alert_json.txt"
     log_format: str = "json"  # 'json' or 'fast'
     timeout: int = 10

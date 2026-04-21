@@ -202,6 +202,7 @@ _TOKEN_RE = re.compile(
 @dataclass
 class _Token:
     """_Token implementation."""
+
     kind: str
     value: str
     pos: int

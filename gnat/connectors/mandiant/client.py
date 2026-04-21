@@ -322,7 +322,11 @@ class MandiantClient(BaseClient, ConnectorMixin):
     def get_actor_attack_patterns(self, actor_id: str) -> list[dict[str, Any]]:
         """List MITRE ATT&CK techniques used by a threat actor."""
         resp = self.get(f"{_V4}/actor/{actor_id}/attack-pattern")
-        return resp.get("attack-patterns", resp.get("attack_patterns", [])) if isinstance(resp, dict) else []
+        return (
+            resp.get("attack-patterns", resp.get("attack_patterns", []))
+            if isinstance(resp, dict)
+            else []
+        )
 
     def get_actor_vulnerabilities(self, actor_id: str) -> list[dict[str, Any]]:
         """List CVEs exploited by a specific threat actor."""
@@ -357,7 +361,11 @@ class MandiantClient(BaseClient, ConnectorMixin):
     def get_malware_attack_patterns(self, malware_id: str) -> list[dict[str, Any]]:
         """List ATT&CK techniques used by a malware family."""
         resp = self.get(f"{_V4}/malware/{malware_id}/attack-pattern")
-        return resp.get("attack-patterns", resp.get("attack_patterns", [])) if isinstance(resp, dict) else []
+        return (
+            resp.get("attack-patterns", resp.get("attack_patterns", []))
+            if isinstance(resp, dict)
+            else []
+        )
 
     def get_malware_campaigns(self, malware_id: str) -> list[dict[str, Any]]:
         """List campaigns that have used a specific malware family."""
@@ -503,13 +511,17 @@ class MandiantClient(BaseClient, ConnectorMixin):
 
     def get_indicator_actors(self, indicator_value: str) -> list[dict[str, Any]]:
         """List threat actors associated with an indicator value."""
-        resp = self.get(f"{_V4}/indicator", params={"value": indicator_value, "with_actors": "true"})
+        resp = self.get(
+            f"{_V4}/indicator", params={"value": indicator_value, "with_actors": "true"}
+        )
         data = resp.get("indicators", [{}])[0] if isinstance(resp, dict) else {}
         return data.get("actors", [])
 
     def get_indicator_malware(self, indicator_value: str) -> list[dict[str, Any]]:
         """List malware families associated with an indicator value."""
-        resp = self.get(f"{_V4}/indicator", params={"value": indicator_value, "with_malware": "true"})
+        resp = self.get(
+            f"{_V4}/indicator", params={"value": indicator_value, "with_malware": "true"}
+        )
         data = resp.get("indicators", [{}])[0] if isinstance(resp, dict) else {}
         return data.get("malware", [])
 
@@ -525,7 +537,9 @@ class MandiantClient(BaseClient, ConnectorMixin):
             f"{_V4}/attack-pattern",
             params={"limit": min(limit, 1000), "offset": offset},
         )
-        return resp.get("attack-patterns", resp.get("objects", [])) if isinstance(resp, dict) else []
+        return (
+            resp.get("attack-patterns", resp.get("objects", [])) if isinstance(resp, dict) else []
+        )
 
     def get_attack_pattern(self, attack_pattern_id: str) -> dict[str, Any]:
         """Retrieve a single ATT&CK technique by Mandiant ID."""

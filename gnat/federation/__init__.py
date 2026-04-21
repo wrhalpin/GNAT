@@ -38,8 +38,8 @@ Quick start
 """
 
 from gnat.federation.peer import FederationPeer, PeerRegistry
-from gnat.federation.sync import FederationError, PeerSyncService, PullResult, PushResult
 from gnat.federation.scheduler import FederationScheduler
+from gnat.federation.sync import FederationError, PeerSyncService, PullResult, PushResult
 from gnat.federation.topology import FederationTopology
 
 __all__ = [

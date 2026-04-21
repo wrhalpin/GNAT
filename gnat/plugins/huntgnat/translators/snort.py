@@ -22,14 +22,16 @@ from gnat.plugins.huntgnat.parser.stix_pattern import (
 )
 from gnat.plugins.huntgnat.translators.base import RuleTranslator
 
-_HOST_ONLY_TYPES = frozenset({
-    "file",
-    "process",
-    "windows-registry-key",
-    "directory",
-    "software",
-    "user-account",
-})
+_HOST_ONLY_TYPES = frozenset(
+    {
+        "file",
+        "process",
+        "windows-registry-key",
+        "directory",
+        "software",
+        "user-account",
+    }
+)
 
 _SID_BASE = 8_000_000
 
@@ -111,43 +113,43 @@ class SnortTranslator(RuleTranslator):
 
         if otype == "domain-name":
             return (
-                f'alert dns $HOME_NET any -> any any '
+                f"alert dns $HOME_NET any -> any any "
                 f'(msg:"HuntGNAT: {msg}"; '
                 f'content:"{value}"; nocase; '
-                f'gid:1; sid:{sid}; rev:1;)'
+                f"gid:1; sid:{sid}; rev:1;)"
             )
         if otype in ("ipv4-addr", "ipv6-addr"):
             prop = ".".join(cmp.object_path.property_path)
             if "dst" in prop or prop == "value":
                 return (
-                    f'alert ip $HOME_NET any -> {value} any '
+                    f"alert ip $HOME_NET any -> {value} any "
                     f'(msg:"HuntGNAT: {msg}"; '
-                    f'gid:1; sid:{sid}; rev:1;)'
+                    f"gid:1; sid:{sid}; rev:1;)"
                 )
             return (
-                f'alert ip {value} any -> $HOME_NET any '
+                f"alert ip {value} any -> $HOME_NET any "
                 f'(msg:"HuntGNAT: {msg}"; '
-                f'gid:1; sid:{sid}; rev:1;)'
+                f"gid:1; sid:{sid}; rev:1;)"
             )
         if otype == "url":
             return (
-                f'alert http $HOME_NET any -> $EXTERNAL_NET any '
+                f"alert http $HOME_NET any -> $EXTERNAL_NET any "
                 f'(msg:"HuntGNAT: {msg}"; '
                 f'http_uri; content:"{value}"; nocase; '
-                f'gid:1; sid:{sid}; rev:1;)'
+                f"gid:1; sid:{sid}; rev:1;)"
             )
         if otype == "network-traffic":
             prop = ".".join(cmp.object_path.property_path)
             if "dst" in prop:
                 return (
-                    f'alert ip $HOME_NET any -> {value} any '
+                    f"alert ip $HOME_NET any -> {value} any "
                     f'(msg:"HuntGNAT: {msg}"; '
-                    f'gid:1; sid:{sid}; rev:1;)'
+                    f"gid:1; sid:{sid}; rev:1;)"
                 )
             if "src" in prop:
                 return (
-                    f'alert ip {value} any -> $HOME_NET any '
+                    f"alert ip {value} any -> $HOME_NET any "
                     f'(msg:"HuntGNAT: {msg}"; '
-                    f'gid:1; sid:{sid}; rev:1;)'
+                    f"gid:1; sid:{sid}; rev:1;)"
                 )
         return None

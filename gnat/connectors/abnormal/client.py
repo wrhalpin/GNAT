@@ -85,9 +85,7 @@ class AbnormalClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Bearer header from the configured token."""
         if not self.api_token:
-            raise GNATClientError(
-                "Abnormal connector requires api_token in config."
-            )
+            raise GNATClientError("Abnormal connector requires api_token in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -106,14 +104,10 @@ class AbnormalClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("Abnormal get_object requires a non-empty id")
         if stix_type != "observed-data":
-            raise GNATClientError(
-                f"Abnormal get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Abnormal get_object does not support stix_type={stix_type!r}")
         resp = self.get(f"/v1/threats/{object_id}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Abnormal returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Abnormal returned unexpected payload for {object_id!r}")
         return dict(resp, _ab_kind="threat")
 
     def list_objects(
@@ -133,9 +127,7 @@ class AbnormalClient(BaseClient, ConnectorMixin):
         * ``filter`` — Abnormal filter DSL passed to the endpoint
         """
         if stix_type != "observed-data":
-            raise GNATClientError(
-                f"Abnormal list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Abnormal list_objects does not support stix_type={stix_type!r}")
         filters = dict(filters or {})
         kind = (filters.get("kind") or "threats").lower()
         params: dict[str, Any] = {"pageNumber": int(page), "pageSize": int(page_size)}
@@ -160,19 +152,13 @@ class AbnormalClient(BaseClient, ConnectorMixin):
         records = _extract_records(resp, kind)
         return [dict(r, _ab_kind=tag) for r in records]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Abnormal connector is read-only."""
-        raise GNATClientError(
-            "Abnormal connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Abnormal connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Abnormal connector is read-only."""
-        raise GNATClientError(
-            "Abnormal connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Abnormal connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -187,9 +173,7 @@ class AbnormalClient(BaseClient, ConnectorMixin):
         """Fetch a single threat by id."""
         return self.get_object("observed-data", threat_id)
 
-    def get_threat_message(
-        self, threat_id: str, message_id: str
-    ) -> dict[str, Any]:
+    def get_threat_message(self, threat_id: str, message_id: str) -> dict[str, Any]:
         """Fetch a specific message within a threat."""
         resp = self.get(f"/v1/threats/{threat_id}/messages/{message_id}")
         if isinstance(resp, dict):
@@ -198,15 +182,11 @@ class AbnormalClient(BaseClient, ConnectorMixin):
 
     def list_cases(self) -> list[dict[str, Any]]:
         """Return BEC investigation cases."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "cases"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "cases"}, page_size=1000)
 
     def list_vendor_cases(self) -> list[dict[str, Any]]:
         """Return vendor-impersonation cases."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "vendor_cases"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "vendor_cases"}, page_size=1000)
 
     def list_abusemailbox_campaigns(self) -> list[dict[str, Any]]:
         """Return user-reported phishing campaigns from the abuse mailbox."""
@@ -248,11 +228,7 @@ class AbnormalClient(BaseClient, ConnectorMixin):
             or native.get("created_at")
             or utcnow()
         )
-        last = (
-            native.get("lastObserved")
-            or native.get("updated_at")
-            or first
-        )
+        last = native.get("lastObserved") or native.get("updated_at") or first
 
         return make_observed_data_envelope(
             first_observed=first,

@@ -70,23 +70,23 @@ class ConnectorHealth:
         Fully-qualified class name of the connector.
     """
 
-    name:            str
-    ok:              bool              = False
-    latency_ms:      float             = 0.0
-    error:           str | None        = None
-    trust_level:     str               = "semi_trusted"
-    checked_at:      datetime          = field(default_factory=lambda: datetime.now(timezone.utc))
-    connector_class: str               = ""
+    name: str
+    ok: bool = False
+    latency_ms: float = 0.0
+    error: str | None = None
+    trust_level: str = "semi_trusted"
+    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    connector_class: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a JSON-friendly dict."""
         return {
-            "name":            self.name,
-            "ok":              self.ok,
-            "latency_ms":      round(self.latency_ms, 2),
-            "error":           self.error,
-            "trust_level":     self.trust_level,
-            "checked_at":      self.checked_at.isoformat(),
+            "name": self.name,
+            "ok": self.ok,
+            "latency_ms": round(self.latency_ms, 2),
+            "error": self.error,
+            "trust_level": self.trust_level,
+            "checked_at": self.checked_at.isoformat(),
             "connector_class": self.connector_class,
         }
 
@@ -111,18 +111,19 @@ class FleetHealthMonitor:
 
     def __init__(
         self,
-        registry:    dict[str, Any] | None = None,
-        config:      dict[str, dict] | None = None,
-        max_workers: int   = _MAX_WORKERS,
-        timeout:     float = _CHECK_TIMEOUT,
+        registry: dict[str, Any] | None = None,
+        config: dict[str, dict] | None = None,
+        max_workers: int = _MAX_WORKERS,
+        timeout: float = _CHECK_TIMEOUT,
     ) -> None:
         if registry is None:
             from gnat.clients import CLIENT_REGISTRY
+
             registry = CLIENT_REGISTRY
-        self._registry    = registry
-        self._config      = config or {}
+        self._registry = registry
+        self._config = config or {}
         self._max_workers = max_workers
-        self._timeout     = timeout
+        self._timeout = timeout
 
     # ── Public API ──────────────────────────────────────────────────────────────
 
@@ -148,23 +149,22 @@ class FleetHealthMonitor:
 
         results: list[ConnectorHealth] = []
         with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="fleet-health") as pool:
-            future_to_name = {
-                pool.submit(self.check_one, name): name
-                for name in names
-            }
+            future_to_name = {pool.submit(self.check_one, name): name for name in names}
             for future in as_completed(future_to_name, timeout=self._timeout * 2):
                 name = future_to_name[future]
                 try:
                     health = future.result(timeout=self._timeout)
                     results.append(health)
                 except Exception as exc:
-                    results.append(ConnectorHealth(
-                        name        = name,
-                        ok          = False,
-                        error       = f"Check timed out or failed: {exc}",
-                        trust_level = self._get_trust_level(name),
-                        connector_class = self._get_class_name(name),
-                    ))
+                    results.append(
+                        ConnectorHealth(
+                            name=name,
+                            ok=False,
+                            error=f"Check timed out or failed: {exc}",
+                            trust_level=self._get_trust_level(name),
+                            connector_class=self._get_class_name(name),
+                        )
+                    )
 
         results.sort(key=lambda r: r.name)
         return results
@@ -188,53 +188,53 @@ class FleetHealthMonitor:
         cls = self._registry.get(name)
         if cls is None:
             return ConnectorHealth(
-                name  = name,
-                ok    = False,
-                error = f"Connector {name!r} not found in registry",
+                name=name,
+                ok=False,
+                error=f"Connector {name!r} not found in registry",
             )
 
-        trust_level    = self._get_trust_level(name)
+        trust_level = self._get_trust_level(name)
         connector_class = self._get_class_name(name)
         connector = None
 
         start_ns = time.perf_counter_ns()
         try:
-            kwargs    = self._config.get(name, {})
+            kwargs = self._config.get(name, {})
             connector = cls(**kwargs)
-            result    = connector.health_check()
-            elapsed   = (time.perf_counter_ns() - start_ns) / 1_000_000
+            result = connector.health_check()
+            elapsed = (time.perf_counter_ns() - start_ns) / 1_000_000
 
             # health_check() should return bool (True=healthy)
             ok = bool(result) if result is not None else True
 
             return ConnectorHealth(
-                name            = name,
-                ok              = ok,
-                latency_ms      = elapsed,
-                trust_level     = trust_level,
-                connector_class = connector_class,
+                name=name,
+                ok=ok,
+                latency_ms=elapsed,
+                trust_level=trust_level,
+                connector_class=connector_class,
             )
 
         except NotImplementedError:
             elapsed = (time.perf_counter_ns() - start_ns) / 1_000_000
             return ConnectorHealth(
-                name            = name,
-                ok              = False,
-                latency_ms      = elapsed,
-                error           = "health_check() not implemented",
-                trust_level     = trust_level,
-                connector_class = connector_class,
+                name=name,
+                ok=False,
+                latency_ms=elapsed,
+                error="health_check() not implemented",
+                trust_level=trust_level,
+                connector_class=connector_class,
             )
         except Exception as exc:
             elapsed = (time.perf_counter_ns() - start_ns) / 1_000_000
             logger.debug("FleetHealthMonitor.check_one(%r): %s", name, exc)
             return ConnectorHealth(
-                name            = name,
-                ok              = False,
-                latency_ms      = elapsed,
-                error           = str(exc),
-                trust_level     = trust_level,
-                connector_class = connector_class,
+                name=name,
+                ok=False,
+                latency_ms=elapsed,
+                error=str(exc),
+                trust_level=trust_level,
+                connector_class=connector_class,
             )
 
     def summary(self, results: list[ConnectorHealth] | None = None) -> dict[str, Any]:
@@ -250,13 +250,13 @@ class FleetHealthMonitor:
             results = self.check_all()
         healthy = sum(1 for r in results if r.ok)
         return {
-            "total":     len(results),
-            "healthy":   healthy,
+            "total": len(results),
+            "healthy": healthy,
             "unhealthy": len(results) - healthy,
-            "pct_ok":    round(healthy / len(results) * 100, 1) if results else 0.0,
+            "pct_ok": round(healthy / len(results) * 100, 1) if results else 0.0,
             "by_trust": {
                 level: {
-                    "total":   sum(1 for r in results if r.trust_level == level),
+                    "total": sum(1 for r in results if r.trust_level == level),
                     "healthy": sum(1 for r in results if r.trust_level == level and r.ok),
                 }
                 for level in ("trusted_internal", "semi_trusted", "untrusted_external")

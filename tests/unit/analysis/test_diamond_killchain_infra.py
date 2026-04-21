@@ -189,9 +189,7 @@ class TestKillChainTracker:
         assert KillChainTracker.compare(a, b) == 0.0
 
     def test_compare_partial(self):
-        a = KillChainTracker.build_progression(
-            "a", [("T1566", "TA0001"), ("T1059", "TA0002")]
-        )
+        a = KillChainTracker.build_progression("a", [("T1566", "TA0001"), ("T1059", "TA0002")])
         b = KillChainTracker.build_progression("b", [("T1566", "TA0001")])
         assert KillChainTracker.compare(a, b) == pytest.approx(0.5)
 
@@ -233,49 +231,56 @@ class TestInfrastructureNode:
 class TestInfrastructureClassifier:
     def test_classify_by_infrastructure_types_c2(self):
         role = InfrastructureClassifier.classify(
-            "ipv4-addr", "1.2.3.4",
+            "ipv4-addr",
+            "1.2.3.4",
             infrastructure_types=["command-and-control"],
         )
         assert role == InfrastructureRole.C2
 
     def test_classify_by_infrastructure_types_staging(self):
         role = InfrastructureClassifier.classify(
-            "domain-name", "stage.evil.com",
+            "domain-name",
+            "stage.evil.com",
             infrastructure_types=["staging"],
         )
         assert role == InfrastructureRole.STAGING
 
     def test_classify_by_infrastructure_types_phishing(self):
         role = InfrastructureClassifier.classify(
-            "domain-name", "phish.evil.com",
+            "domain-name",
+            "phish.evil.com",
             infrastructure_types=["phishing"],
         )
         assert role == InfrastructureRole.DELIVERY
 
     def test_classify_by_kill_chain_c2(self):
         role = InfrastructureClassifier.classify(
-            "ipv4-addr", "1.2.3.4",
+            "ipv4-addr",
+            "1.2.3.4",
             kill_chain_phases=["TA0011"],
         )
         assert role == InfrastructureRole.C2
 
     def test_classify_by_kill_chain_exfil(self):
         role = InfrastructureClassifier.classify(
-            "ipv4-addr", "1.2.3.4",
+            "ipv4-addr",
+            "1.2.3.4",
             kill_chain_phases=["TA0010"],
         )
         assert role == InfrastructureRole.EXFILTRATION
 
     def test_classify_by_kill_chain_initial_access(self):
         role = InfrastructureClassifier.classify(
-            "domain-name", "delivery.evil.com",
+            "domain-name",
+            "delivery.evil.com",
             kill_chain_phases=["TA0001"],
         )
         assert role == InfrastructureRole.DELIVERY
 
     def test_classify_by_ports_c2(self):
         role = InfrastructureClassifier.classify(
-            "ipv4-addr", "1.2.3.4",
+            "ipv4-addr",
+            "1.2.3.4",
             ports=[443, 8443],
         )
         assert role == InfrastructureRole.C2
@@ -286,7 +291,8 @@ class TestInfrastructureClassifier:
 
     def test_infrastructure_types_take_priority(self):
         role = InfrastructureClassifier.classify(
-            "ipv4-addr", "1.2.3.4",
+            "ipv4-addr",
+            "1.2.3.4",
             infrastructure_types=["exfiltration"],
             kill_chain_phases=["TA0011"],
             ports=[443],

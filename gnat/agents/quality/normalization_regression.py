@@ -83,7 +83,12 @@ class RegressionDifference:
         """Allow ``"substring" in diff`` checks against the path and reason."""
         if not isinstance(item, str):
             return False
-        return item in self.path or item in self.reason or item in str(self.expected) or item in str(self.actual)
+        return (
+            item in self.path
+            or item in self.reason
+            or item in str(self.expected)
+            or item in str(self.actual)
+        )
 
 
 @dataclass(slots=True)
@@ -233,7 +238,9 @@ class NormalizationRegressionAgent:
                     )
                 ],
             )
-        differences = self._compare_golden(fixture.expected, actual, policy=fixture.policy, path="$")
+        differences = self._compare_golden(
+            fixture.expected, actual, policy=fixture.policy, path="$"
+        )
         return RegressionResult(
             connector_name=fixture.connector,
             fixture_name=fixture.name,
@@ -246,7 +253,9 @@ class NormalizationRegressionAgent:
         if fixture.connector in self._registry:
             return self._registry[fixture.connector](copy.deepcopy(fixture.input))
         if not fixture.mapper:
-            raise ValueError(f"no mapper registered or specified for connector '{fixture.connector}'")
+            raise ValueError(
+                f"no mapper registered or specified for connector '{fixture.connector}'"
+            )
         module_path, class_name = fixture.mapper.rsplit(":", 1)
         module = importlib.import_module(module_path)
         mapper_class = getattr(module, class_name)
@@ -302,13 +311,19 @@ class NormalizationRegressionAgent:
                     continue
                 child_path = f"{path}.{key}"
                 if key not in actual:
-                    differences.append(RegressionDifference(child_path, exp_val, None, "missing field"))
+                    differences.append(
+                        RegressionDifference(child_path, exp_val, None, "missing field")
+                    )
                 else:
-                    differences.extend(self._compare_golden(exp_val, actual[key], policy=policy, path=child_path))
+                    differences.extend(
+                        self._compare_golden(exp_val, actual[key], policy=policy, path=child_path)
+                    )
             if not policy.allow_additional_fields:
                 for key, act_val in actual.items():
                     if key not in expected and key not in policy.ignore_fields:
-                        differences.append(RegressionDifference(f"{path}.{key}", None, act_val, "unexpected field"))
+                        differences.append(
+                            RegressionDifference(f"{path}.{key}", None, act_val, "unexpected field")
+                        )
         elif isinstance(expected, list) and isinstance(actual, list):
             if policy.require_exact_list_length and len(expected) != len(actual):
                 differences.append(
@@ -320,13 +335,17 @@ class NormalizationRegressionAgent:
             for i, exp_item in enumerate(expected):
                 matched = False
                 for j, act_item in enumerate(unmatched):
-                    if not self._compare_golden(exp_item, act_item, policy=policy, path=f"{path}[{i}]"):
+                    if not self._compare_golden(
+                        exp_item, act_item, policy=policy, path=f"{path}[{i}]"
+                    ):
                         unmatched.pop(j)
                         matched = True
                         break
                 if not matched:
                     differences.append(
-                        RegressionDifference(f"{path}[{i}]", exp_item, None, "no matching list item")
+                        RegressionDifference(
+                            f"{path}[{i}]", exp_item, None, "no matching list item"
+                        )
                     )
         else:
             if expected != actual:
@@ -354,23 +373,39 @@ class NormalizationRegressionAgent:
                 if child_path in policy.ignored_paths:
                     continue
                 if key not in actual:
-                    differences.append(RegressionDifference(child_path, expected_value, None, "missing field"))
+                    differences.append(
+                        RegressionDifference(child_path, expected_value, None, "missing field")
+                    )
                     continue
-                differences.extend(self._compare(expected_value, actual[key], policy=policy, path=child_path))
+                differences.extend(
+                    self._compare(expected_value, actual[key], policy=policy, path=child_path)
+                )
 
             if not policy.allow_additive_fields:
                 for key, actual_value in actual.items():
                     if key not in expected:
-                        differences.append(RegressionDifference(f"{path}.{key}", None, actual_value, "unexpected field"))
+                        differences.append(
+                            RegressionDifference(
+                                f"{path}.{key}", None, actual_value, "unexpected field"
+                            )
+                        )
         elif isinstance(expected, list) and isinstance(actual, list):
             if policy.strict_list_lengths and len(expected) != len(actual):
-                differences.append(RegressionDifference(path, len(expected), len(actual), "list length changed"))
+                differences.append(
+                    RegressionDifference(path, len(expected), len(actual), "list length changed")
+                )
                 return differences
             for idx, expected_item in enumerate(expected):
                 if idx >= len(actual):
-                    differences.append(RegressionDifference(f"{path}[{idx}]", expected_item, None, "missing list item"))
+                    differences.append(
+                        RegressionDifference(
+                            f"{path}[{idx}]", expected_item, None, "missing list item"
+                        )
+                    )
                     continue
-                differences.extend(self._compare(expected_item, actual[idx], policy=policy, path=f"{path}[{idx}]"))
+                differences.extend(
+                    self._compare(expected_item, actual[idx], policy=policy, path=f"{path}[{idx}]")
+                )
         else:
             if expected != actual:
                 differences.append(RegressionDifference(path, expected, actual, "value changed"))
@@ -388,5 +423,7 @@ def render_regression_report(run: RunResult) -> str:
         status = "PASS" if result.passed else "FAIL"
         lines.append(f"  [{status}] {result.fixture_name}")
         for diff in result.differences:
-            lines.append(f"    - {diff.path}: expected {diff.expected!r}, got {diff.actual!r} ({diff.reason})")
+            lines.append(
+                f"    - {diff.path}: expected {diff.expected!r}, got {diff.actual!r} ({diff.reason})"
+            )
     return "\n".join(lines)

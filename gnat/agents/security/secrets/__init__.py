@@ -6,6 +6,7 @@ gnat.agents.security.secrets
 
 Public API surface for the ``gnat.agents.security.secrets`` package.
 """
+
 from .broker import SecretsBroker
 from .models import (
     AuditEvent,

@@ -138,8 +138,5 @@ class ValidationRun:
             finished_at=fa,
             status=data.get("status", "running"),
             executed_by=data.get("executed_by", "analyst"),
-            results=[
-                RuleValidationResult.from_dict(r)
-                for r in (data.get("results") or [])
-            ],
+            results=[RuleValidationResult.from_dict(r) for r in (data.get("results") or [])],
         )

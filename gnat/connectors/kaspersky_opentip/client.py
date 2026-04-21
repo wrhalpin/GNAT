@@ -71,9 +71,7 @@ class KasperskyOpenTIPClient(BaseClient, ConnectorMixin):
     def health_check(self) -> bool:
         """Query a known-good domain lookup."""
         try:
-            self.get(
-                "/api/v1/search/domain", params={"request": "kaspersky.com"}
-            )
+            self.get("/api/v1/search/domain", params={"request": "kaspersky.com"})
             return True
         except Exception:  # noqa: BLE001
             return False
@@ -88,9 +86,7 @@ class KasperskyOpenTIPClient(BaseClient, ConnectorMixin):
             raise GNATClientError("Kaspersky OpenTIP get_object requires a non-empty id")
 
         ioc_type = _guess_ioc_type(object_id)
-        resp = self.get(
-            f"/api/v1/search/{ioc_type}", params={"request": object_id}
-        )
+        resp = self.get(f"/api/v1/search/{ioc_type}", params={"request": object_id})
         if not isinstance(resp, dict):
             raise GNATClientError(
                 f"Kaspersky OpenTIP returned unexpected payload for {object_id!r}"
@@ -118,9 +114,7 @@ class KasperskyOpenTIPClient(BaseClient, ConnectorMixin):
             return []
         return [self.get_object("indicator", value)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Kaspersky OpenTIP connector is read-only."""
         raise GNATClientError(
             "Kaspersky OpenTIP connector is read-only — no write operations supported."
@@ -171,16 +165,8 @@ class KasperskyOpenTIPClient(BaseClient, ConnectorMixin):
             pattern = make_indicator_pattern("domain-name", query)
 
         stix_uuid = uuid.uuid5(_NAMESPACE_KASPERSKY, f"indicator|{query}")
-        zone = (
-            (native.get("Zone") or native.get("zone") or "")
-            if isinstance(native, dict)
-            else ""
-        )
-        labels = (
-            ["malicious-activity"]
-            if str(zone).lower() in {"red", "orange"}
-            else ["benign"]
-        )
+        zone = (native.get("Zone") or native.get("zone") or "") if isinstance(native, dict) else ""
+        labels = ["malicious-activity"] if str(zone).lower() in {"red", "orange"} else ["benign"]
         return {
             "type": "indicator",
             "id": f"indicator--{stix_uuid}",
@@ -221,9 +207,7 @@ def _guess_ioc_type(value: str) -> str:
         return "ip"
     if value.startswith(("http://", "https://")):
         return "url"
-    if len(value) in (32, 40, 64) and all(
-        c in "0123456789abcdefABCDEF" for c in value
-    ):
+    if len(value) in (32, 40, 64) and all(c in "0123456789abcdefABCDEF" for c in value):
         return "hash"
     return "domain"
 

@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.orca`` package.
 
 Exports: ``OrcaClient``.
 """
+
 from .client import OrcaClient
 
 __all__ = ["OrcaClient"]

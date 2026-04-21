@@ -73,20 +73,20 @@ class AlertsPanel(Widget):
     """
 
     pending_reviews: reactive[int] = reactive(0)
-    critical_gaps:   reactive[int] = reactive(0)
+    critical_gaps: reactive[int] = reactive(0)
 
     def __init__(
         self,
         review_service: Any = None,
-        gap_detector:   Any = None,
-        poll_interval:  int = 30,
+        gap_detector: Any = None,
+        poll_interval: int = 30,
         **kwargs: Any,
     ) -> None:
         """Initialize AlertsPanel."""
         super().__init__(**kwargs)
         self._review_service = review_service
-        self._gap_detector   = gap_detector
-        self._poll_interval  = poll_interval
+        self._gap_detector = gap_detector
+        self._poll_interval = poll_interval
         self._timer: Timer | None = None
 
     def compose(self) -> ComposeResult:
@@ -137,8 +137,7 @@ class AlertsPanel(Widget):
             gaps = self._gap_detector.detect()
             if isinstance(gaps, list):
                 self.critical_gaps = sum(
-                    1 for g in gaps
-                    if getattr(g, "severity", "") in ("critical", "high")
+                    1 for g in gaps if getattr(g, "severity", "") in ("critical", "high")
                 )
             else:
                 self.critical_gaps = 0

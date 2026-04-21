@@ -55,9 +55,7 @@ def make_context(
     policy=None,
 ):
     store = MagicMock()
-    store.get_source_platform = MagicMock(
-        side_effect=lambda ws, sid: (platform_map or {}).get(sid)
-    )
+    store.get_source_platform = MagicMock(side_effect=lambda ws, sid: (platform_map or {}).get(sid))
     store.get_source_platforms_bulk = MagicMock(
         side_effect=lambda ws, sids: {s: (platform_map or {}).get(s) for s in sids}
     )

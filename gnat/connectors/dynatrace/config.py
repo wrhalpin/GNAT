@@ -126,9 +126,7 @@ def load_dynatrace_config(
 ) -> DynatraceConfig:
     """Parse [dynatrace] section from gnat.ini."""
     if not config.has_section(section):
-        raise DynatraceConfigError(
-            f"Configuration section '[{section}]' not found in gnat.ini."
-        )
+        raise DynatraceConfigError(f"Configuration section '[{section}]' not found in gnat.ini.")
     raw = dict(_DEFAULTS)
     raw.update(dict(config.items(section)))
 

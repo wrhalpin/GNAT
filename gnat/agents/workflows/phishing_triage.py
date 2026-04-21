@@ -48,14 +48,14 @@ from gnat.agents.workflow import Workflow
 
 def build_phishing_triage_workflow(
     dispatcher: Any = None,
-    resolver:   Any = None,
-    scorer:     Any = None,
-    detector:   Any = None,
-    assistant:  Any = None,
-    service:    Any = None,
-    iocs:       list[str] | None = None,
+    resolver: Any = None,
+    scorer: Any = None,
+    detector: Any = None,
+    assistant: Any = None,
+    service: Any = None,
+    iocs: list[str] | None = None,
     new_status: Any = None,
-    author:     str = "phishing-triage-workflow",
+    author: str = "phishing-triage-workflow",
 ) -> Workflow:
     """
     Build a phishing triage :class:`~gnat.agents.workflow.Workflow`.
@@ -86,6 +86,7 @@ def build_phishing_triage_workflow(
     if new_status is None:
         try:
             from gnat.analysis.investigations.models import InvestigationStatus
+
             new_status = InvestigationStatus.IN_PROGRESS
         except ImportError:
             new_status = "in_progress"
@@ -95,10 +96,13 @@ def build_phishing_triage_workflow(
     wf.add_step(correlate_step(resolver, scorer, name="correlate"))
     wf.add_step(gap_detect_step(detector, name="gap_detect"))
     wf.add_step(draft_report_step(assistant, name="draft_report"))
-    wf.add_step(transition_step(
-        service, new_status,
-        note   = "Automated phishing triage workflow complete.",
-        author = author,
-        name   = "transition",
-    ))
+    wf.add_step(
+        transition_step(
+            service,
+            new_status,
+            note="Automated phishing triage workflow complete.",
+            author=author,
+            name="transition",
+        )
+    )
     return wf

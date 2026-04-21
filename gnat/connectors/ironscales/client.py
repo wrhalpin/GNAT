@@ -89,13 +89,9 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Bearer token + X-Company-Id headers."""
         if not self.api_key:
-            raise GNATClientError(
-                "IRONSCALES connector requires api_key in config."
-            )
+            raise GNATClientError("IRONSCALES connector requires api_key in config.")
         if not self.company_id:
-            raise GNATClientError(
-                "IRONSCALES connector requires company_id in config."
-            )
+            raise GNATClientError("IRONSCALES connector requires company_id in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_key}"
         self._auth_headers["X-Company-Id"] = str(self.company_id)
         self._auth_headers["Accept"] = "application/json"
@@ -119,25 +115,17 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single IRONSCALES record by id."""
         if not object_id:
-            raise GNATClientError(
-                "IRONSCALES get_object requires a non-empty id"
-            )
+            raise GNATClientError("IRONSCALES get_object requires a non-empty id")
         if stix_type == "observed-data":
             resp = self.get(self._company_path(f"incidents/{object_id}/"))
             kind = "incident"
         elif stix_type == "indicator":
-            resp = self.get(
-                self._company_path(f"federation/signatures/{object_id}/")
-            )
+            resp = self.get(self._company_path(f"federation/signatures/{object_id}/"))
             kind = "signature"
         else:
-            raise GNATClientError(
-                f"IRONSCALES get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"IRONSCALES get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"IRONSCALES returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"IRONSCALES returned unexpected payload for {object_id!r}")
         return dict(resp, _is_kind=kind)
 
     def list_objects(
@@ -157,34 +145,22 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
         if stix_type == "observed-data":
             sub = (filters.get("kind") or "incidents").lower()
             if sub == "reported_emails":
-                resp = self.get(
-                    self._company_path("report/reported-emails/"), params=params
-                )
+                resp = self.get(self._company_path("report/reported-emails/"), params=params)
                 tag = "reported_email"
             elif sub == "mailboxes":
-                resp = self.get(
-                    self._company_path("mailboxes/"), params=params
-                )
+                resp = self.get(self._company_path("mailboxes/"), params=params)
                 tag = "mailbox"
             elif sub == "mitigation_actions":
-                resp = self.get(
-                    self._company_path("mitigation-actions/"), params=params
-                )
+                resp = self.get(self._company_path("mitigation-actions/"), params=params)
                 tag = "mitigation_action"
             else:
-                resp = self.get(
-                    self._company_path("incidents/"), params=params
-                )
+                resp = self.get(self._company_path("incidents/"), params=params)
                 tag = "incident"
         elif stix_type == "indicator":
-            resp = self.get(
-                self._company_path("federation/signatures/"), params=params
-            )
+            resp = self.get(self._company_path("federation/signatures/"), params=params)
             tag = "signature"
         elif stix_type == "x-ironscales-classification":
-            resp = self.get(
-                self._company_path("classifications/"), params=params
-            )
+            resp = self.get(self._company_path("classifications/"), params=params)
             tag = "classification"
         else:
             raise GNATClientError(
@@ -192,19 +168,13 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _is_kind=tag) for r in _extract_ironscales_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """IRONSCALES connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "IRONSCALES connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("IRONSCALES connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """IRONSCALES connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "IRONSCALES connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("IRONSCALES connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -222,9 +192,7 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
             filters["severity"] = severity
         if since:
             filters["since"] = since
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=500
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=500)
 
     def get_incident(self, incident_id: str) -> dict[str, Any]:
         """Fetch a single incident by id."""
@@ -232,28 +200,19 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
 
     def list_affected_mailboxes(self, incident_id: str) -> list[dict[str, Any]]:
         """Return the mailboxes affected by an incident."""
-        resp = self.get(
-            self._company_path(f"incidents/{incident_id}/affected-mailboxes/")
-        )
-        return [
-            dict(r, _is_kind="affected_mailbox")
-            for r in _extract_ironscales_list(resp)
-        ]
+        resp = self.get(self._company_path(f"incidents/{incident_id}/affected-mailboxes/"))
+        return [dict(r, _is_kind="affected_mailbox") for r in _extract_ironscales_list(resp)]
 
     def list_reported_emails(self, since: str = "") -> list[dict[str, Any]]:
         """Return user-reported phishing emails."""
         filters: dict[str, Any] = {"kind": "reported_emails"}
         if since:
             filters["since"] = since
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=500
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=500)
 
     def list_mailboxes(self) -> list[dict[str, Any]]:
         """Return protected mailboxes."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "mailboxes"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "mailboxes"}, page_size=500)
 
     def list_mitigation_actions(self) -> list[dict[str, Any]]:
         """Return available / historical mitigation actions."""
@@ -267,16 +226,12 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
         """Return classification rules."""
         return self.list_objects("x-ironscales-classification", page_size=500)
 
-    def list_federation_signatures(
-        self, since: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_federation_signatures(self, since: str = "") -> list[dict[str, Any]]:
         """Return IRONSCALES community (federation) signatures."""
         filters: dict[str, Any] = {}
         if since:
             filters["since"] = since
-        return self.list_objects(
-            "indicator", filters=filters, page_size=500
-        )
+        return self.list_objects("indicator", filters=filters, page_size=500)
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
 
@@ -301,9 +256,7 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
                 pattern = f"[ipv4-addr:value = '{value}']"
             else:
                 pattern = f"[x-ironscales:value = '{value}']"
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_IRONSCALES, f"indicator|{value or sig_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_IRONSCALES, f"indicator|{value or sig_id}")
             return {
                 "type": "indicator",
                 "id": f"indicator--{stix_uuid}",
@@ -343,29 +296,16 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
 
         # observed-data envelope (incident / reported_email / mitigation / mailbox)
         refs: list[str] = []
-        message_id = (
-            native.get("message_id")
-            or native.get("incident_id")
-            or native.get("id")
-            or ""
-        )
+        message_id = native.get("message_id") or native.get("incident_id") or native.get("id") or ""
         if message_id:
-            msg_uuid = uuid.uuid5(
-                _NAMESPACE_IRONSCALES, f"email-message|{message_id}"
-            )
+            msg_uuid = uuid.uuid5(_NAMESPACE_IRONSCALES, f"email-message|{message_id}")
             refs.append(f"email-message--{msg_uuid}")
 
-        sender = (
-            native.get("sender")
-            or native.get("from")
-            or native.get("from_address")
-        )
+        sender = native.get("sender") or native.get("from") or native.get("from_address")
         if isinstance(sender, dict):
             sender = sender.get("email") or sender.get("address")
         if sender:
-            sender_uuid = uuid.uuid5(
-                _NAMESPACE_IRONSCALES, f"identity|{sender}"
-            )
+            sender_uuid = uuid.uuid5(_NAMESPACE_IRONSCALES, f"identity|{sender}")
             refs.append(f"identity--{sender_uuid}")
 
         first = (
@@ -374,18 +314,12 @@ class IRONSCALESClient(BaseClient, ConnectorMixin):
             or native.get("reported_at")
             or utcnow()
         )
-        last = (
-            native.get("last_reported_at")
-            or native.get("updated_at")
-            or first
-        )
+        last = native.get("last_reported_at") or native.get("updated_at") or first
 
         return make_observed_data_envelope(
             first_observed=first,
             last_observed=last,
-            number_observed=int(
-                native.get("affected_mailboxes_count") or native.get("count") or 1
-            ),
+            number_observed=int(native.get("affected_mailboxes_count") or native.get("count") or 1),
             object_refs=refs,
             source_name="ironscales",
             x_extensions={

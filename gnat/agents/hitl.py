@@ -42,7 +42,7 @@ import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from gnat.agents.governor import IMPACT_LEVELS, AgentAction
+from gnat.agents.governor import AgentAction
 from gnat.stix.version import CURRENT_SPEC_VERSION
 
 if TYPE_CHECKING:
@@ -79,7 +79,7 @@ class HITLGateway:
 
     def __init__(
         self,
-        review_service: "ReviewService",
+        review_service: ReviewService,
         approval_timeout_seconds: int = DEFAULT_APPROVAL_TIMEOUT_SECONDS,
         xsoar_client: Any | None = None,
         source_workspace: str = "agent-actions",
@@ -95,7 +95,7 @@ class HITLGateway:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def evaluate(self, action: AgentAction) -> tuple[bool, "ReviewItem | None"]:
+    def evaluate(self, action: AgentAction) -> tuple[bool, ReviewItem | None]:
         """
         Evaluate an agent action against the impact-tier policy.
 
@@ -130,7 +130,7 @@ class HITLGateway:
         review_item = self.submit_for_approval(action)
         return False, review_item
 
-    def submit_for_approval(self, action: AgentAction) -> "ReviewItem":
+    def submit_for_approval(self, action: AgentAction) -> ReviewItem:
         """
         Submit *action* to the review queue and return the created
         :class:`~gnat.review.models.ReviewItem`.
@@ -169,7 +169,7 @@ class HITLGateway:
 
         return review_item
 
-    def check_approval_status(self, review_id: str) -> "ReviewStatus":
+    def check_approval_status(self, review_id: str) -> ReviewStatus:
         """
         Return the current :class:`~gnat.review.models.ReviewStatus` for *review_id*.
 
@@ -256,9 +256,7 @@ class HITLGateway:
     def _notify_xsoar(self, action: AgentAction, review_item: Any) -> None:
         """Fire an XSOAR playbook notification for critical actions."""
         if self._xsoar_client is None:
-            logger.debug(
-                "HITLGateway: no XSOAR client configured; skipping critical notification"
-            )
+            logger.debug("HITLGateway: no XSOAR client configured; skipping critical notification")
             return
         try:
             payload = {

@@ -79,10 +79,17 @@ def _assert_hypothesis_facts(prolog: Any, h: Any, ctx: Any) -> None:
 def _retract_hypothesis_facts(prolog: Any) -> None:
     """Retract all temporary hypothesis facts."""
     for pred in [
-        "hypothesis_status/1", "supporting_count/1", "refuting_count/1",
-        "stix_confidence/1", "days_since_update/1", "age_days/1",
-        "reliability/1", "credibility/1", "ai_confidence_ceiling/1",
-        "ai_only/0", "trusted_source_present/0",
+        "hypothesis_status/1",
+        "supporting_count/1",
+        "refuting_count/1",
+        "stix_confidence/1",
+        "days_since_update/1",
+        "age_days/1",
+        "reliability/1",
+        "credibility/1",
+        "ai_confidence_ceiling/1",
+        "ai_only/0",
+        "trusted_source_present/0",
     ]:
         import contextlib
 
@@ -94,20 +101,20 @@ def _parse_action(action_term: Any) -> Any:
     """Convert a Prolog action term to a Python Decision."""
     s = str(action_term)
     if s.startswith("set_status("):
-        inner = s[len("set_status("):-1]
+        inner = s[len("set_status(") : -1]
         parts = inner.split(",", 1)
         target = parts[0].strip().strip("'")
         reason = parts[1].strip().strip("'") if len(parts) > 1 else ""
         return set_status(target, reason)
     if s.startswith("annotate("):
-        inner = s[len("annotate("):-1]
+        inner = s[len("annotate(") : -1]
         parts = inner.split(",", 2)
         key = parts[0].strip().strip("'")
         value = parts[1].strip().strip("'") if len(parts) > 1 else ""
         reason = parts[2].strip().strip("'") if len(parts) > 2 else ""
         return annotate(key, value, reason)
     if s.startswith("no_op("):
-        inner = s[len("no_op("):-1]
+        inner = s[len("no_op(") : -1]
         return no_op(inner.strip().strip("'"))
     return no_op(f"Unrecognized Prolog action: {s}")
 
@@ -183,9 +190,7 @@ class PrologRuleLoader:
         except Exception as exc:  # noqa: BLE001
             logger.error("Failed to load Prolog rule file %s: %s", pl_file, exc)
 
-    def _register_rule(
-        self, name: str, attrs: Any, source_file: Path
-    ) -> None:
+    def _register_rule(self, name: str, attrs: Any, source_file: Path) -> None:
         phase = None
         priority = 50
         description = ""
@@ -212,6 +217,7 @@ class PrologRuleLoader:
                     return len(result) > 0
                 finally:
                     _retract_hypothesis_facts(prolog_ref)
+
             return when_fn
 
         def make_then(rn: str) -> Any:
@@ -220,19 +226,22 @@ class PrologRuleLoader:
                 if results:
                     return _parse_action(results[0]["Action"])
                 return no_op(f"No then/2 clause for {rn}")
+
             return then_fn
 
-        self._rules.append(RegisteredRule(
-            name=name,
-            description=description,
-            phase=phase,
-            target_status=None,
-            priority=priority,
-            tags=tags,
-            when_fn=make_when(rule_name),
-            then_fn=make_then(rule_name),
-            source_file=str(source_file),
-        ))
+        self._rules.append(
+            RegisteredRule(
+                name=name,
+                description=description,
+                phase=phase,
+                target_status=None,
+                priority=priority,
+                tags=tags,
+                when_fn=make_when(rule_name),
+                then_fn=make_then(rule_name),
+                source_file=str(source_file),
+            )
+        )
 
 
 class PrologRuleEngine:
@@ -278,7 +287,11 @@ class PrologRuleEngine:
             if rule.phase is not None and status_val != rule.phase:
                 continue
 
-            if not self._policy.allow_dirty_rules and rule.source_file and not git_file_is_clean(rule.source_file):
+            if (
+                not self._policy.allow_dirty_rules
+                and rule.source_file
+                and not git_file_is_clean(rule.source_file)
+            ):
                 continue
 
             try:
@@ -298,11 +311,13 @@ class PrologRuleEngine:
                     continue
                 transition_consumed = True
 
-            result.firings.append(RuleFiring(
-                rule_name=rule.name,
-                rule_source_file=str(rule.source_file),
-                rule_git_sha=rule_file_sha(rule.source_file) if rule.source_file else None,
-                decision=decision,
-            ))
+            result.firings.append(
+                RuleFiring(
+                    rule_name=rule.name,
+                    rule_source_file=str(rule.source_file),
+                    rule_git_sha=rule_file_sha(rule.source_file) if rule.source_file else None,
+                    decision=decision,
+                )
+            )
 
         return result

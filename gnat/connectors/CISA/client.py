@@ -66,12 +66,11 @@ class CISAClient(BaseClient, ConnectorMixin):
     host : str
         Base URL, default ``"https://www.cisa.gov"``.
     """
+
     TRUST_LEVEL: str = "untrusted_external"
     API_VERSION: str = "v1"
     API_PREFIX: str = ""
     COST_UNIT: int = 1
-
-
 
     stix_type_map: dict[str, str] = {
         "vulnerability": "kev",

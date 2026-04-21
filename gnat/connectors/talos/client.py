@@ -78,9 +78,7 @@ class TalosClient(BaseClient, ConnectorMixin):
         """Talos public endpoints are anonymous."""
         self._auth_headers["Accept"] = "application/json"
         # Talos's web endpoints reject bot-like User-Agents
-        self._auth_headers["User-Agent"] = (
-            "GNAT/1.5 (+https://github.com/wrhalpin/GNAT)"
-        )
+        self._auth_headers["User-Agent"] = "GNAT/1.5 (+https://github.com/wrhalpin/GNAT)"
 
     # ── ConnectorMixin — CRUD ──────────────────────────────────────────────
 
@@ -105,21 +103,15 @@ class TalosClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("Talos get_object requires a non-empty id")
         if stix_type != "indicator":
-            raise GNATClientError(
-                f"Talos get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Talos get_object does not support stix_type={stix_type!r}")
         query_type = "ip" if _looks_like_ipv4(object_id) else "domain"
         resp = self.get(
             "/sb_api/query_lookup",
             params={"query_entry": object_id, "query_type": query_type},
         )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Talos returned unexpected payload for {object_id!r}"
-            )
-        return dict(
-            resp, _ts_kind="reputation", _ts_query=object_id, _ts_query_type=query_type
-        )
+            raise GNATClientError(f"Talos returned unexpected payload for {object_id!r}")
+        return dict(resp, _ts_kind="reputation", _ts_query=object_id, _ts_query_type=query_type)
 
     def list_objects(
         self,
@@ -142,28 +134,18 @@ class TalosClient(BaseClient, ConnectorMixin):
         if stix_type == "report":
             # Cheap JSON advisory index, if Talos exposes one; otherwise
             # callers should use get_advisories() for the RSS feed.
-            resp = self.get(
-                "/feeds/advisory-summary.json", params={"limit": int(page_size)}
-            )
+            resp = self.get("/feeds/advisory-summary.json", params={"limit": int(page_size)})
             items = _extract_talos_list(resp)
             return [dict(r, _ts_kind="advisory") for r in items]
-        raise GNATClientError(
-            f"Talos list_objects does not support stix_type={stix_type!r}"
-        )
+        raise GNATClientError(f"Talos list_objects does not support stix_type={stix_type!r}")
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Talos connector is read-only."""
-        raise GNATClientError(
-            "Talos connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Talos connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Talos connector is read-only."""
-        raise GNATClientError(
-            "Talos connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Talos connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -214,12 +196,7 @@ class TalosClient(BaseClient, ConnectorMixin):
         else:
             pattern = make_indicator_pattern("domain-name", query)
         stix_uuid = uuid.uuid5(_NAMESPACE_TALOS, f"indicator|{query}")
-        reputation = (
-            native.get("reputation")
-            or native.get("rep")
-            or native.get("rep_score")
-            or ""
-        )
+        reputation = native.get("reputation") or native.get("rep") or native.get("rep_score") or ""
         labels = (
             ["malicious-activity"]
             if str(reputation).lower() in {"untrusted", "poor", "malicious"}

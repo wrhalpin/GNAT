@@ -6,6 +6,7 @@ gnat.agents.security.secrets.broker
 
 Broker utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from urllib.parse import parse_qs, urlparse
@@ -19,6 +20,7 @@ from .providers.base import SecretProvider
 
 class SecretsBroker:
     """SecretsBroker implementation."""
+
     def __init__(
         self,
         providers: dict[str, SecretProvider],

@@ -75,7 +75,7 @@ def report_to_stix_bundle(report: Report) -> dict[str, Any]:
     dict
         STIX 2.1 bundle (JSON-serialisable).
     """
-    now_str    = _utcnow()
+    now_str = _utcnow()
     created_at = (
         report.published_at.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
         if report.published_at
@@ -88,13 +88,13 @@ def report_to_stix_bundle(report: Report) -> dict[str, Any]:
     # ── Identity: GNAT platform ───────────────────────────────────────────────
     identity_id = _stix_id("identity", "gnat-platform-identity")
     identity: dict[str, Any] = {
-        "type":            "identity",
-        "spec_version":    "2.1",
-        "id":              identity_id,
-        "created":         created_at,
-        "modified":        created_at,
-        "name":            "GNAT CTM Toolkit",
-        "identity_class":  "system",
+        "type": "identity",
+        "spec_version": "2.1",
+        "id": identity_id,
+        "created": created_at,
+        "modified": created_at,
+        "name": "GNAT CTM Toolkit",
+        "identity_class": "system",
     }
     objects.append(identity)
     object_refs.append(identity_id)
@@ -104,19 +104,18 @@ def report_to_stix_bundle(report: Report) -> dict[str, Any]:
     if report.attribution:
         attr = report.attribution
         # Use provided STIX id if available, otherwise derive deterministically
-        threat_actor_id = (
-            attr.threat_actor_id
-            or _stix_id("threat-actor", f"ta-{attr.threat_actor_name}")
+        threat_actor_id = attr.threat_actor_id or _stix_id(
+            "threat-actor", f"ta-{attr.threat_actor_name}"
         )
         ta_properties: dict[str, Any] = {
-            "type":               "threat-actor",
-            "spec_version":       "2.1",
-            "id":                 threat_actor_id,
-            "created":            created_at,
-            "modified":           created_at,
-            "name":               attr.threat_actor_name,
+            "type": "threat-actor",
+            "spec_version": "2.1",
+            "id": threat_actor_id,
+            "created": created_at,
+            "modified": created_at,
+            "name": attr.threat_actor_name,
             "threat_actor_types": ["criminal"],
-            "confidence":         attr.confidence.stix_confidence,
+            "confidence": attr.confidence.stix_confidence,
             "x_gnat_attribution_rationale": attr.rationale,
         }
         if attr.mitre_group_id:
@@ -126,17 +125,19 @@ def report_to_stix_bundle(report: Report) -> dict[str, Any]:
 
         # attributed-to relationship: report ← threat-actor
         attr_rel_id = _stix_id("relationship", f"attr-{report.id}-{threat_actor_id}")
-        objects.append({
-            "type":                "relationship",
-            "spec_version":        "2.1",
-            "id":                  attr_rel_id,
-            "created":             created_at,
-            "modified":            created_at,
-            "relationship_type":   "attributed-to",
-            "source_ref":          _stix_id("report", report.id),
-            "target_ref":          threat_actor_id,
-            "confidence":          attr.confidence.stix_confidence,
-        })
+        objects.append(
+            {
+                "type": "relationship",
+                "spec_version": "2.1",
+                "id": attr_rel_id,
+                "created": created_at,
+                "modified": created_at,
+                "relationship_type": "attributed-to",
+                "source_ref": _stix_id("report", report.id),
+                "target_ref": threat_actor_id,
+                "confidence": attr.confidence.stix_confidence,
+            }
+        )
 
     # ── Evidence artifact refs ────────────────────────────────────────────────
     seen_artifact_ids: set[str] = set()
@@ -163,23 +164,23 @@ def report_to_stix_bundle(report: Report) -> dict[str, Any]:
     stix_labels.append(report.classification.label.lower())
 
     report_sdo: dict[str, Any] = {
-        "type":                  "report",
-        "spec_version":          "2.1",
-        "id":                    report_stix_id,
-        "created":               created_at,
-        "modified":              created_at,
-        "name":                  report.title,
-        "published":             created_at,
-        "object_refs":           object_refs_deduped or [identity_id],
-        "labels":                stix_labels,
-        "object_marking_refs":   marking_refs,
-        "created_by_ref":        identity_id,
+        "type": "report",
+        "spec_version": "2.1",
+        "id": report_stix_id,
+        "created": created_at,
+        "modified": created_at,
+        "name": report.title,
+        "published": created_at,
+        "object_refs": object_refs_deduped or [identity_id],
+        "labels": stix_labels,
+        "object_marking_refs": marking_refs,
+        "created_by_ref": identity_id,
         # GNAT extensions
-        "x_gnat_report_id":      report.id,
-        "x_gnat_report_type":    report.report_type.value,
-        "x_gnat_version":        report.version,
-        "x_gnat_status":         report.status.value,
-        "x_gnat_authors":        report.authors,
+        "x_gnat_report_id": report.id,
+        "x_gnat_report_type": report.report_type.value,
+        "x_gnat_version": report.version,
+        "x_gnat_status": report.status.value,
+        "x_gnat_authors": report.authors,
     }
 
     if report.executive_summary:
@@ -192,10 +193,12 @@ def report_to_stix_bundle(report: Report) -> dict[str, Any]:
     if report.key_findings:
         report_sdo["x_gnat_findings"] = [
             {
-                "id":                f["id"],
-                "statement":         f["statement"],
-                "confidence":        f.get("confidence", {}).get("stix_confidence") if f.get("confidence") else None,
-                "mitre_techniques":  f.get("mitre_techniques", []),
+                "id": f["id"],
+                "statement": f["statement"],
+                "confidence": f.get("confidence", {}).get("stix_confidence")
+                if f.get("confidence")
+                else None,
+                "mitre_techniques": f.get("mitre_techniques", []),
             }
             for f in [finding.to_dict() for finding in report.key_findings]
         ]
@@ -211,8 +214,8 @@ def report_to_stix_bundle(report: Report) -> dict[str, Any]:
 
     # ── Bundle ────────────────────────────────────────────────────────────────
     return {
-        "type":         "bundle",
-        "id":           f"bundle--{_uuid.uuid4()}",
+        "type": "bundle",
+        "id": f"bundle--{_uuid.uuid4()}",
         "spec_version": "2.1",
-        "objects":      objects,
+        "objects": objects,
     }

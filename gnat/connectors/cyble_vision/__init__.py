@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.cyble_vision`` package.
 
 Exports: ``CybleVisionClient``.
 """
+
 from .client import CybleVisionClient
 
 __all__ = ["CybleVisionClient"]

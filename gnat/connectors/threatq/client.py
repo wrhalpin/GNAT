@@ -111,17 +111,16 @@ class ThreatQClient(BaseClient, ConnectorMixin):
     **kwargs
         Forwarded to :class:`~gnat.clients.base.BaseClient`.
     """
+
     TRUST_LEVEL: str = "semi_trusted"
     API_VERSION: str = "v1"
     API_PREFIX: str = "/api"
     COST_UNIT: int = 1
 
-
-
     stix_type_map: dict[str, str] = {
-        "indicator":     "indicator",
-        "threat-actor":  "adversary",
-        "malware":       "malware",
+        "indicator": "indicator",
+        "threat-actor": "adversary",
+        "malware": "malware",
         "vulnerability": "vulnerability",
         "attack-pattern": "attack-pattern",
         "observed-data": "event",
@@ -213,7 +212,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         """
         resource = self._resolve_resource(stix_type)
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if stix_type != "observed-data":
@@ -308,13 +307,13 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         if "happened_at" in data or "event_type" in data:
             return self._event_to_stix(data)
         stix: dict[str, Any] = {
-            "type":            "indicator",
-            "id":              f"indicator--{data.get('id', '')}",
-            "name":            data.get("value", ""),
-            "pattern":         f"[{data.get('type', 'unknown')}:value = '{data.get('value', '')}']",
-            "pattern_type":    "stix",
-            "created":         data.get("created_at", ""),
-            "modified":        data.get("updated_at", ""),
+            "type": "indicator",
+            "id": f"indicator--{data.get('id', '')}",
+            "name": data.get("value", ""),
+            "pattern": f"[{data.get('type', 'unknown')}:value = '{data.get('value', '')}']",
+            "pattern_type": "stix",
+            "created": data.get("created_at", ""),
+            "modified": data.get("updated_at", ""),
             "indicator_types": [data.get("class", "unknown")],
         }
         sectors = self._extract_sectors(data.get("attributes", []))
@@ -333,22 +332,22 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ event record (with ``title``, ``happened_at``,
             ``event_type``, etc.).
         """
-        created  = data.get("created_at", "")
+        created = data.get("created_at", "")
         modified = data.get("updated_at", created)
         happened = data.get("happened_at", created)
         return {
-            "type":            "observed-data",
-            "id":              f"observed-data--{data.get('id', '')}",
-            "created":         created,
-            "modified":        modified,
-            "first_observed":  happened,
-            "last_observed":   happened,
+            "type": "observed-data",
+            "id": f"observed-data--{data.get('id', '')}",
+            "created": created,
+            "modified": modified,
+            "first_observed": happened,
+            "last_observed": happened,
             "number_observed": 1,
-            "object_refs":     [],
-            "name":            data.get("title", ""),
-            "description":     data.get("description", ""),
+            "object_refs": [],
+            "name": data.get("title", ""),
+            "description": data.get("description", ""),
             "x_tq_event_type": data.get("event_type", ""),
-            "x_tq_event_id":   str(data.get("id", "")),
+            "x_tq_event_id": str(data.get("id", "")),
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
@@ -400,10 +399,10 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         dict
             Raw ThreatQ API response.
         """
-        tq_id   = self._extract_numeric_id(event_id)
+        tq_id = self._extract_numeric_id(event_id)
         payload = {
-            "value":  stix_obj.get("name", ""),
-            "type":   self._infer_tq_type(stix_obj.get("pattern", "")),
+            "value": stix_obj.get("name", ""),
+            "type": self._infer_tq_type(stix_obj.get("pattern", "")),
             "status": {"name": "Active"},
         }
         return self.post(f"/api/events/{tq_id}/indicators", json=payload)
@@ -430,7 +429,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             Raw ThreatQ indicator records.
         """
         tq_id = self._extract_numeric_id(event_id)
-        resp  = self.get(f"/api/events/{tq_id}/indicators", params={"with": "attributes"})
+        resp = self.get(f"/api/events/{tq_id}/indicators", params={"with": "attributes"})
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_event_adversaries(self, event_id: str) -> list[dict[str, Any]]:
@@ -450,7 +449,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             Raw ThreatQ adversary records.
         """
         tq_id = self._extract_numeric_id(event_id)
-        resp  = self.get(f"/api/events/{tq_id}/adversaries")
+        resp = self.get(f"/api/events/{tq_id}/adversaries")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def search_indicators_by_value(self, value: str) -> list[dict[str, Any]]:
@@ -491,7 +490,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ indicator numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(indicator_id)
-        resp  = self.get(f"/api/indicators/{tq_id}/adversaries")
+        resp = self.get(f"/api/indicators/{tq_id}/adversaries")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_indicator_events(self, indicator_id: str) -> list[dict[str, Any]]:
@@ -506,7 +505,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ indicator numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(indicator_id)
-        resp  = self.get(f"/api/indicators/{tq_id}/events")
+        resp = self.get(f"/api/indicators/{tq_id}/events")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_indicator_malware(self, indicator_id: str) -> list[dict[str, Any]]:
@@ -521,7 +520,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ indicator numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(indicator_id)
-        resp  = self.get(f"/api/indicators/{tq_id}/malware")
+        resp = self.get(f"/api/indicators/{tq_id}/malware")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_indicator_vulnerabilities(self, indicator_id: str) -> list[dict[str, Any]]:
@@ -536,7 +535,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ indicator numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(indicator_id)
-        resp  = self.get(f"/api/indicators/{tq_id}/vulnerabilities")
+        resp = self.get(f"/api/indicators/{tq_id}/vulnerabilities")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_indicator_signatures(self, indicator_id: str) -> list[dict[str, Any]]:
@@ -551,7 +550,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ indicator numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(indicator_id)
-        resp  = self.get(f"/api/indicators/{tq_id}/signatures")
+        resp = self.get(f"/api/indicators/{tq_id}/signatures")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_indicator_comments(self, indicator_id: str) -> list[dict[str, Any]]:
@@ -566,7 +565,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ indicator numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(indicator_id)
-        resp  = self.get(f"/api/indicators/{tq_id}/comments")
+        resp = self.get(f"/api/indicators/{tq_id}/comments")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def add_indicator_comment(self, indicator_id: str, comment: str) -> dict[str, Any]:
@@ -629,7 +628,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ adversary numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(adversary_id)
-        resp  = self.get(
+        resp = self.get(
             f"/api/adversaries/{tq_id}/indicators",
             params={"with": "attributes"},
         )
@@ -647,7 +646,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ adversary numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(adversary_id)
-        resp  = self.get(f"/api/adversaries/{tq_id}/malware")
+        resp = self.get(f"/api/adversaries/{tq_id}/malware")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_adversary_vulnerabilities(self, adversary_id: str) -> list[dict[str, Any]]:
@@ -662,7 +661,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ adversary numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(adversary_id)
-        resp  = self.get(f"/api/adversaries/{tq_id}/vulnerabilities")
+        resp = self.get(f"/api/adversaries/{tq_id}/vulnerabilities")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_adversary_attack_patterns(self, adversary_id: str) -> list[dict[str, Any]]:
@@ -677,7 +676,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ adversary numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(adversary_id)
-        resp  = self.get(f"/api/adversaries/{tq_id}/attack-patterns")
+        resp = self.get(f"/api/adversaries/{tq_id}/attack-patterns")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ------------------------------------------------------------------
@@ -696,7 +695,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ Event numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(event_id)
-        resp  = self.get(f"/api/events/{tq_id}/malware")
+        resp = self.get(f"/api/events/{tq_id}/malware")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_event_vulnerabilities(self, event_id: str) -> list[dict[str, Any]]:
@@ -711,7 +710,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ Event numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(event_id)
-        resp  = self.get(f"/api/events/{tq_id}/vulnerabilities")
+        resp = self.get(f"/api/events/{tq_id}/vulnerabilities")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_event_attack_patterns(self, event_id: str) -> list[dict[str, Any]]:
@@ -726,7 +725,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ Event numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(event_id)
-        resp  = self.get(f"/api/events/{tq_id}/attack-patterns")
+        resp = self.get(f"/api/events/{tq_id}/attack-patterns")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def add_event_comment(self, event_id: str, comment: str) -> dict[str, Any]:
@@ -766,7 +765,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             Query filters (e.g. ``{"type": "Snort"}``).
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -786,7 +785,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ signature numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(signature_id)
-        resp  = self.get(f"/api/signatures/{tq_id}")
+        resp = self.get(f"/api/signatures/{tq_id}")
         return resp.get("data", resp) if isinstance(resp, dict) else {}
 
     def get_signature_indicators(self, signature_id: str) -> list[dict[str, Any]]:
@@ -801,7 +800,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ signature numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(signature_id)
-        resp  = self.get(f"/api/signatures/{tq_id}/indicators")
+        resp = self.get(f"/api/signatures/{tq_id}/indicators")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ------------------------------------------------------------------
@@ -828,9 +827,9 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         """
         if entity_type and entity_id:
             tq_id = self._extract_numeric_id(entity_id)
-            path  = f"/api/{entity_type}/{tq_id}/attachments"
+            path = f"/api/{entity_type}/{tq_id}/attachments"
         else:
-            path  = "/api/attachments"
+            path = "/api/attachments"
         resp = self.get(path)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
@@ -862,7 +861,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             MIME type of the attachment.  Default ``"application/octet-stream"``.
         """
         tq_id = self._extract_numeric_id(entity_id)
-        resp  = self.post(
+        resp = self.post(
             f"/api/{entity_type}/{tq_id}/attachments",
             files={"file": (filename, content, content_type)},
         )
@@ -889,7 +888,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             Query filters (e.g. ``{"status": "open"}``).
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -972,7 +971,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ source numeric ID.
         """
         tq_id = self._extract_numeric_id(source_id)
-        resp  = self.get(f"/api/sources/{tq_id}")
+        resp = self.get(f"/api/sources/{tq_id}")
         return resp.get("data", resp) if isinstance(resp, dict) else {}
 
     # ------------------------------------------------------------------
@@ -991,7 +990,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ malware numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(malware_id)
-        resp  = self.get(
+        resp = self.get(
             f"/api/malware/{tq_id}/indicators",
             params={"with": "attributes"},
         )
@@ -1009,7 +1008,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ malware numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(malware_id)
-        resp  = self.get(f"/api/malware/{tq_id}/adversaries")
+        resp = self.get(f"/api/malware/{tq_id}/adversaries")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_vulnerability_indicators(self, vuln_id: str) -> list[dict[str, Any]]:
@@ -1024,7 +1023,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ vulnerability numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(vuln_id)
-        resp  = self.get(
+        resp = self.get(
             f"/api/vulnerabilities/{tq_id}/indicators",
             params={"with": "attributes"},
         )
@@ -1042,7 +1041,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
             ThreatQ vulnerability numeric ID or STIX id.
         """
         tq_id = self._extract_numeric_id(vuln_id)
-        resp  = self.get(f"/api/vulnerabilities/{tq_id}/adversaries")
+        resp = self.get(f"/api/vulnerabilities/{tq_id}/adversaries")
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ------------------------------------------------------------------
@@ -1055,7 +1054,7 @@ class ThreatQClient(BaseClient, ConnectorMixin):
         if not resource:
             raise GNATClientError(f"ThreatQ: unsupported STIX type '{stix_type}'")
         if stix_type == "observed-data":
-            return "events"   # already the plural form used by the ThreatQ API
+            return "events"  # already the plural form used by the ThreatQ API
         return resource + "s"  # ThreatQ uses plural endpoints
 
     @staticmethod

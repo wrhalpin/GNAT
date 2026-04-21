@@ -93,9 +93,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange client credentials for a Mimecast Bearer token."""
         if not self.client_id or not self.client_secret:
-            raise GNATClientError(
-                "Mimecast connector requires client_id and client_secret."
-            )
+            raise GNATClientError("Mimecast connector requires client_id and client_secret.")
         token_url = f"{self.host}/oauth/token"
         body = (
             f"client_id={self.client_id}"
@@ -117,25 +115,18 @@ class MimecastClient(BaseClient, ConnectorMixin):
                 },
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise GNATClientError(
-                f"Mimecast token request failed: {exc}"
-            ) from exc
+            raise GNATClientError(f"Mimecast token request failed: {exc}") from exc
         if resp.status >= 400:
             raise GNATClientError(
-                f"Mimecast token request returned HTTP {resp.status}: "
-                f"{resp.data[:200]!r}"
+                f"Mimecast token request returned HTTP {resp.status}: {resp.data[:200]!r}"
             )
         try:
             data = json.loads(resp.data.decode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
-            raise GNATClientError(
-                f"Mimecast token response was not JSON: {exc}"
-            ) from exc
+            raise GNATClientError(f"Mimecast token response was not JSON: {exc}") from exc
         token = data.get("access_token") or ""
         if not token:
-            raise GNATClientError(
-                "Mimecast authentication failed — no access_token in response"
-            )
+            raise GNATClientError("Mimecast authentication failed — no access_token in response")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
         self._auth_headers["Content-Type"] = "application/json"
@@ -145,9 +136,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
     def health_check(self) -> bool:
         """Query the audit-events endpoint as a cheap authenticated probe."""
         try:
-            self.post(
-                "/api/audit/get-audit-events", json={"data": [{"pageSize": 1}]}
-            )
+            self.post("/api/audit/get-audit-events", json={"data": [{"pageSize": 1}]})
             return True
         except Exception:  # noqa: BLE001
             return False
@@ -170,12 +159,8 @@ class MimecastClient(BaseClient, ConnectorMixin):
                 items = _extract_mimecast_items(resp)
                 if items:
                     return dict(items[0], _mc_kind="message")
-            raise GNATClientError(
-                f"Mimecast: no message found for {object_id!r}"
-            )
-        raise GNATClientError(
-            f"Mimecast get_object does not support stix_type={stix_type!r}"
-        )
+            raise GNATClientError(f"Mimecast: no message found for {object_id!r}")
+        raise GNATClientError(f"Mimecast get_object does not support stix_type={stix_type!r}")
 
     def list_objects(
         self,
@@ -218,23 +203,17 @@ class MimecastClient(BaseClient, ConnectorMixin):
                 )
                 tag = "group"
             else:
-                resp = self.post(
-                    "/api/directory/find-users", json=body
-                )
+                resp = self.post("/api/directory/find-users", json=body)
                 tag = "user"
         elif stix_type == "observed-data":
             if kind == "url_logs":
                 resp = self.post("/api/ttp/url/get-logs", json=body)
                 tag = "url_log"
             elif kind == "attachment_logs":
-                resp = self.post(
-                    "/api/ttp/attachment/get-logs", json=body
-                )
+                resp = self.post("/api/ttp/attachment/get-logs", json=body)
                 tag = "attachment_log"
             elif kind == "impersonation_logs":
-                resp = self.post(
-                    "/api/ttp/impersonation/get-logs", json=body
-                )
+                resp = self.post("/api/ttp/impersonation/get-logs", json=body)
                 tag = "impersonation_log"
             elif kind == "threat_intel":
                 resp = self.get(
@@ -243,36 +222,22 @@ class MimecastClient(BaseClient, ConnectorMixin):
                 )
                 tag = "threat_intel"
             elif kind == "audit_events":
-                resp = self.post(
-                    "/api/audit/get-audit-events", json=body
-                )
+                resp = self.post("/api/audit/get-audit-events", json=body)
                 tag = "audit_event"
             else:
-                resp = self.post(
-                    "/api/message-finder/search", json=body
-                )
+                resp = self.post("/api/message-finder/search", json=body)
                 tag = "message"
         else:
-            raise GNATClientError(
-                f"Mimecast list_objects does not support stix_type={stix_type!r}"
-            )
-        return [
-            dict(r, _mc_kind=tag) for r in _extract_mimecast_items(resp)
-        ]
+            raise GNATClientError(f"Mimecast list_objects does not support stix_type={stix_type!r}")
+        return [dict(r, _mc_kind=tag) for r in _extract_mimecast_items(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Mimecast connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Mimecast connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Mimecast connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Mimecast connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Mimecast connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Mimecast connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -289,9 +254,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
             filters["query"] = query
         return self.list_objects("observed-data", filters=filters, page_size=500)
 
-    def list_url_protect_logs(
-        self, from_date: str = "", to_date: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_url_protect_logs(self, from_date: str = "", to_date: str = "") -> list[dict[str, Any]]:
         """Return URL Protect click/scan logs."""
         filters: dict[str, Any] = {"kind": "url_logs"}
         if from_date:
@@ -324,9 +287,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
 
     def get_threat_intel_feed(self) -> list[dict[str, Any]]:
         """Return the Mimecast threat-intel feed (hashes, URLs, domains)."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "threat_intel"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "threat_intel"}, page_size=500)
 
     def list_users(self) -> list[dict[str, Any]]:
         """Return mail users from the directory."""
@@ -336,9 +297,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
         """Return distribution groups from the directory."""
         return self.list_objects("identity", filters={"kind": "groups"}, page_size=500)
 
-    def list_audit_events(
-        self, from_date: str = "", to_date: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_audit_events(self, from_date: str = "", to_date: str = "") -> list[dict[str, Any]]:
         """Return admin audit events."""
         filters: dict[str, Any] = {"kind": "audit_events"}
         if from_date:
@@ -358,9 +317,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
 
         if kind == "user":
             user_id = native.get("emailAddress") or native.get("id", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_MIMECAST, f"identity|user|{user_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_MIMECAST, f"identity|user|{user_id}")
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
@@ -375,9 +332,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
 
         if kind == "group":
             group_id = native.get("id") or native.get("folderId", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_MIMECAST, f"identity|group|{group_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_MIMECAST, f"identity|group|{group_id}")
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
@@ -391,34 +346,19 @@ class MimecastClient(BaseClient, ConnectorMixin):
 
         # observed-data for message + TTP log + audit event
         refs: list[str] = []
-        msg_id = (
-            native.get("messageId")
-            or native.get("id")
-            or native.get("msgId", "")
-        )
+        msg_id = native.get("messageId") or native.get("id") or native.get("msgId", "")
         if msg_id:
-            msg_uuid = uuid.uuid5(
-                _NAMESPACE_MIMECAST, f"email-message|{msg_id}"
-            )
+            msg_uuid = uuid.uuid5(_NAMESPACE_MIMECAST, f"email-message|{msg_id}")
             refs.append(f"email-message--{msg_uuid}")
 
-        sender = (
-            native.get("from")
-            or native.get("senderAddress")
-            or native.get("actor")
-        )
+        sender = native.get("from") or native.get("senderAddress") or native.get("actor")
         if isinstance(sender, dict):
             sender = sender.get("emailAddress") or sender.get("address")
         if sender:
             sender_uuid = uuid.uuid5(_NAMESPACE_MIMECAST, f"identity|{sender}")
             refs.append(f"identity--{sender_uuid}")
 
-        first = (
-            native.get("received")
-            or native.get("date")
-            or native.get("eventTime")
-            or utcnow()
-        )
+        first = native.get("received") or native.get("date") or native.get("eventTime") or utcnow()
 
         return make_observed_data_envelope(
             first_observed=first,
@@ -431,8 +371,7 @@ class MimecastClient(BaseClient, ConnectorMixin):
                     "kind": kind,
                     "subject": native.get("subject"),
                     "from": sender,
-                    "to": native.get("to")
-                    or native.get("recipientAddress"),
+                    "to": native.get("to") or native.get("recipientAddress"),
                     "action": native.get("action") or native.get("eventType"),
                     "route": native.get("route"),
                     "result": native.get("result") or native.get("scanResult"),

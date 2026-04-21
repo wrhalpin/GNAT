@@ -82,6 +82,7 @@ class ZeekSTIXError(ZeekError):
 @dataclass
 class ZeekConfig:
     """Configuration container for zeek."""
+
     log_dir: str = "/var/log/zeek/current"
     log_format: str = "tsv"  # 'tsv' or 'json'
     timeout: int = 10

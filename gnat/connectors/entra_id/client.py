@@ -118,9 +118,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 "Entra ID connector requires tenant_id, client_id, and client_secret."
             )
-        token_url = (
-            f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
-        )
+        token_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
         body = (
             f"grant_type=client_credentials"
             f"&client_id={self.client_id}"
@@ -142,25 +140,18 @@ class EntraIDClient(BaseClient, ConnectorMixin):
                 },
             )
         except urllib3.exceptions.HTTPError as exc:
-            raise GNATClientError(
-                f"Entra ID token request failed: {exc}"
-            ) from exc
+            raise GNATClientError(f"Entra ID token request failed: {exc}") from exc
         if resp.status >= 400:
             raise GNATClientError(
-                f"Entra ID token request returned HTTP {resp.status}: "
-                f"{resp.data[:200]!r}"
+                f"Entra ID token request returned HTTP {resp.status}: {resp.data[:200]!r}"
             )
         try:
             data = json.loads(resp.data.decode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
-            raise GNATClientError(
-                f"Entra ID token response was not JSON: {exc}"
-            ) from exc
+            raise GNATClientError(f"Entra ID token response was not JSON: {exc}") from exc
         token = data.get("access_token") or ""
         if not token:
-            raise GNATClientError(
-                "Entra ID authentication failed — no access_token in response"
-            )
+            raise GNATClientError("Entra ID authentication failed — no access_token in response")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -188,13 +179,9 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/v1.0/servicePrincipals/{object_id}")
             kind = "service_principal"
         else:
-            raise GNATClientError(
-                f"Entra ID get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Entra ID get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Entra ID returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Entra ID returned unexpected payload for {object_id!r}")
         return dict(resp, _entra_kind=kind)
 
     def list_objects(
@@ -239,38 +226,26 @@ class EntraIDClient(BaseClient, ConnectorMixin):
                 resp = self.get("/v1.0/auditLogs/directoryAudits", params=params)
                 kind = "directory_audit"
             elif sub == "risky_users":
-                resp = self.get(
-                    "/v1.0/identityProtection/riskyUsers", params=params
-                )
+                resp = self.get("/v1.0/identityProtection/riskyUsers", params=params)
                 kind = "risky_user"
             else:
                 resp = self.get("/v1.0/auditLogs/signIns", params=params)
                 kind = "sign_in"
         else:
-            raise GNATClientError(
-                f"Entra ID list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Entra ID list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _entra_kind=kind) for r in _extract_entra_value(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Entra ID connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Entra ID connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Entra ID connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Entra ID connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Entra ID connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Entra ID connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_users(
-        self, filter_expr: str = "", select: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_users(self, filter_expr: str = "", select: str = "") -> list[dict[str, Any]]:
         """Return users, optionally filtered via OData ``$filter``."""
         filters: dict[str, Any] = {}
         if filter_expr:
@@ -292,12 +267,8 @@ class EntraIDClient(BaseClient, ConnectorMixin):
 
     def list_group_members(self, group_id: str) -> list[dict[str, Any]]:
         """Return members of a specific group."""
-        resp = self.get(
-            f"/v1.0/groups/{group_id}/members", params={"$top": 999}
-        )
-        return [
-            dict(r, _entra_kind="user") for r in _extract_entra_value(resp)
-        ]
+        resp = self.get(f"/v1.0/groups/{group_id}/members", params={"$top": 999})
+        return [dict(r, _entra_kind="user") for r in _extract_entra_value(resp)]
 
     def list_service_principals(self) -> list[dict[str, Any]]:
         """Return registered applications (service principals)."""
@@ -314,39 +285,26 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             filters["filter"] = filter_expr
         elif since:
             filters["filter"] = f"createdDateTime ge {since}"
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=999
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=999)
 
-    def list_directory_audits(
-        self, filter_expr: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_directory_audits(self, filter_expr: str = "") -> list[dict[str, Any]]:
         """Return directory-change audit events."""
         filters: dict[str, Any] = {"kind": "directory_audits"}
         if filter_expr:
             filters["filter"] = filter_expr
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=999
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=999)
 
-    def list_risky_users(
-        self, risk_level: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_risky_users(self, risk_level: str = "") -> list[dict[str, Any]]:
         """Return Identity Protection risky-user entries."""
         filters: dict[str, Any] = {"kind": "risky_users"}
         if risk_level:
             filters["filter"] = f"riskLevel eq '{risk_level}'"
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=999
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=999)
 
     def list_conditional_access_policies(self) -> list[dict[str, Any]]:
         """Return configured Conditional Access policies."""
         resp = self.get("/v1.0/identity/conditionalAccess/policies")
-        return [
-            dict(r, _entra_kind="conditional_access")
-            for r in _extract_entra_value(resp)
-        ]
+        return [dict(r, _entra_kind="conditional_access") for r in _extract_entra_value(resp)]
 
     def list_organization(self) -> list[dict[str, Any]]:
         """Return the tenant organization record."""
@@ -385,9 +343,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
 
         if kind == "group":
             group_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_ENTRA, f"identity|group|{group_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_ENTRA, f"identity|group|{group_id}")
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
@@ -409,9 +365,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
 
         if kind == "service_principal":
             sp_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_ENTRA, f"x-entra-application|{sp_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_ENTRA, f"x-entra-application|{sp_id}")
             return {
                 "type": "x-entra-application",
                 "id": f"x-entra-application--{stix_uuid}",
@@ -427,9 +381,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
 
         if kind == "conditional_access":
             pol_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_ENTRA, f"x-entra-ca-policy|{pol_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_ENTRA, f"x-entra-ca-policy|{pol_id}")
             return {
                 "type": "x-entra-ca-policy",
                 "id": f"x-entra-ca-policy--{stix_uuid}",
@@ -441,15 +393,11 @@ class EntraIDClient(BaseClient, ConnectorMixin):
 
         # observed-data envelope (sign_in / directory_audit / risky_user)
         refs: list[str] = []
-        user_id: str | None = native.get("userId") or native.get(
-            "userPrincipalName"
-        )
+        user_id: str | None = native.get("userId") or native.get("userPrincipalName")
         if not user_id and isinstance(native.get("initiatedBy"), dict):
             init_user = native["initiatedBy"].get("user") or {}
             if isinstance(init_user, dict):
-                user_id = init_user.get("id") or init_user.get(
-                    "userPrincipalName"
-                )
+                user_id = init_user.get("id") or init_user.get("userPrincipalName")
         if user_id:
             user_uuid = uuid.uuid5(_NAMESPACE_ENTRA, f"user-account|{user_id}")
             refs.append(f"user-account--{user_uuid}")
@@ -459,11 +407,7 @@ class EntraIDClient(BaseClient, ConnectorMixin):
             ip_uuid = uuid.uuid5(_NAMESPACE_ENTRA, f"ipv4-addr|{ip}")
             refs.append(f"ipv4-addr--{ip_uuid}")
 
-        first = (
-            native.get("createdDateTime")
-            or native.get("activityDateTime")
-            or utcnow()
-        )
+        first = native.get("createdDateTime") or native.get("activityDateTime") or utcnow()
 
         return make_observed_data_envelope(
             first_observed=first,
@@ -477,22 +421,17 @@ class EntraIDClient(BaseClient, ConnectorMixin):
                     "event_id": native.get("id"),
                     "app_display_name": native.get("appDisplayName"),
                     "client_app_used": native.get("clientAppUsed"),
-                    "conditional_access_status": native.get(
-                        "conditionalAccessStatus"
-                    ),
+                    "conditional_access_status": native.get("conditionalAccessStatus"),
                     "risk_level_aggregated": native.get("riskLevelAggregated"),
                     "risk_state": native.get("riskState"),
                     "activity": native.get("activityDisplayName"),
-                    "result": native.get("result")
-                    or native.get("status", {}).get("errorCode")
+                    "result": native.get("result") or native.get("status", {}).get("errorCode")
                     if isinstance(native.get("status"), dict)
                     else native.get("result"),
                     "location_city": (native.get("location") or {}).get("city")
                     if isinstance(native.get("location"), dict)
                     else None,
-                    "location_country": (native.get("location") or {}).get(
-                        "countryOrRegion"
-                    )
+                    "location_country": (native.get("location") or {}).get("countryOrRegion")
                     if isinstance(native.get("location"), dict)
                     else None,
                     "raw": native,

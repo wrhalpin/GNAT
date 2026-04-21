@@ -48,13 +48,13 @@ class MetricsCollector:
 
     def __init__(self, max_size: int = 10_000) -> None:
         self._buffer: deque[MetricEvent] = deque(maxlen=max_size)
-        self._lock   = threading.Lock()
+        self._lock = threading.Lock()
         self.max_size = max_size
 
     def record(
         self,
         metric_type: MetricType,
-        value:       float,
+        value: float,
         **labels: str,
     ) -> MetricEvent:
         """
@@ -72,9 +72,9 @@ class MetricsCollector:
         MetricEvent
         """
         event = MetricEvent(
-            metric_type = metric_type,
-            value       = value,
-            labels      = {k: str(v) for k, v in labels.items()},
+            metric_type=metric_type,
+            value=value,
+            labels={k: str(v) for k, v in labels.items()},
         )
         with self._lock:
             self._buffer.append(event)
@@ -101,7 +101,7 @@ class MetricsCollector:
 
     def since(
         self,
-        cutoff:      datetime,
+        cutoff: datetime,
         metric_type: MetricType | None = None,
     ) -> list[MetricEvent]:
         """

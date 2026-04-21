@@ -85,19 +85,13 @@ class IntezerClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange the API key for a JWT Bearer token."""
         if not self.api_key:
-            raise GNATClientError(
-                "Intezer connector requires api_key in config."
-            )
-        resp = self.post(
-            "/api/v2-0/get-access-token", json={"api_key": self.api_key}
-        )
+            raise GNATClientError("Intezer connector requires api_key in config.")
+        resp = self.post("/api/v2-0/get-access-token", json={"api_key": self.api_key})
         jwt = ""
         if isinstance(resp, dict):
             jwt = resp.get("result") or resp.get("access_token") or ""
         if not jwt:
-            raise GNATClientError(
-                "Intezer authentication failed — no result token in response"
-            )
+            raise GNATClientError("Intezer authentication failed — no result token in response")
         self._auth_headers["Authorization"] = f"Bearer {jwt}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -129,14 +123,10 @@ class IntezerClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v2-0/families/{object_id}")
             kind = "family"
         else:
-            raise GNATClientError(
-                f"Intezer get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Intezer get_object does not support stix_type={stix_type!r}")
         data = _unwrap_intezer(resp)
         if not isinstance(data, dict):
-            raise GNATClientError(
-                f"Intezer returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Intezer returned unexpected payload for {object_id!r}")
         return dict(data, _iz_kind=kind)
 
     def list_objects(
@@ -152,9 +142,7 @@ class IntezerClient(BaseClient, ConnectorMixin):
 
         if stix_type == "observed-data":
             if analysis_id:
-                resp = self.get(
-                    f"/api/v2-0/analyses/{analysis_id}/sub-analyses"
-                )
+                resp = self.get(f"/api/v2-0/analyses/{analysis_id}/sub-analyses")
                 kind = "sub_analysis"
             else:
                 raise GNATClientError(
@@ -168,9 +156,7 @@ class IntezerClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v2-0/analyses/{analysis_id}/iocs")
             kind = "ioc"
         else:
-            raise GNATClientError(
-                f"Intezer list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Intezer list_objects does not support stix_type={stix_type!r}")
         data = _unwrap_intezer(resp)
         if isinstance(data, list):
             return [dict(r, _iz_kind=kind) for r in data if isinstance(r, dict)]
@@ -181,9 +167,7 @@ class IntezerClient(BaseClient, ConnectorMixin):
                     return [dict(r, _iz_kind=kind) for r in val if isinstance(r, dict)]
         return []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Sandbox submissions are domain helpers, not upsert."""
         raise GNATClientError(
             "Intezer connector is read-only via CRUD — use analyze_file / "
@@ -192,9 +176,7 @@ class IntezerClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Intezer connector is read-only."""
-        raise GNATClientError(
-            "Intezer connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Intezer connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -210,9 +192,7 @@ class IntezerClient(BaseClient, ConnectorMixin):
 
     def analyze_hash(self, sha256: str) -> dict[str, Any]:
         """Submit a SHA-256 hash for analysis (no upload)."""
-        return self.post(
-            "/api/v2-0/analyze-by-hash", json={"hash": sha256}
-        )
+        return self.post("/api/v2-0/analyze-by-hash", json={"hash": sha256})
 
     def get_analysis(self, analysis_id: str) -> dict[str, Any]:
         """Fetch an analysis result by id."""
@@ -220,15 +200,11 @@ class IntezerClient(BaseClient, ConnectorMixin):
 
     def get_sub_analyses(self, analysis_id: str) -> list[dict[str, Any]]:
         """Return the sub-analysis breakdown for an analysis."""
-        return self.list_objects(
-            "observed-data", filters={"analysis_id": analysis_id}
-        )
+        return self.list_objects("observed-data", filters={"analysis_id": analysis_id})
 
     def get_iocs(self, analysis_id: str) -> list[dict[str, Any]]:
         """Return extracted IOCs for an analysis."""
-        return self.list_objects(
-            "indicator", filters={"analysis_id": analysis_id}
-        )
+        return self.list_objects("indicator", filters={"analysis_id": analysis_id})
 
     def get_family(self, family_id: str) -> dict[str, Any]:
         """Fetch metadata for a malware family by id."""
@@ -264,8 +240,7 @@ class IntezerClient(BaseClient, ConnectorMixin):
                 "modified": utcnow(),
                 "name": str(family),
                 "is_family": True,
-                "description": native.get("description")
-                or f"Intezer family {family}",
+                "description": native.get("description") or f"Intezer family {family}",
                 "malware_types": _intezer_malware_types(native),
                 "x_intezer": {
                     "family_id": native.get("family_id"),
@@ -307,12 +282,9 @@ class IntezerClient(BaseClient, ConnectorMixin):
         # Analysis → observed-data envelope
         return sandbox_report_envelope(
             source_name="intezer",
-            analysis_id=str(
-                native.get("analysis_id") or native.get("sub_analysis_id", "")
-            ),
+            analysis_id=str(native.get("analysis_id") or native.get("sub_analysis_id", "")),
             submitted_sha256=native.get("sha256") or "",
-            submitted_filename=native.get("file_name")
-            or native.get("filename", ""),
+            submitted_filename=native.get("file_name") or native.get("filename", ""),
             processes=[],
             contacted_ips=[],
             contacted_domains=[],

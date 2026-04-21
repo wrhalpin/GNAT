@@ -26,6 +26,7 @@ certificate PEM file) when constructing the provider::
         cert="/etc/gnat/cyberark-client.pem",
     )
 """
+
 from __future__ import annotations
 
 import json
@@ -116,9 +117,7 @@ class CyberArkProvider:
             On HTTP errors or missing required fields in the response.
         """
         if not self._host:
-            raise SecretProviderError(
-                "CyberArkProvider requires host to be set"
-            )
+            raise SecretProviderError("CyberArkProvider requires host to be set")
 
         params = urllib.parse.urlencode(
             {"AppID": self._app_id, "Safe": safe, "Object": object_name}
@@ -133,16 +132,12 @@ class CyberArkProvider:
 
         if resp.status != 200:
             body = resp.data.decode("utf-8", errors="replace")
-            raise SecretProviderError(
-                f"CyberArk CCP returned HTTP {resp.status}: {body[:256]}"
-            )
+            raise SecretProviderError(f"CyberArk CCP returned HTTP {resp.status}: {body[:256]}")
 
         try:
             return json.loads(resp.data)
         except json.JSONDecodeError as exc:
-            raise SecretProviderError(
-                f"CyberArk CCP response is not valid JSON: {exc}"
-            ) from exc
+            raise SecretProviderError(f"CyberArk CCP response is not valid JSON: {exc}") from exc
 
     @staticmethod
     def _parse_ts(value: str | None) -> datetime | None:
@@ -188,24 +183,23 @@ class CyberArkProvider:
             If ``ref.vault`` is not set or the CCP call fails.
         """
         if not ref.vault:
-            raise SecretProviderError(
-                "CyberArkProvider.resolve() requires ref.vault (Safe name)"
-            )
+            raise SecretProviderError("CyberArkProvider.resolve() requires ref.vault (Safe name)")
 
         data = self._ccp_request(safe=ref.vault, object_name=ref.path)
         secret_value = data.get("Content") or data.get("Password") or data.get("Value")
         if secret_value is None:
-            raise SecretProviderError(
-                "CyberArk CCP response missing Content/Password/Value field"
-            )
+            raise SecretProviderError("CyberArk CCP response missing Content/Password/Value field")
 
         metadata = SecretMetadata(
             path=ref.path,
             provider=self.name,
             vault=ref.vault,
             version=data.get("PolicyID") or data.get("Version"),
-            tags={k: str(v) for k, v in data.items()
-                  if k not in {"Content", "Password", "Value"} and isinstance(v, (str, int, float))},
+            tags={
+                k: str(v)
+                for k, v in data.items()
+                if k not in {"Content", "Password", "Value"} and isinstance(v, (str, int, float))
+            },
             created_at=self._parse_ts(data.get("CreationDate")),
             updated_at=self._parse_ts(data.get("LastModifiedDate") or data.get("ModificationDate")),
         )
@@ -255,9 +249,7 @@ class CyberArkProvider:
             If ``ref.vault`` is not set or the CCP call fails.
         """
         if not ref.vault:
-            raise SecretProviderError(
-                "CyberArkProvider.describe() requires ref.vault (Safe name)"
-            )
+            raise SecretProviderError("CyberArkProvider.describe() requires ref.vault (Safe name)")
 
         data = self._ccp_request(safe=ref.vault, object_name=ref.path)
 
@@ -265,8 +257,7 @@ class CyberArkProvider:
         safe_data = {
             k: str(v)
             for k, v in data.items()
-            if k not in {"Content", "Password", "Value"}
-            and isinstance(v, (str, int, float))
+            if k not in {"Content", "Password", "Value"} and isinstance(v, (str, int, float))
         }
 
         return SecretMetadata(
@@ -276,9 +267,7 @@ class CyberArkProvider:
             version=data.get("PolicyID") or data.get("Version"),
             tags=safe_data,
             created_at=self._parse_ts(data.get("CreationDate")),
-            updated_at=self._parse_ts(
-                data.get("LastModifiedDate") or data.get("ModificationDate")
-            ),
+            updated_at=self._parse_ts(data.get("LastModifiedDate") or data.get("ModificationDate")),
         )
 
     def list_refs(self, prefix: str | None = None) -> list[SecretRef]:
@@ -288,9 +277,7 @@ class CyberArkProvider:
         CCP is object-level retrieval only; Safe enumeration requires
         the PVWA Safes API.
         """
-        logger.debug(
-            "CyberArkProvider.list_refs() is not implemented via CCP; returning []"
-        )
+        logger.debug("CyberArkProvider.list_refs() is not implemented via CCP; returning []")
         return []
 
     def checkout(self, ref: SecretRef) -> SecretLease | None:
@@ -308,9 +295,7 @@ class CyberArkProvider:
             If ``ref.vault`` is not set or the CCP call fails.
         """
         if not ref.vault:
-            raise SecretProviderError(
-                "CyberArkProvider.checkout() requires ref.vault (Safe name)"
-            )
+            raise SecretProviderError("CyberArkProvider.checkout() requires ref.vault (Safe name)")
 
         data = self._ccp_request(safe=ref.vault, object_name=ref.path)
         secret_value = data.get("Content") or data.get("Password") or data.get("Value")
@@ -328,7 +313,9 @@ class CyberArkProvider:
             username=data.get("UserName") or data.get("Username"),
             lease_id=data.get("RequestId") or data.get("TicketID"),
             expires_at=self._parse_ts(data.get("ExpirationDate")),
-            metadata={k: str(v) for k, v in data.items()
-                      if k not in {"Content", "Password", "Value"}
-                      and isinstance(v, (str, int, float))},
+            metadata={
+                k: str(v)
+                for k, v in data.items()
+                if k not in {"Content", "Password", "Value"} and isinstance(v, (str, int, float))
+            },
         )

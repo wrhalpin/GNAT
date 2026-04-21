@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.flashpoint`` package.
 
 Exports: ``FlashpointClient``.
 """
+
 from .client import FlashpointClient
 
 __all__ = ["FlashpointClient"]

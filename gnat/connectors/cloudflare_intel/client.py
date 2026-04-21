@@ -100,13 +100,9 @@ class CloudflareIntelClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Bearer header from the configured API token."""
         if not self.api_token:
-            raise GNATClientError(
-                "Cloudflare Intel connector requires api_token in config."
-            )
+            raise GNATClientError("Cloudflare Intel connector requires api_token in config.")
         if not self.account_id:
-            raise GNATClientError(
-                "Cloudflare Intel connector requires account_id in config."
-            )
+            raise GNATClientError("Cloudflare Intel connector requires account_id in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -164,9 +160,7 @@ class CloudflareIntelClient(BaseClient, ConnectorMixin):
 
         data = self._unwrap(resp)
         if not isinstance(data, dict):
-            raise GNATClientError(
-                f"Cloudflare Intel returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Cloudflare Intel returned unexpected payload for {object_id!r}")
         return dict(data, _cf_kind=stix_type, _cf_query=object_id)
 
     def list_objects(
@@ -198,8 +192,7 @@ class CloudflareIntelClient(BaseClient, ConnectorMixin):
             if domain:
                 return [self.get_object("indicator", domain)]
             raise GNATClientError(
-                "Cloudflare Intel list_objects(indicator) requires a "
-                "'domain' or 'ipv4' filter"
+                "Cloudflare Intel list_objects(indicator) requires a 'domain' or 'ipv4' filter"
             )
         if stix_type == "infrastructure":
             if not asn:
@@ -222,20 +215,15 @@ class CloudflareIntelClient(BaseClient, ConnectorMixin):
                 data = self._unwrap(resp) or []
                 if isinstance(data, dict):
                     data = [data]
-                return [
-                    dict(d, _cf_kind="observed-data", _cf_query=domain) for d in data
-                ]
+                return [dict(d, _cf_kind="observed-data", _cf_query=domain) for d in data]
             raise GNATClientError(
-                "Cloudflare Intel list_objects(observed-data) requires a "
-                "'domain' or 'ipv4' filter"
+                "Cloudflare Intel list_objects(observed-data) requires a 'domain' or 'ipv4' filter"
             )
         raise GNATClientError(
             f"Cloudflare Intel list_objects does not support stix_type={stix_type!r}"
         )
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Cloudflare Intel connector is read-only."""
         raise GNATClientError(
             "Cloudflare Intel connector is read-only — no write operations supported."
@@ -414,16 +402,10 @@ def _cf_description(native: dict[str, Any]) -> str:
     if score is not None:
         parts.append(f"risk_score={score}")
     if rtypes:
-        names = [
-            (rt.get("name") if isinstance(rt, dict) else str(rt))
-            for rt in rtypes
-        ]
+        names = [(rt.get("name") if isinstance(rt, dict) else str(rt)) for rt in rtypes]
         parts.append("risk=" + ",".join(n for n in names if n))
     if cats:
-        names = [
-            (c.get("name") if isinstance(c, dict) else str(c))
-            for c in cats
-        ]
+        names = [(c.get("name") if isinstance(c, dict) else str(c)) for c in cats]
         parts.append("categories=" + ",".join(n for n in names if n))
     return "Cloudflare Intel: " + "; ".join(parts) if parts else "Cloudflare Intel"
 

@@ -118,16 +118,12 @@ class OktaClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v1/apps/{object_id}")
             kind = "app"
         else:
-            raise GNATClientError(
-                f"Okta get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Okta get_object does not support stix_type={stix_type!r}")
         if isinstance(resp, list) and resp:
             return dict(resp[0], _okta_kind=kind)
         if isinstance(resp, dict):
             return dict(resp, _okta_kind=kind)
-        raise GNATClientError(
-            f"Okta returned unexpected payload for {object_id!r}"
-        )
+        raise GNATClientError(f"Okta returned unexpected payload for {object_id!r}")
 
     def list_objects(
         self,
@@ -164,33 +160,23 @@ class OktaClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v1/apps", params=params)
             kind = "app"
         else:
-            raise GNATClientError(
-                f"Okta list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Okta list_objects does not support stix_type={stix_type!r}")
 
         if isinstance(resp, list):
             return [dict(r, _okta_kind=kind) for r in resp if isinstance(r, dict)]
         return []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Okta connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Okta connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Okta connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Okta connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Okta connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Okta connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_users(
-        self, search: str = "", status: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_users(self, search: str = "", status: str = "") -> list[dict[str, Any]]:
         """Return all users, optionally filtered by search string / status."""
         filters: dict[str, Any] = {}
         if search:
@@ -239,9 +225,7 @@ class OktaClient(BaseClient, ConnectorMixin):
             filters["until"] = until
         if filter_expr:
             filters["filter"] = filter_expr
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=1000
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=1000)
 
     def list_policies(self, policy_type: str = "") -> list[dict[str, Any]]:
         """Return authentication / MFA policies."""
@@ -288,9 +272,9 @@ class OktaClient(BaseClient, ConnectorMixin):
                     "title": profile.get("title"),
                     "department": profile.get("department"),
                     "last_login": native.get("lastLogin"),
-                    "mfa_factors_enrolled": native.get("credentials", {}).get(
-                        "provider", {}
-                    ).get("type")
+                    "mfa_factors_enrolled": native.get("credentials", {})
+                    .get("provider", {})
+                    .get("type")
                     if isinstance(native.get("credentials"), dict)
                     else None,
                     "raw": native,

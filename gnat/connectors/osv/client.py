@@ -88,9 +88,7 @@ class OSVClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single OSV vulnerability by its id."""
         if stix_type != "vulnerability":
-            raise GNATClientError(
-                "OSV get_object only supports stix_type='vulnerability'"
-            )
+            raise GNATClientError("OSV get_object only supports stix_type='vulnerability'")
         if not object_id:
             raise GNATClientError("OSV get_object requires a non-empty id")
         resp = self.get(f"/v1/vulns/{object_id}")
@@ -122,9 +120,7 @@ class OSVClient(BaseClient, ConnectorMixin):
         caller gets an empty list — OSV has no "all vulns" endpoint.
         """
         if stix_type != "vulnerability":
-            raise GNATClientError(
-                "OSV list_objects only supports stix_type='vulnerability'"
-            )
+            raise GNATClientError("OSV list_objects only supports stix_type='vulnerability'")
         filters = dict(filters or {})
         ecosystem = filters.get("ecosystem", "")
         name = filters.get("name", "")
@@ -150,19 +146,13 @@ class OSVClient(BaseClient, ConnectorMixin):
         start = max(0, (int(page) - 1) * int(page_size))
         return vulns[start : start + int(page_size)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """OSV is read-only."""
-        raise GNATClientError(
-            "OSV connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("OSV connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """OSV is read-only."""
-        raise GNATClientError(
-            "OSV connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("OSV connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 

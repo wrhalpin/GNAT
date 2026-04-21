@@ -609,33 +609,33 @@ class WorkflowJob(FeedJob):
 
     def __init__(
         self,
-        job_id:           str,
+        job_id: str,
         workflow_factory: Callable[[], Any],
-        context_factory:  Callable[[], Any] | None = None,
+        context_factory: Callable[[], Any] | None = None,
         interval_seconds: int | None = None,
-        cron:             str | None = None,
-        store:            Any | None = None,
-        on_success:       Callable | None = None,
-        on_failure:       Callable | None = None,
-        max_history:      int = 100,
-        enabled:          bool = True,
+        cron: str | None = None,
+        store: Any | None = None,
+        on_success: Callable | None = None,
+        on_failure: Callable | None = None,
+        max_history: int = 100,
+        enabled: bool = True,
     ) -> None:
         """Initialize WorkflowJob."""
         # FeedJob requires reader_factory and mapper_factory — provide no-ops
         super().__init__(
-            job_id           = job_id,
-            reader_factory   = lambda ctx: None,
-            mapper_factory   = lambda ctx: None,
-            interval_seconds = interval_seconds,
-            cron             = cron,
-            on_success       = on_success,
-            on_failure       = on_failure,
-            max_history      = max_history,
-            enabled          = enabled,
+            job_id=job_id,
+            reader_factory=lambda ctx: None,
+            mapper_factory=lambda ctx: None,
+            interval_seconds=interval_seconds,
+            cron=cron,
+            on_success=on_success,
+            on_failure=on_failure,
+            max_history=max_history,
+            enabled=enabled,
         )
         self._workflow_factory = workflow_factory
-        self._context_factory  = context_factory
-        self._store            = store
+        self._context_factory = context_factory
+        self._store = store
 
     def execute(self) -> Any:
         """
@@ -660,7 +660,8 @@ class WorkflowJob(FeedJob):
 
         try:
             from gnat.agents.workflow import WorkflowContext
-            wf  = self._workflow_factory()
+
+            wf = self._workflow_factory()
             ctx = self._context_factory() if self._context_factory else WorkflowContext()
 
             logger.info("WorkflowJob %r run #%d starting", self.job_id, self.run_count)
@@ -673,19 +674,23 @@ class WorkflowJob(FeedJob):
                     logger.warning("WorkflowJob %r: failed to persist run: %s", self.job_id, exc)
 
             finished_at = _utcnow()
-            duration    = (finished_at - started_at).total_seconds()
+            duration = (finished_at - started_at).total_seconds()
 
             if wf_result.success:
                 self.last_success_at = finished_at
                 logger.info(
                     "WorkflowJob %r run #%d: success (%d steps) in %.1fs",
-                    self.job_id, self.run_count,
-                    len(wf_result.steps_completed), duration,
+                    self.job_id,
+                    self.run_count,
+                    len(wf_result.steps_completed),
+                    duration,
                 )
             else:
                 logger.warning(
                     "WorkflowJob %r run #%d: failed steps=%s",
-                    self.job_id, self.run_count, wf_result.steps_failed,
+                    self.job_id,
+                    self.run_count,
+                    wf_result.steps_failed,
                 )
 
             return wf_result

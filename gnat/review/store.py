@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 logger = logging.getLogger("gnat.review.store")
@@ -39,11 +38,10 @@ class ReviewQueueStore:
                 Text,
                 create_engine,
             )
-            from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+            from sqlalchemy.orm import DeclarativeBase, sessionmaker
         except ImportError as exc:  # pragma: no cover
             raise ImportError(
-                "SQLAlchemy is required for ReviewQueueStore. "
-                'Run: pip install "gnat[persist]"'
+                'SQLAlchemy is required for ReviewQueueStore. Run: pip install "gnat[persist]"'
             ) from exc
 
         self._engine = create_engine(db_url, future=True)
@@ -131,8 +129,9 @@ class ReviewQueueStore:
 
     def get(self, item_id: str) -> Any | None:
         """Return a ReviewItem by id, or None."""
-        from gnat.review.models import ReviewItem
         from sqlalchemy.orm import Session
+
+        from gnat.review.models import ReviewItem
 
         with Session(self._engine) as session:
             row = session.get(self._Model, item_id)
@@ -164,9 +163,10 @@ class ReviewQueueStore:
         page_size : int
             Items per page (max 500).
         """
-        from gnat.review.models import ReviewItem
         from sqlalchemy import select
         from sqlalchemy.orm import Session
+
+        from gnat.review.models import ReviewItem
 
         page_size = max(1, min(500, page_size))
         offset = (max(1, page) - 1) * page_size
@@ -200,7 +200,4 @@ class ReviewQueueStore:
         """Return counts keyed by status value."""
         from gnat.review.models import ReviewStatus
 
-        return {
-            status.value: self.count(status.value)
-            for status in ReviewStatus
-        }
+        return {status.value: self.count(status.value) for status in ReviewStatus}

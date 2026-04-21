@@ -16,15 +16,15 @@ from typing import Any
 class MetricType(str, Enum):
     """Types of analyst performance metrics."""
 
-    INVESTIGATION_OPENED      = "investigation_opened"
-    INVESTIGATION_CLOSED      = "investigation_closed"
-    INVESTIGATION_DURATION    = "investigation_duration"   # value = seconds
-    ENRICHMENT_HIT            = "enrichment_hit"           # value = 1.0
-    ENRICHMENT_MISS           = "enrichment_miss"          # value = 1.0
-    ENRICHMENT_LATENCY        = "enrichment_latency"       # value = ms
-    REPORT_PUBLISHED          = "report_published"
-    FALSE_POSITIVE_FLAGGED    = "false_positive_flagged"
-    GAP_DETECTED              = "gap_detected"
+    INVESTIGATION_OPENED = "investigation_opened"
+    INVESTIGATION_CLOSED = "investigation_closed"
+    INVESTIGATION_DURATION = "investigation_duration"  # value = seconds
+    ENRICHMENT_HIT = "enrichment_hit"  # value = 1.0
+    ENRICHMENT_MISS = "enrichment_miss"  # value = 1.0
+    ENRICHMENT_LATENCY = "enrichment_latency"  # value = ms
+    REPORT_PUBLISHED = "report_published"
+    FALSE_POSITIVE_FLAGGED = "false_positive_flagged"
+    GAP_DETECTED = "gap_detected"
 
 
 @dataclass
@@ -45,16 +45,14 @@ class MetricEvent:
     """
 
     metric_type: MetricType
-    value:       float
-    labels:      dict[str, str] = field(default_factory=dict)
-    timestamp:   datetime       = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
-    )
+    value: float
+    labels: dict[str, str] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "metric_type": self.metric_type.value,
-            "value":       self.value,
-            "labels":      self.labels,
-            "timestamp":   self.timestamp.isoformat(),
+            "value": self.value,
+            "labels": self.labels,
+            "timestamp": self.timestamp.isoformat(),
         }

@@ -59,13 +59,13 @@ from gnat.analysis.confidence import (
 logger = logging.getLogger(__name__)
 
 # Points for each additional corroborating platform (1 = no corroboration)
-_CO_OCCURRENCE_POINTS = [0, 0, 15, 30, 45]   # index = number of platforms
+_CO_OCCURRENCE_POINTS = [0, 0, 15, 30, 45]  # index = number of platforms
 
 # Recency buckets: (max_days, score)
 _RECENCY_BUCKETS = [
-    (7,   25),
-    (30,  15),
-    (90,   5),
+    (7, 25),
+    (30, 15),
+    (90, 5),
     (None, 0),
 ]
 
@@ -95,10 +95,10 @@ class RelationshipScorer:
 
     def score(
         self,
-        platforms:             list[str],
-        last_observed_iso:     str | None = None,
-        source_reliabilities:  dict[str, SourceReliability] | None = None,
-        rationale:             str | None = None,
+        platforms: list[str],
+        last_observed_iso: str | None = None,
+        source_reliabilities: dict[str, SourceReliability] | None = None,
+        rationale: str | None = None,
     ) -> ConfidenceScore:
         """
         Score a relationship observed across one or more platforms.
@@ -152,10 +152,10 @@ class RelationshipScorer:
         full_rationale = f"{rationale}  [{auto_rationale}]" if rationale else auto_rationale
 
         return ConfidenceScore(
-            source_reliability      = worst_reliability,
-            information_credibility = credibility,
-            stix_confidence         = raw,
-            rationale               = full_rationale,
+            source_reliability=worst_reliability,
+            information_credibility=credibility,
+            stix_confidence=raw,
+            rationale=full_rationale,
         )
 
     # ── Helpers ───────────────────────────────────────────────────────────────
@@ -180,10 +180,7 @@ class RelationshipScorer:
         reliabilities: dict[str, SourceReliability],
     ) -> SourceReliability:
         """Return the lowest (most pessimistic) reliability grade."""
-        grades = [
-            reliabilities.get(p, SourceReliability.C_FAIRLY_RELIABLE)
-            for p in platforms
-        ]
+        grades = [reliabilities.get(p, SourceReliability.C_FAIRLY_RELIABLE) for p in platforms]
         # Sort by Admiralty value (A best → F worst); return worst
         order = {r: i for i, r in enumerate(SourceReliability)}
         return max(grades, key=lambda r: order[r])

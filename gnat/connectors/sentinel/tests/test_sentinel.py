@@ -153,6 +153,7 @@ _SAMPLE_TI_INDICATOR = {
 
 class TestSentinelConfig(unittest.TestCase):
     """Configuration container for test sentinel."""
+
     def test_minimal_config(self):
         """Test that minimal config."""
         cfg = _make_config()
@@ -234,6 +235,7 @@ class TestSentinelConfig(unittest.TestCase):
 
 class TestSentinelAuthManager(unittest.TestCase):
     """Unit tests for :class:`SentinelAuthManager`."""
+
     def _make_auth(self):
         """Internal helper for make auth."""
         cfg = _make_config()
@@ -301,6 +303,7 @@ class TestSentinelAuthManager(unittest.TestCase):
 
 class TestSentinelClient(unittest.TestCase):
     """HTTP API client for the TestSentinel platform."""
+
     def test_get_returns_dict(self):
         """Test that get returns dict."""
         client, mock_http = _make_client()
@@ -394,6 +397,7 @@ class TestSentinelClient(unittest.TestCase):
 
 class TestSentinelIncidentCommands(unittest.TestCase):
     """Unit tests for :class:`SentinelIncidentCommands`."""
+
     def _make_incidents(self):
         """Internal helper for make incidents."""
         client, mock_http = _make_client()
@@ -459,6 +463,7 @@ class TestSentinelIncidentCommands(unittest.TestCase):
 
 class TestSentinelThreatIntelCommands(unittest.TestCase):
     """Unit tests for :class:`SentinelThreatIntelCommands`."""
+
     def _make_ti(self):
         """Internal helper for make ti."""
         client, mock_http = _make_client()
@@ -528,6 +533,7 @@ class TestSentinelThreatIntelCommands(unittest.TestCase):
 
 class TestSentinelAnalyticRuleCommands(unittest.TestCase):
     """Unit tests for :class:`SentinelAnalyticRuleCommands`."""
+
     def _make_rules(self):
         """Internal helper for make rules."""
         client, mock_http = _make_client()
@@ -586,6 +592,7 @@ class TestSentinelAnalyticRuleCommands(unittest.TestCase):
 
 class TestSentinelSTIXMapper(unittest.TestCase):
     """STIX translation helper for test sentinel s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = SentinelSTIXMapper()
@@ -686,6 +693,7 @@ class TestSentinelSTIXMapper(unittest.TestCase):
 
 class TestSentinelExceptions(unittest.TestCase):
     """Raised when a test sentinel exceptions error occurs."""
+
     def test_all_inherit_from_base(self):
         """Test that all inherit from base."""
         from gnat.connectors.sentinel.exceptions import SentinelError

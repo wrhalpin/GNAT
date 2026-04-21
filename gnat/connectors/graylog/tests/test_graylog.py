@@ -51,6 +51,7 @@ def _make_client():
 
 class TestGraylogConfig(unittest.TestCase):
     """Configuration container for test graylog."""
+
     def test_basic(self):
         """Test that basic."""
         cfg = _cfg()
@@ -96,6 +97,7 @@ class TestGraylogConfig(unittest.TestCase):
 
 class TestGraylogClient(unittest.TestCase):
     """HTTP API client for the TestGraylog platform."""
+
     def test_get_returns_dict(self):
         """Test that get returns dict."""
         c, mock_http = _make_client()
@@ -162,6 +164,7 @@ class TestGraylogClient(unittest.TestCase):
 
 class TestGraylogSearchCommands(unittest.TestCase):
     """Unit tests for :class:`GraylogSearchCommands`."""
+
     _MSG = {
         "message": {
             "_id": "msg-1",
@@ -216,6 +219,7 @@ class TestGraylogSearchCommands(unittest.TestCase):
 
 class TestGraylogStreamCommands(unittest.TestCase):
     """Unit tests for :class:`GraylogStreamCommands`."""
+
     def _make_streams(self):
         """Internal helper for make streams."""
         c, mock_http = _make_client()
@@ -241,6 +245,7 @@ class TestGraylogStreamCommands(unittest.TestCase):
 
 class TestGraylogSystemCommands(unittest.TestCase):
     """Unit tests for :class:`GraylogSystemCommands`."""
+
     def _make_system(self):
         """Internal helper for make system."""
         c, mock_http = _make_client()
@@ -263,6 +268,7 @@ class TestGraylogSystemCommands(unittest.TestCase):
 
 class TestGraylogSTIXMapper(unittest.TestCase):
     """STIX translation helper for test graylog s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = GraylogSTIXMapper()
@@ -309,6 +315,7 @@ class TestGraylogSTIXMapper(unittest.TestCase):
 
 class TestGraylogExceptions(unittest.TestCase):
     """Raised when a test graylog exceptions error occurs."""
+
     def test_hierarchy(self):
         """Test that hierarchy."""
         from gnat.connectors.graylog import GraylogError

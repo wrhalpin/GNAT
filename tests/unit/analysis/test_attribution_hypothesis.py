@@ -168,7 +168,8 @@ class TestAttributionEngine:
     def test_add_contradicting_evidence(self):
         engine = AttributionEngine()
         h = engine.propose(
-            "c1", "ta1",
+            "c1",
+            "ta1",
             evidence=[AttributionEvidence(evidence_type="x", description="x", weight=60)],
         )
         engine.add_contradicting_evidence(
@@ -208,11 +209,13 @@ class TestAttributionEngine:
     def test_pick_winner(self):
         engine = AttributionEngine()
         h1 = engine.propose(
-            "c1", "ta1",
+            "c1",
+            "ta1",
             evidence=[AttributionEvidence(evidence_type="x", description="x", weight=70)],
         )
         h2 = engine.propose(
-            "c1", "ta2",
+            "c1",
+            "ta2",
             evidence=[AttributionEvidence(evidence_type="x", description="x", weight=40)],
         )
         engine.resolve(h1, HypothesisStatus.SUPPORTED)
@@ -229,10 +232,12 @@ class TestAttributionEngine:
         engine = AttributionEngine()
         h = engine.propose("c1", "ta1")
         engine.add_supporting_evidence(
-            h, AttributionEvidence(evidence_type="a", description="a", weight=30),
+            h,
+            AttributionEvidence(evidence_type="a", description="a", weight=30),
         )
         engine.add_supporting_evidence(
-            h, AttributionEvidence(evidence_type="b", description="b", weight=20),
+            h,
+            AttributionEvidence(evidence_type="b", description="b", weight=20),
         )
         engine.resolve(h, HypothesisStatus.SUPPORTED)
         assert len(h.confidence_history) == 4  # proposal + 2 evidence + resolve
@@ -348,9 +353,7 @@ class TestSupportingTypes:
         assert a2.confidence == 85
 
     def test_technique_capability_roundtrip(self):
-        t = TechniqueCapability(
-            technique_id="T1059.003", tactic_id="TA0002", proficiency="expert"
-        )
+        t = TechniqueCapability(technique_id="T1059.003", tactic_id="TA0002", proficiency="expert")
         d = t.to_dict()
         t2 = TechniqueCapability.from_dict(d)
         assert t2.technique_id == "T1059.003"

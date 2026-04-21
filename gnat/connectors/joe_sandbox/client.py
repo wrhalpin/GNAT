@@ -87,9 +87,7 @@ class JoeSandboxClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Joe Sandbox has no header auth; just stamp the accept type."""
         if not self.api_key:
-            raise GNATClientError(
-                "Joe Sandbox connector requires api_key in config."
-            )
+            raise GNATClientError("Joe Sandbox connector requires api_key in config.")
         self._auth_headers["Accept"] = "application/json"
 
     def _authed_form(self, extra: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -117,13 +115,9 @@ class JoeSandboxClient(BaseClient, ConnectorMixin):
             raise GNATClientError(
                 f"Joe Sandbox get_object does not support stix_type={stix_type!r}"
             )
-        resp = self.post(
-            "/api/v2/analysis/info", data=self._authed_form({"webid": object_id})
-        )
+        resp = self.post("/api/v2/analysis/info", data=self._authed_form({"webid": object_id}))
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Joe Sandbox returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Joe Sandbox returned unexpected payload for {object_id!r}")
         data = resp.get("data") if isinstance(resp.get("data"), dict) else resp
         return dict(data, _jb_kind=stix_type, _jb_webid=object_id)
 
@@ -149,18 +143,12 @@ class JoeSandboxClient(BaseClient, ConnectorMixin):
         for key in ("q", "filename", "sha256", "detection"):
             if filters.get(key):
                 form_extra[key] = filters[key]
-        resp = self.post(
-            "/api/v2/analysis/search", data=self._authed_form(form_extra)
-        )
+        resp = self.post("/api/v2/analysis/search", data=self._authed_form(form_extra))
         items = _extract_joe_list(resp)
         start = max(0, (int(page) - 1) * int(page_size))
-        return [
-            dict(r, _jb_kind=stix_type) for r in items[start : start + int(page_size)]
-        ]
+        return [dict(r, _jb_kind=stix_type) for r in items[start : start + int(page_size)]]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Sandbox submissions are exposed as domain helpers, not upsert."""
         raise GNATClientError(
             "Joe Sandbox connector is read-only via CRUD — use submit_file / "
@@ -175,9 +163,7 @@ class JoeSandboxClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def submit_file(
-        self, filepath: str, comments: str = ""
-    ) -> dict[str, Any]:
+    def submit_file(self, filepath: str, comments: str = "") -> dict[str, Any]:
         """Submit a local file for analysis."""
         import os
 
@@ -208,9 +194,7 @@ class JoeSandboxClient(BaseClient, ConnectorMixin):
 
     def get_iocs(self, webid: str) -> list[dict[str, Any]]:
         """Return IOCs extracted from a completed analysis."""
-        resp = self.post(
-            "/api/v2/analysis/ioc", data=self._authed_form({"webid": webid})
-        )
+        resp = self.post("/api/v2/analysis/ioc", data=self._authed_form({"webid": webid}))
         items = _extract_joe_list(resp)
         return [dict(r, _jb_kind="indicator", _jb_webid=webid) for r in items]
 

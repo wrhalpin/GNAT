@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.wiz`` package.
 
 Exports: ``WizClient``.
 """
+
 from .client import WizClient
 
 __all__ = ["WizClient"]

@@ -6,6 +6,7 @@ gnat.agents.quality.fixture_coverage
 
 Fixture coverage utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -16,6 +17,7 @@ from pathlib import Path
 @dataclass(slots=True)
 class FixtureCoverageResult:
     """FixtureCoverageResult implementation."""
+
     connector_name: str
     fixture_count: int
     has_error_fixture: bool
@@ -40,7 +42,9 @@ class FixtureCoverageAgent:
         """Initialize FixtureCoverageAgent."""
         self.repo_root = Path(repo_root)
 
-    def evaluate_connector(self, connector_name: str, fixture_globs: Sequence[str]) -> FixtureCoverageResult:
+    def evaluate_connector(
+        self, connector_name: str, fixture_globs: Sequence[str]
+    ) -> FixtureCoverageResult:
         """Evaluate connector."""
         matched: list[Path] = []
         for pattern in fixture_globs:
@@ -50,7 +54,9 @@ class FixtureCoverageAgent:
         names = [Path(path).name.lower() for path in unique_paths]
 
         has_error_fixture = any("error" in name or "failure" in name for name in names)
-        has_backward_fixture = any("legacy" in name or "backward" in name or "v1" in name for name in names)
+        has_backward_fixture = any(
+            "legacy" in name or "backward" in name or "v1" in name for name in names
+        )
 
         warnings: list[str] = []
         if not unique_paths:
@@ -72,4 +78,7 @@ class FixtureCoverageAgent:
 
     def evaluate_many(self, registry: dict[str, Sequence[str]]) -> list[FixtureCoverageResult]:
         """Evaluate many."""
-        return [self.evaluate_connector(connector_name, globs) for connector_name, globs in registry.items()]
+        return [
+            self.evaluate_connector(connector_name, globs)
+            for connector_name, globs in registry.items()
+        ]

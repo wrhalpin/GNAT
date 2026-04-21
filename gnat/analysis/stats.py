@@ -36,8 +36,8 @@ Usage::
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.search.index import SolrSearchIndex
@@ -47,28 +47,28 @@ logger = logging.getLogger(__name__)
 # ATT&CK tactics with their standard IDs.  Kill-chain phase names in Solr
 # are checked against this mapping for coverage reporting.
 _ATTACK_TACTICS: dict[str, str] = {
-    "initial-access":          "TA0001",
-    "execution":               "TA0002",
-    "persistence":             "TA0003",
-    "privilege-escalation":    "TA0004",
-    "defense-evasion":         "TA0005",
-    "credential-access":       "TA0006",
-    "discovery":               "TA0007",
-    "lateral-movement":        "TA0008",
-    "collection":              "TA0009",
-    "command-and-control":     "TA0011",
-    "exfiltration":            "TA0010",
-    "impact":                  "TA0040",
-    "reconnaissance":          "TA0043",
-    "resource-development":    "TA0042",
+    "initial-access": "TA0001",
+    "execution": "TA0002",
+    "persistence": "TA0003",
+    "privilege-escalation": "TA0004",
+    "defense-evasion": "TA0005",
+    "credential-access": "TA0006",
+    "discovery": "TA0007",
+    "lateral-movement": "TA0008",
+    "collection": "TA0009",
+    "command-and-control": "TA0011",
+    "exfiltration": "TA0010",
+    "impact": "TA0040",
+    "reconnaissance": "TA0043",
+    "resource-development": "TA0042",
 }
 
 # Confidence score bands (GNAT scale 0-100)
 _CONFIDENCE_BANDS: list[tuple[str, int, int]] = [
-    ("high",    75, 100),
-    ("medium",  40,  74),
-    ("low",      1,  39),
-    ("unknown",  0,   0),
+    ("high", 75, 100),
+    ("medium", 40, 74),
+    ("low", 1, 39),
+    ("unknown", 0, 0),
 ]
 
 
@@ -165,7 +165,8 @@ class WorkspaceStats:
             except Exception as exc:
                 logger.warning(
                     "WorkspaceStats.source_reliability_matrix: platform %r failed — %s",
-                    platform, exc,
+                    platform,
+                    exc,
                 )
         return matrix
 
@@ -199,6 +200,7 @@ class WorkspaceStats:
                 resp = self._index._http.request("GET", url)
                 if resp.status == 200:
                     import json
+
                     data = json.loads(resp.data.decode("utf-8"))
                     result[band_name] = data.get("response", {}).get("numFound", 0)
                 else:
@@ -206,7 +208,8 @@ class WorkspaceStats:
             except Exception as exc:
                 logger.warning(
                     "WorkspaceStats.confidence_distribution: band %r failed — %s",
-                    band_name, exc,
+                    band_name,
+                    exc,
                 )
                 result[band_name] = 0
         return result

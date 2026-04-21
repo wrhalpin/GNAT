@@ -80,9 +80,7 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set HTTP Basic Authorization header (api_key as username)."""
         if not self.api_key:
-            raise GNATClientError(
-                "TRM Labs connector requires api_key in config."
-            )
+            raise GNATClientError("TRM Labs connector requires api_key in config.")
         self._auth_headers["Authorization"] = self._basic_auth(self.api_key, "")
         self._auth_headers["Accept"] = "application/json"
 
@@ -93,7 +91,9 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
         try:
             self.post(
                 "/public/v2/screening/addresses",
-                json=[{"address": "0x0000000000000000000000000000000000000000", "chain": "ethereum"}],
+                json=[
+                    {"address": "0x0000000000000000000000000000000000000000", "chain": "ethereum"}
+                ],
             )
             return True
         except Exception:  # noqa: BLE001
@@ -128,14 +128,10 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
             chain, address = object_id.split(":", 1)
             resp = self.get(f"/public/v2/addresses/{chain}/{address}")
             if not isinstance(resp, dict):
-                raise GNATClientError(
-                    f"TRM Labs returned unexpected payload for {object_id!r}"
-                )
+                raise GNATClientError(f"TRM Labs returned unexpected payload for {object_id!r}")
             return dict(resp, _trm_kind="address", _trm_chain=chain, _trm_address=address)
 
-        raise GNATClientError(
-            f"TRM Labs get_object does not support stix_type={stix_type!r}"
-        )
+        raise GNATClientError(f"TRM Labs get_object does not support stix_type={stix_type!r}")
 
     def list_objects(
         self,
@@ -159,28 +155,18 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
                 raise GNATClientError(
                     "TRM Labs list_objects(indicator) requires an 'addresses' filter"
                 )
-            resp = self.post(
-                "/public/v2/screening/addresses", json=addresses
-            )
+            resp = self.post("/public/v2/screening/addresses", json=addresses)
             records = _extract_records(resp)
             return [dict(r, _trm_kind="screening") for r in records]
-        raise GNATClientError(
-            f"TRM Labs list_objects does not support stix_type={stix_type!r}"
-        )
+        raise GNATClientError(f"TRM Labs list_objects does not support stix_type={stix_type!r}")
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """TRM Labs connector is read-only."""
-        raise GNATClientError(
-            "TRM Labs connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("TRM Labs connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """TRM Labs connector is read-only."""
-        raise GNATClientError(
-            "TRM Labs connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("TRM Labs connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -194,9 +180,7 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
             return records[0]
         return {}
 
-    def screen_addresses_batch(
-        self, addresses: list[dict[str, str]]
-    ) -> list[dict[str, Any]]:
+    def screen_addresses_batch(self, addresses: list[dict[str, str]]) -> list[dict[str, Any]]:
         """Batch-screen many addresses in a single API call."""
         return self.list_objects("indicator", filters={"addresses": addresses})
 
@@ -219,28 +203,15 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
         now = utcnow()
 
         if kind == "screening":
-            address = (
-                native.get("address") or native.get("walletAddress") or ""
-            )
-            chain = (
-                native.get("chain")
-                or native.get("network")
-                or native.get("blockchain")
-                or ""
-            )
-            risk_score = (
-                native.get("addressRiskIndicatorRiskScore")
-                or native.get("riskScore")
-                or 0
-            )
+            address = native.get("address") or native.get("walletAddress") or ""
+            chain = native.get("chain") or native.get("network") or native.get("blockchain") or ""
+            risk_score = native.get("addressRiskIndicatorRiskScore") or native.get("riskScore") or 0
             try:
                 risk_score_num = float(risk_score)
             except (TypeError, ValueError):
                 risk_score_num = 0.0
             pattern = f"[x-cryptocurrency-wallet:value = '{address}' AND x-cryptocurrency-wallet:chain = '{chain}']"
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_TRM, f"indicator|{chain}|{address}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_TRM, f"indicator|{chain}|{address}")
             return {
                 "type": "indicator",
                 "id": f"indicator--{stix_uuid}",
@@ -293,9 +264,7 @@ class TRMLabsClient(BaseClient, ConnectorMixin):
         address = native.get("_trm_address", "")
         refs: list[str] = []
         if chain and address:
-            w_uuid = uuid.uuid5(
-                _NAMESPACE_TRM, f"wallet|{chain}|{address}"
-            )
+            w_uuid = uuid.uuid5(_NAMESPACE_TRM, f"wallet|{chain}|{address}")
             refs.append(f"x-cryptocurrency-wallet--{w_uuid}")
 
         first = native.get("firstTransactionAt") or now

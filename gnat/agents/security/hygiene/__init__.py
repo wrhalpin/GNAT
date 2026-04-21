@@ -6,6 +6,7 @@ gnat.agents.security.hygiene
 
 Public API surface for the ``gnat.agents.security.hygiene`` package.
 """
+
 from .duplicate_detector import DuplicateDetector
 from .leak_scanner import LeakFinding, LeakScanner
 from .unsafe_patterns import UnsafePatternDetector

@@ -718,9 +718,7 @@ class DynatraceClient(BaseClient, ConnectorMixin):
             params["from"] = from_ts
         if to_ts:
             params["to"] = to_ts
-        return self._paginate_v2(
-            "/api/v2/securityProblems", params, "securityProblems"
-        )
+        return self._paginate_v2("/api/v2/securityProblems", params, "securityProblems")
 
     def get_security_problem(
         self,
@@ -764,9 +762,7 @@ class DynatraceClient(BaseClient, ConnectorMixin):
         -------
         list[dict]
         """
-        response = self.get(
-            f"/api/v2/securityProblems/{security_problem_id}/affectedEntities"
-        )
+        response = self.get(f"/api/v2/securityProblems/{security_problem_id}/affectedEntities")
         return response.get("entities", response if isinstance(response, list) else [])
 
     def get_security_problem_remediation_items(
@@ -784,9 +780,7 @@ class DynatraceClient(BaseClient, ConnectorMixin):
         -------
         list[dict]
         """
-        response = self.get(
-            f"/api/v2/securityProblems/{security_problem_id}/remediationItems"
-        )
+        response = self.get(f"/api/v2/securityProblems/{security_problem_id}/remediationItems")
         return response.get("remediationItems", [])
 
     def mute_security_problem(
@@ -1215,11 +1209,13 @@ class DynatraceClient(BaseClient, ConnectorMixin):
         max_wait = timeout_secs or self._cfg.grail_max_wait_secs
         poll_interval = self._cfg.grail_poll_interval_secs
 
-        execute_body = json.dumps({
-            "query": dql,
-            "maxResultRecords": limit,
-            "requestTimeoutMilliseconds": int(max_wait * 1000),
-        }).encode("utf-8")
+        execute_body = json.dumps(
+            {
+                "query": dql,
+                "maxResultRecords": limit,
+                "requestTimeoutMilliseconds": int(max_wait * 1000),
+            }
+        ).encode("utf-8")
 
         execute_resp = self._grail_request(
             "POST",
@@ -1243,8 +1239,7 @@ class DynatraceClient(BaseClient, ConnectorMixin):
             elapsed = time.monotonic() - start
             if elapsed > max_wait:
                 raise DynatraceQueryTimeoutError(
-                    f"Grail DQL query timed out after {max_wait:.0f}s. "
-                    f"requestToken={request_token}"
+                    f"Grail DQL query timed out after {max_wait:.0f}s. requestToken={request_token}"
                 )
 
             poll_resp = self._grail_request(
@@ -1293,11 +1288,7 @@ class DynatraceClient(BaseClient, ConnectorMixin):
         list[dict]
         """
         filter_clause = f"\n{dql_filter}" if dql_filter else ""
-        dql = (
-            f"fetch logs, from:{from_ts}, to:{to_ts}"
-            f"{filter_clause}"
-            f"\n| limit {limit}"
-        )
+        dql = f"fetch logs, from:{from_ts}, to:{to_ts}{filter_clause}\n| limit {limit}"
         return self.query_grail(dql, max_results=limit)
 
     def query_security_events_grail(
@@ -1330,9 +1321,9 @@ class DynatraceClient(BaseClient, ConnectorMixin):
         filter_clause = f"\n{dql_filter}" if dql_filter else ""
         dql = (
             f"fetch events, from:{from_ts}, to:{to_ts}"
-            f"\n| filter event.type == \"VULNERABILITY_OPEN\" "
-            f"or event.type == \"ATTACK_CANDIDATE\" "
-            f"or event.type == \"SECURITY_PROBLEM\""
+            f'\n| filter event.type == "VULNERABILITY_OPEN" '
+            f'or event.type == "ATTACK_CANDIDATE" '
+            f'or event.type == "SECURITY_PROBLEM"'
             f"{filter_clause}"
             f"\n| limit {limit}"
         )

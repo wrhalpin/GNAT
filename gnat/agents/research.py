@@ -143,13 +143,9 @@ class ResearchAgent(SourceReader):
             Allows multi-backend usage and fallback chains.
         """
         if topics and monitored_sources:
-            raise ValueError(
-                "Provide topics or monitored_sources, not both."
-            )
+            raise ValueError("Provide topics or monitored_sources, not both.")
         if not topics and not monitored_sources:
-            raise ValueError(
-                "Provide topics or monitored_sources (at least one is required)."
-            )
+            raise ValueError("Provide topics or monitored_sources (at least one is required).")
 
         super().__init__(source_id="ResearchAgent")
         self._cfg = config
@@ -182,7 +178,6 @@ class ResearchAgent(SourceReader):
 
     def _complete_json(self, prompt: str) -> Any:
         """Call the configured backend and return parsed JSON or None."""
-        import json as _json
 
         if self._llm is not None:
             # Use structured() which returns parsed JSON directly
@@ -283,13 +278,10 @@ class ResearchAgent(SourceReader):
     def _build_feed_prompt(self, sources: list[dict[str, Any]]) -> str:
         """Internal helper for build feed prompt."""
         source_lines = "\n".join(
-            f"- {s.get('label', s.get('url', ''))}: {s.get('url', '')}"
-            for s in sources
+            f"- {s.get('label', s.get('url', ''))}: {s.get('url', '')}" for s in sources
         )
         date_hint = (
-            f"\nOnly include items published after {self._newer_than}."
-            if self._newer_than
-            else ""
+            f"\nOnly include items published after {self._newer_than}." if self._newer_than else ""
         )
         return (
             f"You are a cyber threat intelligence analyst monitoring threat feeds.\n"

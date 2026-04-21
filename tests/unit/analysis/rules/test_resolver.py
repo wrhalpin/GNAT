@@ -12,9 +12,7 @@ from gnat.analysis.rules.resolver import EvidenceResolver, trust_at_least
 class TestEvidenceResolver:
     def _make_store(self, platform_map):
         store = MagicMock()
-        store.get_source_platform = MagicMock(
-            side_effect=lambda ws, sid: platform_map.get(sid)
-        )
+        store.get_source_platform = MagicMock(side_effect=lambda ws, sid: platform_map.get(sid))
         store.get_source_platforms_bulk = MagicMock(
             side_effect=lambda ws, sids: {s: platform_map.get(s) for s in sids}
         )
@@ -52,10 +50,12 @@ class TestEvidenceResolver:
         assert store.get_source_platform.call_count == 1
 
     def test_resolve_many_batch(self):
-        store = self._make_store({
-            "ind-1": "crowdstrike",
-            "ind-2": "splunk",
-        })
+        store = self._make_store(
+            {
+                "ind-1": "crowdstrike",
+                "ind-2": "splunk",
+            }
+        )
         r = EvidenceResolver(workspace_id=1, store=store)
         results = r.resolve_many(["ind-1", "ind-2"])
         assert len(results) == 2

@@ -72,9 +72,7 @@ class CrtShClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("crt.sh get_object requires a non-empty id")
         if stix_type != "x509-certificate":
-            raise GNATClientError(
-                f"crt.sh get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"crt.sh get_object does not support stix_type={stix_type!r}")
         resp = self.get(
             "/",
             params={"id": object_id, "output": "json"},
@@ -85,9 +83,7 @@ class CrtShClient(BaseClient, ConnectorMixin):
         elif isinstance(resp, dict):
             record = resp
         if not isinstance(record, dict):
-            raise GNATClientError(
-                f"crt.sh returned unexpected payload for id={object_id!r}"
-            )
+            raise GNATClientError(f"crt.sh returned unexpected payload for id={object_id!r}")
         return dict(record, _crtsh_kind="certificate")
 
     def list_objects(
@@ -100,14 +96,10 @@ class CrtShClient(BaseClient, ConnectorMixin):
         """Search the CT logs by domain or identity substring."""
         filters = dict(filters or {})
         if stix_type != "x509-certificate":
-            raise GNATClientError(
-                f"crt.sh list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"crt.sh list_objects does not support stix_type={stix_type!r}")
         query = filters.get("query") or filters.get("identity")
         if not query:
-            raise GNATClientError(
-                "crt.sh list_objects requires a 'query' or 'identity' filter"
-            )
+            raise GNATClientError("crt.sh list_objects requires a 'query' or 'identity' filter")
         params: dict[str, Any] = {
             "q": str(query),
             "output": "json",
@@ -124,9 +116,7 @@ class CrtShClient(BaseClient, ConnectorMixin):
                     items.append(dict(r, _crtsh_kind="certificate"))
         return items
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """crt.sh connector is read-only."""
         raise GNATClientError(
             "crt.sh connector is read-only — Certificate Transparency logs "
@@ -135,9 +125,7 @@ class CrtShClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """crt.sh connector is read-only."""
-        raise GNATClientError(
-            "crt.sh connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("crt.sh connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -177,9 +165,7 @@ class CrtShClient(BaseClient, ConnectorMixin):
         not_before = native.get("not_before")
         not_after = native.get("not_after")
 
-        stix_uuid = uuid.uuid5(
-            _NAMESPACE_CRTSH, f"x509-certificate|{crtsh_id}|{serial}"
-        )
+        stix_uuid = uuid.uuid5(_NAMESPACE_CRTSH, f"x509-certificate|{crtsh_id}|{serial}")
 
         return {
             "type": "x509-certificate",

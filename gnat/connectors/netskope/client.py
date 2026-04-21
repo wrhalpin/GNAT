@@ -261,9 +261,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
             params["starttime"] = start_time
         if end_time:
             params["endtime"] = end_time
-        resp = self.get(
-            "/api/v2/events/dataexport/events/application", params=params
-        )
+        resp = self.get("/api/v2/events/dataexport/events/application", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_page_events(
@@ -299,9 +297,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
             params["starttime"] = start_time
         if end_time:
             params["endtime"] = end_time
-        resp = self.get(
-            "/api/v2/events/dataexport/events/page", params=params
-        )
+        resp = self.get("/api/v2/events/dataexport/events/page", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_infrastructure_events(
@@ -337,9 +333,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
             params["starttime"] = start_time
         if end_time:
             params["endtime"] = end_time
-        resp = self.get(
-            "/api/v2/events/dataexport/events/infrastructure", params=params
-        )
+        resp = self.get("/api/v2/events/dataexport/events/infrastructure", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_network_events(
@@ -375,9 +369,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
             params["starttime"] = start_time
         if end_time:
             params["endtime"] = end_time
-        resp = self.get(
-            "/api/v2/events/dataexport/events/network", params=params
-        )
+        resp = self.get("/api/v2/events/dataexport/events/network", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_alert_events(
@@ -413,9 +405,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
             params["starttime"] = start_time
         if end_time:
             params["endtime"] = end_time
-        resp = self.get(
-            "/api/v2/events/dataexport/alerts/alert", params=params
-        )
+        resp = self.get("/api/v2/events/dataexport/alerts/alert", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     # ── Policy ────────────────────────────────────────────────────────────
@@ -539,6 +529,7 @@ class NetskopeClient(BaseClient, ConnectorMixin):
             Netskope username (typically email address).
         """
         import urllib.parse
+
         encoded = urllib.parse.quote(username, safe="")
         resp = self.get(f"/api/v2/userconfig/{encoded}")
         return resp.get("data", resp) if isinstance(resp, dict) else {}

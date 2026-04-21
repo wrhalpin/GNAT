@@ -2,30 +2,32 @@
 
 from __future__ import annotations
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
+import pytest
 
 # ── Models ────────────────────────────────────────────────────────────────────
 
+
 def test_metric_type_values():
     from gnat.metrics.models import MetricType
+
     assert MetricType.INVESTIGATION_OPENED == "investigation_opened"
-    assert MetricType.ENRICHMENT_HIT       == "enrichment_hit"
-    assert MetricType.ENRICHMENT_LATENCY   == "enrichment_latency"
-    assert MetricType.REPORT_PUBLISHED     == "report_published"
+    assert MetricType.ENRICHMENT_HIT == "enrichment_hit"
+    assert MetricType.ENRICHMENT_LATENCY == "enrichment_latency"
+    assert MetricType.REPORT_PUBLISHED == "report_published"
 
 
 def test_metric_event_creation():
     from gnat.metrics.models import MetricEvent, MetricType
 
     e = MetricEvent(
-        metric_type = MetricType.ENRICHMENT_HIT,
-        value       = 1.0,
-        labels      = {"platform": "virustotal"},
+        metric_type=MetricType.ENRICHMENT_HIT,
+        value=1.0,
+        labels={"platform": "virustotal"},
     )
-    assert e.value                     == 1.0
-    assert e.labels["platform"]        == "virustotal"
+    assert e.value == 1.0
+    assert e.labels["platform"] == "virustotal"
     assert e.timestamp is not None
 
 
@@ -34,12 +36,13 @@ def test_metric_event_to_dict():
 
     e = MetricEvent(MetricType.ENRICHMENT_LATENCY, 245.0, labels={"p": "vt"})
     d = e.to_dict()
-    assert d["metric_type"]   == "enrichment_latency"
-    assert d["value"]          == 245.0
-    assert d["labels"]["p"]    == "vt"
+    assert d["metric_type"] == "enrichment_latency"
+    assert d["value"] == 245.0
+    assert d["labels"]["p"] == "vt"
 
 
 # ── MetricsCollector ──────────────────────────────────────────────────────────
+
 
 def test_collector_record_and_snapshot():
     from gnat.metrics.collector import MetricsCollector
@@ -58,9 +61,9 @@ def test_collector_snapshot_filtered():
     from gnat.metrics.models import MetricType
 
     col = MetricsCollector()
-    col.record(MetricType.ENRICHMENT_HIT,  1.0)
+    col.record(MetricType.ENRICHMENT_HIT, 1.0)
     col.record(MetricType.ENRICHMENT_MISS, 1.0)
-    col.record(MetricType.ENRICHMENT_HIT,  1.0)
+    col.record(MetricType.ENRICHMENT_HIT, 1.0)
 
     hits = col.snapshot(MetricType.ENRICHMENT_HIT)
     assert len(hits) == 2
@@ -85,10 +88,10 @@ def test_collector_ring_buffer_evicts_old():
 
 def test_collector_since():
     from gnat.metrics.collector import MetricsCollector
-    from gnat.metrics.models import MetricType, MetricEvent
+    from gnat.metrics.models import MetricEvent, MetricType
 
     col = MetricsCollector()
-    past   = datetime.now(tz=timezone.utc) - timedelta(hours=2)
+    past = datetime.now(tz=timezone.utc) - timedelta(hours=2)
     recent = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
 
     old_evt = MetricEvent(MetricType.ENRICHMENT_HIT, 1.0)
@@ -118,9 +121,10 @@ def test_collector_clear():
 
 
 def test_collector_thread_safe():
+    import threading
+
     from gnat.metrics.collector import MetricsCollector
     from gnat.metrics.models import MetricType
-    import threading
 
     col = MetricsCollector(max_size=1000)
 
@@ -129,13 +133,16 @@ def test_collector_thread_safe():
             col.record(MetricType.ENRICHMENT_HIT, 1.0)
 
     threads = [threading.Thread(target=emit) for _ in range(10)]
-    for t in threads: t.start()
-    for t in threads: t.join()
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
 
     assert len(col) == 500
 
 
 # ── MetricsAggregator ─────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def populated_collector():
@@ -153,7 +160,7 @@ def populated_collector():
     col.record(MetricType.INVESTIGATION_DURATION, 200.0)
     # Enrichment: 4 hits, 1 miss, latency 50ms
     for _ in range(4):
-        col.record(MetricType.ENRICHMENT_HIT,  1.0, platform="virustotal")
+        col.record(MetricType.ENRICHMENT_HIT, 1.0, platform="virustotal")
     col.record(MetricType.ENRICHMENT_MISS, 1.0, platform="virustotal")
     col.record(MetricType.ENRICHMENT_LATENCY, 50.0, platform="virustotal")
     # 1 report published
@@ -168,11 +175,11 @@ def test_investigation_summary(populated_collector):
     from gnat.metrics.aggregator import MetricsAggregator
 
     agg = MetricsAggregator(populated_collector)
-    s   = agg.investigation_summary(days=1)
+    s = agg.investigation_summary(days=1)
 
     assert s["total_opened"] == 3
     assert s["total_closed"] == 2
-    assert s["completion_rate"] == pytest.approx(2/3, rel=1e-3)
+    assert s["completion_rate"] == pytest.approx(2 / 3, rel=1e-3)
     assert s["avg_duration_seconds"] == pytest.approx(150.0)
 
 
@@ -183,9 +190,9 @@ def test_enrichment_effectiveness_all_platforms(populated_collector):
     eff = agg.enrichment_effectiveness(days=1)
 
     assert eff["total_requests"] == 5
-    assert eff["hits"]           == 4
-    assert eff["misses"]         == 1
-    assert eff["hit_rate"]       == pytest.approx(0.8)
+    assert eff["hits"] == 4
+    assert eff["misses"] == 1
+    assert eff["hit_rate"] == pytest.approx(0.8)
     assert eff["avg_latency_ms"] == pytest.approx(50.0)
 
 
@@ -199,17 +206,17 @@ def test_enrichment_effectiveness_filtered_platform(populated_collector):
     # Non-existent platform → 0 requests
     zero = agg.enrichment_effectiveness(platform="nonexistent", days=1)
     assert zero["total_requests"] == 0
-    assert zero["hit_rate"]       == 0.0
+    assert zero["hit_rate"] == 0.0
 
 
 def test_gap_frequency(populated_collector):
     from gnat.metrics.aggregator import MetricsAggregator
 
     agg = MetricsAggregator(populated_collector)
-    gf  = agg.gap_frequency(days=1)
+    gf = agg.gap_frequency(days=1)
 
-    assert gf["total_gaps"]                    == 2
-    assert gf["by_investigation"]["inv-1"]     == 2
+    assert gf["total_gaps"] == 2
+    assert gf["by_investigation"]["inv-1"] == 2
 
 
 def test_false_positive_rate_empty():
@@ -218,15 +225,17 @@ def test_false_positive_rate_empty():
 
     col = MetricsCollector()
     agg = MetricsAggregator(col)
-    fp  = agg.false_positive_rate(days=1)
+    fp = agg.false_positive_rate(days=1)
     assert fp["total_flagged"] == 0
-    assert fp["by_platform"]   == {}
+    assert fp["by_platform"] == {}
 
 
 # ── gnat.metrics __init__ exports ─────────────────────────────────────────────
 
+
 def test_metrics_init_exports():
     import gnat.metrics as m
+
     assert hasattr(m, "MetricsCollector")
     assert hasattr(m, "MetricsAggregator")
     assert hasattr(m, "MetricEvent")
@@ -236,6 +245,7 @@ def test_metrics_init_exports():
 
 
 # ── MetricsHooks (HookBus bridge) ─────────────────────────────────────────────
+
 
 def test_register_hooks_returns_none():
     from gnat.metrics.collector import MetricsCollector
@@ -255,8 +265,9 @@ def test_hooks_capture_investigation_opened():
     col = MetricsCollector()
     register_metrics_hooks(col)
     try:
-        HookBus.instance().emit("investigation_opened",
-                                investigation_id="inv-test", created_by="alice")
+        HookBus.instance().emit(
+            "investigation_opened", investigation_id="inv-test", created_by="alice"
+        )
         events = col.snapshot(MetricType.INVESTIGATION_OPENED)
         assert len(events) == 1
         assert events[0].labels.get("investigation_id") == "inv-test"
@@ -273,9 +284,12 @@ def test_hooks_capture_investigation_closed_with_duration():
     col = MetricsCollector()
     register_metrics_hooks(col)
     try:
-        HookBus.instance().emit("investigation_closed",
-                                investigation_id="inv-2", changed_by="bob",
-                                duration_seconds=3600.0)
+        HookBus.instance().emit(
+            "investigation_closed",
+            investigation_id="inv-2",
+            changed_by="bob",
+            duration_seconds=3600.0,
+        )
         assert len(col.snapshot(MetricType.INVESTIGATION_CLOSED)) == 1
         dur = col.snapshot(MetricType.INVESTIGATION_DURATION)
         assert len(dur) == 1
@@ -309,8 +323,9 @@ def test_hooks_capture_gap_detected():
     col = MetricsCollector()
     register_metrics_hooks(col)
     try:
-        HookBus.instance().emit("gap_detected",
-                                investigation_id="inv-3", gap_type="missing_context")
+        HookBus.instance().emit(
+            "gap_detected", investigation_id="inv-3", gap_type="missing_context"
+        )
         events = col.snapshot(MetricType.GAP_DETECTED)
         assert len(events) == 1
         assert events[0].labels.get("gap_type") == "missing_context"

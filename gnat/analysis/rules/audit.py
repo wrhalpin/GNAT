@@ -98,9 +98,7 @@ class AuditWriter:
 
         return audit_ids
 
-    def mark_applied(
-        self, audit_id: int, error_message: str | None = None
-    ) -> None:
+    def mark_applied(self, audit_id: int, error_message: str | None = None) -> None:
         """Mark an audit row as applied (or record the error)."""
         now = datetime.now(timezone.utc).isoformat()
 
@@ -119,9 +117,7 @@ class AuditWriter:
         self._memory_log.append(record)
         return record["id"]
 
-    def _update_memory(
-        self, audit_id: int, applied_at: str, error_message: str | None
-    ) -> None:
+    def _update_memory(self, audit_id: int, applied_at: str, error_message: str | None) -> None:
         for rec in self._memory_log:
             if rec.get("id") == audit_id:
                 rec["applied"] = error_message is None
@@ -161,9 +157,7 @@ class AuditWriter:
             logger.error("Failed to write audit record: %s", exc)
             return self._write_memory(record)
 
-    def _update_db(
-        self, audit_id: int, applied_at: str, error_message: str | None
-    ) -> None:
+    def _update_db(self, audit_id: int, applied_at: str, error_message: str | None) -> None:
         try:
             with self._session_factory() as sess:
                 from sqlalchemy import text
@@ -187,7 +181,9 @@ class AuditWriter:
 
 def _serialize_decision(decision: Any) -> dict[str, Any]:
     return {
-        "action": decision.action.value if hasattr(decision.action, "value") else str(decision.action),
+        "action": decision.action.value
+        if hasattr(decision.action, "value")
+        else str(decision.action),
         "reason": getattr(decision, "reason", ""),
         "target_status": (
             decision.target_status.value

@@ -62,12 +62,11 @@ _RETRY_BACKOFF = 2.0
 
 class MISPClient:
     """urllib3-based HTTP client for the MISP REST API."""
+
     TRUST_LEVEL: str = "semi_trusted"
     API_VERSION: str = "v1"
     API_PREFIX: str = "/"
     COST_UNIT: int = 1
-
-
 
     def __init__(self, config: MISPConfig) -> None:
         """Initialize MISPClient."""

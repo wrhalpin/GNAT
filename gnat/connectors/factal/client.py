@@ -76,14 +76,10 @@ class FactalClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("Factal get_object requires a non-empty id")
         if stix_type != "observed-data":
-            raise GNATClientError(
-                f"Factal get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Factal get_object does not support stix_type={stix_type!r}")
         resp = self.get(f"/v2/events/{object_id}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Factal returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Factal returned unexpected payload for {object_id!r}")
         return dict(resp, _ft_kind="event")
 
     def list_objects(
@@ -112,24 +108,16 @@ class FactalClient(BaseClient, ConnectorMixin):
                 resp = self.get("/v2/events", params=params)
                 tag = "event"
         else:
-            raise GNATClientError(
-                f"Factal list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Factal list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _ft_kind=tag) for r in _extract_factal_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Factal connector is read-only."""
-        raise GNATClientError(
-            "Factal connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Factal connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Factal connector is read-only."""
-        raise GNATClientError(
-            "Factal connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Factal connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -158,15 +146,11 @@ class FactalClient(BaseClient, ConnectorMixin):
 
     def list_topics(self) -> list[dict[str, Any]]:
         """Return Factal topic taxonomy."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "topics"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "topics"}, page_size=500)
 
     def list_places(self) -> list[dict[str, Any]]:
         """Return geographic place definitions."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "places"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "places"}, page_size=500)
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
 
@@ -179,9 +163,7 @@ class FactalClient(BaseClient, ConnectorMixin):
 
         if kind == "topic":
             topic_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_FACTAL, f"x-factal-topic|{topic_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_FACTAL, f"x-factal-topic|{topic_id}")
             return {
                 "type": "x-factal-topic",
                 "id": f"x-factal-topic--{stix_uuid}",
@@ -192,9 +174,7 @@ class FactalClient(BaseClient, ConnectorMixin):
 
         if kind == "place":
             place_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_FACTAL, f"identity|location|{place_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_FACTAL, f"identity|location|{place_id}")
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
@@ -216,9 +196,7 @@ class FactalClient(BaseClient, ConnectorMixin):
         if isinstance(place, dict):
             place_id = place.get("id") or place.get("name")
             if place_id:
-                place_uuid = uuid.uuid5(
-                    _NAMESPACE_FACTAL, f"identity|location|{place_id}"
-                )
+                place_uuid = uuid.uuid5(_NAMESPACE_FACTAL, f"identity|location|{place_id}")
                 refs.append(f"identity--{place_uuid}")
 
         first = (

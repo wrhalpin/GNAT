@@ -211,9 +211,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/entities/{entity_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def get_neighbors(
-        self, object_id: str, object_type: str = "observables"
-    ) -> dict[str, Any]:
+    def get_neighbors(self, object_id: str, object_type: str = "observables") -> dict[str, Any]:
         """
         Return the graph neighbors of an object — YETI's core
         relationship-traversal endpoint.  ``object_type`` is one of
@@ -225,9 +223,7 @@ class YetiClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
-    def list_indicators(
-        self, pattern_type: str = "", count: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_indicators(self, pattern_type: str = "", count: int = 100) -> list[dict[str, Any]]:
         """List YETI indicator objects (queries/regexes tracking threats)."""
         body: dict[str, Any] = {"count": int(count)}
         if pattern_type:

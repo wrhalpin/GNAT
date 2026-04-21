@@ -70,9 +70,7 @@ class Code42Client(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange client credentials for a Bearer token."""
         if not self.api_client_id or not self.api_client_secret:
-            raise GNATClientError(
-                "Code42 connector requires api_client_id and api_client_secret."
-            )
+            raise GNATClientError("Code42 connector requires api_client_id and api_client_secret.")
         # Use a plain POST with Basic auth on the /v1/oauth endpoint
         self._auth_headers["Authorization"] = self._basic_auth(
             self.api_client_id, self.api_client_secret
@@ -82,9 +80,7 @@ class Code42Client(BaseClient, ConnectorMixin):
         if isinstance(resp, dict):
             token = resp.get("access_token") or resp.get("token", "")
         if not token:
-            raise GNATClientError(
-                "Code42 authentication failed — no access_token in response"
-            )
+            raise GNATClientError("Code42 authentication failed — no access_token in response")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -109,13 +105,9 @@ class Code42Client(BaseClient, ConnectorMixin):
             resp = self.get(f"/v2/users/{object_id}")
             kind = "user"
         else:
-            raise GNATClientError(
-                f"Code42 get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Code42 get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Code42 returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Code42 returned unexpected payload for {object_id!r}")
         return dict(resp, _c42_kind=kind)
 
     def list_objects(
@@ -141,9 +133,7 @@ class Code42Client(BaseClient, ConnectorMixin):
                 items = resp.get("fileEvents", []) if isinstance(resp, dict) else []
                 tag = "file_event"
             elif kind == "alerts":
-                resp = self.get(
-                    "/v1/alerts/search", params={"pageSize": int(page_size)}
-                )
+                resp = self.get("/v1/alerts/search", params={"pageSize": int(page_size)})
                 items = resp.get("alerts", []) if isinstance(resp, dict) else []
                 tag = "alert"
             else:
@@ -155,40 +145,24 @@ class Code42Client(BaseClient, ConnectorMixin):
             items = resp.get("users", []) if isinstance(resp, dict) else []
             tag = "user"
         elif stix_type == "x-code42-risk-profile":
-            resp = self.get(
-                "/v1/user-risk-profiles", params={"pgSize": int(page_size)}
-            )
-            items = (
-                resp.get("userRiskProfiles", [])
-                if isinstance(resp, dict)
-                else []
-            )
+            resp = self.get("/v1/user-risk-profiles", params={"pgSize": int(page_size)})
+            items = resp.get("userRiskProfiles", []) if isinstance(resp, dict) else []
             tag = "risk_profile"
         else:
-            raise GNATClientError(
-                f"Code42 list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Code42 list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _c42_kind=tag) for r in items if isinstance(r, dict)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Code42 connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Code42 connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Code42 connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Code42 connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Code42 connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Code42 connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def search_file_events(
-        self, query: dict[str, Any] | None = None
-    ) -> list[dict[str, Any]]:
+    def search_file_events(self, query: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Search Code42 file-activity events via v2 search DSL."""
         return self.list_objects(
             "observed-data",
@@ -198,9 +172,7 @@ class Code42Client(BaseClient, ConnectorMixin):
 
     def list_alerts(self) -> list[dict[str, Any]]:
         """Return Incydr alerts."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "alerts"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "alerts"}, page_size=500)
 
     def list_cases(self) -> list[dict[str, Any]]:
         """Return Code42 investigation cases."""
@@ -248,9 +220,7 @@ class Code42Client(BaseClient, ConnectorMixin):
 
         if kind == "risk_profile":
             user_id = native.get("userId") or native.get("username", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_CODE42, f"x-code42-risk-profile|{user_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_CODE42, f"x-code42-risk-profile|{user_id}")
             return {
                 "type": "x-code42-risk-profile",
                 "id": f"x-code42-risk-profile--{stix_uuid}",

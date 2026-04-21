@@ -65,9 +65,7 @@ class CymulateClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set ``x-token`` header from the configured API key."""
         if not self.api_key:
-            raise GNATClientError(
-                "Cymulate connector requires api_key in config."
-            )
+            raise GNATClientError("Cymulate connector requires api_key in config.")
         self._auth_headers["x-token"] = self.api_key
         self._auth_headers["Accept"] = "application/json"
 
@@ -92,13 +90,9 @@ class CymulateClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/v1/templates/{object_id}")
             kind = "template"
         else:
-            raise GNATClientError(
-                f"Cymulate get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Cymulate get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Cymulate returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Cymulate returned unexpected payload for {object_id!r}")
         return dict(resp, _cym_kind=kind)
 
     def list_objects(
@@ -119,9 +113,7 @@ class CymulateClient(BaseClient, ConnectorMixin):
                 if not assessment_id:
                     resp = self.get("/v1/technical-findings", params=params)
                 else:
-                    resp = self.get(
-                        f"/v1/assessments/{assessment_id}/findings", params=params
-                    )
+                    resp = self.get(f"/v1/assessments/{assessment_id}/findings", params=params)
                 tag = "finding"
             elif kind == "simulations":
                 resp = self.get("/v1/simulations", params=params)
@@ -133,24 +125,16 @@ class CymulateClient(BaseClient, ConnectorMixin):
             resp = self.get("/v1/templates", params=params)
             tag = "template"
         else:
-            raise GNATClientError(
-                f"Cymulate list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Cymulate list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _cym_kind=tag) for r in _extract_cym_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Cymulate connector is read-only."""
-        raise GNATClientError(
-            "Cymulate connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Cymulate connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Cymulate connector is read-only."""
-        raise GNATClientError(
-            "Cymulate connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Cymulate connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -158,9 +142,7 @@ class CymulateClient(BaseClient, ConnectorMixin):
         """Return Cymulate assessments."""
         return self.list_objects("observed-data", page_size=500)
 
-    def list_findings(
-        self, assessment_id: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_findings(self, assessment_id: str = "") -> list[dict[str, Any]]:
         """Return technical findings, optionally scoped to an assessment."""
         filters: dict[str, Any] = {"kind": "findings"}
         if assessment_id:
@@ -173,9 +155,7 @@ class CymulateClient(BaseClient, ConnectorMixin):
 
     def list_simulations(self) -> list[dict[str, Any]]:
         """Return individual simulations."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "simulations"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "simulations"}, page_size=1000)
 
     def get_assessment(self, assessment_id: str) -> dict[str, Any]:
         """Fetch a single assessment."""
@@ -196,9 +176,7 @@ class CymulateClient(BaseClient, ConnectorMixin):
             stix_uuid = uuid.uuid5(_NAMESPACE_CYMULATE, f"attack-pattern|{tpl_id}")
             external_refs = []
             if mitre:
-                external_refs.append(
-                    {"source_name": "mitre-attack", "external_id": mitre}
-                )
+                external_refs.append({"source_name": "mitre-attack", "external_id": mitre})
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
@@ -212,15 +190,9 @@ class CymulateClient(BaseClient, ConnectorMixin):
             }
 
         # assessment / finding / simulation → observed-data
-        sim_id = str(
-            native.get("id") or native.get("assessmentId") or native.get("runId", "")
-        )
-        targets = _values(
-            native.get("targets") or native.get("endpoints") or native.get("agents")
-        )
-        techniques = _values(
-            native.get("mitreTechniques") or native.get("techniques")
-        )
+        sim_id = str(native.get("id") or native.get("assessmentId") or native.get("runId", ""))
+        targets = _values(native.get("targets") or native.get("endpoints") or native.get("agents"))
+        techniques = _values(native.get("mitreTechniques") or native.get("techniques"))
         return bas_simulation_envelope(
             source_name="cymulate",
             simulation_id=sim_id,

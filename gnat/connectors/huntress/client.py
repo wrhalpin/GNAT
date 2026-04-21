@@ -91,12 +91,8 @@ class HuntressClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set HTTP Basic Authorization header from the configured creds."""
         if not self.api_key_id or not self.api_secret:
-            raise GNATClientError(
-                "Huntress connector requires api_key_id and api_secret."
-            )
-        self._auth_headers["Authorization"] = self._basic_auth(
-            self.api_key_id, self.api_secret
-        )
+            raise GNATClientError("Huntress connector requires api_key_id and api_secret.")
+        self._auth_headers["Authorization"] = self._basic_auth(self.api_key_id, self.api_secret)
         self._auth_headers["Accept"] = "application/json"
 
     # ── ConnectorMixin — CRUD ──────────────────────────────────────────────
@@ -123,14 +119,10 @@ class HuntressClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/v1/agents/{object_id}")
             kind = "agent"
         else:
-            raise GNATClientError(
-                f"Huntress get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Huntress get_object does not support stix_type={stix_type!r}")
         data = _unwrap_huntress(resp)
         if not isinstance(data, dict):
-            raise GNATClientError(
-                f"Huntress returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Huntress returned unexpected payload for {object_id!r}")
         return dict(data, _ht_kind=kind)
 
     def list_objects(
@@ -171,27 +163,16 @@ class HuntressClient(BaseClient, ConnectorMixin):
             resp = self.get("/v1/agents", params=params)
             kind = "agent"
         else:
-            raise GNATClientError(
-                f"Huntress list_objects does not support stix_type={stix_type!r}"
-            )
-        return [
-            dict(r, _ht_kind=kind)
-            for r in _extract_huntress_list(resp)
-        ]
+            raise GNATClientError(f"Huntress list_objects does not support stix_type={stix_type!r}")
+        return [dict(r, _ht_kind=kind) for r in _extract_huntress_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Huntress connector is read-only."""
-        raise GNATClientError(
-            "Huntress connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Huntress connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Huntress connector is read-only."""
-        raise GNATClientError(
-            "Huntress connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Huntress connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -199,16 +180,12 @@ class HuntressClient(BaseClient, ConnectorMixin):
         """Return all managed organizations."""
         return self.list_objects("identity", page_size=1000)
 
-    def list_agents(
-        self, organization_id: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_agents(self, organization_id: str = "") -> list[dict[str, Any]]:
         """Return deployed Huntress agents, optionally filtered by org."""
         filters: dict[str, Any] = {}
         if organization_id:
             filters["organization_id"] = organization_id
-        return self.list_objects(
-            "x-huntress-agent", filters=filters, page_size=1000
-        )
+        return self.list_objects("x-huntress-agent", filters=filters, page_size=1000)
 
     def list_incidents(
         self,
@@ -224,9 +201,7 @@ class HuntressClient(BaseClient, ConnectorMixin):
             filters["severity"] = severity
         if since:
             filters["updated_at_min"] = since
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=1000
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=1000)
 
     def get_incident(self, incident_id: str) -> dict[str, Any]:
         """Fetch a single incident report."""
@@ -243,9 +218,7 @@ class HuntressClient(BaseClient, ConnectorMixin):
 
         if kind == "organization":
             org_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_HUNTRESS, f"identity|org|{org_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_HUNTRESS, f"identity|org|{org_id}")
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
@@ -259,9 +232,7 @@ class HuntressClient(BaseClient, ConnectorMixin):
 
         if kind == "agent":
             agent_id = native.get("id") or ""
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_HUNTRESS, f"agent|{agent_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_HUNTRESS, f"agent|{agent_id}")
             return {
                 "type": "x-huntress-agent",
                 "id": f"x-huntress-agent--{stix_uuid}",
@@ -279,23 +250,17 @@ class HuntressClient(BaseClient, ConnectorMixin):
         refs: list[str] = []
         org_id = native.get("organization_id")
         if org_id:
-            org_uuid = uuid.uuid5(
-                _NAMESPACE_HUNTRESS, f"identity|org|{org_id}"
-            )
+            org_uuid = uuid.uuid5(_NAMESPACE_HUNTRESS, f"identity|org|{org_id}")
             refs.append(f"identity--{org_uuid}")
 
         agent_id = native.get("agent_id")
         if agent_id:
-            agent_uuid = uuid.uuid5(
-                _NAMESPACE_HUNTRESS, f"agent|{agent_id}"
-            )
+            agent_uuid = uuid.uuid5(_NAMESPACE_HUNTRESS, f"agent|{agent_id}")
             refs.append(f"x-huntress-agent--{agent_uuid}")
 
         ip = native.get("remote_ip") or native.get("source_ip")
         if ip:
-            ip_uuid = uuid.uuid5(
-                _NAMESPACE_HUNTRESS, f"ipv4-addr|{ip}"
-            )
+            ip_uuid = uuid.uuid5(_NAMESPACE_HUNTRESS, f"ipv4-addr|{ip}")
             refs.append(f"ipv4-addr--{ip_uuid}")
 
         first = (
@@ -317,8 +282,7 @@ class HuntressClient(BaseClient, ConnectorMixin):
                     "incident_id": native.get("id"),
                     "status": native.get("status"),
                     "severity": native.get("severity"),
-                    "summary": native.get("summary")
-                    or native.get("display_name"),
+                    "summary": native.get("summary") or native.get("display_name"),
                     "incident_type": native.get("type"),
                     "organization_id": org_id,
                     "agent_id": agent_id,

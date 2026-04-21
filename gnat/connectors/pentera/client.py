@@ -66,9 +66,7 @@ class PenteraClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Bearer header."""
         if not self.api_token:
-            raise GNATClientError(
-                "Pentera connector requires api_token in config."
-            )
+            raise GNATClientError("Pentera connector requires api_token in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -96,13 +94,9 @@ class PenteraClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v1/techniques/{object_id}")
             kind = "technique"
         else:
-            raise GNATClientError(
-                f"Pentera get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Pentera get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Pentera returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Pentera returned unexpected payload for {object_id!r}")
         return dict(resp, _pnt_kind=kind)
 
     def list_objects(
@@ -134,24 +128,16 @@ class PenteraClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v1/techniques", params=params)
             tag = "technique"
         else:
-            raise GNATClientError(
-                f"Pentera list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Pentera list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _pnt_kind=tag) for r in _extract_pentera_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Pentera connector is read-only."""
-        raise GNATClientError(
-            "Pentera connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Pentera connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Pentera connector is read-only."""
-        raise GNATClientError(
-            "Pentera connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Pentera connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -165,15 +151,11 @@ class PenteraClient(BaseClient, ConnectorMixin):
 
     def list_assets(self) -> list[dict[str, Any]]:
         """Return discovered assets."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "assets"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "assets"}, page_size=1000)
 
     def list_achievements(self) -> list[dict[str, Any]]:
         """Return successful exploit achievements."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "achievements"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "achievements"}, page_size=1000)
 
     def list_techniques(self) -> list[dict[str, Any]]:
         """Return Pentera attack techniques."""
@@ -202,9 +184,7 @@ class PenteraClient(BaseClient, ConnectorMixin):
             stix_uuid = uuid.uuid5(_NAMESPACE_PENTERA, f"attack-pattern|{tech_id}")
             external_refs = []
             if mitre:
-                external_refs.append(
-                    {"source_name": "mitre-attack", "external_id": mitre}
-                )
+                external_refs.append({"source_name": "mitre-attack", "external_id": mitre})
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
@@ -242,15 +222,9 @@ class PenteraClient(BaseClient, ConnectorMixin):
             }
 
         # task / asset / achievement → observed-data envelope
-        sim_id = str(
-            native.get("id") or native.get("taskId") or native.get("achievementId", "")
-        )
-        targets = _values(
-            native.get("targets") or native.get("assets") or native.get("hostnames")
-        )
-        techniques = _values(
-            native.get("techniques") or native.get("mitreTechniques")
-        )
+        sim_id = str(native.get("id") or native.get("taskId") or native.get("achievementId", ""))
+        targets = _values(native.get("targets") or native.get("assets") or native.get("hostnames"))
+        techniques = _values(native.get("techniques") or native.get("mitreTechniques"))
         return bas_simulation_envelope(
             source_name="pentera",
             simulation_id=sim_id,
@@ -281,7 +255,16 @@ def _extract_pentera_list(resp: Any) -> list[dict[str, Any]]:
         return [r for r in resp if isinstance(r, dict)]
     if not isinstance(resp, dict):
         return []
-    for key in ("data", "items", "results", "tasks", "findings", "techniques", "assets", "achievements"):
+    for key in (
+        "data",
+        "items",
+        "results",
+        "tasks",
+        "findings",
+        "techniques",
+        "assets",
+        "achievements",
+    ):
         val = resp.get(key)
         if isinstance(val, list):
             return [r for r in val if isinstance(r, dict)]

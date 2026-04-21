@@ -5,7 +5,6 @@ Unit tests for gnat.dissemination.notify
 from __future__ import annotations
 
 import json
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 from urllib.error import URLError
@@ -17,35 +16,36 @@ from gnat.dissemination.notify import (
     WebhookSubscription,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_report(tlp: TLPLevel = TLPLevel.GREEN) -> MagicMock:
     r = MagicMock()
-    r.id             = "rpt-test"
-    r.title          = "Test Report"
-    r.report_type    = MagicMock(value="incident")
+    r.id = "rpt-test"
+    r.title = "Test Report"
+    r.report_type = MagicMock(value="incident")
     r.classification = tlp
-    r.published_at   = datetime(2025, 6, 1, tzinfo=timezone.utc)
-    r.stix_id        = "report--test"
+    r.published_at = datetime(2025, 6, 1, tzinfo=timezone.utc)
+    r.stix_id = "report--test"
     return r
 
 
 def _sub(
-    sub_id:  str = "sub-1",
-    url:     str = "https://example.com/hook",
+    sub_id: str = "sub-1",
+    url: str = "https://example.com/hook",
     min_tlp: TLPLevel = TLPLevel.GREEN,
-    events:  list | None = None,
+    events: list | None = None,
 ) -> WebhookSubscription:
     return WebhookSubscription(
-        id      = sub_id,
-        url     = url,
-        min_tlp = min_tlp,
-        events  = events or ["published", "updated"],
+        id=sub_id,
+        url=url,
+        min_tlp=min_tlp,
+        events=events or ["published", "updated"],
     )
 
 
 # ── WebhookSubscription ───────────────────────────────────────────────────────
+
 
 class TestWebhookSubscription:
     def test_matches_same_tlp(self):
@@ -71,6 +71,7 @@ class TestWebhookSubscription:
 
 # ── WebhookNotifier ───────────────────────────────────────────────────────────
 
+
 class TestWebhookNotifier:
     def test_subscribe_and_list(self):
         notifier = WebhookNotifier()
@@ -91,8 +92,8 @@ class TestWebhookNotifier:
     def test_notify_filters_by_tlp(self):
         """Subscribers with higher min_tlp than the report TLP should NOT be notified."""
         notifier = WebhookNotifier()
-        high_sub = _sub("s1", min_tlp=TLPLevel.WHITE)   # WHITE sub: only receives WHITE
-        low_sub  = _sub("s2", min_tlp=TLPLevel.AMBER)   # AMBER sub: can receive up to AMBER
+        high_sub = _sub("s1", min_tlp=TLPLevel.WHITE)  # WHITE sub: only receives WHITE
+        low_sub = _sub("s2", min_tlp=TLPLevel.AMBER)  # AMBER sub: can receive up to AMBER
 
         notifier.subscribe(high_sub)
         notifier.subscribe(low_sub)
@@ -106,8 +107,8 @@ class TestWebhookNotifier:
         with patch("urllib.request.urlopen") as mock_urlopen:
             mock_resp = MagicMock()
             mock_resp.__enter__ = lambda s: s
-            mock_resp.__exit__  = MagicMock(return_value=False)
-            mock_resp.status    = 200
+            mock_resp.__exit__ = MagicMock(return_value=False)
+            mock_resp.status = 200
             mock_urlopen.return_value = mock_resp
             receipts = notifier.notify(report)
 
@@ -125,8 +126,8 @@ class TestWebhookNotifier:
         with patch("urllib.request.urlopen") as mock_urlopen:
             mock_resp = MagicMock()
             mock_resp.__enter__ = lambda s: s
-            mock_resp.__exit__  = MagicMock(return_value=False)
-            mock_resp.status    = 200
+            mock_resp.__exit__ = MagicMock(return_value=False)
+            mock_resp.status = 200
             mock_urlopen.return_value = mock_resp
             receipts = notifier.notify(report)
 
@@ -148,16 +149,16 @@ class TestWebhookNotifier:
 
     def test_notify_no_subscribers(self):
         notifier = WebhookNotifier()
-        report   = _make_report()
+        report = _make_report()
         receipts = notifier.notify(report)
         assert receipts == []
 
     def test_notify_adds_hmac_signature(self):
         sub = WebhookSubscription(
-            id      = "s-hmac",
-            url     = "https://example.com/hook",
-            min_tlp = TLPLevel.GREEN,
-            secret  = "mysecret",
+            id="s-hmac",
+            url="https://example.com/hook",
+            min_tlp=TLPLevel.GREEN,
+            secret="mysecret",
         )
         notifier = WebhookNotifier()
         notifier.subscribe(sub)
@@ -169,8 +170,8 @@ class TestWebhookNotifier:
             captured_headers.update(req.headers)
             resp = MagicMock()
             resp.__enter__ = lambda s: s
-            resp.__exit__  = MagicMock(return_value=False)
-            resp.status    = 200
+            resp.__exit__ = MagicMock(return_value=False)
+            resp.status = 200
             return resp
 
         with patch("urllib.request.urlopen", side_effect=_fake_urlopen):
@@ -181,11 +182,11 @@ class TestWebhookNotifier:
 
     def test_delivery_receipt_fields(self):
         receipt = DeliveryReceipt(
-            subscription_id = "s1",
-            url             = "https://example.com",
-            event           = "published",
-            status_code     = 200,
-            success         = True,
+            subscription_id="s1",
+            url="https://example.com",
+            event="published",
+            status_code=200,
+            success=True,
         )
         assert receipt.subscription_id == "s1"
         assert receipt.success is True
@@ -207,8 +208,8 @@ class TestWebhookNotifier:
             sent_payload.update(json.loads(req.data))
             resp = MagicMock()
             resp.__enter__ = lambda s: s
-            resp.__exit__  = MagicMock(return_value=False)
-            resp.status    = 200
+            resp.__exit__ = MagicMock(return_value=False)
+            resp.status = 200
             return resp
 
         with patch("urllib.request.urlopen", side_effect=_fake_urlopen):
@@ -221,9 +222,11 @@ class TestWebhookNotifier:
 # ── APIKey / APIKeyStore ──────────────────────────────────────────────────────
 # (Tested alongside notify for convenience since both are dissemination-layer)
 
+
 class TestAPIKeyStore:
     def test_add_and_retrieve_key(self):
         from gnat.dissemination.api.auth import APIKeyStore
+
         store = APIKeyStore()
         store.add_key("my-token", TLPLevel.AMBER, label="Test")
         level = store.get_tlp_level("my-token")
@@ -231,11 +234,13 @@ class TestAPIKeyStore:
 
     def test_unknown_token_returns_none(self):
         from gnat.dissemination.api.auth import APIKeyStore
+
         store = APIKeyStore()
         assert store.get_tlp_level("unknown") is None
 
     def test_revoke_disables_key(self):
         from gnat.dissemination.api.auth import APIKeyStore
+
         store = APIKeyStore()
         store.add_key("tok", TLPLevel.GREEN)
         store.revoke_key("tok")
@@ -243,6 +248,7 @@ class TestAPIKeyStore:
 
     def test_generate_key_is_unique(self):
         from gnat.dissemination.api.auth import APIKeyStore
+
         store = APIKeyStore()
         k1 = store.generate_key(TLPLevel.WHITE)
         k2 = store.generate_key(TLPLevel.WHITE)
@@ -250,6 +256,7 @@ class TestAPIKeyStore:
 
     def test_delete_key(self):
         from gnat.dissemination.api.auth import APIKeyStore
+
         store = APIKeyStore()
         store.add_key("del-tok", TLPLevel.RED)
         assert store.delete_key("del-tok") is True
@@ -257,6 +264,7 @@ class TestAPIKeyStore:
 
     def test_list_keys(self):
         from gnat.dissemination.api.auth import APIKeyStore
+
         store = APIKeyStore()
         store.add_key("t1", TLPLevel.WHITE)
         store.add_key("t2", TLPLevel.AMBER)
@@ -265,30 +273,35 @@ class TestAPIKeyStore:
 
     def test_len(self):
         from gnat.dissemination.api.auth import APIKeyStore
+
         store = APIKeyStore()
         store.add_key("t1", TLPLevel.WHITE)
         assert len(store) == 1
 
     def test_api_key_token_hash(self):
         from gnat.dissemination.api.auth import APIKey
+
         key = APIKey(token="secret", tlp_level=TLPLevel.GREEN)
         assert len(key.token_hash) == 16
         assert key.token_hash != "secret"
 
     def test_api_key_is_valid_enabled(self):
         from gnat.dissemination.api.auth import APIKey
+
         key = APIKey(token="t", tlp_level=TLPLevel.WHITE, enabled=True)
         assert key.is_valid() is True
 
     def test_api_key_is_invalid_disabled(self):
         from gnat.dissemination.api.auth import APIKey
+
         key = APIKey(token="t", tlp_level=TLPLevel.WHITE, enabled=False)
         assert key.is_valid() is False
 
     def test_api_key_to_dict(self):
         from gnat.dissemination.api.auth import APIKey
+
         key = APIKey(token="tok", tlp_level=TLPLevel.AMBER, label="my key")
-        d   = key.to_dict()
+        d = key.to_dict()
         assert d["tlp_level"] == "amber"
-        assert d["label"]     == "my key"
-        assert "token" not in d   # raw token not serialised
+        assert d["label"] == "my key"
+        assert "token" not in d  # raw token not serialised

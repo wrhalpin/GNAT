@@ -48,7 +48,7 @@ is called.
 """
 
 from gnat.plugins.base import GNATPlugin, PluginCapability
-from gnat.plugins.hooks import HookBus, KNOWN_EVENTS
+from gnat.plugins.hooks import KNOWN_EVENTS, HookBus
 from gnat.plugins.loader import load_plugins
 from gnat.plugins.registry import PluginRegistry
 

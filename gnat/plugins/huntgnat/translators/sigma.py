@@ -159,16 +159,12 @@ class SigmaTranslator(RuleTranslator):
             metadata=metadata or {},
         )
 
-    def _build_detection(
-        self, ast: CompoundObservation, primary_type: str
-    ) -> list[str]:
+    def _build_detection(self, ast: CompoundObservation, primary_type: str) -> list[str]:
         """Build the Sigma ``detection:`` block from the AST."""
         lines: list[str] = []
 
         if len(ast.observations) == 1:
-            sel_lines = self._selection_from_expr(
-                ast.observations[0].expression, primary_type
-            )
+            sel_lines = self._selection_from_expr(ast.observations[0].expression, primary_type)
             lines.append("    selection:")
             lines.extend(f"        {ln}" for ln in sel_lines)
             lines.append("    condition: selection")
@@ -178,9 +174,7 @@ class SigmaTranslator(RuleTranslator):
             for i, obs in enumerate(ast.observations):
                 name = f"selection_{i + 1}"
                 sel_names.append(name)
-                sel_lines = self._selection_from_expr(
-                    obs.expression, primary_type
-                )
+                sel_lines = self._selection_from_expr(obs.expression, primary_type)
                 lines.append(f"    {name}:")
                 lines.extend(f"        {ln}" for ln in sel_lines)
 
@@ -190,9 +184,7 @@ class SigmaTranslator(RuleTranslator):
 
         return lines
 
-    def _selection_from_expr(
-        self, expr: ComparisonExpr, primary_type: str
-    ) -> list[str]:
+    def _selection_from_expr(self, expr: ComparisonExpr, primary_type: str) -> list[str]:
         """Turn a ComparisonExpr into Sigma selection key-value lines."""
         comparisons = expr.iter_comparisons()
         lines: list[str] = []

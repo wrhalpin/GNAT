@@ -38,6 +38,7 @@ from gnat.schedule import ScheduleLoaderError, load_scheduler
 @pytest.fixture
 def tmp_yaml(tmp_path):
     """Return a helper that writes YAML text to a tmp file and returns its path."""
+
     def _write(text: str) -> Path:
         path = tmp_path / "jobs.yaml"
         path.write_text(textwrap.dedent(text))
@@ -495,9 +496,7 @@ class TestHybridAndConfig:
                 interval_seconds: 60
             """
         )
-        sched = load_scheduler(
-            jobs_file=path, jobs_module="gnat_test_hybrid"
-        )
+        sched = load_scheduler(jobs_file=path, jobs_module="gnat_test_hybrid")
         assert len(sched) == 2
         assert {j.job_id for j in sched} == {"from-module", "from-yaml"}
 

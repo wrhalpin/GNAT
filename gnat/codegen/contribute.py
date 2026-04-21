@@ -145,6 +145,7 @@ class ContributeConfig:
 @dataclass
 class MethodStatus:
     """MethodStatus implementation."""
+
     name: str
     implemented: bool
     note: str = ""

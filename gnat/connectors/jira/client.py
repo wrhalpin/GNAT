@@ -381,16 +381,12 @@ class JiraClient(BaseClient, ConnectorMixin):
         resp = self.post(f"{_API_V3}/issue", json={"fields": fields})
         return resp if isinstance(resp, dict) else {}
 
-    def update_issue(
-        self, issue_key: str, fields: dict[str, Any]
-    ) -> dict[str, Any]:
+    def update_issue(self, issue_key: str, fields: dict[str, Any]) -> dict[str, Any]:
         """Update fields on an existing issue."""
         resp = self.put(f"{_API_V3}/issue/{issue_key}", json={"fields": fields})
         return resp if isinstance(resp, dict) else {"status": "ok", "key": issue_key}
 
-    def transition_issue(
-        self, issue_key: str, transition_id: str
-    ) -> dict[str, Any]:
+    def transition_issue(self, issue_key: str, transition_id: str) -> dict[str, Any]:
         """
         Transition an issue to a new status via the workflow transition
         identified by *transition_id*.  Use :meth:`list_transitions` to

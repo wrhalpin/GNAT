@@ -69,6 +69,7 @@ def _utcnow() -> datetime:
 
 
 if _SA_AVAILABLE:
+
     class _Base(DeclarativeBase):
         """_Base implementation."""
 
@@ -77,22 +78,24 @@ if _SA_AVAILABLE:
 
         __tablename__ = "reports"
 
-        id               = Column(String(36),  primary_key=True)
-        title            = Column(String(512), nullable=False, index=True)
-        report_type      = Column(String(64),  nullable=False, index=True)
-        status           = Column(String(32),  nullable=False, index=True, default="draft")
-        classification   = Column(String(32),  nullable=False, default="amber")
-        authors_csv      = Column(Text,        nullable=True,  default="")
-        tags_csv         = Column(Text,        nullable=True,  default="")
+        id = Column(String(36), primary_key=True)
+        title = Column(String(512), nullable=False, index=True)
+        report_type = Column(String(64), nullable=False, index=True)
+        status = Column(String(32), nullable=False, index=True, default="draft")
+        classification = Column(String(32), nullable=False, default="amber")
+        authors_csv = Column(Text, nullable=True, default="")
+        tags_csv = Column(Text, nullable=True, default="")
         linked_investigation = Column(String(36), nullable=True, index=True)
-        stix_report_ref  = Column(String(255), nullable=True,  index=True)
-        parent_report_id = Column(String(36),  nullable=True,  index=True)
-        version          = Column(Integer,     nullable=False, default=1)
-        report_json      = Column(Text,        nullable=False)
-        published_at     = Column(DateTime(timezone=True), nullable=True)
-        created_at       = Column(DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
-        updated_at       = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)
-        is_deleted       = Column(Boolean,     default=False, nullable=False)
+        stix_report_ref = Column(String(255), nullable=True, index=True)
+        parent_report_id = Column(String(36), nullable=True, index=True)
+        version = Column(Integer, nullable=False, default=1)
+        report_json = Column(Text, nullable=False)
+        published_at = Column(DateTime(timezone=True), nullable=True)
+        created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
+        updated_at = Column(
+            DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False
+        )
+        is_deleted = Column(Boolean, default=False, nullable=False)
 
         def to_report(self) -> Report:
             """Convert this object to REPORT format."""
@@ -100,25 +103,25 @@ if _SA_AVAILABLE:
             return Report.from_dict(data)
 
         @classmethod
-        def from_report(cls, report: Report) -> "ReportModel":
+        def from_report(cls, report: Report) -> ReportModel:
             """Create an instance from REPORT data."""
             return cls(
-                id                   = report.id,
-                title                = report.title,
-                report_type          = report.report_type.value,
-                status               = report.status.value,
-                classification       = report.classification.value,
-                authors_csv          = ",".join(report.authors),
-                tags_csv             = ",".join(report.tags),
-                linked_investigation = report.linked_investigation,
-                stix_report_ref      = report.stix_report_ref,
-                parent_report_id     = report.parent_report_id,
-                version              = report.version,
-                report_json          = json.dumps(report.to_dict()),
-                published_at         = report.published_at,
-                created_at           = report.created_at,
-                updated_at           = report.updated_at,
-                is_deleted           = False,
+                id=report.id,
+                title=report.title,
+                report_type=report.report_type.value,
+                status=report.status.value,
+                classification=report.classification.value,
+                authors_csv=",".join(report.authors),
+                tags_csv=",".join(report.tags),
+                linked_investigation=report.linked_investigation,
+                stix_report_ref=report.stix_report_ref,
+                parent_report_id=report.parent_report_id,
+                version=report.version,
+                report_json=json.dumps(report.to_dict()),
+                published_at=report.published_at,
+                created_at=report.created_at,
+                updated_at=report.updated_at,
+                is_deleted=False,
             )
 
 
@@ -152,12 +155,12 @@ class ReportStore:
         self._Session = sessionmaker(bind=self._engine, expire_on_commit=False)
 
     @classmethod
-    def from_engine(cls, engine: Any) -> "ReportStore":
+    def from_engine(cls, engine: Any) -> ReportStore:
         """Create a store reusing an existing SQLAlchemy engine."""
         _require_sqlalchemy()
         instance = cls.__new__(cls)
-        instance._url     = str(engine.url)
-        instance._engine  = engine
+        instance._url = str(engine.url)
+        instance._engine = engine
         instance._Session = sessionmaker(bind=engine, expire_on_commit=False)
         return instance
 
@@ -193,19 +196,19 @@ class ReportStore:
         with self._Session() as session:
             existing = session.get(ReportModel, report.id)
             if existing:
-                existing.title                = report.title
-                existing.report_type          = report.report_type.value
-                existing.status               = report.status.value
-                existing.classification       = report.classification.value
-                existing.authors_csv          = ",".join(report.authors)
-                existing.tags_csv             = ",".join(report.tags)
+                existing.title = report.title
+                existing.report_type = report.report_type.value
+                existing.status = report.status.value
+                existing.classification = report.classification.value
+                existing.authors_csv = ",".join(report.authors)
+                existing.tags_csv = ",".join(report.tags)
                 existing.linked_investigation = report.linked_investigation
-                existing.stix_report_ref      = report.stix_report_ref
-                existing.parent_report_id     = report.parent_report_id
-                existing.version              = report.version
-                existing.report_json          = json.dumps(report.to_dict())
-                existing.published_at         = report.published_at
-                existing.updated_at           = report.updated_at
+                existing.stix_report_ref = report.stix_report_ref
+                existing.parent_report_id = report.parent_report_id
+                existing.version = report.version
+                existing.report_json = json.dumps(report.to_dict())
+                existing.published_at = report.published_at
+                existing.updated_at = report.updated_at
             else:
                 session.add(ReportModel.from_report(report))
             session.commit()
@@ -223,12 +226,12 @@ class ReportStore:
 
     def list(
         self,
-        status:               ReportStatus | None = None,
-        report_type:          ReportType | None = None,
+        status: ReportStatus | None = None,
+        report_type: ReportType | None = None,
         linked_investigation: str | None = None,
-        tag:                  str | None = None,
-        limit:                int = 100,
-        offset:               int = 0,
+        tag: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[Report]:
         """
         List reports with optional filters.
@@ -249,9 +252,7 @@ class ReportStore:
         """
         _require_sqlalchemy()
         with self._Session() as session:
-            q = session.query(ReportModel).filter(
-                ReportModel.is_deleted.is_(False)
-            )
+            q = session.query(ReportModel).filter(ReportModel.is_deleted.is_(False))
             if status is not None:
                 q = q.filter(ReportModel.status == status.value)
             if report_type is not None:
@@ -260,12 +261,7 @@ class ReportStore:
                 q = q.filter(ReportModel.linked_investigation == linked_investigation)
             if tag is not None:
                 q = q.filter(ReportModel.tags_csv.contains(tag))
-            rows = (
-                q.order_by(ReportModel.updated_at.desc())
-                .offset(offset)
-                .limit(limit)
-                .all()
-            )
+            rows = q.order_by(ReportModel.updated_at.desc()).offset(offset).limit(limit).all()
             return [r.to_report() for r in rows]
 
     def delete(self, report_id: str) -> bool:
@@ -283,9 +279,7 @@ class ReportStore:
         """Count non-deleted reports, optionally filtered by status."""
         _require_sqlalchemy()
         with self._Session() as session:
-            q = session.query(ReportModel).filter(
-                ReportModel.is_deleted.is_(False)
-            )
+            q = session.query(ReportModel).filter(ReportModel.is_deleted.is_(False))
             if status is not None:
                 q = q.filter(ReportModel.status == status.value)
             return q.count()

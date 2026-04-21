@@ -60,13 +60,13 @@ class FederationScheduler:
 
     def __init__(
         self,
-        registry: "PeerRegistry",
-        sync_service: "PeerSyncService",
+        registry: PeerRegistry,
+        sync_service: PeerSyncService,
     ) -> None:
         """Initialize FederationScheduler."""
         self._registry = registry
         self._sync = sync_service
-        self._jobs: dict[str, Any] = {}   # peer_id → FeedJob
+        self._jobs: dict[str, Any] = {}  # peer_id → FeedJob
         self._scheduler: Any = None
 
     # ------------------------------------------------------------------
@@ -108,7 +108,7 @@ class FederationScheduler:
     # Job management
     # ------------------------------------------------------------------
 
-    def add_peer(self, peer: "FederationPeer") -> None:
+    def add_peer(self, peer: FederationPeer) -> None:
         """
         Register a sync job for *peer* and start it if the scheduler is running.
 
@@ -166,11 +166,10 @@ class FederationScheduler:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _add_peer_job(self, peer: "FederationPeer") -> None:
+    def _add_peer_job(self, peer: FederationPeer) -> None:
         """Create a FeedJob for *peer* and register it internally."""
         try:
             from gnat.schedule.job import FeedJob
-            from gnat.ingest.mappers.base import RecordMapper
         except ImportError as exc:
             logger.warning("Cannot create federation job for %r: %s", peer.peer_id, exc)
             return
@@ -209,7 +208,8 @@ class FederationScheduler:
             registry.update_sync_status(peer_id, "failed")
             logger.warning(
                 "Federation pull from peer %r failed: %s",
-                peer_id, record.error,
+                peer_id,
+                record.error,
             )
 
         job = FeedJob(
@@ -240,7 +240,7 @@ class FederationScheduler:
 class _FederationReader:
     """Bridges PeerSyncService into the SourceReader protocol used by FeedJob."""
 
-    def __init__(self, peer: Any, sync_service: "PeerSyncService", added_after: str | None) -> None:
+    def __init__(self, peer: Any, sync_service: PeerSyncService, added_after: str | None) -> None:
         self._peer = peer
         self._sync = sync_service
         self._added_after = added_after
