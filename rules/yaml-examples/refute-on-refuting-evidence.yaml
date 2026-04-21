@@ -1,0 +1,16 @@
+rules:
+  - name: refute-on-refuting-evidence
+    description: "Mark REFUTED when refuting evidence dominates"
+    phase: open
+    target_status: refuted
+    priority: 90
+    tags: [refutation, evidence-based]
+    when:
+      all:
+        - refuting_count: { gte: 2 }
+        - has_confidence: true
+        - reliability_at_least: "C"
+    then:
+      set_status:
+        target: refuted
+        reason: "Refuting evidence exceeds supporting and meets reliability threshold"

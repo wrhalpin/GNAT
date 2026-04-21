@@ -1,0 +1,13 @@
+rules:
+  - name: stale-timeout
+    description: "Mark INCONCLUSIVE after 90 days without updates"
+    phase: open
+    priority: 20
+    tags: [temporal, cleanup]
+    when:
+      all:
+        - stale: { days: 90 }
+    then:
+      set_status:
+        target: inconclusive
+        reason: "No updates in 90+ days"

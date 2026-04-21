@@ -48,7 +48,8 @@ taxii-server   = ["fastapi>=0.111", "uvicorn>=0.30"]    # TAXII 2.1 server (gnat
 dissemination  = ["fastapi>=0.111", "uvicorn>=0.30", "sqlalchemy>=2.0"]  # Full dissemination layer
 tui    = ["textual>=0.60"]
 telemetry  = ["kafka-python-ng>=2.2", "redis>=5.0"]       # High-volume sensor ingestion (Kafka + Redis dedup)
-rules      = ["hy>=1.0"]                                  # Hy-based analysis rule engine for hypothesis evaluation
+rules      = ["hy>=1.0", "pyyaml>=6.0"]                   # Hy + YAML analysis rule engines
+rules-prolog = ["pyswip>=0.2.11"]                          # Prolog rule engine (requires SWI-Prolog system install)
 nlp    = []  # builtin backend has no deps; claude backend uses existing [agents] client
 stix-validate = ["stix2-patterns>=1.3"]  # full ANTLR grammar for strict STIX pattern validation
 dev    = [

@@ -1,0 +1,13 @@
+rules:
+  - name: block-ai-only
+    description: "Block promotion when all evidence is from AI connectors"
+    phase: open
+    priority: 110
+    tags: [guard, ai-ceiling]
+    when:
+      all:
+        - evidence_count: { gt: 0 }
+        - ai_only: true
+    then:
+      no_op:
+        reason: "All evidence from AI connectors — requires human corroboration"

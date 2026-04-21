@@ -5,6 +5,7 @@ gnat.analysis.rules.factory
 ===============================
 
 Factory function for creating rule engine instances from INI config.
+Supports hy (default), yaml, and prolog engines.
 """
 
 from __future__ import annotations
@@ -12,18 +13,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from gnat.analysis.rules.engine import AnalysisRuleEngine
-from gnat.analysis.rules.loader import RuleLoader
 from gnat.analysis.rules.policy import RuleEnginePolicy
 
-_SUPPORTED_ENGINES = {"hy"}
+_SUPPORTED_ENGINES = {"hy", "yaml", "prolog"}
 
 
 def create_engine(
     config: Any,
     policy: RuleEnginePolicy | None = None,
     store: Any = None,
-) -> AnalysisRuleEngine:
+) -> Any:
     """
     Create a rule engine from INI configuration.
 
@@ -49,5 +48,22 @@ def create_engine(
             f"Supported: {sorted(_SUPPORTED_ENGINES)}"
         )
 
-    loader = RuleLoader(Path(policy.rules_dir))
+    rules_dir = Path(policy.rules_dir)
+
+    if engine_name == "yaml":
+        from gnat.analysis.rules.yaml_engine import YamlRuleEngine, YamlRuleLoader
+
+        loader = YamlRuleLoader(rules_dir)
+        return YamlRuleEngine(loader=loader, policy=policy, store=store)
+
+    if engine_name == "prolog":
+        from gnat.analysis.rules.prolog_engine import PrologRuleEngine, PrologRuleLoader
+
+        loader = PrologRuleLoader(rules_dir)
+        return PrologRuleEngine(loader=loader, policy=policy, store=store)
+
+    from gnat.analysis.rules.engine import AnalysisRuleEngine
+    from gnat.analysis.rules.loader import RuleLoader
+
+    loader = RuleLoader(rules_dir)
     return AnalysisRuleEngine(loader=loader, policy=policy, store=store)
