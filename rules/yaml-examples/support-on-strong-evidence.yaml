@@ -1,0 +1,20 @@
+rules:
+  - name: support-on-strong-evidence
+    description: "Promote OPEN -> SUPPORTED when evidence is strong and well-sourced"
+    phase: open
+    target_status: supported
+    priority: 100
+    tags: [promotion, evidence-based]
+    when:
+      all:
+        - supporting_count: { gte: 3 }
+        - has_refutation: false
+        - has_confidence: true
+        - reliability_at_least: "B"
+        - credibility_at_least: 2
+        - has_trusted_evidence: true
+        - within_ai_ceiling: true
+    then:
+      set_status:
+        target: supported
+        reason: "3+ supporting, no refutation, B2+ confidence, trusted source present"

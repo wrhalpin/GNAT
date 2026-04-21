@@ -1296,13 +1296,19 @@ api_token = YOUR_BUGCROWD_API_TOKEN
 #
 # The rule engine evaluates Hypothesis objects and can automatically
 # transition them between statuses (OPEN → SUPPORTED, etc.) based on
-# analyst-authored .hy rule files.
+# analyst-authored rule files (.hy, .yaml, or .pl).
+#
+# Three engines available:
+#   hy      — Lisp/Hy declarative rules (default). Requires gnat[rules].
+#   yaml    — YAML declarative rules with condition DSL. Requires gnat[rules].
+#   prolog  — SWI-Prolog logic rules. Requires gnat[rules-prolog] + SWI-Prolog.
 #
 # The engine is OFF BY DEFAULT. Enable only after rule files exist
-# and have been reviewed. Requires: pip install "gnat[rules]"
+# and have been reviewed.
 # ──────────────────────────────────────────────────────────────────────
 # [rules]
 # enabled = false
+# engine = hy
 # rules_dir = rules
 # ai_confidence_ceiling = 60
 # minimum_evidence_for_support = 3
