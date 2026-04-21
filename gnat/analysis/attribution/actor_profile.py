@@ -184,9 +184,7 @@ class ActorProfile:
     targeting_history: list[TargetingEvent] = field(default_factory=list)
 
     # Infrastructure
-    preferred_infrastructure: list[InfrastructurePattern] = field(
-        default_factory=list
-    )
+    preferred_infrastructure: list[InfrastructurePattern] = field(default_factory=list)
 
     # Attribution
     attributed_campaigns: list[str] = field(default_factory=list)
@@ -203,9 +201,7 @@ class ActorProfile:
 
     # ── Alias management ──────────────────────────────────────────────────
 
-    def add_alias(
-        self, alias: str, source: str = "", confidence: int = 50
-    ) -> None:
+    def add_alias(self, alias: str, source: str = "", confidence: int = 50) -> None:
         """Add an alias (deduplicated by alias string)."""
         for existing in self.aliases:
             if existing.alias.lower() == alias.lower():
@@ -297,9 +293,7 @@ class ActorProfile:
             "target_sectors": list(self.target_sectors),
             "target_geographies": list(self.target_geographies),
             "targeting_history": [t.to_dict() for t in self.targeting_history],
-            "preferred_infrastructure": [
-                p.to_dict() for p in self.preferred_infrastructure
-            ],
+            "preferred_infrastructure": [p.to_dict() for p in self.preferred_infrastructure],
             "attributed_campaigns": list(self.attributed_campaigns),
             "mitre_group_id": self.mitre_group_id,
             "external_references": list(self.external_references),
@@ -328,14 +322,12 @@ class ActorProfile:
             threat_actor_types=list(data.get("threat_actor_types") or []),
             sophistication_level=data.get("sophistication_level", "intermediate"),
             capabilities=[
-                TechniqueCapability.from_dict(c)
-                for c in (data.get("capabilities") or [])
+                TechniqueCapability.from_dict(c) for c in (data.get("capabilities") or [])
             ],
             target_sectors=list(data.get("target_sectors") or []),
             target_geographies=list(data.get("target_geographies") or []),
             targeting_history=[
-                TargetingEvent.from_dict(t)
-                for t in (data.get("targeting_history") or [])
+                TargetingEvent.from_dict(t) for t in (data.get("targeting_history") or [])
             ],
             preferred_infrastructure=[
                 InfrastructurePattern.from_dict(p)

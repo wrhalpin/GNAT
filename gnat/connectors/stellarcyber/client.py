@@ -174,9 +174,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/alerts/{alert_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def list_assets(
-        self, asset_type: str = "", size: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_assets(self, asset_type: str = "", size: int = 100) -> list[dict[str, Any]]:
         """List discovered assets / endpoints."""
         params: dict[str, Any] = {"size": int(size)}
         if asset_type:
@@ -184,9 +182,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/assets", params=params)
         return _extract_sc_list(resp)
 
-    def list_cases(
-        self, status: str = "", size: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_cases(self, status: str = "", size: int = 100) -> list[dict[str, Any]]:
         """List investigation cases."""
         params: dict[str, Any] = {"size": int(size)}
         if status:
@@ -199,9 +195,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/cases/{case_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def search_logs(
-        self, query: str, size: int = 100, since: str = ""
-    ) -> list[dict[str, Any]]:
+    def search_logs(self, query: str, size: int = 100, since: str = "") -> list[dict[str, Any]]:
         """
         Run a free-text search across normalized records.
 
@@ -213,9 +207,7 @@ class StellarCyberClient(BaseClient, ConnectorMixin):
         resp = self.post(f"{_API}/data/search", json=body)
         return _extract_sc_list(resp)
 
-    def list_threat_intel(
-        self, ioc_type: str = "", size: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_threat_intel(self, ioc_type: str = "", size: int = 100) -> list[dict[str, Any]]:
         """List threat-intel feed entries."""
         params: dict[str, Any] = {"size": int(size)}
         if ioc_type:

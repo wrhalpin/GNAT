@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.hudsonrock`` package.
 
 Exports: ``HudsonRockClient``.
 """
+
 from .client import HudsonRockClient
 
 __all__ = ["HudsonRockClient"]

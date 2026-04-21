@@ -6,6 +6,7 @@ gnat.agents.quality.contract
 
 Contract utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
@@ -16,6 +17,7 @@ from pathlib import Path
 @dataclass(slots=True)
 class ConnectorContractProfile:
     """Connector integrating GNAT with the ContractProfile platform."""
+
     connector_name: str
     connector_path: str
     required_files: Sequence[str] = field(default_factory=lambda: ("__init__.py",))
@@ -27,6 +29,7 @@ class ConnectorContractProfile:
 @dataclass(slots=True)
 class ContractCheckResult:
     """ContractCheckResult implementation."""
+
     connector_name: str
     passed: bool
     errors: list[str] = field(default_factory=list)
@@ -80,7 +83,9 @@ class ContractAgent:
             warnings=warnings,
         )
 
-    def evaluate_many(self, profiles: Iterable[ConnectorContractProfile]) -> list[ContractCheckResult]:
+    def evaluate_many(
+        self, profiles: Iterable[ConnectorContractProfile]
+    ) -> list[ContractCheckResult]:
         """Evaluate many."""
         return [self.evaluate(profile) for profile in profiles]
 

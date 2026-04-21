@@ -63,19 +63,16 @@ class WebhookSubscription:
         HTTP request timeout (default 10).
     """
 
-    id:             str
-    url:            str
-    min_tlp:        TLPLevel = TLPLevel.WHITE
-    secret:         str      = ""
-    events:         list[str] = field(default_factory=lambda: ["published", "updated"])
-    timeout_seconds: int     = 10
+    id: str
+    url: str
+    min_tlp: TLPLevel = TLPLevel.WHITE
+    secret: str = ""
+    events: list[str] = field(default_factory=lambda: ["published", "updated"])
+    timeout_seconds: int = 10
 
     def matches(self, report_tlp: TLPLevel, event: str) -> bool:
         """True if this subscription should receive *event* for *report_tlp*."""
-        return (
-            report_tlp.rank <= self.min_tlp.rank
-            and event in self.events
-        )
+        return report_tlp.rank <= self.min_tlp.rank and event in self.events
 
 
 @dataclass
@@ -97,14 +94,12 @@ class DeliveryReceipt:
     """
 
     subscription_id: str
-    url:             str
-    event:           str
-    status_code:     int | None
-    success:         bool
-    error:           str       = ""
-    attempted_at:    datetime  = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
-    )
+    url: str
+    event: str
+    status_code: int | None
+    success: bool
+    error: str = ""
+    attempted_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
 
 class WebhookNotifier:
@@ -122,7 +117,7 @@ class WebhookNotifier:
         subscriptions: list[WebhookSubscription] | None = None,
     ) -> None:
         self._subs: dict[str, WebhookSubscription] = {}
-        for sub in (subscriptions or []):
+        for sub in subscriptions or []:
             self._subs[sub.id] = sub
 
     # ── Subscription management ───────────────────────────────────────────────
@@ -130,8 +125,9 @@ class WebhookNotifier:
     def subscribe(self, subscription: WebhookSubscription) -> None:
         """Register a webhook subscription."""
         self._subs[subscription.id] = subscription
-        logger.debug("WebhookNotifier: registered subscription %s → %s",
-                     subscription.id, subscription.url)
+        logger.debug(
+            "WebhookNotifier: registered subscription %s → %s", subscription.id, subscription.url
+        )
 
     def unsubscribe(self, subscription_id: str) -> bool:
         """Remove a subscription by ID.  Returns True if found."""
@@ -149,7 +145,7 @@ class WebhookNotifier:
     def notify(
         self,
         report: Any,
-        event:  str = "published",
+        event: str = "published",
     ) -> list[DeliveryReceipt]:
         """
         Send notifications to all matching subscribers.
@@ -167,8 +163,8 @@ class WebhookNotifier:
             One receipt per subscriber that was contacted.
         """
         report_tlp = _get_report_tlp(report)
-        payload    = _build_payload(report, event)
-        receipts   = []
+        payload = _build_payload(report, event)
+        receipts = []
 
         for sub in self._subs.values():
             if not sub.matches(report_tlp, event):
@@ -180,14 +176,14 @@ class WebhookNotifier:
 
     def _deliver(
         self,
-        sub:     WebhookSubscription,
+        sub: WebhookSubscription,
         payload: dict[str, Any],
-        event:   str,
+        event: str,
     ) -> DeliveryReceipt:
         body = json.dumps(payload).encode()
         headers = {
             "Content-Type": "application/json",
-            "User-Agent":   "GNAT-WebhookNotifier/1.0",
+            "User-Agent": "GNAT-WebhookNotifier/1.0",
             "X-GNAT-Event": event,
         }
         if sub.secret:
@@ -199,41 +195,42 @@ class WebhookNotifier:
             headers["X-GNAT-Signature"] = f"sha256={sig}"
 
         req = urllib.request.Request(
-            url     = sub.url,
-            data    = body,
-            headers = headers,
-            method  = "POST",
+            url=sub.url,
+            data=body,
+            headers=headers,
+            method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=sub.timeout_seconds) as resp:
-                status  = resp.status
+            with urllib.request.urlopen(req, timeout=sub.timeout_seconds) as resp:  # nosec B310
+                status = resp.status
                 success = 200 <= status < 300
                 logger.info(
                     "WebhookNotifier: %s → %s HTTP %d",
-                    sub.id, sub.url, status,
+                    sub.id,
+                    sub.url,
+                    status,
                 )
                 return DeliveryReceipt(
-                    subscription_id = sub.id,
-                    url             = sub.url,
-                    event           = event,
-                    status_code     = status,
-                    success         = success,
+                    subscription_id=sub.id,
+                    url=sub.url,
+                    event=event,
+                    status_code=status,
+                    success=success,
                 )
         except Exception as exc:  # noqa: BLE001
-            logger.warning(
-                "WebhookNotifier: delivery to %s failed: %s", sub.url, exc
-            )
+            logger.warning("WebhookNotifier: delivery to %s failed: %s", sub.url, exc)
             return DeliveryReceipt(
-                subscription_id = sub.id,
-                url             = sub.url,
-                event           = event,
-                status_code     = None,
-                success         = False,
-                error           = str(exc),
+                subscription_id=sub.id,
+                url=sub.url,
+                event=event,
+                status_code=None,
+                success=False,
+                error=str(exc),
             )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _get_report_tlp(report: Any) -> TLPLevel:
     classification = getattr(report, "classification", None)
@@ -248,11 +245,13 @@ def _get_report_tlp(report: Any) -> TLPLevel:
 def _build_payload(report: Any, event: str) -> dict[str, Any]:
     published = getattr(report, "published_at", None)
     return {
-        "event":      event,
-        "report_id":  str(getattr(report, "id", "")),
-        "title":      getattr(report, "title", ""),
+        "event": event,
+        "report_id": str(getattr(report, "id", "")),
+        "title": getattr(report, "title", ""),
         "report_type": str(getattr(getattr(report, "report_type", None), "value", "")),
-        "tlp":        str(getattr(getattr(report, "classification", None), "value", "")),
-        "published_at": published.isoformat() if hasattr(published, "isoformat") else str(published or ""),
-        "stix_id":    getattr(report, "stix_id", None) or f"report--{getattr(report, 'id', '')}",
+        "tlp": str(getattr(getattr(report, "classification", None), "value", "")),
+        "published_at": published.isoformat()
+        if hasattr(published, "isoformat")
+        else str(published or ""),
+        "stix_id": getattr(report, "stix_id", None) or f"report--{getattr(report, 'id', '')}",
     }

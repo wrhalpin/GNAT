@@ -101,9 +101,7 @@ class DynatraceSTIXMapper:
             entity_id = entity["entityId"]
             display_name = entity["displayName"]
         except KeyError as exc:
-            raise DynatraceSTIXError(
-                f"Entity missing required field: {exc}"
-            ) from exc
+            raise DynatraceSTIXError(f"Entity missing required field: {exc}") from exc
 
         entity_type = entity.get("type", "")
         infra_type = _ENTITY_INFRA_TYPE.get(entity_type, "unknown")
@@ -149,9 +147,7 @@ class DynatraceSTIXMapper:
         try:
             sp_id = sp["securityProblemId"]
         except KeyError as exc:
-            raise DynatraceSTIXError(
-                f"Security problem missing required field: {exc}"
-            ) from exc
+            raise DynatraceSTIXError(f"Security problem missing required field: {exc}") from exc
 
         risk = sp.get("riskAssessment", {})
         cvss_score = risk.get("baseScore") or risk.get("exploitabilityScore")
@@ -198,9 +194,7 @@ class DynatraceSTIXMapper:
         try:
             attack_id = attack["attackId"]
         except KeyError as exc:
-            raise DynatraceSTIXError(
-                f"Attack missing required field: {exc}"
-            ) from exc
+            raise DynatraceSTIXError(f"Attack missing required field: {exc}") from exc
 
         attack_type = attack.get("type", "UNKNOWN")
         severity = attack.get("severity", "").lower()
@@ -251,17 +245,13 @@ class DynatraceSTIXMapper:
         try:
             problem_id = problem["problemId"]
         except KeyError as exc:
-            raise DynatraceSTIXError(
-                f"Problem missing required field: {exc}"
-            ) from exc
+            raise DynatraceSTIXError(f"Problem missing required field: {exc}") from exc
 
         first_obs = _epoch_ms_to_iso(problem.get("startTime"))
         last_obs = _epoch_ms_to_iso(problem.get("endTime") or problem.get("startTime"))
 
         affected_entities = [
-            e.get("entityId", "")
-            for e in problem.get("affectedEntities", [])
-            if e.get("entityId")
+            e.get("entityId", "") for e in problem.get("affectedEntities", []) if e.get("entityId")
         ]
 
         return {
@@ -301,9 +291,7 @@ class DynatraceSTIXMapper:
         try:
             event_id = event["eventId"]
         except KeyError as exc:
-            raise DynatraceSTIXError(
-                f"Event missing required field: {exc}"
-            ) from exc
+            raise DynatraceSTIXError(f"Event missing required field: {exc}") from exc
 
         start_time = _epoch_ms_to_iso(event.get("startTime"))
         end_time = _epoch_ms_to_iso(event.get("endTime") or event.get("startTime"))
@@ -353,11 +341,7 @@ class DynatraceSTIXMapper:
 
         payload: dict = {
             "eventType": stix_dict.get("x_dt_event_type", "CUSTOM_INFO"),
-            "title": (
-                stix_dict.get("x_dt_title")
-                or stix_dict.get("name")
-                or "GNAT event"
-            ),
+            "title": (stix_dict.get("x_dt_title") or stix_dict.get("name") or "GNAT event"),
             "properties": stix_dict.get("x_dt_properties", {}),
         }
         if entity_selector:

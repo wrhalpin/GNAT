@@ -202,9 +202,7 @@ class TestCampaignStore:
         assert results[0].name == "Operation Sunrise"
 
     def test_list_by_threat_actor(self, store):
-        store.save(
-            CampaignProfile(name="A", threat_actor_id="threat-actor--x")
-        )
+        store.save(CampaignProfile(name="A", threat_actor_id="threat-actor--x"))
         store.save(CampaignProfile(name="B", threat_actor_id="threat-actor--y"))
         q = CampaignQuery(threat_actor_id="threat-actor--x")
         results = store.list(q)
@@ -324,9 +322,7 @@ class TestCampaignService:
 
     def test_sub_campaign_hierarchy(self, service):
         parent = service.create(name="Parent Campaign")
-        child = service.create(
-            name="Sub Campaign", parent_campaign_id=parent.id
-        )
+        child = service.create(name="Sub Campaign", parent_campaign_id=parent.id)
         assert child.parent_campaign_id == parent.id
         parent = service.get(parent.id)
         assert child.id in parent.sub_campaign_ids

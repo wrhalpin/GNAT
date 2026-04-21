@@ -214,15 +214,11 @@ class IPAPIClient(BaseClient, ConnectorMixin):
 
     def upsert_object(self, stix_type: str, payload: dict) -> dict:
         """Raise — ip-api.com is a read-only data source."""
-        raise GNATClientError(
-            "ip-api.com is read-only. upsert_object is not supported."
-        )
+        raise GNATClientError("ip-api.com is read-only. upsert_object is not supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Raise — ip-api.com is a read-only data source."""
-        raise GNATClientError(
-            "ip-api.com is read-only. delete_object is not supported."
-        )
+        raise GNATClientError("ip-api.com is read-only. delete_object is not supported.")
 
     def to_stix(self, native: dict) -> dict:
         """
@@ -377,7 +373,7 @@ class IPAPIClient(BaseClient, ConnectorMixin):
             All successful ip-api.com response dicts across all batches.
         """
         results: list[dict] = []
-        chunks = [ips[i:i + _BATCH_SIZE] for i in range(0, len(ips), _BATCH_SIZE)]
+        chunks = [ips[i : i + _BATCH_SIZE] for i in range(0, len(ips), _BATCH_SIZE)]
         for idx, chunk in enumerate(chunks):
             batch_results = self.lookup_batch(chunk)
             results.extend(batch_results)

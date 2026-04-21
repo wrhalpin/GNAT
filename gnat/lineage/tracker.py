@@ -50,19 +50,19 @@ class LineageTracker:
     """
 
     def __init__(self, store: Any = None, default_actor: str = "system") -> None:
-        self._store        = store
+        self._store = store
         self.default_actor = default_actor
 
     # ── Generic append ────────────────────────────────────────────────────────
 
     def record(
         self,
-        event_type:  LineageEventType,
-        object_id:   str,
+        event_type: LineageEventType,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
-        metadata:    dict[str, Any] | None = None,
+        source: str,
+        actor: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LineageEvent | None:
         """
         Append a lineage event.
@@ -71,16 +71,19 @@ class LineageTracker:
         if no store is configured.
         """
         event = LineageEvent(
-            event_type  = event_type,
-            object_id   = object_id,
-            object_type = object_type,
-            actor       = actor or self.default_actor,
-            source      = source,
-            metadata    = metadata or {},
+            event_type=event_type,
+            object_id=object_id,
+            object_type=object_type,
+            actor=actor or self.default_actor,
+            source=source,
+            metadata=metadata or {},
         )
         logger.debug(
             "LineageTracker: %s %s by %s via %s",
-            event_type.value, object_id, event.actor, source,
+            event_type.value,
+            object_id,
+            event.actor,
+            source,
         )
         if self._store is not None:
             try:
@@ -93,98 +96,126 @@ class LineageTracker:
 
     def record_ingest(
         self,
-        object_id:   str,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
+        source: str,
+        actor: str | None = None,
         **metadata: Any,
     ) -> LineageEvent | None:
         """Record an INGESTED event."""
         return self.record(
-            LineageEventType.INGESTED, object_id, object_type, source,
-            actor=actor, metadata=metadata or {},
+            LineageEventType.INGESTED,
+            object_id,
+            object_type,
+            source,
+            actor=actor,
+            metadata=metadata or {},
         )
 
     def record_enrichment(
         self,
-        object_id:   str,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
+        source: str,
+        actor: str | None = None,
         **metadata: Any,
     ) -> LineageEvent | None:
         """Record an ENRICHED event."""
         return self.record(
-            LineageEventType.ENRICHED, object_id, object_type, source,
-            actor=actor, metadata=metadata or {},
+            LineageEventType.ENRICHED,
+            object_id,
+            object_type,
+            source,
+            actor=actor,
+            metadata=metadata or {},
         )
 
     def record_normalization(
         self,
-        object_id:   str,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
+        source: str,
+        actor: str | None = None,
         **metadata: Any,
     ) -> LineageEvent | None:
         """Record a NORMALIZED event."""
         return self.record(
-            LineageEventType.NORMALIZED, object_id, object_type, source,
-            actor=actor, metadata=metadata or {},
+            LineageEventType.NORMALIZED,
+            object_id,
+            object_type,
+            source,
+            actor=actor,
+            metadata=metadata or {},
         )
 
     def record_link(
         self,
-        object_id:   str,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
+        source: str,
+        actor: str | None = None,
         **metadata: Any,
     ) -> LineageEvent | None:
         """Record a LINKED event."""
         return self.record(
-            LineageEventType.LINKED, object_id, object_type, source,
-            actor=actor, metadata=metadata or {},
+            LineageEventType.LINKED,
+            object_id,
+            object_type,
+            source,
+            actor=actor,
+            metadata=metadata or {},
         )
 
     def record_export(
         self,
-        object_id:   str,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
+        source: str,
+        actor: str | None = None,
         **metadata: Any,
     ) -> LineageEvent | None:
         """Record an EXPORTED event."""
         return self.record(
-            LineageEventType.EXPORTED, object_id, object_type, source,
-            actor=actor, metadata=metadata or {},
+            LineageEventType.EXPORTED,
+            object_id,
+            object_type,
+            source,
+            actor=actor,
+            metadata=metadata or {},
         )
 
     def record_report(
         self,
-        object_id:   str,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
+        source: str,
+        actor: str | None = None,
         **metadata: Any,
     ) -> LineageEvent | None:
         """Record a REPORTED event."""
         return self.record(
-            LineageEventType.REPORTED, object_id, object_type, source,
-            actor=actor, metadata=metadata or {},
+            LineageEventType.REPORTED,
+            object_id,
+            object_type,
+            source,
+            actor=actor,
+            metadata=metadata or {},
         )
 
     def record_deletion(
         self,
-        object_id:   str,
+        object_id: str,
         object_type: str,
-        source:      str,
-        actor:       str | None  = None,
+        source: str,
+        actor: str | None = None,
         **metadata: Any,
     ) -> LineageEvent | None:
         """Record a DELETED event."""
         return self.record(
-            LineageEventType.DELETED, object_id, object_type, source,
-            actor=actor, metadata=metadata or {},
+            LineageEventType.DELETED,
+            object_id,
+            object_type,
+            source,
+            actor=actor,
+            metadata=metadata or {},
         )

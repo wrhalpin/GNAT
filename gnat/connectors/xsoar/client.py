@@ -49,27 +49,27 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 # Map XSOAR native indicator_type (lowercase) → STIX object-path prefix
 _XSOAR_TYPE_TO_STIX: dict[str, str] = {
-    "ip":              "ipv4-addr:value",
-    "ipv4":            "ipv4-addr:value",
-    "ip address":      "ipv4-addr:value",
-    "ipv6":            "ipv6-addr:value",
-    "ipv6 address":    "ipv6-addr:value",
-    "domain":          "domain-name:value",
-    "hostname":        "domain-name:value",
-    "fqdn":            "domain-name:value",
-    "url":             "url:value",
-    "file":            "file:hashes.MD5",
-    "file sha-256":    "file:hashes.SHA-256",
-    "file sha-1":      "file:hashes.SHA-1",
-    "file sha1":       "file:hashes.SHA-1",
-    "file md5":        "file:hashes.MD5",
-    "md5":             "file:hashes.MD5",
-    "sha256":          "file:hashes.SHA-256",
-    "sha-256":         "file:hashes.SHA-256",
-    "sha1":            "file:hashes.SHA-1",
-    "sha-1":           "file:hashes.SHA-1",
-    "email":           "email-addr:value",
-    "email address":   "email-addr:value",
+    "ip": "ipv4-addr:value",
+    "ipv4": "ipv4-addr:value",
+    "ip address": "ipv4-addr:value",
+    "ipv6": "ipv6-addr:value",
+    "ipv6 address": "ipv6-addr:value",
+    "domain": "domain-name:value",
+    "hostname": "domain-name:value",
+    "fqdn": "domain-name:value",
+    "url": "url:value",
+    "file": "file:hashes.MD5",
+    "file sha-256": "file:hashes.SHA-256",
+    "file sha-1": "file:hashes.SHA-1",
+    "file sha1": "file:hashes.SHA-1",
+    "file md5": "file:hashes.MD5",
+    "md5": "file:hashes.MD5",
+    "sha256": "file:hashes.SHA-256",
+    "sha-256": "file:hashes.SHA-256",
+    "sha1": "file:hashes.SHA-1",
+    "sha-1": "file:hashes.SHA-1",
+    "email": "email-addr:value",
+    "email address": "email-addr:value",
 }
 
 
@@ -92,17 +92,16 @@ class XSOARClient(BaseClient, ConnectorMixin):
     verify_ssl : bool
         TLS certificate verification.  Default ``True``.
     """
+
     TRUST_LEVEL: str = "trusted_internal"
     API_VERSION: str = "v1"
     API_PREFIX: str = "/xsoar"
     COST_UNIT: int = 1
 
-
-
     stix_type_map: dict[str, str] = {
-        "indicator":     "indicator",
-        "malware":       "indicator",
-        "threat-actor":  "indicator",
+        "indicator": "indicator",
+        "malware": "indicator",
+        "threat-actor": "indicator",
         "vulnerability": "indicator",
         "observed-data": "incident",
     }
@@ -150,9 +149,7 @@ class XSOARClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/incident/{object_id}")
             return resp if isinstance(resp, dict) else {}
         # Indicator path
-        resp = self.post("/indicators/search", json={
-            "query": f"id:{object_id}", "size": 1
-        })
+        resp = self.post("/indicators/search", json={"query": f"id:{object_id}", "size": 1})
         items = resp.get("iocObjects", []) if isinstance(resp, dict) else []
         return items[0] if items else {}
 
@@ -181,16 +178,19 @@ class XSOARClient(BaseClient, ConnectorMixin):
         """
         query = (filters or {}).get("query", "")
         if stix_type == "observed-data":
-            resp = self.post("/incidents/search", json={
-                "query":  query,
-                "size":   page_size,
-                "page":   page - 1,
-            })
+            resp = self.post(
+                "/incidents/search",
+                json={
+                    "query": query,
+                    "size": page_size,
+                    "page": page - 1,
+                },
+            )
             return resp.get("data", []) if isinstance(resp, dict) else []
         # Indicator path
-        resp = self.post("/indicators/search", json={
-            "query": query, "size": page_size, "page": page - 1
-        })
+        resp = self.post(
+            "/indicators/search", json={"query": query, "size": page_size, "page": page - 1}
+        )
         return resp.get("iocObjects", []) if isinstance(resp, dict) else []
 
     def upsert_object(
@@ -241,9 +241,7 @@ class XSOARClient(BaseClient, ConnectorMixin):
         if stix_type == "observed-data":
             self.delete(f"/incident/{object_id}")
         else:
-            self.post("/indicators/delete", json={
-                "id": object_id, "doNotWhitelist": False
-            })
+            self.post("/indicators/delete", json={"id": object_id, "doNotWhitelist": False})
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────
 
@@ -279,14 +277,14 @@ class XSOARClient(BaseClient, ConnectorMixin):
         """
         if stix_dict.get("type") == "observed-data":
             return {
-                "name":        stix_dict.get("name", ""),
+                "name": stix_dict.get("name", ""),
                 "description": stix_dict.get("description", ""),
-                "type":        "incident",
+                "type": "incident",
             }
         return {
-            "value":          stix_dict.get("name", ""),
+            "value": stix_dict.get("name", ""),
             "indicator_type": self._infer_xsoar_type(stix_dict.get("pattern", "")),
-            "score":          self._confidence_to_score(stix_dict.get("confidence", 50)),
+            "score": self._confidence_to_score(stix_dict.get("confidence", 50)),
         }
 
     # ── Investigation linking ─────────────────────────────────────────────
@@ -339,10 +337,13 @@ class XSOARClient(BaseClient, ConnectorMixin):
         list of dict
             Raw XSOAR alert records.
         """
-        resp = self.post("/alerts/search", json={
-            "filter": {"incidentId": incident_id},
-            "size":   100,
-        })
+        resp = self.post(
+            "/alerts/search",
+            json={
+                "filter": {"incidentId": incident_id},
+                "size": 100,
+            },
+        )
         return resp.get("data", []) if isinstance(resp, dict) else []
 
     def get_incident_tasks(self, incident_id: str) -> list[dict[str, Any]]:
@@ -385,10 +386,13 @@ class XSOARClient(BaseClient, ConnectorMixin):
         list of dict
             Raw XSOAR war-room entry records.
         """
-        resp = self.post("/entry/search", json={
-            "filter": {"id": incident_id},
-            "size":   200,
-        })
+        resp = self.post(
+            "/entry/search",
+            json={
+                "filter": {"id": incident_id},
+                "size": 200,
+            },
+        )
         if isinstance(resp, list):
             return resp
         if isinstance(resp, dict):
@@ -434,11 +438,14 @@ class XSOARClient(BaseClient, ConnectorMixin):
         close_notes : str
             Optional notes added to the incident on close.
         """
-        return self.post(f"/incident/close/{incident_id}", json={
-            "closeReason": close_reason,
-            "closeNotes":  close_notes,
-            "id":          incident_id,
-        })
+        return self.post(
+            f"/incident/close/{incident_id}",
+            json={
+                "closeReason": close_reason,
+                "closeNotes": close_notes,
+                "id": incident_id,
+            },
+        )
 
     def reopen_incident(self, incident_id: str) -> dict[str, Any]:
         """
@@ -487,11 +494,14 @@ class XSOARClient(BaseClient, ConnectorMixin):
         comment : str
             Comment text to post.
         """
-        return self.post("/entry", json={
-            "incidentId": incident_id,
-            "data":       comment,
-            "markdown":   True,
-        })
+        return self.post(
+            "/entry",
+            json={
+                "incidentId": incident_id,
+                "data": comment,
+                "markdown": True,
+            },
+        )
 
     def assign_incident(
         self,
@@ -566,11 +576,14 @@ class XSOARClient(BaseClient, ConnectorMixin):
         page_size : int
             Maximum number of indicators to export.  Default ``5000``.
         """
-        resp = self.post("/indicators/export", json={
-            "query":  query,
-            "format": export_format,
-            "size":   page_size,
-        })
+        resp = self.post(
+            "/indicators/export",
+            json={
+                "query": query,
+                "format": export_format,
+                "size": page_size,
+            },
+        )
         return resp if isinstance(resp, dict) else {}
 
     def expire_indicator(self, indicator_id: str) -> dict[str, Any]:
@@ -649,10 +662,13 @@ class XSOARClient(BaseClient, ConnectorMixin):
         page_size : int
             Maximum number of results.  Default ``100``.
         """
-        resp = self.post("/settings/integration/search", json={
-            "query": query,
-            "size":  page_size,
-        })
+        resp = self.post(
+            "/settings/integration/search",
+            json={
+                "query": query,
+                "size": page_size,
+            },
+        )
         return resp.get("configurations", []) if isinstance(resp, dict) else []
 
     def get_playbook_tasks(self, incident_id: str) -> list[dict[str, Any]]:
@@ -691,11 +707,14 @@ class XSOARClient(BaseClient, ConnectorMixin):
         answer : str, optional
             Answer string for tasks with a manual response prompt.
         """
-        return self.post("/task/complete", json={
-            "id":         task_id,
-            "incidentId": incident_id,
-            "answer":     answer,
-        })
+        return self.post(
+            "/task/complete",
+            json={
+                "id": task_id,
+                "incidentId": incident_id,
+                "answer": answer,
+            },
+        )
 
     # ── User / administration ─────────────────────────────────────────────
 
@@ -776,49 +795,48 @@ class XSOARClient(BaseClient, ConnectorMixin):
     def _indicator_to_stix(self, native: dict[str, Any]) -> dict[str, Any]:
         """Map an XSOAR indicator dict to a STIX Indicator SDO."""
         xsoar_type = str(native.get("indicator_type", "")).lower()
-        stix_path  = _XSOAR_TYPE_TO_STIX.get(xsoar_type, "unknown:value")
-        value      = native.get("value", "")
-        pattern    = f"[{stix_path} = '{value}']" if value else ""
+        stix_path = _XSOAR_TYPE_TO_STIX.get(xsoar_type, "unknown:value")
+        value = native.get("value", "")
+        pattern = f"[{stix_path} = '{value}']" if value else ""
         return {
-            "type":            "indicator",
-            "id":              f"indicator--{native.get('id', '')}",
-            "name":            value,
-            "pattern":         pattern,
-            "pattern_type":    "stix",
-            "created":         native.get("timestamp", ""),
-            "modified":        native.get("modified", ""),
+            "type": "indicator",
+            "id": f"indicator--{native.get('id', '')}",
+            "name": value,
+            "pattern": pattern,
+            "pattern_type": "stix",
+            "created": native.get("timestamp", ""),
+            "modified": native.get("modified", ""),
             "indicator_types": [native.get("indicator_type", "unknown")],
-            "confidence":      self._score_to_confidence(native.get("score", 0)),
+            "confidence": self._score_to_confidence(native.get("score", 0)),
         }
 
     @staticmethod
     def _incident_to_stix(native: dict[str, Any]) -> dict[str, Any]:
         """Map an XSOAR incident dict to a STIX ``observed-data`` SDO."""
-        inc_id    = str(native.get("id", ""))
+        inc_id = str(native.get("id", ""))
         opened_at = native.get("occurred", native.get("created", ""))
-        modified  = native.get("modified", opened_at)
-        custom    = native.get("CustomFields", {})
+        modified = native.get("modified", opened_at)
+        custom = native.get("CustomFields", {})
         if not isinstance(custom, dict):
             custom = {}
         return {
-            "type":                "observed-data",
-            "id":                  f"observed-data--{inc_id}",
-            "created":             opened_at,
-            "modified":            modified,
-            "first_observed":      opened_at,
-            "last_observed":       modified,
-            "number_observed":     1,
-            "object_refs":         [],
-            "name":                native.get("name", ""),
-            "description":         native.get("details", ""),
+            "type": "observed-data",
+            "id": f"observed-data--{inc_id}",
+            "created": opened_at,
+            "modified": modified,
+            "first_observed": opened_at,
+            "last_observed": modified,
+            "number_observed": 1,
+            "object_refs": [],
+            "name": native.get("name", ""),
+            "description": native.get("details", ""),
             "x_xsoar_incident_id": inc_id,
-            "x_xsoar_severity":    native.get("severity", 0),
-            "x_xsoar_status":      native.get("status", 0),
-            "x_xsoar_owner":       native.get("owner", ""),
-            "x_xsoar_type":        native.get("type", ""),
+            "x_xsoar_severity": native.get("severity", 0),
+            "x_xsoar_status": native.get("status", 0),
+            "x_xsoar_owner": native.get("owner", ""),
+            "x_xsoar_type": native.get("type", ""),
             "x_xsoar_labels": [
-                lbl.get("value", "") for lbl in native.get("labels", [])
-                if isinstance(lbl, dict)
+                lbl.get("value", "") for lbl in native.get("labels", []) if isinstance(lbl, dict)
             ],
             "x_xsoar_custom": custom,
         }
@@ -827,21 +845,21 @@ class XSOARClient(BaseClient, ConnectorMixin):
     def _infer_xsoar_type(pattern: str) -> str:
         """Infer the XSOAR indicator type from a STIX pattern string."""
         p = pattern.lower()
-        if "ipv4-addr"   in p:
+        if "ipv4-addr" in p:
             return "IP"
-        if "ipv6-addr"   in p:
+        if "ipv6-addr" in p:
             return "IPv6"
         if "domain-name" in p:
             return "Domain"
-        if "url:"        in p:
+        if "url:" in p:
             return "URL"
-        if "sha-256"     in p:
+        if "sha-256" in p:
             return "File SHA-256"
-        if "sha-1"       in p:
+        if "sha-1" in p:
             return "File SHA-1"
-        if "md5"         in p:
+        if "md5" in p:
             return "File MD5"
-        if "email-addr"  in p:
+        if "email-addr" in p:
             return "Email"
         return "Unclassified"
 

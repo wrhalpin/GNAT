@@ -85,7 +85,7 @@ class CopilotPane(Widget):
 
     def __init__(
         self,
-        llm_client:    Any = None,
+        llm_client: Any = None,
         system_prompt: str = (
             "You are a threat intelligence analyst assistant. "
             "Provide concise, actionable answers grounded in STIX 2.1 concepts."
@@ -95,9 +95,9 @@ class CopilotPane(Widget):
     ) -> None:
         """Initialize CopilotPane."""
         super().__init__(**kwargs)
-        self._llm          = llm_client
-        self._system       = system_prompt
-        self._max_lines    = max_log_lines
+        self._llm = llm_client
+        self._system = system_prompt
+        self._max_lines = max_log_lines
 
     def compose(self) -> ComposeResult:
         """Build copilot pane layout."""
@@ -146,7 +146,9 @@ class CopilotPane(Widget):
         log.write_line(f"\n> {query}")
 
         if self._llm is None:
-            log.write_line("⚠ LLM client not configured. Set up [claude] or [openai] in config.ini.")
+            log.write_line(
+                "⚠ LLM client not configured. Set up [claude] or [openai] in config.ini."
+            )
             return
 
         self.is_loading = True

@@ -306,9 +306,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         resp = self.post("/api/v1/detections/search", json=payload)
         return resp if isinstance(resp, list) else []
 
-    def add_detection_note(
-        self, detection_id: int | str, note: str
-    ) -> dict[str, Any]:
+    def add_detection_note(self, detection_id: int | str, note: str) -> dict[str, Any]:
         """Add an analyst note to a detection."""
         resp = self.post(
             f"/api/v1/detections/{detection_id}/notes",
@@ -353,9 +351,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         resp = self.post("/api/v1/devices/search", json=payload)
         return resp if isinstance(resp, list) else []
 
-    def get_device_alerts(
-        self, device_id: int | str, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    def get_device_alerts(self, device_id: int | str, limit: int = 50) -> list[dict[str, Any]]:
         """List detections involving a specific device."""
         payload: dict[str, Any] = {
             "limit": limit,
@@ -387,9 +383,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/api/v1/devices/{device_id}/activity", params=params)
         return resp if isinstance(resp, dict) else {}
 
-    def list_device_peers(
-        self, device_id: int | str, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    def list_device_peers(self, device_id: int | str, limit: int = 50) -> list[dict[str, Any]]:
         """List peer devices that communicated with a specific device."""
         resp = self.get(f"/api/v1/devices/{device_id}/peers", params={"limit": limit})
         return resp if isinstance(resp, list) else []
@@ -564,9 +558,7 @@ class ExtraHopClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v1/apikeys")
         return resp if isinstance(resp, list) else []
 
-    def get_audit_log(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def get_audit_log(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """Retrieve the ExtraHop audit log (admin actions, config changes)."""
         resp = self.get(
             "/api/v1/auditlog",

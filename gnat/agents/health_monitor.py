@@ -66,6 +66,7 @@ logger = logging.getLogger(__name__)
 
 class _NullReader:
     """_NullReader implementation."""
+
     def read(self):
         """Read and yield records from the source."""
         return iter([])
@@ -73,6 +74,7 @@ class _NullReader:
 
 class _NullMapper:
     """STIX translation helper for null objects."""
+
     def map(self, record):  # noqa: PLR0201
         """Map the input record to the output schema."""
         return None

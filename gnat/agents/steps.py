@@ -33,10 +33,11 @@ from gnat.agents.workflow import WorkflowContext, WorkflowStep
 
 # ── Enrichment step ───────────────────────────────────────────────────────────
 
+
 def enrich_step(
     dispatcher: Any,
-    values:     list[str],
-    name:       str = "enrich",
+    values: list[str],
+    name: str = "enrich",
     **step_kwargs: Any,
 ) -> WorkflowStep:
     """
@@ -69,10 +70,11 @@ def enrich_step(
 
 # ── Correlation step ──────────────────────────────────────────────────────────
 
+
 def correlate_step(
     resolver: Any,
-    scorer:   Any,
-    name:     str = "correlate",
+    scorer: Any,
+    name: str = "correlate",
     **step_kwargs: Any,
 ) -> WorkflowStep:
     """
@@ -103,9 +105,10 @@ def correlate_step(
 
 # ── Gap detection step ────────────────────────────────────────────────────────
 
+
 def gap_detect_step(
-    detector:  Any,
-    name:      str = "gap_detect",
+    detector: Any,
+    name: str = "gap_detect",
     **step_kwargs: Any,
 ) -> WorkflowStep:
     """
@@ -139,9 +142,10 @@ def gap_detect_step(
 
 # ── Report drafting step ──────────────────────────────────────────────────────
 
+
 def draft_report_step(
-    assistant:  Any,
-    name:       str = "draft_report",
+    assistant: Any,
+    name: str = "draft_report",
     **step_kwargs: Any,
 ) -> WorkflowStep:
     """
@@ -172,12 +176,13 @@ def draft_report_step(
 
 # ── State transition step ─────────────────────────────────────────────────────
 
+
 def transition_step(
-    service:    Any,
+    service: Any,
     new_status: Any,
-    note:       str | None = None,
-    author:     str | None = None,
-    name:       str = "transition",
+    note: str | None = None,
+    author: str | None = None,
+    name: str = "transition",
     **step_kwargs: Any,
 ) -> WorkflowStep:
     """
@@ -200,8 +205,8 @@ def transition_step(
         return service.transition(
             ctx.investigation_id,
             new_status,
-            note   = note,
-            author = author,
+            note=note,
+            author=author,
         )
 
     return WorkflowStep(name=name, action=_action, **step_kwargs)
@@ -209,8 +214,9 @@ def transition_step(
 
 # ── Arbitrary callable step ───────────────────────────────────────────────────
 
+
 def fn_step(
-    fn:   Any,
+    fn: Any,
     name: str,
     **step_kwargs: Any,
 ) -> WorkflowStep:

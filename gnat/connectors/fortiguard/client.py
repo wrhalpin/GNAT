@@ -106,13 +106,9 @@ class FortiGuardClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/encyclopedia/virus/{object_id}")
             kind = "virus"
         else:
-            raise GNATClientError(
-                f"FortiGuard get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"FortiGuard get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"FortiGuard returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"FortiGuard returned unexpected payload for {object_id!r}")
         return dict(resp, _fg_kind=kind, _fg_query=object_id)
 
     def list_objects(
@@ -148,19 +144,13 @@ class FortiGuardClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _fg_kind=tag) for r in _extract_fg_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """FortiGuard connector is read-only."""
-        raise GNATClientError(
-            "FortiGuard connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("FortiGuard connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """FortiGuard connector is read-only."""
-        raise GNATClientError(
-            "FortiGuard connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("FortiGuard connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -168,9 +158,7 @@ class FortiGuardClient(BaseClient, ConnectorMixin):
         """Return FortiGuard outbreak alerts."""
         return self.list_objects("report", page_size=500)
 
-    def list_iocs(
-        self, since: str = "", severity: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_iocs(self, since: str = "", severity: str = "") -> list[dict[str, Any]]:
         """Return FortiGuard IOC feed entries (requires commercial api_key)."""
         filters: dict[str, Any] = {}
         if since:
@@ -201,12 +189,7 @@ class FortiGuardClient(BaseClient, ConnectorMixin):
         kind = native.get("_fg_kind") or "outbreak"
 
         if kind in ("ip", "url", "ioc"):
-            value = (
-                native.get("_fg_query")
-                or native.get("value")
-                or native.get("ioc")
-                or ""
-            )
+            value = native.get("_fg_query") or native.get("value") or native.get("ioc") or ""
             if kind == "ip":
                 pattern = make_indicator_pattern("ipv4-addr", value)
             elif kind == "url":

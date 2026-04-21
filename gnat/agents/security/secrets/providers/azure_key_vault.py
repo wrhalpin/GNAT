@@ -6,6 +6,7 @@ gnat.agents.security.secrets.providers.azure_key_vault
 
 Azure key vault utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from ..exceptions import SecretProviderError
@@ -29,6 +30,7 @@ except Exception:
 
 class AzureKeyVaultProvider:
     """AzureKeyVaultProvider implementation."""
+
     name = "azurekeyvault"
 
     def __init__(self, credential=None) -> None:

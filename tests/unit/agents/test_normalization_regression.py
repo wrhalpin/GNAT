@@ -42,7 +42,17 @@ class TestNormalizationRegressionAgent:
             method="event_to_observed_data",
             input={"_raw": "hello", "ip": "1.2.3.4"},
             expected={"type": "observed-data", "x_cribl_raw": "hello", "bogus": "missing"},
-            policy=RegressionPolicy(ignore_fields={"created", "modified", "first_observed", "last_observed", "id", "object_refs"}, allow_additional_fields=True),
+            policy=RegressionPolicy(
+                ignore_fields={
+                    "created",
+                    "modified",
+                    "first_observed",
+                    "last_observed",
+                    "id",
+                    "object_refs",
+                },
+                allow_additional_fields=True,
+            ),
         )
 
         result = agent.run_fixture(fixture)
@@ -77,7 +87,17 @@ class TestNormalizationRegressionAgent:
             method="event_to_observed_data",
             input={"_raw": "hello"},
             expected={"type": "indicator"},
-            policy=RegressionPolicy(ignore_fields={"created", "modified", "first_observed", "last_observed", "id", "object_refs"}, allow_additional_fields=True),
+            policy=RegressionPolicy(
+                ignore_fields={
+                    "created",
+                    "modified",
+                    "first_observed",
+                    "last_observed",
+                    "id",
+                    "object_refs",
+                },
+                allow_additional_fields=True,
+            ),
         )
 
         run = agent.run()

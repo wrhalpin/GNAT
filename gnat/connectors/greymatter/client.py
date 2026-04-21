@@ -84,18 +84,18 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     API_PREFIX: str = ""
 
     stix_type_map: dict[str, str] = {
-        "indicator":      "observables",
-        "threat-actor":   "threat-actors",
-        "malware":        "malware",
-        "vulnerability":  "vulnerabilities",
+        "indicator": "observables",
+        "threat-actor": "threat-actors",
+        "malware": "malware",
+        "vulnerability": "vulnerabilities",
         "attack-pattern": "attack-patterns",
-        "observed-data":  "incidents",
+        "observed-data": "incidents",
     }
 
     # GreyMatter observable type → STIX pattern template
     _OBS_PATTERN: dict[str, str] = {
-        "ipv4":   "[ipv4-addr:value = '{v}']",
-        "ipv6":   "[ipv6-addr:value = '{v}']",
+        "ipv4": "[ipv4-addr:value = '{v}']",
+        "ipv6": "[ipv6-addr:value = '{v}']",
         "domain": "[domain-name:value = '{v}']",
         "url": "[url:value = '{v}']",
         "md5": "[file:hashes.MD5 = '{v}']",
@@ -179,7 +179,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         """
         resource = self._resolve(stix_type)
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -187,9 +187,13 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/v1/{resource}", params=params)
         return resp.get("data", []) if isinstance(resp, dict) else []
 
-    def upsert_object(self, stix_type: str, payload: dict[str, Any],
-                      linked_cases: list[str] | None = None,
-                      **kwargs: Any) -> dict[str, Any]:
+    def upsert_object(
+        self,
+        stix_type: str,
+        payload: dict[str, Any],
+        linked_cases: list[str] | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         """
         Create or update a GreyMatter object.
 
@@ -235,11 +239,11 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         # Investigations/cases have case_number or assigned_to; observables have type+value
         if "case_number" in data or "assigned_to" in data:
             return self._incident_to_stix(data)
-        gm_type  = data.get("type", "")
-        value    = data.get("value", data.get("name", ""))
-        pattern  = self._OBS_PATTERN.get(
-            gm_type, "[unknown:value = '{v}']"
-        ).format(v=value.replace("'", "\\'"))
+        gm_type = data.get("type", "")
+        value = data.get("value", data.get("name", ""))
+        pattern = self._OBS_PATTERN.get(gm_type, "[unknown:value = '{v}']").format(
+            v=value.replace("'", "\\'")
+        )
 
         return {
             "type": "indicator",
@@ -269,25 +273,25 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             GreyMatter incident/case record (with ``case_number``,
             ``assigned_to``, ``status``, ``severity`` etc.).
         """
-        created  = data.get("created_at", "")
+        created = data.get("created_at", "")
         modified = data.get("updated_at", created)
         return {
-            "type":              "observed-data",
-            "id":                f"observed-data--{data.get('id', '')}",
-            "created":           created,
-            "modified":          modified,
-            "first_observed":    created,
-            "last_observed":     modified,
-            "number_observed":   1,
-            "object_refs":       [],
-            "name":              data.get("title", data.get("name", "")),
-            "description":       data.get("description", ""),
-            "x_gm_case_number":  data.get("case_number", ""),
-            "x_gm_status":       data.get("status", ""),
-            "x_gm_severity":     data.get("severity", ""),
-            "x_gm_assigned_to":  data.get("assigned_to", ""),
-            "x_gm_tags":         data.get("tags", []),
-            "x_tlp":             data.get("tlp", "white"),
+            "type": "observed-data",
+            "id": f"observed-data--{data.get('id', '')}",
+            "created": created,
+            "modified": modified,
+            "first_observed": created,
+            "last_observed": modified,
+            "number_observed": 1,
+            "object_refs": [],
+            "name": data.get("title", data.get("name", "")),
+            "description": data.get("description", ""),
+            "x_gm_case_number": data.get("case_number", ""),
+            "x_gm_status": data.get("status", ""),
+            "x_gm_severity": data.get("severity", ""),
+            "x_gm_assigned_to": data.get("assigned_to", ""),
+            "x_gm_tags": data.get("tags", []),
+            "x_tlp": data.get("tlp", "white"),
         }
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
@@ -535,10 +539,10 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         return self.post(
             f"/v1/incidents/{self._to_gm_id(case_id)}/observables",
             json={
-                "type":       obs_type,
-                "value":      value,
+                "type": obs_type,
+                "value": value,
                 "confidence": confidence,
-                "tags":       tags or [],
+                "tags": tags or [],
             },
         )
 
@@ -615,7 +619,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             Query filters (e.g. ``{"tag": "apt28"}``).
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -651,7 +655,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             Query filters (e.g. ``{"tag": "ransomware"}``).
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -687,7 +691,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             Query filters (e.g. ``{"cve": "CVE-2021-44228"}``).
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -710,7 +714,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             Query filters (e.g. ``{"technique_id": "T1059"}``).
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -758,9 +762,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
         observable_id : str
             GreyMatter observable UUID.
         """
-        resp = self.get(
-            f"/v1/observables/{self._to_gm_id(observable_id)}/enrichments"
-        )
+        resp = self.get(f"/v1/observables/{self._to_gm_id(observable_id)}/enrichments")
         return resp if isinstance(resp, dict) else {}
 
     def get_case_timeline(self, case_id: str) -> list[dict[str, Any]]:
@@ -814,7 +816,7 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
             Query filters (e.g. ``{"status": "active"}``).
         """
         params: dict[str, Any] = {
-            "limit":  page_size,
+            "limit": page_size,
             "offset": (page - 1) * page_size,
         }
         if filters:
@@ -873,21 +875,21 @@ class GreyMatterClient(BaseClient, ConnectorMixin):
     def _infer_gm_type(pattern: str) -> str:
         """Internal helper for infer gm type."""
         pattern = pattern.lower()
-        if "ipv4-addr"   in pattern:
+        if "ipv4-addr" in pattern:
             return "ipv4"
-        if "ipv6-addr"   in pattern:
+        if "ipv6-addr" in pattern:
             return "ipv6"
         if "domain-name" in pattern:
             return "domain"
-        if "url:"        in pattern:
+        if "url:" in pattern:
             return "url"
-        if "sha-256"     in pattern:
+        if "sha-256" in pattern:
             return "sha256"
-        if "sha-1"       in pattern:
+        if "sha-1" in pattern:
             return "sha1"
-        if "md5"         in pattern:
+        if "md5" in pattern:
             return "md5"
-        if "email-addr"  in pattern:
+        if "email-addr" in pattern:
             return "email"
         return "unknown"
 

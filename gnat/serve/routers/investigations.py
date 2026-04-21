@@ -54,10 +54,10 @@ router = APIRouter(prefix="/api/investigations", tags=["investigations"])
 class BulkTransitionRequest(BaseModel):
     """Request body for POST /api/investigations/bulk-transition."""
 
-    ids:    list[str]
+    ids: list[str]
     status: str
-    note:   str | None = None
-    author: str        = "api"
+    note: str | None = None
+    author: str = "api"
 
 
 def _get_service(request: Request):
@@ -69,26 +69,28 @@ def _get_service(request: Request):
 
 # ── List ──────────────────────────────────────────────────────────────────────
 
+
 @router.get("")
 def list_investigations(
-    request:    Request,
-    status:     str | None = Query(None, description="Comma-separated status values"),
+    request: Request,
+    status: str | None = Query(None, description="Comma-separated status values"),
     created_by: str | None = Query(None),
-    tags:       str | None = Query(None, description="Comma-separated tags (ANY match)"),
-    tlp:        str | None = Query(None, description="Comma-separated TLP levels"),
-    text:       str | None = Query(None, max_length=200),
-    date_from:  str | None = Query(None, description="ISO 8601 datetime"),
-    date_to:    str | None = Query(None, description="ISO 8601 datetime"),
-    sort_by:    str        = Query("updated_at"),
-    sort_desc:  bool       = Query(True),
-    page:       int        = Query(1, ge=1),
-    page_size:  int        = Query(50, ge=1, le=500),
+    tags: str | None = Query(None, description="Comma-separated tags (ANY match)"),
+    tlp: str | None = Query(None, description="Comma-separated TLP levels"),
+    text: str | None = Query(None, max_length=200),
+    date_from: str | None = Query(None, description="ISO 8601 datetime"),
+    date_to: str | None = Query(None, description="ISO 8601 datetime"),
+    sort_by: str = Query("updated_at"),
+    sort_desc: bool = Query(True),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
 ) -> dict[str, Any]:
     """List investigations with optional rich filters."""
     from datetime import datetime as _dt
+
     from gnat.analysis.investigations.models import InvestigationStatus
-    from gnat.analysis.tlp import TLPLevel
     from gnat.analysis.query import InvestigationQuery
+    from gnat.analysis.tlp import TLPLevel
 
     def _parse_status(s: str | None):
         if not s:
@@ -123,17 +125,17 @@ def list_investigations(
         raise HTTPException(400, f"Cannot parse datetime: {s!r}")
 
     q = InvestigationQuery(
-        status         = _parse_status(status),
-        created_by     = created_by,
-        tags           = [t.strip() for t in tags.split(",")] if tags else None,
-        classification = _parse_tlp(tlp),
-        text           = text,
-        date_from      = _parse_dt(date_from),
-        date_to        = _parse_dt(date_to),
-        sort_by        = sort_by,
-        sort_desc      = sort_desc,
-        page           = page,
-        page_size      = page_size,
+        status=_parse_status(status),
+        created_by=created_by,
+        tags=[t.strip() for t in tags.split(",")] if tags else None,
+        classification=_parse_tlp(tlp),
+        text=text,
+        date_from=_parse_dt(date_from),
+        date_to=_parse_dt(date_to),
+        sort_by=sort_by,
+        sort_desc=sort_desc,
+        page=page,
+        page_size=page_size,
     )
 
     svc = _get_service(request)
@@ -143,19 +145,20 @@ def list_investigations(
         raise HTTPException(500, str(exc))
 
     return {
-        "page":            page,
-        "page_size":       page_size,
-        "count":           len(investigations),
-        "investigations":  [inv.to_dict() for inv in investigations],
+        "page": page,
+        "page_size": page_size,
+        "count": len(investigations),
+        "investigations": [inv.to_dict() for inv in investigations],
     }
 
 
 # ── Create ────────────────────────────────────────────────────────────────────
 
+
 @router.post("", status_code=201)
 def create_investigation(
     request: Request,
-    body:    dict[str, Any],
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Create a new Investigation.
@@ -171,7 +174,7 @@ def create_investigation(
     """
     from gnat.analysis.tlp import TLPLevel
 
-    title      = body.get("title", "").strip()
+    title = body.get("title", "").strip()
     created_by = body.get("created_by", "").strip()
     if not title:
         raise HTTPException(400, "Field 'title' is required.")
@@ -186,12 +189,12 @@ def create_investigation(
     svc = _get_service(request)
     try:
         inv = svc.create(
-            title          = title,
-            created_by     = created_by,
-            description    = body.get("description", ""),
-            classification = tlp,
-            tags           = body.get("tags", []),
-            assigned_to    = body.get("assigned_to", []),
+            title=title,
+            created_by=created_by,
+            description=body.get("description", ""),
+            classification=tlp,
+            tags=body.get("tags", []),
+            assigned_to=body.get("assigned_to", []),
         )
     except Exception as exc:
         raise HTTPException(500, str(exc))
@@ -200,6 +203,7 @@ def create_investigation(
 
 
 # ── Get ───────────────────────────────────────────────────────────────────────
+
 
 @router.get("/{inv_id}")
 def get_investigation(request: Request, inv_id: str) -> dict[str, Any]:
@@ -214,11 +218,12 @@ def get_investigation(request: Request, inv_id: str) -> dict[str, Any]:
 
 # ── Update ────────────────────────────────────────────────────────────────────
 
+
 @router.put("/{inv_id}")
 def update_investigation(
     request: Request,
-    inv_id:  str,
-    body:    dict[str, Any],
+    inv_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Update Investigation fields (title, description, tags).
@@ -244,11 +249,12 @@ def update_investigation(
 
 # ── Transition ────────────────────────────────────────────────────────────────
 
+
 @router.post("/{inv_id}/transition")
 def transition_investigation(
     request: Request,
-    inv_id:  str,
-    body:    dict[str, Any],
+    inv_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Transition an Investigation to a new lifecycle state.
@@ -260,6 +266,7 @@ def transition_investigation(
     ``author`` : str (optional)
     """
     from gnat.analysis.investigations.models import InvestigationStatus
+
     new_status_str = body.get("status", "")
     try:
         new_status = InvestigationStatus(new_status_str)
@@ -271,8 +278,8 @@ def transition_investigation(
         inv = svc.transition(
             inv_id,
             new_status,
-            note   = body.get("note"),
-            author = body.get("author"),
+            note=body.get("note"),
+            author=body.get("author"),
         )
     except Exception as exc:
         raise HTTPException(400, str(exc))
@@ -281,11 +288,12 @@ def transition_investigation(
 
 # ── Notes ─────────────────────────────────────────────────────────────────────
 
+
 @router.post("/{inv_id}/notes", status_code=201)
 def add_note(
     request: Request,
-    inv_id:  str,
-    body:    dict[str, Any],
+    inv_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Add an analyst note to an Investigation.
@@ -297,7 +305,7 @@ def add_note(
     ``linked_artifacts`` : list[str] (optional)
     """
     content = body.get("content", "").strip()
-    author  = body.get("author",  "").strip()
+    author = body.get("author", "").strip()
     if not content:
         raise HTTPException(400, "Field 'content' is required.")
     if not author:
@@ -307,23 +315,28 @@ def add_note(
     try:
         note = svc.add_note(
             inv_id,
-            content          = content,
-            author           = author,
-            linked_artifacts = body.get("linked_artifacts"),
+            content=content,
+            author=author,
+            linked_artifacts=body.get("linked_artifacts"),
         )
     except Exception as exc:
         raise HTTPException(400, str(exc))
-    return {"id": note.id, "content": note.content, "author": note.author,
-            "created_at": note.created_at.isoformat()}
+    return {
+        "id": note.id,
+        "content": note.content,
+        "author": note.author,
+        "created_at": note.created_at.isoformat(),
+    }
 
 
 # ── Tasks ─────────────────────────────────────────────────────────────────────
 
+
 @router.post("/{inv_id}/tasks", status_code=201)
 def add_task(
     request: Request,
-    inv_id:  str,
-    body:    dict[str, Any],
+    inv_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Add a task to an Investigation.
@@ -351,23 +364,27 @@ def add_task(
     try:
         task = svc.add_task(
             inv_id,
-            title       = title,
-            description = body.get("description", ""),
-            priority    = priority,
-            assigned_to = body.get("assigned_to"),
+            title=title,
+            description=body.get("description", ""),
+            priority=priority,
+            assigned_to=body.get("assigned_to"),
         )
     except Exception as exc:
         raise HTTPException(400, str(exc))
-    return {"id": task.id, "title": task.title, "status": task.status.value,
-            "priority": task.priority.value}
+    return {
+        "id": task.id,
+        "title": task.title,
+        "status": task.status.value,
+        "priority": task.priority.value,
+    }
 
 
 @router.put("/{inv_id}/tasks/{task_id}")
 def update_task(
     request: Request,
-    inv_id:  str,
+    inv_id: str,
     task_id: str,
-    body:    dict[str, Any],
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Update the status of a task.
@@ -377,6 +394,7 @@ def update_task(
     ``status`` : str (required) — "todo" | "in_progress" | "done" | "blocked"
     """
     from gnat.analysis.investigations.models import TaskStatus
+
     status_str = body.get("status", "")
     try:
         new_status = TaskStatus(status_str)
@@ -393,11 +411,12 @@ def update_task(
 
 # ── Hypotheses ────────────────────────────────────────────────────────────────
 
+
 @router.post("/{inv_id}/hypotheses", status_code=201)
 def add_hypothesis(
     request: Request,
-    inv_id:  str,
-    body:    dict[str, Any],
+    inv_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Add a hypothesis to an Investigation.
@@ -420,11 +439,12 @@ def add_hypothesis(
 
 # ── Artifact linking ──────────────────────────────────────────────────────────
 
+
 @router.post("/{inv_id}/link")
 def link_artifacts(
     request: Request,
-    inv_id:  str,
-    body:    dict[str, Any],
+    inv_id: str,
+    body: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Link artifacts to an Investigation.
@@ -458,15 +478,16 @@ def link_artifacts(
             raise HTTPException(404, str(exc))
 
     return {
-        "id":            inv.id,
-        "indicators":    inv.indicators,
-        "observables":   inv.observables,
+        "id": inv.id,
+        "indicators": inv.indicators,
+        "observables": inv.observables,
         "threat_actors": inv.threat_actors,
-        "reports":       inv.reports,
+        "reports": inv.reports,
     }
 
 
 # ── Summary ───────────────────────────────────────────────────────────────────
+
 
 @router.get("/{inv_id}/summary")
 def get_summary(request: Request, inv_id: str) -> dict[str, Any]:
@@ -480,10 +501,11 @@ def get_summary(request: Request, inv_id: str) -> dict[str, Any]:
 
 # ── Bulk transition ───────────────────────────────────────────────────────────
 
+
 @router.post("/bulk-transition")
 def bulk_transition(
     request: Request,
-    body:    BulkTransitionRequest,
+    body: BulkTransitionRequest,
 ) -> dict[str, Any]:
     """
     Transition multiple investigations to the same target status.
@@ -512,9 +534,9 @@ def bulk_transition(
         try:
             svc.transition(
                 inv_id,
-                new_status = body.status,
-                note       = body.note,
-                author     = body.author,
+                new_status=body.status,
+                note=body.note,
+                author=body.author,
             )
             succeeded += 1
         except Exception as exc:
@@ -522,21 +544,22 @@ def bulk_transition(
             logger.warning("bulk_transition: %s failed — %s", inv_id, exc)
 
     return {
-        "total":     len(body.ids),
+        "total": len(body.ids),
         "succeeded": succeeded,
-        "failed":    failed,
+        "failed": failed,
     }
 
 
 # ── Export ────────────────────────────────────────────────────────────────────
 
+
 @router.get("/export")
 def export_investigations(
-    request:    Request,
-    format:     str        = Query("csv", description="Export format: csv | json | stix"),
-    status:     str | None = Query(None),
+    request: Request,
+    format: str = Query("csv", description="Export format: csv | json | stix"),
+    status: str | None = Query(None),
     created_by: str | None = Query(None),
-    limit:      int        = Query(1000, ge=1, le=10000),
+    limit: int = Query(1000, ge=1, le=10000),
 ) -> Any:
     """
     Export filtered investigations as CSV, JSON, or a STIX bundle.
@@ -556,38 +579,36 @@ def export_investigations(
 
     try:
         from gnat.analysis.investigations.service import InvestigationQuery
+
         q = InvestigationQuery(
-            statuses   = [s.strip() for s in status.split(",")] if status else None,
-            created_by = created_by,
-            page       = 1,
-            page_size  = limit,
+            statuses=[s.strip() for s in status.split(",")] if status else None,
+            created_by=created_by,
+            page=1,
+            page_size=limit,
         )
         investigations = svc.list(q)
     except Exception as exc:
         raise HTTPException(400, f"Query failed: {exc}") from exc
 
     if format.lower() == "json":
-        data = json.dumps(
-            [_inv_to_dict(inv) for inv in investigations],
-            indent=2, default=str
-        )
+        data = json.dumps([_inv_to_dict(inv) for inv in investigations], indent=2, default=str)
         return StreamingResponse(
             io.StringIO(data),
-            media_type   = "application/json",
-            headers      = {"Content-Disposition": "attachment; filename=investigations.json"},
+            media_type="application/json",
+            headers={"Content-Disposition": "attachment; filename=investigations.json"},
         )
 
     if format.lower() == "stix":
         bundle = {
-            "type":    "bundle",
-            "id":      "bundle--gnat-investigations-export",
+            "type": "bundle",
+            "id": "bundle--gnat-investigations-export",
             "objects": [_inv_to_stix_dict(inv) for inv in investigations],
         }
         data = json.dumps(bundle, indent=2, default=str)
         return StreamingResponse(
             io.StringIO(data),
-            media_type   = "application/json",
-            headers      = {"Content-Disposition": "attachment; filename=investigations.stix.json"},
+            media_type="application/json",
+            headers={"Content-Disposition": "attachment; filename=investigations.stix.json"},
         )
 
     # Default: CSV
@@ -600,18 +621,18 @@ def export_investigations(
     output.seek(0)
     return StreamingResponse(
         output,
-        media_type   = "text/csv",
-        headers      = {"Content-Disposition": "attachment; filename=investigations.csv"},
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=investigations.csv"},
     )
 
 
 def _inv_to_dict(inv: Any) -> dict[str, Any]:
     """Convert an Investigation to a flat dict."""
     return {
-        "id":         getattr(inv, "id", ""),
-        "title":      getattr(inv, "title", ""),
-        "status":     str(getattr(inv, "status", "")),
-        "severity":   getattr(inv, "severity", ""),
+        "id": getattr(inv, "id", ""),
+        "title": getattr(inv, "title", ""),
+        "status": str(getattr(inv, "status", "")),
+        "severity": getattr(inv, "severity", ""),
         "created_by": getattr(inv, "created_by", ""),
         "created_at": str(getattr(inv, "created_at", "")),
         "updated_at": str(getattr(inv, "updated_at", "")),

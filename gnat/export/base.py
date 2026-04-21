@@ -447,7 +447,7 @@ class ExportPipeline:
         self._delivery = delivery
         return self
 
-    def with_lineage(self, tracker: "Any | None" = None) -> "ExportPipeline":
+    def with_lineage(self, tracker: Any | None = None) -> ExportPipeline:
         """
         Attach a :class:`~gnat.lineage.tracker.LineageTracker`.
 
@@ -532,8 +532,8 @@ class ExportPipeline:
                             self._lineage.record_export(
                                 getattr(obj, "id", str(obj)),
                                 getattr(obj, "type", "unknown"),
-                                source = self.pipeline_id,
-                                actor  = "export-pipeline",
+                                source=self.pipeline_id,
+                                actor="export-pipeline",
                             )
                     except Exception:
                         pass

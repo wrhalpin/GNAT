@@ -64,9 +64,7 @@ class Deployment:
             "deployed_at": self.deployed_at.isoformat(),
             "deployed_by": self.deployed_by,
             "last_reconciled_at": (
-                self.last_reconciled_at.isoformat()
-                if self.last_reconciled_at
-                else None
+                self.last_reconciled_at.isoformat() if self.last_reconciled_at else None
             ),
             "canonical_hash": self.canonical_hash,
             "remote_hash": self.remote_hash,
@@ -132,9 +130,7 @@ class DriftDetector:
         Returns a :class:`DriftEvent` if divergent, ``None`` if matched.
         Does NOT auto-correct — drift is observed, never corrected.
         """
-        remote_hash = hashlib.sha256(
-            remote_rule_body.encode("utf-8")
-        ).hexdigest()
+        remote_hash = hashlib.sha256(remote_rule_body.encode("utf-8")).hexdigest()
 
         deployment.last_reconciled_at = _utcnow()
         deployment.remote_hash = remote_hash

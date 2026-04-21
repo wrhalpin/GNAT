@@ -69,9 +69,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set the X-API-Key header from the configured api_key."""
         if not self.api_key:
-            raise GNATClientError(
-                "Magnet AXIOM connector requires api_key in config."
-            )
+            raise GNATClientError("Magnet AXIOM connector requires api_key in config.")
         self._auth_headers["X-API-Key"] = self.api_key
         self._auth_headers["Accept"] = "application/json"
 
@@ -104,9 +102,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
                 f"Magnet AXIOM get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Magnet AXIOM returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Magnet AXIOM returned unexpected payload for {object_id!r}")
         return dict(resp, _ax_kind=kind)
 
     def list_objects(
@@ -128,22 +124,14 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
             if kind == "evidence":
                 case_id = filters.get("case_id")
                 if not case_id:
-                    raise GNATClientError(
-                        "Magnet AXIOM evidence listing requires 'case_id'"
-                    )
-                resp = self.get(
-                    f"/api/v1/cases/{case_id}/evidence", params=params
-                )
+                    raise GNATClientError("Magnet AXIOM evidence listing requires 'case_id'")
+                resp = self.get(f"/api/v1/cases/{case_id}/evidence", params=params)
                 tag = "evidence"
             elif kind == "artifacts":
                 case_id = filters.get("case_id")
                 if not case_id:
-                    raise GNATClientError(
-                        "Magnet AXIOM artifact listing requires 'case_id'"
-                    )
-                resp = self.get(
-                    f"/api/v1/cases/{case_id}/artifacts", params=params
-                )
+                    raise GNATClientError("Magnet AXIOM artifact listing requires 'case_id'")
+                resp = self.get(f"/api/v1/cases/{case_id}/artifacts", params=params)
                 tag = "artifact"
             else:
                 resp = self.get("/api/v1/cases", params=params)
@@ -164,9 +152,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
         items = _extract_axiom_list(resp)
         return [dict(r, _ax_kind=tag) for r in items if isinstance(r, dict)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Magnet AXIOM connector is read-only via CRUD."""
         raise GNATClientError(
             "Magnet AXIOM connector is read-only via CRUD — use the "
@@ -186,9 +172,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
         filters: dict[str, Any] = {}
         if status:
             filters["status"] = status
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=500
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=500)
 
     def get_case(self, case_id: str) -> dict[str, Any]:
         """Fetch a single investigation case by id."""
@@ -222,9 +206,7 @@ class MagnetAxiomClient(BaseClient, ConnectorMixin):
         """Return examiner / analyst accounts."""
         return self.list_objects("user-account", page_size=500)
 
-    def create_case(
-        self, name: str, description: str = "", examiner: str = ""
-    ) -> dict[str, Any]:
+    def create_case(self, name: str, description: str = "", examiner: str = "") -> dict[str, Any]:
         """Create a new investigation case."""
         body: dict[str, Any] = {"name": name}
         if description:
@@ -362,7 +344,17 @@ def _extract_axiom_list(resp: Any) -> list[dict[str, Any]]:
         return [r for r in resp if isinstance(r, dict)]
     if not isinstance(resp, dict):
         return []
-    for key in ("data", "results", "items", "cases", "agents", "collections", "users", "evidence", "artifacts"):
+    for key in (
+        "data",
+        "results",
+        "items",
+        "cases",
+        "agents",
+        "collections",
+        "users",
+        "evidence",
+        "artifacts",
+    ):
         val = resp.get(key)
         if isinstance(val, list):
             return [r for r in val if isinstance(r, dict)]

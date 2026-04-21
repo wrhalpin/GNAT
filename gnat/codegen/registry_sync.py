@@ -42,14 +42,10 @@ _REGISTRY_FILE = "gnat/clients/__init__.py"
 _CONNECTORS_DIR = "gnat/connectors"
 
 # Regex to detect the class definition in client.py
-_CLASS_RE = re.compile(
-    r"^class\s+(\w+Client)\s*\(", re.MULTILINE
-)
+_CLASS_RE = re.compile(r"^class\s+(\w+Client)\s*\(", re.MULTILINE)
 
 # Regex to find the CLIENT_REGISTRY dict block
-_REGISTRY_START_RE = re.compile(
-    r'^CLIENT_REGISTRY\s*(?::\s*dict\S*\s*)?\s*=\s*\{', re.MULTILINE
-)
+_REGISTRY_START_RE = re.compile(r"^CLIENT_REGISTRY\s*(?::\s*dict\S*\s*)?\s*=\s*\{", re.MULTILINE)
 
 
 # ---------------------------------------------------------------------------
@@ -59,9 +55,10 @@ _REGISTRY_START_RE = re.compile(
 
 class RegistryGap(NamedTuple):
     """A connector that exists on disk but is missing from CLIENT_REGISTRY."""
-    name: str           # snake_case connector name (matches directory name)
-    class_name: str     # detected class name from client.py
-    client_path: str    # relative path to client.py
+
+    name: str  # snake_case connector name (matches directory name)
+    class_name: str  # detected class name from client.py
+    client_path: str  # relative path to client.py
 
 
 # ---------------------------------------------------------------------------
@@ -108,11 +105,13 @@ def scan_unregistered(repo_root: str = ".") -> list[RegistryGap]:
             logger.debug("Could not detect class in %s; skipping", client_file)
             continue
 
-        gaps.append(RegistryGap(
-            name=name,
-            class_name=class_name,
-            client_path=str(client_file.relative_to(root)),
-        ))
+        gaps.append(
+            RegistryGap(
+                name=name,
+                class_name=class_name,
+                client_path=str(client_file.relative_to(root)),
+            )
+        )
 
     return gaps
 
@@ -150,15 +149,11 @@ def sync_registry(
 
     client_file = root / _CONNECTORS_DIR / name / "client.py"
     if not client_file.exists():
-        raise FileNotFoundError(
-            f"Connector client not found: {client_file}"
-        )
+        raise FileNotFoundError(f"Connector client not found: {client_file}")
 
     class_name = _detect_class_name(client_file)
     if class_name is None:
-        raise ValueError(
-            f"Could not detect a BaseClient subclass in {client_file}"
-        )
+        raise ValueError(f"Could not detect a BaseClient subclass in {client_file}")
 
     registered = _read_registered_names(root)
     if name in registered:

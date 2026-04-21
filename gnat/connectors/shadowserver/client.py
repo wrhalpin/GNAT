@@ -57,12 +57,11 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
     api_secret : str
         Shadowserver API secret for HMAC signing.
     """
+
     TRUST_LEVEL: str = "untrusted_external"
     API_VERSION: str = "v1"
     API_PREFIX: str = "/api-query"
     COST_UNIT: int = 1
-
-
 
     stix_type_map: dict[str, str] = {
         "indicator": "ip",
@@ -164,9 +163,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
 
     def query_asn(self, asn: int | str) -> dict[str, Any]:
         """Look up Shadowserver reputation / rank data for an ASN."""
-        resp = self._signed_post(
-            "/api/asn/query", {"asn": str(asn).upper().removeprefix("AS")}
-        )
+        resp = self._signed_post("/api/asn/query", {"asn": str(asn).upper().removeprefix("AS")})
         return resp if isinstance(resp, dict) else {}
 
     def query_cve(self, cve: str) -> dict[str, Any]:
@@ -174,9 +171,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         resp = self._signed_post("/api/cve/query", {"cve": cve})
         return resp if isinstance(resp, dict) else {}
 
-    def query_malware(
-        self, family: str = "", sha256: str = ""
-    ) -> list[dict[str, Any]]:
+    def query_malware(self, family: str = "", sha256: str = "") -> list[dict[str, Any]]:
         """
         Query the Shadowserver malware index.
 
@@ -188,9 +183,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
         if sha256:
             payload["sha256"] = sha256
         if not payload:
-            raise GNATClientError(
-                "query_malware requires a 'family' or 'sha256' parameter"
-            )
+            raise GNATClientError("query_malware requires a 'family' or 'sha256' parameter")
         resp = self._signed_post("/api/malware/query", payload)
         if isinstance(resp, list):
             return [r for r in resp if isinstance(r, dict)]
@@ -221,9 +214,7 @@ class ShadowServerClient(BaseClient, ConnectorMixin):
             return [resp]
         return []
 
-    def query_report(
-        self, report: str, date: str = "", limit: int = 1000
-    ) -> list[dict[str, Any]]:
+    def query_report(self, report: str, date: str = "", limit: int = 1000) -> list[dict[str, Any]]:
         """Query a specific Shadowserver report by name + date."""
         payload: dict[str, Any] = {"report": report, "limit": int(limit)}
         if date:

@@ -139,9 +139,7 @@ class CuckooClient(BaseClient, ConnectorMixin):
 
     def authenticate(self) -> None:
         if not self.api_key:
-            raise GNATClientError(
-                "Cuckoo connector requires api_key in config."
-            )
+            raise GNATClientError("Cuckoo connector requires api_key in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_key}"
 
         if self._api_version is None:
@@ -171,15 +169,11 @@ class CuckooClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("Cuckoo get_object requires a non-empty id")
         if stix_type not in ("observed-data", "malware", "indicator"):
-            raise GNATClientError(
-                f"Cuckoo get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Cuckoo get_object does not support stix_type={stix_type!r}")
         trail = "/" if self._api_version == "3" else ""
         resp = self.get(f"{self._prefix}/tasks/report/{object_id}{trail}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Cuckoo returned unexpected payload for task {object_id!r}"
-            )
+            raise GNATClientError(f"Cuckoo returned unexpected payload for task {object_id!r}")
         return dict(resp, _cuckoo_kind=stix_type, _cuckoo_task_id=str(object_id))
 
     def list_objects(
@@ -190,21 +184,15 @@ class CuckooClient(BaseClient, ConnectorMixin):
         page_size: int = 100,
     ) -> list[dict[str, Any]]:
         if stix_type not in ("observed-data", "malware", "indicator"):
-            raise GNATClientError(
-                f"Cuckoo list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Cuckoo list_objects does not support stix_type={stix_type!r}")
         trail = "/" if self._api_version == "3" else ""
         limit = int(page_size)
         offset = max(0, (int(page) - 1) * limit)
-        resp = self.get(
-            f"{self._prefix}/tasks/list/{limit}/{offset}{trail}"
-        )
+        resp = self.get(f"{self._prefix}/tasks/list/{limit}/{offset}{trail}")
         items = _extract_cuckoo_list(resp)
         return [dict(r, _cuckoo_kind=stix_type) for r in items]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise GNATClientError(
             "Cuckoo connector is read-only via CRUD — use submit_file / "
             "submit_url domain helpers to trigger analyses."
@@ -214,15 +202,11 @@ class CuckooClient(BaseClient, ConnectorMixin):
         if self._api_version == "3":
             self.get(f"{self._prefix}/tasks/delete/{object_id}/")
         else:
-            raise GNATClientError(
-                "Cuckoo 2.x API does not support task deletion."
-            )
+            raise GNATClientError("Cuckoo 2.x API does not support task deletion.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def submit_file(
-        self, filepath: str, **opts: Any
-    ) -> dict[str, Any]:
+    def submit_file(self, filepath: str, **opts: Any) -> dict[str, Any]:
         import os
 
         if not os.path.isfile(filepath):
@@ -250,9 +234,7 @@ class CuckooClient(BaseClient, ConnectorMixin):
             data["machine"] = opts["machine"]
         if opts.get("package"):
             data["package"] = opts["package"]
-        return self.post(
-            f"{self._prefix}/tasks/create/url{trail}", data=data
-        )
+        return self.post(f"{self._prefix}/tasks/create/url{trail}", data=data)
 
     def get_report(self, task_id: str) -> dict[str, Any]:
         return self.get_object("observed-data", task_id)
@@ -277,10 +259,7 @@ class CuckooClient(BaseClient, ConnectorMixin):
 
     def iocs_to_indicators(self, task_id: str) -> list[dict[str, Any]]:
         iocs = self.get_iocs(task_id)
-        return [
-            dict(ioc, _cuckoo_kind="indicator", _cuckoo_task_id=task_id)
-            for ioc in iocs
-        ]
+        return [dict(ioc, _cuckoo_kind="indicator", _cuckoo_task_id=task_id) for ioc in iocs]
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
 
@@ -334,9 +313,7 @@ class CuckooClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _to_stix_malware(
-        self, native: dict[str, Any], task_id: str
-    ) -> dict[str, Any]:
+    def _to_stix_malware(self, native: dict[str, Any], task_id: str) -> dict[str, Any]:
         info = native.get("info") or {}
         target = native.get("target") or {}
         target_file = target.get("file") or {}
@@ -370,26 +347,20 @@ class CuckooClient(BaseClient, ConnectorMixin):
             },
         }
 
-    def _to_stix_observed_data(
-        self, native: dict[str, Any], task_id: str
-    ) -> dict[str, Any]:
+    def _to_stix_observed_data(self, native: dict[str, Any], task_id: str) -> dict[str, Any]:
         info = native.get("info") or {}
         target = native.get("target") or {}
         target_file = target.get("file") or {}
         network = native.get("network") or {}
         behavior = native.get("behavior") or {}
 
-        hosts = [
-            h if isinstance(h, str) else h.get("ip", "")
-            for h in (network.get("hosts") or [])
-        ]
+        hosts = [h if isinstance(h, str) else h.get("ip", "") for h in (network.get("hosts") or [])]
         domains = [
             d.get("domain") if isinstance(d, dict) else str(d)
             for d in (network.get("domains") or [])
         ]
         urls = [
-            h.get("uri") if isinstance(h, dict) else str(h)
-            for h in (network.get("http") or [])
+            h.get("uri") if isinstance(h, dict) else str(h) for h in (network.get("http") or [])
         ]
         processes = [
             p.get("process_name") if isinstance(p, dict) else str(p)

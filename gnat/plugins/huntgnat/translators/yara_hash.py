@@ -86,19 +86,14 @@ class YaraHashTranslator(RuleTranslator):
 
         conditions = []
         for algo, value in hashes:
-            yara_fn, expected_len = _HASH_ALGO_MAP.get(
-                algo, ("hash.sha256", 64)
-            )
+            yara_fn, expected_len = _HASH_ALGO_MAP.get(algo, ("hash.sha256", 64))
             if len(value) != expected_len:
                 raise UntranslatableError(
-                    reason=f"{algo} hash must be {expected_len} hex chars, "
-                    f"got {len(value)}",
+                    reason=f"{algo} hash must be {expected_len} hex chars, got {len(value)}",
                     pattern=pattern,
                     target_language="yara",
                 )
-            conditions.append(
-                f'{yara_fn}(0, filesize) == "{value}"'
-            )
+            conditions.append(f'{yara_fn}(0, filesize) == "{value}"')
 
         joiner = " or\n        "
         lines.append(f"        {joiner.join(conditions)}")
@@ -115,9 +110,7 @@ class YaraHashTranslator(RuleTranslator):
         )
 
     @staticmethod
-    def _extract_hash(
-        cmp: Comparison, pattern: str
-    ) -> tuple[str | None, str | None]:
+    def _extract_hash(cmp: Comparison, pattern: str) -> tuple[str | None, str | None]:
         """Extract (algorithm, hash_value) from a hash comparison."""
         path = cmp.object_path.property_path
         if cmp.object_path.object_type != "file":

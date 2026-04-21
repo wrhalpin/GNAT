@@ -132,7 +132,9 @@ class EmbeddingStore:
             except Exception as exc:
                 logger.warning(
                     "EmbeddingStore.add_batch: batch %d-%d failed — %s",
-                    i, i + self._batch_size, exc,
+                    i,
+                    i + self._batch_size,
+                    exc,
                 )
 
     def remove(self, key: str) -> None:

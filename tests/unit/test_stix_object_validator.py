@@ -7,16 +7,14 @@ Unit tests for gnat.stix.object_validator — STIX 2.1 object-level validation.
 from __future__ import annotations
 
 import pytest
+
 from gnat.stix.object_validator import (
     BundleValidationResult,
     ObjectValidationError,
     ObjectValidationResult,
-    STIXBundleValidator,
-    STIXObjectValidator,
     validate_bundle,
     validate_object,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -52,6 +50,7 @@ def _indicator(**extra) -> dict:
 # Import & public API
 # ---------------------------------------------------------------------------
 
+
 class TestPublicAPI:
     def test_validate_object_returns_result(self):
         result = validate_object(_indicator())
@@ -81,6 +80,7 @@ class TestPublicAPI:
 # ---------------------------------------------------------------------------
 # Common required properties
 # ---------------------------------------------------------------------------
+
 
 class TestCommonRequired:
     def test_valid_indicator_passes(self):
@@ -130,6 +130,7 @@ class TestCommonRequired:
 # ID format validation
 # ---------------------------------------------------------------------------
 
+
 class TestIDFormat:
     def test_valid_id_accepted(self):
         obj = _indicator()
@@ -165,6 +166,7 @@ class TestIDFormat:
 # ---------------------------------------------------------------------------
 # Timestamp validation
 # ---------------------------------------------------------------------------
+
 
 class TestTimestamps:
     def test_valid_timestamp_z(self):
@@ -203,6 +205,7 @@ class TestTimestamps:
 # ---------------------------------------------------------------------------
 # Per-type required properties
 # ---------------------------------------------------------------------------
+
 
 class TestTypeRequired:
     def test_indicator_requires_pattern(self):
@@ -252,8 +255,9 @@ class TestTypeRequired:
         assert validate_object(obj).valid
 
     def test_observed_data_requires_refs(self):
-        obj = _base("observed-data", first_observed=_CREATED, last_observed=_CREATED,
-                    number_observed=1)
+        obj = _base(
+            "observed-data", first_observed=_CREATED, last_observed=_CREATED, number_observed=1
+        )
         result = validate_object(obj)
         assert any("object_refs" in e for e in result.errors)
 
@@ -280,6 +284,7 @@ class TestTypeRequired:
 # ---------------------------------------------------------------------------
 # SCOs
 # ---------------------------------------------------------------------------
+
 
 class TestSCOs:
     def _sco(self, type_: str, **extra) -> dict:
@@ -324,6 +329,7 @@ class TestSCOs:
 # Boolean properties
 # ---------------------------------------------------------------------------
 
+
 class TestBooleanProperties:
     def test_is_family_bool_accepted(self):
         obj = _base("malware", name="X", is_family=True)
@@ -348,6 +354,7 @@ class TestBooleanProperties:
 # ---------------------------------------------------------------------------
 # Integer properties
 # ---------------------------------------------------------------------------
+
 
 class TestIntegerProperties:
     def test_confidence_int_accepted(self):
@@ -401,6 +408,7 @@ class TestIntegerProperties:
 # Open vocabulary
 # ---------------------------------------------------------------------------
 
+
 class TestOpenVocabulary:
     def test_known_indicator_type_no_warning(self):
         obj = _indicator(indicator_types=["malicious-activity"])
@@ -421,8 +429,7 @@ class TestOpenVocabulary:
         assert any("indicator_types" in e for e in result.errors)
 
     def test_malware_types_list(self):
-        obj = _base("malware", name="X", is_family=False,
-                    malware_types=["ransomware", "trojan"])
+        obj = _base("malware", name="X", is_family=False, malware_types=["ransomware", "trojan"])
         result = validate_object(obj)
         assert result.valid
         assert not result.warnings
@@ -482,6 +489,7 @@ class TestOpenVocabulary:
 # Closed vocabulary
 # ---------------------------------------------------------------------------
 
+
 class TestClosedVocabulary:
     def test_spec_version_21_accepted(self):
         assert validate_object(_indicator()).valid
@@ -502,6 +510,7 @@ class TestClosedVocabulary:
 # ---------------------------------------------------------------------------
 # _ref / _refs format validation
 # ---------------------------------------------------------------------------
+
 
 class TestRefFormat:
     def test_valid_source_ref(self):
@@ -538,6 +547,7 @@ class TestRefFormat:
 # ---------------------------------------------------------------------------
 # Custom types
 # ---------------------------------------------------------------------------
+
 
 class TestCustomTypes:
     def test_x_prefix_custom_type_allowed(self):
@@ -578,6 +588,7 @@ class TestCustomTypes:
 # ---------------------------------------------------------------------------
 # Bundle validation
 # ---------------------------------------------------------------------------
+
 
 class TestBundleValidation:
     def _bundle(self, *objects) -> dict:
@@ -638,6 +649,7 @@ class TestBundleValidation:
 # Marking definition
 # ---------------------------------------------------------------------------
 
+
 class TestMarkingDefinition:
     def test_tlp_marking_valid(self):
         obj = {
@@ -674,23 +686,29 @@ class TestMarkingDefinition:
 # gnat.stix __init__ re-exports
 # ---------------------------------------------------------------------------
 
+
 class TestInitExports:
     def test_validate_object_importable_from_package(self):
         from gnat.stix import validate_object as vo
+
         assert vo is not None
 
     def test_validate_bundle_importable_from_package(self):
         from gnat.stix import validate_bundle as vb
+
         assert vb is not None
 
     def test_object_validation_error_importable(self):
         from gnat.stix import ObjectValidationError
+
         assert ObjectValidationError is not None
 
     def test_result_classes_importable(self):
-        from gnat.stix import ObjectValidationResult, BundleValidationResult
+        from gnat.stix import BundleValidationResult, ObjectValidationResult
+
         assert ObjectValidationResult and BundleValidationResult
 
     def test_validator_classes_importable(self):
-        from gnat.stix import STIXObjectValidator, STIXBundleValidator
+        from gnat.stix import STIXBundleValidator, STIXObjectValidator
+
         assert STIXObjectValidator and STIXBundleValidator

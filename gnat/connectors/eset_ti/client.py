@@ -65,9 +65,7 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Bearer header."""
         if not self.api_token:
-            raise GNATClientError(
-                "ESET Threat Intelligence connector requires api_token."
-            )
+            raise GNATClientError("ESET Threat Intelligence connector requires api_token.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -95,13 +93,9 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v1/iocs/{object_id}")
             kind = "ioc"
         else:
-            raise GNATClientError(
-                f"ESET TI get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"ESET TI get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"ESET TI returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"ESET TI returned unexpected payload for {object_id!r}")
         return dict(resp, _eset_kind=kind)
 
     def list_objects(
@@ -136,14 +130,10 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v1/samples", params=params)
             tag = "sample"
         else:
-            raise GNATClientError(
-                f"ESET TI list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"ESET TI list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _eset_kind=tag) for r in _extract_eset_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """ESET TI connector is read-only."""
         raise GNATClientError(
             "ESET Threat Intelligence connector is read-only — no write operations supported."
@@ -157,9 +147,7 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_iocs(
-        self, since: str = "", ioc_type: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_iocs(self, since: str = "", ioc_type: str = "") -> list[dict[str, Any]]:
         """Return ESET IOC feed entries."""
         filters: dict[str, Any] = {}
         if since:
@@ -168,9 +156,7 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
             filters["ioc_type"] = ioc_type
         return self.list_objects("indicator", filters=filters, page_size=1000)
 
-    def list_reports(
-        self, actor: str = "", family: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_reports(self, actor: str = "", family: str = "") -> list[dict[str, Any]]:
         """Return ESET APT / campaign reports."""
         filters: dict[str, Any] = {}
         if actor:
@@ -185,15 +171,11 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
 
     def list_yara(self) -> list[dict[str, Any]]:
         """Return ESET YARA rule feed."""
-        return self.list_objects(
-            "indicator", filters={"kind": "yara"}, page_size=1000
-        )
+        return self.list_objects("indicator", filters={"kind": "yara"}, page_size=1000)
 
     def list_botnet(self) -> list[dict[str, Any]]:
         """Return ESET botnet tracking entries."""
-        return self.list_objects(
-            "indicator", filters={"kind": "botnet"}, page_size=1000
-        )
+        return self.list_objects("indicator", filters={"kind": "botnet"}, page_size=1000)
 
     def get_report(self, report_id: str) -> dict[str, Any]:
         """Fetch a single ESET report."""
@@ -267,9 +249,7 @@ class ESETThreatIntelClient(BaseClient, ConnectorMixin):
         else:
             pattern = f"[x-eset:value = '{value}']"
 
-        stix_uuid = uuid.uuid5(
-            _NAMESPACE_ESET, f"indicator|{kind}|{value or native.get('id', '')}"
-        )
+        stix_uuid = uuid.uuid5(_NAMESPACE_ESET, f"indicator|{kind}|{value or native.get('id', '')}")
         return {
             "type": "indicator",
             "id": f"indicator--{stix_uuid}",

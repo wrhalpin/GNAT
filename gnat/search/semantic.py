@@ -44,7 +44,7 @@ Usage::
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gnat.search.index import SearchIndex
 
@@ -108,6 +108,7 @@ class SemanticSearchIndex(SearchIndex):
     ) -> None:
         """Initialize SemanticSearchIndex."""
         from gnat.agents.embeddings import EmbeddingStore
+
         self._store: EmbeddingStore = EmbeddingStore(
             llm, embed_model=embed_model, batch_size=batch_size
         )

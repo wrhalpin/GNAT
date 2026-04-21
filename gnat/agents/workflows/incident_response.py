@@ -46,15 +46,15 @@ from gnat.agents.workflow import Workflow
 
 
 def build_incident_response_workflow(
-    dispatcher:  Any = None,
-    resolver:    Any = None,
-    scorer:      Any = None,
-    detector:    Any = None,
-    assistant:   Any = None,
-    service:     Any = None,
-    iocs:        list[str] | None = None,
+    dispatcher: Any = None,
+    resolver: Any = None,
+    scorer: Any = None,
+    detector: Any = None,
+    assistant: Any = None,
+    service: Any = None,
+    iocs: list[str] | None = None,
     review_status: Any = None,
-    author:      str = "incident-response-workflow",
+    author: str = "incident-response-workflow",
 ) -> Workflow:
     """
     Build an incident response :class:`~gnat.agents.workflow.Workflow`.
@@ -82,10 +82,12 @@ def build_incident_response_workflow(
     if review_status is None:
         try:
             from gnat.analysis.investigations.models import InvestigationStatus
+
             review_status = InvestigationStatus.REVIEW
         except (ImportError, AttributeError):
             try:
                 from gnat.analysis.investigations.models import InvestigationStatus
+
                 review_status = InvestigationStatus.IN_PROGRESS
             except ImportError:
                 review_status = "review"
@@ -95,10 +97,13 @@ def build_incident_response_workflow(
     wf.add_step(correlate_step(resolver, scorer, name="correlate"))
     wf.add_step(gap_detect_step(detector, name="gap_detect"))
     wf.add_step(draft_report_step(assistant, name="draft_report"))
-    wf.add_step(transition_step(
-        service, review_status,
-        note   = "Incident response workflow complete — escalating for review.",
-        author = author,
-        name   = "transition_review",
-    ))
+    wf.add_step(
+        transition_step(
+            service,
+            review_status,
+            note="Incident response workflow complete — escalating for review.",
+            author=author,
+            name="transition_review",
+        )
+    )
     return wf

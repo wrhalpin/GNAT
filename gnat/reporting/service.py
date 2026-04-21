@@ -74,20 +74,20 @@ class ReportService:
         Persistence backend.
     """
 
-    def __init__(self, store: ReportStore, lineage: "Any | None" = None) -> None:
-        self._store   = store
+    def __init__(self, store: ReportStore, lineage: Any | None = None) -> None:
+        self._store = store
         self._lineage = lineage  # optional LineageTracker
 
     # ── Factory / CRUD ────────────────────────────────────────────────────────
 
     def create(
         self,
-        title:                str,
-        report_type:          ReportType,
-        authors:              list[str] | None = None,
-        classification:       TLPLevel = TLPLevel.AMBER,
+        title: str,
+        report_type: ReportType,
+        authors: list[str] | None = None,
+        classification: TLPLevel = TLPLevel.AMBER,
         linked_investigation: str | None = None,
-        tags:                 list[str] | None = None,
+        tags: list[str] | None = None,
     ) -> Report:
         """
         Create and persist a new Report in DRAFT status.
@@ -107,12 +107,12 @@ class ReportService:
         Report
         """
         report = Report(
-            title                = title,
-            report_type          = report_type,
-            authors              = list(authors or []),
-            classification       = classification,
-            linked_investigation = linked_investigation,
-            tags                 = list(tags or []),
+            title=title,
+            report_type=report_type,
+            authors=list(authors or []),
+            classification=classification,
+            linked_investigation=linked_investigation,
+            tags=list(tags or []),
         )
         self._store.save(report)
         logger.info("ReportService: created report %s (%s)", report.id, title)
@@ -138,18 +138,21 @@ class ReportService:
 
     def list(
         self,
-        status:               ReportStatus | None = None,
-        report_type:          ReportType | None = None,
+        status: ReportStatus | None = None,
+        report_type: ReportType | None = None,
         linked_investigation: str | None = None,
-        tag:                  str | None = None,
-        limit:                int = 100,
-        offset:               int = 0,
+        tag: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[Report]:
         """List reports with optional filters."""
         return self._store.list(
-            status=status, report_type=report_type,
+            status=status,
+            report_type=report_type,
             linked_investigation=linked_investigation,
-            tag=tag, limit=limit, offset=offset,
+            tag=tag,
+            limit=limit,
+            offset=offset,
         )
 
     def delete(self, report_id: str) -> None:
@@ -161,8 +164,7 @@ class ReportService:
 
     def submit_for_review(self, report_id: str, submitter: str | None = None) -> Report:
         """Transition a DRAFT report to REVIEW."""
-        return self._transition(report_id, ReportStatus.REVIEW, submitter,
-                                "Submitted for review.")
+        return self._transition(report_id, ReportStatus.REVIEW, submitter, "Submitted for review.")
 
     def reject_to_draft(self, report_id: str, reviewer: str, reason: str = "") -> Report:
         """Reject a REVIEW report back to DRAFT with an optional reason."""
@@ -185,9 +187,7 @@ class ReportService:
         """
         report = self.get(report_id)
         if not report.can_transition_to(ReportStatus.APPROVED):
-            raise ReportError(
-                f"Cannot approve report in status {report.status.value!r}."
-            )
+            raise ReportError(f"Cannot approve report in status {report.status.value!r}.")
         if reviewer not in report.reviewers:
             report.reviewers.append(reviewer)
             self._store.save(report)  # persist reviewer before _transition reloads
@@ -223,13 +223,14 @@ class ReportService:
                 "Report must be APPROVED first."
             )
 
-        report.status       = ReportStatus.PUBLISHED
+        report.status = ReportStatus.PUBLISHED
         report.published_at = datetime.now(tz=timezone.utc)
-        report.updated_at   = report.published_at
+        report.updated_at = report.published_at
 
         # Generate STIX bundle
         bundle = report_to_stix_bundle(report)
         import json as _json
+
         report.stix_bundle_json = _json.dumps(bundle)
         # Extract the STIX Report SDO ID
         for obj in bundle.get("objects", []):
@@ -237,11 +238,13 @@ class ReportService:
                 report.stix_report_ref = obj["id"]
                 break
 
-        report.changelog.append(ChangelogEntry(
-            version    = report.version,
-            changed_by = changed_by,
-            summary    = f"Published version {report.version}.",
-        ))
+        report.changelog.append(
+            ChangelogEntry(
+                version=report.version,
+                changed_by=changed_by,
+                summary=f"Published version {report.version}.",
+            )
+        )
 
         self._store.save(report)
         logger.info("ReportService: published report %s (v%d)", report.id, report.version)
@@ -251,10 +254,11 @@ class ReportService:
             try:
                 stix_ref = report.stix_report_ref or f"report--{report.id}"
                 self._lineage.record_report(
-                    stix_ref, "report",
-                    source = "reporting-service",
-                    actor  = changed_by,
-                    report_id = report.id,
+                    stix_ref,
+                    "report",
+                    source="reporting-service",
+                    actor=changed_by,
+                    report_id=report.id,
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Lineage record_report failed for report %s: %s", report.id, exc)
@@ -268,26 +272,27 @@ class ReportService:
 
     def _transition(
         self,
-        report_id:  str,
+        report_id: str,
         new_status: ReportStatus,
         changed_by: str | None,
-        note:       str,
+        note: str,
     ) -> Report:
         """Internal helper for transition."""
         report = self.get(report_id)
         if not report.can_transition_to(new_status):
             raise ReportError(
-                f"Cannot transition report from {report.status.value!r} "
-                f"to {new_status.value!r}."
+                f"Cannot transition report from {report.status.value!r} to {new_status.value!r}."
             )
-        old_status  = report.status
-        report.status     = new_status
+        old_status = report.status
+        report.status = new_status
         report.updated_at = datetime.now(tz=timezone.utc)
-        report.changelog.append(ChangelogEntry(
-            version    = report.version,
-            changed_by = changed_by or "system",
-            summary    = f"{old_status.value} → {new_status.value}: {note}",
-        ))
+        report.changelog.append(
+            ChangelogEntry(
+                version=report.version,
+                changed_by=changed_by or "system",
+                summary=f"{old_status.value} → {new_status.value}: {note}",
+            )
+        )
         self._store.save(report)
         logger.info("ReportService: %s %s → %s", report_id, old_status.value, new_status.value)
         return report
@@ -314,9 +319,9 @@ class ReportService:
     def add_section(
         self,
         report_id: str,
-        title:     str,
-        content:   str = "",
-        order:     int | None = None,
+        title: str,
+        content: str = "",
+        order: int | None = None,
     ) -> ReportSection:
         """
         Add a body section to a report.
@@ -346,10 +351,10 @@ class ReportService:
 
     def add_finding(
         self,
-        report_id:           str,
-        statement:           str,
-        confidence:          ConfidenceScore | None = None,
-        mitre_techniques:    list[str] | None = None,
+        report_id: str,
+        statement: str,
+        confidence: ConfidenceScore | None = None,
+        mitre_techniques: list[str] | None = None,
     ) -> Finding:
         """
         Add a key finding to a report.
@@ -361,9 +366,9 @@ class ReportService:
         report = self.get(report_id)
         self._check_mutable(report)
         finding = Finding(
-            statement        = statement,
-            confidence       = confidence,
-            mitre_techniques = list(mitre_techniques or []),
+            statement=statement,
+            confidence=confidence,
+            mitre_techniques=list(mitre_techniques or []),
         )
         report.key_findings.append(finding)
         report.updated_at = datetime.now(tz=timezone.utc)
@@ -372,13 +377,13 @@ class ReportService:
 
     def add_evidence_link(
         self,
-        report_id:       str,
-        statement:       str,
-        artifact_type:   str,
-        artifact_id:     str,
+        report_id: str,
+        statement: str,
+        artifact_type: str,
+        artifact_id: str,
         artifact_source: str,
-        link_type:       EvidenceLinkType = EvidenceLinkType.SUPPORTS,
-        confidence:      ConfidenceScore | None = None,
+        link_type: EvidenceLinkType = EvidenceLinkType.SUPPORTS,
+        confidence: ConfidenceScore | None = None,
     ) -> EvidenceLink:
         """
         Add a statement-to-artifact evidence binding to a report.
@@ -390,12 +395,12 @@ class ReportService:
         report = self.get(report_id)
         self._check_mutable(report)
         link = EvidenceLink(
-            statement       = statement,
-            artifact_type   = artifact_type,
-            artifact_id     = artifact_id,
-            artifact_source = artifact_source,
-            link_type       = link_type,
-            confidence      = confidence,
+            statement=statement,
+            artifact_type=artifact_type,
+            artifact_id=artifact_id,
+            artifact_source=artifact_source,
+            link_type=link_type,
+            confidence=confidence,
         )
         report.evidence_links.append(link)
         report.updated_at = datetime.now(tz=timezone.utc)
@@ -404,22 +409,22 @@ class ReportService:
 
     def set_attribution(
         self,
-        report_id:         str,
+        report_id: str,
         threat_actor_name: str,
-        confidence:        ConfidenceScore,
-        rationale:         str,
-        threat_actor_id:   str | None = None,
-        mitre_group_id:    str | None = None,
+        confidence: ConfidenceScore,
+        rationale: str,
+        threat_actor_id: str | None = None,
+        mitre_group_id: str | None = None,
     ) -> Report:
         """Set or replace the attribution on a report."""
         report = self.get(report_id)
         self._check_mutable(report)
         report.attribution = Attribution(
-            threat_actor_name = threat_actor_name,
-            confidence        = confidence,
-            rationale         = rationale,
-            threat_actor_id   = threat_actor_id,
-            mitre_group_id    = mitre_group_id,
+            threat_actor_name=threat_actor_name,
+            confidence=confidence,
+            rationale=rationale,
+            threat_actor_id=threat_actor_id,
+            mitre_group_id=mitre_group_id,
         )
         report.updated_at = datetime.now(tz=timezone.utc)
         self._store.save(report)
@@ -479,26 +484,31 @@ class ReportService:
             )
         data = source.to_dict()
         import uuid as _uuid
-        data["id"]               = str(_uuid.uuid4())
-        data["status"]           = ReportStatus.DRAFT.value
-        data["version"]          = source.version + 1
+
+        data["id"] = str(_uuid.uuid4())
+        data["status"] = ReportStatus.DRAFT.value
+        data["version"] = source.version + 1
         data["parent_report_id"] = published_report_id
-        data["stix_report_ref"]  = None
+        data["stix_report_ref"] = None
         data["stix_bundle_json"] = None
-        data["published_at"]     = None
-        data["authors"]          = [author]
-        data["reviewers"]        = []
-        from datetime import datetime, timezone as _tz
+        data["published_at"] = None
+        data["authors"] = [author]
+        data["reviewers"] = []
+        from datetime import datetime
+        from datetime import timezone as _tz
+
         now = datetime.now(tz=_tz.utc).isoformat()
         data["created_at"] = now
         data["updated_at"] = now
-        data["changelog"]  = []
+        data["changelog"] = []
 
         new_report = Report.from_dict(data)
         self._store.save(new_report)
         logger.info(
             "ReportService: created revision %s (v%d) from %s",
-            new_report.id, new_report.version, published_report_id,
+            new_report.id,
+            new_report.version,
+            published_report_id,
         )
         return new_report
 
@@ -517,21 +527,21 @@ class ReportService:
         """
         report = self.get(report_id)
         return {
-            "id":                  report.id,
-            "title":               report.title,
-            "report_type":         report.report_type.value,
-            "status":              report.status.value,
-            "classification":      report.classification.label,
-            "authors":             report.authors,
-            "finding_count":       len(report.key_findings),
+            "id": report.id,
+            "title": report.title,
+            "report_type": report.report_type.value,
+            "status": report.status.value,
+            "classification": report.classification.label,
+            "authors": report.authors,
+            "finding_count": len(report.key_findings),
             "evidence_link_count": len(report.evidence_links),
-            "section_count":       len(report.body_sections),
-            "has_attribution":     report.attribution is not None,
-            "tags":                report.tags,
-            "version":             report.version,
-            "parent_report_id":    report.parent_report_id,
-            "stix_report_ref":     report.stix_report_ref,
-            "published_at":        report.published_at.isoformat() if report.published_at else None,
-            "created_at":          report.created_at.isoformat(),
-            "updated_at":          report.updated_at.isoformat(),
+            "section_count": len(report.body_sections),
+            "has_attribution": report.attribution is not None,
+            "tags": report.tags,
+            "version": report.version,
+            "parent_report_id": report.parent_report_id,
+            "stix_report_ref": report.stix_report_ref,
+            "published_at": report.published_at.isoformat() if report.published_at else None,
+            "created_at": report.created_at.isoformat(),
+            "updated_at": report.updated_at.isoformat(),
         }

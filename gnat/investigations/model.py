@@ -39,31 +39,31 @@ from typing import Any
 class SeedType(str, Enum):
     """Classification of an investigation seed value."""
 
-    IOC_VALUE   = "ioc_value"   # Generic indicator (IP, domain, URL, hash)
-    IP          = "ip"
-    DOMAIN      = "domain"
-    HASH        = "hash"
-    EMAIL       = "email"
-    URL         = "url"
-    HOSTNAME    = "hostname"
-    USERNAME    = "username"
-    ALERT_ID    = "alert_id"
-    CASE_ID     = "case_id"
-    TICKET_REF  = "ticket_ref"
-    EMAIL_SUBJ  = "email_subject"
+    IOC_VALUE = "ioc_value"  # Generic indicator (IP, domain, URL, hash)
+    IP = "ip"
+    DOMAIN = "domain"
+    HASH = "hash"
+    EMAIL = "email"
+    URL = "url"
+    HOSTNAME = "hostname"
+    USERNAME = "username"
+    ALERT_ID = "alert_id"
+    CASE_ID = "case_id"
+    TICKET_REF = "ticket_ref"
+    EMAIL_SUBJ = "email_subject"
 
 
 class NodeType(str, Enum):
     """Normalised record category regardless of source platform."""
 
-    INCIDENT       = "incident"
-    OBSERVABLE     = "observable"
-    ASSET          = "asset"
-    IDENTITY       = "identity"
-    FINDING        = "finding"
-    TASK           = "task"
-    DECISION       = "decision"
-    ARTIFACT       = "artifact"
+    INCIDENT = "incident"
+    OBSERVABLE = "observable"
+    ASSET = "asset"
+    IDENTITY = "identity"
+    FINDING = "finding"
+    TASK = "task"
+    DECISION = "decision"
+    ARTIFACT = "artifact"
     TIMELINE_EVENT = "timeline_event"
 
 
@@ -127,11 +127,11 @@ class EvidenceNode:
     source_id: str
     stix: dict[str, Any]
     raw: dict[str, Any]
-    ioc_values: list[str]     = field(default_factory=list)
-    hostnames: list[str]      = field(default_factory=list)
-    usernames: list[str]      = field(default_factory=list)
+    ioc_values: list[str] = field(default_factory=list)
+    hostnames: list[str] = field(default_factory=list)
+    usernames: list[str] = field(default_factory=list)
     campaign_labels: list[str] = field(default_factory=list)
-    ticket_refs: list[str]    = field(default_factory=list)
+    ticket_refs: list[str] = field(default_factory=list)
     infrastructure_roles: list[str] = field(default_factory=list)
     time_window: tuple[str, str] | None = None
 
@@ -197,14 +197,14 @@ class EvidenceGraph:
 
     title: str
     seeds: list[Seed]
-    nodes: dict[str, EvidenceNode]  = field(default_factory=dict)
-    edges: list[EvidenceEdge]       = field(default_factory=list)
+    nodes: dict[str, EvidenceNode] = field(default_factory=dict)
+    edges: list[EvidenceEdge] = field(default_factory=list)
     # Correlation indexes populated by correlator
-    by_ioc:      dict[str, list[str]] = field(default_factory=dict)
+    by_ioc: dict[str, list[str]] = field(default_factory=dict)
     by_hostname: dict[str, list[str]] = field(default_factory=dict)
     by_username: dict[str, list[str]] = field(default_factory=dict)
     by_campaign: dict[str, list[str]] = field(default_factory=dict)
-    by_ticket:   dict[str, list[str]] = field(default_factory=dict)
+    by_ticket: dict[str, list[str]] = field(default_factory=dict)
     by_infra_role: dict[str, list[str]] = field(default_factory=dict)
 
     # ── Convenience helpers ───────────────────────────────────────────────
@@ -217,23 +217,26 @@ class EvidenceGraph:
             platform_counts[node.platform] = platform_counts.get(node.platform, 0) + 1
             type_counts[node.node_type] = type_counts.get(node.node_type, 0) + 1
         cross = sum(
-            1 for e in self.edges
+            1
+            for e in self.edges
             if e.relationship_type.startswith("same-")
-            and self.nodes.get(e.source_id, EvidenceNode("", NodeType.OBSERVABLE, "", "", {}, {})).platform
-            != self.nodes.get(e.target_id, EvidenceNode("", NodeType.OBSERVABLE, "", "", {}, {})).platform
+            and self.nodes.get(
+                e.source_id, EvidenceNode("", NodeType.OBSERVABLE, "", "", {}, {})
+            ).platform
+            != self.nodes.get(
+                e.target_id, EvidenceNode("", NodeType.OBSERVABLE, "", "", {}, {})
+            ).platform
         )
         return {
-            "title":              self.title,
-            "seeds":              len(self.seeds),
-            "nodes":              len(self.nodes),
-            "edges":              len(self.edges),
+            "title": self.title,
+            "seeds": len(self.seeds),
+            "nodes": len(self.nodes),
+            "edges": len(self.edges),
             "cross_platform_hits": cross,
-            "by_platform":        platform_counts,
-            "by_type":            type_counts,
-            "shared_iocs":        sum(1 for v in self.by_ioc.values() if len(v) > 1),
-            "shared_hosts":       sum(1 for v in self.by_hostname.values() if len(v) > 1),
-            "shared_campaigns":   sum(1 for v in self.by_campaign.values() if len(v) > 1),
-            "infrastructure_roles": {
-                role: len(nids) for role, nids in self.by_infra_role.items()
-            },
+            "by_platform": platform_counts,
+            "by_type": type_counts,
+            "shared_iocs": sum(1 for v in self.by_ioc.values() if len(v) > 1),
+            "shared_hosts": sum(1 for v in self.by_hostname.values() if len(v) > 1),
+            "shared_campaigns": sum(1 for v in self.by_campaign.values() if len(v) > 1),
+            "infrastructure_roles": {role: len(nids) for role, nids in self.by_infra_role.items()},
         }

@@ -71,9 +71,7 @@ class AttackIQClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Token header."""
         if not self.api_token:
-            raise GNATClientError(
-                "AttackIQ connector requires api_token in config."
-            )
+            raise GNATClientError("AttackIQ connector requires api_token in config.")
         self._auth_headers["Authorization"] = f"Token {self.api_token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -98,13 +96,9 @@ class AttackIQClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v1/scenarios/{object_id}/")
             kind = "scenario"
         else:
-            raise GNATClientError(
-                f"AttackIQ get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"AttackIQ get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"AttackIQ returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"AttackIQ returned unexpected payload for {object_id!r}")
         return dict(resp, _aiq_kind=kind)
 
     def list_objects(
@@ -138,24 +132,16 @@ class AttackIQClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v1/scenarios/", params=params)
             tag = "scenario"
         else:
-            raise GNATClientError(
-                f"AttackIQ list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"AttackIQ list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _aiq_kind=tag) for r in _extract_aiq_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """AttackIQ connector is read-only."""
-        raise GNATClientError(
-            "AttackIQ connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("AttackIQ connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """AttackIQ connector is read-only."""
-        raise GNATClientError(
-            "AttackIQ connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("AttackIQ connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -193,9 +179,7 @@ class AttackIQClient(BaseClient, ConnectorMixin):
             stix_uuid = uuid.uuid5(_NAMESPACE_ATTACKIQ, f"attack-pattern|{scenario_id}")
             external_refs = []
             if mitre:
-                external_refs.append(
-                    {"source_name": "mitre-attack", "external_id": mitre}
-                )
+                external_refs.append({"source_name": "mitre-attack", "external_id": mitre})
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
@@ -211,14 +195,10 @@ class AttackIQClient(BaseClient, ConnectorMixin):
         # assessment / result / phase / test → observed-data
         sim_id = str(native.get("id") or native.get("uuid", ""))
         targets = _values(
-            native.get("assets")
-            or native.get("target_assets")
-            or native.get("hostname")
+            native.get("assets") or native.get("target_assets") or native.get("hostname")
         )
         techniques = _values(
-            native.get("mitre_techniques")
-            or native.get("mitre_ids")
-            or native.get("scenarios")
+            native.get("mitre_techniques") or native.get("mitre_ids") or native.get("scenarios")
         )
         return bas_simulation_envelope(
             source_name="attackiq",

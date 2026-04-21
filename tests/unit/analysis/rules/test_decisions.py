@@ -43,6 +43,7 @@ class TestDecisions:
     def test_decisions_are_frozen(self):
         d = set_status("supported")
         import pytest
+
         with pytest.raises(AttributeError):
             d.reason = "changed"
 
@@ -56,18 +57,22 @@ class TestRuleEvaluationResult:
         from gnat.analysis.rules.result import RuleEvaluationResult, RuleFiring
 
         result = RuleEvaluationResult()
-        result.firings.append(RuleFiring(
-            rule_name="annotate-rule",
-            rule_source_file="a.hy",
-            rule_git_sha=None,
-            decision=annotate("k", "v"),
-        ))
-        result.firings.append(RuleFiring(
-            rule_name="status-rule",
-            rule_source_file="b.hy",
-            rule_git_sha=None,
-            decision=set_status("supported"),
-        ))
+        result.firings.append(
+            RuleFiring(
+                rule_name="annotate-rule",
+                rule_source_file="a.hy",
+                rule_git_sha=None,
+                decision=annotate("k", "v"),
+            )
+        )
+        result.firings.append(
+            RuleFiring(
+                rule_name="status-rule",
+                rule_source_file="b.hy",
+                rule_git_sha=None,
+                decision=set_status("supported"),
+            )
+        )
         assert result.primary_decision is not None
         assert result.primary_decision.action == DecisionAction.SET_STATUS
 
@@ -75,12 +80,14 @@ class TestRuleEvaluationResult:
         from gnat.analysis.rules.result import RuleEvaluationResult, RuleFiring
 
         result = RuleEvaluationResult()
-        result.firings.append(RuleFiring(
-            rule_name="annotate-rule",
-            rule_source_file="a.hy",
-            rule_git_sha=None,
-            decision=annotate("k", "v"),
-        ))
+        result.firings.append(
+            RuleFiring(
+                rule_name="annotate-rule",
+                rule_source_file="a.hy",
+                rule_git_sha=None,
+                decision=annotate("k", "v"),
+            )
+        )
         assert result.primary_decision is None
 
     def test_empty_result(self):

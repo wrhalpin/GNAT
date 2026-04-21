@@ -68,9 +68,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set X-API-Key header."""
         if not self.api_key:
-            raise GNATClientError(
-                "Bitdefender IntelliZone connector requires api_key in config."
-            )
+            raise GNATClientError("Bitdefender IntelliZone connector requires api_key in config.")
         self._auth_headers["X-API-Key"] = self.api_key
         self._auth_headers["Accept"] = "application/json"
 
@@ -87,9 +85,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single Bitdefender record by id."""
         if not object_id:
-            raise GNATClientError(
-                "Bitdefender IntelliZone get_object requires a non-empty id"
-            )
+            raise GNATClientError("Bitdefender IntelliZone get_object requires a non-empty id")
         if stix_type == "report":
             resp = self.get(f"/api/v1/reports/{object_id}")
             kind = "report"
@@ -144,9 +140,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _bd_kind=tag) for r in _extract_bd_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Bitdefender IntelliZone connector is read-only."""
         raise GNATClientError(
             "Bitdefender IntelliZone connector is read-only — no write operations supported."
@@ -160,9 +154,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_iocs(
-        self, since: str = "", ioc_type: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_iocs(self, since: str = "", ioc_type: str = "") -> list[dict[str, Any]]:
         """Return IntelliZone IOC feed entries."""
         filters: dict[str, Any] = {}
         if since:
@@ -171,9 +163,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
             filters["ioc_type"] = ioc_type
         return self.list_objects("indicator", filters=filters, page_size=1000)
 
-    def list_reports(
-        self, actor: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_reports(self, actor: str = "") -> list[dict[str, Any]]:
         """Return IntelliZone threat reports."""
         filters: dict[str, Any] = {}
         if actor:
@@ -243,9 +233,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
 
         if kind == "actor":
             actor_id = native.get("id") or native.get("name", "unknown")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_BITDEFENDER, f"threat-actor|{actor_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_BITDEFENDER, f"threat-actor|{actor_id}")
             return {
                 "type": "threat-actor",
                 "id": f"threat-actor--{stix_uuid}",
@@ -262,9 +250,7 @@ class BitdefenderIntelliZoneClient(BaseClient, ConnectorMixin):
         if kind == "sample":
             sha256 = native.get("sha256") or ""
             family = native.get("family") or native.get("detection", "unknown")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_BITDEFENDER, f"malware|{family}|{sha256}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_BITDEFENDER, f"malware|{family}|{sha256}")
             return {
                 "type": "malware",
                 "id": f"malware--{stix_uuid}",

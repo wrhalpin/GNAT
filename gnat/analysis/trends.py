@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from gnat.search.index import SolrSearchIndex
@@ -78,9 +78,7 @@ class TrendReport:
     delta_pct: float = 0.0
     is_spike: bool = False
     histogram: list[tuple[str, int]] = field(default_factory=list)
-    detected_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a JSON-friendly dict."""
@@ -205,14 +203,8 @@ class TrendDetector:
             else:
                 window_counts.append(count)
 
-        baseline_avg = (
-            sum(baseline_counts) / len(baseline_counts)
-            if baseline_counts
-            else 0.0
-        )
-        window_avg = (
-            sum(window_counts) / len(window_counts) if window_counts else 0.0
-        )
+        baseline_avg = sum(baseline_counts) / len(baseline_counts) if baseline_counts else 0.0
+        window_avg = sum(window_counts) / len(window_counts) if window_counts else 0.0
 
         if baseline_avg > 0:
             delta_pct = (window_avg - baseline_avg) / baseline_avg * 100.0
@@ -220,8 +212,7 @@ class TrendDetector:
             delta_pct = 100.0 if window_avg > 0 else 0.0
 
         is_spike = (
-            delta_pct >= _SPIKE_PCT_THRESHOLD
-            and (window_avg - baseline_avg) >= _MIN_SPIKE_DELTA
+            delta_pct >= _SPIKE_PCT_THRESHOLD and (window_avg - baseline_avg) >= _MIN_SPIKE_DELTA
         )
 
         return TrendReport(

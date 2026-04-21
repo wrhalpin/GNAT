@@ -154,6 +154,7 @@ _SAMPLE_ATTR = {
 
 class TestMISPConfig(unittest.TestCase):
     """Configuration container for test m i s p."""
+
     def test_minimal_config(self):
         """Test that minimal config."""
         cfg = _make_config()
@@ -228,6 +229,7 @@ class TestMISPConfig(unittest.TestCase):
 
 class TestMISPAuthManager(unittest.TestCase):
     """Unit tests for :class:`MISPAuthManager`."""
+
     def test_get_headers(self):
         """Test that get headers."""
         cfg = _make_config()
@@ -262,6 +264,7 @@ class TestMISPAuthManager(unittest.TestCase):
 
 class TestMISPClient(unittest.TestCase):
     """HTTP API client for the TestMISP platform."""
+
     def test_get_json_returns_parsed(self):
         """Test that get json returns parsed."""
         client, mock_http = _make_client()
@@ -350,6 +353,7 @@ class TestMISPClient(unittest.TestCase):
 
 class TestMISPEventCommands(unittest.TestCase):
     """Unit tests for :class:`MISPEventCommands`."""
+
     def _make_events(self):
         """Internal helper for make events."""
         client, mock_http = _make_client()
@@ -440,6 +444,7 @@ class TestMISPEventCommands(unittest.TestCase):
 
 class TestMISPAttributeCommands(unittest.TestCase):
     """Unit tests for :class:`MISPAttributeCommands`."""
+
     def _make_attrs(self):
         """Internal helper for make attrs."""
         client, mock_http = _make_client()
@@ -505,6 +510,7 @@ class TestMISPAttributeCommands(unittest.TestCase):
 
 class TestMISPTagCommands(unittest.TestCase):
     """Unit tests for :class:`MISPTagCommands`."""
+
     def _make_tags(self):
         """Internal helper for make tags."""
         client, mock_http = _make_client()
@@ -543,6 +549,7 @@ class TestMISPTagCommands(unittest.TestCase):
 
 class TestMISPFeedCommands(unittest.TestCase):
     """Unit tests for :class:`MISPFeedCommands`."""
+
     def _make_feeds(self):
         """Internal helper for make feeds."""
         client, mock_http = _make_client()
@@ -573,6 +580,7 @@ class TestMISPFeedCommands(unittest.TestCase):
 
 class TestMISPSightingCommands(unittest.TestCase):
     """Unit tests for :class:`MISPSightingCommands`."""
+
     def _make_sightings(self):
         """Internal helper for make sightings."""
         client, mock_http = _make_client()
@@ -611,6 +619,7 @@ class TestMISPSightingCommands(unittest.TestCase):
 
 class TestMISPSTIXMapper(unittest.TestCase):
     """STIX translation helper for test m i s p s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = MISPSTIXMapper()
@@ -824,6 +833,7 @@ class TestMISPSTIXMapper(unittest.TestCase):
 
 class TestMISPExceptions(unittest.TestCase):
     """Raised when a test m i s p exceptions error occurs."""
+
     def test_all_inherit_from_base(self):
         """Test that all inherit from base."""
         from gnat.connectors.misp.exceptions import MISPError

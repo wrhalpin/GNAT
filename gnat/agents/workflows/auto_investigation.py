@@ -47,7 +47,6 @@ from typing import Any
 
 from gnat.agents.steps import (
     correlate_step,
-    enrich_step,
     fn_step,
     gap_detect_step,
     transition_step,
@@ -67,9 +66,9 @@ def _hypothesis_action(llm_client: Any) -> Any:
             ctx.shared["hypothesis"] = "No LLM client configured — manual analysis required."
             return ctx.shared["hypothesis"]
 
-        alert   = ctx.shared.get("alert", {})
-        enrich  = ctx.shared.get("enrichment_results", {})
-        gaps    = ctx.shared.get("gaps", [])
+        alert = ctx.shared.get("alert", {})
+        enrich = ctx.shared.get("enrichment_results", {})
+        gaps = ctx.shared.get("gaps", [])
 
         prompt = (
             "You are a threat intelligence analyst. Given the following alert and enrichment data, "
@@ -89,9 +88,7 @@ def _hypothesis_action(llm_client: Any) -> Any:
                         hypothesis = block.get("text", "")
                         break
             elif "choices" in response:
-                hypothesis = (
-                    response["choices"][0].get("message", {}).get("content", "")
-                )
+                hypothesis = response["choices"][0].get("message", {}).get("content", "")
             ctx.shared["hypothesis"] = hypothesis
             return hypothesis
         except Exception as exc:
@@ -113,7 +110,7 @@ def _score_action(ctx: WorkflowContext) -> float:
     """
     # Start from alert score
     alert = ctx.shared.get("alert", {})
-    base  = float(alert.get("score", alert.get("severity", 0.5)))
+    base = float(alert.get("score", alert.get("severity", 0.5)))
     if base > 1.0:
         base /= 100.0  # normalise 0-100 → 0-1
 
@@ -144,16 +141,16 @@ def _open_investigation_action(inv_service: Any) -> Any:
             ctx.shared["investigation_opened"] = False
             return None
 
-        alert      = ctx.shared.get("alert", {})
+        alert = ctx.shared.get("alert", {})
         hypothesis = ctx.shared.get("hypothesis", "")
         try:
             inv = inv_service.create(
-                title       = alert.get("title", "Auto-generated investigation"),
-                description = hypothesis,
-                severity    = alert.get("severity", "medium"),
-                source      = alert.get("source", "auto-investigation"),
+                title=alert.get("title", "Auto-generated investigation"),
+                description=hypothesis,
+                severity=alert.get("severity", "medium"),
+                source=alert.get("source", "auto-investigation"),
             )
-            ctx.investigation_id        = getattr(inv, "id", None) or str(inv)
+            ctx.investigation_id = getattr(inv, "id", None) or str(inv)
             ctx.shared["investigation"] = inv
             ctx.shared["investigation_opened"] = True
             logger.info("auto_investigation: opened investigation %s", ctx.investigation_id)
@@ -175,24 +172,25 @@ def _analyst_review_action(hitl: Any) -> Any:
             ctx.shared["review_submitted"] = False
             return None
 
-        alert      = ctx.shared.get("alert", {})
+        alert = ctx.shared.get("alert", {})
         hypothesis = ctx.shared.get("hypothesis", "")
-        score      = ctx.shared.get("score", 0.0)
+        score = ctx.shared.get("score", 0.0)
         try:
             from gnat.agents.hitl import AgentAction
+
             action_obj = AgentAction(
-                agent_id     = "auto-investigation-workflow",
-                action_type  = "open_investigation",
-                target_ref   = alert.get("id", ""),
-                impact_level = "high",
-                metadata     = {
+                agent_id="auto-investigation-workflow",
+                action_type="open_investigation",
+                target_ref=alert.get("id", ""),
+                impact_level="high",
+                metadata={
                     "hypothesis": hypothesis,
-                    "score":      score,
-                    "alert":      alert,
+                    "score": score,
+                    "alert": alert,
                 },
             )
             review = hitl.submit_for_approval(action_obj)
-            ctx.shared["review_item"]     = review
+            ctx.shared["review_item"] = review
             ctx.shared["review_submitted"] = True
             logger.info("auto_investigation: submitted for analyst review (score=%.3f)", score)
             return review
@@ -205,14 +203,14 @@ def _analyst_review_action(hitl: Any) -> Any:
 
 
 def build_auto_investigation_workflow(
-    dispatcher:            Any = None,
-    resolver:              Any = None,
-    scorer:                Any = None,
-    detector:              Any = None,
-    llm_client:            Any = None,
-    inv_service:           Any = None,
-    hitl:                  Any = None,
-    confidence_threshold:  float = _DEFAULT_CONFIDENCE_THRESHOLD,
+    dispatcher: Any = None,
+    resolver: Any = None,
+    scorer: Any = None,
+    detector: Any = None,
+    llm_client: Any = None,
+    inv_service: Any = None,
+    hitl: Any = None,
+    confidence_threshold: float = _DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> Workflow:
     """
     Build the autonomous investigation :class:`~gnat.agents.workflow.Workflow`.
@@ -259,11 +257,13 @@ def build_auto_investigation_workflow(
             ctx.shared["enrichment_results"] = {}
             raise
 
-    wf.add_step(WorkflowStep(
-        name  = "enrich",
-        action = _enrich_action,
-        retry  = RetryPolicy(max_attempts=2, backoff_seconds=1.0),
-    ))
+    wf.add_step(
+        WorkflowStep(
+            name="enrich",
+            action=_enrich_action,
+            retry=RetryPolicy(max_attempts=2, backoff_seconds=1.0),
+        )
+    )
 
     # ── 2. Correlate relationships ────────────────────────────────────────────
     wf.add_step(correlate_step(resolver, scorer, name="correlate"))
@@ -272,11 +272,13 @@ def build_auto_investigation_workflow(
     wf.add_step(gap_detect_step(detector, name="gap_detect"))
 
     # ── 4. Hypothesis generation ──────────────────────────────────────────────
-    wf.add_step(WorkflowStep(
-        name   = "hypothesis",
-        action = _hypothesis_action(llm_client),
-        retry  = RetryPolicy(max_attempts=2, backoff_seconds=2.0),
-    ))
+    wf.add_step(
+        WorkflowStep(
+            name="hypothesis",
+            action=_hypothesis_action(llm_client),
+            retry=RetryPolicy(max_attempts=2, backoff_seconds=2.0),
+        )
+    )
 
     # ── 5. Confidence scoring ─────────────────────────────────────────────────
     wf.add_step(fn_step(_score_action, name="score"))
@@ -286,39 +288,48 @@ def build_auto_investigation_workflow(
         score = float(ctx.shared.get("score", 0.0))
         return "open_investigation" if score >= confidence_threshold else "analyst_review"
 
-    wf.add_step(WorkflowStep(
-        name      = "route",
-        action    = lambda ctx: None,
-        branch_on = _router,
-    ))
+    wf.add_step(
+        WorkflowStep(
+            name="route",
+            action=lambda ctx: None,
+            branch_on=_router,
+        )
+    )
 
     # ── 7a. High path: open investigation ────────────────────────────────────
-    wf.add_step(WorkflowStep(
-        name       = "open_investigation",
-        action     = _open_investigation_action(inv_service),
-        on_success = "transition",
-        on_failure = "analyst_review",
-    ))
+    wf.add_step(
+        WorkflowStep(
+            name="open_investigation",
+            action=_open_investigation_action(inv_service),
+            on_success="transition",
+            on_failure="analyst_review",
+        )
+    )
 
     # ── 7b. Low path: analyst review ─────────────────────────────────────────
-    wf.add_step(WorkflowStep(
-        name   = "analyst_review",
-        action = _analyst_review_action(hitl),
-    ))
+    wf.add_step(
+        WorkflowStep(
+            name="analyst_review",
+            action=_analyst_review_action(hitl),
+        )
+    )
 
     # ── 8. Transition to IN_PROGRESS (only reached via high path) ────────────
     try:
         from gnat.analysis.investigations.models import InvestigationStatus
+
         new_status = InvestigationStatus.IN_PROGRESS
     except ImportError:
         new_status = "in_progress"
 
-    wf.add_step(transition_step(
-        inv_service,
-        new_status,
-        note   = "Investigation automatically opened by autonomous pipeline.",
-        author = "auto-investigation-workflow",
-        name   = "transition",
-    ))
+    wf.add_step(
+        transition_step(
+            inv_service,
+            new_status,
+            note="Investigation automatically opened by autonomous pipeline.",
+            author="auto-investigation-workflow",
+            name="transition",
+        )
+    )
 
     return wf

@@ -47,12 +47,12 @@ if TYPE_CHECKING:
 class PluginCapability(str, Enum):
     """Capability flag declaring what a plugin contributes."""
 
-    CONNECTOR = "connector"   # Platform connector (CLIENT_REGISTRY entry)
-    READER    = "reader"      # SourceReader subclass
-    MAPPER    = "mapper"      # RecordMapper subclass
-    AGENT     = "agent"       # AI agent or workflow step
-    REPORTER  = "reporter"    # Report renderer or template
-    HOOK      = "hook"        # Event hook registration only
+    CONNECTOR = "connector"  # Platform connector (CLIENT_REGISTRY entry)
+    READER = "reader"  # SourceReader subclass
+    MAPPER = "mapper"  # RecordMapper subclass
+    AGENT = "agent"  # AI agent or workflow step
+    REPORTER = "reporter"  # Report renderer or template
+    HOOK = "hook"  # Event hook registration only
 
 
 class GNATPlugin(ABC):
@@ -74,13 +74,13 @@ class GNATPlugin(ABC):
         Human-readable description (optional).
     """
 
-    name:         str
-    version:      str
+    name: str
+    version: str
     capabilities: list[PluginCapability]
-    description:  str = ""
+    description: str = ""
 
     @abstractmethod
-    def register(self, registry: "PluginRegistry") -> None:
+    def register(self, registry: PluginRegistry) -> None:
         """
         Register this plugin's contributions with *registry*.
 
@@ -89,7 +89,7 @@ class GNATPlugin(ABC):
         or :meth:`~PluginRegistry.hooks` to contribute.
         """
 
-    def unload(self) -> None:
+    def unload(self) -> None:  # noqa: B027
         """
         Unload the plugin and release any held resources.
 

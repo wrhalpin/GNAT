@@ -14,12 +14,14 @@ from gnat.analysis.rules.result import RuleEvaluationResult, RuleFiring
 def _make_result(*decisions):
     result = RuleEvaluationResult()
     for i, d in enumerate(decisions):
-        result.firings.append(RuleFiring(
-            rule_name=f"rule-{i}",
-            rule_source_file=f"rule_{i}.hy",
-            rule_git_sha=None,
-            decision=d,
-        ))
+        result.firings.append(
+            RuleFiring(
+                rule_name=f"rule-{i}",
+                rule_source_file=f"rule_{i}.hy",
+                rule_git_sha=None,
+                decision=d,
+            )
+        )
     return result
 
 

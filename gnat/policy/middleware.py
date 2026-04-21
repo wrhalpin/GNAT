@@ -62,7 +62,7 @@ def build_audit_middleware(key_store: Any) -> type:
             auth = request.headers.get("authorization", "")
             if auth.startswith("Bearer ") and key_store is not None:
                 token = auth.removeprefix("Bearer ").strip()
-                key   = key_store.get_key(token)
+                key = key_store.get_key(token)
                 if key is not None:
                     actor = getattr(key, "label", None) or f"key:{key.token_hash}"
 
@@ -78,13 +78,14 @@ def build_audit_middleware(key_store: Any) -> type:
             # Emit to HookBus for plugin handlers
             try:
                 from gnat.plugins.hooks import HookBus
+
                 HookBus.instance().emit(
                     "api_request",
-                    actor       = actor,
-                    method      = request.method,
-                    path        = request.url.path,
-                    status_code = response.status_code,
-                    elapsed_ms  = elapsed_ms,
+                    actor=actor,
+                    method=request.method,
+                    path=request.url.path,
+                    status_code=response.status_code,
+                    elapsed_ms=elapsed_ms,
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Policy audit middleware emit failed: %s", exc)

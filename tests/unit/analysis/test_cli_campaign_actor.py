@@ -56,8 +56,7 @@ class TestActorCLI:
 
     def test_create_json(self, run_cli):
         exit_code, out, _ = run_cli(
-            "--output", "json",
-            "actor", "create", "--name", "APT28", "--mitre-group", "G0007"
+            "--output", "json", "actor", "create", "--name", "APT28", "--mitre-group", "G0007"
         )
         assert exit_code == 0
         data = json.loads(out)
@@ -76,9 +75,7 @@ class TestActorCLI:
         assert "TestActor" in out
 
     def test_show(self, run_cli):
-        _, out, _ = run_cli(
-            "--output", "json", "actor", "create", "--name", "ShowMe"
-        )
+        _, out, _ = run_cli("--output", "json", "actor", "create", "--name", "ShowMe")
         actor_id = json.loads(out)["id"]
         exit_code, out2, _ = run_cli("actor", "show", actor_id)
         assert exit_code == 0
@@ -89,9 +86,7 @@ class TestActorCLI:
         assert exit_code == 2
 
     def test_alias(self, run_cli):
-        _, out, _ = run_cli(
-            "--output", "json", "actor", "create", "--name", "SANDWORM"
-        )
+        _, out, _ = run_cli("--output", "json", "actor", "create", "--name", "SANDWORM")
         actor_id = json.loads(out)["id"]
         exit_code, out2, _ = run_cli(
             "actor", "alias", actor_id, "--add", "Voodoo Bear", "--source", "CrowdStrike"
@@ -100,13 +95,16 @@ class TestActorCLI:
         assert "Voodoo Bear" in out2
 
     def test_capability(self, run_cli):
-        _, out, _ = run_cli(
-            "--output", "json", "actor", "create", "--name", "APT28"
-        )
+        _, out, _ = run_cli("--output", "json", "actor", "create", "--name", "APT28")
         actor_id = json.loads(out)["id"]
         exit_code, out2, _ = run_cli(
-            "actor", "capability", actor_id,
-            "--technique", "T1059.003", "--proficiency", "expert",
+            "actor",
+            "capability",
+            actor_id,
+            "--technique",
+            "T1059.003",
+            "--proficiency",
+            "expert",
         )
         assert exit_code == 0
         assert "T1059.003" in out2
@@ -128,16 +126,18 @@ class TestCampaignCLI:
         assert "no campaigns" in out
 
     def test_create(self, run_cli):
-        exit_code, out, _ = run_cli(
-            "campaign", "create", "--name", "Operation Sunrise"
-        )
+        exit_code, out, _ = run_cli("campaign", "create", "--name", "Operation Sunrise")
         assert exit_code == 0
         assert "Operation Sunrise" in out
 
     def test_create_json(self, run_cli):
         exit_code, out, _ = run_cli(
-            "--output", "json",
-            "campaign", "create", "--name", "Op Test",
+            "--output",
+            "json",
+            "campaign",
+            "create",
+            "--name",
+            "Op Test",
         )
         assert exit_code == 0
         data = json.loads(out)
@@ -151,9 +151,7 @@ class TestCampaignCLI:
         assert "Visible" in out
 
     def test_show(self, run_cli):
-        _, out, _ = run_cli(
-            "--output", "json", "campaign", "create", "--name", "ShowMe"
-        )
+        _, out, _ = run_cli("--output", "json", "campaign", "create", "--name", "ShowMe")
         camp_id = json.loads(out)["id"]
         exit_code, out2, _ = run_cli("campaign", "show", camp_id)
         assert exit_code == 0
@@ -164,36 +162,30 @@ class TestCampaignCLI:
         assert exit_code == 2
 
     def test_transition(self, run_cli):
-        _, out, _ = run_cli(
-            "--output", "json", "campaign", "create", "--name", "Trans"
-        )
+        _, out, _ = run_cli("--output", "json", "campaign", "create", "--name", "Trans")
         camp_id = json.loads(out)["id"]
-        exit_code, out2, _ = run_cli(
-            "campaign", "transition", camp_id, "active"
-        )
+        exit_code, out2, _ = run_cli("campaign", "transition", camp_id, "active")
         assert exit_code == 0
         assert "active" in out2
 
     def test_link_indicator(self, run_cli):
-        _, out, _ = run_cli(
-            "--output", "json", "campaign", "create", "--name", "LinkTest"
-        )
+        _, out, _ = run_cli("--output", "json", "campaign", "create", "--name", "LinkTest")
         camp_id = json.loads(out)["id"]
-        exit_code, out2, _ = run_cli(
-            "campaign", "link", camp_id, "--indicator", "indicator--abc"
-        )
+        exit_code, out2, _ = run_cli("campaign", "link", camp_id, "--indicator", "indicator--abc")
         assert exit_code == 0
         assert "indicator--abc" in out2
 
     def test_attribute(self, run_cli):
-        _, out, _ = run_cli(
-            "--output", "json", "campaign", "create", "--name", "AttrTest"
-        )
+        _, out, _ = run_cli("--output", "json", "campaign", "create", "--name", "AttrTest")
         camp_id = json.loads(out)["id"]
         exit_code, out2, _ = run_cli(
-            "campaign", "attribute", camp_id,
-            "--actor", "threat-actor--apt28",
-            "--rationale", "TTP overlap",
+            "campaign",
+            "attribute",
+            camp_id,
+            "--actor",
+            "threat-actor--apt28",
+            "--rationale",
+            "TTP overlap",
         )
         assert exit_code == 0
         assert "apt28" in out2
@@ -210,8 +202,6 @@ class TestCampaignCLI:
         }
         cluster_file = tmp_path / "cluster.json"
         cluster_file.write_text(json.dumps(cluster))
-        exit_code, out, _ = run_cli(
-            "campaign", "promote-cluster", str(cluster_file)
-        )
+        exit_code, out, _ = run_cli("campaign", "promote-cluster", str(cluster_file))
         assert exit_code == 0
         assert "Promoted" in out

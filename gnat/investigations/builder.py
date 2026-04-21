@@ -66,24 +66,28 @@ from gnat.investigations.normalizer import normalize
 logger = logging.getLogger(__name__)
 
 # Seed types that should trigger a value-search on indicators/observables
-_IOC_SEED_TYPES = frozenset({
-    SeedType.IOC_VALUE,
-    SeedType.IP,
-    SeedType.DOMAIN,
-    SeedType.HASH,
-    SeedType.EMAIL,
-    SeedType.URL,
-})
+_IOC_SEED_TYPES = frozenset(
+    {
+        SeedType.IOC_VALUE,
+        SeedType.IP,
+        SeedType.DOMAIN,
+        SeedType.HASH,
+        SeedType.EMAIL,
+        SeedType.URL,
+    }
+)
 
 # Seed types that should also search incidents by free-text query
-_INCIDENT_SEARCH_TYPES = frozenset({
-    SeedType.IOC_VALUE,
-    SeedType.IP,
-    SeedType.DOMAIN,
-    SeedType.HOSTNAME,
-    SeedType.HASH,
-    SeedType.USERNAME,
-})
+_INCIDENT_SEARCH_TYPES = frozenset(
+    {
+        SeedType.IOC_VALUE,
+        SeedType.IP,
+        SeedType.DOMAIN,
+        SeedType.HOSTNAME,
+        SeedType.HASH,
+        SeedType.USERNAME,
+    }
+)
 
 
 class InvestigationBuilder:
@@ -140,13 +144,8 @@ class InvestigationBuilder:
             self._expand_seed(graph, seed)
 
         # Step 2: Expand each incident → constituent evidence
-        incident_nodes = [
-            n for n in list(graph.nodes.values())
-            if n.node_type == NodeType.INCIDENT
-        ]
-        logger.debug(
-            "InvestigationBuilder: expanding %d incident nodes", len(incident_nodes)
-        )
+        incident_nodes = [n for n in list(graph.nodes.values()) if n.node_type == NodeType.INCIDENT]
+        logger.debug("InvestigationBuilder: expanding %d incident nodes", len(incident_nodes))
         for node in incident_nodes:
             self._expand_incident(graph, node)
 
@@ -180,15 +179,24 @@ class InvestigationBuilder:
         if seed.seed_type in _IOC_SEED_TYPES:
             # Prefer platform-specific value-search methods
             if hasattr(connector, "search_indicators_by_value"):
-                self._collect(graph, platform, "indicator",
-                              _safe_call(connector.search_indicators_by_value, seed.value))
+                self._collect(
+                    graph,
+                    platform,
+                    "indicator",
+                    _safe_call(connector.search_indicators_by_value, seed.value),
+                )
             elif hasattr(connector, "search_observables_by_value"):
-                self._collect(graph, platform, "observable",
-                              _safe_call(connector.search_observables_by_value, seed.value))
+                self._collect(
+                    graph,
+                    platform,
+                    "observable",
+                    _safe_call(connector.search_observables_by_value, seed.value),
+                )
             # Also fall back to generic list_objects with query filter
             else:
                 results = _safe_call(
-                    connector.list_objects, "indicator",
+                    connector.list_objects,
+                    "indicator",
                     filters={"query": seed.value},
                 )
                 self._collect(graph, platform, "indicator", results)
@@ -203,7 +211,8 @@ class InvestigationBuilder:
         # ── Incident text search for IOC / hostname / username seeds ──────
         if seed.seed_type in _INCIDENT_SEARCH_TYPES:
             results = _safe_call(
-                connector.list_objects, "observed-data",
+                connector.list_objects,
+                "observed-data",
                 filters={"query": seed.value},
             )
             self._collect(graph, platform, "incident", results)
@@ -211,7 +220,8 @@ class InvestigationBuilder:
         # ── Hostname / username: search indicators too ────────────────────
         if seed.seed_type in (SeedType.HOSTNAME, SeedType.USERNAME):
             results = _safe_call(
-                connector.list_objects, "indicator",
+                connector.list_objects,
+                "indicator",
                 filters={"query": seed.value},
             )
             self._collect(graph, platform, "indicator", results)
@@ -225,7 +235,7 @@ class InvestigationBuilder:
             return
 
         platform = node.platform
-        inc_id   = node.source_id
+        inc_id = node.source_id
 
         if platform == "xsoar":
             self._expand_xsoar_incident(graph, node, connector, inc_id)
@@ -399,6 +409,7 @@ class InvestigationBuilder:
 
 # ── Module-level helpers ───────────────────────────────────────────────────
 
+
 def _add_node(graph: EvidenceGraph, node: EvidenceNode) -> None:
     """Add *node* to *graph*, skipping duplicates (by node_id)."""
     if node.node_id not in graph.nodes:
@@ -411,13 +422,15 @@ def _add_part_of(
     parent: EvidenceNode,
 ) -> None:
     """Add a structural ``part-of`` edge from *child* to *parent*."""
-    graph.edges.append(EvidenceEdge(
-        source_id         = child.node_id,
-        target_id         = parent.node_id,
-        relationship_type = "part-of",
-        confidence        = 1.0,
-        source_platform   = child.platform,
-    ))
+    graph.edges.append(
+        EvidenceEdge(
+            source_id=child.node_id,
+            target_id=parent.node_id,
+            relationship_type="part-of",
+            confidence=1.0,
+            source_platform=child.platform,
+        )
+    )
 
 
 def _safe_call(fn: Any, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:

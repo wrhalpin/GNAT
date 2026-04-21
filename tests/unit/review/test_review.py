@@ -7,17 +7,17 @@ Unit tests for gnat.review — AI-extracted intel review queue.
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timezone
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def store():
     pytest.importorskip("sqlalchemy")
     from gnat.review.store import ReviewQueueStore
+
     s = ReviewQueueStore("sqlite:///:memory:")
     s.create_all()
     return s
@@ -26,6 +26,7 @@ def store():
 @pytest.fixture
 def svc(store):
     from gnat.review.service import ReviewService
+
     return ReviewService(store)
 
 
@@ -46,10 +47,12 @@ def _stix(type_="indicator", **extra):
 # Models
 # ---------------------------------------------------------------------------
 
+
 class TestReviewStatus:
     def test_values(self):
         from gnat.review.models import ReviewStatus
-        assert ReviewStatus.PENDING  == "pending"
+
+        assert ReviewStatus.PENDING == "pending"
         assert ReviewStatus.APPROVED == "approved"
         assert ReviewStatus.REJECTED == "rejected"
         assert ReviewStatus.MODIFIED == "modified"
@@ -58,6 +61,7 @@ class TestReviewStatus:
 class TestReviewItem:
     def test_defaults(self):
         from gnat.review.models import ReviewItem, ReviewStatus
+
         item = ReviewItem()
         assert item.status == ReviewStatus.PENDING
         assert item.id is not None
@@ -65,6 +69,7 @@ class TestReviewItem:
 
     def test_to_dict_roundtrip(self):
         from gnat.review.models import ReviewItem, ReviewStatus
+
         item = ReviewItem(
             stix_id="indicator--abc",
             stix_type="indicator",
@@ -74,7 +79,7 @@ class TestReviewItem:
         )
         d = item.to_dict()
         assert d["stix_id"] == "indicator--abc"
-        assert d["status"]  == "pending"
+        assert d["status"] == "pending"
         assert d["stix_data"]["type"] == "indicator"
 
         restored = ReviewItem.from_dict(d)
@@ -84,12 +89,15 @@ class TestReviewItem:
 
     def test_from_dict_handles_missing_optional_fields(self):
         from gnat.review.models import ReviewItem
-        item = ReviewItem.from_dict({
-            "id": "00000000-0000-4000-8000-000000000001",
-            "stix_id": "x",
-            "stix_type": "indicator",
-            "status": "pending",
-        })
+
+        item = ReviewItem.from_dict(
+            {
+                "id": "00000000-0000-4000-8000-000000000001",
+                "stix_id": "x",
+                "stix_type": "indicator",
+                "status": "pending",
+            }
+        )
         assert item.reviewed_by is None
         assert item.confidence_override is None
 
@@ -98,11 +106,18 @@ class TestReviewItem:
 # Store
 # ---------------------------------------------------------------------------
 
+
 class TestReviewQueueStore:
     def test_save_and_get(self, store):
         from gnat.review.models import ReviewItem
-        item = ReviewItem(stix_id="indicator--1", stix_type="indicator",
-                          stix_data={}, source_workspace="ws", submitted_by="a")
+
+        item = ReviewItem(
+            stix_id="indicator--1",
+            stix_type="indicator",
+            stix_data={},
+            source_workspace="ws",
+            submitted_by="a",
+        )
         store.save(item)
         fetched = store.get(item.id)
         assert fetched is not None
@@ -113,8 +128,14 @@ class TestReviewQueueStore:
 
     def test_update_existing(self, store):
         from gnat.review.models import ReviewItem, ReviewStatus
-        item = ReviewItem(stix_id="x", stix_type="indicator",
-                          stix_data={}, source_workspace="ws", submitted_by="a")
+
+        item = ReviewItem(
+            stix_id="x",
+            stix_type="indicator",
+            stix_data={},
+            source_workspace="ws",
+            submitted_by="a",
+        )
         store.save(item)
         item.status = ReviewStatus.APPROVED
         store.save(item)
@@ -123,9 +144,15 @@ class TestReviewQueueStore:
 
     def test_list_by_status(self, store):
         from gnat.review.models import ReviewItem, ReviewStatus
+
         for i in range(3):
-            item = ReviewItem(stix_id=f"ind--{i}", stix_type="indicator",
-                              stix_data={}, source_workspace="ws", submitted_by="a")
+            item = ReviewItem(
+                stix_id=f"ind--{i}",
+                stix_type="indicator",
+                stix_data={},
+                source_workspace="ws",
+                submitted_by="a",
+            )
             store.save(item)
         # Approve one
         items = store.list(status="pending")
@@ -138,9 +165,15 @@ class TestReviewQueueStore:
 
     def test_list_by_stix_type(self, store):
         from gnat.review.models import ReviewItem
+
         for t in ("indicator", "malware", "indicator"):
-            item = ReviewItem(stix_id=f"{t}--x", stix_type=t,
-                              stix_data={}, source_workspace="ws", submitted_by="a")
+            item = ReviewItem(
+                stix_id=f"{t}--x",
+                stix_type=t,
+                stix_data={},
+                source_workspace="ws",
+                submitted_by="a",
+            )
             store.save(item)
         results = store.list(stix_type="indicator")
         assert all(r.stix_type == "indicator" for r in results)
@@ -148,8 +181,14 @@ class TestReviewQueueStore:
 
     def test_delete(self, store):
         from gnat.review.models import ReviewItem
-        item = ReviewItem(stix_id="x", stix_type="indicator",
-                          stix_data={}, source_workspace="ws", submitted_by="a")
+
+        item = ReviewItem(
+            stix_id="x",
+            stix_type="indicator",
+            stix_data={},
+            source_workspace="ws",
+            submitted_by="a",
+        )
         store.save(item)
         assert store.delete(item.id)
         assert store.get(item.id) is None
@@ -162,10 +201,16 @@ class TestReviewQueueStore:
         assert stats == {"pending": 0, "approved": 0, "rejected": 0, "modified": 0}
 
     def test_stats_with_items(self, store):
-        from gnat.review.models import ReviewItem, ReviewStatus
+        from gnat.review.models import ReviewItem
+
         for _ in range(2):
-            item = ReviewItem(stix_id="x", stix_type="indicator",
-                              stix_data={}, source_workspace="ws", submitted_by="a")
+            item = ReviewItem(
+                stix_id="x",
+                stix_type="indicator",
+                stix_data={},
+                source_workspace="ws",
+                submitted_by="a",
+            )
             store.save(item)
         stats = store.stats()
         assert stats["pending"] == 2
@@ -175,9 +220,11 @@ class TestReviewQueueStore:
 # Service — submit
 # ---------------------------------------------------------------------------
 
+
 class TestReviewServiceSubmit:
     def test_submit_creates_pending_item(self, svc):
         from gnat.review.models import ReviewStatus
+
         item = svc.submit(_stix(), source_workspace="ws1", submitted_by="agent")
         assert item.status == ReviewStatus.PENDING
         assert item.stix_id == _stix()["id"]
@@ -185,11 +232,13 @@ class TestReviewServiceSubmit:
 
     def test_submit_missing_id_raises(self, svc):
         from gnat.review.service import ReviewError
+
         with pytest.raises(ReviewError):
             svc.submit({"type": "indicator"}, source_workspace="ws", submitted_by="a")
 
     def test_submit_missing_type_raises(self, svc):
         from gnat.review.service import ReviewError
+
         with pytest.raises(ReviewError):
             svc.submit({"id": "indicator--abc"}, source_workspace="ws", submitted_by="a")
 
@@ -198,8 +247,9 @@ class TestReviewServiceSubmit:
         assert store.get(item.id) is not None
 
     def test_submit_custom_target_workspace(self, svc):
-        item = svc.submit(_stix(), source_workspace="ws", submitted_by="a",
-                          target_workspace="custom-staging")
+        item = svc.submit(
+            _stix(), source_workspace="ws", submitted_by="a", target_workspace="custom-staging"
+        )
         assert item.target_workspace == "custom-staging"
 
 
@@ -207,9 +257,11 @@ class TestReviewServiceSubmit:
 # Service — approve
 # ---------------------------------------------------------------------------
 
+
 class TestReviewServiceApprove:
     def test_approve_pending(self, svc):
         from gnat.review.models import ReviewStatus
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         approved = svc.approve(item.id, reviewed_by="alice")
         assert approved.status == ReviewStatus.APPROVED
@@ -218,13 +270,15 @@ class TestReviewServiceApprove:
 
     def test_approve_with_notes_and_confidence(self, svc):
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
-        approved = svc.approve(item.id, reviewed_by="alice",
-                               notes="Confirmed", confidence_override=80)
+        approved = svc.approve(
+            item.id, reviewed_by="alice", notes="Confirmed", confidence_override=80
+        )
         assert approved.reviewer_notes == "Confirmed"
         assert approved.confidence_override == 80
 
     def test_approve_already_rejected_raises(self, svc):
         from gnat.review.service import ReviewError
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         svc.reject(item.id, reviewed_by="bob")
         with pytest.raises(ReviewError, match="status"):
@@ -232,12 +286,14 @@ class TestReviewServiceApprove:
 
     def test_approve_invalid_confidence_raises(self, svc):
         from gnat.review.service import ReviewError
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         with pytest.raises(ReviewError, match="confidence"):
             svc.approve(item.id, reviewed_by="alice", confidence_override=150)
 
     def test_approve_nonexistent_raises(self, svc):
         from gnat.review.service import ReviewError
+
         with pytest.raises(ReviewError):
             svc.approve("no-such-id", reviewed_by="alice")
 
@@ -246,9 +302,11 @@ class TestReviewServiceApprove:
 # Service — reject
 # ---------------------------------------------------------------------------
 
+
 class TestReviewServiceReject:
     def test_reject_pending(self, svc):
         from gnat.review.models import ReviewStatus
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         rejected = svc.reject(item.id, reviewed_by="bob", reason="False positive")
         assert rejected.status == ReviewStatus.REJECTED
@@ -256,6 +314,7 @@ class TestReviewServiceReject:
 
     def test_reject_already_approved_raises(self, svc):
         from gnat.review.service import ReviewError
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         svc.approve(item.id, reviewed_by="alice")
         with pytest.raises(ReviewError):
@@ -266,26 +325,32 @@ class TestReviewServiceReject:
 # Service — modify
 # ---------------------------------------------------------------------------
 
+
 class TestReviewServiceModify:
     def test_modify_pending(self, svc):
         from gnat.review.models import ReviewStatus
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
-        modified = svc.modify(item.id, modified_by="carol",
-                              modified_properties={"name": "Override Name"},
-                              notes="Adjusted name")
+        modified = svc.modify(
+            item.id,
+            modified_by="carol",
+            modified_properties={"name": "Override Name"},
+            notes="Adjusted name",
+        )
         assert modified.status == ReviewStatus.MODIFIED
         assert modified.modified_properties["name"] == "Override Name"
 
     def test_modify_then_approve(self, svc):
         from gnat.review.models import ReviewStatus
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
-        svc.modify(item.id, modified_by="carol",
-                   modified_properties={"confidence": 75})
+        svc.modify(item.id, modified_by="carol", modified_properties={"confidence": 75})
         approved = svc.approve(item.id, reviewed_by="carol")
         assert approved.status == ReviewStatus.APPROVED
 
     def test_modify_rejected_raises(self, svc):
         from gnat.review.service import ReviewError
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         svc.reject(item.id, reviewed_by="bob")
         with pytest.raises(ReviewError, match="rejected"):
@@ -295,6 +360,7 @@ class TestReviewServiceModify:
 # ---------------------------------------------------------------------------
 # Service — promote
 # ---------------------------------------------------------------------------
+
 
 class TestReviewServicePromote:
     def test_promote_approved_no_manager(self, svc):
@@ -318,20 +384,23 @@ class TestReviewServicePromote:
 
     def test_promote_applies_modified_properties(self, svc):
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
-        svc.modify(item.id, modified_by="carol",
-                   modified_properties={"name": "Analyst Verified IP"})
+        svc.modify(
+            item.id, modified_by="carol", modified_properties={"name": "Analyst Verified IP"}
+        )
         svc.approve(item.id, reviewed_by="carol")
         promoted = svc.promote(item.id, workspace_manager=None)
         assert promoted["name"] == "Analyst Verified IP"
 
     def test_promote_unapproved_raises(self, svc):
         from gnat.review.service import ReviewError
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         with pytest.raises(ReviewError, match="APPROVED"):
             svc.promote(item.id, workspace_manager=None)
 
     def test_promote_twice_raises(self, svc):
         from gnat.review.service import ReviewError
+
         item = svc.submit(_stix(), source_workspace="ws", submitted_by="a")
         svc.approve(item.id, reviewed_by="alice")
         svc.promote(item.id, workspace_manager=None)
@@ -351,9 +420,11 @@ class TestReviewServicePromote:
 # Service — bulk ops
 # ---------------------------------------------------------------------------
 
+
 class TestBulkOps:
     def test_bulk_approve(self, svc):
         from gnat.review.models import ReviewStatus
+
         ids = []
         for i in range(3):
             stix = {**_stix(), "id": f"indicator--1d8d7c3e-abc1-4a7e-9f15-{i:012d}"}
@@ -365,6 +436,7 @@ class TestBulkOps:
 
     def test_bulk_reject(self, svc):
         from gnat.review.models import ReviewStatus
+
         ids = []
         for i in range(2):
             stix = {**_stix(), "id": f"indicator--1d8d7c3e-abc1-4a7e-9f15-{i:012d}"}
@@ -378,6 +450,7 @@ class TestBulkOps:
 # ---------------------------------------------------------------------------
 # Service — stats / list
 # ---------------------------------------------------------------------------
+
 
 class TestServiceStats:
     def test_stats_empty(self, svc):
@@ -413,7 +486,15 @@ class TestServiceStats:
 # Package exports
 # ---------------------------------------------------------------------------
 
+
 class TestPackageExports:
     def test_all_exports(self):
-        from gnat.review import ReviewItem, ReviewStatus, ReviewService, ReviewError, ReviewQueueStore
+        from gnat.review import (
+            ReviewError,
+            ReviewItem,
+            ReviewQueueStore,
+            ReviewService,
+            ReviewStatus,
+        )
+
         assert all([ReviewItem, ReviewStatus, ReviewService, ReviewError, ReviewQueueStore])

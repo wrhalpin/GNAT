@@ -64,6 +64,7 @@ _ALARM = {
 
 class TestOSSIMConfig(unittest.TestCase):
     """Configuration container for test o s s i m."""
+
     def test_basic(self):
         """Test that basic."""
         cfg = _cfg()
@@ -105,6 +106,7 @@ class TestOSSIMConfig(unittest.TestCase):
 
 class TestOSSIMClient(unittest.TestCase):
     """HTTP API client for the TestOSSIM platform."""
+
     def test_get_sends_api_key_header(self):
         """Test that get sends api key header."""
         c, mock_http = _make_client()
@@ -136,6 +138,7 @@ class TestOSSIMClient(unittest.TestCase):
 
 class TestOSSIMAlarmCommands(unittest.TestCase):
     """Unit tests for :class:`OSSIMAlarmCommands`."""
+
     def _make_alarms(self):
         """Internal helper for make alarms."""
         c, mock_http = _make_client()
@@ -182,6 +185,7 @@ class TestOSSIMAlarmCommands(unittest.TestCase):
 
 class TestOSSIMAssetCommands(unittest.TestCase):
     """Unit tests for :class:`OSSIMAssetCommands`."""
+
     def _make_assets(self):
         """Internal helper for make assets."""
         c, mock_http = _make_client()
@@ -207,6 +211,7 @@ class TestOSSIMAssetCommands(unittest.TestCase):
 
 class TestOSSIMSTIXMapper(unittest.TestCase):
     """STIX translation helper for test o s s i m s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = OSSIMSTIXMapper()

@@ -71,9 +71,7 @@ class TestHuntPackage:
 
     def test_add_rule(self):
         pkg = HuntPackage(name="With Rules")
-        rule = TranslationResult(
-            rule_id="r1", language=RuleLanguage.SIGMA, rule_body="test"
-        )
+        rule = TranslationResult(rule_id="r1", language=RuleLanguage.SIGMA, rule_body="test")
         pkg.add_rule(rule)
         assert pkg.rule_count == 1
 
@@ -170,9 +168,7 @@ class TestCoverageMatrix:
         pkg.link_technique("T1059.003")
         pkg.add_rule(TranslationResult(language=RuleLanguage.SIGMA, rule_body="x"))
 
-        matrix = CoverageAnalyzer.build_matrix(
-            [pkg], all_techniques=["T1059.003", "T1566.001"]
-        )
+        matrix = CoverageAnalyzer.build_matrix([pkg], all_techniques=["T1059.003", "T1566.001"])
         gaps = CoverageAnalyzer.find_gaps(matrix, platform="suricata")
         assert "T1059.003" in gaps  # covered by sigma but not suricata
         assert "T1566.001" in gaps
@@ -291,18 +287,30 @@ class TestValidationRun:
 
     def test_add_results_and_score(self):
         run = ValidationRun(package_id="pkg-1")
-        run.add_result(RuleValidationResult(
-            rule_id="r1", technique_id="T1059.003",
-            outcome=ValidationOutcome.FIRED, duration_seconds=1.2,
-        ))
-        run.add_result(RuleValidationResult(
-            rule_id="r2", technique_id="T1566.001",
-            outcome=ValidationOutcome.MISSED, duration_seconds=5.0,
-        ))
-        run.add_result(RuleValidationResult(
-            rule_id="r3", technique_id="T1190",
-            outcome=ValidationOutcome.FIRED, duration_seconds=0.8,
-        ))
+        run.add_result(
+            RuleValidationResult(
+                rule_id="r1",
+                technique_id="T1059.003",
+                outcome=ValidationOutcome.FIRED,
+                duration_seconds=1.2,
+            )
+        )
+        run.add_result(
+            RuleValidationResult(
+                rule_id="r2",
+                technique_id="T1566.001",
+                outcome=ValidationOutcome.MISSED,
+                duration_seconds=5.0,
+            )
+        )
+        run.add_result(
+            RuleValidationResult(
+                rule_id="r3",
+                technique_id="T1190",
+                outcome=ValidationOutcome.FIRED,
+                duration_seconds=0.8,
+            )
+        )
         assert run.total == 3
         assert run.fired_count == 2
         assert run.missed_count == 1
@@ -320,10 +328,13 @@ class TestValidationRun:
             target_hosts=["lab-host-1"],
             executed_by="analyst",
         )
-        run.add_result(RuleValidationResult(
-            rule_id="r1", technique_id="T1059.003",
-            outcome=ValidationOutcome.FIRED,
-        ))
+        run.add_result(
+            RuleValidationResult(
+                rule_id="r1",
+                technique_id="T1059.003",
+                outcome=ValidationOutcome.FIRED,
+            )
+        )
         run.complete()
         d = run.to_dict()
         run2 = ValidationRun.from_dict(d)

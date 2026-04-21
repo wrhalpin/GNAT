@@ -505,9 +505,7 @@ def sandbox_report_envelope(
     dict
         STIX 2.1 ``observed-data`` SDO with behavioral object_refs.
     """
-    ns = uuid.uuid5(
-        _NAMESPACE_OBSERVED_DATA, f"sandbox|{source_name}|{analysis_id}"
-    )
+    ns = uuid.uuid5(_NAMESPACE_OBSERVED_DATA, f"sandbox|{source_name}|{analysis_id}")
 
     def _sco_ref(sco_type: str, value: str) -> str:
         return f"{sco_type}--{uuid.uuid5(ns, f'{sco_type}|{value}')}"
@@ -605,9 +603,7 @@ def bas_simulation_envelope(
     dict
         STIX 2.1 ``observed-data`` SDO with behavioral object_refs.
     """
-    ns = uuid.uuid5(
-        _NAMESPACE_OBSERVED_DATA, f"bas|{source_name}|{simulation_id}"
-    )
+    ns = uuid.uuid5(_NAMESPACE_OBSERVED_DATA, f"bas|{source_name}|{simulation_id}")
 
     refs: list[str] = []
     for asset in target_assets or []:
@@ -615,9 +611,7 @@ def bas_simulation_envelope(
             refs.append(f"identity--{uuid.uuid5(ns, f'identity|{asset}')}")
     for tech in attack_techniques or []:
         if tech:
-            refs.append(
-                f"attack-pattern--{uuid.uuid5(ns, f'attack-pattern|{tech}')}"
-            )
+            refs.append(f"attack-pattern--{uuid.uuid5(ns, f'attack-pattern|{tech}')}")
 
     first = first_observed or utcnow()
     last = last_observed or first

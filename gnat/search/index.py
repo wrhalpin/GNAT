@@ -514,11 +514,7 @@ class SolrSearchIndex(SearchIndex):
                 logger.warning("Solr facet returned HTTP %s for field %r", resp.status, field)
                 return {}
             data = json.loads(resp.data.decode("utf-8"))
-            flat: list[Any] = (
-                data.get("facet_counts", {})
-                .get("facet_fields", {})
-                .get(field, [])
-            )
+            flat: list[Any] = data.get("facet_counts", {}).get("facet_fields", {}).get(field, [])
             # Solr returns alternating [value, count, value, count, ...]
             result: dict[str, int] = {}
             for i in range(0, len(flat) - 1, 2):
@@ -593,11 +589,7 @@ class SolrSearchIndex(SearchIndex):
                 )
                 return []
             data = json.loads(resp.data.decode("utf-8"))
-            range_data = (
-                data.get("facet_counts", {})
-                .get("facet_ranges", {})
-                .get(date_field, {})
-            )
+            range_data = data.get("facet_counts", {}).get("facet_ranges", {}).get(date_field, {})
             flat: list[Any] = range_data.get("counts", [])
             result: list[tuple[str, int]] = []
             for i in range(0, len(flat) - 1, 2):

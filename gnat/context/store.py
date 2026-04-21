@@ -586,9 +586,7 @@ class WorkspaceStore:
                 .count()
             )
 
-    def get_source_platform(
-        self, workspace_id: int, stix_id: str
-    ) -> str | None:
+    def get_source_platform(self, workspace_id: int, stix_id: str) -> str | None:
         """Return the source_platform for a stix_id in a workspace, or None."""
         with self.session() as sess:
             row = (

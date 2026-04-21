@@ -441,20 +441,14 @@ class RiskReconClient(BaseClient, ConnectorMixin):
 
     # ── Findings (enhanced) ───────────────────────────────────────────────────
 
-    def get_critical_findings(
-        self, company_id: str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def get_critical_findings(self, company_id: str, limit: int = 100) -> list[dict[str, Any]]:
         """Return only critical and high severity findings for a company."""
         results: list[dict[str, Any]] = []
         for sev in ("critical", "high"):
-            results.extend(
-                self.list_findings(company_id, severity=sev, page_size=limit)
-            )
+            results.extend(self.list_findings(company_id, severity=sev, page_size=limit))
         return results
 
-    def list_remediated_findings(
-        self, company_id: str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_remediated_findings(self, company_id: str, limit: int = 100) -> list[dict[str, Any]]:
         """List findings that have been remediated / closed."""
         resp = self.get(
             f"/companies/{company_id}/findings",
@@ -467,9 +461,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/findings/{finding_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def list_asset_findings(
-        self, asset_id: str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_asset_findings(self, asset_id: str, limit: int = 100) -> list[dict[str, Any]]:
         """List all findings associated with a specific asset."""
         resp = self.get(
             f"/assets/{asset_id}/findings",
@@ -501,9 +493,7 @@ class RiskReconClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/assets/{asset_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def list_open_ports(
-        self, company_id: str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_open_ports(self, company_id: str, limit: int = 100) -> list[dict[str, Any]]:
         """List open ports detected across a company's internet-facing assets."""
         resp = self.get(
             f"/companies/{company_id}/assets",

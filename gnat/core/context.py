@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 # Query Budget (4E-2)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class QueryBudget:
     """
@@ -87,6 +88,7 @@ class QueryBudget:
         """
         if self._consumed + units > self.max_units:
             from gnat.clients.base import BudgetExceeded
+
             raise BudgetExceeded(
                 connector=connector,
                 cost=units,
@@ -95,8 +97,12 @@ class QueryBudget:
         self._consumed += units
         logger.debug(
             "QueryBudget: consumed %d units by %r; remaining=%d/%d",
-            units, connector, self.remaining, self.max_units,
+            units,
+            connector,
+            self.remaining,
+            self.max_units,
         )
+
 
 # Valid trust levels (mirrors BaseClient.TRUST_LEVEL values)
 TRUST_LEVELS = frozenset({"trusted_internal", "semi_trusted", "untrusted_external"})

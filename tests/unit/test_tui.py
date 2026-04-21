@@ -472,10 +472,12 @@ class TestCLITuiSubcommand:
 
     def test_tui_investigations_screen_import(self):
         from gnat.tui.screens.investigations import InvestigationsScreen
+
         assert InvestigationsScreen is not None
 
     def test_tui_review_screen_import(self):
         from gnat.tui.screens.review import ReviewScreen
+
         assert ReviewScreen is not None
 
     def test_tui_missing_textual_returns_1(self, monkeypatch):

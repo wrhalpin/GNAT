@@ -122,17 +122,19 @@ class YamlRuleLoader:
         when_fn = compile_condition(when_spec)
         then_fn = compile_action(then_spec)
 
-        self._rules.append(RegisteredRule(
-            name=name,
-            description=spec.get("description", ""),
-            phase=spec.get("phase"),
-            target_status=spec.get("target_status"),
-            priority=int(spec.get("priority", 50)),
-            tags=list(spec.get("tags") or []),
-            when_fn=when_fn,
-            then_fn=then_fn,
-            source_file=str(source_file),
-        ))
+        self._rules.append(
+            RegisteredRule(
+                name=name,
+                description=spec.get("description", ""),
+                phase=spec.get("phase"),
+                target_status=spec.get("target_status"),
+                priority=int(spec.get("priority", 50)),
+                tags=list(spec.get("tags") or []),
+                when_fn=when_fn,
+                then_fn=then_fn,
+                source_file=str(source_file),
+            )
+        )
 
 
 class YamlRuleEngine:
@@ -178,7 +180,11 @@ class YamlRuleEngine:
             if rule.phase is not None and status_val != rule.phase:
                 continue
 
-            if not self._policy.allow_dirty_rules and rule.source_file and not git_file_is_clean(rule.source_file):
+            if (
+                not self._policy.allow_dirty_rules
+                and rule.source_file
+                and not git_file_is_clean(rule.source_file)
+            ):
                 continue
 
             try:
@@ -198,11 +204,13 @@ class YamlRuleEngine:
                     continue
                 transition_consumed = True
 
-            result.firings.append(RuleFiring(
-                rule_name=rule.name,
-                rule_source_file=str(rule.source_file),
-                rule_git_sha=rule_file_sha(rule.source_file) if rule.source_file else None,
-                decision=decision,
-            ))
+            result.firings.append(
+                RuleFiring(
+                    rule_name=rule.name,
+                    rule_source_file=str(rule.source_file),
+                    rule_git_sha=rule_file_sha(rule.source_file) if rule.source_file else None,
+                    decision=decision,
+                )
+            )
 
         return result

@@ -41,43 +41,45 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_INI  = "config/config.ini.example"
-_DEFAULT_OUT  = "docs/reference/configuration.md"
+_DEFAULT_INI = "config/config.ini.example"
+_DEFAULT_OUT = "docs/reference/configuration.md"
 _SENTINEL_KEY = "platform-connectors"
 
 # Sections that are *not* per-platform connector configs.
-_CORE_SECTIONS = frozenset({
-    "DEFAULT",
-    "claude",
-    "openai",
-    "grok",
-    "gemini",
-    "search",
-    "analysis",
-    "reporting",
-    "agent_policy",
-    "connector_limits",
-    "workspace_defaults",
-    "execution_context",
-    "sector_aliases",
-    "report",
-    "report_executive",
-    "report_trends",
-    "report_annual",
-    "schedule",
-    "ingest",
-    "export",
-})
+_CORE_SECTIONS = frozenset(
+    {
+        "DEFAULT",
+        "claude",
+        "openai",
+        "grok",
+        "gemini",
+        "search",
+        "analysis",
+        "reporting",
+        "agent_policy",
+        "connector_limits",
+        "workspace_defaults",
+        "execution_context",
+        "sector_aliases",
+        "report",
+        "report_executive",
+        "report_trends",
+        "report_annual",
+        "schedule",
+        "ingest",
+        "export",
+    }
+)
 
 # Known auth types — used for generating the Auth column.
 _AUTH_LABELS: dict[str, str] = {
-    "oauth2":  "OAuth2",
+    "oauth2": "OAuth2",
     "api_key": "API key",
-    "token":   "Token",
-    "basic":   "Basic",
-    "bearer":  "Bearer",
-    "hmac":    "HMAC",
-    "none":    "None (public)",
+    "token": "Token",
+    "basic": "Basic",
+    "bearer": "Bearer",
+    "hmac": "HMAC",
+    "none": "None (public)",
 }
 
 
@@ -117,8 +119,8 @@ def generate_config_docs(
         Path to GNAT config.ini for AI model lookup.
     """
     root = Path(repo_root)
-    ini_full  = root / ini_path
-    out_full  = root / out_path
+    ini_full = root / ini_path
+    out_full = root / out_path
 
     if not ini_full.exists():
         raise FileNotFoundError(f"INI file not found: {ini_full}")
@@ -131,6 +133,7 @@ def generate_config_docs(
     llm = None
     if use_ai:
         from gnat.codegen.openapi_generator import _try_load_llm  # type: ignore[attr-defined]
+
         llm = _try_load_llm(config_path)
         if llm is None:
             logger.warning(
@@ -148,6 +151,7 @@ def generate_config_docs(
 
     if dry_run:
         import difflib
+
         diff = difflib.unified_diff(
             current.splitlines(keepends=True),
             new_source.splitlines(keepends=True),
@@ -212,7 +216,7 @@ def _parse_ini(ini_path: Path) -> list[dict[str, Any]]:
             continue
         kv_m = re.match(r"^\s*([^#;=\s][^=]*?)\s*=\s*(.*?)\s*(?:;\s*(.+))?$", line)
         if kv_m:
-            key   = kv_m.group(1).strip()
+            key = kv_m.group(1).strip()
             value = kv_m.group(2).strip()
             comment = kv_m.group(3) or ""
             # Inline comment after # character
@@ -237,11 +241,13 @@ def _parse_ini(ini_path: Path) -> list[dict[str, Any]]:
         if not keys:
             continue
 
-        sections.append({
-            "name": section,
-            "keys": keys,
-            "section_comment": section_comments.get(section, ""),
-        })
+        sections.append(
+            {
+                "name": section,
+                "keys": keys,
+                "section_comment": section_comments.get(section, ""),
+            }
+        )
 
     return sections
 
@@ -259,8 +265,8 @@ def _render_platform_table(
     parts: list[str] = []
 
     for sec in sections:
-        name    = sec["name"]
-        keys    = sec["keys"]
+        name = sec["name"]
+        keys = sec["keys"]
         comment = sec["section_comment"]
 
         # Detect auth type from 'auth_type' key or key names
@@ -289,7 +295,7 @@ def _render_platform_table(
             desc = ai_descriptions.get(key) or inline_comment or _default_description(key)
             # Escape pipe characters in values for Markdown tables
             safe_value = value.replace("|", "\\|")
-            safe_desc  = desc.replace("|", "\\|")
+            safe_desc = desc.replace("|", "\\|")
             rows.append(f"| `{key}` | `{safe_value}` | {safe_desc} |")
 
         parts.append(header + "\n".join(rows) + "\n")
@@ -318,18 +324,18 @@ def _infer_auth_type(keys: list[tuple[str, str, str]]) -> str:
 def _default_description(key: str) -> str:
     """Return a sensible default description for common key names."""
     _defaults: dict[str, str] = {
-        "host":           "Base URL for the platform API",
-        "api_key":        "API key for authentication",
-        "api_token":      "API token for authentication",
-        "token":          "Authentication token",
-        "client_id":      "OAuth2 client ID",
-        "client_secret":  "OAuth2 client secret",
-        "username":       "Username for basic authentication",
-        "password":       "Password for basic authentication",
-        "timeout":        "Request timeout in seconds",
-        "verify_ssl":     "Verify SSL certificates",
-        "max_retries":    "Maximum number of request retries",
-        "auth_type":      "Authentication mechanism",
+        "host": "Base URL for the platform API",
+        "api_key": "API key for authentication",
+        "api_token": "API token for authentication",
+        "token": "Authentication token",
+        "client_id": "OAuth2 client ID",
+        "client_secret": "OAuth2 client secret",
+        "username": "Username for basic authentication",
+        "password": "Password for basic authentication",
+        "timeout": "Request timeout in seconds",
+        "verify_ssl": "Verify SSL certificates",
+        "max_retries": "Maximum number of request retries",
+        "auth_type": "Authentication mechanism",
     }
     return _defaults.get(key, "")
 
@@ -348,9 +354,7 @@ def _ai_field_descriptions(
     import json
 
     key_list = [
-        {"key": k, "example": v, "inline_comment": c}
-        for k, v, c in keys
-        if k != "auth_type"
+        {"key": k, "example": v, "inline_comment": c} for k, v, c in keys if k != "auth_type"
     ]
     if not key_list:
         return {}
@@ -371,7 +375,9 @@ def _ai_field_descriptions(
         "additionalProperties": {"type": "string"},
     }
 
-    return llm.structured(prompt=prompt, output_schema=output_schema, temperature=0.1, max_tokens=1024)
+    return llm.structured(
+        prompt=prompt, output_schema=output_schema, temperature=0.1, max_tokens=1024
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +393,7 @@ def _splice(source: str, key: str, content: str) -> str:
     final ``---`` separator if present).
     """
     begin_tag = f"<!-- codegen:begin:{key} -->"
-    end_tag   = f"<!-- codegen:end:{key} -->"
+    end_tag = f"<!-- codegen:end:{key} -->"
 
     if begin_tag in source and end_tag in source:
         pattern = re.compile(

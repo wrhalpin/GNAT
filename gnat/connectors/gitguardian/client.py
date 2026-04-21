@@ -91,9 +91,7 @@ class GitGuardianClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Token header from the configured API key."""
         if not self.api_key:
-            raise GNATClientError(
-                "GitGuardian connector requires api_key in config."
-            )
+            raise GNATClientError("GitGuardian connector requires api_key in config.")
         self._auth_headers["Authorization"] = f"Token {self.api_key}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -127,9 +125,7 @@ class GitGuardianClient(BaseClient, ConnectorMixin):
                 f"GitGuardian get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"GitGuardian returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"GitGuardian returned unexpected payload for {object_id!r}")
         return resp
 
     def list_objects(
@@ -181,13 +177,9 @@ class GitGuardianClient(BaseClient, ConnectorMixin):
                 return data
         return []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """GitGuardian connector is read-only (incident creation belongs to GG scanners)."""
-        raise GNATClientError(
-            "GitGuardian connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("GitGuardian connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """GitGuardian connector is read-only."""
@@ -221,9 +213,7 @@ class GitGuardianClient(BaseClient, ConnectorMixin):
             filters["to_date"] = to_date
         if source_name:
             filters["source_name"] = source_name
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=page_size
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=page_size)
 
     def get_incident(self, incident_id: str) -> dict[str, Any]:
         """Fetch a single secret incident by id."""
@@ -251,9 +241,7 @@ class GitGuardianClient(BaseClient, ConnectorMixin):
         resp = self.post("/v1/scan", json=body)
         return resp if isinstance(resp, dict) else {"raw": resp}
 
-    def scan_content_batch(
-        self, documents: list[dict[str, str]]
-    ) -> list[dict[str, Any]]:
+    def scan_content_batch(self, documents: list[dict[str, str]]) -> list[dict[str, Any]]:
         """
         Batch content scan via ``POST /v1/multiscan``.
 
@@ -284,9 +272,7 @@ class GitGuardianClient(BaseClient, ConnectorMixin):
 
         # File observable — derived from the first occurrence's filepath
         occurrences = native.get("occurrences") or []
-        first_occ = (
-            occurrences[0] if isinstance(occurrences, list) and occurrences else {}
-        )
+        first_occ = occurrences[0] if isinstance(occurrences, list) and occurrences else {}
         filepath = first_occ.get("filepath") if isinstance(first_occ, dict) else ""
         if filepath:
             file_uuid = uuid.uuid5(
@@ -307,11 +293,7 @@ class GitGuardianClient(BaseClient, ConnectorMixin):
             or native.get("created_at")
             or utcnow()
         )
-        last = (
-            native.get("last_occurrence_date")
-            or native.get("updated_at")
-            or first
-        )
+        last = native.get("last_occurrence_date") or native.get("updated_at") or first
 
         envelope = make_observed_data_envelope(
             first_observed=first,

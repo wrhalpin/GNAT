@@ -75,9 +75,7 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set custom x-apitoken + x-accountid headers."""
         if not self.api_token or not self.account_id:
-            raise GNATClientError(
-                "SafeBreach connector requires api_token and account_id."
-            )
+            raise GNATClientError("SafeBreach connector requires api_token and account_id.")
         self._auth_headers["x-apitoken"] = self.api_token
         self._auth_headers["x-accountid"] = str(self.account_id)
         self._auth_headers["Accept"] = "application/json"
@@ -109,13 +107,9 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
             resp = self.get(self._acct_path(f"attackers/{object_id}", tree="config"))
             kind = "attacker"
         else:
-            raise GNATClientError(
-                f"SafeBreach get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"SafeBreach get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"SafeBreach returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"SafeBreach returned unexpected payload for {object_id!r}")
         return dict(resp, _sb_kind=kind)
 
     def list_objects(
@@ -143,9 +137,7 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
                 resp = self.get(self._acct_path("findings"), params=params)
                 tag = "finding"
             elif kind == "scenarios":
-                resp = self.get(
-                    self._acct_path("scenarios", tree="config"), params=params
-                )
+                resp = self.get(self._acct_path("scenarios", tree="config"), params=params)
                 tag = "scenario"
             elif kind == "simulations":
                 test_id = filters.get("test_id")
@@ -153,17 +145,13 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
                     raise GNATClientError(
                         "SafeBreach list_objects(simulations) requires 'test_id' filter"
                     )
-                resp = self.get(
-                    self._acct_path(f"tests/{test_id}/simulations"), params=params
-                )
+                resp = self.get(self._acct_path(f"tests/{test_id}/simulations"), params=params)
                 tag = "simulation"
             else:
                 resp = self.get(self._acct_path("tests"), params=params)
                 tag = "test"
         elif stix_type == "attack-pattern":
-            resp = self.get(
-                self._acct_path("attackers", tree="config"), params=params
-            )
+            resp = self.get(self._acct_path("attackers", tree="config"), params=params)
             tag = "attacker"
         else:
             raise GNATClientError(
@@ -172,27 +160,19 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
 
         return [dict(r, _sb_kind=tag) for r in _extract_sb_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """SafeBreach connector is read-only."""
-        raise GNATClientError(
-            "SafeBreach connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("SafeBreach connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """SafeBreach connector is read-only."""
-        raise GNATClientError(
-            "SafeBreach connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("SafeBreach connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
     def list_tests(self) -> list[dict[str, Any]]:
         """Return SafeBreach test runs."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "tests"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "tests"}, page_size=1000)
 
     def list_simulations(self, test_id: str) -> list[dict[str, Any]]:
         """Return simulations for a specific test run."""
@@ -204,9 +184,7 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
 
     def list_findings(self) -> list[dict[str, Any]]:
         """Return SafeBreach findings."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "findings"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "findings"}, page_size=1000)
 
     def list_attackers(self) -> list[dict[str, Any]]:
         """Return SafeBreach attackers (MITRE technique catalog)."""
@@ -228,14 +206,10 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
         if kind == "attacker":
             attacker_id = native.get("id") or native.get("name", "unknown")
             mitre = native.get("mitreTechnique") or native.get("mitre_id", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_SAFEBREACH, f"attack-pattern|{attacker_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_SAFEBREACH, f"attack-pattern|{attacker_id}")
             external_refs = []
             if mitre:
-                external_refs.append(
-                    {"source_name": "mitre-attack", "external_id": mitre}
-                )
+                external_refs.append({"source_name": "mitre-attack", "external_id": mitre})
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
@@ -252,15 +226,9 @@ class SafeBreachClient(BaseClient, ConnectorMixin):
         simulation_id = str(
             native.get("id") or native.get("simulationId") or native.get("testId", "")
         )
-        targets = _values(
-            native.get("targets")
-            or native.get("targetNodes")
-            or native.get("nodes")
-        )
+        targets = _values(native.get("targets") or native.get("targetNodes") or native.get("nodes"))
         techniques = _values(
-            native.get("mitreTechniques")
-            or native.get("techniques")
-            or native.get("attackerId")
+            native.get("mitreTechniques") or native.get("techniques") or native.get("attackerId")
         )
         return bas_simulation_envelope(
             source_name="safebreach",
@@ -292,7 +260,16 @@ def _extract_sb_list(resp: Any) -> list[dict[str, Any]]:
         return [r for r in resp if isinstance(r, dict)]
     if not isinstance(resp, dict):
         return []
-    for key in ("data", "result", "results", "items", "tests", "findings", "scenarios", "simulations"):
+    for key in (
+        "data",
+        "result",
+        "results",
+        "items",
+        "tests",
+        "findings",
+        "scenarios",
+        "simulations",
+    ):
         val = resp.get(key)
         if isinstance(val, list):
             return [r for r in val if isinstance(r, dict)]

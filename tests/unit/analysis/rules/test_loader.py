@@ -54,19 +54,24 @@ class TestRuleLoaderWithRegistry:
         clear_registry()
 
     def test_drain_after_manual_registration(self):
-        register_rule({
-            "name": "high-priority",
-            "priority": 100,
-            "when_fn": lambda h, ctx: True,
-            "then_fn": lambda h, ctx: None,
-        })
-        register_rule({
-            "name": "low-priority",
-            "priority": 10,
-            "when_fn": lambda h, ctx: True,
-            "then_fn": lambda h, ctx: None,
-        })
+        register_rule(
+            {
+                "name": "high-priority",
+                "priority": 100,
+                "when_fn": lambda h, ctx: True,
+                "then_fn": lambda h, ctx: None,
+            }
+        )
+        register_rule(
+            {
+                "name": "low-priority",
+                "priority": 10,
+                "when_fn": lambda h, ctx: True,
+                "then_fn": lambda h, ctx: None,
+            }
+        )
         from gnat.analysis.rules.registry import drain_rules
+
         rules = sorted(drain_rules(), key=lambda r: -r.priority)
         assert rules[0].name == "high-priority"
         assert rules[1].name == "low-priority"

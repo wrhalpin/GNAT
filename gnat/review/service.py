@@ -107,7 +107,9 @@ class ReviewService:
         self._store.save(item)
         logger.info(
             "ReviewService: submitted %s %s from workspace %r",
-            stix_type, stix_id, source_workspace,
+            stix_type,
+            stix_id,
+            source_workspace,
         )
         return item
 
@@ -151,9 +153,7 @@ class ReviewService:
                 "item must be PENDING or MODIFIED"
             )
         if confidence_override is not None and not (0 <= confidence_override <= 100):
-            raise ReviewError(
-                f"confidence_override must be in [0, 100], got {confidence_override}"
-            )
+            raise ReviewError(f"confidence_override must be in [0, 100], got {confidence_override}")
 
         item.status = ReviewStatus.APPROVED
         item.reviewed_by = reviewed_by
@@ -161,9 +161,7 @@ class ReviewService:
         item.reviewer_notes = notes
         item.confidence_override = confidence_override
         self._store.save(item)
-        logger.info(
-            "ReviewService: approved %s by %s", item.stix_id, reviewed_by
-        )
+        logger.info("ReviewService: approved %s by %s", item.stix_id, reviewed_by)
         return item
 
     def reject(
@@ -193,18 +191,14 @@ class ReviewService:
 
         item = self._get_or_raise(item_id)
         if item.status not in (ReviewStatus.PENDING, ReviewStatus.MODIFIED):
-            raise ReviewError(
-                f"Cannot reject item in status {item.status.value!r}"
-            )
+            raise ReviewError(f"Cannot reject item in status {item.status.value!r}")
 
         item.status = ReviewStatus.REJECTED
         item.reviewed_by = reviewed_by
         item.reviewed_at = datetime.now(tz=timezone.utc)
         item.reviewer_notes = reason
         self._store.save(item)
-        logger.info(
-            "ReviewService: rejected %s by %s", item.stix_id, reviewed_by
-        )
+        logger.info("ReviewService: rejected %s by %s", item.stix_id, reviewed_by)
         return item
 
     def modify(
@@ -244,9 +238,7 @@ class ReviewService:
         if item.status == ReviewStatus.APPROVED:
             raise ReviewError("Item is already approved; reject and resubmit to modify")
         if confidence_override is not None and not (0 <= confidence_override <= 100):
-            raise ReviewError(
-                f"confidence_override must be in [0, 100], got {confidence_override}"
-            )
+            raise ReviewError(f"confidence_override must be in [0, 100], got {confidence_override}")
 
         item.status = ReviewStatus.MODIFIED
         item.reviewed_by = modified_by
@@ -255,9 +247,7 @@ class ReviewService:
         item.confidence_override = confidence_override
         item.modified_properties.update(modified_properties)
         self._store.save(item)
-        logger.info(
-            "ReviewService: modified %s by %s", item.stix_id, modified_by
-        )
+        logger.info("ReviewService: modified %s by %s", item.stix_id, modified_by)
         return item
 
     # ------------------------------------------------------------------
@@ -294,13 +284,10 @@ class ReviewService:
         item = self._get_or_raise(item_id)
         if item.status != ReviewStatus.APPROVED:
             raise ReviewError(
-                f"Cannot promote item in status {item.status.value!r}; "
-                "item must be APPROVED first"
+                f"Cannot promote item in status {item.status.value!r}; item must be APPROVED first"
             )
         if item.promoted_at is not None:
-            raise ReviewError(
-                f"Item {item_id} has already been promoted at {item.promoted_at}"
-            )
+            raise ReviewError(f"Item {item_id} has already been promoted at {item.promoted_at}")
 
         # Build the promoted object
         promoted = copy.deepcopy(item.stix_data)
@@ -326,12 +313,14 @@ class ReviewService:
         if workspace_manager is not None:
             try:
                 from gnat.orm.base import STIXBase
+
                 target_ws = workspace_manager.get_or_create(item.target_workspace)
                 stix_obj = STIXBase.from_dict(promoted)
                 target_ws.add(stix_obj)
                 logger.info(
                     "ReviewService: promoted %s → workspace %r",
-                    item.stix_id, item.target_workspace,
+                    item.stix_id,
+                    item.target_workspace,
                 )
             except Exception as exc:
                 raise ReviewError(

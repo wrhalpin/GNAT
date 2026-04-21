@@ -52,12 +52,11 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
     api_key : str
         VirusTotal API key.
     """
+
     TRUST_LEVEL: str = "semi_trusted"
     API_VERSION: str = "v3"
     API_PREFIX: str = "/api/v3"
     COST_UNIT: int = 1
-
-
 
     stix_type_map: dict[str, str] = {
         "indicator": "files",
@@ -305,6 +304,7 @@ class VirusTotalClient(BaseClient, ConnectorMixin):
         Accepts a raw URL; the connector handles URL-safe base64 encoding.
         """
         import base64
+
         encoded = base64.urlsafe_b64encode(url.encode()).decode().rstrip("=")
         resp = self.get(f"/api/v3/urls/{encoded}")
         return resp.get("data", {}) if isinstance(resp, dict) else {}

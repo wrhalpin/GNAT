@@ -58,19 +58,19 @@ class ConnectorHealthResult:
         Connector ``TRUST_LEVEL`` value.
     """
 
-    ok:          bool             = False
-    latency_ms:  float            = 0.0
-    error:       str | None       = None
-    checked_at:  datetime         = field(default_factory=lambda: datetime.now(timezone.utc))
-    trust_level: str              = "semi_trusted"
+    ok: bool = False
+    latency_ms: float = 0.0
+    error: str | None = None
+    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    trust_level: str = "semi_trusted"
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a JSON-friendly dict."""
         return {
-            "ok":          self.ok,
-            "latency_ms":  round(self.latency_ms, 2),
-            "error":       self.error,
-            "checked_at":  self.checked_at.isoformat(),
+            "ok": self.ok,
+            "latency_ms": round(self.latency_ms, 2),
+            "error": self.error,
+            "checked_at": self.checked_at.isoformat(),
             "trust_level": self.trust_level,
         }
 
@@ -242,17 +242,17 @@ class BaseClient:
         ok = False
         try:
             result = self.health_check()  # type: ignore[attr-defined]
-            ok     = bool(result) if result is not None else True
+            ok = bool(result) if result is not None else True
         except Exception as exc:
             error = str(exc)
         elapsed_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
 
         return ConnectorHealthResult(
-            ok          = ok,
-            latency_ms  = elapsed_ms,
-            error       = error,
-            checked_at  = datetime.now(timezone.utc),
-            trust_level = getattr(self, "TRUST_LEVEL", "semi_trusted"),
+            ok=ok,
+            latency_ms=elapsed_ms,
+            error=error,
+            checked_at=datetime.now(timezone.utc),
+            trust_level=getattr(self, "TRUST_LEVEL", "semi_trusted"),
         )
 
     # ------------------------------------------------------------------
@@ -301,7 +301,12 @@ class BaseClient:
     ) -> Any:
         """Issue an HTTP POST request. Provide either *json*, *data*, or *files*."""
         return self._request(
-            "POST", path, body=json, form_data=data, params=params, extra_headers=headers,
+            "POST",
+            path,
+            body=json,
+            form_data=data,
+            params=params,
+            extra_headers=headers,
             files=files,
         )
 

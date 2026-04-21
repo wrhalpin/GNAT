@@ -85,12 +85,11 @@ class SplunkClient(BaseClient, ConnectorMixin):
     config : SplunkConfig, optional
         Fully-constructed config object (alternative to keyword args).
     """
+
     TRUST_LEVEL: str = "trusted_internal"
     API_VERSION: str = "v2"
     API_PREFIX: str = "/services"
     COST_UNIT: int = 10
-
-
 
     def __init__(
         self,
@@ -717,7 +716,11 @@ class SplunkClient(BaseClient, ConnectorMixin):
     def get_search_job(self, sid: str) -> dict:
         """Return status and metadata for a search job."""
         resp = self.get(f"search/jobs/{sid}", namespaced=True)
-        return (resp or {}).get("entry", [{}])[0] if isinstance((resp or {}).get("entry"), list) else (resp or {})
+        return (
+            (resp or {}).get("entry", [{}])[0]
+            if isinstance((resp or {}).get("entry"), list)
+            else (resp or {})
+        )
 
     def get_job_results(
         self,
@@ -896,6 +899,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         e.g. ``{"status": "open"}``.
         """
         import json as _json
+
         params: dict = {"limit": limit}
         if query:
             params["query"] = _json.dumps(query)
@@ -909,6 +913,7 @@ class SplunkClient(BaseClient, ConnectorMixin):
         If ``record_id`` is provided, updates that record; otherwise inserts.
         """
         import json as _json
+
         endpoint = (
             f"storage/collections/data/{collection}/{record_id}"
             if record_id

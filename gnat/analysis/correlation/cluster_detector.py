@@ -78,15 +78,13 @@ class Cluster:
         Suggested campaign label if temporal + infrastructure patterns match.
     """
 
-    id:                 str
-    label:              str
-    member_ids:         list[str]
-    signals:            list[str]         = field(default_factory=list)
-    confidence:         ConfidenceScore   = field(
-                            default_factory=ConfidenceScore.low
-                        )
-    suggested_actor:    str | None        = None
-    suggested_campaign: str | None        = None
+    id: str
+    label: str
+    member_ids: list[str]
+    signals: list[str] = field(default_factory=list)
+    confidence: ConfidenceScore = field(default_factory=ConfidenceScore.low)
+    suggested_actor: str | None = None
+    suggested_campaign: str | None = None
 
     @property
     def size(self) -> int:
@@ -94,14 +92,14 @@ class Cluster:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "id":                 self.id,
-            "label":              self.label,
-            "member_ids":         self.member_ids,
-            "signals":            self.signals,
-            "confidence":         self.confidence.to_dict(),
-            "suggested_actor":    self.suggested_actor,
+            "id": self.id,
+            "label": self.label,
+            "member_ids": self.member_ids,
+            "signals": self.signals,
+            "confidence": self.confidence.to_dict(),
+            "suggested_actor": self.suggested_actor,
             "suggested_campaign": self.suggested_campaign,
-            "size":               self.size,
+            "size": self.size,
         }
 
 
@@ -124,15 +122,15 @@ class ClusterDetector:
 
     def __init__(
         self,
-        subnet_bits:         int = 24,
-        tag_min_overlap:     int = 1,
+        subnet_bits: int = 24,
+        tag_min_overlap: int = 1,
         timing_window_hours: int = 72,
-        min_signals:         int = 1,
+        min_signals: int = 1,
     ) -> None:
-        self._subnet_bits         = subnet_bits
-        self._tag_min_overlap     = tag_min_overlap
+        self._subnet_bits = subnet_bits
+        self._tag_min_overlap = tag_min_overlap
         self._timing_window_hours = timing_window_hours
-        self._min_signals         = min_signals
+        self._min_signals = min_signals
 
     def detect(self, groups: list[EntityGroup]) -> list[Cluster]:
         """
@@ -165,8 +163,9 @@ class ClusterDetector:
 
         result = [c for c in clusters if len(c.signals) >= self._min_signals]
         result.sort(key=lambda c: c.confidence.stix_confidence, reverse=True)
-        logger.debug("ClusterDetector: found %d clusters from %d entity groups",
-                     len(result), len(groups))
+        logger.debug(
+            "ClusterDetector: found %d clusters from %d entity groups", len(result), len(groups)
+        )
         return result
 
     # ── Signal computation ────────────────────────────────────────────────────
@@ -203,16 +202,15 @@ class ClusterDetector:
         if g.ioc_type != "ipv4-addr":
             return None
         try:
-            net = ipaddress.IPv4Network(
-                f"{g.canonical_value}/{self._subnet_bits}", strict=False
-            )
+            net = ipaddress.IPv4Network(f"{g.canonical_value}/{self._subnet_bits}", strict=False)
             return str(net)
         except ValueError:
             return None
 
     def _timing_overlap(self, g: EntityGroup, h: EntityGroup) -> bool:
         """True if any first_seen timestamps are within timing_window_hours."""
-        from datetime import datetime, timezone as _tz
+        from datetime import datetime
+
         window_s = self._timing_window_hours * 3600
         g_times = [r.first_seen for r in g.records if r.first_seen]
         h_times = [r.first_seen for r in h.records if r.first_seen]
@@ -264,43 +262,47 @@ class ClusterDetector:
             n_signals = len(unique_signals)
             stix_conf = min(100, 20 + n_signals * 20)
             if n_signals >= 3:
-                src_rel  = SourceReliability.B_USUALLY_RELIABLE
+                src_rel = SourceReliability.B_USUALLY_RELIABLE
                 credibility = InformationCredibility.PROBABLY_TRUE
             elif n_signals == 2:
-                src_rel  = SourceReliability.C_FAIRLY_RELIABLE
+                src_rel = SourceReliability.C_FAIRLY_RELIABLE
                 credibility = InformationCredibility.POSSIBLY_TRUE
             else:
-                src_rel  = SourceReliability.D_NOT_USUALLY_RELIABLE
+                src_rel = SourceReliability.D_NOT_USUALLY_RELIABLE
                 credibility = InformationCredibility.DOUBTFUL
 
             conf = ConfidenceScore(
-                source_reliability      = src_rel,
-                information_credibility = credibility,
-                stix_confidence         = stix_conf,
-                rationale               = f"{n_signals} clustering signal(s)",
+                source_reliability=src_rel,
+                information_credibility=credibility,
+                stix_confidence=stix_conf,
+                rationale=f"{n_signals} clustering signal(s)",
             )
 
             # Derive a label from dominant IOC type and tag hints
             ioc_types = [id_map[cid].ioc_type for cid in component if cid in id_map]
-            dominant  = max(set(ioc_types), key=ioc_types.count) if ioc_types else "indicator"
+            dominant = max(set(ioc_types), key=ioc_types.count) if ioc_types else "indicator"
             all_tags: set[str] = set()
             for cid in component:
                 if cid in id_map:
                     all_tags.update(id_map[cid].all_tags)
-            label = f"cluster:{dominant}:{'+'.join(sorted(all_tags)[:3])}" if all_tags else f"cluster:{dominant}:{len(component)}-members"
-
-            suggested_actor = next(
-                (t for t in sorted(all_tags) if not t.startswith("tlp:")), None
+            label = (
+                f"cluster:{dominant}:{'+'.join(sorted(all_tags)[:3])}"
+                if all_tags
+                else f"cluster:{dominant}:{len(component)}-members"
             )
 
+            suggested_actor = next((t for t in sorted(all_tags) if not t.startswith("tlp:")), None)
+
             cluster_id = "-".join(sorted(component[:3]))
-            clusters.append(Cluster(
-                id               = cluster_id,
-                label            = label,
-                member_ids       = component,
-                signals          = unique_signals,
-                confidence       = conf,
-                suggested_actor  = suggested_actor,
-            ))
+            clusters.append(
+                Cluster(
+                    id=cluster_id,
+                    label=label,
+                    member_ids=component,
+                    signals=unique_signals,
+                    confidence=conf,
+                    suggested_actor=suggested_actor,
+                )
+            )
 
         return clusters

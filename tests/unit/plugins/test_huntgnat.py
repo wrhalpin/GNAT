@@ -84,46 +84,34 @@ class TestSTIXPatternParser:
         assert c.value == "malware.exe"
 
     def test_registry_key(self):
-        ast = parse_pattern(
-            "[windows-registry-key:key = 'HKLM\\\\Software\\\\Evil']"
-        )
+        ast = parse_pattern("[windows-registry-key:key = 'HKLM\\\\Software\\\\Evil']")
         c = ast.observations[0].expression.iter_comparisons()[0]
         assert c.object_path.object_type == "windows-registry-key"
 
     def test_compound_and(self):
-        ast = parse_pattern(
-            "[file:hashes.'MD5' = 'aaa' AND file:name = 'bad.exe']"
-        )
+        ast = parse_pattern("[file:hashes.'MD5' = 'aaa' AND file:name = 'bad.exe']")
         expr = ast.observations[0].expression
         assert expr.operator == "AND"
         assert len(expr.iter_comparisons()) == 2
 
     def test_compound_or(self):
-        ast = parse_pattern(
-            "[domain-name:value = 'a.com' OR domain-name:value = 'b.com']"
-        )
+        ast = parse_pattern("[domain-name:value = 'a.com' OR domain-name:value = 'b.com']")
         expr = ast.observations[0].expression
         assert expr.operator == "OR"
         assert len(expr.iter_comparisons()) == 2
 
     def test_multiple_observations_or(self):
-        ast = parse_pattern(
-            "[ipv4-addr:value = '1.1.1.1'] OR [domain-name:value = 'x.com']"
-        )
+        ast = parse_pattern("[ipv4-addr:value = '1.1.1.1'] OR [domain-name:value = 'x.com']")
         assert len(ast.observations) == 2
         assert ast.operator == "OR"
 
     def test_multiple_observations_and(self):
-        ast = parse_pattern(
-            "[file:name = 'a'] AND [process:name = 'b']"
-        )
+        ast = parse_pattern("[file:name = 'a'] AND [process:name = 'b']")
         assert len(ast.observations) == 2
         assert ast.operator == "AND"
 
     def test_in_operator(self):
-        ast = parse_pattern(
-            "[file:hashes.'MD5' IN ('aaa', 'bbb', 'ccc')]"
-        )
+        ast = parse_pattern("[file:hashes.'MD5' IN ('aaa', 'bbb', 'ccc')]")
         c = ast.observations[0].expression.iter_comparisons()[0]
         assert c.operator == "IN"
         assert c.value == ["aaa", "bbb", "ccc"]
@@ -153,9 +141,7 @@ class TestSTIXPatternParser:
 
     def test_within_qualifier_raises(self):
         with pytest.raises(STIXPatternParseError, match="Phase 2"):
-            parse_pattern(
-                "[file:name = 'x'] WITHIN 5 SECONDS"
-            )
+            parse_pattern("[file:name = 'x'] WITHIN 5 SECONDS")
 
 
 # ===========================================================================
@@ -266,7 +252,7 @@ class TestYaraHashTranslator:
             indicator_name="Empty file",
         )
         _assert_result(r, RuleLanguage.YARA)
-        assert "import \"hash\"" in r.rule_body
+        assert 'import "hash"' in r.rule_body
         assert "hash.sha256" in r.rule_body
         assert "e3b0c44298fc1c149afbf4c8996fb924" in r.rule_body
         assert "rule Empty_file" in r.rule_body
@@ -352,9 +338,7 @@ class TestSuricataTranslator:
             )
 
     def test_network_traffic_dst(self):
-        r = translate(
-            "[network-traffic:dst_ref.value = '10.0.0.1']", "suricata"
-        )
+        r = translate("[network-traffic:dst_ref.value = '10.0.0.1']", "suricata")
         _assert_result(r, RuleLanguage.SURICATA)
         assert "-> 10.0.0.1" in r.rule_body
 
@@ -406,9 +390,7 @@ class TestTranslateAll:
 
     def test_ip_pattern_three_languages(self):
         results = translate_all("[ipv4-addr:value = '1.2.3.4']")
-        ok_count = sum(
-            1 for r in results.values() if isinstance(r, TranslationResult)
-        )
+        ok_count = sum(1 for r in results.values() if isinstance(r, TranslationResult))
         assert ok_count == 3  # sigma, suricata, snort
 
     def test_all_results_have_metadata(self):

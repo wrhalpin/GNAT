@@ -359,9 +359,7 @@ class CortexXDRClient(BaseClient, ConnectorMixin):
             "/public_api/v1/indicators/",
             json={
                 "request_data": {
-                    "filters": [
-                        {"field": "indicator_value", "operator": "eq", "value": value}
-                    ],
+                    "filters": [{"field": "indicator_value", "operator": "eq", "value": value}],
                     "page_size": 100,
                     "page_number": 0,
                 }

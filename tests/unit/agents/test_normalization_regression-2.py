@@ -8,13 +8,15 @@ from gnat.agents.quality.normalization_regression import (
 
 
 def test_normalization_regression_allows_ignored_paths() -> None:
-    agent = NormalizationRegressionAgent({
-        "cribl": lambda payload: {
-            "type": "indicator",
-            "id": "generated-runtime-id",
-            "value": payload["value"],
+    agent = NormalizationRegressionAgent(
+        {
+            "cribl": lambda payload: {
+                "type": "indicator",
+                "id": "generated-runtime-id",
+                "value": payload["value"],
+            }
         }
-    })
+    )
 
     fixture = RegressionFixture(
         connector_name="cribl",
@@ -35,12 +37,14 @@ def test_normalization_regression_allows_ignored_paths() -> None:
 
 
 def test_normalization_regression_detects_semantic_drift() -> None:
-    agent = NormalizationRegressionAgent({
-        "cribl": lambda payload: {
-            "type": "malware",
-            "value": payload["value"],
+    agent = NormalizationRegressionAgent(
+        {
+            "cribl": lambda payload: {
+                "type": "malware",
+                "value": payload["value"],
+            }
         }
-    })
+    )
 
     fixture = RegressionFixture(
         connector_name="cribl",

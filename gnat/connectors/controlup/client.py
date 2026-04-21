@@ -610,10 +610,10 @@ class ControlUpClient(BaseClient, ConnectorMixin):
             name = row.get("deviceName", "")
             if name:
                 result[name] = {
-                    "city":    row.get("location.city", ""),
+                    "city": row.get("location.city", ""),
                     "country": row.get("location.country", ""),
-                    "lat":     row.get("location.latitude"),
-                    "lon":     row.get("location.longitude"),
+                    "lat": row.get("location.latitude"),
+                    "lon": row.get("location.longitude"),
                 }
         return result
 
@@ -690,10 +690,10 @@ class ControlUpClient(BaseClient, ConnectorMixin):
         # (DAL uses dot-notation keys) or when REST responses include a nested
         # "location" object.  We surface both forms to STIX extension fields.
         loc = native.get("location", {}) if isinstance(native.get("location"), dict) else {}
-        loc_city    = loc.get("city",      native.get("location.city",      ""))
-        loc_country = loc.get("country",   native.get("location.country",   ""))
-        loc_lat     = loc.get("latitude",  native.get("location.latitude"))
-        loc_lon     = loc.get("longitude", native.get("location.longitude"))
+        loc_city = loc.get("city", native.get("location.city", ""))
+        loc_country = loc.get("country", native.get("location.country", ""))
+        loc_lat = loc.get("latitude", native.get("location.latitude"))
+        loc_lon = loc.get("longitude", native.get("location.longitude"))
 
         stix: dict[str, Any] = {
             "type": "infrastructure",

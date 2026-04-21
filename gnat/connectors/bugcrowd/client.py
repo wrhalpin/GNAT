@@ -68,9 +68,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set the proprietary ``Authorization: Token`` header."""
         if not self.api_token:
-            raise GNATClientError(
-                "Bugcrowd connector requires api_token in config."
-            )
+            raise GNATClientError("Bugcrowd connector requires api_token in config.")
         self._auth_headers["Authorization"] = f"Token {self.api_token}"
         self._auth_headers["Accept"] = "application/vnd.bugcrowd+json"
 
@@ -93,14 +91,10 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/programs/{object_id}")
             kind = "program"
         else:
-            raise GNATClientError(
-                f"Bugcrowd get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Bugcrowd get_object does not support stix_type={stix_type!r}")
         record = resp.get("data") if isinstance(resp, dict) else None
         if not isinstance(record, dict):
-            raise GNATClientError(
-                f"Bugcrowd returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Bugcrowd returned unexpected payload for {object_id!r}")
         return dict(record, _bc_kind=kind)
 
     def list_objects(
@@ -133,16 +127,12 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             tag = "program"
         elif stix_type == "x-bugcrowd-target":
             if not program:
-                raise GNATClientError(
-                    "Bugcrowd target listing requires 'program_id'"
-                )
+                raise GNATClientError("Bugcrowd target listing requires 'program_id'")
             resp = self.get(f"/programs/{program}/targets", params=params)
             tag = "target"
         elif stix_type == "x-bugcrowd-reward":
             if not program:
-                raise GNATClientError(
-                    "Bugcrowd reward listing requires 'program_id'"
-                )
+                raise GNATClientError("Bugcrowd reward listing requires 'program_id'")
             resp = self.get(f"/programs/{program}/rewards", params=params)
             tag = "reward"
         elif stix_type == "x-bugcrowd-report":
@@ -152,15 +142,11 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             resp = self.get("/organizations", params=params)
             tag = "organization"
         else:
-            raise GNATClientError(
-                f"Bugcrowd list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Bugcrowd list_objects does not support stix_type={stix_type!r}")
         items = resp.get("data", []) if isinstance(resp, dict) else []
         return [dict(r, _bc_kind=tag) for r in items if isinstance(r, dict)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Bugcrowd connector is read-only via CRUD."""
         raise GNATClientError(
             "Bugcrowd connector is read-only via CRUD. Use add_submission_comment "
@@ -169,9 +155,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Bugcrowd connector is read-only."""
-        raise GNATClientError(
-            "Bugcrowd connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Bugcrowd connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -189,9 +173,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
             filters["severity"] = severity
         if program:
             filters["program"] = program
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=100
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=100)
 
     def get_submission(self, submission_id: str) -> dict[str, Any]:
         """Fetch a single submission by id."""
@@ -335,11 +317,7 @@ class BugcrowdClient(BaseClient, ConnectorMixin):
 
         # submission → observed-data envelope
         sid = native.get("id", "")
-        first = (
-            attrs.get("created_at")
-            or attrs.get("submitted_at")
-            or utcnow()
-        )
+        first = attrs.get("created_at") or attrs.get("submitted_at") or utcnow()
         last = attrs.get("updated_at") or first
 
         return make_observed_data_envelope(

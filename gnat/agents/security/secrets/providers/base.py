@@ -8,6 +8,7 @@ Protocol definition for secret provider backends used by the GNAT secrets
 hygiene sub-agent.  Any class satisfying :class:`SecretProvider` can be
 registered as a backend for resolving, storing, and managing secrets.
 """
+
 from __future__ import annotations
 
 from typing import Protocol

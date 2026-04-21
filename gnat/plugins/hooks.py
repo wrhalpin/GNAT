@@ -51,19 +51,21 @@ from typing import Any, Callable
 logger = logging.getLogger(__name__)
 
 # Known event names (not enforced — custom events are allowed)
-KNOWN_EVENTS: frozenset[str] = frozenset({
-    "pre_ingest",
-    "post_ingest",
-    "pre_enrich",
-    "post_enrich",
-    "pre_export",
-    "post_export",
-    "investigation_opened",
-    "investigation_closed",
-    "report_published",
-    "plugin_loaded",
-    "plugin_unloaded",
-})
+KNOWN_EVENTS: frozenset[str] = frozenset(
+    {
+        "pre_ingest",
+        "post_ingest",
+        "pre_enrich",
+        "post_enrich",
+        "pre_export",
+        "post_export",
+        "investigation_opened",
+        "investigation_closed",
+        "report_published",
+        "plugin_loaded",
+        "plugin_unloaded",
+    }
+)
 
 
 class HookBus:
@@ -74,7 +76,7 @@ class HookBus:
     independently for testing isolation.
     """
 
-    _instance: "HookBus | None" = None
+    _instance: HookBus | None = None
     _lock: threading.Lock = threading.Lock()
 
     def __init__(self) -> None:
@@ -84,7 +86,7 @@ class HookBus:
     # ── Singleton ─────────────────────────────────────────────────────────
 
     @classmethod
-    def instance(cls) -> "HookBus":
+    def instance(cls) -> HookBus:
         """Return the process-level singleton :class:`HookBus`."""
         if cls._instance is None:
             with cls._lock:
@@ -110,9 +112,11 @@ class HookBus:
             def handle(result, **ctx):
                 ...
         """
+
         def decorator(fn: Callable) -> Callable:
             self.register(event, fn)
             return fn
+
         return decorator
 
     def register(self, event: str, handler: Callable) -> None:
@@ -177,7 +181,9 @@ class HookBus:
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "HookBus: handler %r raised for event %r: %s",
-                    handler, event, exc,
+                    handler,
+                    event,
+                    exc,
                 )
                 results.append(None)
         return results

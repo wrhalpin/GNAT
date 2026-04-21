@@ -106,9 +106,7 @@ def _compile_leaf(name: str, arg: Any) -> Callable[[Any, Any], bool]:
     raise ValueError(f"Unknown helper function: {name!r}")
 
 
-def _build_no_ctx_check(
-    fn: Callable, name: str, arg: Any
-) -> Callable[[Any, Any], bool]:
+def _build_no_ctx_check(fn: Callable, name: str, arg: Any) -> Callable[[Any, Any], bool]:
     if isinstance(arg, dict):
         if "days" in arg:
             days_val = arg["days"]
@@ -129,9 +127,7 @@ def _build_no_ctx_check(
     return lambda h, ctx, _fn=fn: bool(_fn(h))
 
 
-def _build_ctx_check(
-    fn: Callable, name: str, arg: Any
-) -> Callable[[Any, Any], bool]:
+def _build_ctx_check(fn: Callable, name: str, arg: Any) -> Callable[[Any, Any], bool]:
     if isinstance(arg, bool):
         return lambda h, ctx, _fn=fn, _a=arg: bool(_fn(h, ctx)) == _a
     if isinstance(arg, str):

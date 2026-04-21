@@ -14,8 +14,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # ── Parser registration ────────────────────────────────────────────────────────
+
 
 class TestCliParserRegistration:
     def test_investigation_subcommand_registered(self):
@@ -63,13 +63,15 @@ class TestCliParserRegistration:
 
 # ── investigation list ────────────────────────────────────────────────────────
 
+
 class TestInvestigationList:
     def _make_inv(self, idx=1):
         from datetime import datetime, timezone
+
         inv = MagicMock()
-        inv.id         = f"inv-{'0' * 31}{idx}"
-        inv.title      = f"Test Investigation {idx}"
-        inv.status     = MagicMock(value="open")
+        inv.id = f"inv-{'0' * 31}{idx}"
+        inv.title = f"Test Investigation {idx}"
+        inv.status = MagicMock(value="open")
         inv.classification = MagicMock(value="green")
         inv.created_by = "alice"
         inv.updated_at = datetime(2026, 1, idx, tzinfo=timezone.utc)
@@ -77,7 +79,7 @@ class TestInvestigationList:
 
     # Lazy imports inside _cmd_investigation live in their source modules
     _STORE_PATCH = "gnat.analysis.investigations.storage.InvestigationStore"
-    _SVC_PATCH   = "gnat.analysis.investigations.service.InvestigationService"
+    _SVC_PATCH = "gnat.analysis.investigations.service.InvestigationService"
 
     def test_list_returns_0_on_success(self, monkeypatch):
         from gnat.cli.main import _cmd_investigation
@@ -91,13 +93,13 @@ class TestInvestigationList:
 
             args = MagicMock()
             args.inv_command = "list"
-            args.status      = None
-            args.created_by  = None
-            args.tag         = None
-            args.text        = None
-            args.page        = 1
-            args.page_size   = 25
-            args.config      = None
+            args.status = None
+            args.created_by = None
+            args.tag = None
+            args.text = None
+            args.page = 1
+            args.page_size = 25
+            args.config = None
 
             monkeypatch.setenv("GNAT_DB_URL", "sqlite:///:memory:")
             result = _cmd_investigation(args)
@@ -117,7 +119,9 @@ class TestInvestigationList:
             args = MagicMock()
             args.inv_command = "list"
             args.status = args.created_by = args.tag = args.text = None
-            args.page = 1; args.page_size = 25; args.config = None
+            args.page = 1
+            args.page_size = 25
+            args.config = None
 
             monkeypatch.setenv("GNAT_DB_URL", "sqlite:///:memory:")
             result = _cmd_investigation(args)
@@ -130,7 +134,7 @@ class TestInvestigationList:
 
         args = MagicMock()
         args.inv_command = "list"
-        args.config      = None
+        args.config = None
 
         with patch.dict(sys.modules, {"gnat.analysis.investigations.storage": None}):
             result = _cmd_investigation(args)
@@ -139,16 +143,17 @@ class TestInvestigationList:
 
 # ── investigation create ──────────────────────────────────────────────────────
 
+
 class TestInvestigationCreate:
     _STORE_PATCH = "gnat.analysis.investigations.storage.InvestigationStore"
-    _SVC_PATCH   = "gnat.analysis.investigations.service.InvestigationService"
+    _SVC_PATCH = "gnat.analysis.investigations.service.InvestigationService"
 
     def test_create_returns_0(self, monkeypatch):
         from gnat.cli.main import _cmd_investigation
 
         inv = MagicMock()
-        inv.id     = "inv-" + "a" * 32
-        inv.title  = "My inv"
+        inv.id = "inv-" + "a" * 32
+        inv.title = "My inv"
         inv.status = MagicMock(value="open")
 
         with (
@@ -159,13 +164,13 @@ class TestInvestigationCreate:
             MockSvc.return_value.create.return_value = inv
 
             args = MagicMock()
-            args.inv_command  = "create"
-            args.title        = "My inv"
-            args.created_by   = "alice"
-            args.description  = ""
-            args.tlp          = "green"
-            args.tags         = ""
-            args.config       = None
+            args.inv_command = "create"
+            args.title = "My inv"
+            args.created_by = "alice"
+            args.description = ""
+            args.tlp = "green"
+            args.tags = ""
+            args.config = None
 
             monkeypatch.setenv("GNAT_DB_URL", "sqlite:///:memory:")
             result = _cmd_investigation(args)
@@ -182,13 +187,13 @@ class TestInvestigationCreate:
             MockStore.return_value.create_all.return_value = None
 
             args = MagicMock()
-            args.inv_command  = "create"
-            args.title        = "T"
-            args.created_by   = "alice"
-            args.description  = ""
-            args.tlp          = "INVALID_TLP"
-            args.tags         = ""
-            args.config       = None
+            args.inv_command = "create"
+            args.title = "T"
+            args.created_by = "alice"
+            args.description = ""
+            args.tlp = "INVALID_TLP"
+            args.tags = ""
+            args.config = None
 
             monkeypatch.setenv("GNAT_DB_URL", "sqlite:///:memory:")
             result = _cmd_investigation(args)
@@ -198,9 +203,10 @@ class TestInvestigationCreate:
 
 # ── investigation transition ──────────────────────────────────────────────────
 
+
 class TestInvestigationTransition:
     _STORE_PATCH = "gnat.analysis.investigations.storage.InvestigationStore"
-    _SVC_PATCH   = "gnat.analysis.investigations.service.InvestigationService"
+    _SVC_PATCH = "gnat.analysis.investigations.service.InvestigationService"
 
     def test_transition_returns_0(self, monkeypatch):
         from gnat.cli.main import _cmd_investigation
@@ -217,11 +223,11 @@ class TestInvestigationTransition:
 
             args = MagicMock()
             args.inv_command = "transition"
-            args.id          = "inv-" + "b" * 32
-            args.status      = "in_progress"
-            args.note        = "moving ahead"
-            args.author      = "bob"
-            args.config      = None
+            args.id = "inv-" + "b" * 32
+            args.status = "in_progress"
+            args.note = "moving ahead"
+            args.author = "bob"
+            args.config = None
 
             monkeypatch.setenv("GNAT_DB_URL", "sqlite:///:memory:")
             result = _cmd_investigation(args)
@@ -240,11 +246,11 @@ class TestInvestigationTransition:
 
             args = MagicMock()
             args.inv_command = "transition"
-            args.id          = "inv-" + "c" * 32
-            args.status      = "closed"
-            args.note        = ""
-            args.author      = "alice"
-            args.config      = None
+            args.id = "inv-" + "c" * 32
+            args.status = "closed"
+            args.note = ""
+            args.author = "alice"
+            args.config = None
 
             monkeypatch.setenv("GNAT_DB_URL", "sqlite:///:memory:")
             result = _cmd_investigation(args)
@@ -253,6 +259,7 @@ class TestInvestigationTransition:
 
 
 # ── plugins list / load ────────────────────────────────────────────────────────
+
 
 class TestPluginsSubcommand:
     # _cmd_plugins imports PluginRegistry lazily from its source module
@@ -274,10 +281,10 @@ class TestPluginsSubcommand:
         from gnat.cli.main import _cmd_plugins
 
         plugin = MagicMock()
-        plugin.name         = "test.plugin"
-        plugin.version      = "1.0.0"
+        plugin.name = "test.plugin"
+        plugin.version = "1.0.0"
         plugin.capabilities = [MagicMock(value="CONNECTOR")]
-        plugin.description  = "A test plugin"
+        plugin.description = "A test plugin"
 
         args = MagicMock()
         args.plg_command = "list"
@@ -293,7 +300,7 @@ class TestPluginsSubcommand:
 
         args = MagicMock()
         args.plg_command = "load"
-        args.directory   = str(tmp_path)
+        args.directory = str(tmp_path)
 
         with patch(self._REG_PATCH) as MockReg:
             MockReg.return_value.load_directory.return_value = 0
@@ -306,7 +313,7 @@ class TestPluginsSubcommand:
 
         args = MagicMock()
         args.plg_command = "load"
-        args.directory   = "/nonexistent/path"
+        args.directory = "/nonexistent/path"
 
         with patch(self._REG_PATCH) as MockReg:
             MockReg.return_value.load_directory.side_effect = OSError("not found")
@@ -361,9 +368,9 @@ class TestDbSubcommand:
         from gnat.cli.main import _cmd_db
 
         args = MagicMock()
-        args.db_command    = "revision"
-        args.message       = "add_tags_column"
-        args.autogenerate  = False
+        args.db_command = "revision"
+        args.message = "add_tags_column"
+        args.autogenerate = False
 
         with patch(_DB_PATCH) as mock_run:
             mock_run.return_value = None
@@ -375,8 +382,8 @@ class TestDbSubcommand:
         from gnat.cli.main import _cmd_db
 
         args = MagicMock()
-        args.db_command   = "revision"
-        args.message      = "auto"
+        args.db_command = "revision"
+        args.message = "auto"
         args.autogenerate = True
 
         with patch(_DB_PATCH) as mock_run:
@@ -390,7 +397,7 @@ class TestDbSubcommand:
 
         args = MagicMock()
         args.db_command = "stamp"
-        args.revision   = "head"
+        args.revision = "head"
 
         with patch(_DB_PATCH) as mock_run:
             mock_run.return_value = None

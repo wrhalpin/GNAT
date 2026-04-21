@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.upguard`` package.
 
 Exports: ``UpGuardClient``.
 """
+
 from .client import UpGuardClient
 
 __all__ = ["UpGuardClient"]

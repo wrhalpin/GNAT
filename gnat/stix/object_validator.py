@@ -61,9 +61,7 @@ from gnat.stix.version import SUPPORTED_SPEC_VERSIONS
 # ---------------------------------------------------------------------------
 
 # STIX 2.1 §3.3: timestamps must be RFC 3339 with millisecond precision
-_TIMESTAMP_RE = re.compile(
-    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"
-)
+_TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$")
 
 # STIX 2.1 §2.9: identifiers are <type>--<UUID4>
 _ID_RE = re.compile(
@@ -74,9 +72,7 @@ _ID_RE = re.compile(
 # Common required properties for all STIX objects (§3.2)
 # ---------------------------------------------------------------------------
 
-_COMMON_REQUIRED: frozenset[str] = frozenset(
-    {"type", "spec_version", "id", "created", "modified"}
-)
+_COMMON_REQUIRED: frozenset[str] = frozenset({"type", "spec_version", "id", "created", "modified"})
 
 # Properties that must be valid timestamps
 _TIMESTAMP_PROPS: frozenset[str] = frozenset(
@@ -123,9 +119,7 @@ _TYPE_REQUIRED: dict[str, frozenset[str]] = {
     "tool": frozenset({"name", "tool_types"}),
     "vulnerability": frozenset({"name"}),
     # SROs
-    "relationship": frozenset(
-        {"relationship_type", "source_ref", "target_ref"}
-    ),
+    "relationship": frozenset({"relationship_type", "source_ref", "target_ref"}),
     "sighting": frozenset({"sighting_of_ref"}),
     # SCOs (spec_version, id are still required per §10.1)
     "artifact": frozenset(),
@@ -577,9 +571,7 @@ class STIXObjectValidator:
     # Private checks
     # ------------------------------------------------------------------
 
-    def _check_type(
-        self, obj: dict, obj_type: str, result: ObjectValidationResult
-    ) -> None:
+    def _check_type(self, obj: dict, obj_type: str, result: ObjectValidationResult) -> None:
         """Validate the ``type`` field."""
         if not obj_type:
             result._add_error("Missing required property 'type'")
@@ -617,9 +609,7 @@ class STIXObjectValidator:
             if prop not in obj:
                 result._add_error(f"Missing required property '{prop}'")
 
-    def _check_id(
-        self, obj: dict, obj_type: str, result: ObjectValidationResult
-    ) -> None:
+    def _check_id(self, obj: dict, obj_type: str, result: ObjectValidationResult) -> None:
         """Validate ``id`` format: <type>--<UUID4>."""
         obj_id = obj.get("id")
         if not obj_id:
@@ -628,20 +618,14 @@ class STIXObjectValidator:
             result._add_error(f"Property 'id' must be a string, got {type(obj_id).__name__}")
             return
         if not _ID_RE.match(obj_id):
-            result._add_error(
-                f"Property 'id' must follow <type>--<UUID4> format; got {obj_id!r}"
-            )
+            result._add_error(f"Property 'id' must follow <type>--<UUID4> format; got {obj_id!r}")
             return
         # Type prefix must match the object's type
         id_prefix = obj_id.split("--")[0]
         if obj_type and id_prefix != obj_type:
-            result._add_error(
-                f"ID prefix {id_prefix!r} does not match object type {obj_type!r}"
-            )
+            result._add_error(f"ID prefix {id_prefix!r} does not match object type {obj_type!r}")
 
-    def _check_timestamps(
-        self, obj: dict, result: ObjectValidationResult
-    ) -> None:
+    def _check_timestamps(self, obj: dict, result: ObjectValidationResult) -> None:
         """Validate all timestamp properties."""
         for prop in _TIMESTAMP_PROPS:
             val = obj.get(prop)
@@ -649,8 +633,7 @@ class STIXObjectValidator:
                 continue
             if not isinstance(val, str):
                 result._add_error(
-                    f"Property '{prop}' must be a string timestamp, "
-                    f"got {type(val).__name__}"
+                    f"Property '{prop}' must be a string timestamp, got {type(val).__name__}"
                 )
             elif not _TIMESTAMP_RE.match(val):
                 result._add_error(
@@ -665,39 +648,27 @@ class STIXObjectValidator:
         required = _TYPE_REQUIRED.get(obj_type, frozenset())
         for prop in required:
             if prop not in obj:
-                result._add_error(
-                    f"Type '{obj_type}' requires property '{prop}'"
-                )
+                result._add_error(f"Type '{obj_type}' requires property '{prop}'")
 
-    def _check_booleans(
-        self, obj: dict, result: ObjectValidationResult
-    ) -> None:
+    def _check_booleans(self, obj: dict, result: ObjectValidationResult) -> None:
         """Validate boolean properties."""
         for prop in _BOOL_PROPS:
             val = obj.get(prop)
             if val is None:
                 continue
             if not isinstance(val, bool):
-                result._add_error(
-                    f"Property '{prop}' must be a boolean, got {type(val).__name__}"
-                )
+                result._add_error(f"Property '{prop}' must be a boolean, got {type(val).__name__}")
 
-    def _check_integers(
-        self, obj: dict, result: ObjectValidationResult
-    ) -> None:
+    def _check_integers(self, obj: dict, result: ObjectValidationResult) -> None:
         """Validate integer properties (excluding booleans which are int subclass)."""
         for prop in _INT_PROPS:
             val = obj.get(prop)
             if val is None:
                 continue
             if isinstance(val, bool) or not isinstance(val, int):
-                result._add_error(
-                    f"Property '{prop}' must be an integer, got {type(val).__name__}"
-                )
+                result._add_error(f"Property '{prop}' must be an integer, got {type(val).__name__}")
 
-    def _check_confidence(
-        self, obj: dict, result: ObjectValidationResult
-    ) -> None:
+    def _check_confidence(self, obj: dict, result: ObjectValidationResult) -> None:
         """Validate confidence is in [0, 100]."""
         val = obj.get("confidence")
         if val is None:
@@ -707,13 +678,9 @@ class STIXObjectValidator:
             return
         lo, hi = _CONFIDENCE_RANGE
         if not (lo <= val <= hi):
-            result._add_error(
-                f"Property 'confidence' must be in [{lo}, {hi}], got {val}"
-            )
+            result._add_error(f"Property 'confidence' must be in [{lo}, {hi}], got {val}")
 
-    def _check_open_vocabs(
-        self, obj: dict, result: ObjectValidationResult
-    ) -> None:
+    def _check_open_vocabs(self, obj: dict, result: ObjectValidationResult) -> None:
         """Warn (or error in strict mode) when open-vocab values are non-standard."""
         for prop, vocab in _OPEN_VOCAB.items():
             val = obj.get(prop)
@@ -722,18 +689,13 @@ class STIXObjectValidator:
             values = val if isinstance(val, list) else [val]
             for v in values:
                 if isinstance(v, str) and v not in vocab:
-                    msg = (
-                        f"Property '{prop}' value {v!r} is not in the "
-                        f"STIX 2.1 default vocabulary"
-                    )
+                    msg = f"Property '{prop}' value {v!r} is not in the STIX 2.1 default vocabulary"
                     if self._strict:
                         result._add_error(msg)
                     else:
                         result._add_warning(msg)
 
-    def _check_closed_vocabs(
-        self, obj: dict, result: ObjectValidationResult
-    ) -> None:
+    def _check_closed_vocabs(self, obj: dict, result: ObjectValidationResult) -> None:
         """Error when closed-vocab values are invalid."""
         for prop, vocab in _CLOSED_VOCAB.items():
             val = obj.get(prop)
@@ -745,23 +707,19 @@ class STIXObjectValidator:
                     f"STIX 2.1 value; allowed: {sorted(vocab)}"
                 )
 
-    def _check_ref_format(
-        self, obj: dict, result: ObjectValidationResult
-    ) -> None:
+    def _check_ref_format(self, obj: dict, result: ObjectValidationResult) -> None:
         """Validate _ref / _refs properties contain valid STIX identifiers."""
         for key, val in obj.items():
             if key.endswith("_ref") and isinstance(val, str):
                 if not _ID_RE.match(val):
                     result._add_error(
-                        f"Property '{key}' must be a valid STIX identifier, "
-                        f"got {val!r}"
+                        f"Property '{key}' must be a valid STIX identifier, got {val!r}"
                     )
             elif key.endswith("_refs") and isinstance(val, list):
                 for i, ref in enumerate(val):
                     if isinstance(ref, str) and not _ID_RE.match(ref):
                         result._add_error(
-                            f"Property '{key}[{i}]' must be a valid STIX "
-                            f"identifier, got {ref!r}"
+                            f"Property '{key}[{i}]' must be a valid STIX identifier, got {ref!r}"
                         )
 
 
@@ -818,9 +776,7 @@ class STIXBundleValidator:
             return result
 
         if bundle.get("type") != "bundle":
-            result.bundle_errors.append(
-                f"Expected type 'bundle', got {bundle.get('type')!r}"
-            )
+            result.bundle_errors.append(f"Expected type 'bundle', got {bundle.get('type')!r}")
             result.valid = False
 
         if "id" not in bundle:
@@ -828,8 +784,7 @@ class STIXBundleValidator:
             result.valid = False
         elif not isinstance(bundle["id"], str) or not _ID_RE.match(bundle["id"]):
             result.bundle_errors.append(
-                f"Bundle 'id' must follow bundle--<UUID4> format; "
-                f"got {bundle.get('id')!r}"
+                f"Bundle 'id' must follow bundle--<UUID4> format; got {bundle.get('id')!r}"
             )
             result.valid = False
 

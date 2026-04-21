@@ -6,6 +6,7 @@ gnat.agents.security.secrets.providers.memory
 
 Memory utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from dataclasses import replace
@@ -25,6 +26,7 @@ from ..models import (
 
 class MemorySecretProvider:
     """MemorySecretProvider implementation."""
+
     name = "memory"
 
     def __init__(self) -> None:

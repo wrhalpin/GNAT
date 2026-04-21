@@ -71,8 +71,7 @@ def generate_connector_tests(
     name = connector_name.lower().replace("-", "_")
     if name not in CLIENT_REGISTRY:
         raise KeyError(
-            f"Connector '{name}' not found in CLIENT_REGISTRY. "
-            f"Available: {sorted(CLIENT_REGISTRY)}"
+            f"Connector '{name}' not found in CLIENT_REGISTRY. Available: {sorted(CLIENT_REGISTRY)}"
         )
 
     cls = CLIENT_REGISTRY[name]
@@ -89,6 +88,7 @@ def generate_connector_tests(
     ai_fixtures: dict[str, str] = {}
     if use_ai:
         from gnat.codegen.openapi_generator import _try_load_llm
+
         llm = _try_load_llm(config_path)
         if llm is None:
             logger.warning(
@@ -128,9 +128,21 @@ def _inspect_connector(cls: type) -> dict[str, Any]:
     - ``custom_methods``: list of public method names beyond the base interface
     """
     base_methods = {
-        "authenticate", "health_check", "get_object", "list_objects",
-        "upsert_object", "delete_object", "to_stix", "from_stix",
-        "get", "post", "put", "patch", "delete", "request", "capabilities",
+        "authenticate",
+        "health_check",
+        "get_object",
+        "list_objects",
+        "upsert_object",
+        "delete_object",
+        "to_stix",
+        "from_stix",
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+        "request",
+        "capabilities",
         "call",
     }
 
@@ -191,10 +203,10 @@ def _ai_connector_fixtures(
         Generate realistic pytest fixtures and test cases for a GNAT connector.
 
         Connector: {connector_name} ({class_name})
-        Trust level: {meta['trust_level']}
-        Auth type: {meta['auth_type']}
-        STIX type map: {json.dumps(meta['stix_type_map'])}
-        Custom methods: {meta['custom_methods']}
+        Trust level: {meta["trust_level"]}
+        Auth type: {meta["auth_type"]}
+        STIX type map: {json.dumps(meta["stix_type_map"])}
+        Custom methods: {meta["custom_methods"]}
 
         Return JSON with:
         - "native_fixture": Python dict literal for a realistic native API response
@@ -217,7 +229,9 @@ def _ai_connector_fixtures(
         "required": ["native_fixture", "stix_fixture", "list_response", "extra_tests"],
     }
 
-    return llm.structured(prompt=prompt, output_schema=output_schema, temperature=0.2, max_tokens=2048)
+    return llm.structured(
+        prompt=prompt, output_schema=output_schema, temperature=0.2, max_tokens=2048
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -276,8 +290,7 @@ def _render_connector_tests(
             "\n\n# ---------------------------------------------------------------------------\n"
             "# Platform-specific methods\n"
             "# ---------------------------------------------------------------------------\n\n"
-            f"class TestCustomMethods:\n"
-            + "\n\n".join(tests)
+            "class TestCustomMethods:\n" + "\n\n".join(tests)
         )
 
     extra_tests_block = ""
@@ -322,7 +335,7 @@ def _render_connector_tests(
 
         class TestClassAttributes:
             def test_trust_level_set(self):
-                assert {class_name}.TRUST_LEVEL == "{meta['trust_level']}"
+                assert {class_name}.TRUST_LEVEL == "{meta["trust_level"]}"
 
             def test_stix_type_map_is_dict(self):
                 assert isinstance({class_name}.stix_type_map, dict)

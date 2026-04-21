@@ -73,12 +73,8 @@ class HackerOneClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set HTTP Basic header from username + token."""
         if not self.api_username or not self.api_token:
-            raise GNATClientError(
-                "HackerOne connector requires api_username and api_token."
-            )
-        self._auth_headers["Authorization"] = self._basic_auth(
-            self.api_username, self.api_token
-        )
+            raise GNATClientError("HackerOne connector requires api_username and api_token.")
+        self._auth_headers["Authorization"] = self._basic_auth(self.api_username, self.api_token)
         self._auth_headers["Accept"] = "application/json"
 
     def health_check(self) -> bool:
@@ -100,14 +96,10 @@ class HackerOneClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/v1/programs/{object_id}")
             kind = "program"
         else:
-            raise GNATClientError(
-                f"HackerOne get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"HackerOne get_object does not support stix_type={stix_type!r}")
         record = resp.get("data") if isinstance(resp, dict) else None
         if not isinstance(record, dict):
-            raise GNATClientError(
-                f"HackerOne returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"HackerOne returned unexpected payload for {object_id!r}")
         return dict(record, _h1_kind=kind)
 
     def list_objects(
@@ -144,19 +136,13 @@ class HackerOneClient(BaseClient, ConnectorMixin):
             tag = "program"
         elif stix_type == "vulnerability":
             if not program:
-                raise GNATClientError(
-                    "HackerOne weakness listing requires 'program_handle'"
-                )
+                raise GNATClientError("HackerOne weakness listing requires 'program_handle'")
             resp = self.get(f"/v1/{program}/weaknesses", params=params)
             tag = "weakness"
         elif stix_type == "x-h1-scope":
             if not program:
-                raise GNATClientError(
-                    "HackerOne scope listing requires 'program_handle'"
-                )
-            resp = self.get(
-                f"/v1/{program}/structured_scopes", params=params
-            )
+                raise GNATClientError("HackerOne scope listing requires 'program_handle'")
+            resp = self.get(f"/v1/{program}/structured_scopes", params=params)
             tag = "scope"
         else:
             raise GNATClientError(
@@ -165,9 +151,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
         items = resp.get("data", []) if isinstance(resp, dict) else []
         return [dict(r, _h1_kind=tag) for r in items if isinstance(r, dict)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """HackerOne connector is read-only via CRUD."""
         raise GNATClientError(
             "HackerOne connector is read-only via CRUD. Use add_report_comment "
@@ -176,9 +160,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """HackerOne connector is read-only."""
-        raise GNATClientError(
-            "HackerOne connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("HackerOne connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -196,9 +178,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
             filters["severity"] = severity
         if program:
             filters["program"] = program
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=100
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=100)
 
     def get_report(self, report_id: str) -> dict[str, Any]:
         """Fetch a single report by id."""
@@ -224,9 +204,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
             page_size=200,
         )
 
-    def list_structured_scopes(
-        self, program_handle: str
-    ) -> list[dict[str, Any]]:
+    def list_structured_scopes(self, program_handle: str) -> list[dict[str, Any]]:
         """Return the in-scope asset list for a program."""
         return self.list_objects(
             "x-h1-scope",
@@ -250,9 +228,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
         resp = self.post(f"/v1/reports/{report_id}/activities", json=body)
         return resp if isinstance(resp, dict) else {"raw": resp}
 
-    def change_report_state(
-        self, report_id: str, state: str, message: str = ""
-    ) -> dict[str, Any]:
+    def change_report_state(self, report_id: str, state: str, message: str = "") -> dict[str, Any]:
         """Change a report's state (triaged / resolved / informative / etc.)."""
         attrs: dict[str, Any] = {"state": state}
         if message:
@@ -319,11 +295,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
 
         # report → observed-data envelope
         report_id = native.get("id", "")
-        first = (
-            attrs.get("created_at")
-            or attrs.get("submitted_at")
-            or utcnow()
-        )
+        first = attrs.get("created_at") or attrs.get("submitted_at") or utcnow()
         last = attrs.get("last_activity_at") or attrs.get("updated_at") or first
 
         return make_observed_data_envelope(
@@ -338,9 +310,7 @@ class HackerOneClient(BaseClient, ConnectorMixin):
                     "title": attrs.get("title"),
                     "state": attrs.get("state"),
                     "severity_rating": attrs.get("severity_rating"),
-                    "vulnerability_information": attrs.get(
-                        "vulnerability_information"
-                    ),
+                    "vulnerability_information": attrs.get("vulnerability_information"),
                     "weakness": attrs.get("weakness"),
                     "raw": native,
                 }

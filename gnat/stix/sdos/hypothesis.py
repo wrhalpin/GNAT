@@ -29,7 +29,7 @@ Usage
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from gnat.orm.base import STIXBase, _utcnow
 from gnat.stix.version import CURRENT_SPEC_VERSION
@@ -80,20 +80,17 @@ class STIXHypothesis(STIXBase):
         status: str = "pending",
         supporting_evidence: list[str] | None = None,
         refuting_evidence: list[str] | None = None,
-        client: Optional[Any] = None,
+        client: Any | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize STIXHypothesis."""
         super().__init__(client=client, **kwargs)
         if status not in self.STATUSES:
             raise ValueError(
-                f"Invalid hypothesis status {status!r}. "
-                f"Must be one of: {sorted(self.STATUSES)}"
+                f"Invalid hypothesis status {status!r}. Must be one of: {sorted(self.STATUSES)}"
             )
         if not (0.0 <= confidence <= 1.0):
-            raise ValueError(
-                f"confidence must be in [0.0, 1.0], got {confidence!r}"
-            )
+            raise ValueError(f"confidence must be in [0.0, 1.0], got {confidence!r}")
         self._properties["statement"] = statement
         self._properties["confidence"] = float(confidence)
         self._properties["status"] = status
@@ -177,7 +174,7 @@ class STIXHypothesis(STIXBase):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], client: Optional[Any] = None) -> STIXHypothesis:
+    def from_dict(cls, data: dict[str, Any], client: Any | None = None) -> STIXHypothesis:
         """Deserialise from a STIX dict."""
         obj = cls(
             statement=data.get("statement", ""),

@@ -79,7 +79,7 @@ class HypothesisEngine:
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
+        manager: WorkspaceManager,
         workspace_name: str = "analysis",
         search_index: Any | None = None,
     ) -> None:
@@ -90,6 +90,7 @@ class HypothesisEngine:
             self._search_index = search_index
         else:
             from gnat.search.index import NullSearchIndex
+
             self._search_index = NullSearchIndex()
 
     # ── Public API ─────────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ class HypothesisEngine:
             confidence=confidence,
             status="pending",
         )
-        for ev_id in (initial_evidence or []):
+        for ev_id in initial_evidence or []:
             h.add_supporting_evidence(ev_id)
 
         self._persist(h)
@@ -218,9 +219,7 @@ class HypothesisEngine:
         h = self._load(hypothesis_id)
         h.close(verdict)
         self._persist(h)
-        logger.info(
-            "HypothesisEngine: closed %s with verdict %r", hypothesis_id, verdict
-        )
+        logger.info("HypothesisEngine: closed %s with verdict %r", hypothesis_id, verdict)
         return h
 
     def get(self, hypothesis_id: str) -> STIXHypothesis | None:

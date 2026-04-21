@@ -37,6 +37,7 @@ router = APIRouter(prefix="/api", tags=["analysis"])
 
 # ── Graph ─────────────────────────────────────────────────────────────────────
 
+
 @router.post("/graph/pivot")
 def graph_pivot(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     """
@@ -56,7 +57,7 @@ def graph_pivot(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     if not node_id:
         raise HTTPException(400, "Field 'node_id' is required.")
 
-    hops    = int(body.get("hops", 2))
+    hops = int(body.get("hops", 2))
     filters = body.get("filters", {})
 
     try:
@@ -141,6 +142,7 @@ def graph_infrastructure(request: Request, body: dict[str, Any]) -> dict[str, An
 
 # ── Copilot ───────────────────────────────────────────────────────────────────
 
+
 @router.post("/copilot/gaps")
 def detect_gaps(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     """
@@ -205,6 +207,7 @@ def draft_report(request: Request, body: dict[str, Any]) -> dict[str, Any]:
 
 # ── Export ────────────────────────────────────────────────────────────────────
 
+
 @router.get("/reports/{report_id}/export/stix")
 def export_stix(request: Request, report_id: str) -> dict[str, Any]:
     """Export a report as a STIX 2.1 bundle."""
@@ -224,10 +227,11 @@ def export_stix(request: Request, report_id: str) -> dict[str, Any]:
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
+
 @router.get("/metrics/investigations")
 def metrics_investigations(
     request: Request,
-    days:    int = 30,
+    days: int = 30,
 ) -> dict[str, Any]:
     """
     Investigation completion metrics for the past *days* days.
@@ -246,9 +250,9 @@ def metrics_investigations(
 
 @router.get("/metrics/enrichment")
 def metrics_enrichment(
-    request:  Request,
+    request: Request,
     platform: str | None = None,
-    days:     int = 7,
+    days: int = 7,
 ) -> dict[str, Any]:
     """
     Enrichment effectiveness metrics (hit rate per platform).

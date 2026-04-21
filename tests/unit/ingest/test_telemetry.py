@@ -297,9 +297,9 @@ class TestRedisDeduplicationCache:
 
 class TestCampaignLinker:
     def test_extract_ioc_from_pattern(self):
-        assert CampaignLinker._extract_ioc_from_pattern(
-            "[ipv4-addr:value = '1.2.3.4']"
-        ) == "1.2.3.4"
+        assert (
+            CampaignLinker._extract_ioc_from_pattern("[ipv4-addr:value = '1.2.3.4']") == "1.2.3.4"
+        )
 
     def test_extract_ioc_empty_pattern(self):
         assert CampaignLinker._extract_ioc_from_pattern("") == ""
@@ -387,7 +387,10 @@ class TestKafkaSourceReader:
         from gnat.ingest.telemetry.kafka_reader import KafkaSourceReader
 
         reader = KafkaSourceReader(topics=["test"])
-        with patch.dict("sys.modules", {"kafka": None}), pytest.raises(ImportError, match="kafka-python-ng"):
+        with (
+            patch.dict("sys.modules", {"kafka": None}),
+            pytest.raises(ImportError, match="kafka-python-ng"),
+        ):
             reader.open()
 
     def test_iter_without_open_raises(self):

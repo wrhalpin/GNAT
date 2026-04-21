@@ -88,12 +88,8 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set HTTP Basic Authorization header from the configured creds."""
         if not self.username or not self.password:
-            raise GNATClientError(
-                "Cofense Intelligence connector requires username and password."
-            )
-        self._auth_headers["Authorization"] = self._basic_auth(
-            self.username, self.password
-        )
+            raise GNATClientError("Cofense Intelligence connector requires username and password.")
+        self._auth_headers["Authorization"] = self._basic_auth(self.username, self.password)
         self._auth_headers["Accept"] = "application/json"
 
     # ── ConnectorMixin — CRUD ──────────────────────────────────────────────
@@ -117,13 +113,9 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/apiv1/malware/families/{object_id}")
             kind = "malware_family"
         else:
-            raise GNATClientError(
-                f"Cofense get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Cofense get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Cofense returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Cofense returned unexpected payload for {object_id!r}")
         return dict(resp, _cf_kind=kind)
 
     def list_objects(
@@ -173,13 +165,9 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
             resp = self.get("/apiv1/threat/actors", params=params)
             records = _extract_records(resp, ("data", "actors", "results"))
             return [dict(r, _cf_kind="actor") for r in records]
-        raise GNATClientError(
-            f"Cofense list_objects does not support stix_type={stix_type!r}"
-        )
+        raise GNATClientError(f"Cofense list_objects does not support stix_type={stix_type!r}")
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Cofense Intelligence connector is read-only."""
         raise GNATClientError(
             "Cofense Intelligence connector is read-only — no write operations supported."
@@ -193,13 +181,9 @@ class CofenseIntelClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def search_threats(
-        self, ioc_type: str, value: str
-    ) -> list[dict[str, Any]]:
+    def search_threats(self, ioc_type: str, value: str) -> list[dict[str, Any]]:
         """Search Cofense for a specific IOC."""
-        return self.list_objects(
-            "indicator", filters={"ioc_type": ioc_type, "value": value}
-        )
+        return self.list_objects("indicator", filters={"ioc_type": ioc_type, "value": value})
 
     def get_threat(self, threat_id: str) -> dict[str, Any]:
         """Fetch a single threat record."""

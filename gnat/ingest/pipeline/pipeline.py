@@ -32,9 +32,10 @@ Usage::
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from gnat.ingest.base import (
     DeduplicationCache,
@@ -95,7 +96,7 @@ class IngestPipeline:
         self._dedup: DeduplicationCache | None = None
         self._filters: list[Callable[[STIXBase], bool]] = []
         self._transforms: list[Callable[[STIXBase], STIXBase]] = []
-        self._lineage: "Any | None" = None
+        self._lineage: Any | None = None
 
     # ------------------------------------------------------------------
     # Fluent builder
@@ -135,7 +136,7 @@ class IngestPipeline:
         self._mapper = mapper
         return self
 
-    def with_lineage(self, tracker: "Any | None" = None) -> "IngestPipeline":
+    def with_lineage(self, tracker: Any | None = None) -> IngestPipeline:
         """
         Attach a :class:`~gnat.lineage.tracker.LineageTracker`.
 
@@ -306,15 +307,13 @@ class IngestPipeline:
                                 obj.save()
                                 result.written_objects += 1
                                 if self._lineage is not None:
-                                    try:
+                                    with contextlib.suppress(Exception):
                                         self._lineage.record_ingest(
                                             obj.id,
                                             getattr(obj, "type", "unknown"),
-                                            source  = self._name or "ingest-pipeline",
-                                            actor   = "ingest-pipeline",
+                                            source=self._name or "ingest-pipeline",
+                                            actor="ingest-pipeline",
                                         )
-                                    except Exception:
-                                        pass
                             except Exception as write_exc:  # noqa: BLE001
                                 msg = f"Write failed for {obj.id}: {write_exc}"
                                 result.errors.append(msg)

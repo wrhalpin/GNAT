@@ -66,6 +66,7 @@ class SecurityOnionAuthError(SecurityOnionError):
 
 class SecurityOnionAPIError(SecurityOnionError):
     """Raised when a security onion a p i error error occurs."""
+
     def __init__(self, message, status_code=None, endpoint=None):
         """Initialize SecurityOnionAPIError."""
         super().__init__(message)
@@ -87,6 +88,7 @@ class SecurityOnionSTIXError(SecurityOnionError):
 @dataclass
 class SecurityOnionConfig:
     """Configuration container for security onion."""
+
     url: str
     username: str
     password: str

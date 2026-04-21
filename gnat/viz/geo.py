@@ -28,24 +28,42 @@ logger = logging.getLogger(__name__)
 
 # Mapping from common country aliases to ISO-3 alpha codes
 _COUNTRY_ISO3: dict[str, str] = {
-    "united states": "USA", "us": "USA", "usa": "USA",
-    "united kingdom": "GBR", "uk": "GBR", "gb": "GBR",
-    "russia": "RUS", "ru": "RUS",
-    "china": "CHN", "cn": "CHN",
+    "united states": "USA",
+    "us": "USA",
+    "usa": "USA",
+    "united kingdom": "GBR",
+    "uk": "GBR",
+    "gb": "GBR",
+    "russia": "RUS",
+    "ru": "RUS",
+    "china": "CHN",
+    "cn": "CHN",
     "iran": "IRN",
     "north korea": "PRK",
-    "germany": "DEU", "de": "DEU",
-    "france": "FRA", "fr": "FRA",
-    "canada": "CAN", "ca": "CAN",
-    "australia": "AUS", "au": "AUS",
-    "brazil": "BRA", "br": "BRA",
-    "india": "IND", "in": "IND",
-    "japan": "JPN", "jp": "JPN",
-    "ukraine": "UKR", "ua": "UKR",
-    "israel": "ISR", "il": "ISR",
-    "netherlands": "NLD", "nl": "NLD",
-    "singapore": "SGP", "sg": "SGP",
-    "south korea": "KOR", "kr": "KOR",
+    "germany": "DEU",
+    "de": "DEU",
+    "france": "FRA",
+    "fr": "FRA",
+    "canada": "CAN",
+    "ca": "CAN",
+    "australia": "AUS",
+    "au": "AUS",
+    "brazil": "BRA",
+    "br": "BRA",
+    "india": "IND",
+    "in": "IND",
+    "japan": "JPN",
+    "jp": "JPN",
+    "ukraine": "UKR",
+    "ua": "UKR",
+    "israel": "ISR",
+    "il": "ISR",
+    "netherlands": "NLD",
+    "nl": "NLD",
+    "singapore": "SGP",
+    "sg": "SGP",
+    "south korea": "KOR",
+    "kr": "KOR",
 }
 
 
@@ -82,7 +100,7 @@ class GeoView:
     def render_threat_heatmap(
         self,
         output: str = "threat_heatmap.html",
-        title: str  = "Threat Intensity by Country",
+        title: str = "Threat Intensity by Country",
         stix_types: list[str] | None = None,
         color_scale: str = "Reds",
     ) -> str:
@@ -111,36 +129,40 @@ class GeoView:
             counts = {"USA": 0}  # empty placeholder
 
         locations = list(counts.keys())
-        z_values  = [counts[loc] for loc in locations]
+        z_values = [counts[loc] for loc in locations]
 
         # Build self-contained HTML with embedded Plotly
         import json as _json
 
-        chart_data = _json.dumps({
-            "type":         "choropleth",
-            "locations":    locations,
-            "z":            z_values,
-            "locationmode": "ISO-3",
-            "colorscale":   color_scale,
-            "colorbar":     {"title": "Object Count"},
-            "hovertemplate": "%{location}: %{z} objects<extra></extra>",
-        })
+        chart_data = _json.dumps(
+            {
+                "type": "choropleth",
+                "locations": locations,
+                "z": z_values,
+                "locationmode": "ISO-3",
+                "colorscale": color_scale,
+                "colorbar": {"title": "Object Count"},
+                "hovertemplate": "%{location}: %{z} objects<extra></extra>",
+            }
+        )
 
-        layout = _json.dumps({
-            "title":  title,
-            "paper_bgcolor": "#1e1e2e",
-            "plot_bgcolor":  "#1e1e2e",
-            "font":   {"color": "#e8eaf6"},
-            "geo":    {
-                "showframe":    False,
-                "showcoastlines": True,
-                "projection":   {"type": "natural earth"},
-                "bgcolor":      "#263238",
-                "landcolor":    "#37474f",
-                "coastlinecolor": "#546e7a",
-                "countrycolor": "#455a64",
-            },
-        })
+        layout = _json.dumps(
+            {
+                "title": title,
+                "paper_bgcolor": "#1e1e2e",
+                "plot_bgcolor": "#1e1e2e",
+                "font": {"color": "#e8eaf6"},
+                "geo": {
+                    "showframe": False,
+                    "showcoastlines": True,
+                    "projection": {"type": "natural earth"},
+                    "bgcolor": "#263238",
+                    "landcolor": "#37474f",
+                    "coastlinecolor": "#546e7a",
+                    "countrycolor": "#455a64",
+                },
+            }
+        )
 
         html = f"""<!DOCTYPE html>
 <html><head>

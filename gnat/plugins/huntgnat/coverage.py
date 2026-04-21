@@ -58,9 +58,7 @@ class CoverageMatrix:
 
     @property
     def gaps(self) -> list[str]:
-        return sorted(
-            tid for tid, tc in self.techniques.items() if not tc.covered
-        )
+        return sorted(tid for tid, tc in self.techniques.items() if not tc.covered)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -68,9 +66,7 @@ class CoverageMatrix:
             "covered_count": self.covered_count,
             "coverage_pct": round(self.coverage_pct, 1),
             "gaps": self.gaps,
-            "techniques": {
-                tid: tc.to_dict() for tid, tc in self.techniques.items()
-            },
+            "techniques": {tid: tc.to_dict() for tid, tc in self.techniques.items()},
         }
 
 
