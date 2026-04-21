@@ -271,9 +271,7 @@ class DiscordClient(BaseClient, ConnectorMixin):
         channel_id = payload.get("channel_id", "")
         content = payload.get("content", "")
         if not channel_id or not content:
-            raise GNATClientError(
-                "upsert_object payload must contain 'channel_id' and 'content'."
-            )
+            raise GNATClientError("upsert_object payload must contain 'channel_id' and 'content'.")
         body: dict[str, Any] = {"content": content}
         if "thread_id" in payload:
             body["thread_id"] = payload["thread_id"]
@@ -407,7 +405,9 @@ class DiscordClient(BaseClient, ConnectorMixin):
 
     def list_members(self, guild_id: str, limit: int = 100) -> list[dict[str, Any]]:
         """List guild members (requires GUILD_MEMBERS privileged intent or admin scope)."""
-        result = self.get(f"{_API_BASE}/guilds/{guild_id}/members", params={"limit": min(limit, 1000)})
+        result = self.get(
+            f"{_API_BASE}/guilds/{guild_id}/members", params={"limit": min(limit, 1000)}
+        )
         return result if isinstance(result, list) else []
 
     # ── ConnectorMixin — STIX translation ─────────────────────────────────

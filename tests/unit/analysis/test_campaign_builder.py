@@ -85,9 +85,7 @@ class TestCampaignBuilderFromCluster:
 
     def test_created_by_custom(self):
         cluster = _make_cluster()
-        campaign = CampaignBuilder.from_cluster(
-            cluster, created_by="senior_analyst"
-        )
+        campaign = CampaignBuilder.from_cluster(cluster, created_by="senior_analyst")
         assert campaign.created_by == "senior_analyst"
 
 
@@ -109,9 +107,7 @@ class TestCampaignBuilderFromClusters:
             _make_cluster(cluster_id="c2", stix_confidence=30),
             _make_cluster(cluster_id="c3", stix_confidence=60),
         ]
-        campaigns = CampaignBuilder.from_clusters(
-            clusters, min_confidence=50
-        )
+        campaigns = CampaignBuilder.from_clusters(clusters, min_confidence=50)
         assert len(campaigns) == 2
 
     def test_min_confidence_zero_includes_all(self):

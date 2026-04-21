@@ -149,9 +149,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
 
     def list_threat_actors(self, limit: int = 100) -> list[dict[str, Any]]:
         """Return SOCRadar threat-actor catalog."""
-        resp = self.get(
-            f"{_API}/cti/threat_actor/", params={"limit": int(limit)}
-        )
+        resp = self.get(f"{_API}/cti/threat_actor/", params={"limit": int(limit)})
         return _extract_socradar_list(resp)
 
     def get_threat_actor(self, actor_id: str) -> dict[str, Any]:
@@ -161,9 +159,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
 
     def list_malware_families(self, limit: int = 100) -> list[dict[str, Any]]:
         """Return SOCRadar malware family catalog."""
-        resp = self.get(
-            f"{_API}/cti/malware/", params={"limit": int(limit)}
-        )
+        resp = self.get(f"{_API}/cti/malware/", params={"limit": int(limit)})
         return _extract_socradar_list(resp)
 
     def get_malware(self, malware_id: str) -> dict[str, Any]:
@@ -171,9 +167,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/cti/malware/{malware_id}/")
         return resp if isinstance(resp, dict) else {}
 
-    def list_dark_web_findings(
-        self, since: str = "", limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_dark_web_findings(self, since: str = "", limit: int = 100) -> list[dict[str, Any]]:
         """Return SOCRadar dark-web monitoring hits."""
         params: dict[str, Any] = {"limit": int(limit)}
         if since:
@@ -183,9 +177,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
 
     def list_brand_alerts(self, limit: int = 100) -> list[dict[str, Any]]:
         """Return brand-protection / digital-risk alerts."""
-        resp = self.get(
-            f"{_API}/drps/alerts/", params={"limit": int(limit)}
-        )
+        resp = self.get(f"{_API}/drps/alerts/", params={"limit": int(limit)})
         return _extract_socradar_list(resp)
 
     def list_attack_surface_alerts(
@@ -198,9 +190,7 @@ class SOCRadarClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/asm/alerts/", params=params)
         return _extract_socradar_list(resp)
 
-    def list_industry_threats(
-        self, industry: str = "", limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_industry_threats(self, industry: str = "", limit: int = 100) -> list[dict[str, Any]]:
         """Return SOCRadar industry-specific threat reports."""
         params: dict[str, Any] = {"limit": int(limit)}
         if industry:

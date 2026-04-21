@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.cycognito`` package.
 
 Exports: ``CyCognitoClient``.
 """
+
 from .client import CyCognitoClient
 
 __all__ = ["CyCognitoClient"]

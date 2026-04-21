@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +67,12 @@ class SectionSpec:
         Sort order within the report (lower = earlier).
     """
 
-    id:               str
-    title:            str            = ""
-    aggregator_field: str            = ""
-    renderer_fn:      str            = ""
-    condition_expr:   str            = ""
-    order:            int            = 0
+    id: str
+    title: str = ""
+    aggregator_field: str = ""
+    renderer_fn: str = ""
+    condition_expr: str = ""
+    order: int = 0
 
     def __post_init__(self) -> None:
         if not self.renderer_fn:
@@ -94,9 +94,9 @@ class ReportTemplate:
         Arbitrary metadata (author, version, description).
     """
 
-    name:     str
-    sections: list[SectionSpec]        = field(default_factory=list)
-    metadata: dict[str, Any]           = field(default_factory=dict)
+    name: str
+    sections: list[SectionSpec] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def sorted_sections(self) -> list[SectionSpec]:
         """Return sections ordered by ``SectionSpec.order``."""
@@ -127,7 +127,9 @@ class ReportTemplate:
         except Exception as exc:
             logger.warning(
                 "ReportTemplate %r: condition_expr %r raised %s — including section",
-                self.name, section.condition_expr, exc,
+                self.name,
+                section.condition_expr,
+                exc,
             )
             return True
 
@@ -188,56 +190,129 @@ class TemplateRegistry:
 # ── Built-in template definitions ────────────────────────────────────────────
 
 _DAILY_SECTIONS = [
-    SectionSpec("exec_summary",  "Executive Summary",          "top_threats",        order=1),
-    SectionSpec("ioc_volume",    "IOC Volume Trends",          "ioc_counts",         order=2),
-    SectionSpec("indicators",    "New Indicators",             "indicators",
-                condition_expr="len(getattr(agg, 'indicators', [])) > 0",             order=3),
-    SectionSpec("malware",       "Malware Families",           "malware_families",
-                condition_expr="getattr(agg, 'malware_count', 0) > 0",               order=4),
-    SectionSpec("threat_actors", "Threat Actor Activity",      "threat_actors",
-                condition_expr="getattr(agg, 'actor_count', 0) > 0",                 order=5),
-    SectionSpec("gaps",          "Analytical Gaps",            "gaps",
-                condition_expr="len(getattr(agg, 'gaps', [])) > 0",                   order=6),
-    SectionSpec("recommendations","Recommendations",           "recommendations",    order=7),
+    SectionSpec("exec_summary", "Executive Summary", "top_threats", order=1),
+    SectionSpec("ioc_volume", "IOC Volume Trends", "ioc_counts", order=2),
+    SectionSpec(
+        "indicators",
+        "New Indicators",
+        "indicators",
+        condition_expr="len(getattr(agg, 'indicators', [])) > 0",
+        order=3,
+    ),
+    SectionSpec(
+        "malware",
+        "Malware Families",
+        "malware_families",
+        condition_expr="getattr(agg, 'malware_count', 0) > 0",
+        order=4,
+    ),
+    SectionSpec(
+        "threat_actors",
+        "Threat Actor Activity",
+        "threat_actors",
+        condition_expr="getattr(agg, 'actor_count', 0) > 0",
+        order=5,
+    ),
+    SectionSpec(
+        "gaps",
+        "Analytical Gaps",
+        "gaps",
+        condition_expr="len(getattr(agg, 'gaps', [])) > 0",
+        order=6,
+    ),
+    SectionSpec("recommendations", "Recommendations", "recommendations", order=7),
 ]
 
 _WEEKLY_SECTIONS = [
-    SectionSpec("exec_summary",  "Weekly Executive Summary",   "top_threats",        order=1),
-    SectionSpec("ioc_volume",    "IOC Volume (7-day)",         "ioc_counts",         order=2),
-    SectionSpec("sector_threats","Sector-Specific Threats",    "sector_breakdown",   order=3),
-    SectionSpec("malware",       "Malware Families",           "malware_families",
-                condition_expr="getattr(agg, 'malware_count', 0) > 0",               order=4),
-    SectionSpec("campaigns",     "Active Campaigns",           "campaigns",
-                condition_expr="getattr(agg, 'campaign_count', 0) > 0",              order=5),
-    SectionSpec("vulnerabilities","Key Vulnerabilities",       "vulnerabilities",
-                condition_expr="getattr(agg, 'vuln_count', 0) > 0",                  order=6),
-    SectionSpec("gaps",          "Analytical Gaps",            "gaps",
-                condition_expr="len(getattr(agg, 'gaps', [])) > 0",                   order=7),
-    SectionSpec("recommendations","Recommendations",           "recommendations",    order=8),
+    SectionSpec("exec_summary", "Weekly Executive Summary", "top_threats", order=1),
+    SectionSpec("ioc_volume", "IOC Volume (7-day)", "ioc_counts", order=2),
+    SectionSpec("sector_threats", "Sector-Specific Threats", "sector_breakdown", order=3),
+    SectionSpec(
+        "malware",
+        "Malware Families",
+        "malware_families",
+        condition_expr="getattr(agg, 'malware_count', 0) > 0",
+        order=4,
+    ),
+    SectionSpec(
+        "campaigns",
+        "Active Campaigns",
+        "campaigns",
+        condition_expr="getattr(agg, 'campaign_count', 0) > 0",
+        order=5,
+    ),
+    SectionSpec(
+        "vulnerabilities",
+        "Key Vulnerabilities",
+        "vulnerabilities",
+        condition_expr="getattr(agg, 'vuln_count', 0) > 0",
+        order=6,
+    ),
+    SectionSpec(
+        "gaps",
+        "Analytical Gaps",
+        "gaps",
+        condition_expr="len(getattr(agg, 'gaps', [])) > 0",
+        order=7,
+    ),
+    SectionSpec("recommendations", "Recommendations", "recommendations", order=8),
 ]
 
 _INCIDENT_SECTIONS = [
-    SectionSpec("incident_summary", "Incident Summary",        "top_threats",        order=1),
-    SectionSpec("iocs",             "Indicators of Compromise","indicators",         order=2),
-    SectionSpec("attack_patterns",  "Attack Patterns",         "attack_patterns",
-                condition_expr="getattr(agg, 'attack_pattern_count', 0) > 0",        order=3),
-    SectionSpec("malware",          "Malware Involved",        "malware_families",
-                condition_expr="getattr(agg, 'malware_count', 0) > 0",               order=4),
-    SectionSpec("timeline",         "Event Timeline",          "timeline_events",    order=5),
-    SectionSpec("containment",      "Containment Actions",     "recommendations",    order=6),
+    SectionSpec("incident_summary", "Incident Summary", "top_threats", order=1),
+    SectionSpec("iocs", "Indicators of Compromise", "indicators", order=2),
+    SectionSpec(
+        "attack_patterns",
+        "Attack Patterns",
+        "attack_patterns",
+        condition_expr="getattr(agg, 'attack_pattern_count', 0) > 0",
+        order=3,
+    ),
+    SectionSpec(
+        "malware",
+        "Malware Involved",
+        "malware_families",
+        condition_expr="getattr(agg, 'malware_count', 0) > 0",
+        order=4,
+    ),
+    SectionSpec("timeline", "Event Timeline", "timeline_events", order=5),
+    SectionSpec("containment", "Containment Actions", "recommendations", order=6),
 ]
 
 _EXECUTIVE_SECTIONS = [
-    SectionSpec("exec_summary",  "Executive Summary",          "top_threats",        order=1),
-    SectionSpec("risk_posture",  "Current Risk Posture",       "sector_breakdown",   order=2),
-    SectionSpec("top_threats",   "Top Threat Actors",          "threat_actors",
-                condition_expr="getattr(agg, 'actor_count', 0) > 0",                 order=3),
-    SectionSpec("metrics",       "Key Metrics",                "ioc_counts",         order=4),
-    SectionSpec("recommendations","Strategic Recommendations", "recommendations",    order=5),
+    SectionSpec("exec_summary", "Executive Summary", "top_threats", order=1),
+    SectionSpec("risk_posture", "Current Risk Posture", "sector_breakdown", order=2),
+    SectionSpec(
+        "top_threats",
+        "Top Threat Actors",
+        "threat_actors",
+        condition_expr="getattr(agg, 'actor_count', 0) > 0",
+        order=3,
+    ),
+    SectionSpec("metrics", "Key Metrics", "ioc_counts", order=4),
+    SectionSpec("recommendations", "Strategic Recommendations", "recommendations", order=5),
 ]
 
 # Register built-in templates
-TemplateRegistry.register("daily",     ReportTemplate("daily",     _DAILY_SECTIONS,     {"description": "Daily threat intelligence brief"}))
-TemplateRegistry.register("weekly",    ReportTemplate("weekly",    _WEEKLY_SECTIONS,    {"description": "Weekly threat intelligence summary"}))
-TemplateRegistry.register("incident",  ReportTemplate("incident",  _INCIDENT_SECTIONS,  {"description": "Incident-specific investigation report"}))
-TemplateRegistry.register("executive", ReportTemplate("executive", _EXECUTIVE_SECTIONS, {"description": "Executive-level threat brief"}))
+TemplateRegistry.register(
+    "daily",
+    ReportTemplate("daily", _DAILY_SECTIONS, {"description": "Daily threat intelligence brief"}),
+)
+TemplateRegistry.register(
+    "weekly",
+    ReportTemplate(
+        "weekly", _WEEKLY_SECTIONS, {"description": "Weekly threat intelligence summary"}
+    ),
+)
+TemplateRegistry.register(
+    "incident",
+    ReportTemplate(
+        "incident", _INCIDENT_SECTIONS, {"description": "Incident-specific investigation report"}
+    ),
+)
+TemplateRegistry.register(
+    "executive",
+    ReportTemplate(
+        "executive", _EXECUTIVE_SECTIONS, {"description": "Executive-level threat brief"}
+    ),
+)

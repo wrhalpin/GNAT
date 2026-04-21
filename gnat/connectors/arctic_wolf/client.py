@@ -88,9 +88,7 @@ class ArcticWolfClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization + optional Customer headers."""
         if not self.api_key:
-            raise GNATClientError(
-                "Arctic Wolf connector requires api_key in config."
-            )
+            raise GNATClientError("Arctic Wolf connector requires api_key in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_key}"
         self._auth_headers["Accept"] = "application/json"
         if self.customer_id:
@@ -122,9 +120,7 @@ class ArcticWolfClient(BaseClient, ConnectorMixin):
                 f"Arctic Wolf get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Arctic Wolf returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Arctic Wolf returned unexpected payload for {object_id!r}")
         return dict(resp, _aw_kind=kind)
 
     def list_objects(
@@ -166,13 +162,9 @@ class ArcticWolfClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _aw_kind=tag) for r in _extract_aw_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Arctic Wolf connector is read-only."""
-        raise GNATClientError(
-            "Arctic Wolf connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Arctic Wolf connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Arctic Wolf connector is read-only."""
@@ -182,18 +174,14 @@ class ArcticWolfClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_tickets(
-        self, status: str = "", severity: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_tickets(self, status: str = "", severity: str = "") -> list[dict[str, Any]]:
         """Return Arctic Wolf tickets (MDR delivery workflow units)."""
         filters: dict[str, Any] = {"kind": "tickets"}
         if status:
             filters["status"] = status
         if severity:
             filters["severity"] = severity
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=1000
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=1000)
 
     def list_investigations(self) -> list[dict[str, Any]]:
         """Return Arctic Wolf investigation records."""
@@ -230,17 +218,14 @@ class ArcticWolfClient(BaseClient, ConnectorMixin):
 
         if kind == "customer":
             cust_id = native.get("id") or self.customer_id or "unknown"
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_ARCTICWOLF, f"identity|customer|{cust_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_ARCTICWOLF, f"identity|customer|{cust_id}")
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
                 "spec_version": CURRENT_SPEC_VERSION,
                 "created": utcnow(),
                 "modified": utcnow(),
-                "name": native.get("name")
-                or f"Arctic Wolf customer {cust_id}",
+                "name": native.get("name") or f"Arctic Wolf customer {cust_id}",
                 "identity_class": "organization",
                 "x_arctic_wolf": {"raw": native},
             }
@@ -249,22 +234,14 @@ class ArcticWolfClient(BaseClient, ConnectorMixin):
         refs: list[str] = []
         cust_id = native.get("customer_id") or self.customer_id
         if cust_id:
-            cust_uuid = uuid.uuid5(
-                _NAMESPACE_ARCTICWOLF, f"identity|customer|{cust_id}"
-            )
+            cust_uuid = uuid.uuid5(_NAMESPACE_ARCTICWOLF, f"identity|customer|{cust_id}")
             refs.append(f"identity--{cust_uuid}")
 
         for ip in _values(native.get("affected_ips") or native.get("ips")):
-            ip_uuid = uuid.uuid5(
-                _NAMESPACE_ARCTICWOLF, f"ipv4-addr|{ip}"
-            )
+            ip_uuid = uuid.uuid5(_NAMESPACE_ARCTICWOLF, f"ipv4-addr|{ip}")
             refs.append(f"ipv4-addr--{ip_uuid}")
 
-        first = (
-            native.get("created_at")
-            or native.get("detected_at")
-            or utcnow()
-        )
+        first = native.get("created_at") or native.get("detected_at") or utcnow()
         last = native.get("updated_at") or first
 
         return make_observed_data_envelope(

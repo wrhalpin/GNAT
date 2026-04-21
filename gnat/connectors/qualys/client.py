@@ -184,9 +184,12 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
         params: dict[str, Any] = {"action": "list", "limit": int(limit)}
         resp = self.get("/api/2.0/fo/asset/host/", params=params)
         if isinstance(resp, dict):
-            host_list = resp.get("HOST_LIST_OUTPUT", {}).get(
-                "RESPONSE", {}
-            ).get("HOST_LIST", {}).get("HOST", [])
+            host_list = (
+                resp.get("HOST_LIST_OUTPUT", {})
+                .get("RESPONSE", {})
+                .get("HOST_LIST", {})
+                .get("HOST", [])
+            )
             if isinstance(host_list, list):
                 return host_list
             if isinstance(host_list, dict):
@@ -195,9 +198,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
 
     def list_asset_groups(self) -> list[dict[str, Any]]:
         """List defined Qualys asset groups."""
-        resp = self.get(
-            "/api/2.0/fo/asset/group/", params={"action": "list"}
-        )
+        resp = self.get("/api/2.0/fo/asset/group/", params={"action": "list"})
         if isinstance(resp, dict):
             groups = (
                 resp.get("ASSET_GROUP_LIST_OUTPUT", {})
@@ -211,9 +212,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
                 return [groups]
         return []
 
-    def list_scans(
-        self, state: str = "", limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_scans(self, state: str = "", limit: int = 100) -> list[dict[str, Any]]:
         """List VM scans, optionally filtered by state (``Finished``/``Running``)."""
         params: dict[str, Any] = {"action": "list"}
         if state:
@@ -254,9 +253,7 @@ class QualysVMDRClient(BaseClient, ConnectorMixin):
 
     def list_reports(self, limit: int = 100) -> list[dict[str, Any]]:
         """List generated Qualys reports."""
-        resp = self.get(
-            "/api/2.0/fo/report/", params={"action": "list"}
-        )
+        resp = self.get("/api/2.0/fo/report/", params={"action": "list"})
         if isinstance(resp, dict):
             reports = (
                 resp.get("REPORT_LIST_OUTPUT", {})

@@ -61,9 +61,9 @@ class ReportCache:
         ttl_seconds: float = _DEFAULT_TTL,
     ) -> None:
         self._ttl = ttl_seconds
-        self._dir = Path(cache_dir or os.path.join(
-            os.path.expanduser("~"), ".gnat", "report_cache"
-        ))
+        self._dir = Path(
+            cache_dir or os.path.join(os.path.expanduser("~"), ".gnat", "report_cache")
+        )
         self._dir.mkdir(parents=True, exist_ok=True)
         self._index_path = self._dir / "cache_index.json"
         self._index: dict[str, dict[str, Any]] = self._load_index()
@@ -94,8 +94,8 @@ class ReportCache:
         """
         payload = {
             "report_type": report_type,
-            "formats":     sorted(formats or []),
-            "data":        self._serialize_aggregates(aggregates),
+            "formats": sorted(formats or []),
+            "data": self._serialize_aggregates(aggregates),
         }
         raw = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
         return hashlib.md5(raw).hexdigest()  # nosec B324
@@ -134,8 +134,8 @@ class ReportCache:
             Rendered file paths to associate with this key.
         """
         self._index[key] = {
-            "paths":      paths,
-            "stored_at":  time.time(),
+            "paths": paths,
+            "stored_at": time.time(),
             "stored_iso": datetime.now(timezone.utc).isoformat(),
         }
         self._save_index()
@@ -155,11 +155,10 @@ class ReportCache:
 
     def evict_expired(self) -> int:
         """Remove expired entries.  Returns number of entries evicted."""
-        now    = time.time()
+        now = time.time()
         before = len(self._index)
         self._index = {
-            k: v for k, v in self._index.items()
-            if now - v.get("stored_at", 0) <= self._ttl
+            k: v for k, v in self._index.items() if now - v.get("stored_at", 0) <= self._ttl
         }
         evicted = before - len(self._index)
         if evicted:
@@ -171,8 +170,8 @@ class ReportCache:
         self.evict_expired()
         return {
             "total_entries": len(self._index),
-            "cache_dir":     str(self._dir),
-            "ttl_seconds":   self._ttl,
+            "cache_dir": str(self._dir),
+            "ttl_seconds": self._ttl,
         }
 
     # ── Internal helpers ────────────────────────────────────────────────────────
@@ -210,8 +209,6 @@ class ReportCache:
 
     def _save_index(self) -> None:
         try:
-            self._index_path.write_text(
-                json.dumps(self._index, indent=2), encoding="utf-8"
-            )
+            self._index_path.write_text(json.dumps(self._index, indent=2), encoding="utf-8")
         except Exception as exc:
             logger.warning("ReportCache: failed to save index: %s", exc)

@@ -82,20 +82,20 @@ class InvestigationQuery:
         Sort descending when True (default True — newest first).
     """
 
-    status:           list[Any] | None  = None
-    created_by:       str | None        = None
-    assigned_to:      str | None        = None
-    tags:             list[str] | None  = None
-    classification:   list[Any] | None  = None
-    date_from:        datetime | None   = None
-    date_to:          datetime | None   = None
-    text:             str | None        = None
-    has_hypothesis:   bool | None       = None
-    has_linked_report: bool | None      = None
-    page:             int               = 1
-    page_size:        int               = 50
-    sort_by:          str               = "updated_at"
-    sort_desc:        bool              = True
+    status: list[Any] | None = None
+    created_by: str | None = None
+    assigned_to: str | None = None
+    tags: list[str] | None = None
+    classification: list[Any] | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    text: str | None = None
+    has_hypothesis: bool | None = None
+    has_linked_report: bool | None = None
+    page: int = 1
+    page_size: int = 50
+    sort_by: str = "updated_at"
+    sort_desc: bool = True
 
     # ── Derived helpers ───────────────────────────────────────────────────────
 
@@ -123,9 +123,7 @@ class InvestigationQuery:
             return None
         return [c.value if hasattr(c, "value") else str(c) for c in self.classification]
 
-    _VALID_SORT_COLUMNS: frozenset[str] = frozenset(
-        {"created_at", "updated_at", "title", "status"}
-    )
+    _VALID_SORT_COLUMNS: frozenset[str] = frozenset({"created_at", "updated_at", "title", "status"})
 
     @property
     def safe_sort_by(self) -> str:

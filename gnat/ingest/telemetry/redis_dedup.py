@@ -57,9 +57,7 @@ class RedisDeduplicationCache:
         try:
             import redis as redis_lib
 
-            self._redis = redis_lib.Redis.from_url(
-                self._redis_url, decode_responses=True
-            )
+            self._redis = redis_lib.Redis.from_url(self._redis_url, decode_responses=True)
             self._redis.ping()
             logger.info("RedisDeduplicationCache: connected to %s", self._redis_url)
         except Exception:

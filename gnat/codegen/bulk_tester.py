@@ -37,9 +37,9 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_TEST_DIR  = "tests/unit/connectors"
-_DEFAULT_WORKERS   = 4
-_PYTEST_TIMEOUT    = 120  # seconds per connector test file
+_DEFAULT_TEST_DIR = "tests/unit/connectors"
+_DEFAULT_WORKERS = 4
+_PYTEST_TIMEOUT = 120  # seconds per connector test file
 
 
 @dataclass
@@ -71,30 +71,30 @@ class ConnectorTestResult:
         Path to the test file that was executed.
     """
 
-    name:            str
-    passed:          bool    = False
-    total_tests:     int     = 0
-    passed_tests:    int     = 0
-    failed_tests:    int     = 0
-    error_tests:     int     = 0
-    skipped_tests:   int     = 0
-    elapsed_seconds: float   = 0.0
-    error_summary:   str     = ""
-    test_file:       str     = ""
+    name: str
+    passed: bool = False
+    total_tests: int = 0
+    passed_tests: int = 0
+    failed_tests: int = 0
+    error_tests: int = 0
+    skipped_tests: int = 0
+    elapsed_seconds: float = 0.0
+    error_summary: str = ""
+    test_file: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a JSON-friendly dict."""
         return {
-            "name":            self.name,
-            "passed":          self.passed,
-            "total_tests":     self.total_tests,
-            "passed_tests":    self.passed_tests,
-            "failed_tests":    self.failed_tests,
-            "error_tests":     self.error_tests,
-            "skipped_tests":   self.skipped_tests,
+            "name": self.name,
+            "passed": self.passed,
+            "total_tests": self.total_tests,
+            "passed_tests": self.passed_tests,
+            "failed_tests": self.failed_tests,
+            "error_tests": self.error_tests,
+            "skipped_tests": self.skipped_tests,
             "elapsed_seconds": round(self.elapsed_seconds, 2),
-            "error_summary":   self.error_summary,
-            "test_file":       self.test_file,
+            "error_summary": self.error_summary,
+            "test_file": self.test_file,
         }
 
 
@@ -123,35 +123,35 @@ class BulkTestResult:
         Per-connector details.
     """
 
-    total:            int                       = 0
-    passed:           int                       = 0
-    failed:           int                       = 0
-    skipped:          int                       = 0
-    coverage_pct:     float                     = 0.0
-    total_test_cases: int                       = 0
-    elapsed_seconds:  float                     = 0.0
+    total: int = 0
+    passed: int = 0
+    failed: int = 0
+    skipped: int = 0
+    coverage_pct: float = 0.0
+    total_test_cases: int = 0
+    elapsed_seconds: float = 0.0
     connector_results: list[ConnectorTestResult] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a JSON-friendly dict."""
         return {
-            "total":             self.total,
-            "passed":            self.passed,
-            "failed":            self.failed,
-            "skipped":           self.skipped,
-            "coverage_pct":      round(self.coverage_pct, 1),
-            "total_test_cases":  self.total_test_cases,
-            "elapsed_seconds":   round(self.elapsed_seconds, 2),
+            "total": self.total,
+            "passed": self.passed,
+            "failed": self.failed,
+            "skipped": self.skipped,
+            "coverage_pct": round(self.coverage_pct, 1),
+            "total_test_cases": self.total_test_cases,
+            "elapsed_seconds": round(self.elapsed_seconds, 2),
             "connector_results": [r.to_dict() for r in self.connector_results],
         }
 
 
 def run_bulk_tests(
-    connectors:   list[str] | None = None,
-    test_dir:     str = _DEFAULT_TEST_DIR,
-    parallel:     int = _DEFAULT_WORKERS,
+    connectors: list[str] | None = None,
+    test_dir: str = _DEFAULT_TEST_DIR,
+    parallel: int = _DEFAULT_WORKERS,
     project_root: str | None = None,
-    verbose:      bool = False,
+    verbose: bool = False,
 ) -> BulkTestResult:
     """
     Run pytest for all (or specified) connector test files.
@@ -174,9 +174,9 @@ def run_bulk_tests(
     -------
     BulkTestResult
     """
-    root     = Path(project_root or os.getcwd())
+    root = Path(project_root or os.getcwd())
     test_path = root / test_dir
-    start    = time.monotonic()
+    start = time.monotonic()
 
     # Discover test files
     connector_files = _discover_test_files(test_path, connectors)
@@ -185,7 +185,9 @@ def run_bulk_tests(
         logger.warning("bulk_tester: no test files found in %s", test_path)
         return BulkTestResult(total=0, coverage_pct=0.0)
 
-    logger.info("bulk_tester: testing %d connector(s) with %d workers", len(connector_files), parallel)
+    logger.info(
+        "bulk_tester: testing %d connector(s) with %d workers", len(connector_files), parallel
+    )
 
     workers = min(parallel, len(connector_files))
     connector_results: list[ConnectorTestResult] = []
@@ -201,37 +203,38 @@ def run_bulk_tests(
                 cr = future.result(timeout=_PYTEST_TIMEOUT + 10)
             except Exception as exc:
                 cr = ConnectorTestResult(
-                    name          = name,
-                    passed        = False,
-                    error_summary = f"Executor error: {exc}",
+                    name=name,
+                    passed=False,
+                    error_summary=f"Executor error: {exc}",
                 )
             connector_results.append(cr)
 
     elapsed = time.monotonic() - start
 
     # Aggregate
-    passed    = sum(1 for r in connector_results if r.passed)
-    failed    = sum(1 for r in connector_results if not r.passed and r.total_tests > 0)
-    skipped   = sum(1 for r in connector_results if r.total_tests == 0 and not r.error_summary)
+    passed = sum(1 for r in connector_results if r.passed)
+    failed = sum(1 for r in connector_results if not r.passed and r.total_tests > 0)
+    skipped = sum(1 for r in connector_results if r.total_tests == 0 and not r.error_summary)
     total_tcs = sum(r.total_tests for r in connector_results)
-    tested    = passed + failed
-    cov_pct   = (tested / len(connector_files) * 100) if connector_files else 0.0
+    tested = passed + failed
+    cov_pct = (tested / len(connector_files) * 100) if connector_files else 0.0
 
     connector_results.sort(key=lambda r: r.name)
 
     return BulkTestResult(
-        total             = len(connector_files),
-        passed            = passed,
-        failed            = failed,
-        skipped           = skipped,
-        coverage_pct      = cov_pct,
-        total_test_cases  = total_tcs,
-        elapsed_seconds   = elapsed,
-        connector_results = connector_results,
+        total=len(connector_files),
+        passed=passed,
+        failed=failed,
+        skipped=skipped,
+        coverage_pct=cov_pct,
+        total_test_cases=total_tcs,
+        elapsed_seconds=elapsed,
+        connector_results=connector_results,
     )
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
+
 
 def _discover_test_files(
     test_path: Path,
@@ -265,9 +268,9 @@ def _discover_test_files(
 
 
 def _run_single(
-    name:    str,
-    path:    Path,
-    root:    Path,
+    name: str,
+    path: Path,
+    root: Path,
     verbose: bool,
 ) -> ConnectorTestResult:
     """Run pytest for a single connector test file and parse the XML output."""
@@ -277,7 +280,9 @@ def _run_single(
 
     try:
         cmd = [
-            sys.executable, "-m", "pytest",
+            sys.executable,
+            "-m",
+            "pytest",
             str(path),
             f"--junitxml={xml_path}",
             "--tb=short",
@@ -300,38 +305,38 @@ def _run_single(
     except subprocess.TimeoutExpired:
         elapsed = time.monotonic() - start
         return ConnectorTestResult(
-            name            = name,
-            passed          = False,
-            elapsed_seconds = elapsed,
-            error_summary   = f"Timed out after {_PYTEST_TIMEOUT}s",
-            test_file       = str(path),
+            name=name,
+            passed=False,
+            elapsed_seconds=elapsed,
+            error_summary=f"Timed out after {_PYTEST_TIMEOUT}s",
+            test_file=str(path),
         )
     except Exception as exc:
         elapsed = time.monotonic() - start
         return ConnectorTestResult(
-            name            = name,
-            passed          = False,
-            elapsed_seconds = elapsed,
-            error_summary   = str(exc),
-            test_file       = str(path),
+            name=name,
+            passed=False,
+            elapsed_seconds=elapsed,
+            error_summary=str(exc),
+            test_file=str(path),
         )
     finally:
-        try:
+        import contextlib
+
+        with contextlib.suppress(OSError):
             os.unlink(xml_path)
-        except OSError:
-            pass
 
 
 def _parse_junit_xml(
-    name:     str,
+    name: str,
     xml_path: str,
     test_file: str,
-    elapsed:  float,
-    proc:     subprocess.CompletedProcess,
+    elapsed: float,
+    proc: subprocess.CompletedProcess,
 ) -> ConnectorTestResult:
     """Parse JUnit XML output and build a :class:`ConnectorTestResult`."""
     try:
-        tree = ET.parse(xml_path)
+        tree = ET.parse(xml_path)  # nosec B314
         root = tree.getroot()
 
         # Handle both <testsuites> and <testsuite> roots
@@ -340,47 +345,49 @@ def _parse_junit_xml(
         else:
             suites = [root]
 
-        total   = 0
-        failed  = 0
-        errors  = 0
+        total = 0
+        failed = 0
+        errors = 0
         skipped = 0
         failures_text: list[str] = []
 
         for suite in suites:
-            total   += int(suite.get("tests",    0))
-            failed  += int(suite.get("failures", 0))
-            errors  += int(suite.get("errors",   0))
-            skipped += int(suite.get("skipped",  0))
+            total += int(suite.get("tests", 0))
+            failed += int(suite.get("failures", 0))
+            errors += int(suite.get("errors", 0))
+            skipped += int(suite.get("skipped", 0))
             for tc in suite.findall(".//failure"):
                 msg = tc.get("message", "") or tc.text or ""
                 failures_text.append(msg[:200])
 
         passed_count = total - failed - errors - skipped
-        all_passed   = (failed == 0 and errors == 0 and total > 0)
-        error_summary = "; ".join(failures_text[:3]) if failures_text else (
-            "" if all_passed else (proc.stderr or proc.stdout or "")[:300]
+        all_passed = failed == 0 and errors == 0 and total > 0
+        error_summary = (
+            "; ".join(failures_text[:3])
+            if failures_text
+            else ("" if all_passed else (proc.stderr or proc.stdout or "")[:300])
         )
 
         return ConnectorTestResult(
-            name            = name,
-            passed          = all_passed,
-            total_tests     = total,
-            passed_tests    = max(0, passed_count),
-            failed_tests    = failed,
-            error_tests     = errors,
-            skipped_tests   = skipped,
-            elapsed_seconds = elapsed,
-            error_summary   = error_summary,
-            test_file       = test_file,
+            name=name,
+            passed=all_passed,
+            total_tests=total,
+            passed_tests=max(0, passed_count),
+            failed_tests=failed,
+            error_tests=errors,
+            skipped_tests=skipped,
+            elapsed_seconds=elapsed,
+            error_summary=error_summary,
+            test_file=test_file,
         )
 
     except Exception:
         # XML missing or malformed — fall back to return code
         passed = proc.returncode == 0
         return ConnectorTestResult(
-            name            = name,
-            passed          = passed,
-            elapsed_seconds = elapsed,
-            error_summary   = "" if passed else (proc.stderr or proc.stdout or "")[:300],
-            test_file       = test_file,
+            name=name,
+            passed=passed,
+            elapsed_seconds=elapsed,
+            error_summary="" if passed else (proc.stderr or proc.stdout or "")[:300],
+            test_file=test_file,
         )

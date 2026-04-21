@@ -60,8 +60,7 @@ except ImportError:
 def _require_sqlalchemy() -> None:
     if not _SA_AVAILABLE:
         raise ImportError(
-            "sqlalchemy is required for LineageStore. "
-            "Install with: pip install 'gnat[persist]'"
+            "sqlalchemy is required for LineageStore. Install with: pip install 'gnat[persist]'"
         )
 
 
@@ -70,6 +69,7 @@ def _utcnow() -> datetime:
 
 
 if _SA_AVAILABLE:
+
     class _Base(DeclarativeBase):
         pass
 
@@ -79,45 +79,43 @@ if _SA_AVAILABLE:
         __tablename__ = "lineage_events"
 
         # Auto-increment integer PK; the UUID 'id' is stored in metadata_json
-        pk            = Column(Integer, primary_key=True, autoincrement=True)
-        id            = Column(String(36), nullable=False, unique=True, index=True)
-        event_type    = Column(String(32), nullable=False, index=True)
-        object_id     = Column(String(256), nullable=False)
-        object_type   = Column(String(64),  nullable=False)
-        actor         = Column(String(256), nullable=False)
-        source        = Column(String(256), nullable=False)
+        pk = Column(Integer, primary_key=True, autoincrement=True)
+        id = Column(String(36), nullable=False, unique=True, index=True)
+        event_type = Column(String(32), nullable=False, index=True)
+        object_id = Column(String(256), nullable=False)
+        object_type = Column(String(64), nullable=False)
+        actor = Column(String(256), nullable=False)
+        source = Column(String(256), nullable=False)
         metadata_json = Column(Text, nullable=False, default="{}")
-        timestamp     = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+        timestamp = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
-        __table_args__ = (
-            Index("ix_lineage_object_timestamp", "object_id", "timestamp"),
-        )
+        __table_args__ = (Index("ix_lineage_object_timestamp", "object_id", "timestamp"),)
 
         def to_event(self) -> LineageEvent:
             meta = json.loads(self.metadata_json or "{}")
             return LineageEvent(
-                id          = self.id,
-                event_type  = LineageEventType(self.event_type),
-                object_id   = self.object_id,
-                object_type = self.object_type,
-                actor       = self.actor,
-                source      = self.source,
-                timestamp   = self.timestamp,
-                metadata    = meta,
+                id=self.id,
+                event_type=LineageEventType(self.event_type),
+                object_id=self.object_id,
+                object_type=self.object_type,
+                actor=self.actor,
+                source=self.source,
+                timestamp=self.timestamp,
+                metadata=meta,
             )
 
         @classmethod
-        def from_event(cls, evt: LineageEvent) -> "LineageEventModel":
+        def from_event(cls, evt: LineageEvent) -> LineageEventModel:
             et = evt.event_type
             return cls(
-                id            = evt.id,
-                event_type    = et.value if hasattr(et, "value") else str(et),
-                object_id     = evt.object_id,
-                object_type   = evt.object_type,
-                actor         = evt.actor,
-                source        = evt.source,
-                metadata_json = json.dumps(evt.metadata),
-                timestamp     = evt.timestamp,
+                id=evt.id,
+                event_type=et.value if hasattr(et, "value") else str(et),
+                object_id=evt.object_id,
+                object_type=evt.object_type,
+                actor=evt.actor,
+                source=evt.source,
+                metadata_json=json.dumps(evt.metadata),
+                timestamp=evt.timestamp,
             )
 
 
@@ -135,14 +133,14 @@ class LineageStore:
 
     def __init__(self, url: str, echo: bool = False) -> None:
         _require_sqlalchemy()
-        self._engine  = create_engine(url, echo=echo, future=True)
+        self._engine = create_engine(url, echo=echo, future=True)
         self._Session = sessionmaker(bind=self._engine, expire_on_commit=False)
 
     @classmethod
-    def from_engine(cls, engine: Any) -> "LineageStore":
+    def from_engine(cls, engine: Any) -> LineageStore:
         _require_sqlalchemy()
         instance = cls.__new__(cls)
-        instance._engine  = engine
+        instance._engine = engine
         instance._Session = sessionmaker(bind=engine, expire_on_commit=False)
         return instance
 
@@ -162,10 +160,10 @@ class LineageStore:
         with self._Session() as session:
             session.add(LineageEventModel.from_event(event))
             session.commit()
-        et_name = event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type)
-        logger.debug(
-            "LineageStore: appended %s for %s", et_name, event.object_id
+        et_name = (
+            event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type)
         )
+        logger.debug("LineageStore: appended %s for %s", et_name, event.object_id)
 
     def query(self, object_id: str, limit: int = 500) -> list[LineageEvent]:
         """Return all events for *object_id*, ordered oldest-first."""

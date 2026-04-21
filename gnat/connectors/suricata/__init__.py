@@ -93,6 +93,7 @@ class SuricataSTIXError(SuricataError):
 @dataclass
 class SuricataConfig:
     """Configuration container for suricata."""
+
     eve_log_path: str = "/var/log/suricata/eve.json"
     socket_path: str = "/var/run/suricata/suricata-command.socket"
     timeout: int = 10

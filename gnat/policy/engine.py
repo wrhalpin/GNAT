@@ -78,7 +78,9 @@ class PolicyEngine:
         has = permission in permissions_for(role)
         logger.debug(
             "PolicyEngine: subject role=%r, permission=%r → %s",
-            role, permission, "ALLOW" if has else "DENY",
+            role,
+            permission,
+            "ALLOW" if has else "DENY",
         )
         return has
 
@@ -90,9 +92,9 @@ class PolicyEngine:
 
     def require(
         self,
-        permission:  Permission,
-        key_store:   Any | None = None,
-        allow_none:  bool = False,
+        permission: Permission,
+        key_store: Any | None = None,
+        allow_none: bool = False,
     ) -> Any:
         """
         Return a FastAPI ``Depends``-compatible callable that enforces *permission*.
@@ -128,11 +130,9 @@ class PolicyEngine:
                 key: Any = None
                 if _key_store is not None and authorization.startswith("Bearer "):
                     token = authorization.removeprefix("Bearer ").strip()
-                    key   = _key_store.get_key(token)
+                    key = _key_store.get_key(token)
                     if key is None and not allow_none:
-                        raise HTTPException(
-                            status_code=401, detail="Invalid or missing API key."
-                        )
+                        raise HTTPException(status_code=401, detail="Invalid or missing API key.")
 
                 if not engine.evaluate(key, permission):
                     raise HTTPException(
@@ -154,10 +154,10 @@ class PolicyEngine:
 
     def audit(
         self,
-        subject:    Any,
+        subject: Any,
         permission: Permission,
-        resource:   str = "",
-        granted:    bool | None = None,
+        resource: str = "",
+        granted: bool | None = None,
     ) -> None:
         """
         Emit an audit log entry for an access decision.
@@ -172,18 +172,23 @@ class PolicyEngine:
 
         logger.info(
             "AUDIT: actor=%r role=%r permission=%r resource=%r decision=%s",
-            actor, role, permission.value, resource, "ALLOW" if granted else "DENY",
+            actor,
+            role,
+            permission.value,
+            resource,
+            "ALLOW" if granted else "DENY",
         )
 
         try:
             from gnat.plugins.hooks import HookBus
+
             HookBus.instance().emit(
                 "policy_decision",
-                actor      = actor,
-                role       = role,
-                permission = permission.value,
-                resource   = resource,
-                granted    = granted,
+                actor=actor,
+                role=role,
+                permission=permission.value,
+                resource=resource,
+                granted=granted,
             )
         except Exception as exc:  # noqa: BLE001
             logger.warning("Policy audit log emit failed: %s", exc)

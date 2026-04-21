@@ -6,6 +6,7 @@ gnat.connectors.gemini.client
 
 Client utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 import json

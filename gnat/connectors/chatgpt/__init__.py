@@ -9,6 +9,7 @@ Public API surface for the ``gnat.connectors.chatgpt`` package.
 
 Exports: ``ChatGPTClient``.
 """
+
 from .client import ChatGPTClient
 
 __all__ = ["ChatGPTClient"]

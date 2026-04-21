@@ -64,26 +64,24 @@ class MetricsAggregator:
         """
         cutoff = self._cutoff(days)
 
-        opened   = self._collector.since(cutoff, MetricType.INVESTIGATION_OPENED)
-        closed   = self._collector.since(cutoff, MetricType.INVESTIGATION_CLOSED)
+        opened = self._collector.since(cutoff, MetricType.INVESTIGATION_OPENED)
+        closed = self._collector.since(cutoff, MetricType.INVESTIGATION_CLOSED)
         duration = self._collector.since(cutoff, MetricType.INVESTIGATION_DURATION)
         reported = self._collector.since(cutoff, MetricType.REPORT_PUBLISHED)
 
-        n_opened   = len(opened)
-        n_closed   = len(closed)
+        n_opened = len(opened)
+        n_closed = len(closed)
         completion = n_closed / n_opened if n_opened else 0.0
-        avg_dur    = (
-            sum(e.value for e in duration) / len(duration) if duration else 0.0
-        )
-        report_rt  = n_closed / len(reported) if reported else 0.0
+        avg_dur = sum(e.value for e in duration) / len(duration) if duration else 0.0
+        report_rt = n_closed / len(reported) if reported else 0.0
 
         return {
-            "days":                    days,
-            "total_opened":            n_opened,
-            "total_closed":            n_closed,
-            "completion_rate":         round(completion, 4),
-            "avg_duration_seconds":    round(avg_dur, 1),
-            "report_rate":             round(report_rt, 4),
+            "days": days,
+            "total_opened": n_opened,
+            "total_closed": n_closed,
+            "completion_rate": round(completion, 4),
+            "avg_duration_seconds": round(avg_dur, 1),
+            "report_rate": round(report_rt, 4),
         }
 
     # ── Enrichment metrics ────────────────────────────────────────────────────
@@ -91,7 +89,7 @@ class MetricsAggregator:
     def enrichment_effectiveness(
         self,
         platform: str | None = None,
-        days:     int = 7,
+        days: int = 7,
     ) -> dict[str, Any]:
         """
         Enrichment hit rate for the past *days* days.
@@ -117,21 +115,21 @@ class MetricsAggregator:
                 return events
             return [e for e in events if e.labels.get("platform") == platform]
 
-        hits    = _platform_filter(self._collector.since(cutoff, MetricType.ENRICHMENT_HIT))
-        misses  = _platform_filter(self._collector.since(cutoff, MetricType.ENRICHMENT_MISS))
+        hits = _platform_filter(self._collector.since(cutoff, MetricType.ENRICHMENT_HIT))
+        misses = _platform_filter(self._collector.since(cutoff, MetricType.ENRICHMENT_MISS))
         latency = _platform_filter(self._collector.since(cutoff, MetricType.ENRICHMENT_LATENCY))
 
-        total   = len(hits) + len(misses)
-        hit_rt  = len(hits) / total if total else 0.0
+        total = len(hits) + len(misses)
+        hit_rt = len(hits) / total if total else 0.0
         avg_lat = sum(e.value for e in latency) / len(latency) if latency else 0.0
 
         return {
-            "platform":       platform or "all",
-            "days":           days,
+            "platform": platform or "all",
+            "days": days,
             "total_requests": total,
-            "hits":           len(hits),
-            "misses":         len(misses),
-            "hit_rate":       round(hit_rt, 4),
+            "hits": len(hits),
+            "misses": len(misses),
+            "hit_rate": round(hit_rt, 4),
             "avg_latency_ms": round(avg_lat, 1),
         }
 
@@ -156,9 +154,9 @@ class MetricsAggregator:
             by_inv[inv_id] = by_inv.get(inv_id, 0) + 1
 
         return {
-            "days":               days,
-            "total_gaps":         len(events),
-            "by_investigation":   by_inv,
+            "days": days,
+            "total_gaps": len(events),
+            "by_investigation": by_inv,
         }
 
     # ── False positive rate ───────────────────────────────────────────────────
@@ -180,7 +178,7 @@ class MetricsAggregator:
             by_platform[platform] = by_platform.get(platform, 0) + 1
 
         return {
-            "days":         days,
+            "days": days,
             "total_flagged": len(events),
-            "by_platform":  by_platform,
+            "by_platform": by_platform,
         }

@@ -137,9 +137,7 @@ class TestObservedDataEnvelope:
 
 class TestCvssExternalReference:
     def test_basic(self):
-        ref = cvss_to_external_reference(
-            "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", 9.8
-        )
+        ref = cvss_to_external_reference("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", 9.8)
         assert ref["source_name"] == "cvss"
         assert "AV:N" in ref["external_id"]
         assert "9.8" in ref["description"]
@@ -229,7 +227,10 @@ class TestOsvToStixVulnerability:
             "modified": "2022-05-01T00:00:00Z",
             "affected": [
                 {
-                    "package": {"ecosystem": "Maven", "name": "org.apache.logging.log4j:log4j-core"},
+                    "package": {
+                        "ecosystem": "Maven",
+                        "name": "org.apache.logging.log4j:log4j-core",
+                    },
                     "ranges": [],
                     "versions": ["2.0", "2.14"],
                 }

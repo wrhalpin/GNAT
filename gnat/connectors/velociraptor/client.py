@@ -85,8 +85,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
         """Set Bearer header (or rely on mTLS via cert/key paths)."""
         if not self.api_token and not (self.cert_path and self.key_path):
             raise GNATClientError(
-                "Velociraptor connector requires either api_token or "
-                "cert_path + key_path."
+                "Velociraptor connector requires either api_token or cert_path + key_path."
             )
         if self.api_token:
             self._auth_headers["Authorization"] = f"Bearer {self.api_token}"
@@ -118,9 +117,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
                 f"Velociraptor get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Velociraptor returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Velociraptor returned unexpected payload for {object_id!r}")
         return dict(resp, _vr_kind=kind)
 
     def list_objects(
@@ -156,9 +153,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
         elif stix_type == "observed-data":
             client_id = filters.get("client_id")
             if not client_id:
-                raise GNATClientError(
-                    "Velociraptor flow listing requires a 'client_id' filter"
-                )
+                raise GNATClientError("Velociraptor flow listing requires a 'client_id' filter")
             resp = self.get(f"/api/v1/flows/{client_id}", params=params)
             items = resp.get("items", []) if isinstance(resp, dict) else []
             tag = "flow"
@@ -168,9 +163,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _vr_kind=tag) for r in items if isinstance(r, dict)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Velociraptor connector is read-only via CRUD."""
         raise GNATClientError(
             "Velociraptor connector is read-only via CRUD — use the "
@@ -185,18 +178,14 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_clients(
-        self, search: str = "", labels: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_clients(self, search: str = "", labels: str = "") -> list[dict[str, Any]]:
         """Return all enrolled Velociraptor agents."""
         filters: dict[str, Any] = {}
         if search:
             filters["search"] = search
         if labels:
             filters["labels"] = labels
-        return self.list_objects(
-            "x-velociraptor-client", filters=filters, page_size=500
-        )
+        return self.list_objects("x-velociraptor-client", filters=filters, page_size=500)
 
     def get_client(self, client_id: str) -> dict[str, Any]:
         """Fetch a single agent by id."""
@@ -212,9 +201,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
 
     def list_flows(self, client_id: str) -> list[dict[str, Any]]:
         """Return collected flows for a single agent."""
-        return self.list_objects(
-            "observed-data", filters={"client_id": client_id}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"client_id": client_id}, page_size=500)
 
     def list_artifacts(self) -> list[dict[str, Any]]:
         """Return the artifact catalog."""
@@ -254,9 +241,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
 
         if kind == "client":
             client_id = native.get("client_id") or native.get("id", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_VR, f"x-velociraptor-client|{client_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_VR, f"x-velociraptor-client|{client_id}")
             return {
                 "type": "x-velociraptor-client",
                 "id": f"x-velociraptor-client--{stix_uuid}",
@@ -274,9 +259,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
 
         if kind == "hunt":
             hunt_id = native.get("hunt_id") or native.get("id", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_VR, f"x-velociraptor-hunt|{hunt_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_VR, f"x-velociraptor-hunt|{hunt_id}")
             return {
                 "type": "x-velociraptor-hunt",
                 "id": f"x-velociraptor-hunt--{stix_uuid}",
@@ -293,9 +276,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
 
         if kind == "artifact":
             name = native.get("name") or native.get("artifact", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_VR, f"x-velociraptor-artifact|{name}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_VR, f"x-velociraptor-artifact|{name}")
             return {
                 "type": "x-velociraptor-artifact",
                 "id": f"x-velociraptor-artifact--{stix_uuid}",
@@ -309,9 +290,7 @@ class VelociraptorClient(BaseClient, ConnectorMixin):
         refs: list[str] = []
         client_id = native.get("client_id") or native.get("ClientId")
         if client_id:
-            client_uuid = uuid.uuid5(
-                _NAMESPACE_VR, f"x-velociraptor-client|{client_id}"
-            )
+            client_uuid = uuid.uuid5(_NAMESPACE_VR, f"x-velociraptor-client|{client_id}")
             refs.append(f"x-velociraptor-client--{client_uuid}")
         first = (
             native.get("create_time")

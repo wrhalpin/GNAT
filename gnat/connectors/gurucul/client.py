@@ -87,13 +87,9 @@ class GuruculClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v1/risk/users/{object_id}")
             kind = "user"
         else:
-            raise GNATClientError(
-                f"Gurucul get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Gurucul get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Gurucul returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Gurucul returned unexpected payload for {object_id!r}")
         return dict(resp, _gc_kind=kind)
 
     def list_objects(
@@ -131,30 +127,20 @@ class GuruculClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v1/models", params=params)
             tag = "model"
         else:
-            raise GNATClientError(
-                f"Gurucul list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Gurucul list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _gc_kind=tag) for r in _extract_gurucul_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Gurucul connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Gurucul connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Gurucul connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Gurucul connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Gurucul connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Gurucul connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_incidents(
-        self, severity: str = "", since: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_incidents(self, severity: str = "", since: str = "") -> list[dict[str, Any]]:
         """Return Gurucul UEBA incidents."""
         filters: dict[str, Any] = {}
         if severity:
@@ -170,9 +156,7 @@ class GuruculClient(BaseClient, ConnectorMixin):
             filters["since"] = since
         return self.list_objects("observed-data", filters=filters, page_size=1000)
 
-    def list_user_risk_scores(
-        self, severity: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_user_risk_scores(self, severity: str = "") -> list[dict[str, Any]]:
         """Return per-user risk scores."""
         filters: dict[str, Any] = {}
         if severity:
@@ -189,9 +173,7 @@ class GuruculClient(BaseClient, ConnectorMixin):
 
     def list_cases(self) -> list[dict[str, Any]]:
         """Return investigation cases."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "cases"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "cases"}, page_size=500)
 
     def get_incident(self, incident_id: str) -> dict[str, Any]:
         """Fetch a single incident by id."""
@@ -227,9 +209,7 @@ class GuruculClient(BaseClient, ConnectorMixin):
 
         if kind == "entity":
             ent_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_GURUCUL, f"x-gurucul-entity|{ent_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_GURUCUL, f"x-gurucul-entity|{ent_id}")
             return {
                 "type": "x-gurucul-entity",
                 "id": f"x-gurucul-entity--{stix_uuid}",
@@ -242,9 +222,7 @@ class GuruculClient(BaseClient, ConnectorMixin):
 
         if kind == "model":
             model_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_GURUCUL, f"x-gurucul-model|{model_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_GURUCUL, f"x-gurucul-model|{model_id}")
             return {
                 "type": "x-gurucul-model",
                 "id": f"x-gurucul-model--{stix_uuid}",

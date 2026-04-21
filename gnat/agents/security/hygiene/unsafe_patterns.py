@@ -6,6 +6,7 @@ gnat.agents.security.hygiene.unsafe_patterns
 
 Unsafe patterns utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from typing import Any
 @dataclass
 class UnsafePatternFinding:
     """UnsafePatternFinding implementation."""
+
     location: str
     rule: str
     message: str
@@ -22,6 +24,7 @@ class UnsafePatternFinding:
 
 class UnsafePatternDetector:
     """UnsafePatternDetector implementation."""
+
     def inspect_connector_config(self, config: dict[str, Any]) -> list[UnsafePatternFinding]:
         """Inspect connector config."""
         findings: list[UnsafePatternFinding] = []

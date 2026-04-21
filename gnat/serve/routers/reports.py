@@ -56,7 +56,7 @@ def _scan_dir(rdir: str) -> list[dict[str, Any]]:
                 }
             )
     except OSError as exc:
-        logger.warning("Failed to scan reports directory %s: %s", reports_dir, exc)
+        logger.warning("Failed to scan reports directory %s: %s", rdir, exc)
     entries.sort(key=lambda e: e["modified"], reverse=True)
     return entries
 

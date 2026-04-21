@@ -52,6 +52,7 @@ def _make_client():
 
 class TestSecurityOnionConfig(unittest.TestCase):
     """Configuration container for test security onion."""
+
     def test_basic(self):
         """Test that basic."""
         cfg = _cfg()
@@ -83,6 +84,7 @@ class TestSecurityOnionConfig(unittest.TestCase):
 
 class TestSecurityOnionAuth(unittest.TestCase):
     """Unit tests for :class:`SecurityOnionAuth`."""
+
     def test_login_success(self):
         """Test that login success."""
         c, mock_http = _make_client()
@@ -102,6 +104,7 @@ class TestSecurityOnionAuth(unittest.TestCase):
 
 class TestSecurityOnionClient(unittest.TestCase):
     """HTTP API client for the TestSecurityOnion platform."""
+
     def test_get_returns_dict(self):
         """Test that get returns dict."""
         c, mock_http = _make_client()
@@ -149,6 +152,7 @@ class TestSecurityOnionClient(unittest.TestCase):
 
 class TestSecurityOnionAlertCommands(unittest.TestCase):
     """Unit tests for :class:`SecurityOnionAlertCommands`."""
+
     _ALERT = {
         "uid": "abc123",
         "@timestamp": "2024-03-10T12:00:00Z",
@@ -196,6 +200,7 @@ class TestSecurityOnionAlertCommands(unittest.TestCase):
 
 class TestSecurityOnionCaseCommands(unittest.TestCase):
     """Unit tests for :class:`SecurityOnionCaseCommands`."""
+
     def _make_cases(self):
         """Internal helper for make cases."""
         c, mock_http = _make_client()
@@ -229,6 +234,7 @@ class TestSecurityOnionCaseCommands(unittest.TestCase):
 
 class TestSecurityOnionSTIXMapper(unittest.TestCase):
     """STIX translation helper for test security onion s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = SecurityOnionSTIXMapper()

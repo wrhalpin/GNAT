@@ -88,6 +88,7 @@ _EVE_FLOW = {
 
 class TestSuricataConfig(unittest.TestCase):
     """Configuration container for test suricata."""
+
     def test_defaults(self):
         """Test that defaults."""
         cfg = SuricataConfig()
@@ -113,6 +114,7 @@ class TestSuricataConfig(unittest.TestCase):
 
 class TestSuricataEVEReader(unittest.TestCase):
     """Unit tests for :class:`SuricataEVEReader`."""
+
     def test_iter_alerts_from_file(self):
         """Test that iter alerts from file."""
         lines = [json.dumps(_EVE_ALERT), json.dumps(_EVE_FLOW)]
@@ -188,6 +190,7 @@ class TestSuricataEVEReader(unittest.TestCase):
 
 class TestSuricataSTIXMapper(unittest.TestCase):
     """STIX translation helper for test suricata s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = SuricataSTIXMapper()
@@ -251,6 +254,7 @@ _SNORT2_FAST_LINE = (
 
 class TestSnortConfig(unittest.TestCase):
     """Configuration container for test snort."""
+
     def test_defaults(self):
         """Test that defaults."""
         cfg = SnortConfig()
@@ -271,6 +275,7 @@ class TestSnortConfig(unittest.TestCase):
 
 class TestSnortJSONReader(unittest.TestCase):
     """Unit tests for :class:`SnortJSONReader`."""
+
     def test_iter_alerts(self):
         """Test that iter alerts."""
         path = _write_temp(json.dumps(_SNORT3_JSON_ALERT))
@@ -308,6 +313,7 @@ class TestSnortJSONReader(unittest.TestCase):
 
 class TestSnortFastReader(unittest.TestCase):
     """Unit tests for :class:`SnortFastReader`."""
+
     def test_parse_fast_line(self):
         """Test that parse fast line."""
         result = SnortFastReader._parse_fast_line(_SNORT2_FAST_LINE)
@@ -351,6 +357,7 @@ class TestSnortFastReader(unittest.TestCase):
 
 class TestSnortSTIXMapper(unittest.TestCase):
     """STIX translation helper for test snort s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = SnortSTIXMapper()
@@ -412,6 +419,7 @@ _ZEEK_JSON_CONN = {
 
 class TestZeekConfig(unittest.TestCase):
     """Configuration container for test zeek."""
+
     def test_defaults(self):
         """Test that defaults."""
         cfg = ZeekConfig()
@@ -442,6 +450,7 @@ class TestZeekConfig(unittest.TestCase):
 
 class TestZeekTSVReader(unittest.TestCase):
     """Unit tests for :class:`ZeekTSVReader`."""
+
     def test_parse_notice_tsv(self):
         """Test that parse notice tsv."""
         path = _write_temp(_ZEEK_TSV_NOTICE, suffix=".log")
@@ -495,6 +504,7 @@ class TestZeekTSVReader(unittest.TestCase):
 
 class TestZeekJSONReader(unittest.TestCase):
     """Unit tests for :class:`ZeekJSONReader`."""
+
     def test_iter_records(self):
         """Test that iter records."""
         path = _write_temp(json.dumps(_ZEEK_JSON_CONN), suffix=".json")
@@ -522,6 +532,7 @@ class TestZeekJSONReader(unittest.TestCase):
 
 class TestZeekLogCommands(unittest.TestCase):
     """Unit tests for :class:`ZeekLogCommands`."""
+
     def test_normalise_notice(self):
         """Test that normalise notice."""
         tsv_record = {
@@ -554,6 +565,7 @@ class TestZeekLogCommands(unittest.TestCase):
 
 class TestZeekSTIXMapper(unittest.TestCase):
     """STIX translation helper for test zeek s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = ZeekSTIXMapper()

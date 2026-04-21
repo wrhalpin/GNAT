@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.defectdojo`` package.
 
 Exports: ``DefectDojoClient``.
 """
+
 from .client import DefectDojoClient
 
 __all__ = ["DefectDojoClient"]

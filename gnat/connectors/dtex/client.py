@@ -87,13 +87,9 @@ class DTEXClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/v1/users/{object_id}")
             kind = "user"
         else:
-            raise GNATClientError(
-                f"DTEX get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"DTEX get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"DTEX returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"DTEX returned unexpected payload for {object_id!r}")
         return dict(resp, _dtex_kind=kind)
 
     def list_objects(
@@ -131,30 +127,20 @@ class DTEXClient(BaseClient, ConnectorMixin):
             resp = self.get("/v1/risk-factors", params=params)
             tag = "risk_factor"
         else:
-            raise GNATClientError(
-                f"DTEX list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"DTEX list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _dtex_kind=tag) for r in _extract_dtex_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """DTEX connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "DTEX connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("DTEX connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """DTEX connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "DTEX connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("DTEX connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_alerts(
-        self, severity: str = "", since: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_alerts(self, severity: str = "", since: str = "") -> list[dict[str, Any]]:
         """Return behavioral alerts."""
         filters: dict[str, Any] = {}
         if severity:
@@ -165,13 +151,9 @@ class DTEXClient(BaseClient, ConnectorMixin):
 
     def list_incidents(self) -> list[dict[str, Any]]:
         """Return investigation workflow incidents."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "incidents"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "incidents"}, page_size=500)
 
-    def list_activities(
-        self, user: str = "", since: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_activities(self, user: str = "", since: str = "") -> list[dict[str, Any]]:
         """Return raw user-activity stream."""
         filters: dict[str, Any] = {"kind": "activities"}
         if user:
@@ -239,9 +221,7 @@ class DTEXClient(BaseClient, ConnectorMixin):
 
         if kind == "risk_factor":
             rf_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_DTEX, f"x-dtex-risk-factor|{rf_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_DTEX, f"x-dtex-risk-factor|{rf_id}")
             return {
                 "type": "x-dtex-risk-factor",
                 "id": f"x-dtex-risk-factor--{stix_uuid}",

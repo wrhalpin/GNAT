@@ -154,12 +154,8 @@ def load_scheduler(
     if jobs_file:
         path = Path(jobs_file).expanduser()
         if not path.exists():
-            raise ScheduleLoaderError(
-                f"Schedule YAML file not found: {path}"
-            )
-        for job in _load_yaml_jobs(
-            path, config=config, skip_client_init=skip_client_init
-        ):
+            raise ScheduleLoaderError(f"Schedule YAML file not found: {path}")
+        for job in _load_yaml_jobs(path, config=config, skip_client_init=skip_client_init):
             scheduler.add(job)
             added += 1
 
@@ -201,29 +197,21 @@ def _load_yaml_jobs(
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
-        raise ScheduleLoaderError(
-            f"Failed to parse {path}: {exc}"
-        ) from exc
+        raise ScheduleLoaderError(f"Failed to parse {path}: {exc}") from exc
 
     if data is None:
         return []
     if not isinstance(data, dict) or "jobs" not in data:
-        raise ScheduleLoaderError(
-            f"{path}: expected a top-level 'jobs:' key mapping to a list"
-        )
+        raise ScheduleLoaderError(f"{path}: expected a top-level 'jobs:' key mapping to a list")
 
     jobs_list = data.get("jobs") or []
     if not isinstance(jobs_list, list):
-        raise ScheduleLoaderError(
-            f"{path}: 'jobs' must be a list, got {type(jobs_list).__name__}"
-        )
+        raise ScheduleLoaderError(f"{path}: 'jobs' must be a list, got {type(jobs_list).__name__}")
 
     out: list[FeedJob] = []
     for idx, entry in enumerate(jobs_list):
         if not isinstance(entry, dict):
-            raise ScheduleLoaderError(
-                f"{path}: job #{idx} is not a mapping"
-            )
+            raise ScheduleLoaderError(f"{path}: job #{idx} is not a mapping")
         try:
             out.append(
                 _build_yaml_job(
@@ -236,9 +224,7 @@ def _load_yaml_jobs(
             raise
         except Exception as exc:  # noqa: BLE001
             job_id = entry.get("id", "?")
-            raise ScheduleLoaderError(
-                f"{path}: job #{idx} ({job_id!r}): {exc}"
-            ) from exc
+            raise ScheduleLoaderError(f"{path}: job #{idx} ({job_id!r}): {exc}") from exc
     return out
 
 
@@ -268,13 +254,9 @@ def _build_yaml_job(
     interval_seconds = entry.get("interval_seconds")
     cron = entry.get("cron")
     if interval_seconds is None and not cron:
-        raise ValueError(
-            "job must specify either 'interval_seconds' or 'cron'"
-        )
+        raise ValueError("job must specify either 'interval_seconds' or 'cron'")
     if interval_seconds is not None and cron:
-        raise ValueError(
-            "'interval_seconds' and 'cron' are mutually exclusive"
-        )
+        raise ValueError("'interval_seconds' and 'cron' are mutually exclusive")
 
     # Optional GNATClient via [<name>] config section
     gnat_client = None
@@ -284,14 +266,10 @@ def _build_yaml_job(
 
     # Factories close over the already-resolved class objects so that
     # typos fail at load time, not at first execution.
-    def reader_factory(
-        ctx, _cls=reader_class, _args=reader_args
-    ):
+    def reader_factory(ctx, _cls=reader_class, _args=reader_args):
         return _cls(**_args)
 
-    def mapper_factory(
-        ctx, _cls=mapper_class, _args=mapper_args
-    ):
+    def mapper_factory(ctx, _cls=mapper_class, _args=mapper_args):
         return _cls(**_args)
 
     # Filter kwargs the user might legitimately want on FeedJob
@@ -335,15 +313,11 @@ def _resolve_class(dotted_path: str) -> type:
     try:
         module = importlib.import_module(module_name)
     except ImportError as exc:
-        raise ValueError(
-            f"cannot import module {module_name!r}: {exc}"
-        ) from exc
+        raise ValueError(f"cannot import module {module_name!r}: {exc}") from exc
     try:
         return getattr(module, class_name)
     except AttributeError as exc:
-        raise ValueError(
-            f"{module_name!r} has no attribute {class_name!r}"
-        ) from exc
+        raise ValueError(f"{module_name!r} has no attribute {class_name!r}") from exc
 
 
 def _build_gnat_client(
@@ -367,9 +341,7 @@ def _build_gnat_client(
         from gnat.client import GNATClient
         from gnat.clients import CLIENT_REGISTRY
     except ImportError as exc:
-        raise ValueError(
-            f"cannot import GNATClient to resolve client={target!r}: {exc}"
-        ) from exc
+        raise ValueError(f"cannot import GNATClient to resolve client={target!r}: {exc}") from exc
 
     target_key = target.lower()
 
@@ -377,14 +349,9 @@ def _build_gnat_client(
     # re-reading gnat.ini from disk (important for test isolation).
     if config is not None:
         if target_key not in CLIENT_REGISTRY:
-            raise ValueError(
-                f"client {target!r} is not registered in CLIENT_REGISTRY"
-            )
+            raise ValueError(f"client {target!r} is not registered in CLIENT_REGISTRY")
         if not config.has_section(target_key):
-            raise ValueError(
-                f"client {target!r}: no [{target_key}] section in the "
-                f"provided config"
-            )
+            raise ValueError(f"client {target!r}: no [{target_key}] section in the provided config")
         cfg_kwargs = dict(config[target_key])
         connector_cls = CLIENT_REGISTRY[target_key]
         # Mirror GNATClient.connect()'s construction path
@@ -400,13 +367,9 @@ def _build_gnat_client(
         gcli = GNATClient(config_path=None)
         gcli.connect(target=target_key)
     except KeyError as exc:
-        raise ValueError(
-            f"client {target!r} is not registered in CLIENT_REGISTRY: {exc}"
-        ) from exc
+        raise ValueError(f"client {target!r} is not registered in CLIENT_REGISTRY: {exc}") from exc
     except Exception as exc:  # noqa: BLE001
-        raise ValueError(
-            f"failed to build GNATClient for {target!r}: {exc}"
-        ) from exc
+        raise ValueError(f"failed to build GNATClient for {target!r}: {exc}") from exc
     return gcli
 
 
@@ -434,9 +397,7 @@ def _load_module_jobs(
     try:
         module = importlib.import_module(module_name)
     except ImportError as exc:
-        raise ScheduleLoaderError(
-            f"cannot import jobs module {module_name!r}: {exc}"
-        ) from exc
+        raise ScheduleLoaderError(f"cannot import jobs module {module_name!r}: {exc}") from exc
 
     # Preference 1: build_jobs(config) factory function
     builder: Callable[..., Any] | None = getattr(module, "build_jobs", None)
@@ -448,9 +409,7 @@ def _load_module_jobs(
                 # builder() signature may not accept config
                 result = builder()
         except Exception as exc:  # noqa: BLE001
-            raise ScheduleLoaderError(
-                f"{module_name}.build_jobs() raised: {exc}"
-            ) from exc
+            raise ScheduleLoaderError(f"{module_name}.build_jobs() raised: {exc}") from exc
         return _coerce_to_job_list(result, origin=f"{module_name}.build_jobs()")
 
     # Preference 2: module-level scheduler
@@ -476,6 +435,5 @@ def _coerce_to_job_list(obj: Any, *, origin: str) -> list[FeedJob]:
     if isinstance(obj, list) and all(isinstance(j, FeedJob) for j in obj):
         return obj
     raise ScheduleLoaderError(
-        f"{origin} must return list[FeedJob] or FeedScheduler; "
-        f"got {type(obj).__name__}"
+        f"{origin} must return list[FeedJob] or FeedScheduler; got {type(obj).__name__}"
     )

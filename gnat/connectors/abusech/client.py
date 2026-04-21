@@ -139,8 +139,7 @@ class AbuseChClient(BaseClient, ConnectorMixin):
         """Initialize AbuseChClient."""
         if default_feed not in VALID_FEEDS:
             raise GNATClientError(
-                f"Invalid default_feed {default_feed!r}. "
-                f"Valid values: {sorted(VALID_FEEDS)}"
+                f"Invalid default_feed {default_feed!r}. Valid values: {sorted(VALID_FEEDS)}"
             )
         super().__init__(host=host, **kwargs)
         self.auth_key = auth_key or ""
@@ -222,9 +221,7 @@ class AbuseChClient(BaseClient, ConnectorMixin):
         try:
             return json.loads(resp.data.decode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
-            raise GNATClientError(
-                f"abuse.ch {feed} returned non-JSON payload: {exc}"
-            ) from exc
+            raise GNATClientError(f"abuse.ch {feed} returned non-JSON payload: {exc}") from exc
 
     # ── ConnectorMixin — CRUD ──────────────────────────────────────────────
 
@@ -246,18 +243,14 @@ class AbuseChClient(BaseClient, ConnectorMixin):
         ``list_objects``.
         """
         if stix_type not in ("indicator", "malware"):
-            raise GNATClientError(
-                "abuse.ch get_object supports only indicator / malware"
-            )
+            raise GNATClientError("abuse.ch get_object supports only indicator / malware")
         target = object_id.strip()
         if not target:
             raise GNATClientError("abuse.ch get_object requires a non-empty id")
 
         # Heuristic: hashes go to MalwareBazaar, URLs to URLhaus, IPs to
         # Feodo Tracker, everything else to ThreatFox.
-        if len(target) in (32, 40, 64) and all(
-            c in "0123456789abcdefABCDEF" for c in target
-        ):
+        if len(target) in (32, 40, 64) and all(c in "0123456789abcdefABCDEF" for c in target):
             return self.query_mb_hash(target)
         if target.startswith(("http://", "https://")):
             return self.query_urlhaus_url(target)
@@ -266,9 +259,7 @@ class AbuseChClient(BaseClient, ConnectorMixin):
             for entry in blocklist:
                 if entry.get("ip_address") == target:
                     return entry
-            raise GNATClientError(
-                f"IP {target!r} not found in Feodo Tracker blocklist"
-            )
+            raise GNATClientError(f"IP {target!r} not found in Feodo Tracker blocklist")
         return self.query_threatfox_ioc(target)
 
     def list_objects(
@@ -289,9 +280,7 @@ class AbuseChClient(BaseClient, ConnectorMixin):
         * ``malwarebazaar``: ``selector`` (``"time"`` default)
         """
         if stix_type not in ("indicator", "malware"):
-            raise GNATClientError(
-                "abuse.ch list_objects supports only indicator / malware"
-            )
+            raise GNATClientError("abuse.ch list_objects supports only indicator / malware")
         filters = dict(filters or {})
         feed = filters.pop("feed", self.default_feed)
         if feed not in VALID_FEEDS:
@@ -299,9 +288,7 @@ class AbuseChClient(BaseClient, ConnectorMixin):
 
         if feed == "threatfox":
             days = int(filters.get("days", 1))
-            resp = self._fetch_feed(
-                "threatfox", body={"query": "get_iocs", "days": days}
-            )
+            resp = self._fetch_feed("threatfox", body={"query": "get_iocs", "days": days})
             data = resp.get("data") if isinstance(resp, dict) else None
             items = data if isinstance(data, list) else []
         elif feed == "urlhaus":
@@ -329,19 +316,13 @@ class AbuseChClient(BaseClient, ConnectorMixin):
         start = max(0, (int(page) - 1) * int(page_size))
         return tagged[start : start + int(page_size)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """abuse.ch feeds are read-only."""
-        raise GNATClientError(
-            "abuse.ch connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("abuse.ch connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """abuse.ch feeds are read-only."""
-        raise GNATClientError(
-            "abuse.ch connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("abuse.ch connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -423,9 +404,7 @@ class AbuseChClient(BaseClient, ConnectorMixin):
             return _map_feodo(native)
         if feed == "sslbl":
             return _map_sslbl(native)
-        raise GNATClientError(
-            f"Cannot map abuse.ch record — unknown feed (marker={feed!r})"
-        )
+        raise GNATClientError(f"Cannot map abuse.ch record — unknown feed (marker={feed!r})")
 
     def from_stix(self, stix_dict: dict[str, Any]) -> dict[str, Any]:
         """abuse.ch is read-only; returns an informational stub."""
@@ -469,9 +448,7 @@ def _infer_feed(record: dict[str, Any]) -> str:
     return "threatfox"
 
 
-def _base_indicator(
-    pattern: str, name: str, description: str, now: str
-) -> dict[str, Any]:
+def _base_indicator(pattern: str, name: str, description: str, now: str) -> dict[str, Any]:
     """Common base STIX indicator skeleton used by all feed mappers."""
     return {
         "type": "indicator",
@@ -514,9 +491,7 @@ def _map_malwarebazaar(rec: dict[str, Any]) -> dict[str, Any]:
     now = utcnow()
     sha256 = rec.get("sha256_hash") or ""
     pattern = (
-        make_indicator_pattern("file:sha256", sha256)
-        if sha256
-        else "[file:hashes.'SHA-256' = '']"
+        make_indicator_pattern("file:sha256", sha256) if sha256 else "[file:hashes.'SHA-256' = '']"
     )
     ind = _base_indicator(
         pattern=pattern,
@@ -611,7 +586,9 @@ def _map_sslbl(rec: dict[str, Any]) -> dict[str, Any]:
     """Map an SSLBL record to a STIX indicator (x509 fingerprint)."""
     now = utcnow()
     sha1 = rec.get("SHA1") or rec.get("sha1") or ""
-    pattern = x509_fingerprint_pattern(sha1=sha1) if sha1 else "[x509-certificate:hashes.'SHA-1' = '']"
+    pattern = (
+        x509_fingerprint_pattern(sha1=sha1) if sha1 else "[x509-certificate:hashes.'SHA-1' = '']"
+    )
     ind = _base_indicator(
         pattern=pattern,
         name=f"SSLBL: {rec.get('Listingreason') or sha1[:16]}",

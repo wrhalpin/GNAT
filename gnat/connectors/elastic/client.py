@@ -82,12 +82,11 @@ class ElasticClient:
     config : ElasticConfig
         Validated connector configuration.
     """
+
     TRUST_LEVEL: str = "trusted_internal"
     API_VERSION: str = "v1"
     API_PREFIX: str = ""
     COST_UNIT: int = 10
-
-
 
     def __init__(self, config: ElasticConfig) -> None:
         """Initialize ElasticClient."""

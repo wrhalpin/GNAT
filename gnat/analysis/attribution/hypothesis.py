@@ -196,16 +196,13 @@ class AttributionHypothesis:
             rationale=data.get("rationale", ""),
             source=data.get("source", "analyst"),
             supporting_evidence=[
-                AttributionEvidence.from_dict(e)
-                for e in (data.get("supporting_evidence") or [])
+                AttributionEvidence.from_dict(e) for e in (data.get("supporting_evidence") or [])
             ],
             contradicting_evidence=[
-                AttributionEvidence.from_dict(e)
-                for e in (data.get("contradicting_evidence") or [])
+                AttributionEvidence.from_dict(e) for e in (data.get("contradicting_evidence") or [])
             ],
             confidence_history=[
-                ConfidenceSnapshot.from_dict(s)
-                for s in (data.get("confidence_history") or [])
+                ConfidenceSnapshot.from_dict(s) for s in (data.get("confidence_history") or [])
             ],
             created_at=created,
             updated_at=updated,
@@ -299,8 +296,7 @@ class AttributionEngine:
         """Move a hypothesis from OPEN to a resolved state."""
         if hypothesis.status != HypothesisStatus.OPEN:
             raise ValueError(
-                f"hypothesis {hypothesis.id} is already resolved "
-                f"({hypothesis.status.value})"
+                f"hypothesis {hypothesis.id} is already resolved ({hypothesis.status.value})"
             )
         if status == HypothesisStatus.OPEN:
             raise ValueError("cannot resolve to OPEN")
@@ -322,9 +318,7 @@ class AttributionEngine:
         hypotheses: list[AttributionHypothesis],
     ) -> AttributionHypothesis | None:
         """Return the highest-confidence SUPPORTED hypothesis, or None."""
-        supported = [
-            h for h in hypotheses if h.status == HypothesisStatus.SUPPORTED
-        ]
+        supported = [h for h in hypotheses if h.status == HypothesisStatus.SUPPORTED]
         if not supported:
             return None
         return max(supported, key=lambda h: h.stix_confidence)

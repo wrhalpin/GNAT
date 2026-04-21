@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Callable that accepts alert/event data and returns a WorkflowResult or None
 WorkflowFactory = Callable[[], Any]  # () -> Workflow
-ContextFactory  = Callable[[dict[str, Any]], Any]  # (event_data) -> WorkflowContext
+ContextFactory = Callable[[dict[str, Any]], Any]  # (event_data) -> WorkflowContext
 
 
 @dataclass
@@ -59,9 +59,9 @@ class TriggerEvent:
         UTC timestamp of the event.
     """
 
-    event_type:  str
-    data:        dict[str, Any] = field(default_factory=dict)
-    source:      str = ""
+    event_type: str
+    data: dict[str, Any] = field(default_factory=dict)
+    source: str = ""
     occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -87,16 +87,16 @@ class WorkflowTrigger:
 
     def __init__(
         self,
-        name:             str,
+        name: str,
         workflow_factory: WorkflowFactory,
-        context_factory:  ContextFactory | None = None,
-        store:            Any | None = None,
+        context_factory: ContextFactory | None = None,
+        store: Any | None = None,
     ) -> None:
-        self.name             = name
+        self.name = name
         self._workflow_factory = workflow_factory
-        self._context_factory  = context_factory
-        self._store            = store
-        self._enabled          = True
+        self._context_factory = context_factory
+        self._store = store
+        self._enabled = True
 
     def enable(self) -> None:
         """Enable this trigger."""
@@ -119,7 +119,9 @@ class WorkflowTrigger:
 
         logger.info(
             "Trigger %r firing for event_type=%r source=%r",
-            self.name, event.event_type, event.source,
+            self.name,
+            event.event_type,
+            event.source,
         )
 
         try:
@@ -128,6 +130,7 @@ class WorkflowTrigger:
                 ctx = self._context_factory(event.data)
             else:
                 from gnat.agents.workflow import WorkflowContext
+
                 ctx = WorkflowContext(shared=dict(event.data))
 
             result = wf.run(ctx)
@@ -170,16 +173,19 @@ class AlertTrigger(WorkflowTrigger):
 
     def __init__(
         self,
-        name:             str,
+        name: str,
         workflow_factory: WorkflowFactory,
-        context_factory:  ContextFactory | None = None,
-        min_score:        float = 0.0,
-        store:            Any | None = None,
+        context_factory: ContextFactory | None = None,
+        min_score: float = 0.0,
+        store: Any | None = None,
     ) -> None:
         if context_factory is None:
+
             def _default_ctx(data: dict[str, Any]) -> Any:
                 from gnat.agents.workflow import WorkflowContext
+
                 return WorkflowContext(shared={"alert": data, **data})
+
             context_factory = _default_ctx
 
         super().__init__(name, workflow_factory, context_factory, store)
@@ -199,15 +205,17 @@ class AlertTrigger(WorkflowTrigger):
         if score < self._min_score:
             logger.debug(
                 "AlertTrigger %r: score %.2f below threshold %.2f — skipping",
-                self.name, score, self._min_score,
+                self.name,
+                score,
+                self._min_score,
             )
             return None
 
         event = TriggerEvent(
-            event_type  = "alert",
-            data        = alert_data,
-            source      = alert_data.get("source", ""),
-            occurred_at = datetime.now(timezone.utc),
+            event_type="alert",
+            data=alert_data,
+            source=alert_data.get("source", ""),
+            occurred_at=datetime.now(timezone.utc),
         )
         return self.fire(event)
 
@@ -235,18 +243,18 @@ class ScheduledTrigger(WorkflowTrigger):
 
     def __init__(
         self,
-        name:             str,
+        name: str,
         workflow_factory: WorkflowFactory,
-        context_factory:  ContextFactory | None = None,
-        cron_expr:        str | None = None,
+        context_factory: ContextFactory | None = None,
+        cron_expr: str | None = None,
         interval_seconds: float = 3600.0,
-        store:            Any | None = None,
+        store: Any | None = None,
     ) -> None:
         super().__init__(name, workflow_factory, context_factory, store)
-        self._cron_expr       = cron_expr
-        self._interval        = interval_seconds
+        self._cron_expr = cron_expr
+        self._interval = interval_seconds
         self._thread: threading.Thread | None = None
-        self._stop_event      = threading.Event()
+        self._stop_event = threading.Event()
 
     def start(self) -> None:
         """Start the background scheduling thread."""
@@ -254,12 +262,14 @@ class ScheduledTrigger(WorkflowTrigger):
             logger.warning("ScheduledTrigger %r already running", self.name)
             return
         self._stop_event.clear()
-        self._thread = threading.Thread(
-            target=self._loop, name=f"trigger-{self.name}", daemon=True
-        )
+        self._thread = threading.Thread(target=self._loop, name=f"trigger-{self.name}", daemon=True)
         self._thread.start()
-        logger.info("ScheduledTrigger %r started (cron=%r interval=%.0fs)",
-                    self.name, self._cron_expr, self._interval)
+        logger.info(
+            "ScheduledTrigger %r started (cron=%r interval=%.0fs)",
+            self.name,
+            self._cron_expr,
+            self._interval,
+        )
 
     def stop(self) -> None:
         """Stop the scheduling thread (non-blocking)."""
@@ -269,7 +279,9 @@ class ScheduledTrigger(WorkflowTrigger):
         """Background thread that fires the workflow at the scheduled time."""
         while not self._stop_event.is_set():
             sleep_secs = self._seconds_until_next_run()
-            logger.debug("ScheduledTrigger %r: sleeping %.1fs until next run", self.name, sleep_secs)
+            logger.debug(
+                "ScheduledTrigger %r: sleeping %.1fs until next run", self.name, sleep_secs
+            )
             # Wait in small increments so stop_event is checked frequently
             deadline = sleep_secs
             while deadline > 0 and not self._stop_event.is_set():
@@ -281,10 +293,10 @@ class ScheduledTrigger(WorkflowTrigger):
                 break
 
             event = TriggerEvent(
-                event_type  = "scheduled",
-                data        = {"trigger_name": self.name},
-                source      = "scheduler",
-                occurred_at = datetime.now(timezone.utc),
+                event_type="scheduled",
+                data={"trigger_name": self.name},
+                source="scheduler",
+                occurred_at=datetime.now(timezone.utc),
             )
             self.fire(event)
 
@@ -292,11 +304,14 @@ class ScheduledTrigger(WorkflowTrigger):
         if self._cron_expr:
             try:
                 from croniter import croniter
+
                 it = croniter(self._cron_expr, datetime.now(timezone.utc))
                 nxt = it.get_next(datetime)
                 return max(0.0, (nxt - datetime.now(timezone.utc)).total_seconds())
             except Exception as exc:
-                logger.warning("ScheduledTrigger %r: croniter error (%s) — using interval", self.name, exc)
+                logger.warning(
+                    "ScheduledTrigger %r: croniter error (%s) — using interval", self.name, exc
+                )
         return self._interval
 
 
@@ -319,11 +334,11 @@ class WebhookTrigger(WorkflowTrigger):
 
     def __init__(
         self,
-        name:             str,
+        name: str,
         workflow_factory: WorkflowFactory,
-        context_factory:  ContextFactory | None = None,
-        secret:           str | None = None,
-        store:            Any | None = None,
+        context_factory: ContextFactory | None = None,
+        secret: str | None = None,
+        store: Any | None = None,
     ) -> None:
         super().__init__(name, workflow_factory, context_factory, store)
         self._secret = secret
@@ -344,16 +359,15 @@ class WebhookTrigger(WorkflowTrigger):
         -------
         WorkflowResult | None
         """
-        if self._secret and signature:
-            if not self._verify_signature(payload, signature):
-                logger.warning("WebhookTrigger %r: signature mismatch — request rejected", self.name)
-                return None
+        if self._secret and signature and not self._verify_signature(payload, signature):
+            logger.warning("WebhookTrigger %r: signature mismatch — request rejected", self.name)
+            return None
 
         event = TriggerEvent(
-            event_type  = "webhook",
-            data        = payload,
-            source      = payload.get("source", "webhook"),
-            occurred_at = datetime.now(timezone.utc),
+            event_type="webhook",
+            data=payload,
+            source=payload.get("source", "webhook"),
+            occurred_at=datetime.now(timezone.utc),
         )
         return self.fire(event)
 
@@ -361,7 +375,10 @@ class WebhookTrigger(WorkflowTrigger):
         import hashlib
         import hmac
         import json as _json
+
         body = _json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
-        secret_bytes = self._secret.encode("utf-8") if isinstance(self._secret, str) else self._secret
+        secret_bytes = (
+            self._secret.encode("utf-8") if isinstance(self._secret, str) else self._secret
+        )
         expected = "sha256=" + hmac.new(secret_bytes, body, hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, signature)

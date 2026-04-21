@@ -75,9 +75,7 @@ class VMRayClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: api_key header from the configured key."""
         if not self.api_key:
-            raise GNATClientError(
-                "VMRay connector requires api_key in config."
-            )
+            raise GNATClientError("VMRay connector requires api_key in config.")
         self._auth_headers["Authorization"] = f"api_key {self.api_key}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -110,14 +108,10 @@ class VMRayClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/rest/sample/{object_id}")
             kind = "sample"
         else:
-            raise GNATClientError(
-                f"VMRay get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"VMRay get_object does not support stix_type={stix_type!r}")
         data = _unwrap_vmray(resp)
         if not isinstance(data, dict):
-            raise GNATClientError(
-                f"VMRay returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"VMRay returned unexpected payload for {object_id!r}")
         return dict(data, _vmr_kind=kind)
 
     def list_objects(
@@ -129,9 +123,7 @@ class VMRayClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List recent analyses or samples."""
         if stix_type not in ("observed-data", "malware"):
-            raise GNATClientError(
-                f"VMRay list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"VMRay list_objects does not support stix_type={stix_type!r}")
         filters = dict(filters or {})
         params: dict[str, Any] = {"_limit": int(page_size)}
         if filters.get("offset") is not None:
@@ -153,9 +145,7 @@ class VMRayClient(BaseClient, ConnectorMixin):
             return [dict(r, _vmr_kind=kind) for r in data if isinstance(r, dict)]
         return []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Sandbox submissions are domain helpers, not upsert."""
         raise GNATClientError(
             "VMRay connector is read-only via CRUD — use submit_file / "
@@ -164,9 +154,7 @@ class VMRayClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """VMRay connector is read-only."""
-        raise GNATClientError(
-            "VMRay connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("VMRay connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -244,14 +232,10 @@ class VMRayClient(BaseClient, ConnectorMixin):
         contacted_ips = _values(network.get("hosts") or network.get("ips"))
         contacted_domains = _values(network.get("domains"))
         contacted_urls = _values(network.get("urls"))
-        processes = _values(
-            native.get("analysis_process_list") or native.get("processes")
-        )
+        processes = _values(native.get("analysis_process_list") or native.get("processes"))
         return sandbox_report_envelope(
             source_name="vmray",
-            analysis_id=str(
-                native.get("analysis_id") or native.get("sample_id", "")
-            ),
+            analysis_id=str(native.get("analysis_id") or native.get("sample_id", "")),
             submitted_sha256=native.get("sample_sha256") or "",
             submitted_filename=native.get("sample_filename") or "",
             processes=processes,
@@ -260,10 +244,8 @@ class VMRayClient(BaseClient, ConnectorMixin):
             contacted_urls=contacted_urls,
             first_observed=native.get("analysis_created") or "",
             last_observed=native.get("analysis_finished") or "",
-            verdict=native.get("analysis_verdict")
-            or native.get("sample_verdict", ""),
-            score=native.get("analysis_severity")
-            or native.get("sample_severity"),
+            verdict=native.get("analysis_verdict") or native.get("sample_verdict", ""),
+            score=native.get("analysis_severity") or native.get("sample_severity"),
             raw_report=native,
         )
 

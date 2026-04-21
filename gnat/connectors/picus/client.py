@@ -65,12 +65,8 @@ class PicusClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange the refresh token for an access token."""
         if not self.refresh_token:
-            raise GNATClientError(
-                "Picus connector requires refresh_token in config."
-            )
-        resp = self.post(
-            "/v1/refresh-token", json={"refresh_token": self.refresh_token}
-        )
+            raise GNATClientError("Picus connector requires refresh_token in config.")
+        resp = self.post("/v1/refresh-token", json={"refresh_token": self.refresh_token})
         token = ""
         if isinstance(resp, dict):
             token = (
@@ -80,9 +76,7 @@ class PicusClient(BaseClient, ConnectorMixin):
                 or ""
             )
         if not token:
-            raise GNATClientError(
-                "Picus authentication failed — no access_token in response"
-            )
+            raise GNATClientError("Picus authentication failed — no access_token in response")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -107,13 +101,9 @@ class PicusClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/v1/attacks/{object_id}")
             kind = "attack"
         else:
-            raise GNATClientError(
-                f"Picus get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Picus get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Picus returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Picus returned unexpected payload for {object_id!r}")
         data = resp.get("data") if isinstance(resp.get("data"), dict) else resp
         return dict(data, _pc_kind=kind)
 
@@ -143,24 +133,16 @@ class PicusClient(BaseClient, ConnectorMixin):
             resp = self.get("/v1/attacks", params=params)
             tag = "attack"
         else:
-            raise GNATClientError(
-                f"Picus list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Picus list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _pc_kind=tag) for r in _extract_picus_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Picus connector is read-only."""
-        raise GNATClientError(
-            "Picus connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Picus connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Picus connector is read-only."""
-        raise GNATClientError(
-            "Picus connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Picus connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -174,9 +156,7 @@ class PicusClient(BaseClient, ConnectorMixin):
 
     def list_results(self) -> list[dict[str, Any]]:
         """Return per-simulation results."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "results"}, page_size=1000
-        )
+        return self.list_objects("observed-data", filters={"kind": "results"}, page_size=1000)
 
     def list_threat_library(self) -> list[dict[str, Any]]:
         """Return Picus's curated threat library entries."""
@@ -207,9 +187,7 @@ class PicusClient(BaseClient, ConnectorMixin):
             stix_uuid = uuid.uuid5(_NAMESPACE_PICUS, f"attack-pattern|{atk_id}")
             external_refs = []
             if mitre:
-                external_refs.append(
-                    {"source_name": "mitre-attack", "external_id": mitre}
-                )
+                external_refs.append({"source_name": "mitre-attack", "external_id": mitre})
             return {
                 "type": "attack-pattern",
                 "id": f"attack-pattern--{stix_uuid}",
@@ -222,15 +200,9 @@ class PicusClient(BaseClient, ConnectorMixin):
                 "x_picus": {"raw": native},
             }
 
-        sim_id = str(
-            native.get("id") or native.get("simulationId") or native.get("resultId", "")
-        )
-        targets = _values(
-            native.get("agents") or native.get("targets") or native.get("endpoints")
-        )
-        techniques = _values(
-            native.get("mitreTechniques") or native.get("techniques")
-        )
+        sim_id = str(native.get("id") or native.get("simulationId") or native.get("resultId", ""))
+        targets = _values(native.get("agents") or native.get("targets") or native.get("endpoints"))
+        techniques = _values(native.get("mitreTechniques") or native.get("techniques"))
         return bas_simulation_envelope(
             source_name="picus",
             simulation_id=sim_id,

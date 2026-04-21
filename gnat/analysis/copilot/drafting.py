@@ -96,21 +96,21 @@ class DraftResult:
         Any warnings generated during drafting.
     """
 
-    executive_summary:      str
+    executive_summary: str
     key_findings_narrative: str
-    model:                  str            = ""
-    prompt_tokens:          int            = 0
-    completion_tokens:      int            = 0
-    warnings:               list[str]      = field(default_factory=list)
+    model: str = ""
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "executive_summary":      self.executive_summary,
+            "executive_summary": self.executive_summary,
             "key_findings_narrative": self.key_findings_narrative,
-            "model":                  self.model,
-            "prompt_tokens":          self.prompt_tokens,
-            "completion_tokens":      self.completion_tokens,
-            "warnings":               self.warnings,
+            "model": self.model,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "warnings": self.warnings,
         }
 
 
@@ -134,15 +134,15 @@ class ReportDraftingAssistant:
 
     def __init__(
         self,
-        llm_client:               Any | None = None,
-        summary_prompt_template:  str | None = None,
+        llm_client: Any | None = None,
+        summary_prompt_template: str | None = None,
         findings_prompt_template: str | None = None,
-        max_tokens:               int        = 1024,
+        max_tokens: int = 1024,
     ) -> None:
-        self._llm              = llm_client
-        self._summary_tmpl     = summary_prompt_template  or _DEFAULT_SUMMARY_PROMPT
-        self._findings_tmpl    = findings_prompt_template or _DEFAULT_FINDINGS_PROMPT
-        self._max_tokens       = max_tokens
+        self._llm = llm_client
+        self._summary_tmpl = summary_prompt_template or _DEFAULT_SUMMARY_PROMPT
+        self._findings_tmpl = findings_prompt_template or _DEFAULT_FINDINGS_PROMPT
+        self._max_tokens = max_tokens
 
     def draft_executive_summary(self, report: Any) -> DraftResult:
         """
@@ -161,13 +161,13 @@ class ReportDraftingAssistant:
         evidence_block = self._format_evidence(report)
 
         prompt = self._summary_tmpl.format(
-            title          = report.title,
-            report_type    = report.report_type.value,
-            classification = report.classification.label,
-            authors        = ", ".join(report.authors) or "Unknown",
-            n_findings     = len(report.key_findings),
-            findings_block = findings_block,
-            evidence_block = evidence_block,
+            title=report.title,
+            report_type=report.report_type.value,
+            classification=report.classification.label,
+            authors=", ".join(report.authors) or "Unknown",
+            n_findings=len(report.key_findings),
+            findings_block=findings_block,
+            evidence_block=evidence_block,
         )
 
         return self._call_llm(prompt, report)
@@ -182,19 +182,19 @@ class ReportDraftingAssistant:
         """
         if not report.key_findings:
             return DraftResult(
-                executive_summary      = "",
-                key_findings_narrative = "",
-                warnings               = ["No key findings to draft narrative for."],
+                executive_summary="",
+                key_findings_narrative="",
+                warnings=["No key findings to draft narrative for."],
             )
 
         findings_block = self._format_findings(report)
         evidence_block = self._format_evidence(report)
 
         prompt = self._findings_tmpl.format(
-            title          = report.title,
-            classification = report.classification.label,
-            findings_block = findings_block,
-            evidence_block = evidence_block,
+            title=report.title,
+            classification=report.classification.label,
+            findings_block=findings_block,
+            evidence_block=evidence_block,
         )
 
         return self._call_llm(prompt, report)
@@ -209,16 +209,16 @@ class ReportDraftingAssistant:
         -------
         DraftResult
         """
-        summary_result  = self.draft_executive_summary(report)
+        summary_result = self.draft_executive_summary(report)
         findings_result = self.draft_key_findings_narrative(report)
 
         return DraftResult(
-            executive_summary      = summary_result.executive_summary,
-            key_findings_narrative = findings_result.key_findings_narrative,
-            model                  = summary_result.model or findings_result.model,
-            prompt_tokens          = summary_result.prompt_tokens + findings_result.prompt_tokens,
-            completion_tokens      = summary_result.completion_tokens + findings_result.completion_tokens,
-            warnings               = summary_result.warnings + findings_result.warnings,
+            executive_summary=summary_result.executive_summary,
+            key_findings_narrative=findings_result.key_findings_narrative,
+            model=summary_result.model or findings_result.model,
+            prompt_tokens=summary_result.prompt_tokens + findings_result.prompt_tokens,
+            completion_tokens=summary_result.completion_tokens + findings_result.completion_tokens,
+            warnings=summary_result.warnings + findings_result.warnings,
         )
 
     # ── Internal ──────────────────────────────────────────────────────────────
@@ -229,31 +229,30 @@ class ReportDraftingAssistant:
         if self._llm is None:
             warnings.append("No LLM client configured — returning placeholder text.")
             return DraftResult(
-                executive_summary      = f"[DRAFT REQUIRED] {report.title}",
-                key_findings_narrative = "\n\n".join(
-                    f"**{f.statement}**\n\n[Evidence review pending.]"
-                    for f in report.key_findings
+                executive_summary=f"[DRAFT REQUIRED] {report.title}",
+                key_findings_narrative="\n\n".join(
+                    f"**{f.statement}**\n\n[Evidence review pending.]" for f in report.key_findings
                 ),
-                warnings = warnings,
+                warnings=warnings,
             )
 
         try:
             response = self._llm.complete(prompt, max_tokens=self._max_tokens)
-            text  = response.get("content", "") if isinstance(response, dict) else str(response)
+            text = response.get("content", "") if isinstance(response, dict) else str(response)
             model = response.get("model", "") if isinstance(response, dict) else ""
             return DraftResult(
-                executive_summary      = text.strip(),
-                key_findings_narrative = text.strip(),
-                model                  = model,
-                warnings               = warnings,
+                executive_summary=text.strip(),
+                key_findings_narrative=text.strip(),
+                model=model,
+                warnings=warnings,
             )
         except Exception as exc:  # noqa: BLE001
             logger.warning("ReportDraftingAssistant: LLM call failed: %s", exc)
             warnings.append(f"LLM call failed: {exc}")
             return DraftResult(
-                executive_summary      = f"[DRAFT FAILED] {report.title}",
-                key_findings_narrative = "",
-                warnings               = warnings,
+                executive_summary=f"[DRAFT FAILED] {report.title}",
+                key_findings_narrative="",
+                warnings=warnings,
             )
 
     @staticmethod

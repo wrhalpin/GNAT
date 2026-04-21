@@ -265,6 +265,7 @@ class AgentGovernor:
         )
         try:
             from gnat.plugins.hooks import HookBus
+
             HookBus.instance().emit(
                 "agent_action",
                 agent_id=action.agent_id,

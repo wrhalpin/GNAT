@@ -58,10 +58,11 @@ from typing import Any
 
 class GapSeverity(str, Enum):
     """Severity of a detected gap."""
+
     CRITICAL = "critical"
-    HIGH     = "high"
-    MEDIUM   = "medium"
-    LOW      = "low"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
 @dataclass
@@ -81,29 +82,30 @@ class GapRecommendation:
         Identifier of the rule that triggered this gap.
     """
 
-    description:      str
-    severity:         GapSeverity
+    description: str
+    severity: GapSeverity
     suggested_action: str
-    rule_id:          str
+    rule_id: str
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "rule_id":          self.rule_id,
-            "description":      self.description,
-            "severity":         self.severity.value,
+            "rule_id": self.rule_id,
+            "description": self.description,
+            "severity": self.severity.value,
             "suggested_action": self.suggested_action,
         }
 
 
 # ── Rule definitions ──────────────────────────────────────────────────────────
 
+
 @dataclass
 class _GapRule:
-    id:               str
-    keywords:         list[str]           # any match triggers check
-    check_fn:         Any                 # callable(hypothesis, investigation) -> bool (True = gap)
-    description:      str
-    severity:         GapSeverity
+    id: str
+    keywords: list[str]  # any match triggers check
+    check_fn: Any  # callable(hypothesis, investigation) -> bool (True = gap)
+    description: str
+    severity: GapSeverity
     suggested_action: str
 
 
@@ -112,12 +114,12 @@ def _has_ioc_type(investigation: Any, *ioc_types: str) -> bool:
     all_iocs: list[str] = list(investigation.indicators) + list(investigation.observables)
     # Simple heuristic: check if any IOC ID or raw value hints at the type
     type_patterns = {
-        "host":    re.compile(r"hostname|workstation|server|\d{1,3}\.\d{1,3}", re.I),
+        "host": re.compile(r"hostname|workstation|server|\d{1,3}\.\d{1,3}", re.I),
         "network": re.compile(r"ipv4|ip-addr|domain|url|cidr|\d{1,3}\.\d{1,3}", re.I),
-        "file":    re.compile(r"hash|md5|sha256|sha1|yara|file", re.I),
-        "email":   re.compile(r"email|phish|@", re.I),
-        "domain":  re.compile(r"domain|fqdn|\.", re.I),
-        "ip":      re.compile(r"ip|addr|\d{1,3}\.\d{1,3}", re.I),
+        "file": re.compile(r"hash|md5|sha256|sha1|yara|file", re.I),
+        "email": re.compile(r"email|phish|@", re.I),
+        "domain": re.compile(r"domain|fqdn|\.", re.I),
+        "ip": re.compile(r"ip|addr|\d{1,3}\.\d{1,3}", re.I),
     }
     for ioc_type in ioc_types:
         pattern = type_patterns.get(ioc_type)
@@ -127,97 +129,95 @@ def _has_ioc_type(investigation: Any, *ioc_types: str) -> bool:
 
 
 def _has_no_evidence(hypothesis: Any, _investigation: Any) -> bool:
-    return (
-        not hypothesis.supporting_evidence
-        and not hypothesis.refuting_evidence
-    )
+    return not hypothesis.supporting_evidence and not hypothesis.refuting_evidence
 
 
 _RULES: list[_GapRule] = [
     _GapRule(
-        id               = "no-evidence",
-        keywords         = [],  # always checked
-        check_fn         = _has_no_evidence,
-        description      = "No evidence artifacts linked to this hypothesis.",
-        severity         = GapSeverity.CRITICAL,
-        suggested_action = (
+        id="no-evidence",
+        keywords=[],  # always checked
+        check_fn=_has_no_evidence,
+        description="No evidence artifacts linked to this hypothesis.",
+        severity=GapSeverity.CRITICAL,
+        suggested_action=(
             "Link at least one supporting indicator, observable, or analyst note "
             "to this hypothesis before submitting for review."
         ),
     ),
     _GapRule(
-        id               = "lateral-movement-no-host",
-        keywords         = ["lateral movement", "lateral-movement", "pivot", "pivoting"],
-        check_fn         = lambda hyp, inv: not _has_ioc_type(inv, "host", "network"),
-        description      = "Lateral movement hypothesis lacks host-based or network observable.",
-        severity         = GapSeverity.HIGH,
-        suggested_action = (
+        id="lateral-movement-no-host",
+        keywords=["lateral movement", "lateral-movement", "pivot", "pivoting"],
+        check_fn=lambda hyp, inv: not _has_ioc_type(inv, "host", "network"),
+        description="Lateral movement hypothesis lacks host-based or network observable.",
+        severity=GapSeverity.HIGH,
+        suggested_action=(
             "Link a hostname, internal IP address, or network traffic indicator "
             "that demonstrates the movement path."
         ),
     ),
     _GapRule(
-        id               = "exfiltration-no-network",
-        keywords         = ["exfiltration", "data theft", "exfil", "stolen", "leaked"],
-        check_fn         = lambda hyp, inv: not _has_ioc_type(inv, "network", "ip"),
-        description      = "Exfiltration hypothesis lacks network traffic evidence.",
-        severity         = GapSeverity.HIGH,
-        suggested_action = (
+        id="exfiltration-no-network",
+        keywords=["exfiltration", "data theft", "exfil", "stolen", "leaked"],
+        check_fn=lambda hyp, inv: not _has_ioc_type(inv, "network", "ip"),
+        description="Exfiltration hypothesis lacks network traffic evidence.",
+        severity=GapSeverity.HIGH,
+        suggested_action=(
             "Link a destination IP, domain, or URL observed during the suspected "
             "exfiltration window."
         ),
     ),
     _GapRule(
-        id               = "attribution-no-ttp",
-        keywords         = ["attributed", "attribution", "responsible", "actor", "group"],
-        check_fn         = lambda hyp, inv: not inv.threat_actors and not _has_ioc_type(inv, "file", "network"),
-        description      = "Attribution hypothesis lacks TTP evidence or linked threat-actor.",
-        severity         = GapSeverity.HIGH,
-        suggested_action = (
+        id="attribution-no-ttp",
+        keywords=["attributed", "attribution", "responsible", "actor", "group"],
+        check_fn=lambda hyp, inv: (
+            not inv.threat_actors and not _has_ioc_type(inv, "file", "network")
+        ),
+        description="Attribution hypothesis lacks TTP evidence or linked threat-actor.",
+        severity=GapSeverity.HIGH,
+        suggested_action=(
             "Link a STIX ThreatActor SDO or add indicators (malware hash, C2 domain) "
             "that corroborate the attribution claim."
         ),
     ),
     _GapRule(
-        id               = "ransomware-no-hash",
-        keywords         = ["ransomware", "encrypted", "ransom note", "locker"],
-        check_fn         = lambda hyp, inv: not _has_ioc_type(inv, "file"),
-        description      = "Ransomware hypothesis lacks file-hash or YARA indicator.",
-        severity         = GapSeverity.MEDIUM,
-        suggested_action = (
+        id="ransomware-no-hash",
+        keywords=["ransomware", "encrypted", "ransom note", "locker"],
+        check_fn=lambda hyp, inv: not _has_ioc_type(inv, "file"),
+        description="Ransomware hypothesis lacks file-hash or YARA indicator.",
+        severity=GapSeverity.MEDIUM,
+        suggested_action=(
             "Collect a file hash (SHA-256 preferred) from the encrypted binary or "
             "ransom dropper and link it as an indicator."
         ),
     ),
     _GapRule(
-        id               = "phishing-no-email-or-domain",
-        keywords         = ["phishing", "spear-phishing", "spear phishing", "lure", "pretexting"],
-        check_fn         = lambda hyp, inv: not _has_ioc_type(inv, "email", "domain"),
-        description      = "Phishing hypothesis lacks email address or sender domain indicator.",
-        severity         = GapSeverity.MEDIUM,
-        suggested_action = (
-            "Link the sender email address, lure domain, or URL from the phishing "
-            "message headers."
+        id="phishing-no-email-or-domain",
+        keywords=["phishing", "spear-phishing", "spear phishing", "lure", "pretexting"],
+        check_fn=lambda hyp, inv: not _has_ioc_type(inv, "email", "domain"),
+        description="Phishing hypothesis lacks email address or sender domain indicator.",
+        severity=GapSeverity.MEDIUM,
+        suggested_action=(
+            "Link the sender email address, lure domain, or URL from the phishing message headers."
         ),
     ),
     _GapRule(
-        id               = "c2-no-network-ioc",
-        keywords         = ["c2", "c&c", "command and control", "command-and-control", "beaconing"],
-        check_fn         = lambda hyp, inv: not _has_ioc_type(inv, "ip", "domain"),
-        description      = "C2 hypothesis lacks an IP address or domain indicator.",
-        severity         = GapSeverity.HIGH,
-        suggested_action = (
+        id="c2-no-network-ioc",
+        keywords=["c2", "c&c", "command and control", "command-and-control", "beaconing"],
+        check_fn=lambda hyp, inv: not _has_ioc_type(inv, "ip", "domain"),
+        description="C2 hypothesis lacks an IP address or domain indicator.",
+        severity=GapSeverity.HIGH,
+        suggested_action=(
             "Extract the C2 IP or domain from network captures or EDR telemetry "
             "and link it as an indicator."
         ),
     ),
     _GapRule(
-        id               = "no-campaign-linkage",
-        keywords         = ["campaign", "operation", "wave", "cluster"],
-        check_fn         = lambda hyp, inv: not inv.campaigns and len(inv.indicators) < 2,
-        description      = "Campaign hypothesis has no linked STIX Campaign and fewer than 2 indicators.",
-        severity         = GapSeverity.LOW,
-        suggested_action = (
+        id="no-campaign-linkage",
+        keywords=["campaign", "operation", "wave", "cluster"],
+        check_fn=lambda hyp, inv: not inv.campaigns and len(inv.indicators) < 2,
+        description="Campaign hypothesis has no linked STIX Campaign and fewer than 2 indicators.",
+        severity=GapSeverity.LOW,
+        suggested_action=(
             "Link a STIX Campaign SDO and ensure at least two indicators are "
             "attributed to the same campaign activity."
         ),
@@ -226,6 +226,7 @@ _RULES: list[_GapRule] = [
 
 
 # ── Detector ──────────────────────────────────────────────────────────────────
+
 
 class GapDetector:
     """
@@ -244,7 +245,7 @@ class GapDetector:
 
     def detect(
         self,
-        hypothesis:    Any,
+        hypothesis: Any,
         investigation: Any,
     ) -> list[GapRecommendation]:
         """
@@ -271,17 +272,23 @@ class GapDetector:
                 continue
             try:
                 if rule.check_fn(hypothesis, investigation):
-                    gaps.append(GapRecommendation(
-                        rule_id          = rule.id,
-                        description      = rule.description,
-                        severity         = rule.severity,
-                        suggested_action = rule.suggested_action,
-                    ))
+                    gaps.append(
+                        GapRecommendation(
+                            rule_id=rule.id,
+                            description=rule.description,
+                            severity=rule.severity,
+                            suggested_action=rule.suggested_action,
+                        )
+                    )
             except Exception:  # noqa: BLE001
                 pass  # rule evaluation failure never blocks gap detection
 
-        _ORDER = {GapSeverity.CRITICAL: 0, GapSeverity.HIGH: 1,
-                  GapSeverity.MEDIUM: 2, GapSeverity.LOW: 3}
+        _ORDER = {
+            GapSeverity.CRITICAL: 0,
+            GapSeverity.HIGH: 1,
+            GapSeverity.MEDIUM: 2,
+            GapSeverity.LOW: 3,
+        }
         gaps.sort(key=lambda g: _ORDER[g.severity])
         return gaps
 
@@ -297,19 +304,17 @@ class GapDetector:
         dict
             ``{hypothesis_id: [GapRecommendation, ...]}``.
         """
-        return {
-            h.id: self.detect(h, investigation)
-            for h in investigation.hypothesis
-        }
+        return {h.id: self.detect(h, investigation) for h in investigation.hypothesis}
 
     def summary(self, gaps: list[GapRecommendation]) -> dict[str, Any]:
         """Return a count summary of gaps by severity."""
         from collections import Counter
+
         counts = Counter(g.severity.value for g in gaps)
         return {
-            "total":    len(gaps),
+            "total": len(gaps),
             "critical": counts.get("critical", 0),
-            "high":     counts.get("high", 0),
-            "medium":   counts.get("medium", 0),
-            "low":      counts.get("low", 0),
+            "high": counts.get("high", 0),
+            "medium": counts.get("medium", 0),
+            "low": counts.get("low", 0),
         }

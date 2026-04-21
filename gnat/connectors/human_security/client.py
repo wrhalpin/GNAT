@@ -72,9 +72,7 @@ class HumanSecurityClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange client credentials for a Bearer token."""
         if not self.client_id or not self.client_secret:
-            raise GNATClientError(
-                "HUMAN Security connector requires client_id and client_secret."
-            )
+            raise GNATClientError("HUMAN Security connector requires client_id and client_secret.")
         resp = self.post(
             "/oauth/token",
             data={
@@ -104,9 +102,7 @@ class HumanSecurityClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch a single record by id."""
         if not object_id:
-            raise GNATClientError(
-                "HUMAN Security get_object requires a non-empty id"
-            )
+            raise GNATClientError("HUMAN Security get_object requires a non-empty id")
         if stix_type == "observed-data":
             resp = self.get(f"/v1/bot-detections/{object_id}")
             kind = "bot_detection"
@@ -118,9 +114,7 @@ class HumanSecurityClient(BaseClient, ConnectorMixin):
                 f"HUMAN Security get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"HUMAN Security returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"HUMAN Security returned unexpected payload for {object_id!r}")
         return dict(resp, _hs_kind=kind)
 
     def list_objects(
@@ -140,14 +134,10 @@ class HumanSecurityClient(BaseClient, ConnectorMixin):
         if stix_type == "observed-data":
             kind = (filters.get("kind") or "bot_detections").lower()
             if kind == "ato_events":
-                resp = self.get(
-                    "/v1/account-takeover/events", params=params
-                )
+                resp = self.get("/v1/account-takeover/events", params=params)
                 tag = "ato_event"
             elif kind == "credential_stuffing":
-                resp = self.get(
-                    "/v1/credential-stuffing/events", params=params
-                )
+                resp = self.get("/v1/credential-stuffing/events", params=params)
                 tag = "credential_stuffing"
             else:
                 resp = self.get("/v1/bot-detections", params=params)
@@ -164,9 +154,7 @@ class HumanSecurityClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _hs_kind=tag) for r in _extract_human_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """HUMAN Security connector is read-only."""
         raise GNATClientError(
             "HUMAN Security connector is read-only — no write operations supported."
@@ -189,9 +177,7 @@ class HumanSecurityClient(BaseClient, ConnectorMixin):
 
     def list_account_takeover_events(self) -> list[dict[str, Any]]:
         """Return account-takeover events."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "ato_events"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "ato_events"}, page_size=500)
 
     def list_credential_stuffing(self) -> list[dict[str, Any]]:
         """Return credential-stuffing events."""
@@ -251,9 +237,7 @@ class HumanSecurityClient(BaseClient, ConnectorMixin):
 
         if kind == "integration":
             int_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_HUMAN, f"x-human-integration|{int_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_HUMAN, f"x-human-integration|{int_id}")
             return {
                 "type": "x-human-integration",
                 "id": f"x-human-integration--{stix_uuid}",

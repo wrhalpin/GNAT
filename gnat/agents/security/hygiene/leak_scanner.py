@@ -6,6 +6,7 @@ gnat.agents.security.hygiene.leak_scanner
 
 Leak scanner utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 import re
@@ -17,6 +18,7 @@ from pathlib import Path
 @dataclass
 class LeakFinding:
     """LeakFinding implementation."""
+
     path: str
     line_number: int
     severity: str
@@ -26,6 +28,7 @@ class LeakFinding:
 
 class LeakScanner:
     """LeakScanner implementation."""
+
     DEFAULT_PATTERNS = {
         "aws_access_key": re.compile(r"AKIA[0-9A-Z]{16}"),
         "private_key_header": re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"),

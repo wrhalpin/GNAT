@@ -265,7 +265,11 @@ class NucleusClient(BaseClient, ConnectorMixin):
     def list_projects(self) -> list[dict[str, Any]]:
         """List all Nucleus projects accessible with the current API key."""
         resp = self.get("/v2/projects")
-        return resp if isinstance(resp, list) else (resp.get("projects", []) if isinstance(resp, dict) else [])
+        return (
+            resp
+            if isinstance(resp, list)
+            else (resp.get("projects", []) if isinstance(resp, dict) else [])
+        )
 
     def get_project(self, project_id: str) -> dict[str, Any]:
         """Retrieve metadata for a specific Nucleus project."""
@@ -320,17 +324,13 @@ class NucleusClient(BaseClient, ConnectorMixin):
         data = resp.get("vulnerabilities", resp) if isinstance(resp, dict) else resp
         return data if isinstance(data, list) else []
 
-    def get_vulnerability(
-        self, vuln_id: str, project: str = ""
-    ) -> dict[str, Any]:
+    def get_vulnerability(self, vuln_id: str, project: str = "") -> dict[str, Any]:
         """Retrieve full details for a specific vulnerability finding."""
         proj = project or self._project
         resp = self.get(f"/v2/projects/{proj}/vulnerabilities/{vuln_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def get_vulnerability_assets(
-        self, vuln_id: str, project: str = ""
-    ) -> list[dict[str, Any]]:
+    def get_vulnerability_assets(self, vuln_id: str, project: str = "") -> list[dict[str, Any]]:
         """List assets affected by a specific vulnerability."""
         proj = project or self._project
         resp = self.get(f"/v2/projects/{proj}/vulnerabilities/{vuln_id}/assets")
@@ -360,9 +360,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
-    def reopen_vulnerability(
-        self, vuln_id: str, project: str = ""
-    ) -> dict[str, Any]:
+    def reopen_vulnerability(self, vuln_id: str, project: str = "") -> dict[str, Any]:
         """Reopen a closed or accepted vulnerability."""
         proj = project or self._project
         resp = self.patch(
@@ -432,9 +430,7 @@ class NucleusClient(BaseClient, ConnectorMixin):
         resp = self.get(f"/v2/projects/{proj}/statistics")
         return resp if isinstance(resp, dict) else {}
 
-    def get_sla_violations(
-        self, project: str = "", limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def get_sla_violations(self, project: str = "", limit: int = 100) -> list[dict[str, Any]]:
         """List vulnerabilities currently in breach of SLA remediation policies."""
         proj = project or self._project
         resp = self.get(
@@ -490,17 +486,13 @@ class NucleusClient(BaseClient, ConnectorMixin):
         data = resp.get("connectors", resp) if isinstance(resp, dict) else resp
         return data if isinstance(data, list) else []
 
-    def get_connector_status(
-        self, connector_id: str, project: str = ""
-    ) -> dict[str, Any]:
+    def get_connector_status(self, connector_id: str, project: str = "") -> dict[str, Any]:
         """Retrieve the last sync status for a specific connector."""
         proj = project or self._project
         resp = self.get(f"/v2/projects/{proj}/connectors/{connector_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def trigger_connector_sync(
-        self, connector_id: str, project: str = ""
-    ) -> dict[str, Any]:
+    def trigger_connector_sync(self, connector_id: str, project: str = "") -> dict[str, Any]:
         """Force an immediate re-import from a connector source."""
         proj = project or self._project
         resp = self.post(f"/v2/projects/{proj}/connectors/{connector_id}/sync")

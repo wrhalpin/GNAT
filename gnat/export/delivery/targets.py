@@ -281,6 +281,7 @@ class EDLServer(ExportDelivery):
 
         class _H(http.server.BaseHTTPRequestHandler):
             """_H implementation."""
+
             def do_GET(self):
                 """Do get."""
                 path = self.path.strip("/")
@@ -510,7 +511,6 @@ class TAXIIPushDelivery(ExportDelivery):
         timeout: int = 30,
     ) -> None:
         """Initialize TAXIIPushDelivery."""
-        import uuid as _uuid
 
         self._taxii_url = taxii_url.rstrip("/")
         self._workspace = workspace
@@ -533,7 +533,9 @@ class TAXIIPushDelivery(ExportDelivery):
 
         if not objects:
             dr = DeliveryResult()
-            logger.debug("TAXIIPushDelivery: no objects to push to %s/%s", self._taxii_url, self._workspace)
+            logger.debug(
+                "TAXIIPushDelivery: no objects to push to %s/%s", self._taxii_url, self._workspace
+            )
             return dr
 
         bundle = {

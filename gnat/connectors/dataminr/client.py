@@ -70,9 +70,7 @@ class DataminrClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange client credentials for a Dataminr Bearer token."""
         if not self.client_id or not self.client_secret:
-            raise GNATClientError(
-                "Dataminr connector requires client_id and client_secret."
-            )
+            raise GNATClientError("Dataminr connector requires client_id and client_secret.")
         resp = self.post(
             "/auth/2/token",
             data={
@@ -83,15 +81,9 @@ class DataminrClient(BaseClient, ConnectorMixin):
         )
         token = ""
         if isinstance(resp, dict):
-            token = (
-                resp.get("dmaToken")
-                or resp.get("access_token")
-                or resp.get("token", "")
-            )
+            token = resp.get("dmaToken") or resp.get("access_token") or resp.get("token", "")
         if not token:
-            raise GNATClientError(
-                "Dataminr authentication failed — no token in response"
-            )
+            raise GNATClientError("Dataminr authentication failed — no token in response")
         self._auth_headers["Authorization"] = f"Dmauth {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -108,14 +100,10 @@ class DataminrClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("Dataminr get_object requires a non-empty id")
         if stix_type != "observed-data":
-            raise GNATClientError(
-                f"Dataminr get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Dataminr get_object does not support stix_type={stix_type!r}")
         resp = self.get(f"/api/3/alerts/{object_id}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Dataminr returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Dataminr returned unexpected payload for {object_id!r}")
         return dict(resp, _dm_kind="alert")
 
     def list_objects(
@@ -139,19 +127,13 @@ class DataminrClient(BaseClient, ConnectorMixin):
             elif kind == "list_alerts":
                 list_id = filters.get("list_id")
                 if not list_id:
-                    raise GNATClientError(
-                        "Dataminr list_alerts requires 'list_id' filter"
-                    )
-                resp = self.get(
-                    f"/api/3/lists/{list_id}/alerts", params=params
-                )
+                    raise GNATClientError("Dataminr list_alerts requires 'list_id' filter")
+                resp = self.get(f"/api/3/lists/{list_id}/alerts", params=params)
                 tag = "alert"
             elif kind == "related":
                 alert_id = filters.get("alert_id")
                 if not alert_id:
-                    raise GNATClientError(
-                        "Dataminr related requires 'alert_id' filter"
-                    )
+                    raise GNATClientError("Dataminr related requires 'alert_id' filter")
                 resp = self.get(
                     "/api/3/relatedAlerts",
                     params={**params, "alertId": alert_id},
@@ -161,30 +143,20 @@ class DataminrClient(BaseClient, ConnectorMixin):
                 resp = self.get("/api/3/alerts", params=params)
                 tag = "alert"
         else:
-            raise GNATClientError(
-                f"Dataminr list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Dataminr list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _dm_kind=tag) for r in _extract_dataminr_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Dataminr connector is read-only."""
-        raise GNATClientError(
-            "Dataminr connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Dataminr connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Dataminr connector is read-only."""
-        raise GNATClientError(
-            "Dataminr connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Dataminr connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_alerts(
-        self, since: str = "", alert_type: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_alerts(self, since: str = "", alert_type: str = "") -> list[dict[str, Any]]:
         """Return recent Pulse alerts."""
         filters: dict[str, Any] = {}
         if since:
@@ -199,9 +171,7 @@ class DataminrClient(BaseClient, ConnectorMixin):
 
     def list_watchlists(self) -> list[dict[str, Any]]:
         """Return configured watch lists."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "lists"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "lists"}, page_size=500)
 
     def list_list_alerts(self, list_id: str) -> list[dict[str, Any]]:
         """Return alerts matching a specific watch list."""
@@ -230,9 +200,7 @@ class DataminrClient(BaseClient, ConnectorMixin):
 
         if kind == "list":
             list_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_DATAMINR, f"x-dataminr-list|{list_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_DATAMINR, f"x-dataminr-list|{list_id}")
             return {
                 "type": "x-dataminr-list",
                 "id": f"x-dataminr-list--{stix_uuid}",
@@ -248,16 +216,11 @@ class DataminrClient(BaseClient, ConnectorMixin):
         if isinstance(location, dict):
             place = location.get("name") or location.get("countryCode")
             if place:
-                loc_uuid = uuid.uuid5(
-                    _NAMESPACE_DATAMINR, f"identity|location|{place}"
-                )
+                loc_uuid = uuid.uuid5(_NAMESPACE_DATAMINR, f"identity|location|{place}")
                 refs.append(f"identity--{loc_uuid}")
 
         first = (
-            native.get("eventTime")
-            or native.get("publishTime")
-            or native.get("time")
-            or utcnow()
+            native.get("eventTime") or native.get("publishTime") or native.get("time") or utcnow()
         )
 
         alert_type_raw = native.get("alertType")

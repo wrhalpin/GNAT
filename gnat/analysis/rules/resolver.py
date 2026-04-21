@@ -49,9 +49,7 @@ class EvidenceResolver:
     def resolve(self, stix_id: str) -> ResolvedEvidence:
         if stix_id in self._cache:
             return self._cache[stix_id]
-        source_platform = self._store.get_source_platform(
-            self._workspace_id, stix_id
-        )
+        source_platform = self._store.get_source_platform(self._workspace_id, stix_id)
         resolved = self._build(stix_id, source_platform)
         self._cache[stix_id] = resolved
         return resolved
@@ -59,16 +57,12 @@ class EvidenceResolver:
     def resolve_many(self, stix_ids: list[str]) -> dict[str, ResolvedEvidence]:
         missing = [sid for sid in stix_ids if sid not in self._cache]
         if missing:
-            platforms = self._store.get_source_platforms_bulk(
-                self._workspace_id, missing
-            )
+            platforms = self._store.get_source_platforms_bulk(self._workspace_id, missing)
             for sid in missing:
                 self._cache[sid] = self._build(sid, platforms.get(sid))
         return {sid: self._cache[sid] for sid in stix_ids}
 
-    def _build(
-        self, stix_id: str, source_platform: str | None
-    ) -> ResolvedEvidence:
+    def _build(self, stix_id: str, source_platform: str | None) -> ResolvedEvidence:
         if source_platform is None:
             return ResolvedEvidence(
                 stix_id=stix_id,

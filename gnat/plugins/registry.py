@@ -56,7 +56,7 @@ class PluginRegistry:
     Use :meth:`instance` to get the singleton.
     """
 
-    _instance: "PluginRegistry | None" = None
+    _instance: PluginRegistry | None = None
     _lock: threading.Lock = threading.Lock()
 
     def __init__(self) -> None:
@@ -67,7 +67,7 @@ class PluginRegistry:
     # ── Singleton ─────────────────────────────────────────────────────────
 
     @classmethod
-    def instance(cls) -> "PluginRegistry":
+    def instance(cls) -> PluginRegistry:
         """Return the process-level singleton :class:`PluginRegistry`."""
         if cls._instance is None:
             with cls._lock:
@@ -94,21 +94,15 @@ class PluginRegistry:
         """
         with self._reg_lock:
             if plugin.name in self._plugins:
-                logger.warning(
-                    "PluginRegistry: %r is already loaded — skipping.", plugin.name
-                )
+                logger.warning("PluginRegistry: %r is already loaded — skipping.", plugin.name)
                 return
             try:
                 plugin.register(self)
                 self._plugins[plugin.name] = plugin
                 self._hooks.emit("plugin_loaded", plugin=plugin)
-                logger.info(
-                    "PluginRegistry: loaded plugin %r v%s", plugin.name, plugin.version
-                )
+                logger.info("PluginRegistry: loaded plugin %r v%s", plugin.name, plugin.version)
             except Exception as exc:
-                logger.error(
-                    "PluginRegistry: failed to load plugin %r: %s", plugin.name, exc
-                )
+                logger.error("PluginRegistry: failed to load plugin %r: %s", plugin.name, exc)
                 raise
 
     def unload(self, name: str) -> bool:
@@ -162,6 +156,7 @@ class PluginRegistry:
         loaded = 0
         try:
             from importlib.metadata import entry_points
+
             eps = entry_points(group=group)
         except Exception as exc:
             logger.warning("PluginRegistry: could not read entry points: %s", exc)
@@ -179,9 +174,7 @@ class PluginRegistry:
                 self.load(plugin_cls())
                 loaded += 1
             except Exception as exc:
-                logger.error(
-                    "PluginRegistry: failed to load entry point %r: %s", ep.name, exc
-                )
+                logger.error("PluginRegistry: failed to load entry point %r: %s", ep.name, exc)
 
         return loaded
 
@@ -225,9 +218,7 @@ class PluginRegistry:
                         self.load(attr())
                         loaded += 1
             except Exception as exc:
-                logger.error(
-                    "PluginRegistry: error loading %r: %s", py_file, exc
-                )
+                logger.error("PluginRegistry: error loading %r: %s", py_file, exc)
 
         return loaded
 
@@ -242,10 +233,13 @@ class PluginRegistry:
         """
         try:
             from gnat.clients import CLIENT_REGISTRY
+
             CLIENT_REGISTRY[name] = client_class
             logger.debug("PluginRegistry: registered connector %r", name)
         except ImportError:
-            logger.warning("PluginRegistry: gnat.clients not available; connector %r not registered.", name)
+            logger.warning(
+                "PluginRegistry: gnat.clients not available; connector %r not registered.", name
+            )
 
     def register_reader(self, reader_class: type) -> None:
         """
@@ -255,6 +249,7 @@ class PluginRegistry:
         """
         try:
             import gnat.ingest.sources as sources_mod
+
             name = reader_class.__name__
             if not hasattr(sources_mod, name):
                 setattr(sources_mod, name, reader_class)
@@ -272,6 +267,7 @@ class PluginRegistry:
         """
         try:
             import gnat.ingest.mappers as mappers_mod
+
             name = mapper_class.__name__
             if not hasattr(mappers_mod, name):
                 setattr(mappers_mod, name, mapper_class)

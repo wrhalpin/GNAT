@@ -6,22 +6,30 @@ Unit tests for Phase 4D — AgentGovernor, HITLGateway, and policy models.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # Policy model tests (AgentActionType)
 # ---------------------------------------------------------------------------
+
 
 class TestAgentActionType:
     def test_all_action_types_defined(self):
         from gnat.policy.models import AgentActionType
 
         expected = {
-            "read_stix", "write_stix", "delete_stix", "enrich",
-            "ingest", "export", "trigger_playbook", "manage_workspace",
-            "escalate", "hypothesize",
+            "read_stix",
+            "write_stix",
+            "delete_stix",
+            "enrich",
+            "ingest",
+            "export",
+            "trigger_playbook",
+            "manage_workspace",
+            "escalate",
+            "hypothesize",
         }
         actual = {a.value for a in AgentActionType}
         assert expected == actual
@@ -59,9 +67,11 @@ class TestAgentActionType:
 # AgentGovernor tests
 # ---------------------------------------------------------------------------
 
+
 class TestAgentGovernor:
     def _make_governor(self, **kwargs):
         from gnat.agents.governor import AgentGovernor
+
         return AgentGovernor(**kwargs)
 
     def test_can_act_trusted_internal(self):
@@ -74,7 +84,9 @@ class TestAgentGovernor:
         from gnat.policy.models import AgentActionType
 
         gov = self._make_governor()
-        assert gov.can_act("agent-1", AgentActionType.TRIGGER_PLAYBOOK, "untrusted_external") is False
+        assert (
+            gov.can_act("agent-1", AgentActionType.TRIGGER_PLAYBOOK, "untrusted_external") is False
+        )
 
     def test_require_can_act_raises(self):
         from gnat.agents.governor import AgentPermissionDenied
@@ -87,18 +99,17 @@ class TestAgentGovernor:
     def test_policy_override_allow(self):
         from gnat.policy.models import AgentActionType
 
-        gov = self._make_governor(
-            policy_overrides={"agent-special": {"trigger_playbook": True}}
-        )
+        gov = self._make_governor(policy_overrides={"agent-special": {"trigger_playbook": True}})
         # Override allows untrusted external to trigger playbooks
-        assert gov.can_act("agent-special", AgentActionType.TRIGGER_PLAYBOOK, "untrusted_external") is True
+        assert (
+            gov.can_act("agent-special", AgentActionType.TRIGGER_PLAYBOOK, "untrusted_external")
+            is True
+        )
 
     def test_policy_override_deny(self):
         from gnat.policy.models import AgentActionType
 
-        gov = self._make_governor(
-            policy_overrides={"agent-restricted": {"enrich": False}}
-        )
+        gov = self._make_governor(policy_overrides={"agent-restricted": {"enrich": False}})
         # Override denies trusted_internal from enriching
         assert gov.can_act("agent-restricted", AgentActionType.ENRICH, "trusted_internal") is False
 
@@ -159,6 +170,7 @@ class TestAgentGovernor:
 
     def test_rate_limit_window_expires(self):
         import time
+
         from gnat.agents.governor import AgentGovernor
 
         gov = AgentGovernor(max_calls_per_window=2, window_seconds=1)
@@ -173,6 +185,7 @@ class TestAgentGovernor:
 # ---------------------------------------------------------------------------
 # AgentAction tests
 # ---------------------------------------------------------------------------
+
 
 class TestAgentAction:
     def test_create(self):
@@ -223,6 +236,7 @@ class TestAgentAction:
 # HITLGateway tests
 # ---------------------------------------------------------------------------
 
+
 class TestHITLGateway:
     def _make_gateway(self, auto_approve=True):
         from gnat.agents.hitl import HITLGateway
@@ -231,9 +245,11 @@ class TestHITLGateway:
         mock_item = MagicMock()
         mock_item.id = "review-item-123"
         from datetime import datetime, timezone
+
         mock_item.submitted_at = datetime.now(timezone.utc)
 
         from gnat.review.models import ReviewStatus
+
         mock_item.status = ReviewStatus.PENDING
         review_service.submit.return_value = mock_item
         review_service.get.return_value = mock_item
@@ -290,15 +306,17 @@ class TestHITLGateway:
 
     def test_critical_impact_notifies_xsoar(self):
         from gnat.agents.governor import AgentAction
-        from gnat.policy.models import AgentActionType
         from gnat.agents.hitl import HITLGateway
+        from gnat.policy.models import AgentActionType
 
         review_service = MagicMock()
         mock_item = MagicMock()
         mock_item.id = "review-crit-999"
         from datetime import datetime, timezone
+
         mock_item.submitted_at = datetime.now(timezone.utc)
         from gnat.review.models import ReviewStatus
+
         mock_item.status = ReviewStatus.PENDING
         review_service.submit.return_value = mock_item
 
@@ -318,9 +336,10 @@ class TestHITLGateway:
         xsoar.upsert_object.assert_called_once()
 
     def test_check_approval_status_timeout(self):
+        from datetime import datetime, timedelta, timezone
+
         from gnat.agents.hitl import HITLGateway
         from gnat.review.models import ReviewStatus
-        from datetime import datetime, timezone, timedelta
 
         review_service = MagicMock()
         mock_item = MagicMock()
@@ -334,11 +353,13 @@ class TestHITLGateway:
 
         # After reject, get returns the rejected item
         call_count = [0]
+
         def get_side_effect(item_id):
             call_count[0] += 1
             if call_count[0] == 1:
                 return mock_item
             return rejected_item
+
         review_service.get.side_effect = get_side_effect
 
         gateway = HITLGateway(review_service=review_service, approval_timeout_seconds=60)
@@ -357,19 +378,18 @@ class TestHITLGateway:
 
         gateway = HITLGateway(review_service=review_service)
         gateway.auto_approve_pending("review-123", reviewer="system-test")
-        review_service.approve.assert_called_once_with(
-            "review-123", reviewed_by="system-test"
-        )
+        review_service.approve.assert_called_once_with("review-123", reviewed_by="system-test")
 
 
 # ---------------------------------------------------------------------------
 # AgentTestHarness tests
 # ---------------------------------------------------------------------------
 
+
 class TestAgentTestHarness:
     def test_run_action_low_impact(self):
-        from gnat.testing import AgentTestHarness
         from gnat.policy.models import AgentActionType
+        from gnat.testing import AgentTestHarness
 
         harness = AgentTestHarness()
         approved, action = harness.run_action(
@@ -383,9 +403,9 @@ class TestAgentTestHarness:
         assert len(harness.recorded_actions) == 1
 
     def test_run_action_denied(self):
-        from gnat.testing import AgentTestHarness
         from gnat.agents.governor import AgentPermissionDenied
         from gnat.policy.models import AgentActionType
+        from gnat.testing import AgentTestHarness
 
         harness = AgentTestHarness()
         with pytest.raises(AgentPermissionDenied):
@@ -396,8 +416,8 @@ class TestAgentTestHarness:
             )
 
     def test_multiple_actions_recorded(self):
-        from gnat.testing import AgentTestHarness
         from gnat.policy.models import AgentActionType
+        from gnat.testing import AgentTestHarness
 
         harness = AgentTestHarness()
         for _ in range(5):

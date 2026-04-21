@@ -12,13 +12,11 @@ urllib3.PoolManager level via the mock_pool_manager fixture.
 
 from __future__ import annotations
 
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -76,10 +74,13 @@ class TestHealthCheck:
 
     def test_raises_on_error_status(self):
         from gnat.clients.base import GNATClientError
+
         c = _connector()
-        with patch.object(c, "get", side_effect=GNATClientError("401", 401, b"Unauthorized")):
-            with pytest.raises(GNATClientError):
-                c.health_check()
+        with (
+            patch.object(c, "get", side_effect=GNATClientError("401", 401, b"Unauthorized")),
+            pytest.raises(GNATClientError),
+        ):
+            c.health_check()
 
 
 # ---------------------------------------------------------------------------
@@ -92,8 +93,18 @@ class TestListCollections:
         c = _connector()
         payload = {
             "collections": [
-                {"id": "threats-2025", "title": "Threats 2025", "can_read": True, "can_write": True},
-                {"id": "apt-tracking", "title": "APT Tracking", "can_read": True, "can_write": False},
+                {
+                    "id": "threats-2025",
+                    "title": "Threats 2025",
+                    "can_read": True,
+                    "can_write": True,
+                },
+                {
+                    "id": "apt-tracking",
+                    "title": "APT Tracking",
+                    "can_read": True,
+                    "can_write": False,
+                },
             ]
         }
         with patch.object(c, "get", return_value=payload):
@@ -209,7 +220,9 @@ class TestPassThrough:
 class TestCRUD:
     def test_list_objects_returns_list(self):
         c = _connector()
-        with patch.object(c, "get", return_value={"objects": [{"type": "indicator", "id": "indicator--1"}]}):
+        with patch.object(
+            c, "get", return_value={"objects": [{"type": "indicator", "id": "indicator--1"}]}
+        ):
             result = c.list_objects("indicator")
         assert isinstance(result, list)
         assert result[0]["type"] == "indicator"

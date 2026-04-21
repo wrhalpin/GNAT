@@ -64,9 +64,7 @@ if _SA_AVAILABLE:
         threat_actor_id = Column(String(64), nullable=True, index=True)
         tags_csv = Column(Text, nullable=True, default="")
         campaign_json = Column(Text, nullable=False)
-        created_at = Column(
-            DateTime(timezone=True), default=_utcnow, nullable=False, index=True
-        )
+        created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
         updated_at = Column(
             DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False
         )
@@ -168,23 +166,18 @@ class CampaignStore:
                 CampaignModel.is_deleted == False  # noqa: E712
             )
             if query.status:
-                q = q.filter(
-                    CampaignModel.status.in_([s.value for s in query.status])
-                )
+                q = q.filter(CampaignModel.status.in_([s.value for s in query.status]))
             if query.threat_actor_id:
                 q = q.filter(CampaignModel.threat_actor_id == query.threat_actor_id)
             if query.parent_campaign_id:
-                q = q.filter(
-                    CampaignModel.parent_campaign_id == query.parent_campaign_id
-                )
+                q = q.filter(CampaignModel.parent_campaign_id == query.parent_campaign_id)
             if query.tags:
                 for tag in query.tags:
                     q = q.filter(CampaignModel.tags_csv.contains(tag))
             if query.text_search:
                 term = f"%{query.text_search}%"
                 q = q.filter(
-                    CampaignModel.name.ilike(term)
-                    | CampaignModel.campaign_json.ilike(term)
+                    CampaignModel.name.ilike(term) | CampaignModel.campaign_json.ilike(term)
                 )
             q = q.order_by(CampaignModel.updated_at.desc())
             offset = (query.page - 1) * query.page_size
@@ -199,7 +192,5 @@ class CampaignStore:
                 CampaignModel.is_deleted == False  # noqa: E712
             )
             if query.status:
-                q = q.filter(
-                    CampaignModel.status.in_([s.value for s in query.status])
-                )
+                q = q.filter(CampaignModel.status.in_([s.value for s in query.status]))
             return q.count()

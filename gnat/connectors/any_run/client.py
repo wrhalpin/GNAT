@@ -83,9 +83,7 @@ class AnyRunClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set ``Authorization: API-Key`` from the configured key."""
         if not self.api_key:
-            raise GNATClientError(
-                "ANY.RUN connector requires api_key in config."
-            )
+            raise GNATClientError("ANY.RUN connector requires api_key in config.")
         self._auth_headers["Authorization"] = f"API-Key {self.api_key}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -104,14 +102,10 @@ class AnyRunClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("ANY.RUN get_object requires a non-empty id")
         if stix_type not in ("observed-data", "malware", "indicator"):
-            raise GNATClientError(
-                f"ANY.RUN get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"ANY.RUN get_object does not support stix_type={stix_type!r}")
         resp = self.get(f"/v1/analysis/{object_id}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"ANY.RUN returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"ANY.RUN returned unexpected payload for {object_id!r}")
         data = resp.get("data") if isinstance(resp.get("data"), dict) else resp
         return dict(data, _ar_kind=stix_type, _ar_task_id=object_id)
 
@@ -124,9 +118,7 @@ class AnyRunClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List recent team analyses."""
         if stix_type not in ("observed-data", "malware", "indicator"):
-            raise GNATClientError(
-                f"ANY.RUN list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"ANY.RUN list_objects does not support stix_type={stix_type!r}")
         filters = dict(filters or {})
         params: dict[str, Any] = {
             "limit": int(page_size),
@@ -139,9 +131,7 @@ class AnyRunClient(BaseClient, ConnectorMixin):
         items = _extract_any_run_list(resp)
         return [dict(r, _ar_kind=stix_type) for r in items]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """ANY.RUN submissions are exposed as domain helpers."""
         raise GNATClientError(
             "ANY.RUN connector is read-only via CRUD — use submit_file / "
@@ -150,9 +140,7 @@ class AnyRunClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """ANY.RUN connector is read-only."""
-        raise GNATClientError(
-            "ANY.RUN connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("ANY.RUN connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -222,9 +210,9 @@ class AnyRunClient(BaseClient, ConnectorMixin):
 
         if kind == "malware":
             verdict = native.get("verdict") or native.get("threatLevel") or "unknown"
-            family = native.get("threatName") or native.get("mainObject", {}).get(
-                "name"
-            ) or "unknown"
+            family = (
+                native.get("threatName") or native.get("mainObject", {}).get("name") or "unknown"
+            )
             stix_uuid = uuid.uuid5(_NAMESPACE_ANYRUN, f"malware|{family}")
             return {
                 "type": "malware",
@@ -243,9 +231,7 @@ class AnyRunClient(BaseClient, ConnectorMixin):
         main = native.get("mainObject") or {}
         network = native.get("network") or {}
         ips = _extract_values(network.get("ipAddresses") or network.get("ips"))
-        domains = _extract_values(
-            network.get("domainNames") or network.get("domains")
-        )
+        domains = _extract_values(network.get("domainNames") or network.get("domains"))
         urls = _extract_values(network.get("urls"))
         processes = [
             p.get("commandLine") or p.get("name")
@@ -308,12 +294,7 @@ def _extract_values(container: Any) -> list[str]:
             if isinstance(item, str):
                 out.append(item)
             elif isinstance(item, dict):
-                val = (
-                    item.get("value")
-                    or item.get("ip")
-                    or item.get("domain")
-                    or item.get("url")
-                )
+                val = item.get("value") or item.get("ip") or item.get("domain") or item.get("url")
                 if isinstance(val, str):
                     out.append(val)
         return out

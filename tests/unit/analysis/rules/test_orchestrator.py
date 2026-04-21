@@ -57,20 +57,20 @@ class TestRuleOrchestrator:
         service.update_hypothesis_status.assert_not_called()
 
     def test_empty_result_no_audit(self):
-        orch, service, audit, hyp = _make_orchestrator(
-            result=RuleEvaluationResult()
-        )
+        orch, service, audit, hyp = _make_orchestrator(result=RuleEvaluationResult())
         orch.on_hypothesis_changed("inv-1", hyp.id, workspace_id=1)
         assert len(audit.memory_log) == 0
 
     def test_set_status_applied(self):
         result = RuleEvaluationResult()
-        result.firings.append(RuleFiring(
-            rule_name="promote",
-            rule_source_file="test.hy",
-            rule_git_sha=None,
-            decision=set_status("supported", "strong evidence"),
-        ))
+        result.firings.append(
+            RuleFiring(
+                rule_name="promote",
+                rule_source_file="test.hy",
+                rule_git_sha=None,
+                decision=set_status("supported", "strong evidence"),
+            )
+        )
         orch, service, audit, hyp = _make_orchestrator(result=result)
         orch.on_hypothesis_changed("inv-1", hyp.id, workspace_id=1)
         service.update_hypothesis_status.assert_called_once_with(
@@ -84,12 +84,14 @@ class TestRuleOrchestrator:
 
     def test_annotation_no_service_call(self):
         result = RuleEvaluationResult()
-        result.firings.append(RuleFiring(
-            rule_name="annotate",
-            rule_source_file="test.hy",
-            rule_git_sha=None,
-            decision=annotate("flag", "v"),
-        ))
+        result.firings.append(
+            RuleFiring(
+                rule_name="annotate",
+                rule_source_file="test.hy",
+                rule_git_sha=None,
+                decision=annotate("flag", "v"),
+            )
+        )
         orch, service, audit, hyp = _make_orchestrator(result=result)
         orch.on_hypothesis_changed("inv-1", hyp.id, workspace_id=1)
         service.update_hypothesis_status.assert_not_called()
@@ -97,12 +99,14 @@ class TestRuleOrchestrator:
 
     def test_service_error_recorded(self):
         result = RuleEvaluationResult()
-        result.firings.append(RuleFiring(
-            rule_name="promote",
-            rule_source_file="test.hy",
-            rule_git_sha=None,
-            decision=set_status("supported"),
-        ))
+        result.firings.append(
+            RuleFiring(
+                rule_name="promote",
+                rule_source_file="test.hy",
+                rule_git_sha=None,
+                decision=set_status("supported"),
+            )
+        )
         orch, service, audit, hyp = _make_orchestrator(
             result=result,
             service_error=RuntimeError("db error"),
@@ -113,12 +117,14 @@ class TestRuleOrchestrator:
 
     def test_audit_first_pattern(self):
         result = RuleEvaluationResult()
-        result.firings.append(RuleFiring(
-            rule_name="promote",
-            rule_source_file="test.hy",
-            rule_git_sha=None,
-            decision=set_status("supported"),
-        ))
+        result.firings.append(
+            RuleFiring(
+                rule_name="promote",
+                rule_source_file="test.hy",
+                rule_git_sha=None,
+                decision=set_status("supported"),
+            )
+        )
         orch, service, audit, hyp = _make_orchestrator(result=result)
         orch.on_hypothesis_changed("inv-1", hyp.id, workspace_id=1)
         assert len(audit.memory_log) == 1

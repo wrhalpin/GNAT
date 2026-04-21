@@ -6,6 +6,8 @@ gnat.agents.security.secrets.exceptions
 
 Exceptions utilities and helpers for the GNAT toolkit.
 """
+
+
 class SecretError(Exception):
     """Raised when a secret error error occurs."""
 

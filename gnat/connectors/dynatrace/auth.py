@@ -143,6 +143,4 @@ class DynatraceOAuthManager:
             self._expires_in = int(body.get("expires_in", 3600))
             self._acquired_at = time.time()
         except (KeyError, json.JSONDecodeError) as exc:
-            raise DynatraceAuthError(
-                f"Could not parse Dynatrace token response: {exc}"
-            ) from exc
+            raise DynatraceAuthError(f"Could not parse Dynatrace token response: {exc}") from exc

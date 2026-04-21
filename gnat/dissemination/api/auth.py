@@ -58,16 +58,14 @@ class APIKey:
         Arbitrary key metadata.
     """
 
-    token:      str
-    tlp_level:  TLPLevel
-    label:      str                  = ""
-    role:       str                  = "viewer"
-    created_at: datetime             = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
-    )
-    expires_at: datetime | None      = None
-    enabled:    bool                 = True
-    metadata:   dict[str, Any]       = field(default_factory=dict)
+    token: str
+    tlp_level: TLPLevel
+    label: str = ""
+    role: str = "viewer"
+    created_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    expires_at: datetime | None = None
+    enabled: bool = True
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def token_hash(self) -> str:
@@ -85,12 +83,12 @@ class APIKey:
     def to_dict(self) -> dict[str, Any]:
         return {
             "token_hash": self.token_hash,
-            "tlp_level":  self.tlp_level.value,
-            "label":      self.label,
-            "role":       self.role,
+            "tlp_level": self.tlp_level.value,
+            "label": self.label,
+            "role": self.role,
             "created_at": self.created_at.isoformat(),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "enabled":    self.enabled,
+            "enabled": self.enabled,
         }
 
 
@@ -111,17 +109,17 @@ class APIKeyStore:
 
     def __init__(self, keys: list[APIKey] | None = None) -> None:
         self._keys: dict[str, APIKey] = {}
-        for key in (keys or []):
+        for key in keys or []:
             self._keys[key.token] = key
 
     def add_key(
         self,
-        token:     str,
+        token: str,
         tlp_level: TLPLevel,
-        label:     str                  = "",
-        role:      str                  = "viewer",
-        expires_at: datetime | None     = None,
-        metadata:  dict[str, Any] | None = None,
+        label: str = "",
+        role: str = "viewer",
+        expires_at: datetime | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> APIKey:
         """
         Register an API key.
@@ -147,12 +145,12 @@ class APIKeyStore:
         APIKey
         """
         key = APIKey(
-            token      = token,
-            tlp_level  = tlp_level,
-            label      = label,
-            role       = role,
-            expires_at = expires_at,
-            metadata   = metadata or {},
+            token=token,
+            tlp_level=tlp_level,
+            label=label,
+            role=role,
+            expires_at=expires_at,
+            metadata=metadata or {},
         )
         self._keys[token] = key
         return key
@@ -160,7 +158,7 @@ class APIKeyStore:
     def generate_key(
         self,
         tlp_level: TLPLevel,
-        label:     str = "",
+        label: str = "",
         **kwargs: Any,
     ) -> APIKey:
         """

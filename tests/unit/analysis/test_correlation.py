@@ -4,9 +4,9 @@ Unit tests for gnat.analysis.correlation
 
 from __future__ import annotations
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
+from gnat.analysis.confidence import SourceReliability
 from gnat.analysis.correlation import (
     ClusterDetector,
     EnrichmentDispatcher,
@@ -16,18 +16,17 @@ from gnat.analysis.correlation import (
     IndicatorRecord,
     RelationshipScorer,
 )
-from gnat.analysis.confidence import ConfidenceLevel, SourceReliability
-
 
 # ── EntityResolver ────────────────────────────────────────────────────────────
+
 
 class TestEntityResolver:
     def _make_record(self, ioc_type: str, value: str, platform: str = "test") -> IndicatorRecord:
         return IndicatorRecord(
-            platform   = platform,
-            ioc_type   = ioc_type,
-            value      = value,
-            source_id  = f"{platform}-1",
+            platform=platform,
+            ioc_type=ioc_type,
+            value=value,
+            source_id=f"{platform}-1",
         )
 
     def test_resolve_deduplicates_same_ip(self):
@@ -91,7 +90,10 @@ class TestEntityResolver:
 
     def test_entity_group_max_confidence(self):
         resolver = EntityResolver()
-        from gnat.analysis.confidence import ConfidenceScore, SourceReliability, InformationCredibility
+        from gnat.analysis.confidence import (
+            ConfidenceScore,
+        )
+
         r1 = IndicatorRecord("p1", "ipv4", "5.5.5.5", "x1", confidence=ConfidenceScore.high())
         r2 = IndicatorRecord("p2", "ipv4", "5.5.5.5", "x2", confidence=ConfidenceScore.low())
         groups = resolver.resolve([r1, r2])
@@ -116,10 +118,11 @@ class TestEntityResolver:
 
 # ── RelationshipScorer ────────────────────────────────────────────────────────
 
+
 class TestRelationshipScorer:
     def test_single_platform_base_score(self):
         scorer = RelationshipScorer()
-        score  = scorer.score(platforms={"platform_a"})
+        score = scorer.score(platforms={"platform_a"})
         assert score.stix_confidence >= 20
 
     def test_two_platforms_higher_than_one(self):
@@ -137,23 +140,23 @@ class TestRelationshipScorer:
     def test_recent_observation_boosts_score(self):
         scorer = RelationshipScorer()
         recent = (datetime.now(tz=timezone.utc) - timedelta(days=3)).isoformat()
-        old    = (datetime.now(tz=timezone.utc) - timedelta(days=200)).isoformat()
+        old = (datetime.now(tz=timezone.utc) - timedelta(days=200)).isoformat()
         s_recent = scorer.score(platforms={"p1"}, last_observed_iso=recent)
-        s_old    = scorer.score(platforms={"p1"}, last_observed_iso=old)
+        s_old = scorer.score(platforms={"p1"}, last_observed_iso=old)
         assert s_recent.stix_confidence > s_old.stix_confidence
 
     def test_high_reliability_bonus(self):
         scorer = RelationshipScorer()
-        reliable    = scorer.score(
-            platforms            = ["p1", "p2"],
-            source_reliabilities = {
+        reliable = scorer.score(
+            platforms=["p1", "p2"],
+            source_reliabilities={
                 "p1": SourceReliability.A_COMPLETELY_RELIABLE,
                 "p2": SourceReliability.B_USUALLY_RELIABLE,
             },
         )
-        unreliable  = scorer.score(
-            platforms            = ["p1", "p2"],
-            source_reliabilities = {
+        unreliable = scorer.score(
+            platforms=["p1", "p2"],
+            source_reliabilities={
                 "p1": SourceReliability.E_UNRELIABLE,
                 "p2": SourceReliability.F_CANNOT_BE_JUDGED,
             },
@@ -163,10 +166,10 @@ class TestRelationshipScorer:
     def test_score_capped_at_100(self):
         scorer = RelationshipScorer()
         recent = (datetime.now(tz=timezone.utc) - timedelta(hours=1)).isoformat()
-        score  = scorer.score(
-            platforms            = ["p1", "p2", "p3", "p4", "p5"],
-            last_observed_iso    = recent,
-            source_reliabilities = {
+        score = scorer.score(
+            platforms=["p1", "p2", "p3", "p4", "p5"],
+            last_observed_iso=recent,
+            source_reliabilities={
                 "p1": SourceReliability.A_COMPLETELY_RELIABLE,
                 "p2": SourceReliability.A_COMPLETELY_RELIABLE,
                 "p3": SourceReliability.A_COMPLETELY_RELIABLE,
@@ -183,34 +186,36 @@ class TestRelationshipScorer:
 
     def test_rationale_included(self):
         scorer = RelationshipScorer()
-        score  = scorer.score(platforms={"p1", "p2"}, rationale="test rationale")
+        score = scorer.score(platforms={"p1", "p2"}, rationale="test rationale")
         assert "test rationale" in (score.rationale or "")
 
 
 # ── ClusterDetector ───────────────────────────────────────────────────────────
 
+
 class TestClusterDetector:
     def _make_group(
         self,
-        canonical_id:    str,
-        ioc_type:        str = "ipv4",
+        canonical_id: str,
+        ioc_type: str = "ipv4",
         canonical_value: str = "1.2.3.4",
-        platforms:       set | None = None,
-        tags:            set | None = None,
+        platforms: set | None = None,
+        tags: set | None = None,
     ) -> EntityGroup:
         from gnat.analysis.correlation.entity_resolver import IndicatorRecord
+
         rec = IndicatorRecord(
-            platform  = "p1",
-            ioc_type  = ioc_type,
-            value     = canonical_value,
-            source_id = canonical_id,
+            platform="p1",
+            ioc_type=ioc_type,
+            value=canonical_value,
+            source_id=canonical_id,
         )
         group = EntityGroup(
-            canonical_id    = canonical_id,
-            canonical_key   = (ioc_type, canonical_value),
-            ioc_type        = ioc_type,
-            canonical_value = canonical_value,
-            records         = [rec],
+            canonical_id=canonical_id,
+            canonical_key=(ioc_type, canonical_value),
+            ioc_type=ioc_type,
+            canonical_value=canonical_value,
+            records=[rec],
         )
         if platforms:
             group.records = [
@@ -229,7 +234,7 @@ class TestClusterDetector:
 
     def test_single_group_no_cluster(self):
         detector = ClusterDetector()
-        group    = self._make_group("g1", canonical_value="1.2.3.4")
+        group = self._make_group("g1", canonical_value="1.2.3.4")
         clusters = detector.detect([group])
         assert len(clusters) == 0
 
@@ -258,37 +263,53 @@ class TestClusterDetector:
 
     def test_cluster_confidence_increases_with_signals(self):
         detector = ClusterDetector()
-        g1 = self._make_group("g1", ioc_type="ipv4", canonical_value="10.0.0.1",
-                              platforms={"xsoar", "tq"}, tags={"apt29"})
-        g2 = self._make_group("g2", ioc_type="ipv4", canonical_value="10.0.0.2",
-                              platforms={"xsoar", "tq"}, tags={"apt29"})
+        g1 = self._make_group(
+            "g1",
+            ioc_type="ipv4",
+            canonical_value="10.0.0.1",
+            platforms={"xsoar", "tq"},
+            tags={"apt29"},
+        )
+        g2 = self._make_group(
+            "g2",
+            ioc_type="ipv4",
+            canonical_value="10.0.0.2",
+            platforms={"xsoar", "tq"},
+            tags={"apt29"},
+        )
         clusters = detector.detect([g1, g2])
         assert clusters[0].confidence.stix_confidence >= 60
 
     def test_no_cross_group_signals(self):
         detector = ClusterDetector()
-        g1 = self._make_group("g1", ioc_type="ipv4", canonical_value="1.1.1.1",
-                              platforms={"p1"}, tags={"tagA"})
-        g2 = self._make_group("g2", ioc_type="domain", canonical_value="evil.com",
-                              platforms={"p2"}, tags={"tagB"})
+        g1 = self._make_group(
+            "g1", ioc_type="ipv4", canonical_value="1.1.1.1", platforms={"p1"}, tags={"tagA"}
+        )
+        g2 = self._make_group(
+            "g2", ioc_type="domain", canonical_value="evil.com", platforms={"p2"}, tags={"tagB"}
+        )
         clusters = detector.detect([g1, g2])
         assert len(clusters) == 0
 
     def test_cluster_has_label(self):
         detector = ClusterDetector()
-        g1 = self._make_group("g1", ioc_type="ipv4", canonical_value="172.16.0.1",
-                              platforms={"xsoar", "tq"})
-        g2 = self._make_group("g2", ioc_type="ipv4", canonical_value="172.16.0.2",
-                              platforms={"xsoar", "tq"})
+        g1 = self._make_group(
+            "g1", ioc_type="ipv4", canonical_value="172.16.0.1", platforms={"xsoar", "tq"}
+        )
+        g2 = self._make_group(
+            "g2", ioc_type="ipv4", canonical_value="172.16.0.2", platforms={"xsoar", "tq"}
+        )
         clusters = detector.detect([g1, g2])
         assert clusters[0].label != ""
 
 
 # ── EnrichmentDispatcher ──────────────────────────────────────────────────────
 
+
 class TestEnrichmentDispatcher:
     def _make_connector(self, platform: str, results: list | None = None) -> object:
         """Minimal fake connector for enrichment tests."""
+
         class _FakeConnector:
             def search_indicators_by_value(self, value: str):
                 if results is None:
@@ -309,6 +330,7 @@ class TestEnrichmentDispatcher:
     def test_enrich_best_effort_skips_failures(self):
         class _FailConnector:
             platform = "fail_platform"
+
             def search_indicators_by_value(self, value):
                 raise RuntimeError("connection refused")
 

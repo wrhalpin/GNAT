@@ -27,10 +27,10 @@ Usage from Python::
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
-import logging
-from typing import Sequence
+from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,8 @@ def run_db_command(args: Sequence[str], alembic_ini: str | None = None) -> int:
         Exit code (0 = success).
     """
     try:
-        from alembic.config import Config
         import alembic.command as alembic_cmd
+        from alembic.config import Config
     except ImportError as exc:
         logger.error("Alembic is required: pip install 'gnat[migrations]'")
         raise ImportError("alembic not installed") from exc
@@ -83,13 +83,13 @@ def run_db_command(args: Sequence[str], alembic_ini: str | None = None) -> int:
     rest = list(args[1:]) if len(args) > 1 else []
 
     dispatch: dict = {
-        "upgrade":    lambda: alembic_cmd.upgrade(alembic_cfg, rest[0] if rest else "head"),
-        "downgrade":  lambda: alembic_cmd.downgrade(alembic_cfg, rest[0] if rest else "-1"),
-        "current":    lambda: alembic_cmd.current(alembic_cfg),
-        "history":    lambda: alembic_cmd.history(alembic_cfg),
-        "check":      lambda: alembic_cmd.check(alembic_cfg),
-        "revision":   lambda: _run_revision(alembic_cfg, rest),
-        "stamp":      lambda: alembic_cmd.stamp(alembic_cfg, rest[0] if rest else "head"),
+        "upgrade": lambda: alembic_cmd.upgrade(alembic_cfg, rest[0] if rest else "head"),
+        "downgrade": lambda: alembic_cmd.downgrade(alembic_cfg, rest[0] if rest else "-1"),
+        "current": lambda: alembic_cmd.current(alembic_cfg),
+        "history": lambda: alembic_cmd.history(alembic_cfg),
+        "check": lambda: alembic_cmd.check(alembic_cfg),
+        "revision": lambda: _run_revision(alembic_cfg, rest),
+        "stamp": lambda: alembic_cmd.stamp(alembic_cfg, rest[0] if rest else "head"),
     }
 
     handler = dispatch.get(cmd)
@@ -108,6 +108,7 @@ def run_db_command(args: Sequence[str], alembic_ini: str | None = None) -> int:
 
 def _run_revision(cfg, rest: list[str]) -> None:
     import alembic.command as alembic_cmd
+
     autogenerate = "--autogenerate" in rest or "-a" in rest
     message = None
     for i, arg in enumerate(rest):

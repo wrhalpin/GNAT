@@ -70,8 +70,8 @@ _API_ROOT = "intelligence"  # single API root name
 
 
 def build_taxii_router(
-    report_store:  Any,
-    key_store:     Any,
+    report_store: Any,
+    key_store: Any,
     policy_engine: Any | None = None,
 ) -> Any:
     """
@@ -97,13 +97,12 @@ def build_taxii_router(
         from fastapi.responses import JSONResponse
     except ImportError as exc:  # pragma: no cover
         raise ImportError(
-            "FastAPI is required for the TAXII server. "
-            "Install it with: pip install 'gnat[serve]'"
+            "FastAPI is required for the TAXII server. Install it with: pip install 'gnat[serve]'"
         ) from exc
 
     from gnat.policy import Permission, PolicyEngine
 
-    router  = APIRouter()
+    router = APIRouter()
     _engine = policy_engine or PolicyEngine()
 
     # ── Auth dependencies ─────────────────────────────────────────────────────
@@ -111,22 +110,20 @@ def build_taxii_router(
     def _require_api_key(authorization: str = Header(default="")) -> TLPLevel:
         if not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Missing Bearer token.")
-        token    = authorization.removeprefix("Bearer ").strip()
+        token = authorization.removeprefix("Bearer ").strip()
         tlp_level = key_store.get_tlp_level(token)
         if tlp_level is None:
             raise HTTPException(status_code=401, detail="Invalid API key.")
         return tlp_level
 
     # Dependency that resolves the full APIKey (needed for role checks)
-    _require_write_taxii = _engine.require(
-        Permission.WRITE_TAXII, key_store=key_store
-    )
+    _require_write_taxii = _engine.require(Permission.WRITE_TAXII, key_store=key_store)
 
     def _taxii_response(data: dict | list, status: int = 200) -> JSONResponse:
         return JSONResponse(
-            content     = data,
-            status_code = status,
-            headers     = {"Content-Type": _TAXII_CONTENT_TYPE},
+            content=data,
+            status_code=status,
+            headers={"Content-Type": _TAXII_CONTENT_TYPE},
         )
 
     # ── Endpoints ─────────────────────────────────────────────────────────────
@@ -148,11 +145,12 @@ def build_taxii_router(
     @router.get("/{api_root}/")
     def api_root_info(
         api_root: str,
-        key_tlp:  TLPLevel = Depends(_require_api_key),
+        key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """GET /taxii2/{api-root}/ — API root information."""
         if api_root != _API_ROOT:
             from fastapi import HTTPException as _HTTPException
+
             raise _HTTPException(status_code=404, detail=f"Unknown API root: {api_root!r}")
         body = _make_api_root_body(
             title="GNAT Intelligence API Root",
@@ -164,7 +162,7 @@ def build_taxii_router(
     @router.get("/{api_root}/collections/")
     def list_collections(
         api_root: str,
-        key_tlp:  TLPLevel = Depends(_require_api_key),
+        key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """GET /taxii2/{api-root}/collections/ — List accessible collections."""
         if api_root != _API_ROOT:
@@ -175,9 +173,9 @@ def build_taxii_router(
 
     @router.get("/{api_root}/collections/{collection_id}/")
     def get_collection(
-        api_root:      str,
+        api_root: str,
         collection_id: str,
-        key_tlp:       TLPLevel = Depends(_require_api_key),
+        key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """GET /taxii2/{api-root}/collections/{id}/ — Collection metadata."""
         if api_root != _API_ROOT:
@@ -191,12 +189,12 @@ def build_taxii_router(
 
     @router.get("/{api_root}/collections/{collection_id}/objects/")
     def get_objects(
-        api_root:      str,
+        api_root: str,
         collection_id: str,
-        added_after:   str  | None = Query(default=None),
-        limit:         int         = Query(default=100, ge=1, le=1000),
-        next_cursor:   str  | None = Query(default=None, alias="next"),
-        key_tlp:       TLPLevel    = Depends(_require_api_key),
+        added_after: str | None = Query(default=None),
+        limit: int = Query(default=100, ge=1, le=1000),
+        next_cursor: str | None = Query(default=None, alias="next"),
+        key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """GET /taxii2/{api-root}/collections/{id}/objects/ — Fetch STIX objects."""
         if api_root != _API_ROOT:
@@ -207,13 +205,13 @@ def build_taxii_router(
         if not col.is_accessible(key_tlp):
             raise HTTPException(status_code=403, detail="Insufficient TLP access level.")
 
-        offset     = _decode_cursor(next_cursor) if next_cursor else 0
+        offset = _decode_cursor(next_cursor) if next_cursor else 0
         tlp_values = tlp_filter_for_collection(collection_id)
 
         # Fetch published reports filtered by TLP level
         all_reports = _fetch_reports(report_store, tlp_values, added_after)
-        page        = all_reports[offset : offset + limit]
-        objects     = [_report_to_stix_envelope(r) for r in page]
+        page = all_reports[offset : offset + limit]
+        objects = [_report_to_stix_envelope(r) for r in page]
 
         headers: dict[str, str] = {"Content-Type": _STIX_CONTENT_TYPE}
         has_more = (offset + limit) < len(all_reports)
@@ -228,12 +226,12 @@ def build_taxii_router(
 
     @router.get("/{api_root}/collections/{collection_id}/manifest/")
     def get_manifest(
-        api_root:      str,
+        api_root: str,
         collection_id: str,
-        added_after:   str  | None = Query(default=None),
-        limit:         int         = Query(default=100, ge=1, le=1000),
-        next_cursor:   str  | None = Query(default=None, alias="next"),
-        key_tlp:       TLPLevel    = Depends(_require_api_key),
+        added_after: str | None = Query(default=None),
+        limit: int = Query(default=100, ge=1, le=1000),
+        next_cursor: str | None = Query(default=None, alias="next"),
+        key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """GET /taxii2/{api-root}/collections/{id}/manifest/ — Object manifest."""
         if api_root != _API_ROOT:
@@ -244,25 +242,24 @@ def build_taxii_router(
         if not col.is_accessible(key_tlp):
             raise HTTPException(status_code=403, detail="Insufficient TLP access level.")
 
-        offset     = _decode_cursor(next_cursor) if next_cursor else 0
+        offset = _decode_cursor(next_cursor) if next_cursor else 0
         tlp_values = tlp_filter_for_collection(collection_id)
 
         all_reports = _fetch_reports(report_store, tlp_values, added_after)
-        page        = all_reports[offset : offset + limit]
+        page = all_reports[offset : offset + limit]
 
         manifest_entries = []
         for r in page:
-            stix_id  = getattr(r, "stix_id", None) or f"report--{r.id}"
-            modified = (
-                r.published_at.isoformat() if r.published_at else
-                r.updated_at.isoformat()
+            stix_id = getattr(r, "stix_id", None) or f"report--{r.id}"
+            modified = r.published_at.isoformat() if r.published_at else r.updated_at.isoformat()
+            manifest_entries.append(
+                {
+                    "id": stix_id,
+                    "date_added": modified,
+                    "version": modified,
+                    "media_types": [_STIX_CONTENT_TYPE],
+                }
             )
-            manifest_entries.append({
-                "id":       stix_id,
-                "date_added": modified,
-                "version":  modified,
-                "media_types": [_STIX_CONTENT_TYPE],
-            })
 
         body: dict[str, Any] = {"objects": manifest_entries}
         has_more = (offset + limit) < len(all_reports)
@@ -275,11 +272,11 @@ def build_taxii_router(
 
     @router.post("/{api_root}/collections/{collection_id}/objects/")
     def add_objects(
-        api_root:      str,
+        api_root: str,
         collection_id: str,
-        body:          dict[str, Any],
-        api_key:       Any     = Depends(_require_write_taxii),
-        key_tlp:       TLPLevel = Depends(_require_api_key),
+        body: dict[str, Any],
+        api_key: Any = Depends(_require_write_taxii),
+        key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """
         POST /taxii2/{api-root}/collections/{id}/objects/
@@ -313,24 +310,25 @@ def build_taxii_router(
         ingested, skipped = _ingest_stix_objects(body, report_store)
 
         status_record = {
-            "id":               f"status--{collection_id}",
-            "status":           "complete",
+            "id": f"status--{collection_id}",
+            "status": "complete",
             "request_timestamp": "",
-            "total_count":      ingested + skipped,
-            "success_count":    ingested,
-            "failure_count":    0,
-            "pending_count":    0,
+            "total_count": ingested + skipped,
+            "success_count": ingested,
+            "failure_count": 0,
+            "pending_count": 0,
         }
-        return JSONResponse(content=status_record, status_code=202,
-                            headers={"Content-Type": _TAXII_CONTENT_TYPE})
+        return JSONResponse(
+            content=status_record, status_code=202, headers={"Content-Type": _TAXII_CONTENT_TYPE}
+        )
 
     @router.delete("/{api_root}/collections/{collection_id}/objects/{stix_id:path}")
     def delete_object(
-        api_root:      str,
+        api_root: str,
         collection_id: str,
-        stix_id:       str,
-        api_key:       Any     = Depends(_require_write_taxii),
-        key_tlp:       TLPLevel = Depends(_require_api_key),
+        stix_id: str,
+        api_key: Any = Depends(_require_write_taxii),
+        key_tlp: TLPLevel = Depends(_require_api_key),
     ) -> JSONResponse:
         """
         DELETE /taxii2/{api-root}/collections/{id}/objects/{stix-id}
@@ -371,6 +369,7 @@ def build_taxii_router(
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _ingest_stix_objects(bundle: dict[str, Any], store: Any) -> tuple[int, int]:
     """
     Extract STIX objects from *bundle* and route them to *store*.
@@ -384,13 +383,13 @@ def _ingest_stix_objects(bundle: dict[str, Any], store: Any) -> tuple[int, int]:
     (ingested, skipped) : tuple[int, int]
         Counts of successfully stored and skipped objects.
     """
-    objects  = bundle.get("objects", [])
+    objects = bundle.get("objects", [])
     ingested = 0
-    skipped  = 0
+    skipped = 0
 
     for obj in objects:
         obj_type = obj.get("type", "unknown")
-        obj_id   = obj.get("id", "")
+        obj_id = obj.get("id", "")
         if obj_type == "report":
             try:
                 if hasattr(store, "ingest_stix"):
@@ -446,8 +445,8 @@ def _soft_delete_object(stix_id: str, store: Any) -> bool:
 
 
 def _fetch_reports(
-    store:       Any,
-    tlp_values:  list[str],
+    store: Any,
+    tlp_values: list[str],
     added_after: str | None,
 ) -> list[Any]:
     """
@@ -457,8 +456,8 @@ def _fetch_reports(
     """
     try:
         reports = store.list(
-            status     = "published",
-            page_size  = 10_000,  # fetch all; paginate in caller
+            status="published",
+            page_size=10_000,  # fetch all; paginate in caller
         )
     except Exception:
         try:
@@ -484,9 +483,7 @@ def _fetch_reports(
 
     # Sort by published_at ascending
     filtered.sort(
-        key=lambda r: (
-            getattr(r, "published_at", None) or getattr(r, "updated_at", None) or ""
-        )
+        key=lambda r: getattr(r, "published_at", None) or getattr(r, "updated_at", None) or ""
     )
     return filtered
 
@@ -523,15 +520,15 @@ def _report_to_stix_envelope(report: Any) -> dict[str, Any]:
     # Minimal fallback STIX report dict
     stix_id = getattr(report, "stix_id", None) or f"report--{report.id}"
     published = getattr(report, "published_at", None) or getattr(report, "updated_at", None)
-    pub_str   = published.isoformat() if hasattr(published, "isoformat") else str(published or "")
+    pub_str = published.isoformat() if hasattr(published, "isoformat") else str(published or "")
     return {
-        "type":         "report",
+        "type": "report",
         "spec_version": "2.1",
-        "id":           stix_id,
-        "name":         getattr(report, "title", ""),
-        "description":  getattr(report, "executive_summary", "") or "",
-        "published":    pub_str,
-        "created":      pub_str,
-        "modified":     pub_str,
-        "object_refs":  [],
+        "id": stix_id,
+        "name": getattr(report, "title", ""),
+        "description": getattr(report, "executive_summary", "") or "",
+        "published": pub_str,
+        "created": pub_str,
+        "modified": pub_str,
+        "object_refs": [],
     }

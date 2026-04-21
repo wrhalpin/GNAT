@@ -6,6 +6,7 @@ gnat.agents.security.secrets.policy
 
 Policy utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
@@ -17,6 +18,7 @@ from .models import SecretRef
 @dataclass
 class PolicyDecision:
     """PolicyDecision implementation."""
+
     allowed: bool
     reason: str = ""
     return_mode: str = "in_memory_only"
@@ -26,6 +28,7 @@ class PolicyDecision:
 @dataclass
 class PolicyRule:
     """PolicyRule implementation."""
+
     path_prefix: str
     actions: Sequence[str]
     allowed_callers: Sequence[str]
@@ -45,6 +48,7 @@ class PolicyRule:
 
 class SecretPolicyEngine:
     """SecretPolicyEngine implementation."""
+
     def __init__(self, rules: Iterable[PolicyRule] | None = None) -> None:
         """Initialize SecretPolicyEngine."""
         self._rules = list(rules or [])

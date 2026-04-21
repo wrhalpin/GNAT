@@ -195,6 +195,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
             Comma-separated list of RF fields to include.
         """
         import urllib.parse
+
         encoded = urllib.parse.quote(url, safe="")
         resp = self.get(f"/v2/url/{encoded}", params={"fields": fields})
         return resp.get("data", {}) if isinstance(resp, dict) else {}
@@ -598,7 +599,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
         """
         payload: dict[str, Any] = {
             "entity": {"id": entity_id, "type": entity_type},
-            "limit":  limit,
+            "limit": limit,
         }
         if relation_types:
             payload["relationTypes"] = relation_types
@@ -678,6 +679,7 @@ class RecordedFutureClient(BaseClient, ConnectorMixin):
             Fusion file path as returned by :meth:`list_fusion_files`.
         """
         import urllib.parse
+
         encoded_path = urllib.parse.quote(path, safe="")
         resp = self.get(f"/v2/fusion/files/{encoded_path}")
         if isinstance(resp, bytes):

@@ -38,6 +38,7 @@ class TestSourceHelpers:
         h = make_hypothesis(supporting=["ind-1"])
         ctx = make_context(platform_map={"ind-1": "crowdstrike"})
         from gnat.clients import CLIENT_REGISTRY
+
         cls = CLIENT_REGISTRY.get("crowdstrike")
         if cls and getattr(cls, "TRUST_LEVEL", "") == "trusted_internal":
             assert has_trusted_evidence(h, ctx) is True

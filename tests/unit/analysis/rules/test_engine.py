@@ -105,7 +105,9 @@ class TestAnalysisRuleEngine:
         assert result.firings[0].rule_name == "first"
 
     def test_annotations_always_fire(self):
-        r1 = _make_rule(name="transition", priority=100, then_fn=lambda h, ctx: set_status("supported"))
+        r1 = _make_rule(
+            name="transition", priority=100, then_fn=lambda h, ctx: set_status("supported")
+        )
         r2 = _make_rule(name="annotate", priority=50, then_fn=lambda h, ctx: annotate("key", "val"))
         engine = _make_engine(rules=[r1, r2])
         hyp = make_hypothesis()

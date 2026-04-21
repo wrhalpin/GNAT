@@ -80,9 +80,7 @@ class ProofpointClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_messages_delivered(
-        self, since_seconds: int = 3600
-    ) -> list[dict[str, Any]]:
+    def list_messages_delivered(self, since_seconds: int = 3600) -> list[dict[str, Any]]:
         """Return messages delivered to end users within the window."""
         resp = self.get(
             "/v2/siem/messages/delivered",
@@ -90,9 +88,7 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         )
         return resp.get("messagesDelivered", []) if isinstance(resp, dict) else []
 
-    def list_messages_blocked(
-        self, since_seconds: int = 3600
-    ) -> list[dict[str, Any]]:
+    def list_messages_blocked(self, since_seconds: int = 3600) -> list[dict[str, Any]]:
         """Return messages blocked by TAP within the window."""
         resp = self.get(
             "/v2/siem/messages/blocked",
@@ -100,9 +96,7 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         )
         return resp.get("messagesBlocked", []) if isinstance(resp, dict) else []
 
-    def list_clicks_permitted(
-        self, since_seconds: int = 3600
-    ) -> list[dict[str, Any]]:
+    def list_clicks_permitted(self, since_seconds: int = 3600) -> list[dict[str, Any]]:
         """Return URL clicks that were permitted (URL was clean at click time)."""
         resp = self.get(
             "/v2/siem/clicks/permitted",
@@ -110,9 +104,7 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         )
         return resp.get("clicksPermitted", []) if isinstance(resp, dict) else []
 
-    def list_clicks_blocked(
-        self, since_seconds: int = 3600
-    ) -> list[dict[str, Any]]:
+    def list_clicks_blocked(self, since_seconds: int = 3600) -> list[dict[str, Any]]:
         """Return URL clicks that were blocked by the URL Defense rewrite."""
         resp = self.get(
             "/v2/siem/clicks/blocked",
@@ -120,9 +112,7 @@ class ProofpointClient(BaseClient, ConnectorMixin):
         )
         return resp.get("clicksBlocked", []) if isinstance(resp, dict) else []
 
-    def list_issues(
-        self, since_seconds: int = 3600
-    ) -> list[dict[str, Any]]:
+    def list_issues(self, since_seconds: int = 3600) -> list[dict[str, Any]]:
         """Return all issues (delivered + clicked-permitted) in the window."""
         resp = self.get(
             "/v2/siem/issues",

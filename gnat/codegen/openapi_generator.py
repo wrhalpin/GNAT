@@ -157,9 +157,7 @@ def generate_connector(
                     type_map=type_map,
                 )
             except Exception as exc:
-                logger.warning(
-                    "AI enhancement failed, falling back to scaffold: %s", exc
-                )
+                logger.warning("AI enhancement failed, falling back to scaffold: %s", exc)
 
     client_code = _render_client(
         name=name,
@@ -323,8 +321,8 @@ def _try_load_llm(config_path: str | None) -> Any:
     Returns ``None`` if Claude is not configured or dependencies are missing.
     """
     try:
-        from gnat.config import GNATConfig
         from gnat.agents.llm import LLMClient
+        from gnat.config import GNATConfig
 
         cfg = GNATConfig(config_path=config_path)
         claude_cfg = cfg.get("claude")
@@ -427,8 +425,14 @@ def _ai_enhance(
             "helpers": {"type": "string"},
         },
         "required": [
-            "health_check", "get_object", "list_objects", "upsert_object",
-            "delete_object", "to_stix", "from_stix", "helpers",
+            "health_check",
+            "get_object",
+            "list_objects",
+            "upsert_object",
+            "delete_object",
+            "to_stix",
+            "from_stix",
+            "helpers",
         ],
     }
 
@@ -539,59 +543,59 @@ def _render_client(
         "health_check",
         '        """Check platform connectivity."""\n'
         '        self.get("/health")\n'
-        '        return True',
+        "        return True",
     )
     get_object_body = _body(
         "get_object",
         f'        """TODO: Implement get_object for {name}."""\n'
-        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        "        resource = self.stix_type_map.get(stix_type, stix_type)\n"
         '        return self.get(f"/{resource}/{object_id}")',
     )
     list_objects_body = _body(
         "list_objects",
         f'        """TODO: Implement list_objects for {name}."""\n'
-        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        "        resource = self.stix_type_map.get(stix_type, stix_type)\n"
         '        params: Dict[str, Any] = {"limit": page_size, "page": page}\n'
-        '        if filters:\n'
-        '            params.update(filters)\n'
+        "        if filters:\n"
+        "            params.update(filters)\n"
         '        resp = self.get(f"/{resource}", params=params)\n'
         '        return resp.get("data", []) if isinstance(resp, dict) else []',
     )
     upsert_object_body = _body(
         "upsert_object",
         f'        """TODO: Implement upsert_object for {name}."""\n'
-        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        "        resource = self.stix_type_map.get(stix_type, stix_type)\n"
         '        obj_id = payload.pop("id", None)\n'
-        '        if obj_id:\n'
+        "        if obj_id:\n"
         '            return self.put(f"/{resource}/{obj_id}", json=payload)\n'
         '        return self.post(f"/{resource}", json=payload)',
     )
     delete_object_body = _body(
         "delete_object",
         f'        """TODO: Implement delete_object for {name}."""\n'
-        '        resource = self.stix_type_map.get(stix_type, stix_type)\n'
+        "        resource = self.stix_type_map.get(stix_type, stix_type)\n"
         '        self.delete(f"/{resource}/{object_id}")',
     )
     to_stix_body = _body(
         "to_stix",
         f'        """\n'
-        f'        TODO: Map native {name} fields to STIX 2.1.\n\n'
-        f'        Detected schema fields:\n'
-        f'{schema_fields}\n'
+        f"        TODO: Map native {name} fields to STIX 2.1.\n\n"
+        f"        Detected schema fields:\n"
+        f"{schema_fields}\n"
         f'        """\n'
-        '        return {\n'
+        "        return {\n"
         '            "type": "indicator",\n'
-        '            "id": f"indicator--{native.get(\'id\', \'\')}",\n'
+        "            \"id\": f\"indicator--{native.get('id', '')}\",\n"
         '            "name": native.get("name", native.get("value", "")),\n'
         '            "pattern_type": "stix",\n'
         '            "created": native.get("created_at", native.get("created", "")),\n'
         '            "modified": native.get("updated_at", native.get("modified", "")),\n'
-        '        }',
+        "        }",
     )
     from_stix_body = _body(
         "from_stix",
         '        """Map STIX 2.1 fields to native format."""\n'
-        '        return {\n'
+        "        return {\n"
         '            "name": stix_dict.get("name", ""),\n'
         '            "description": stix_dict.get("description", ""),\n'
         '            "confidence": stix_dict.get("confidence"),\n'
@@ -606,13 +610,15 @@ def _render_client(
         '            "object_marking_refs": stix_dict.get("object_marking_refs", []),\n'
         '            "stix_id": stix_dict.get("id", ""),\n'
         '            "stix_type": stix_dict.get("type", ""),\n'
-        '        }',
+        "        }",
     )
 
     # Optional AI-generated helpers
     helpers_block = ""
     if "helpers" in ai_impls and ai_impls["helpers"].strip():
-        helpers_block = f"\n    # --- Platform-specific helpers (AI-generated) ---\n\n{ai_impls['helpers']}\n"
+        helpers_block = (
+            f"\n    # --- Platform-specific helpers (AI-generated) ---\n\n{ai_impls['helpers']}\n"
+        )
 
     return textwrap.dedent(f'''\
         """

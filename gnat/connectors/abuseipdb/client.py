@@ -74,22 +74,16 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
         """Fetch reputation data for a single IP."""
         if not object_id:
-            raise GNATClientError(
-                "AbuseIPDB get_object requires a non-empty IP address"
-            )
+            raise GNATClientError("AbuseIPDB get_object requires a non-empty IP address")
         if stix_type != "indicator":
-            raise GNATClientError(
-                f"AbuseIPDB get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"AbuseIPDB get_object does not support stix_type={stix_type!r}")
         resp = self.get(
             "/api/v2/check",
             params={"ipAddress": object_id, "maxAgeInDays": 90, "verbose": True},
         )
         data = _unwrap_abuseipdb(resp)
         if not isinstance(data, dict):
-            raise GNATClientError(
-                f"AbuseIPDB returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"AbuseIPDB returned unexpected payload for {object_id!r}")
         return dict(data, _ai_kind="reputation", _ai_query=object_id)
 
     def list_objects(
@@ -118,9 +112,7 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
         if kind == "check_block":
             cidr = filters.get("cidr")
             if not cidr:
-                raise GNATClientError(
-                    "AbuseIPDB check_block requires a 'cidr' filter"
-                )
+                raise GNATClientError("AbuseIPDB check_block requires a 'cidr' filter")
             resp = self.get(
                 "/api/v2/check-block",
                 params={"network": cidr, "maxAgeInDays": 30},
@@ -131,19 +123,13 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
         if kind == "reports":
             ip = filters.get("ip")
             if not ip:
-                raise GNATClientError(
-                    "AbuseIPDB reports requires an 'ip' filter"
-                )
+                raise GNATClientError("AbuseIPDB reports requires an 'ip' filter")
             resp = self.get(
                 "/api/v2/reports",
                 params={"ipAddress": ip, "maxAgeInDays": 90, "perPage": int(page_size)},
             )
             data = _unwrap_abuseipdb(resp)
-            results = (
-                data.get("results", [])
-                if isinstance(data, dict)
-                else []
-            )
+            results = data.get("results", []) if isinstance(data, dict) else []
             return [dict(r, _ai_kind="report") for r in results if isinstance(r, dict)]
         # default → blacklist
         params: dict[str, Any] = {
@@ -156,9 +142,7 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
             return [dict(r, _ai_kind="reputation") for r in data if isinstance(r, dict)]
         return []
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Submit an abuse report (write operation; not part of the
         standard CRUD contract).
@@ -170,9 +154,7 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """AbuseIPDB connector is read-only."""
-        raise GNATClientError(
-            "AbuseIPDB connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("AbuseIPDB connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -182,13 +164,9 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
 
     def check_block(self, cidr: str) -> list[dict[str, Any]]:
         """Return reputation data for every reported IP in a CIDR block."""
-        return self.list_objects(
-            "indicator", filters={"kind": "check_block", "cidr": cidr}
-        )
+        return self.list_objects("indicator", filters={"kind": "check_block", "cidr": cidr})
 
-    def get_blacklist(
-        self, confidence_min: int = 90, limit: int = 1000
-    ) -> list[dict[str, Any]]:
+    def get_blacklist(self, confidence_min: int = 90, limit: int = 1000) -> list[dict[str, Any]]:
         """Return the AbuseIPDB blacklist (high-confidence reported IPs)."""
         return self.list_objects(
             "indicator",
@@ -198,9 +176,7 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
 
     def get_reports(self, ip: str) -> list[dict[str, Any]]:
         """Return historical abuse reports for an IP."""
-        return self.list_objects(
-            "indicator", filters={"kind": "reports", "ip": ip}
-        )
+        return self.list_objects("indicator", filters={"kind": "reports", "ip": ip})
 
     def submit_report(
         self,
@@ -231,11 +207,7 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
             raise GNATClientError("AbuseIPDB to_stix expects a dict input")
 
         kind = native.get("_ai_kind") or "reputation"
-        ip = (
-            native.get("ipAddress")
-            or native.get("_ai_query")
-            or native.get("ip", "")
-        )
+        ip = native.get("ipAddress") or native.get("_ai_query") or native.get("ip", "")
         pattern = make_indicator_pattern("ipv4-addr", ip) if ip else "[ipv4-addr:value = '']"
         stix_uuid = uuid.uuid5(_NAMESPACE_ABUSEIPDB, f"indicator|{ip}")
         confidence = native.get("abuseConfidenceScore") or native.get("confidence") or 0
@@ -255,8 +227,7 @@ class AbuseIPDBClient(BaseClient, ConnectorMixin):
             "pattern_type": "stix",
             "valid_from": utcnow(),
             "name": f"AbuseIPDB: {ip}",
-            "description": native.get("description")
-            or "AbuseIPDB community IP reputation",
+            "description": native.get("description") or "AbuseIPDB community IP reputation",
             "labels": labels,
             "confidence": conf_num,
             "x_abuseipdb": {

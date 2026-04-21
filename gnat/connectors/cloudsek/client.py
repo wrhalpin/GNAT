@@ -319,8 +319,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List credential leak alerts (exposed usernames/passwords)."""
         return self.list_alerts(
-            category="credential_leak", limit=limit,
-            from_date=from_date, to_date=to_date,
+            category="credential_leak",
+            limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     def list_brand_abuse(
@@ -328,8 +330,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List brand abuse / impersonation alerts."""
         return self.list_alerts(
-            category="brand_abuse", limit=limit,
-            from_date=from_date, to_date=to_date,
+            category="brand_abuse",
+            limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     def list_phishing_urls(
@@ -337,8 +341,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List phishing URL / site alerts."""
         return self.list_alerts(
-            category="phishing", limit=limit,
-            from_date=from_date, to_date=to_date,
+            category="phishing",
+            limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     def list_dark_web_mentions(
@@ -346,8 +352,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List dark web mention alerts."""
         return self.list_alerts(
-            category="dark_web", limit=limit,
-            from_date=from_date, to_date=to_date,
+            category="dark_web",
+            limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     def list_exposed_assets(
@@ -355,8 +363,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List exposed asset / IP exposure alerts."""
         return self.list_alerts(
-            category="ip_exposure", limit=limit,
-            from_date=from_date, to_date=to_date,
+            category="ip_exposure",
+            limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     def list_code_leaks(
@@ -364,8 +374,10 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
     ) -> list[dict[str, Any]]:
         """List source code leak alerts (GitHub, GitLab, Pastebin exposure)."""
         return self.list_alerts(
-            category="code_leak", limit=limit,
-            from_date=from_date, to_date=to_date,
+            category="code_leak",
+            limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     # ── Indicators ────────────────────────────────────────────────────────────
@@ -422,9 +434,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
 
     # ── Threat actors ─────────────────────────────────────────────────────────
 
-    def list_threat_actors(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def list_threat_actors(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """List tracked threat actor profiles."""
         resp = self.get(
             f"{_API}/threat_actors",
@@ -447,9 +457,7 @@ class CloudSEKClient(BaseClient, ConnectorMixin):
 
     # ── Malware ───────────────────────────────────────────────────────────────
 
-    def list_malware_families(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def list_malware_families(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """List tracked malware family profiles."""
         resp = self.get(
             f"{_API}/malware",

@@ -41,9 +41,7 @@ def has_trusted_evidence(h: Any, ctx: Any) -> bool:
     return "trusted_internal" in trust_levels(h, ctx)
 
 
-def all_evidence_trusted(
-    h: Any, ctx: Any, minimum: str = "semi_trusted"
-) -> bool:
+def all_evidence_trusted(h: Any, ctx: Any, minimum: str = "semi_trusted") -> bool:
     """True if all evidence meets the minimum trust level."""
     ids = _all_evidence_ids(h)
     if not ids:

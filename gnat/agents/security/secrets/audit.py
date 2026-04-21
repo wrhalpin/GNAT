@@ -6,6 +6,7 @@ gnat.agents.security.secrets.audit
 
 Audit utilities and helpers for the GNAT toolkit.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -15,6 +16,7 @@ from .models import AuditEvent, SecretRef
 
 class InMemoryAuditRecorder:
     """InMemoryAuditRecorder implementation."""
+
     def __init__(self) -> None:
         """Initialize InMemoryAuditRecorder."""
         self.events: list[AuditEvent] = []

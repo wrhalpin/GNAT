@@ -7,13 +7,14 @@ Domain boundaries, SimulationConnector, ReplayRunner.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # ExecutionContext tests
 # ---------------------------------------------------------------------------
+
 
 class TestExecutionContext:
     def test_create_defaults(self):
@@ -99,6 +100,7 @@ class TestExecutionContext:
 # QueryBudget tests
 # ---------------------------------------------------------------------------
 
+
 class TestQueryBudget:
     def test_initial_state(self):
         from gnat.core.context import QueryBudget
@@ -124,8 +126,8 @@ class TestQueryBudget:
         assert budget.is_exhausted is True
 
     def test_budget_exceeded(self):
-        from gnat.core.context import QueryBudget
         from gnat.clients.base import BudgetExceeded
+        from gnat.core.context import QueryBudget
 
         budget = QueryBudget(max_units=5)
         budget.consume(3, "Connector1")
@@ -136,8 +138,8 @@ class TestQueryBudget:
         assert exc_info.value.remaining == 2
 
     def test_budget_deducted_by_base_client(self):
-        from gnat.core.context import ExecutionContext, QueryBudget
         from gnat.clients.base import BaseClient, BudgetExceeded
+        from gnat.core.context import ExecutionContext
 
         class MockClient(BaseClient):
             COST_UNIT = 5
@@ -176,6 +178,7 @@ class TestQueryBudget:
 # ---------------------------------------------------------------------------
 # Domain boundary tests
 # ---------------------------------------------------------------------------
+
 
 class TestDomainBoundary:
     def test_domain_enum_values(self):
@@ -232,6 +235,7 @@ class TestDomainBoundary:
 # ---------------------------------------------------------------------------
 # SimulationConnector tests
 # ---------------------------------------------------------------------------
+
 
 class TestSimulationConnector:
     def _make_fixtures(self):
@@ -311,8 +315,8 @@ class TestSimulationConnector:
         assert sim.TRUST_LEVEL == "trusted_internal"
 
     def test_raise_on_request(self):
-        from gnat.testing import SimulationConnector
         from gnat.clients.base import GNATClientError
+        from gnat.testing import SimulationConnector
 
         sim = SimulationConnector(raise_on_request=True)
         with pytest.raises(GNATClientError):
@@ -323,10 +327,11 @@ class TestSimulationConnector:
 # ReplayRunner tests
 # ---------------------------------------------------------------------------
 
+
 class TestReplayRunner:
     def test_replay_produces_output(self):
-        from gnat.testing import ReplayRunner
         from gnat.core.context import ExecutionContext
+        from gnat.testing import ReplayRunner
 
         indicator = {"type": "indicator", "id": "indicator--replay-1"}
 
@@ -345,8 +350,8 @@ class TestReplayRunner:
         assert result[0]["id"] == "indicator--replay-1"
 
     def test_replay_asserts_expected_ids(self):
-        from gnat.testing import ReplayRunner
         from gnat.core.context import ExecutionContext
+        from gnat.testing import ReplayRunner
 
         def fake_pipeline(ctx):
             return [{"id": "indicator--expected"}]
@@ -362,8 +367,8 @@ class TestReplayRunner:
         runner.replay(log, expected_stix_ids=["indicator--expected"])
 
     def test_replay_asserts_fails_on_missing(self):
-        from gnat.testing import ReplayRunner
         from gnat.core.context import ExecutionContext
+        from gnat.testing import ReplayRunner
 
         def fake_pipeline(ctx):
             return [{"id": "indicator--produced"}]
@@ -382,6 +387,7 @@ class TestReplayRunner:
 # ---------------------------------------------------------------------------
 # Workspace trust boundary tests (4E-1)
 # ---------------------------------------------------------------------------
+
 
 class TestWorkspaceTrustBoundary:
     def _make_workspace(self, trust_boundary="semi_trusted", allowed_refs=None):

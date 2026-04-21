@@ -33,16 +33,16 @@ from typing import Any
 from gnat.analysis.tlp import TLPLevel
 from gnat.dissemination.api.auth import APIKey, APIKeyStore
 from gnat.dissemination.export import ExportFormat, ExportService
-from gnat.policy import PolicyEngine, Permission
+from gnat.policy import Permission, PolicyEngine
 
 logger = logging.getLogger(__name__)
 
 
 def build_gateway_router(
     export_service: ExportService,
-    key_store:      APIKeyStore,
-    report_store:   Any | None = None,
-    policy_engine:  PolicyEngine | None = None,
+    key_store: APIKeyStore,
+    report_store: Any | None = None,
+    policy_engine: PolicyEngine | None = None,
 ) -> Any:
     """
     Build a FastAPI router for the GNAT dissemination REST gateway.
@@ -65,11 +65,10 @@ def build_gateway_router(
         from fastapi.responses import FileResponse, JSONResponse
     except ImportError as exc:  # pragma: no cover
         raise ImportError(
-            "FastAPI is required for the gateway. "
-            "Install it with: pip install 'gnat[serve]'"
+            "FastAPI is required for the gateway. Install it with: pip install 'gnat[serve]'"
         ) from exc
 
-    router  = APIRouter()
+    router = APIRouter()
     _engine = policy_engine or PolicyEngine()
 
     # ── Auth ──────────────────────────────────────────────────────────────────
@@ -78,7 +77,7 @@ def build_gateway_router(
         if not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Missing Bearer token.")
         token = authorization.removeprefix("Bearer ").strip()
-        key   = key_store.get_key(token)
+        key = key_store.get_key(token)
         if key is None or not key.is_valid():
             raise HTTPException(status_code=401, detail="Invalid or expired API key.")
         return key
@@ -94,9 +93,9 @@ def build_gateway_router(
 
     @router.get("/reports")
     def list_reports(
-        page:      int  = Query(default=1, ge=1),
-        page_size: int  = Query(default=50, ge=1, le=500),
-        api_key:   APIKey = Depends(_require_api_key),
+        page: int = Query(default=1, ge=1),
+        page_size: int = Query(default=50, ge=1, le=500),
+        api_key: APIKey = Depends(_require_api_key),
     ) -> JSONResponse:
         """List published reports accessible at the caller's TLP level."""
         if report_store is None:
@@ -104,9 +103,9 @@ def build_gateway_router(
 
         try:
             reports = report_store.list(
-                status    = "published",
-                page      = page,
-                page_size = page_size,
+                status="published",
+                page=page,
+                page_size=page_size,
             )
         except Exception:
             reports = report_store.list(page=page, page_size=page_size)
@@ -116,29 +115,32 @@ def build_gateway_router(
             report_tlp = _extract_tlp_rank(r)
             if report_tlp > api_key.tlp_level.rank:
                 continue
-            result.append({
-                "id":          str(r.id),
-                "title":       r.title,
-                "report_type": getattr(getattr(r, "report_type", None), "value", ""),
-                "tlp":         getattr(getattr(r, "classification", None), "value", ""),
-                "status":      getattr(getattr(r, "status", None), "value", ""),
-                "published_at": (
-                    r.published_at.isoformat()
-                    if getattr(r, "published_at", None) else None
-                ),
-            })
+            result.append(
+                {
+                    "id": str(r.id),
+                    "title": r.title,
+                    "report_type": getattr(getattr(r, "report_type", None), "value", ""),
+                    "tlp": getattr(getattr(r, "classification", None), "value", ""),
+                    "status": getattr(getattr(r, "status", None), "value", ""),
+                    "published_at": (
+                        r.published_at.isoformat() if getattr(r, "published_at", None) else None
+                    ),
+                }
+            )
 
-        return JSONResponse({
-            "page":      page,
-            "page_size": page_size,
-            "count":     len(result),
-            "reports":   result,
-        })
+        return JSONResponse(
+            {
+                "page": page,
+                "page_size": page_size,
+                "count": len(result),
+                "reports": result,
+            }
+        )
 
     @router.get("/reports/{report_id}")
     def get_report(
         report_id: str,
-        api_key:   APIKey = Depends(_require_api_key),
+        api_key: APIKey = Depends(_require_api_key),
     ) -> JSONResponse:
         """Fetch report metadata by ID."""
         if report_store is None:
@@ -155,7 +157,7 @@ def build_gateway_router(
     @router.get("/reports/{report_id}/export/stix")
     def export_stix(
         report_id: str,
-        api_key:   APIKey = Depends(_require_api_key),
+        api_key: APIKey = Depends(_require_api_key),
     ) -> JSONResponse:
         """
         Export a report as a STIX 2.1 bundle (in-memory, no disk write).
@@ -180,7 +182,7 @@ def build_gateway_router(
     @router.get("/reports/{report_id}/export/json")
     def export_json(
         report_id: str,
-        api_key:   APIKey = Depends(_require_api_key),
+        api_key: APIKey = Depends(_require_api_key),
     ) -> JSONResponse:
         """Export a report as GNAT internal JSON."""
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as fh:
@@ -188,6 +190,7 @@ def build_gateway_router(
         try:
             result = export_service.export(report_id, ExportFormat.JSON, tmp_path)
             import json as _json
+
             with open(tmp_path, "rb") as fh:
                 data = _json.loads(fh.read())
         except ValueError as exc:
@@ -195,18 +198,20 @@ def build_gateway_router(
         finally:
             _safe_unlink(tmp_path)
 
-        return JSONResponse({
-            "report_id":  result.report_id,
-            "format":     result.format.value,
-            "size_bytes": result.size_bytes,
-            "checksum":   result.checksum,
-            "data":       data,
-        })
+        return JSONResponse(
+            {
+                "report_id": result.report_id,
+                "format": result.format.value,
+                "size_bytes": result.size_bytes,
+                "checksum": result.checksum,
+                "data": data,
+            }
+        )
 
     @router.get("/reports/{report_id}/export/pdf")
     def export_pdf(
         report_id: str,
-        api_key:   APIKey = Depends(_require_api_key),
+        api_key: APIKey = Depends(_require_api_key),
     ) -> Any:
         """Export a report as PDF (download)."""
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as fh:
@@ -218,31 +223,27 @@ def build_gateway_router(
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
         return FileResponse(
-            path         = tmp_path,
-            filename     = f"report-{report_id}.pdf",
-            media_type   = "application/pdf",
-            background   = _cleanup_background(tmp_path),
+            path=tmp_path,
+            filename=f"report-{report_id}.pdf",
+            media_type="application/pdf",
+            background=_cleanup_background(tmp_path),
         )
 
     # ── Admin: key management ─────────────────────────────────────────────────
     # Use PolicyEngine.require(MANAGE_KEYS) so role-based access is enforced
     # in addition to the Bearer token check.
-    _require_manage_keys = _engine.require(
-        Permission.MANAGE_KEYS, key_store=key_store
-    )
+    _require_manage_keys = _engine.require(Permission.MANAGE_KEYS, key_store=key_store)
 
     @router.get("/admin/keys")
     def list_keys(
         api_key: APIKey = Depends(_require_manage_keys),
     ) -> JSONResponse:
         """List all API keys (MANAGE_KEYS permission required)."""
-        return JSONResponse({
-            "keys": [k.to_dict() for k in key_store.list_keys()]
-        })
+        return JSONResponse({"keys": [k.to_dict() for k in key_store.list_keys()]})
 
     @router.post("/admin/keys")
     def create_key(
-        body:    dict[str, Any],
+        body: dict[str, Any],
         api_key: APIKey = Depends(_require_manage_keys),
     ) -> JSONResponse:
         """
@@ -260,8 +261,8 @@ def build_gateway_router(
             raise HTTPException(status_code=400, detail="Invalid tlp_level.")
         new_key = key_store.generate_key(
             tlp,
-            label = body.get("label", ""),
-            role  = body.get("role", "viewer"),
+            label=body.get("label", ""),
+            role=body.get("role", "viewer"),
         )
         return JSONResponse(
             {**new_key.to_dict(), "token": new_key.token},
@@ -271,14 +272,11 @@ def build_gateway_router(
     @router.delete("/admin/keys/{token_prefix}")
     def revoke_key(
         token_prefix: str,
-        api_key:      APIKey = Depends(_require_manage_keys),
+        api_key: APIKey = Depends(_require_manage_keys),
     ) -> JSONResponse:
         """Revoke an API key by its full token or a unique prefix."""
         # Find by prefix
-        matches = [
-            k for k in key_store.list_keys()
-            if k.token.startswith(token_prefix)
-        ]
+        matches = [k for k in key_store.list_keys() if k.token.startswith(token_prefix)]
         if not matches:
             raise HTTPException(status_code=404, detail="Key not found.")
         if len(matches) > 1:
@@ -293,6 +291,7 @@ def build_gateway_router(
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _extract_tlp_rank(report: Any) -> int:
     classification = getattr(report, "classification", None)
@@ -320,16 +319,17 @@ def _bundle_tlp_rank(bundle: dict[str, Any]) -> int:
 
 
 def _safe_unlink(path: str) -> None:
-    try:
+    import contextlib
+
+    with contextlib.suppress(Exception):
         os.unlink(path)
-    except Exception:
-        pass
 
 
 def _cleanup_background(path: str) -> Any:
     """Return a BackgroundTask that deletes *path* after the response is sent."""
     try:
         from starlette.background import BackgroundTask
+
         return BackgroundTask(_safe_unlink, path)
     except ImportError:
         return None

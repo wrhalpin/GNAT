@@ -33,12 +33,23 @@ from __future__ import annotations
 import asyncio
 import json as _json
 
-from fastapi import Depends, FastAPI, Request as _SSERequest
+from fastapi import Depends, FastAPI
+from fastapi import Request as _SSERequest
 from fastapi.responses import HTMLResponse, StreamingResponse
 
 from .auth import APIKeyAuth
 from .rate_limit import RateLimiter
-from .routers import analysis, analytics, federation, investigations, library, reports, review, scheduler, workflows
+from .routers import (
+    analysis,
+    analytics,
+    federation,
+    investigations,
+    library,
+    reports,
+    review,
+    scheduler,
+    workflows,
+)
 
 # ---------------------------------------------------------------------------
 # Embedded single-page dashboard
@@ -387,22 +398,22 @@ def create_app(
     )
 
     # Store backends in app state for router access
-    app.state.library                   = library_backend
-    app.state.scheduler                 = scheduler_backend
-    app.state.reports_dir               = reports_dir
-    app.state.investigation_service     = investigation_service
-    app.state.graph_query               = graph_query
-    app.state.gap_detector              = gap_detector
+    app.state.library = library_backend
+    app.state.scheduler = scheduler_backend
+    app.state.reports_dir = reports_dir
+    app.state.investigation_service = investigation_service
+    app.state.graph_query = graph_query
+    app.state.gap_detector = gap_detector
     app.state.report_drafting_assistant = report_drafting_assistant
-    app.state.export_service            = export_service
-    app.state.metrics_aggregator        = metrics_aggregator
-    app.state.federation_registry       = federation_registry
-    app.state.federation_scheduler      = federation_scheduler
-    app.state.federation_sync_service   = federation_sync_service
-    app.state.trend_detector            = trend_detector
-    app.state.workspace_stats           = workspace_stats
-    app.state.search_index              = search_index
-    app.state.workflow_store            = workflow_store
+    app.state.export_service = export_service
+    app.state.metrics_aggregator = metrics_aggregator
+    app.state.federation_registry = federation_registry
+    app.state.federation_scheduler = federation_scheduler
+    app.state.federation_sync_service = federation_sync_service
+    app.state.trend_detector = trend_detector
+    app.state.workspace_stats = workspace_stats
+    app.state.search_index = search_index
+    app.state.workflow_store = workflow_store
 
     # ── Unauthenticated endpoints ──────────────────────────────────────────
     @app.get("/health", tags=["health"], include_in_schema=False)
@@ -424,10 +435,11 @@ def create_app(
         # Validate API key manually since SSE can't use Depends easily
         if api_key_header != api_key:
             from fastapi import HTTPException
+
             raise HTTPException(status_code=403, detail="Invalid API key")
 
         async def _event_generator():
-            import time
+
             yield "data: " + _json.dumps({"type": "connected", "service": "gnat-sse"}) + "\n\n"
 
             while True:
@@ -440,12 +452,13 @@ def create_app(
                 svc = getattr(request.app.state, "investigation_service", None)
                 if svc is not None:
                     try:
-                        from gnat.review.service import ReviewService
                         # Only emit if review service is wired to app state
                         review_svc = getattr(request.app.state, "review_service", None)
                         if review_svc is not None:
                             items = review_svc.list(status="pending", page=1, page_size=1)
-                            total = getattr(items, "total", len(items) if isinstance(items, list) else 0)
+                            total = getattr(
+                                items, "total", len(items) if isinstance(items, list) else 0
+                            )
                             events.append({"type": "review_pending", "count": total})
                     except Exception:
                         pass
@@ -454,7 +467,9 @@ def create_app(
                 scheduler = getattr(request.app.state, "scheduler", None)
                 if scheduler is not None:
                     try:
-                        running = [j.job_id for j in scheduler.jobs if getattr(j, "_is_running", False)]
+                        running = [
+                            j.job_id for j in scheduler.jobs if getattr(j, "_is_running", False)
+                        ]
                         if running:
                             events.append({"type": "job_running", "job_ids": running})
                     except Exception:
@@ -467,9 +482,9 @@ def create_app(
 
         return StreamingResponse(
             _event_generator(),
-            media_type = "text/event-stream",
-            headers    = {
-                "Cache-Control":     "no-cache",
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
                 "X-Accel-Buffering": "no",
             },
         )
@@ -481,15 +496,15 @@ def create_app(
 
     # ── Authenticated API routers ──────────────────────────────────────────
     _api_deps = [Depends(auth), Depends(limiter)]
-    app.include_router(library.router,         dependencies=_api_deps)
-    app.include_router(reports.router,         dependencies=_api_deps)
-    app.include_router(scheduler.router,       dependencies=_api_deps)
-    app.include_router(investigations.router,  dependencies=_api_deps)
-    app.include_router(review.router,          dependencies=_api_deps)
-    app.include_router(analysis.router,        dependencies=_api_deps)
-    app.include_router(analytics.router,       dependencies=_api_deps)
-    app.include_router(federation.router,      dependencies=_api_deps)
-    app.include_router(workflows.router,       dependencies=_api_deps)
+    app.include_router(library.router, dependencies=_api_deps)
+    app.include_router(reports.router, dependencies=_api_deps)
+    app.include_router(scheduler.router, dependencies=_api_deps)
+    app.include_router(investigations.router, dependencies=_api_deps)
+    app.include_router(review.router, dependencies=_api_deps)
+    app.include_router(analysis.router, dependencies=_api_deps)
+    app.include_router(analytics.router, dependencies=_api_deps)
+    app.include_router(federation.router, dependencies=_api_deps)
+    app.include_router(workflows.router, dependencies=_api_deps)
 
     return app
 
@@ -524,18 +539,18 @@ def run(
     import uvicorn  # optional dep — fastapi[standard] or uvicorn
 
     app = create_app(
-        api_key                   = api_key,
-        library_backend           = library_backend,
-        scheduler_backend         = scheduler_backend,
-        reports_dir               = reports_dir,
-        investigation_service     = investigation_service,
-        graph_query               = graph_query,
-        gap_detector              = gap_detector,
-        report_drafting_assistant = report_drafting_assistant,
-        export_service            = export_service,
-        metrics_aggregator        = metrics_aggregator,
-        federation_registry       = federation_registry,
-        federation_scheduler      = federation_scheduler,
-        federation_sync_service   = federation_sync_service,
+        api_key=api_key,
+        library_backend=library_backend,
+        scheduler_backend=scheduler_backend,
+        reports_dir=reports_dir,
+        investigation_service=investigation_service,
+        graph_query=graph_query,
+        gap_detector=gap_detector,
+        report_drafting_assistant=report_drafting_assistant,
+        export_service=export_service,
+        metrics_aggregator=metrics_aggregator,
+        federation_registry=federation_registry,
+        federation_scheduler=federation_scheduler,
+        federation_sync_service=federation_sync_service,
     )
     uvicorn.run(app, host=host, port=port, log_level="warning")

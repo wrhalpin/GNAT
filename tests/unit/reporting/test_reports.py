@@ -26,9 +26,7 @@ from gnat.reporting import (
 
 @pytest.fixture
 def store():
-    pytest.importorskip(
-        "sqlalchemy", reason="gnat[persist] extras not installed"
-    )
+    pytest.importorskip("sqlalchemy", reason="gnat[persist] extras not installed")
     s = ReportStore("sqlite:///:memory:")
     s.create_all()
     return s
@@ -42,21 +40,22 @@ def service(store):
 @pytest.fixture
 def draft(service):
     return service.create(
-        title       = "BLACKCAT Ransomware — April 2026",
-        report_type = ReportType.INCIDENT_REPORT,
-        authors     = ["analyst@example.com"],
-        tags        = ["ransomware", "blackcat"],
+        title="BLACKCAT Ransomware — April 2026",
+        report_type=ReportType.INCIDENT_REPORT,
+        authors=["analyst@example.com"],
+        tags=["ransomware", "blackcat"],
     )
 
 
 # ── Report model ──────────────────────────────────────────────────────────────
 
+
 class TestReportModel:
     def test_defaults(self):
         r = Report(title="Test", report_type=ReportType.INCIDENT_REPORT)
-        assert r.status  == ReportStatus.DRAFT
+        assert r.status == ReportStatus.DRAFT
         assert r.version == 1
-        assert r.key_findings   == []
+        assert r.key_findings == []
         assert r.evidence_links == []
 
     def test_is_published(self):
@@ -67,47 +66,51 @@ class TestReportModel:
 
     def test_can_transition_valid(self):
         r = Report(title="T", report_type=ReportType.INCIDENT_REPORT)
-        assert r.can_transition_to(ReportStatus.REVIEW)   is True
+        assert r.can_transition_to(ReportStatus.REVIEW) is True
         assert r.can_transition_to(ReportStatus.ARCHIVED) is True
 
     def test_can_transition_invalid(self):
         r = Report(title="T", report_type=ReportType.INCIDENT_REPORT)
-        assert r.can_transition_to(ReportStatus.APPROVED)  is False
+        assert r.can_transition_to(ReportStatus.APPROVED) is False
         assert r.can_transition_to(ReportStatus.PUBLISHED) is False
 
     def test_published_is_terminal_except_archive(self):
         r = Report(title="T", report_type=ReportType.INCIDENT_REPORT)
         r.status = ReportStatus.PUBLISHED
         assert r.can_transition_to(ReportStatus.ARCHIVED) is True
-        assert r.can_transition_to(ReportStatus.DRAFT)    is False
-        assert r.can_transition_to(ReportStatus.REVIEW)   is False
+        assert r.can_transition_to(ReportStatus.DRAFT) is False
+        assert r.can_transition_to(ReportStatus.REVIEW) is False
 
     def test_roundtrip_serialization(self):
         r = Report(
-            title          = "Test Report",
-            report_type    = ReportType.CAMPAIGN_ANALYSIS,
-            classification = TLPLevel.RED,
-            authors        = ["analyst@example.com"],
+            title="Test Report",
+            report_type=ReportType.CAMPAIGN_ANALYSIS,
+            classification=TLPLevel.RED,
+            authors=["analyst@example.com"],
         )
-        r.key_findings.append(Finding(
-            statement        = "Key finding 1",
-            confidence       = ConfidenceScore.high(),
-            mitre_techniques = ["T1059.003"],
-        ))
-        r.evidence_links.append(EvidenceLink(
-            statement       = "Evidence for finding 1",
-            artifact_type   = "indicator",
-            artifact_id     = "indicator--abc",
-            artifact_source = "threatq",
-        ))
+        r.key_findings.append(
+            Finding(
+                statement="Key finding 1",
+                confidence=ConfidenceScore.high(),
+                mitre_techniques=["T1059.003"],
+            )
+        )
+        r.evidence_links.append(
+            EvidenceLink(
+                statement="Evidence for finding 1",
+                artifact_type="indicator",
+                artifact_id="indicator--abc",
+                artifact_source="threatq",
+            )
+        )
 
-        data     = r.to_dict()
+        data = r.to_dict()
         restored = Report.from_dict(data)
 
-        assert restored.id              == r.id
-        assert restored.title           == r.title
-        assert restored.classification  == r.classification
-        assert len(restored.key_findings)   == 1
+        assert restored.id == r.id
+        assert restored.title == r.title
+        assert restored.classification == r.classification
+        assert len(restored.key_findings) == 1
         assert len(restored.evidence_links) == 1
         assert restored.key_findings[0].confidence.stix_confidence == 75
         assert restored.key_findings[0].mitre_techniques == ["T1059.003"]
@@ -125,50 +128,53 @@ class TestReportModel:
 
 # ── EvidenceLink ──────────────────────────────────────────────────────────────
 
+
 class TestEvidenceLink:
     def test_roundtrip(self):
         link = EvidenceLink(
-            statement       = "IP observed in C2 communications.",
-            artifact_type   = "indicator",
-            artifact_id     = "indicator--abc-123",
-            artifact_source = "threatq",
-            link_type       = EvidenceLinkType.SUPPORTS,
-            confidence      = ConfidenceScore.medium(),
+            statement="IP observed in C2 communications.",
+            artifact_type="indicator",
+            artifact_id="indicator--abc-123",
+            artifact_source="threatq",
+            link_type=EvidenceLinkType.SUPPORTS,
+            confidence=ConfidenceScore.medium(),
         )
-        data     = link.to_dict()
+        data = link.to_dict()
         restored = EvidenceLink.from_dict(data)
 
-        assert restored.id              == link.id
-        assert restored.statement       == link.statement
+        assert restored.id == link.id
+        assert restored.statement == link.statement
         assert restored.artifact_source == link.artifact_source
-        assert restored.link_type       == link.link_type
+        assert restored.link_type == link.link_type
         assert restored.confidence.stix_confidence == 50
 
 
 # ── Attribution ───────────────────────────────────────────────────────────────
 
+
 class TestAttribution:
     def test_roundtrip(self):
         attr = Attribution(
-            threat_actor_name = "BLACKCAT",
-            confidence        = ConfidenceScore.high(),
-            rationale         = "Shared C2 infra with March 2026 campaign.",
-            mitre_group_id    = "G0096",
+            threat_actor_name="BLACKCAT",
+            confidence=ConfidenceScore.high(),
+            rationale="Shared C2 infra with March 2026 campaign.",
+            mitre_group_id="G0096",
         )
-        data     = attr.to_dict()
+        data = attr.to_dict()
         restored = Attribution.from_dict(data)
 
         assert restored.threat_actor_name == "BLACKCAT"
-        assert restored.mitre_group_id    == "G0096"
+        assert restored.mitre_group_id == "G0096"
         assert restored.confidence.band.value == "HIGH"
 
 
 # ── ReportService lifecycle ───────────────────────────────────────────────────
 
+
 class TestReportServiceLifecycle:
     def test_create_and_get(self, service, draft):
         r = service.get(draft.id)
-        assert r.title  == "BLACKCAT Ransomware — April 2026"
+        assert r.title == "BLACKCAT Ransomware — April 2026"
         assert r.status == ReportStatus.DRAFT
         assert "ransomware" in r.tags
 
@@ -197,17 +203,17 @@ class TestReportServiceLifecycle:
         service.add_finding(draft.id, "Finding 1", confidence=ConfidenceScore.high())
         service.add_evidence_link(
             draft.id,
-            statement       = "IP linked to C2.",
-            artifact_type   = "indicator",
-            artifact_id     = "indicator--abc",
-            artifact_source = "threatq",
+            statement="IP linked to C2.",
+            artifact_type="indicator",
+            artifact_id="indicator--abc",
+            artifact_source="threatq",
         )
         service.submit_for_review(draft.id)
         service.approve(draft.id, reviewer="manager@example.com")
         published = service.publish(draft.id, changed_by="manager@example.com")
 
-        assert published.status         == ReportStatus.PUBLISHED
-        assert published.published_at   is not None
+        assert published.status == ReportStatus.PUBLISHED
+        assert published.published_at is not None
         assert published.stix_report_ref is not None
         assert published.stix_bundle_json is not None
 
@@ -248,10 +254,10 @@ class TestReportServiceLifecycle:
     def test_set_attribution(self, service, draft):
         service.set_attribution(
             draft.id,
-            threat_actor_name = "BLACKCAT",
-            confidence        = ConfidenceScore.medium(),
-            rationale         = "Shared infrastructure.",
-            mitre_group_id    = "G0096",
+            threat_actor_name="BLACKCAT",
+            confidence=ConfidenceScore.medium(),
+            rationale="Shared infrastructure.",
+            mitre_group_id="G0096",
         )
         r = service.get(draft.id)
         assert r.attribution is not None
@@ -278,9 +284,9 @@ class TestReportServiceLifecycle:
         r2 = service.create(title="R2", report_type=ReportType.DAILY_BRIEF)
         service.submit_for_review(r2.id)
 
-        drafts  = service.list(status=ReportStatus.DRAFT)
+        drafts = service.list(status=ReportStatus.DRAFT)
         reviews = service.list(status=ReportStatus.REVIEW)
-        assert len(drafts)  == 1
+        assert len(drafts) == 1
         assert len(reviews) == 1
 
     def test_create_revision(self, service, draft):
@@ -289,10 +295,10 @@ class TestReportServiceLifecycle:
         published = service.publish(draft.id, changed_by="mgr")
 
         revision = service.create_revision(published.id, author="analyst2@example.com")
-        assert revision.status           == ReportStatus.DRAFT
-        assert revision.version          == 2
+        assert revision.status == ReportStatus.DRAFT
+        assert revision.version == 2
         assert revision.parent_report_id == published.id
-        assert revision.stix_report_ref  is None
+        assert revision.stix_report_ref is None
         assert "analyst2@example.com" in revision.authors
 
     def test_create_revision_requires_published(self, service, draft):
@@ -304,35 +310,36 @@ class TestReportServiceLifecycle:
         service.add_section(draft.id, title="Section A")
 
         s = service.summary(draft.id)
-        assert s["finding_count"]  == 1
-        assert s["section_count"]  == 1
-        assert s["status"]         == "draft"
-        assert "classification"    in s
+        assert s["finding_count"] == 1
+        assert s["section_count"] == 1
+        assert s["status"] == "draft"
+        assert "classification" in s
 
 
 # ── STIX export ───────────────────────────────────────────────────────────────
+
 
 class TestStixExport:
     def test_bundle_structure(self, service, draft):
         service.add_finding(draft.id, "Key finding.", confidence=ConfidenceScore.high())
         service.add_evidence_link(
             draft.id,
-            statement       = "Evidence.",
-            artifact_type   = "indicator",
-            artifact_id     = "indicator--abc-123",
-            artifact_source = "threatq",
+            statement="Evidence.",
+            artifact_type="indicator",
+            artifact_id="indicator--abc-123",
+            artifact_source="threatq",
         )
         service.submit_for_review(draft.id)
         service.approve(draft.id, reviewer="manager")
         published = service.publish(draft.id, changed_by="manager")
 
         bundle = json.loads(published.stix_bundle_json)
-        assert bundle["type"]         == "bundle"
+        assert bundle["type"] == "bundle"
         assert bundle["spec_version"] == "2.1"
         assert len(bundle["objects"]) >= 2  # report SDO + identity
 
         types = {obj["type"] for obj in bundle["objects"]}
-        assert "report"   in types
+        assert "report" in types
         assert "identity" in types
 
     def test_report_sdo_fields(self, service, draft):
@@ -340,31 +347,31 @@ class TestStixExport:
         service.approve(draft.id, reviewer="manager")
         published = service.publish(draft.id, changed_by="manager")
 
-        bundle   = json.loads(published.stix_bundle_json)
+        bundle = json.loads(published.stix_bundle_json)
         report_obj = next(o for o in bundle["objects"] if o["type"] == "report")
 
-        assert report_obj["name"]            == draft.title
-        assert report_obj["spec_version"]    == "2.1"
-        assert "object_refs"                 in report_obj
-        assert "object_marking_refs"         in report_obj
+        assert report_obj["name"] == draft.title
+        assert report_obj["spec_version"] == "2.1"
+        assert "object_refs" in report_obj
+        assert "object_marking_refs" in report_obj
         assert report_obj["x_gnat_report_id"] == published.id
 
     def test_attribution_in_bundle(self, service, draft):
         service.set_attribution(
             draft.id,
-            threat_actor_name = "BLACKCAT",
-            confidence        = ConfidenceScore.high(),
-            rationale         = "Infrastructure overlap.",
-            mitre_group_id    = "G0096",
+            threat_actor_name="BLACKCAT",
+            confidence=ConfidenceScore.high(),
+            rationale="Infrastructure overlap.",
+            mitre_group_id="G0096",
         )
         service.submit_for_review(draft.id)
         service.approve(draft.id, reviewer="manager")
         published = service.publish(draft.id, changed_by="manager")
 
         bundle = json.loads(published.stix_bundle_json)
-        types  = {obj["type"] for obj in bundle["objects"]}
+        types = {obj["type"] for obj in bundle["objects"]}
         assert "threat-actor" in types
-        assert "relationship"  in types
+        assert "relationship" in types
 
         ta = next(o for o in bundle["objects"] if o["type"] == "threat-actor")
         assert ta["name"] == "BLACKCAT"
@@ -373,9 +380,9 @@ class TestStixExport:
     def test_standalone_stix_export(self):
         """report_to_stix_bundle can be called directly without going through service."""
         r = Report(
-            title       = "Standalone Export Test",
-            report_type = ReportType.FINISHED_INTELLIGENCE,
-            authors     = ["analyst"],
+            title="Standalone Export Test",
+            report_type=ReportType.FINISHED_INTELLIGENCE,
+            authors=["analyst"],
         )
         bundle = report_to_stix_bundle(r)
         assert bundle["type"] == "bundle"

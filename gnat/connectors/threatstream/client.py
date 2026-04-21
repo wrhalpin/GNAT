@@ -326,10 +326,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         ``trusted_circles`` — list of trusted circle IDs to share with.
         """
         payload: dict[str, Any] = {
-            "objects": [
-                {**ind, "source": ind.get("source", source)}
-                for ind in indicators
-            ],
+            "objects": [{**ind, "source": ind.get("source", source)} for ind in indicators],
             "meta": {"allow_unresolved": True},
         }
         if trusted_circles:
@@ -344,9 +341,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
-    def update_indicator_status(
-        self, ioc_id: int | str, status: str
-    ) -> dict[str, Any]:
+    def update_indicator_status(self, ioc_id: int | str, status: str) -> dict[str, Any]:
         """
         Update the status of a single indicator.
 
@@ -359,9 +354,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         )
         return resp if isinstance(resp, dict) else {}
 
-    def tag_indicators(
-        self, ioc_ids: list[int | str], tags: list[str]
-    ) -> dict[str, Any]:
+    def tag_indicators(self, ioc_ids: list[int | str], tags: list[str]) -> dict[str, Any]:
         """Apply a list of tags to multiple indicators."""
         resp = self.post(
             f"{_API}/intelligence/bulk_tag/",
@@ -417,17 +410,13 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{_API}/actor/{actor_id}/", params=self._ts_auth)
         return resp if isinstance(resp, dict) else {}
 
-    def list_actor_indicators(
-        self, actor_id: int | str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_actor_indicators(self, actor_id: int | str, limit: int = 100) -> list[dict[str, Any]]:
         """List intelligence indicators associated with a threat actor."""
         params: dict[str, Any] = {**self._ts_auth, "limit": limit}
         resp = self.get(f"{_API}/actor/{actor_id}/intelligence/", params=params)
         return resp.get("objects", []) if isinstance(resp, dict) else []
 
-    def create_actor(
-        self, name: str, description: str = "", **kwargs: Any
-    ) -> dict[str, Any]:
+    def create_actor(self, name: str, description: str = "", **kwargs: Any) -> dict[str, Any]:
         """Create a new threat actor entity."""
         payload: dict[str, Any] = {"name": name, "description": description, **kwargs}
         resp = self.post(f"{_API}/actor/", params=self._ts_auth, json=payload)
@@ -573,9 +562,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
         resp = self.post(f"{_API}/incident/", params=self._ts_auth, json=payload)
         return resp if isinstance(resp, dict) else {}
 
-    def update_incident(
-        self, incident_id: int | str, updates: dict[str, Any]
-    ) -> dict[str, Any]:
+    def update_incident(self, incident_id: int | str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update an existing incident (status, severity, description, etc.)."""
         resp = self.patch(
             f"{_API}/incident/{incident_id}/",
@@ -682,9 +669,7 @@ class ThreatStreamClient(BaseClient, ConnectorMixin):
 
     # ── Reports ───────────────────────────────────────────────────────────────
 
-    def list_reports(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def list_reports(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """List threat intelligence reports in ThreatStream."""
         resp = self.get(
             f"{_API}/report/",

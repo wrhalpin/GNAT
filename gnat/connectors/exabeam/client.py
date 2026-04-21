@@ -68,9 +68,7 @@ class ExabeamClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange client credentials for a Bearer token."""
         if not self.client_id or not self.client_secret:
-            raise GNATClientError(
-                "Exabeam connector requires client_id and client_secret."
-            )
+            raise GNATClientError("Exabeam connector requires client_id and client_secret.")
         resp = self.post(
             "/auth/v1/token",
             json={
@@ -83,9 +81,7 @@ class ExabeamClient(BaseClient, ConnectorMixin):
         if isinstance(resp, dict):
             token = resp.get("access_token") or resp.get("token", "")
         if not token:
-            raise GNATClientError(
-                "Exabeam authentication failed — no access_token in response"
-            )
+            raise GNATClientError("Exabeam authentication failed — no access_token in response")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -108,13 +104,9 @@ class ExabeamClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/threat-detection/v1/users/{object_id}")
             kind = "user"
         else:
-            raise GNATClientError(
-                f"Exabeam get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Exabeam get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Exabeam returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Exabeam returned unexpected payload for {object_id!r}")
         return dict(resp, _exa_kind=kind)
 
     def list_objects(
@@ -143,9 +135,7 @@ class ExabeamClient(BaseClient, ConnectorMixin):
                 resp = self.get("/threat-detection/v1/cases", params=params)
                 tag = "case"
             elif kind == "notable_assets":
-                resp = self.get(
-                    "/threat-detection/v1/notable-assets", params=params
-                )
+                resp = self.get("/threat-detection/v1/notable-assets", params=params)
                 tag = "notable_asset"
             else:
                 resp = self.get("/threat-detection/v1/incidents", params=params)
@@ -154,30 +144,20 @@ class ExabeamClient(BaseClient, ConnectorMixin):
             resp = self.get("/threat-detection/v1/users", params=params)
             tag = "user"
         else:
-            raise GNATClientError(
-                f"Exabeam list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Exabeam list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _exa_kind=tag) for r in _extract_exabeam_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Exabeam connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Exabeam connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Exabeam connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Exabeam connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Exabeam connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Exabeam connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_incidents(
-        self, priority: str = "", since: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_incidents(self, priority: str = "", since: str = "") -> list[dict[str, Any]]:
         """Return Exabeam incidents."""
         filters: dict[str, Any] = {}
         if priority:
@@ -195,21 +175,15 @@ class ExabeamClient(BaseClient, ConnectorMixin):
 
     def list_alerts(self) -> list[dict[str, Any]]:
         """Return raw alerts."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "alerts"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "alerts"}, page_size=500)
 
     def list_cases(self) -> list[dict[str, Any]]:
         """Return investigation cases."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "cases"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "cases"}, page_size=500)
 
     def list_notable_assets(self) -> list[dict[str, Any]]:
         """Return notable (high-risk) assets."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "notable_assets"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "notable_assets"}, page_size=500)
 
     def list_users(self) -> list[dict[str, Any]]:
         """Return user risk profiles."""

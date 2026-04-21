@@ -57,12 +57,11 @@ _RETRY_BACKOFF = 2.0
 
 class SentinelClient:
     """urllib3-based HTTP client for the Microsoft Sentinel REST API."""
+
     TRUST_LEVEL: str = "trusted_internal"
     API_VERSION: str = "v1"
     API_PREFIX: str = "/api"
     COST_UNIT: int = 1
-
-
 
     def __init__(self, config: SentinelConfig) -> None:
         """Initialize SentinelClient."""

@@ -1759,9 +1759,9 @@ class VisualizationTheme:
         Background hex colour (default dark charcoal).
     """
 
-    node_colors: dict[str, str]  = field(default_factory=dict)
-    edge_colors: dict[str, str]  = field(default_factory=dict)
-    background:  str             = "#1e1e2e"
+    node_colors: dict[str, str] = field(default_factory=dict)
+    edge_colors: dict[str, str] = field(default_factory=dict)
+    background: str = "#1e1e2e"
 
     def node_color(self, stix_type: str) -> str:
         """Return colour for *stix_type*, falling back to module defaults."""
@@ -1774,9 +1774,7 @@ class VisualizationTheme:
     def edge_color(self, rel_type: str) -> str:
         """Return colour for *rel_type*, falling back to module defaults."""
         return (
-            self.edge_colors.get(rel_type)
-            or _EDGE_COLORS.get(rel_type)
-            or _EDGE_COLORS["_default"]
+            self.edge_colors.get(rel_type) or _EDGE_COLORS.get(rel_type) or _EDGE_COLORS["_default"]
         )
 
 
@@ -1832,6 +1830,7 @@ def _circular_layout(
 ) -> dict[str, tuple[float, float]]:
     """Place nodes equally spaced on a unit circle."""
     import math
+
     n = len(node_ids)
     if n == 0:
         return {}
@@ -1843,16 +1842,17 @@ def _circular_layout(
 
 # Register built-in layouts
 LayoutRegistry.register("barnes-hut", _barnes_hut_layout)
-LayoutRegistry.register("spring",     _spring_layout)
-LayoutRegistry.register("circular",   _circular_layout)
+LayoutRegistry.register("spring", _spring_layout)
+LayoutRegistry.register("circular", _circular_layout)
 
 
 # ── Additional GraphView rendering methods ────────────────────────────────────
 # These are added as free functions that accept a GraphView (to avoid
 # reopening the class which would shadow existing methods).
 
+
 def _render_attack_matrix(
-    self: "GraphView",
+    self: GraphView,
     output: str = "attack_matrix.html",
     theme: VisualizationTheme | None = None,
     stix_types: list[str] | None = None,
@@ -1877,7 +1877,6 @@ def _render_attack_matrix(
     str
         Path to the written HTML file.
     """
-    import json as _json
 
     th = theme or VisualizationTheme()
     types = stix_types or ["attack-pattern"]
@@ -1897,28 +1896,30 @@ def _render_attack_matrix(
                 tactic = phase.phase_name
             else:
                 tactic = str(phase)
-            tactic_groups.setdefault(tactic, []).append({
-                "name":       getattr(obj, "name", obj.id),
-                "id":         obj.id,
-                "confidence": getattr(obj, "confidence", 0),
-            })
+            tactic_groups.setdefault(tactic, []).append(
+                {
+                    "name": getattr(obj, "name", obj.id),
+                    "id": obj.id,
+                    "confidence": getattr(obj, "confidence", 0),
+                }
+            )
 
     if not tactic_groups:
         tactic_groups = {"(no data)": []}
 
-    tactics   = sorted(tactic_groups.keys())
+    tactics = sorted(tactic_groups.keys())
     max_count = max((len(v) for v in tactic_groups.values()), default=1)
 
     rows_html = ""
     for tactic in tactics:
         techniques = tactic_groups.get(tactic, [])
-        count      = len(techniques)
-        intensity  = min(1.0, count / max_count)
-        r          = int(30 + intensity * 180)
-        g          = int(160 + intensity * 60)
-        b          = int(90)
-        bg         = f"rgb({r},{g},{b})"
-        names_str  = ", ".join(t["name"] for t in techniques[:8])
+        count = len(techniques)
+        intensity = min(1.0, count / max_count)
+        r = int(30 + intensity * 180)
+        g = int(160 + intensity * 60)
+        b = 90
+        bg = f"rgb({r},{g},{b})"
+        names_str = ", ".join(t["name"] for t in techniques[:8])
         if len(techniques) > 8:
             names_str += f" (+{len(techniques) - 8} more)"
         rows_html += (
@@ -1955,7 +1956,7 @@ td.techniques {{ color:#b0bec5; font-size:12px; }}
 
 
 def _render_causal_timeline(
-    self: "GraphView",
+    self: GraphView,
     output: str = "causal_timeline.html",
     theme: VisualizationTheme | None = None,
     layout: str = "spring",
@@ -1991,25 +1992,26 @@ def _render_causal_timeline(
         else:
             ts_str = str(ts)
         name = getattr(obj, "name", None) or obj.id
-        events.append({
-            "id":    obj.id,
-            "name":  name,
-            "type":  getattr(obj, "type", "unknown"),
-            "ts":    ts_str,
-            "color": th.node_color(getattr(obj, "type", "")),
-        })
+        events.append(
+            {
+                "id": obj.id,
+                "name": name,
+                "type": getattr(obj, "type", "unknown"),
+                "ts": ts_str,
+                "color": th.node_color(getattr(obj, "type", "")),
+            }
+        )
 
     events.sort(key=lambda e: e["ts"])
 
-    import json as _json
     rows_html = ""
-    for i, ev in enumerate(events[:200]):
+    for _i, ev in enumerate(events[:200]):
         rows_html += (
             f'<tr style="border-left:4px solid {ev["color"]}">'
             f'<td style="padding:4px 8px;color:#9e9e9e">{ev["ts"][:19]}</td>'
             f'<td style="padding:4px 8px;color:{ev["color"]}">{ev["type"]}</td>'
             f'<td style="padding:4px 8px">{ev["name"]}</td>'
-            f'</tr>\n'
+            f"</tr>\n"
         )
 
     html = f"""<!DOCTYPE html>
@@ -2037,7 +2039,7 @@ td {{ border-bottom:1px solid #37474f; }}
 
 
 def _render_temporal_playback(
-    self: "GraphView",
+    self: GraphView,
     output: str = "temporal_playback.html",
     theme: VisualizationTheme | None = None,
 ) -> str:
@@ -2066,13 +2068,15 @@ def _render_temporal_playback(
     for obj in self._objects:
         ts = getattr(obj, "first_seen", None) or getattr(obj, "created", None)
         ts_str = ts.isoformat() if hasattr(ts, "isoformat") else (str(ts) if ts else "")
-        nodes.append({
-            "id":    obj.id,
-            "label": getattr(obj, "name", obj.id)[:40],
-            "type":  getattr(obj, "type", "unknown"),
-            "ts":    ts_str,
-            "color": th.node_color(getattr(obj, "type", "")),
-        })
+        nodes.append(
+            {
+                "id": obj.id,
+                "label": getattr(obj, "name", obj.id)[:40],
+                "type": getattr(obj, "type", "unknown"),
+                "ts": ts_str,
+                "color": th.node_color(getattr(obj, "type", "")),
+            }
+        )
 
     nodes.sort(key=lambda n: n["ts"])
     nodes_json = _json.dumps(nodes)
@@ -2127,6 +2131,6 @@ updateView(100);
 
 
 # Monkey-patch new render methods onto GraphView so they appear as first-class methods
-GraphView.render_attack_matrix    = _render_attack_matrix
-GraphView.render_causal_timeline  = _render_causal_timeline
+GraphView.render_attack_matrix = _render_attack_matrix
+GraphView.render_causal_timeline = _render_causal_timeline
 GraphView.render_temporal_playback = _render_temporal_playback

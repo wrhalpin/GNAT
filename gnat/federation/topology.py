@@ -56,7 +56,7 @@ class FederationTopology:
         print(topo.effective_max_tlp("hospital-a", "health-system-parent"))  # "amber"
     """
 
-    def __init__(self, registry: "PeerRegistry") -> None:
+    def __init__(self, registry: PeerRegistry) -> None:
         """Initialize FederationTopology."""
         self._registry = registry
 
@@ -93,9 +93,7 @@ class FederationTopology:
                 break
             parent_id = peer.parent_peer_id
             if parent_id in visited:
-                raise ValueError(
-                    f"Cycle detected in federation hierarchy at peer {parent_id!r}."
-                )
+                raise ValueError(f"Cycle detected in federation hierarchy at peer {parent_id!r}.")
             visited.add(parent_id)
             result.append(parent_id)
             current_id = parent_id
@@ -134,14 +132,14 @@ class FederationTopology:
 
         return result
 
-    def parent(self, peer_id: str) -> "FederationPeer | None":
+    def parent(self, peer_id: str) -> FederationPeer | None:
         """Return the parent peer of *peer_id*, or ``None``."""
         peer = self._registry.get(peer_id)
         if peer is None or peer.parent_peer_id is None:
             return None
         return self._registry.get(peer.parent_peer_id)
 
-    def children(self, peer_id: str) -> list["FederationPeer"]:
+    def children(self, peer_id: str) -> list[FederationPeer]:
         """Return direct children of *peer_id*."""
         return [p for p in self._registry.list() if p.parent_peer_id == peer_id]
 
@@ -258,20 +256,31 @@ class FederationTopology:
             else:
                 # Mesh peers — represent as undirected edge if both registered
                 for other in all_peers:
-                    if other.peer_id != peer.peer_id and other.parent_peer_id is None:
-                        if peer.peer_id < other.peer_id:  # deduplicate symmetric edges
-                            edges.append({
+                    if (
+                        other.peer_id != peer.peer_id
+                        and other.parent_peer_id is None
+                        and peer.peer_id < other.peer_id  # deduplicate symmetric edges
+                    ):
+                        edges.append(
+                            {
                                 "from": peer.peer_id,
                                 "to": other.peer_id,
                                 "direction": "mesh",
                                 "max_tlp": min(
                                     peer.max_tlp,
                                     other.max_tlp,
-                                    key=lambda t: {"white": 0, "clear": 0, "green": 1,
-                                                   "amber": 2, "amber+strict": 3, "red": 4}.get(t, 1),
+                                    key=lambda t: {
+                                        "white": 0,
+                                        "clear": 0,
+                                        "green": 1,
+                                        "amber": 2,
+                                        "amber+strict": 3,
+                                        "red": 4,
+                                    }.get(t, 1),
                                 ),
                                 "type": "mesh",
-                            })
+                            }
+                        )
 
         return {
             "nodes": nodes,

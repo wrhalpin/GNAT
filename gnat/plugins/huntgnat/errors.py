@@ -30,6 +30,5 @@ class UntranslatableError(Exception):
 
     def __str__(self) -> str:
         return (
-            f"cannot translate to {self.target_language}: {self.reason} "
-            f"(pattern: {self.pattern!r})"
+            f"cannot translate to {self.target_language}: {self.reason} (pattern: {self.pattern!r})"
         )

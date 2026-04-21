@@ -552,7 +552,9 @@ class TestReportGeneratorAdditional(unittest.TestCase):
         from gnat.reports.generator import ReportResult
 
         r = ReportResult(
-            report_type="daily", title="T", generated_at=datetime.now(timezone.utc),
+            report_type="daily",
+            title="T",
+            generated_at=datetime.now(timezone.utc),
             formats_rendered=["pdf"],
         )
         r.errors = ["something failed"]
@@ -562,7 +564,9 @@ class TestReportGeneratorAdditional(unittest.TestCase):
         from gnat.reports.generator import ReportResult
 
         r = ReportResult(
-            report_type="daily", title="T", generated_at=datetime.now(timezone.utc),
+            report_type="daily",
+            title="T",
+            generated_at=datetime.now(timezone.utc),
             formats_rendered=["pdf"],
         )
         self.assertTrue(r.success)
@@ -571,7 +575,9 @@ class TestReportGeneratorAdditional(unittest.TestCase):
         from gnat.reports.generator import ReportResult
 
         r = ReportResult(
-            report_type="daily", title="T", generated_at=datetime.now(timezone.utc),
+            report_type="daily",
+            title="T",
+            generated_at=datetime.now(timezone.utc),
         )
         r.files_written.append("/tmp/report.md")  # nosec B108
         self.assertIn("/tmp/report.md", r.files_written)  # nosec B108

@@ -6,6 +6,7 @@ gnat.agents.security.secrets.redaction
 
 Redaction utilities and helpers for the GNAT toolkit.
 """
+
 from collections.abc import Iterable
 
 

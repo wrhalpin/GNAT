@@ -69,7 +69,11 @@ class AnalysisRuleEngine:
             if rule.phase is not None and status_val != rule.phase:
                 continue
 
-            if not self._policy.allow_dirty_rules and rule.source_file and not git_file_is_clean(rule.source_file):
+            if (
+                not self._policy.allow_dirty_rules
+                and rule.source_file
+                and not git_file_is_clean(rule.source_file)
+            ):
                 logger.warning(
                     "Skipping rule %s: source file %s has uncommitted changes",
                     rule.name,

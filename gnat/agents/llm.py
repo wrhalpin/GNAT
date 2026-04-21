@@ -88,12 +88,15 @@ class LLMClient:
         """Instantiate the provider for *backend* with *config*."""
         if backend == "claude":
             from .claude import ClaudeProvider
+
             return ClaudeProvider(**config)
         if backend in ("openai", "grok"):
             from .openai_compatible import OpenAICompatibleProvider
+
             return OpenAICompatibleProvider(provider=backend, **config)
         if backend == "gemini":
             from .gemini import GeminiProvider
+
             return GeminiProvider(**config)
         raise ValueError(
             f"Unsupported LLM backend '{backend}'. Supported: claude, openai, grok, gemini"
@@ -130,9 +133,7 @@ class LLMClient:
                     "LLMClient.chat: provider %s failed — %s", type(provider).__name__, exc
                 )
                 last_exc = exc
-        raise GNATClientError(
-            f"All LLM backends failed. Last error: {last_exc}"
-        ) from last_exc
+        raise GNATClientError(f"All LLM backends failed. Last error: {last_exc}") from last_exc
 
     def structured(
         self,

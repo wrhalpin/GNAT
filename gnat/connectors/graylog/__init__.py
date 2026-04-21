@@ -67,6 +67,7 @@ class GraylogAuthError(GraylogError):
 
 class GraylogAPIError(GraylogError):
     """Raised when a graylog a p i error error occurs."""
+
     def __init__(self, message, status_code=None, endpoint=None):
         """Initialize GraylogAPIError."""
         super().__init__(message)
@@ -88,6 +89,7 @@ class GraylogSTIXError(GraylogError):
 @dataclass
 class GraylogConfig:
     """Configuration container for graylog."""
+
     url: str
     username: str
     password: str
@@ -578,7 +580,12 @@ class GraylogSTIXMapper:
             if uid not in seen:
                 seen.add(uid)
                 objects.append(
-                    {"type": "user-account", "id": uid, "spec_version": CURRENT_SPEC_VERSION, "user_id": user}
+                    {
+                        "type": "user-account",
+                        "id": uid,
+                        "spec_version": CURRENT_SPEC_VERSION,
+                        "user_id": user,
+                    }
                 )
             refs.append(uid)
 

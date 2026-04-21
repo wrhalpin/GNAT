@@ -112,6 +112,7 @@ def _make_client(config: WazuhConfig | None = None) -> tuple[WazuhClient, MagicM
 
 class TestWazuhConfig(unittest.TestCase):
     """Configuration container for test wazuh."""
+
     def test_minimal_config(self):
         """Test that minimal config."""
         cfg = _make_config()
@@ -220,6 +221,7 @@ class TestWazuhConfig(unittest.TestCase):
 
 class TestWazuhAuthManager(unittest.TestCase):
     """Unit tests for :class:`WazuhAuthManager`."""
+
     def _make_auth(self, config=None):
         """Internal helper for make auth."""
         cfg = config or _make_config()
@@ -302,6 +304,7 @@ class TestWazuhAuthManager(unittest.TestCase):
 
 class TestWazuhClient(unittest.TestCase):
     """HTTP API client for the TestWazuh platform."""
+
     def test_get_returns_parsed_json(self):
         """Test that get returns parsed json."""
         client, mock_http = _make_client()
@@ -392,6 +395,7 @@ class TestWazuhClient(unittest.TestCase):
 
 class TestWazuhAgentCommands(unittest.TestCase):
     """Unit tests for :class:`WazuhAgentCommands`."""
+
     def _make_agents(self):
         """Internal helper for make agents."""
         client, mock_http = _make_client()
@@ -484,6 +488,7 @@ class TestWazuhAgentCommands(unittest.TestCase):
 
 class TestWazuhAlertCommands(unittest.TestCase):
     """Unit tests for :class:`WazuhAlertCommands`."""
+
     def _make_alerts_cmd(self):
         """Internal helper for make alerts cmd."""
         client, mock_http = _make_client()
@@ -550,6 +555,7 @@ class TestWazuhAlertCommands(unittest.TestCase):
 
 class TestWazuhSyscheckCommands(unittest.TestCase):
     """Unit tests for :class:`WazuhSyscheckCommands`."""
+
     def _make_syscheck(self):
         """Internal helper for make syscheck."""
         client, mock_http = _make_client()
@@ -612,6 +618,7 @@ class TestWazuhSyscheckCommands(unittest.TestCase):
 
 class TestWazuhVulnerabilityCommands(unittest.TestCase):
     """Unit tests for :class:`WazuhVulnerabilityCommands`."""
+
     def _make_vuln(self):
         """Internal helper for make vuln."""
         client, mock_http = _make_client()
@@ -674,6 +681,7 @@ class TestWazuhVulnerabilityCommands(unittest.TestCase):
 
 class TestWazuhRulesCommands(unittest.TestCase):
     """Unit tests for :class:`WazuhRulesCommands`."""
+
     def _make_rules(self):
         """Internal helper for make rules."""
         client, mock_http = _make_client()
@@ -727,6 +735,7 @@ class TestWazuhRulesCommands(unittest.TestCase):
 
 class TestWazuhActiveResponseCommands(unittest.TestCase):
     """Unit tests for :class:`WazuhActiveResponseCommands`."""
+
     def _make_ar(self):
         """Internal helper for make ar."""
         client, mock_http = _make_client()
@@ -768,6 +777,7 @@ class TestWazuhActiveResponseCommands(unittest.TestCase):
 
 class TestWazuhIndexerCommands(unittest.TestCase):
     """Unit tests for :class:`WazuhIndexerCommands`."""
+
     def _make_indexer(self, enabled=True):
         """Internal helper for make indexer."""
         cfg = _make_config(
@@ -834,6 +844,7 @@ class TestWazuhIndexerCommands(unittest.TestCase):
 
 class TestWazuhSTIXMapper(unittest.TestCase):
     """STIX translation helper for test wazuh s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = WazuhSTIXMapper()
@@ -1101,6 +1112,7 @@ class TestWazuhSTIXMapper(unittest.TestCase):
 
 class TestWazuhExceptions(unittest.TestCase):
     """Raised when a test wazuh exceptions error occurs."""
+
     def test_all_inherit_from_base(self):
         """Test that all inherit from base."""
         from gnat.connectors.wazuh.exceptions import WazuhError

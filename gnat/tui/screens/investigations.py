@@ -18,14 +18,13 @@ import logging
 import os
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Select
 
+logger = logging.getLogger(__name__)
 
 _NO_PERSIST_MSG = (
     "Investigation storage not available.\n"
@@ -34,18 +33,18 @@ _NO_PERSIST_MSG = (
 )
 
 _STATUS_OPTIONS = [
-    ("All",         ""),
-    ("Open",        "open"),
+    ("All", ""),
+    ("Open", "open"),
     ("In Progress", "in_progress"),
-    ("Review",      "review"),
-    ("Closed",      "closed"),
+    ("Review", "review"),
+    ("Closed", "closed"),
 ]
 
 _TRANSITION_OPTIONS = [
     ("→ In Progress", "in_progress"),
-    ("→ Review",      "review"),
-    ("→ Closed",      "closed"),
-    ("→ Open",        "open"),
+    ("→ Review", "review"),
+    ("→ Closed", "closed"),
+    ("→ Open", "open"),
 ]
 
 
@@ -55,10 +54,10 @@ class InvestigationsScreen(Screen):
     TITLE = "GNAT — Investigations"
 
     BINDINGS = [
-        Binding("escape", "app.pop_screen", "Back",    show=True),
-        Binding("ctrl+r", "refresh",        "Refresh", show=True),
-        Binding("ctrl+n", "new_dialog",     "New",     show=True),
-        Binding("ctrl+e", "export_csv",     "Export",  show=True),
+        Binding("escape", "app.pop_screen", "Back", show=True),
+        Binding("ctrl+r", "refresh", "Refresh", show=True),
+        Binding("ctrl+n", "new_dialog", "New", show=True),
+        Binding("ctrl+e", "export_csv", "Export", show=True),
     ]
 
     CSS = """
@@ -111,9 +110,9 @@ class InvestigationsScreen(Screen):
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
-        self._db_url          = db_url or os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
-        self._config_path     = config_path
-        self._service: Any    = None
+        self._db_url = db_url or os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
+        self._config_path = config_path
+        self._service: Any = None
         self._selected_id: str | None = None
         self._investigations: list[Any] = []
 
@@ -122,16 +121,15 @@ class InvestigationsScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical():
-            with Horizontal(id="toolbar"):
-                with Horizontal(id="filter-row"):
-                    yield Input(placeholder="Search title…", id="search-input")
-                    yield Select(
-                        options=_STATUS_OPTIONS,
-                        prompt="Status",
-                        id="status-select",
-                    )
-                    yield Button("Search", variant="primary", id="search-btn")
-                    yield Button("New",    variant="success", id="new-btn")
+            with Horizontal(id="toolbar"), Horizontal(id="filter-row"):
+                yield Input(placeholder="Search title…", id="search-input")
+                yield Select(
+                    options=_STATUS_OPTIONS,
+                    prompt="Status",
+                    id="status-select",
+                )
+                yield Button("Search", variant="primary", id="search-btn")
+                yield Button("New", variant="success", id="new-btn")
             yield Label("Loading investigations…", id="status-label")
             yield DataTable(id="inv-table", cursor_type="row")
             with Vertical(id="detail-pane"):
@@ -142,8 +140,8 @@ class InvestigationsScreen(Screen):
                         prompt="Transition to…",
                         id="transition-select",
                     )
-                    yield Button("Apply", variant="primary",  id="apply-btn")
-                    yield Button("Close", variant="default",  id="close-detail-btn")
+                    yield Button("Apply", variant="primary", id="apply-btn")
+                    yield Button("Close", variant="default", id="close-detail-btn")
         yield Footer()
 
     # ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -155,8 +153,9 @@ class InvestigationsScreen(Screen):
 
     def _init_service(self) -> None:
         try:
-            from gnat.analysis.investigations.storage import InvestigationStore
             from gnat.analysis.investigations.service import InvestigationService
+            from gnat.analysis.investigations.storage import InvestigationStore
+
             store = InvestigationStore(self._db_url)
             store.create_all()
             self._service = InvestigationService(store)
@@ -167,17 +166,15 @@ class InvestigationsScreen(Screen):
 
     def _setup_table(self) -> None:
         table: DataTable = self.query_one("#inv-table", DataTable)
-        table.add_columns(
-            "ID (short)", "Title", "Status", "TLP", "Created by", "Updated"
-        )
+        table.add_columns("ID (short)", "Title", "Status", "TLP", "Created by", "Updated")
 
     def _load_investigations(self, status_filter: str = "", text: str = "") -> None:
         if self._service is None:
             return
 
         try:
-            from gnat.analysis.query import InvestigationQuery
             from gnat.analysis.investigations.models import InvestigationStatus
+            from gnat.analysis.query import InvestigationQuery
 
             status = None
             if status_filter:
@@ -187,10 +184,10 @@ class InvestigationsScreen(Screen):
                     logger.debug("Unknown investigation status filter %r; ignoring", status_filter)
 
             q = InvestigationQuery(
-                status    = status,
-                text      = text or None,
-                page_size = 200,
-                sort_desc = True,
+                status=status,
+                text=text or None,
+                page_size=200,
+                sort_desc=True,
             )
             investigations = self._service.list(query=q)
             self._investigations = list(investigations)
@@ -222,7 +219,7 @@ class InvestigationsScreen(Screen):
         btn_id = event.button.id
 
         if btn_id == "search-btn":
-            text   = self.query_one("#search-input",  Input).value.strip()
+            text = self.query_one("#search-input", Input).value.strip()
             status = str(self.query_one("#status-select", Select).value or "")
             self._load_investigations(status_filter=status, text=text)
 
@@ -255,7 +252,7 @@ class InvestigationsScreen(Screen):
             f"Indicators: {len(inv.indicators)}\n"
             f"Tags: {', '.join(inv.tags) or '—'}"
         )
-        self.query_one("#detail-text",  Label).update(detail)
+        self.query_one("#detail-text", Label).update(detail)
         self.query_one("#detail-pane").add_class("visible")
 
     def action_refresh(self) -> None:
@@ -264,9 +261,7 @@ class InvestigationsScreen(Screen):
     def action_new_dialog(self) -> None:
         """Push a simple inline creation flow (uses Input widget)."""
         # Simple approach: prompt for title via status bar
-        self._set_status(
-            "[yellow]Enter title in search box and press Ctrl+N again to create.[/]"
-        )
+        self._set_status("[yellow]Enter title in search box and press Ctrl+N again to create.[/]")
 
     def action_export_csv(self) -> None:
         """Export the current filtered investigation list as CSV."""
@@ -279,7 +274,7 @@ class InvestigationsScreen(Screen):
             return
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path  = os.path.expanduser(f"~/gnat_investigations_{timestamp}.csv")
+        out_path = os.path.expanduser(f"~/gnat_investigations_{timestamp}.csv")
         fieldnames = ["id", "title", "status", "severity", "created_by", "created_at"]
 
         try:
@@ -287,14 +282,16 @@ class InvestigationsScreen(Screen):
                 writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
                 writer.writeheader()
                 for inv in self._investigations:
-                    writer.writerow({
-                        "id":         getattr(inv, "id", ""),
-                        "title":      getattr(inv, "title", ""),
-                        "status":     str(getattr(inv, "status", "")),
-                        "severity":   getattr(inv, "severity", ""),
-                        "created_by": getattr(inv, "created_by", ""),
-                        "created_at": str(getattr(inv, "created_at", "")),
-                    })
+                    writer.writerow(
+                        {
+                            "id": getattr(inv, "id", ""),
+                            "title": getattr(inv, "title", ""),
+                            "status": str(getattr(inv, "status", "")),
+                            "severity": getattr(inv, "severity", ""),
+                            "created_by": getattr(inv, "created_by", ""),
+                            "created_at": str(getattr(inv, "created_at", "")),
+                        }
+                    )
             self._set_status(f"[green]Exported {len(self._investigations)} rows → {out_path}[/]")
         except Exception as exc:
             self._set_status(f"[red]Export failed: {exc}[/]")
@@ -309,12 +306,12 @@ class InvestigationsScreen(Screen):
             return
         try:
             from gnat.analysis.investigations.models import InvestigationStatus
+
             new_status = InvestigationStatus(new_status_str)
-            self._service.transition(self._selected_id, new_status,
-                                     author="tui", note="Transitioned via TUI")
-            self._set_status(
-                f"[green]✓ {self._selected_id[:8]}… → {new_status.value}[/]"
+            self._service.transition(
+                self._selected_id, new_status, author="tui", note="Transitioned via TUI"
             )
+            self._set_status(f"[green]✓ {self._selected_id[:8]}… → {new_status.value}[/]")
             self._load_investigations()
             self.query_one("#detail-pane").remove_class("visible")
         except Exception as exc:

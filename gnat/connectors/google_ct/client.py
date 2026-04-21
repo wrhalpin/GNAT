@@ -74,9 +74,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
         """Compose a full path under the configured log prefix."""
         log_prefix = (log or self.log).strip("/")
         if not log_prefix:
-            raise GNATClientError(
-                "GoogleCT requires a log path (e.g. logs/eu1/xenon2026)"
-            )
+            raise GNATClientError("GoogleCT requires a log path (e.g. logs/eu1/xenon2026)")
         return f"/{log_prefix}/ct/v1/{suffix}"
 
     def get_object(self, stix_type: str, object_id: str) -> dict[str, Any]:
@@ -84,9 +82,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("GoogleCT get_object requires a non-empty index")
         if stix_type != "x509-certificate":
-            raise GNATClientError(
-                f"GoogleCT get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"GoogleCT get_object does not support stix_type={stix_type!r}")
         try:
             idx = int(object_id)
         except (TypeError, ValueError) as exc:
@@ -99,9 +95,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
         )
         entries = resp.get("entries", []) if isinstance(resp, dict) else []
         if not entries:
-            raise GNATClientError(
-                f"GoogleCT returned no entry for leaf_index={idx}"
-            )
+            raise GNATClientError(f"GoogleCT returned no entry for leaf_index={idx}")
         return dict(entries[0], _gct_kind="entry", _gct_index=idx)
 
     def list_objects(
@@ -114,18 +108,12 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
         """List CT entries by ``[start, end]`` range or roots."""
         filters = dict(filters or {})
         if stix_type != "x509-certificate":
-            raise GNATClientError(
-                f"GoogleCT list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"GoogleCT list_objects does not support stix_type={stix_type!r}")
         kind = (filters.get("kind") or "entries").lower()
         if kind == "roots":
             resp = self.get(self._path("get-roots"))
             roots = resp.get("certificates", []) if isinstance(resp, dict) else []
-            return [
-                {"_gct_kind": "root", "der_b64": d}
-                for d in roots
-                if isinstance(d, str)
-            ]
+            return [{"_gct_kind": "root", "der_b64": d} for d in roots if isinstance(d, str)]
         start = int(filters.get("start") or 0)
         end = int(filters.get("end") or (start + max(1, int(page_size)) - 1))
         resp = self.get(
@@ -136,14 +124,10 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
         out: list[dict[str, Any]] = []
         for offset, entry in enumerate(entries):
             if isinstance(entry, dict):
-                out.append(
-                    dict(entry, _gct_kind="entry", _gct_index=start + offset)
-                )
+                out.append(dict(entry, _gct_kind="entry", _gct_index=start + offset))
         return out
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """GoogleCT connector is read-only."""
         raise GNATClientError(
             "GoogleCT connector is read-only — RFC 6962 logs accept "
@@ -153,9 +137,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """GoogleCT connector is read-only."""
-        raise GNATClientError(
-            "GoogleCT connector is read-only — CT logs are append-only."
-        )
+        raise GNATClientError("GoogleCT connector is read-only — CT logs are append-only.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -166,9 +148,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
             raise GNATClientError("GoogleCT get_sth returned a non-dict payload")
         return dict(resp, _gct_kind="sth")
 
-    def get_entries(
-        self, start: int, end: int, log: str | None = None
-    ) -> list[dict[str, Any]]:
+    def get_entries(self, start: int, end: int, log: str | None = None) -> list[dict[str, Any]]:
         """Return entries in the half-open range ``[start, end]``."""
         resp = self.get(
             self._path("get-entries", log=log),
@@ -199,9 +179,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
             params={"hash": leaf_hash, "tree_size": int(tree_size)},
         )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                "GoogleCT get_proof_by_hash returned a non-dict payload"
-            )
+            raise GNATClientError("GoogleCT get_proof_by_hash returned a non-dict payload")
         return dict(resp, _gct_kind="proof")
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
@@ -245,9 +223,7 @@ class GoogleCTClient(BaseClient, ConnectorMixin):
         # Default → x509-certificate stub for an entry
         index = native.get("_gct_index") or 0
         leaf_input = native.get("leaf_input") or ""
-        stix_uuid = uuid.uuid5(
-            _NAMESPACE_GCT, f"x509-certificate|{self.log}|{index}"
-        )
+        stix_uuid = uuid.uuid5(_NAMESPACE_GCT, f"x509-certificate|{self.log}|{index}")
         return {
             "type": "x509-certificate",
             "id": f"x509-certificate--{stix_uuid}",

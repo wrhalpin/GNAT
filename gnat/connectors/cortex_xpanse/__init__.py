@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.cortex_xpanse`` package.
 
 Exports: ``CortexXpanseClient``.
 """
+
 from .client import CortexXpanseClient
 
 __all__ = ["CortexXpanseClient"]

@@ -6,16 +6,15 @@ Unit tests for Phase 4C — Hypothesis Engine, Negative Evidence, Reasoning Engi
 
 from __future__ import annotations
 
-import time
-from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, patch
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # STIXHypothesis tests
 # ---------------------------------------------------------------------------
+
 
 class TestSTIXHypothesis:
     def test_create_defaults(self):
@@ -108,6 +107,7 @@ class TestSTIXHypothesis:
 # NegativeEvidenceRecord tests
 # ---------------------------------------------------------------------------
 
+
 class TestNegativeEvidenceRecord:
     def test_create(self):
         from gnat.stix.sdos.negative_evidence import NegativeEvidenceRecord
@@ -184,6 +184,7 @@ class TestNegativeEvidenceRecord:
 # ---------------------------------------------------------------------------
 # HypothesisEngine tests
 # ---------------------------------------------------------------------------
+
 
 class TestHypothesisEngine:
     def _make_engine(self, fixtures=None):
@@ -281,7 +282,9 @@ class TestHypothesisEngine:
 
         class FakeObj:
             stix_type = "x-gnat-hypothesis"
-            def to_dict(self): return h1.to_dict()
+
+            def to_dict(self):
+                return h1.to_dict()
 
         ws.objects = {
             h1.id: FakeObj(),
@@ -295,6 +298,7 @@ class TestHypothesisEngine:
 # ReasoningEngine tests
 # ---------------------------------------------------------------------------
 
+
 class TestReasoningEngine:
     def _make_observable(self, obj_id="indicator--abc", modified_days_ago=1):
         obs = MagicMock()
@@ -306,7 +310,6 @@ class TestReasoningEngine:
 
     def _make_engine(self, search_hits=0):
         from gnat.reasoning.engine import ReasoningEngine
-        from gnat.search.index import NullSearchIndex
 
         manager = MagicMock()
         ws = MagicMock()
@@ -330,6 +333,7 @@ class TestReasoningEngine:
         obs2 = self._make_observable("indicator--2", modified_days_ago=100)
 
         from gnat.core.context import ExecutionContext
+
         ctx = ExecutionContext.create(
             initiated_by="test",
             domain="analysis",
@@ -368,8 +372,8 @@ class TestReasoningEngine:
 
     def test_negative_evidence_reduces_score(self):
         from gnat.reasoning.engine import ReasoningEngine
-        from gnat.stix.sdos.negative_evidence import NegativeEvidenceRecord
         from gnat.search.index import NullSearchIndex
+        from gnat.stix.sdos.negative_evidence import NegativeEvidenceRecord
 
         manager = MagicMock()
         ws = MagicMock()
@@ -430,8 +434,8 @@ class TestReasoningEngine:
         assert ReasoningEngine._age_factor(obs) == 0.5
 
     def test_trusted_internal_scores_higher(self):
-        from gnat.reasoning.engine import ReasoningEngine
         from gnat.core.context import ExecutionContext
+        from gnat.reasoning.engine import ReasoningEngine
         from gnat.search.index import NullSearchIndex
 
         manager = MagicMock()
@@ -444,11 +448,15 @@ class TestReasoningEngine:
         obs = self._make_observable("indicator--trust-test", modified_days_ago=1)
 
         ctx_trusted = ExecutionContext.create(
-            initiated_by="splunk", domain="analysis", workspace_id="ws1",
+            initiated_by="splunk",
+            domain="analysis",
+            workspace_id="ws1",
             trust_level="trusted_internal",
         )
         ctx_untrusted = ExecutionContext.create(
-            initiated_by="otx", domain="analysis", workspace_id="ws1",
+            initiated_by="otx",
+            domain="analysis",
+            workspace_id="ws1",
             trust_level="untrusted_external",
         )
 

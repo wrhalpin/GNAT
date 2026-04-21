@@ -90,9 +90,7 @@ class SilentPushClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set the X-API-KEY header from the configured key."""
         if not self.api_key:
-            raise GNATClientError(
-                "Silent Push connector requires api_key in config."
-            )
+            raise GNATClientError("Silent Push connector requires api_key in config.")
         self._auth_headers["X-API-KEY"] = self.api_key
         self._auth_headers["Accept"] = "application/json"
 
@@ -126,13 +124,9 @@ class SilentPushClient(BaseClient, ConnectorMixin):
                 resp = self.get(f"/api/v1/merge-api/explore/domain/{object_id}")
                 kind = "domain"
             if not isinstance(resp, dict):
-                raise GNATClientError(
-                    f"Silent Push returned unexpected payload for {object_id!r}"
-                )
+                raise GNATClientError(f"Silent Push returned unexpected payload for {object_id!r}")
             return dict(resp, _sp_kind="indicator", _sp_subkind=kind, _sp_query=object_id)
-        raise GNATClientError(
-            f"Silent Push get_object does not support stix_type={stix_type!r}"
-        )
+        raise GNATClientError(f"Silent Push get_object does not support stix_type={stix_type!r}")
 
     def list_objects(
         self,
@@ -154,13 +148,9 @@ class SilentPushClient(BaseClient, ConnectorMixin):
         if stix_type == "indicator":
             ioc_type = filters.get("ioc_type") or "domain"
             query = filters.get("query") or {}
-            resp = self.post(
-                f"/api/v1/merge-api/iocs/{ioc_type}/search", json=query
-            )
+            resp = self.post(f"/api/v1/merge-api/iocs/{ioc_type}/search", json=query)
             data = _extract_sp_items(resp)
-            return [
-                dict(r, _sp_kind="indicator", _sp_subkind=ioc_type) for r in data
-            ]
+            return [dict(r, _sp_kind="indicator", _sp_subkind=ioc_type) for r in data]
         if stix_type == "observed-data":
             qtype = (filters.get("qtype") or "a").lower()
             qvalue = filters.get("qvalue") or ""
@@ -171,20 +161,13 @@ class SilentPushClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v1/merge-api/padns/lookup/{qtype}/{qvalue}")
             data = _extract_sp_items(resp)
             return [
-                dict(r, _sp_kind="observed-data", _sp_qtype=qtype, _sp_query=qvalue)
-                for r in data
+                dict(r, _sp_kind="observed-data", _sp_qtype=qtype, _sp_query=qvalue) for r in data
             ]
-        raise GNATClientError(
-            f"Silent Push list_objects does not support stix_type={stix_type!r}"
-        )
+        raise GNATClientError(f"Silent Push list_objects does not support stix_type={stix_type!r}")
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Silent Push connector is read-only."""
-        raise GNATClientError(
-            "Silent Push connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Silent Push connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Silent Push connector is read-only."""
@@ -204,17 +187,11 @@ class SilentPushClient(BaseClient, ConnectorMixin):
 
     def padns(self, qtype: str, qvalue: str) -> list[dict[str, Any]]:
         """Return passive DNS lookups for (*qtype*, *qvalue*)."""
-        return self.list_objects(
-            "observed-data", filters={"qtype": qtype, "qvalue": qvalue}
-        )
+        return self.list_objects("observed-data", filters={"qtype": qtype, "qvalue": qvalue})
 
-    def search_iocs(
-        self, ioc_type: str, query: dict[str, Any]
-    ) -> list[dict[str, Any]]:
+    def search_iocs(self, ioc_type: str, query: dict[str, Any]) -> list[dict[str, Any]]:
         """Search Silent Push IOC indices."""
-        return self.list_objects(
-            "indicator", filters={"ioc_type": ioc_type, "query": query}
-        )
+        return self.list_objects("indicator", filters={"ioc_type": ioc_type, "query": query})
 
     def scan_asset(self, asset: str) -> dict[str, Any]:
         """Trigger a Silent Push scan on *asset* and return the result."""
@@ -262,12 +239,9 @@ class SilentPushClient(BaseClient, ConnectorMixin):
                 "description": native.get("description") or "Silent Push IOC",
                 "labels": _sp_labels(native),
                 "x_silentpush": {
-                    "sp_risk_score": native.get("sp_risk_score")
-                    or native.get("risk_score"),
+                    "sp_risk_score": native.get("sp_risk_score") or native.get("risk_score"),
                     "actor_profile": native.get("actor_profile"),
-                    "future_attack_indicator": native.get(
-                        "future_attack_indicator"
-                    ),
+                    "future_attack_indicator": native.get("future_attack_indicator"),
                     "tags": native.get("tags", []),
                     "raw": native,
                 },

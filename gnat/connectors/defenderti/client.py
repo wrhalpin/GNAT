@@ -318,16 +318,12 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         resp = self.post(_TI, json=payload)
         return resp if isinstance(resp, dict) else {}
 
-    def update_indicator(
-        self, indicator_id: str, updates: dict[str, Any]
-    ) -> dict[str, Any]:
+    def update_indicator(self, indicator_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update an existing TI indicator by ID (PATCH)."""
         resp = self.patch(f"{_TI}/{indicator_id}", json=updates)
         return resp if isinstance(resp, dict) else {}
 
-    def bulk_create_indicators(
-        self, indicators: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def bulk_create_indicators(self, indicators: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Submit multiple indicators in a single batch POST.
 
@@ -391,9 +387,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
     def get_article_indicators(self, article_id: str) -> list[dict[str, Any]]:
         """List IOC indicators mentioned in a Defender TI article."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/articles/{article_id}/indicators"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/articles/{article_id}/indicators")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     # ── Defender TI — Host intelligence ──────────────────────────────────────
@@ -413,69 +407,51 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
     def get_host_trackers(self, host_id: str) -> list[dict[str, Any]]:
         """Get web trackers (Google Analytics, Facebook Pixel, etc.) for a host."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/hosts/{host_id}/trackers"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/hosts/{host_id}/trackers")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     def get_host_components(self, host_id: str) -> list[dict[str, Any]]:
         """Get web technology components detected on a host."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/hosts/{host_id}/components"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/hosts/{host_id}/components")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     def get_host_cookies(self, host_id: str) -> list[dict[str, Any]]:
         """Get cookies observed on a host."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/hosts/{host_id}/cookies"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/hosts/{host_id}/cookies")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     def get_host_ssl_certificates(self, host_id: str) -> list[dict[str, Any]]:
         """Get SSL/TLS certificates associated with a host."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/hosts/{host_id}/sslCertificates"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/hosts/{host_id}/sslCertificates")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     def get_host_resolutions(self, host_id: str) -> list[dict[str, Any]]:
         """Get passive DNS resolution records for a host."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/hosts/{host_id}/resolutions"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/hosts/{host_id}/resolutions")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     def get_host_subdomains(self, host_id: str) -> list[dict[str, Any]]:
         """Get known subdomains of a host."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/hosts/{host_id}/subdomains"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/hosts/{host_id}/subdomains")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     # ── Defender TI — SSL Certificates ───────────────────────────────────────
 
     def get_ssl_certificate(self, cert_id: str) -> dict[str, Any]:
         """Retrieve details for a specific SSL certificate by fingerprint."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/sslCertificates/{cert_id}"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/sslCertificates/{cert_id}")
         return resp if isinstance(resp, dict) else {}
 
     def get_ssl_certificate_hosts(self, cert_id: str) -> list[dict[str, Any]]:
         """List hosts that have used a specific SSL certificate."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/sslCertificates/{cert_id}/relatedHosts"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/sslCertificates/{cert_id}/relatedHosts")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     # ── Defender TI — WHOIS ───────────────────────────────────────────────────
 
     def get_whois_record(self, host_id: str) -> dict[str, Any]:
         """Retrieve the WHOIS registration record for a domain."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/hosts/{host_id}/whois"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/hosts/{host_id}/whois")
         return resp if isinstance(resp, dict) else {}
 
     def search_whois_by_registrant(self, registrant: str, top: int = 20) -> list[dict[str, Any]]:
@@ -502,23 +478,17 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
         Returns CVSS scores, affected components, exploitation status,
         and related indicators and articles.
         """
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/vulnerabilities/{cve_id}"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/vulnerabilities/{cve_id}")
         return resp if isinstance(resp, dict) else {}
 
     def get_vulnerability_components(self, cve_id: str) -> list[dict[str, Any]]:
         """List affected software components for a vulnerability."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/vulnerabilities/{cve_id}/components"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/vulnerabilities/{cve_id}/components")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     def get_vulnerability_articles(self, cve_id: str) -> list[dict[str, Any]]:
         """List Defender TI articles mentioning a vulnerability."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/vulnerabilities/{cve_id}/articles"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/vulnerabilities/{cve_id}/articles")
         return resp.get("value", []) if isinstance(resp, dict) else []
 
     # ── Defender TI — Intelligence profiles (threat actors) ──────────────────
@@ -544,9 +514,7 @@ class DefenderTIClient(BaseClient, ConnectorMixin):
 
     def get_intelligence_profile(self, profile_id: str) -> dict[str, Any]:
         """Retrieve a specific Defender TI intelligence profile."""
-        resp = self.get(
-            f"/v1.0/security/threatIntelligence/intelligenceProfiles/{profile_id}"
-        )
+        resp = self.get(f"/v1.0/security/threatIntelligence/intelligenceProfiles/{profile_id}")
         return resp if isinstance(resp, dict) else {}
 
     def get_profile_indicators(self, profile_id: str) -> list[dict[str, Any]]:

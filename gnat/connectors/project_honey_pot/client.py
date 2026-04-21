@@ -71,16 +71,15 @@ class ProjectHoneyPotClient(BaseClient, ConnectorMixin):
         super().__init__(host=host, **kwargs)
         self.api_key = api_key
         # Override the parsed host so DNS lookups use the bare zone
-        self._dnsbl_zone = (host or "dnsbl.httpbl.org").replace(
-            "https://", ""
-        ).replace("http://", "").rstrip("/")
+        self._dnsbl_zone = (
+            (host or "dnsbl.httpbl.org").replace("https://", "").replace("http://", "").rstrip("/")
+        )
 
     def authenticate(self) -> None:
         """Validate that an http:BL access key is configured."""
         if not self.api_key:
             raise GNATClientError(
-                "ProjectHoneyPot connector requires api_key in config "
-                "(http:BL access key)."
+                "ProjectHoneyPot connector requires api_key in config (http:BL access key)."
             )
         if len(self.api_key) != 12:
             raise GNATClientError(
@@ -106,9 +105,7 @@ class ProjectHoneyPotClient(BaseClient, ConnectorMixin):
                 f"ProjectHoneyPot get_object does not support stix_type={stix_type!r}"
             )
         if not object_id:
-            raise GNATClientError(
-                "ProjectHoneyPot get_object requires a non-empty IP address"
-            )
+            raise GNATClientError("ProjectHoneyPot get_object requires a non-empty IP address")
         return self._httpbl_query(object_id)
 
     def list_objects(
@@ -146,13 +143,10 @@ class ProjectHoneyPotClient(BaseClient, ConnectorMixin):
                 results.append({"_php_kind": "lookup", "ip": ip, "error": str(exc)})
         return results
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """ProjectHoneyPot connector is read-only."""
         raise GNATClientError(
-            "ProjectHoneyPot connector is read-only — http:BL is a "
-            "lookup-only protocol."
+            "ProjectHoneyPot connector is read-only — http:BL is a lookup-only protocol."
         )
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
@@ -186,14 +180,10 @@ class ProjectHoneyPotClient(BaseClient, ConnectorMixin):
         try:
             octets = ip.strip().split(".")
             if len(octets) != 4:
-                raise GNATClientError(
-                    f"ProjectHoneyPot expects an IPv4 address; got {ip!r}"
-                )
+                raise GNATClientError(f"ProjectHoneyPot expects an IPv4 address; got {ip!r}")
             reversed_ip = ".".join(reversed(octets))
         except (AttributeError, ValueError) as exc:
-            raise GNATClientError(
-                f"ProjectHoneyPot could not parse IP {ip!r}: {exc}"
-            ) from exc
+            raise GNATClientError(f"ProjectHoneyPot could not parse IP {ip!r}: {exc}") from exc
 
         query_host = f"{self.api_key}.{reversed_ip}.{self._dnsbl_zone}"
         try:
@@ -223,8 +213,10 @@ class ProjectHoneyPotClient(BaseClient, ConnectorMixin):
         stix_uuid = uuid.uuid5(_NAMESPACE_PHP, f"indicator|{ip}")
         threat_score = int(native.get("threat_score") or 0)
         listed = bool(native.get("listed"))
-        labels = ["malicious-activity"] if listed and threat_score >= 25 else (
-            ["anomalous-activity"] if listed else ["benign"]
+        labels = (
+            ["malicious-activity"]
+            if listed and threat_score >= 25
+            else (["anomalous-activity"] if listed else ["benign"])
         )
         types = native.get("visitor_types") or []
 
@@ -247,9 +239,7 @@ class ProjectHoneyPotClient(BaseClient, ConnectorMixin):
             "x_project_honey_pot": {
                 "listed": listed,
                 "threat_score": threat_score,
-                "days_since_last_activity": int(
-                    native.get("days_since_last_activity") or 0
-                ),
+                "days_since_last_activity": int(native.get("days_since_last_activity") or 0),
                 "visitor_type_bits": int(native.get("visitor_type_bits") or 0),
                 "visitor_types": types,
                 "raw": native.get("raw"),
@@ -271,17 +261,13 @@ def _parse_httpbl_response(ip: str, answer: str) -> dict[str, Any]:
     """Parse a 4-octet http:BL DNS response into a structured dict."""
     parts = (answer or "").split(".")
     if len(parts) != 4 or parts[0] != "127":
-        raise GNATClientError(
-            f"ProjectHoneyPot returned unexpected http:BL response {answer!r}"
-        )
+        raise GNATClientError(f"ProjectHoneyPot returned unexpected http:BL response {answer!r}")
     try:
         days = int(parts[1])
         score = int(parts[2])
         bits = int(parts[3])
     except ValueError as exc:
-        raise GNATClientError(
-            f"ProjectHoneyPot http:BL response not numeric: {answer!r}"
-        ) from exc
+        raise GNATClientError(f"ProjectHoneyPot http:BL response not numeric: {answer!r}") from exc
     types: list[str] = []
     if bits == 0:
         types.append(_VISITOR_TYPES[0])

@@ -459,7 +459,7 @@ class LLMProvider(ABC):
     ) -> dict[str, Any]:
         """Return structured JSON output matching the supplied schema."""
 
-    def stream(self, prompt: str, **kwargs: Any) -> "Iterator[str]":
+    def stream(self, prompt: str, **kwargs: Any) -> Iterator[str]:
         """
         Yield text chunks from a streaming completion.
 

@@ -122,9 +122,7 @@ class CampaignBuilder:
                     min_confidence,
                 )
                 continue
-            campaigns.append(
-                CampaignBuilder.from_cluster(cluster, created_by=created_by)
-            )
+            campaigns.append(CampaignBuilder.from_cluster(cluster, created_by=created_by))
         return campaigns
 
     @staticmethod

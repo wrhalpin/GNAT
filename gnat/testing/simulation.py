@@ -25,10 +25,11 @@ Simulation primitives for GNAT pipeline tests.
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
+from gnat.agents.governor import AgentAction, AgentGovernor
 from gnat.clients.base import BaseClient, GNATClientError
-from gnat.agents.governor import AgentAction, AgentGovernor, RateLimitExceeded
 from gnat.policy.models import AgentActionType
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # SimulationConnector
 # ---------------------------------------------------------------------------
+
 
 class SimulationConnector(BaseClient):
     """
@@ -99,9 +101,7 @@ class SimulationConnector(BaseClient):
         self._index: dict[str, dict[str, Any]] = {
             obj.get("id", ""): obj for obj in self._fixtures if obj.get("id")
         }
-        logger.debug(
-            "SimulationConnector: loaded %d fixtures", len(self._fixtures)
-        )
+        logger.debug("SimulationConnector: loaded %d fixtures", len(self._fixtures))
 
     # ── ConnectorMixin-compatible interface ────────────────────────────────────
 
@@ -138,7 +138,7 @@ class SimulationConnector(BaseClient):
             results = [f for f in results if f.get("type") == stix_type]
         # Simple pagination
         start = (page - 1) * page_size
-        return results[start: start + page_size]
+        return results[start : start + page_size]
 
     def get_object(self, stix_id: str) -> dict[str, Any] | None:
         """Return the fixture with matching STIX id, or ``None``."""
@@ -148,9 +148,7 @@ class SimulationConnector(BaseClient):
         """Add or replace a fixture by STIX id."""
         stix_id = stix_dict.get("id", "")
         self._index[stix_id] = stix_dict
-        existing = next(
-            (i for i, f in enumerate(self._fixtures) if f.get("id") == stix_id), None
-        )
+        existing = next((i for i, f in enumerate(self._fixtures) if f.get("id") == stix_id), None)
         if existing is not None:
             self._fixtures[existing] = stix_dict
         else:
@@ -183,8 +181,7 @@ class SimulationConnector(BaseClient):
     def _request(self, method: str, path: str, **kwargs: Any) -> Any:  # type: ignore[override]
         if self._raise_on_request:
             raise GNATClientError(
-                f"SimulationConnector: _request blocked (raise_on_request=True) "
-                f"— {method} {path}"
+                f"SimulationConnector: _request blocked (raise_on_request=True) — {method} {path}"
             )
         # Budget deduction still applies
         if self._context is not None:
@@ -198,6 +195,7 @@ class SimulationConnector(BaseClient):
 # ---------------------------------------------------------------------------
 # ReplayRunner
 # ---------------------------------------------------------------------------
+
 
 class ReplayRunner:
     """
@@ -255,9 +253,7 @@ class ReplayRunner:
         if expected_stix_ids:
             produced_ids = {o.get("id") for o in all_output}
             missing = [sid for sid in expected_stix_ids if sid not in produced_ids]
-            assert not missing, (
-                f"ReplayRunner: expected STIX IDs not produced: {missing}"
-            )
+            assert not missing, f"ReplayRunner: expected STIX IDs not produced: {missing}"
 
         logger.info(
             "ReplayRunner: replayed %d contexts, produced %d objects",
@@ -271,6 +267,7 @@ class ReplayRunner:
 # AgentTestHarness
 # ---------------------------------------------------------------------------
 
+
 class _MockReviewService:
     """Minimal ReviewService stub that auto-approves everything."""
 
@@ -279,12 +276,14 @@ class _MockReviewService:
             """Initialize _MockItem."""
             import uuid
             from datetime import datetime, timezone
+
             self.id = str(uuid.uuid4())
             self.submitted_by = agent_id
             self.submitted_at = datetime.now(timezone.utc)
 
             class _Status:
                 value = "approved"
+
             # Use simple string-compatible status
             self.status = "approved"
 
@@ -306,6 +305,7 @@ class _MockReviewService:
         """Get."""
         item = self._MockItem("")
         from gnat.review.models import ReviewStatus
+
         item.status = ReviewStatus.APPROVED
         return item
 
@@ -355,6 +355,7 @@ class AgentTestHarness:
         )
 
         from gnat.agents.hitl import HITLGateway
+
         self.hitl = HITLGateway(
             review_service=_MockReviewService(),  # type: ignore[arg-type]
             approval_timeout_seconds=86400,  # 24h — tests won't time out

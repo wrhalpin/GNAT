@@ -29,33 +29,27 @@ class RuleEnginePolicy:
             return policy
 
         known_keys = {
-            "enabled", "rules_dir", "ai_confidence_ceiling",
-            "minimum_evidence_for_support", "stale_days_default",
-            "fresh_days_default", "allow_dirty_rules",
+            "enabled",
+            "rules_dir",
+            "ai_confidence_ceiling",
+            "minimum_evidence_for_support",
+            "stale_days_default",
+            "fresh_days_default",
+            "allow_dirty_rules",
         }
         for key in config.options("rules"):
             if key not in known_keys and key != "engine":
                 logger.info("Unknown key in [rules] config: %s", key)
 
-        policy.rule_evaluation_enabled = config.getboolean(
-            "rules", "enabled", fallback=False
-        )
+        policy.rule_evaluation_enabled = config.getboolean("rules", "enabled", fallback=False)
         policy.rules_dir = config.get("rules", "rules_dir", fallback="rules")
-        policy.ai_confidence_ceiling = config.getint(
-            "rules", "ai_confidence_ceiling", fallback=60
-        )
+        policy.ai_confidence_ceiling = config.getint("rules", "ai_confidence_ceiling", fallback=60)
         policy.minimum_evidence_for_support = config.getint(
             "rules", "minimum_evidence_for_support", fallback=3
         )
-        policy.stale_days_default = config.getint(
-            "rules", "stale_days_default", fallback=30
-        )
-        policy.fresh_days_default = config.getint(
-            "rules", "fresh_days_default", fallback=7
-        )
-        policy.allow_dirty_rules = config.getboolean(
-            "rules", "allow_dirty_rules", fallback=False
-        )
+        policy.stale_days_default = config.getint("rules", "stale_days_default", fallback=30)
+        policy.fresh_days_default = config.getint("rules", "fresh_days_default", fallback=7)
+        policy.allow_dirty_rules = config.getboolean("rules", "allow_dirty_rules", fallback=False)
 
         if os.environ.get("GNAT_ALLOW_DIRTY_RULES") == "1":
             policy.allow_dirty_rules = True

@@ -42,10 +42,10 @@ Quick start::
 from gnat.policy.engine import PolicyEngine
 from gnat.policy.middleware import build_audit_middleware
 from gnat.policy.models import (
+    ROLE_PERMISSIONS,
     AgentActionType,
     Permission,
     Role,
-    ROLE_PERMISSIONS,
     agent_can_act,
     permissions_for,
     roles_with,

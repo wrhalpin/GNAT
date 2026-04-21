@@ -98,9 +98,7 @@ class RunZeroClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Bearer header from the configured export token."""
         if not self.export_token:
-            raise GNATClientError(
-                "runZero connector requires export_token in config."
-            )
+            raise GNATClientError("runZero connector requires export_token in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.export_token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -131,13 +129,9 @@ class RunZeroClient(BaseClient, ConnectorMixin):
         elif stix_type == "vulnerability":
             resp = self.get(f"/api/v1.0/org/vulnerabilities/{object_id}")
         else:
-            raise GNATClientError(
-                f"runZero get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"runZero get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"runZero returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"runZero returned unexpected payload for {object_id!r}")
         return resp
 
     def list_objects(
@@ -172,9 +166,7 @@ class RunZeroClient(BaseClient, ConnectorMixin):
         elif stix_type == "vulnerability":
             resp = self.get("/api/v1.0/export/org/vulnerabilities.json", params=params)
         else:
-            raise GNATClientError(
-                f"runZero list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"runZero list_objects does not support stix_type={stix_type!r}")
 
         items: list[dict[str, Any]]
         if isinstance(resp, list):
@@ -192,25 +184,17 @@ class RunZeroClient(BaseClient, ConnectorMixin):
         start = max(0, (int(page) - 1) * int(page_size))
         return tagged[start : start + int(page_size)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """runZero connector is read-only."""
-        raise GNATClientError(
-            "runZero connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("runZero connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """runZero connector is read-only."""
-        raise GNATClientError(
-            "runZero connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("runZero connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def export_assets(
-        self, search: str = "", site: str = ""
-    ) -> list[dict[str, Any]]:
+    def export_assets(self, search: str = "", site: str = "") -> list[dict[str, Any]]:
         """Return the asset export, optionally filtered by search or site."""
         filters: dict[str, Any] = {}
         if search:
@@ -303,16 +287,9 @@ def _asset_to_observed_data(asset: dict[str, Any]) -> dict[str, Any]:
             refs.append(f"software--{sw_uuid}")
 
     first = (
-        asset.get("first_seen")
-        or asset.get("detected_at")
-        or asset.get("created_at")
-        or utcnow()
+        asset.get("first_seen") or asset.get("detected_at") or asset.get("created_at") or utcnow()
     )
-    last = (
-        asset.get("last_seen")
-        or asset.get("updated_at")
-        or first
-    )
+    last = asset.get("last_seen") or asset.get("updated_at") or first
 
     envelope = make_observed_data_envelope(
         first_observed=first,
@@ -346,9 +323,7 @@ def _software_to_stix(sw: dict[str, Any]) -> dict[str, Any]:
     version = sw.get("version") or ""
     cpe = sw.get("cpe") or ""
 
-    sw_uuid = uuid.uuid5(
-        _NAMESPACE_RUNZERO, f"software|{vendor}|{name}|{version}"
-    )
+    sw_uuid = uuid.uuid5(_NAMESPACE_RUNZERO, f"software|{vendor}|{name}|{version}")
     return {
         "type": "software",
         "id": f"software--{sw_uuid}",
@@ -391,9 +366,7 @@ def _vulnerability_to_stix(vuln: dict[str, Any]) -> dict[str, Any]:
         elif "CVSS:2" in cvss_vector:
             version = "2.0"
         external_refs.append(
-            cvss_to_external_reference(
-                cvss_vector, cvss_score=cvss_score, cvss_version=version
-            )
+            cvss_to_external_reference(cvss_vector, cvss_score=cvss_score, cvss_version=version)
         )
 
     return {

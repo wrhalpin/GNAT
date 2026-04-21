@@ -4,29 +4,31 @@ from __future__ import annotations
 
 import pytest
 
-
 # ── Plugin capability & base ──────────────────────────────────────────────────
+
 
 def test_plugin_capability_values():
     from gnat.plugins.base import PluginCapability
+
     assert PluginCapability.CONNECTOR == "connector"
-    assert PluginCapability.READER    == "reader"
-    assert PluginCapability.MAPPER    == "mapper"
-    assert PluginCapability.AGENT     == "agent"
-    assert PluginCapability.REPORTER  == "reporter"
-    assert PluginCapability.HOOK      == "hook"
+    assert PluginCapability.READER == "reader"
+    assert PluginCapability.MAPPER == "mapper"
+    assert PluginCapability.AGENT == "agent"
+    assert PluginCapability.REPORTER == "reporter"
+    assert PluginCapability.HOOK == "hook"
 
 
 def test_gnat_plugin_abc_requires_register():
+
     from gnat.plugins.base import GNATPlugin, PluginCapability
-    import abc
 
     with pytest.raises(TypeError):
         # Cannot instantiate abstract class without register()
         class BadPlugin(GNATPlugin):
-            name         = "bad"
-            version      = "0.0"
+            name = "bad"
+            version = "0.0"
             capabilities = [PluginCapability.HOOK]
+
         BadPlugin()
 
 
@@ -35,15 +37,15 @@ def test_concrete_plugin_registers():
     from gnat.plugins.registry import PluginRegistry
 
     class MyPlugin(GNATPlugin):
-        name         = "my-plugin"
-        version      = "1.0"
+        name = "my-plugin"
+        version = "1.0"
         capabilities = [PluginCapability.HOOK]
-        description  = "Test plugin"
+        description = "Test plugin"
 
         def register(self, registry):
             registry.hooks.register("test_event", lambda **kw: "ok")
 
-    plugin   = MyPlugin()
+    plugin = MyPlugin()
     registry = PluginRegistry()
     registry.load(plugin)
 
@@ -57,8 +59,12 @@ def test_duplicate_plugin_is_skipped():
     from gnat.plugins.registry import PluginRegistry
 
     class P(GNATPlugin):
-        name = "dup"; version = "1.0"; capabilities = [PluginCapability.HOOK]
-        def register(self, _): pass
+        name = "dup"
+        version = "1.0"
+        capabilities = [PluginCapability.HOOK]
+
+        def register(self, _):
+            pass
 
     registry = PluginRegistry()
     registry.load(P())
@@ -68,12 +74,16 @@ def test_duplicate_plugin_is_skipped():
 
 
 def test_unload_plugin():
-    from gnat.plugins.base import GNATPlugin, PluginCapability
+    from gnat.plugins.base import GNATPlugin
     from gnat.plugins.registry import PluginRegistry
 
     class P(GNATPlugin):
-        name = "rm-me"; version = "1.0"; capabilities = []
-        def register(self, _): pass
+        name = "rm-me"
+        version = "1.0"
+        capabilities = []
+
+        def register(self, _):
+            pass
 
     registry = PluginRegistry()
     registry.load(P())
@@ -85,10 +95,12 @@ def test_unload_plugin():
 
 # ── HookBus ────────────────────────────────────────────────────────────────────
 
+
 def test_hook_bus_emit_and_receive():
     from gnat.plugins.hooks import HookBus
-    bus    = HookBus()
-    calls  = []
+
+    bus = HookBus()
+    calls = []
 
     bus.register("my_event", lambda **kw: calls.append(kw))
     bus.emit("my_event", a=1, b=2)
@@ -99,8 +111,9 @@ def test_hook_bus_emit_and_receive():
 
 def test_hook_bus_multiple_handlers():
     from gnat.plugins.hooks import HookBus
-    bus    = HookBus()
-    log    = []
+
+    bus = HookBus()
+    log = []
 
     bus.register("ev", lambda **kw: log.append("h1"))
     bus.register("ev", lambda **kw: log.append("h2"))
@@ -111,6 +124,7 @@ def test_hook_bus_multiple_handlers():
 
 def test_hook_bus_decorator():
     from gnat.plugins.hooks import HookBus
+
     bus = HookBus()
     log = []
 
@@ -124,10 +138,13 @@ def test_hook_bus_decorator():
 
 def test_hook_bus_unregister():
     from gnat.plugins.hooks import HookBus
+
     bus = HookBus()
     log = []
 
-    def h(**kw): log.append(1)
+    def h(**kw):
+        log.append(1)
+
     bus.register("ev", h)
     bus.unregister("ev", h)
     bus.emit("ev")
@@ -137,6 +154,7 @@ def test_hook_bus_unregister():
 
 def test_hook_bus_handler_exception_is_swallowed():
     from gnat.plugins.hooks import HookBus
+
     bus = HookBus()
 
     def bad_handler(**kw):
@@ -150,6 +168,7 @@ def test_hook_bus_handler_exception_is_swallowed():
 
 def test_hook_bus_clear():
     from gnat.plugins.hooks import HookBus
+
     bus = HookBus()
     bus.register("a", lambda **kw: None)
     bus.register("b", lambda **kw: None)
@@ -162,12 +181,14 @@ def test_hook_bus_clear():
 
 def test_hook_bus_emit_no_handlers_returns_empty():
     from gnat.plugins.hooks import HookBus
+
     bus = HookBus()
     assert bus.emit("nonexistent_event") == []
 
 
 def test_known_events_exported():
     from gnat.plugins.hooks import KNOWN_EVENTS
+
     assert "pre_ingest" in KNOWN_EVENTS
     assert "post_ingest" in KNOWN_EVENTS
     assert "plugin_loaded" in KNOWN_EVENTS
@@ -175,8 +196,10 @@ def test_known_events_exported():
 
 # ── PluginRegistry helpers ────────────────────────────────────────────────────
 
+
 def test_registry_register_connector():
     from gnat.plugins.registry import PluginRegistry
+
     registry = PluginRegistry()
     import gnat.clients as _clients
 
@@ -191,6 +214,7 @@ def test_registry_register_connector():
 
 def test_plugins_init_exports():
     from gnat import plugins
+
     assert hasattr(plugins, "GNATPlugin")
     assert hasattr(plugins, "HookBus")
     assert hasattr(plugins, "PluginRegistry")

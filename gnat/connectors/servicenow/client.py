@@ -294,9 +294,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         resp = self.post(f"{self._TABLE_BASE}/incident", json=payload)
         return _extract_sn_record(resp)
 
-    def list_change_requests(
-        self, state: str = "", limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_change_requests(self, state: str = "", limit: int = 100) -> list[dict[str, Any]]:
         """List rows from the ``change_request`` table."""
         params: dict[str, Any] = {"sysparm_limit": int(limit)}
         if state:
@@ -341,9 +339,7 @@ class ServiceNowClient(BaseClient, ConnectorMixin):
         resp = self.get(f"{self._TABLE_BASE}/cmdb_ci/{sys_id}")
         return _extract_sn_record(resp)
 
-    def list_cmdb_ci_by_name(
-        self, name: str, limit: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_cmdb_ci_by_name(self, name: str, limit: int = 100) -> list[dict[str, Any]]:
         """Find CMDB configuration items by display name substring."""
         return self.query_table(
             "cmdb_ci",

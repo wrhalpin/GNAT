@@ -326,9 +326,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
 
     # ── InsightVM — Assets ────────────────────────────────────────────────────
 
-    def list_assets(
-        self, page: int = 1, page_size: int = 100
-    ) -> list[dict[str, Any]]:
+    def list_assets(self, page: int = 1, page_size: int = 100) -> list[dict[str, Any]]:
         """List discovered assets in InsightVM."""
         resp = self.get(
             "/vm/v4/integration/assets",
@@ -375,7 +373,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
             "match": "all",
         }
         resp = self.post(
-            f"/vm/v4/integration/assets/search?page={page-1}&size={page_size}",
+            f"/vm/v4/integration/assets/search?page={page - 1}&size={page_size}",
             json=payload,
         )
         return resp.get("data", []) if isinstance(resp, dict) else []
@@ -497,9 +495,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
 
     # ── Threat Command — Threat actors ────────────────────────────────────────
 
-    def list_threat_actors(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def list_threat_actors(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """List Threat Command threat actor profiles."""
         resp = self.get(
             "/public/v2/threat-actors",
@@ -541,9 +537,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
 
     # ── Threat Command — Alerts (dark web / brand) ───────────────────────────
 
-    def list_dark_web_alerts(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def list_dark_web_alerts(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """List dark web mention alerts from Threat Command."""
         resp = self.get(
             "/public/v2/data/alerts",
@@ -551,9 +545,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         )
         return resp.get("content", []) if isinstance(resp, dict) else []
 
-    def list_brand_alerts(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    def list_brand_alerts(self, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """List brand protection alerts from Threat Command."""
         resp = self.get(
             "/public/v2/data/alerts",
@@ -566,9 +558,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
         resp = self.get(f"/public/v2/data/alerts/{alert_id}")
         return resp if isinstance(resp, dict) else {}
 
-    def update_alert_status(
-        self, alert_id: str, status: str, comment: str = ""
-    ) -> dict[str, Any]:
+    def update_alert_status(self, alert_id: str, status: str, comment: str = "") -> dict[str, Any]:
         """
         Update the status of a Threat Command alert.
 
@@ -582,9 +572,7 @@ class Rapid7Client(BaseClient, ConnectorMixin):
 
     # ── Threat Command — Intelligence search ─────────────────────────────────
 
-    def search_intelligence(
-        self, query: str, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    def search_intelligence(self, query: str, limit: int = 50) -> list[dict[str, Any]]:
         """Free-text search across all Threat Command intelligence types."""
         resp = self.get(
             "/public/v2/search",

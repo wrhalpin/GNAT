@@ -113,7 +113,7 @@ def register_peer(request: Request, body: dict[str, Any]) -> Any:
     - ``workspace_filter``      (list[str], optional) — explicit workspaces to sync
     - ``enabled``               (bool, optional, default ``True``)
     """
-    from gnat.federation.peer import FederationPeer, PeerRegistry
+    from gnat.federation.peer import PeerRegistry
 
     registry: PeerRegistry = _registry(request)
 

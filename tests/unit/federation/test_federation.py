@@ -16,7 +16,6 @@ Covers:
 
 from __future__ import annotations
 
-import json
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -26,7 +25,6 @@ import pytest
 from gnat.federation.peer import FederationPeer, PeerRegistry
 from gnat.federation.sync import FederationError, PeerSyncService, PullResult, PushResult
 from gnat.federation.topology import FederationTopology
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -109,8 +107,12 @@ class TestFederationPeer:
 class TestPeerRegistry:
     def test_register_and_get(self):
         reg = _registry()
-        reg.register("peer-a", taxii_url="https://a.example.com/taxii2/", api_key="k",
-                     workspace_filter=["ws1"])
+        reg.register(
+            "peer-a",
+            taxii_url="https://a.example.com/taxii2/",
+            api_key="k",
+            workspace_filter=["ws1"],
+        )
         peer = reg.get("peer-a")
         assert peer is not None
         assert peer.peer_id == "peer-a"
@@ -155,8 +157,12 @@ class TestPeerRegistry:
     def test_persistence_across_instances(self, tmp_path):
         path = str(tmp_path / "peers.json")
         reg1 = PeerRegistry(registry_path=path)
-        reg1.register("saved-peer", taxii_url="https://saved.example.com/taxii2/", api_key="k",
-                      workspace_filter=["ws1"])
+        reg1.register(
+            "saved-peer",
+            taxii_url="https://saved.example.com/taxii2/",
+            api_key="k",
+            workspace_filter=["ws1"],
+        )
 
         reg2 = PeerRegistry(registry_path=path)
         peer = reg2.get("saved-peer")
@@ -269,7 +275,12 @@ class TestSyncFromPeer:
 
         mock_connector = MagicMock()
         mock_connector.fetch_objects.return_value = [
-            {"type": "indicator", "id": "indicator--1", "x_tlp": "green", "modified": "2025-01-01T00:00:00Z"},
+            {
+                "type": "indicator",
+                "id": "indicator--1",
+                "x_tlp": "green",
+                "modified": "2025-01-01T00:00:00Z",
+            },
         ]
         with patch.object(svc, "_make_connector", return_value=mock_connector):
             result = svc.sync_from_peer(peer)
@@ -285,7 +296,12 @@ class TestSyncFromPeer:
 
         mock_connector = MagicMock()
         mock_connector.fetch_objects.return_value = [
-            {"type": "indicator", "id": "indicator--1", "x_tlp": "amber", "modified": "2025-01-01T00:00:00Z"},
+            {
+                "type": "indicator",
+                "id": "indicator--1",
+                "x_tlp": "amber",
+                "modified": "2025-01-01T00:00:00Z",
+            },
         ]
         with patch.object(svc, "_make_connector", return_value=mock_connector):
             result = svc.sync_from_peer(peer)
@@ -387,14 +403,26 @@ class TestFederationTopology:
     def reg(self):
         r = _registry()
         # parent has max_tlp="green" so topology default rules apply
-        r.register("parent", taxii_url="https://parent.example.com/taxii2/", api_key="k",
-                   max_tlp="green")
-        r.register("child-a", taxii_url="https://child-a.example.com/taxii2/", api_key="k",
-                   parent_peer_id="parent", max_tlp="green")
-        r.register("child-b", taxii_url="https://child-b.example.com/taxii2/", api_key="k",
-                   parent_peer_id="parent", max_tlp="green")
-        r.register("mesh-peer", taxii_url="https://mesh.example.com/taxii2/", api_key="k",
-                   max_tlp="green")
+        r.register(
+            "parent", taxii_url="https://parent.example.com/taxii2/", api_key="k", max_tlp="green"
+        )
+        r.register(
+            "child-a",
+            taxii_url="https://child-a.example.com/taxii2/",
+            api_key="k",
+            parent_peer_id="parent",
+            max_tlp="green",
+        )
+        r.register(
+            "child-b",
+            taxii_url="https://child-b.example.com/taxii2/",
+            api_key="k",
+            parent_peer_id="parent",
+            max_tlp="green",
+        )
+        r.register(
+            "mesh-peer", taxii_url="https://mesh.example.com/taxii2/", api_key="k", max_tlp="green"
+        )
         return r
 
     @pytest.fixture
@@ -453,8 +481,13 @@ class TestFederationTopology:
 
     def test_effective_max_tlp_explicit_overrides(self, reg):
         # Set explicit max_tlp != green on child
-        reg.register("child-c", taxii_url="https://child-c.example.com/taxii2/", api_key="k",
-                     parent_peer_id="parent", max_tlp="amber")
+        reg.register(
+            "child-c",
+            taxii_url="https://child-c.example.com/taxii2/",
+            api_key="k",
+            parent_peer_id="parent",
+            max_tlp="amber",
+        )
         topo = FederationTopology(reg)
         # child-c explicitly set to amber → should win
         tlp = topo.effective_max_tlp("child-c", "parent")
@@ -464,10 +497,18 @@ class TestFederationTopology:
         """ancestors() raises ValueError when a cycle exists in parent chain."""
         reg = _registry()
         # We manually insert a cycle by registering then updating storage
-        reg.register("node-a", taxii_url="https://a.example.com/taxii2/", api_key="k",
-                     parent_peer_id="node-b")
-        reg.register("node-b", taxii_url="https://b.example.com/taxii2/", api_key="k",
-                     parent_peer_id="node-a")
+        reg.register(
+            "node-a",
+            taxii_url="https://a.example.com/taxii2/",
+            api_key="k",
+            parent_peer_id="node-b",
+        )
+        reg.register(
+            "node-b",
+            taxii_url="https://b.example.com/taxii2/",
+            api_key="k",
+            parent_peer_id="node-a",
+        )
         topo = FederationTopology(reg)
         with pytest.raises(ValueError, match="Cycle detected"):
             topo.ancestors("node-a")
@@ -503,12 +544,14 @@ class TestFederationScheduler:
         svc = PeerSyncService()
         sched = FederationScheduler(registry=reg, sync_service=svc)
 
-        with patch.dict("sys.modules", {"gnat.schedule.scheduler": None}):
+        import contextlib
+
+        with (
+            patch.dict("sys.modules", {"gnat.schedule.scheduler": None}),
             # When the module is explicitly None in sys.modules, importing it raises ImportError
-            try:
-                sched.start()
-            except (ImportError, AttributeError):
-                pass  # expected — FeedScheduler not available in unit test env
+            contextlib.suppress(ImportError, AttributeError),
+        ):
+            sched.start()  # expected — FeedScheduler not available in unit test env
 
     def test_trigger_raises_for_unknown_peer(self):
         from gnat.federation.scheduler import FederationScheduler

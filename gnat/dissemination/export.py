@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 
 class ExportFormat(str, Enum):
     """Supported export formats."""
+
     STIX = "stix"
-    PDF  = "pdf"
+    PDF = "pdf"
     JSON = "json"
 
 
@@ -60,20 +61,20 @@ class ExportResult:
         Timestamp of the export.
     """
 
-    report_id:   str
-    format:      ExportFormat
-    path:        str
-    size_bytes:  int
-    checksum:    str
+    report_id: str
+    format: ExportFormat
+    path: str
+    size_bytes: int
+    checksum: str
     exported_at: datetime
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "report_id":   self.report_id,
-            "format":      self.format.value,
-            "path":        self.path,
-            "size_bytes":  self.size_bytes,
-            "checksum":    self.checksum,
+            "report_id": self.report_id,
+            "format": self.format.value,
+            "path": self.path,
+            "size_bytes": self.size_bytes,
+            "checksum": self.checksum,
             "exported_at": self.exported_at.isoformat(),
         }
 
@@ -93,8 +94,8 @@ class ExportService:
 
     def export(
         self,
-        report_id:   str,
-        fmt:         ExportFormat,
+        report_id: str,
+        fmt: ExportFormat,
         output_path: str,
     ) -> ExportResult:
         """
@@ -148,7 +149,7 @@ class ExportService:
         if report.stix_bundle_json:
             content = report.stix_bundle_json.encode()
         else:
-            bundle  = report_to_stix_bundle(report)
+            bundle = report_to_stix_bundle(report)
             content = json.dumps(bundle, indent=2).encode()
 
         return self._write(report.id, ExportFormat.STIX, output_path, content)
@@ -164,20 +165,24 @@ class ExportService:
         Falls back to a plain-text representation if reportlab is not installed.
         """
         try:
-            from gnat.reports.renderers import PDFRenderer  # type: ignore[import]
+            from datetime import datetime
+            from datetime import timezone as _tz
+
             from gnat.reports.base import ReportDocument, ReportSection  # type: ignore[import]
-            from datetime import datetime, timezone as _tz
+            from gnat.reports.renderers import PDFRenderer  # type: ignore[import]
 
             _now = datetime.now(tz=_tz.utc)
             doc = ReportDocument(
-                title        = report.title,
-                report_type  = getattr(getattr(report, "report_type", None), "value", "finished_intelligence"),
-                period_start = _now,
-                period_end   = _now,
-                sections     = [
+                title=report.title,
+                report_type=getattr(
+                    getattr(report, "report_type", None), "value", "finished_intelligence"
+                ),
+                period_start=_now,
+                period_end=_now,
+                sections=[
                     ReportSection(
-                        title     = "Executive Summary",
-                        narrative = report.executive_summary or "(none)",
+                        title="Executive Summary",
+                        narrative=report.executive_summary or "(none)",
                     ),
                     *[
                         ReportSection(title=s.title, narrative=getattr(s, "content", ""))
@@ -191,18 +196,20 @@ class ExportService:
                 content = _fh.read()
             # Return early — file already written
             checksum = hashlib.sha256(content).hexdigest()
-            size     = len(content)
+            size = len(content)
             logger.info(
                 "ExportService: pdf exported to %s (%d bytes, sha256=%s…)",
-                output_path, size, checksum[:12],
+                output_path,
+                size,
+                checksum[:12],
             )
             return ExportResult(
-                report_id   = report.id,
-                format      = ExportFormat.PDF,
-                path        = output_path,
-                size_bytes  = size,
-                checksum    = checksum,
-                exported_at = datetime.now(tz=timezone.utc),
+                report_id=report.id,
+                format=ExportFormat.PDF,
+                path=output_path,
+                size_bytes=size,
+                checksum=checksum,
+                exported_at=datetime.now(tz=timezone.utc),
             )
         except ImportError:
             logger.warning(
@@ -213,10 +220,9 @@ class ExportService:
                 f"Type: {report.report_type.value}\n"
                 f"Status: {report.status.value}\n"
                 f"Classification: {report.classification.label}\n\n"
-                f"Executive Summary\n{'='*40}\n{report.executive_summary or '(none)'}\n\n"
+                f"Executive Summary\n{'=' * 40}\n{report.executive_summary or '(none)'}\n\n"
                 + "\n\n".join(
-                    f"{s.title}\n{'='*40}\n{s.content}"
-                    for s in report.ordered_sections
+                    f"{s.title}\n{'=' * 40}\n{s.content}" for s in report.ordered_sections
                 )
             )
             content = text.encode()
@@ -225,25 +231,28 @@ class ExportService:
 
     @staticmethod
     def _write(
-        report_id:   str,
-        fmt:         ExportFormat,
+        report_id: str,
+        fmt: ExportFormat,
         output_path: str,
-        content:     bytes,
+        content: bytes,
     ) -> ExportResult:
         with open(output_path, "wb") as fh:
             fh.write(content)
 
         checksum = hashlib.sha256(content).hexdigest()
-        size     = len(content)
+        size = len(content)
         logger.info(
             "ExportService: %s exported to %s (%d bytes, sha256=%s…)",
-            fmt.value, output_path, size, checksum[:12],
+            fmt.value,
+            output_path,
+            size,
+            checksum[:12],
         )
         return ExportResult(
-            report_id   = report_id,
-            format      = fmt,
-            path        = output_path,
-            size_bytes  = size,
-            checksum    = checksum,
-            exported_at = datetime.now(tz=timezone.utc),
+            report_id=report_id,
+            format=fmt,
+            path=output_path,
+            size_bytes=size,
+            checksum=checksum,
+            exported_at=datetime.now(tz=timezone.utc),
         )

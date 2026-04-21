@@ -58,6 +58,7 @@ def _svc(request: Request) -> Any:
 # List / stats
 # ---------------------------------------------------------------------------
 
+
 @router.get("")
 def list_review_items(
     request: Request,
@@ -89,10 +90,12 @@ def get_stats(request: Request) -> Any:
 # Single item
 # ---------------------------------------------------------------------------
 
+
 @router.get("/{item_id}")
 def get_item(item_id: str, request: Request) -> Any:
     """Get a review item by ID."""
     from gnat.review.service import ReviewError
+
     try:
         return _svc(request).get(item_id).to_dict()
     except ReviewError as exc:
@@ -102,6 +105,7 @@ def get_item(item_id: str, request: Request) -> Any:
 # ---------------------------------------------------------------------------
 # Submit
 # ---------------------------------------------------------------------------
+
 
 @router.post("")
 def submit_item(request: Request, body: dict[str, Any]) -> Any:
@@ -115,6 +119,7 @@ def submit_item(request: Request, body: dict[str, Any]) -> Any:
     - ``target_workspace`` (str, optional, default ``"_ctmsak_staging"``)
     """
     from gnat.review.service import ReviewError
+
     try:
         item = _svc(request).submit(
             stix_data=body.get("stix_data", {}),
@@ -131,8 +136,9 @@ def submit_item(request: Request, body: dict[str, Any]) -> Any:
 # Review actions
 # ---------------------------------------------------------------------------
 
+
 @router.post("/{item_id}/approve")
-def approve_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> Any:
+def approve_item(item_id: str, request: Request, body: dict[str, Any] | None = None) -> Any:
     """
     Approve a PENDING or MODIFIED item.
 
@@ -142,6 +148,8 @@ def approve_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> A
     - ``confidence_override`` (int, 0-100)
     """
     from gnat.review.service import ReviewError
+
+    body = body or {}
     try:
         item = _svc(request).approve(
             item_id,
@@ -155,7 +163,7 @@ def approve_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> A
 
 
 @router.post("/{item_id}/reject")
-def reject_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> Any:
+def reject_item(item_id: str, request: Request, body: dict[str, Any] | None = None) -> Any:
     """
     Reject a PENDING or MODIFIED item.
 
@@ -164,6 +172,8 @@ def reject_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> An
     - ``reason``      (str)
     """
     from gnat.review.service import ReviewError
+
+    body = body or {}
     try:
         item = _svc(request).reject(
             item_id,
@@ -176,7 +186,7 @@ def reject_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> An
 
 
 @router.post("/{item_id}/modify")
-def modify_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> Any:
+def modify_item(item_id: str, request: Request, body: dict[str, Any] | None = None) -> Any:
     """
     Record analyst modifications on a PENDING item (transitions to MODIFIED).
 
@@ -187,6 +197,8 @@ def modify_item(item_id: str, request: Request, body: dict[str, Any] = {}) -> An
     - ``confidence_override``  (int, optional)
     """
     from gnat.review.service import ReviewError
+
+    body = body or {}
     try:
         item = _svc(request).modify(
             item_id,
@@ -208,6 +220,7 @@ def promote_item(item_id: str, request: Request) -> Any:
     Requires a workspace manager attached to ``app.state.workspace_manager``.
     """
     from gnat.review.service import ReviewError
+
     workspace_manager = getattr(request.app.state, "workspace_manager", None)
     try:
         promoted = _svc(request).promote(item_id, workspace_manager=workspace_manager)

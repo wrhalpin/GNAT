@@ -136,6 +136,7 @@ class TrustLevelViolation(GNATClientError):
 
 # ── Active domain stack helpers ────────────────────────────────────────────────
 
+
 def _get_domain_stack() -> list[Domain]:
     """Return the thread-local domain stack, initialising if absent."""
     if not hasattr(_domain_stack, "stack"):
@@ -150,6 +151,7 @@ def _current_domain() -> Domain | None:
 
 
 # ── Decorators ─────────────────────────────────────────────────────────────────
+
 
 def domain_boundary(target_domain: Domain, allowed_callers: list[Domain] | None = None):
     """
@@ -261,9 +263,7 @@ def require_trust_level(minimum: str):
 
             if ctx is not None:
                 actual = getattr(ctx, "trust_level", "untrusted_external")
-                actual_rank = (
-                    _TRUST_ORDER.index(actual) if actual in _TRUST_ORDER else 0
-                )
+                actual_rank = _TRUST_ORDER.index(actual) if actual in _TRUST_ORDER else 0
                 if actual_rank < min_rank:
                     logger.warning(
                         "TrustLevelViolation in %s: required=%r actual=%r",

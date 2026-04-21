@@ -39,26 +39,26 @@ from enum import Enum
 class Role(str, Enum):
     """Analyst role granting a bundle of permissions."""
 
-    VIEWER          = "viewer"
-    ANALYST         = "analyst"
-    SENIOR_ANALYST  = "senior_analyst"
-    REVIEWER        = "reviewer"
-    ADMIN           = "admin"
+    VIEWER = "viewer"
+    ANALYST = "analyst"
+    SENIOR_ANALYST = "senior_analyst"
+    REVIEWER = "reviewer"
+    ADMIN = "admin"
 
 
 class Permission(str, Enum):
     """Granular permission checked by the policy engine."""
 
-    READ_INVESTIGATIONS   = "read_investigations"
-    WRITE_INVESTIGATIONS  = "write_investigations"
-    READ_REPORTS          = "read_reports"
-    SUBMIT_REPORTS        = "submit_reports"
-    APPROVE_REPORTS       = "approve_reports"
-    PUBLISH_REPORTS       = "publish_reports"
-    EXPORT_RED            = "export_red"
-    MANAGE_KEYS           = "manage_keys"
-    MANAGE_PLUGINS        = "manage_plugins"
-    WRITE_TAXII           = "write_taxii"
+    READ_INVESTIGATIONS = "read_investigations"
+    WRITE_INVESTIGATIONS = "write_investigations"
+    READ_REPORTS = "read_reports"
+    SUBMIT_REPORTS = "submit_reports"
+    APPROVE_REPORTS = "approve_reports"
+    PUBLISH_REPORTS = "publish_reports"
+    EXPORT_RED = "export_red"
+    MANAGE_KEYS = "manage_keys"
+    MANAGE_PLUGINS = "manage_plugins"
+    WRITE_TAXII = "write_taxii"
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
         Permission.APPROVE_REPORTS,
         Permission.WRITE_TAXII,
     },
-    Role.ADMIN: set(Permission),   # full access
+    Role.ADMIN: set(Permission),  # full access
 }
 
 
@@ -108,19 +108,20 @@ def roles_with(permission: Permission) -> list[Role]:
 # Agent permission matrix
 # ---------------------------------------------------------------------------
 
+
 class AgentActionType(str, Enum):
     """Action types that agents can request permission to perform."""
 
-    READ_STIX         = "read_stix"          # Read STIX objects from workspace
-    WRITE_STIX        = "write_stix"         # Create/modify STIX objects
-    DELETE_STIX       = "delete_stix"        # Remove STIX objects
-    ENRICH            = "enrich"             # Call connector enrichment
-    INGEST            = "ingest"             # Pull data from external sources
-    EXPORT            = "export"             # Push data to external systems
-    TRIGGER_PLAYBOOK  = "trigger_playbook"   # Fire SOAR playbook
-    MANAGE_WORKSPACE  = "manage_workspace"   # Create/delete workspaces
-    ESCALATE          = "escalate"           # Raise impact level / request human review
-    HYPOTHESIZE       = "hypothesize"        # Propose or evaluate hypotheses
+    READ_STIX = "read_stix"  # Read STIX objects from workspace
+    WRITE_STIX = "write_stix"  # Create/modify STIX objects
+    DELETE_STIX = "delete_stix"  # Remove STIX objects
+    ENRICH = "enrich"  # Call connector enrichment
+    INGEST = "ingest"  # Pull data from external sources
+    EXPORT = "export"  # Push data to external systems
+    TRIGGER_PLAYBOOK = "trigger_playbook"  # Fire SOAR playbook
+    MANAGE_WORKSPACE = "manage_workspace"  # Create/delete workspaces
+    ESCALATE = "escalate"  # Raise impact level / request human review
+    HYPOTHESIZE = "hypothesize"  # Propose or evaluate hypotheses
 
 
 # Default permission matrix: which action types are permitted per trust level

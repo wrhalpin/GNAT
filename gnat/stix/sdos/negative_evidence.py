@@ -29,7 +29,7 @@ Usage
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from gnat.orm.base import STIXBase, _utcnow
 from gnat.stix.version import CURRENT_SPEC_VERSION
@@ -65,7 +65,7 @@ class NegativeEvidenceRecord(STIXBase):
         queried_connector: str = "",
         ttl_seconds: int = 3600,
         query_timestamp: str | None = None,
-        client: Optional[Any] = None,
+        client: Any | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize NegativeEvidenceRecord."""
@@ -127,7 +127,7 @@ class NegativeEvidenceRecord(STIXBase):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], client: Optional[Any] = None) -> NegativeEvidenceRecord:
+    def from_dict(cls, data: dict[str, Any], client: Any | None = None) -> NegativeEvidenceRecord:
         """Deserialise from a STIX dict."""
         return cls(
             target_ref=data.get("target_ref", ""),

@@ -10723,7 +10723,9 @@ class TestDiscordClient:
     # ── health_check ─────────────────────────────────────────────────────
 
     def test_health_check_returns_true(self, client, monkeypatch):
-        monkeypatch.setattr(client, "get", MagicMock(return_value={"url": "wss://gateway.discord.gg/"}))
+        monkeypatch.setattr(
+            client, "get", MagicMock(return_value={"url": "wss://gateway.discord.gg/"})
+        )
         assert client.health_check() is True
 
     def test_health_check_raises_on_http_error(self, client, monkeypatch):
@@ -10734,16 +10736,24 @@ class TestDiscordClient:
     # ── get_object ────────────────────────────────────────────────────────
 
     def test_get_object_note_by_channel_message(self, client, monkeypatch):
-        msg = {"id": "123456789", "channel_id": "999", "content": "hello",
-               "author": {"id": "u1", "username": "alice"}}
+        msg = {
+            "id": "123456789",
+            "channel_id": "999",
+            "content": "hello",
+            "author": {"id": "u1", "username": "alice"},
+        }
         monkeypatch.setattr(client, "get", MagicMock(return_value=msg))
         result = client.get_object("note", "999:123456789")
         assert result["type"] == "note"
         assert result["content"] == "hello"
 
     def test_get_object_indicator_by_channel_message(self, client, monkeypatch):
-        msg = {"id": "777", "channel_id": "555", "content": "IOC: 1.2.3.4",
-               "author": {"id": "u2", "username": "bob"}}
+        msg = {
+            "id": "777",
+            "channel_id": "555",
+            "content": "IOC: 1.2.3.4",
+            "author": {"id": "u2", "username": "bob"},
+        }
         monkeypatch.setattr(client, "get", MagicMock(return_value=msg))
         result = client.get_object("indicator", "555:777")
         assert result["type"] == "note"
@@ -10753,7 +10763,13 @@ class TestDiscordClient:
             client.get_object("note", "no-colon-here")
 
     def test_get_object_observed_data_channel(self, client, monkeypatch):
-        channel = {"id": "chan1", "name": "intel", "topic": "IOC sharing", "type": 0, "guild_id": "g1"}
+        channel = {
+            "id": "chan1",
+            "name": "intel",
+            "topic": "IOC sharing",
+            "type": 0,
+            "guild_id": "g1",
+        }
         monkeypatch.setattr(client, "get", MagicMock(return_value=channel))
         result = client.get_object("observed-data", "chan1")
         assert result["type"] == "observed-data"
@@ -10774,10 +10790,18 @@ class TestDiscordClient:
 
     def test_list_objects_note_messages(self, client, monkeypatch):
         msgs = [
-            {"id": "1", "channel_id": "ch1", "content": "msg1",
-             "author": {"id": "u1", "username": "alice"}},
-            {"id": "2", "channel_id": "ch1", "content": "msg2",
-             "author": {"id": "u1", "username": "alice"}},
+            {
+                "id": "1",
+                "channel_id": "ch1",
+                "content": "msg1",
+                "author": {"id": "u1", "username": "alice"},
+            },
+            {
+                "id": "2",
+                "channel_id": "ch1",
+                "content": "msg2",
+                "author": {"id": "u1", "username": "alice"},
+            },
         ]
         monkeypatch.setattr(client, "get", MagicMock(return_value=msgs))
         result = client.list_objects("note", filters={"channel_id": "ch1"})
@@ -10789,8 +10813,14 @@ class TestDiscordClient:
             client.list_objects("note")
 
     def test_list_objects_observed_data_thread(self, client, monkeypatch):
-        msgs = [{"id": "10", "channel_id": "thread1", "content": "thread msg",
-                 "author": {"id": "u3", "username": "dave"}}]
+        msgs = [
+            {
+                "id": "10",
+                "channel_id": "thread1",
+                "content": "thread msg",
+                "author": {"id": "u3", "username": "dave"},
+            }
+        ]
         monkeypatch.setattr(client, "get", MagicMock(return_value=msgs))
         result = client.list_objects("observed-data", filters={"thread_id": "thread1"})
         assert len(result) == 1
@@ -10830,8 +10860,12 @@ class TestDiscordClient:
     # ── upsert_object ─────────────────────────────────────────────────────
 
     def test_upsert_object_posts_message(self, client, monkeypatch):
-        created = {"id": "new1", "channel_id": "ch1", "content": "Alert: 1.2.3.4",
-                   "author": {"id": "u1", "username": "bot"}}
+        created = {
+            "id": "new1",
+            "channel_id": "ch1",
+            "content": "Alert: 1.2.3.4",
+            "author": {"id": "u1", "username": "bot"},
+        }
         monkeypatch.setattr(client, "post", MagicMock(return_value=created))
         result = client.upsert_object("note", {"channel_id": "ch1", "content": "Alert: 1.2.3.4"})
         assert result["type"] == "note"
@@ -10867,8 +10901,12 @@ class TestDiscordClient:
     # ── Domain-specific helpers ───────────────────────────────────────────
 
     def test_post_message_helper(self, client, monkeypatch):
-        created = {"id": "99", "channel_id": "c1", "content": "test",
-                   "author": {"id": "b1", "username": "bot"}}
+        created = {
+            "id": "99",
+            "channel_id": "c1",
+            "content": "test",
+            "author": {"id": "b1", "username": "bot"},
+        }
         mock_post = MagicMock(return_value=created)
         monkeypatch.setattr(client, "post", mock_post)
         result = client.post_message("c1", "test")
@@ -10877,24 +10915,42 @@ class TestDiscordClient:
         assert call_body["content"] == "test"
 
     def test_post_message_with_thread_id(self, client, monkeypatch):
-        mock_post = MagicMock(return_value={"id": "100", "channel_id": "c1", "content": "x",
-                                             "author": {"id": "b1", "username": "bot"}})
+        mock_post = MagicMock(
+            return_value={
+                "id": "100",
+                "channel_id": "c1",
+                "content": "x",
+                "author": {"id": "b1", "username": "bot"},
+            }
+        )
         monkeypatch.setattr(client, "post", mock_post)
         client.post_message("c1", "x", thread_id="t1")
         body = mock_post.call_args[1]["json_body"]
         assert body["thread_id"] == "t1"
 
     def test_post_message_truncates_to_2000(self, client, monkeypatch):
-        mock_post = MagicMock(return_value={"id": "1", "channel_id": "c", "content": "x",
-                                             "author": {"id": "b", "username": "bot"}})
+        mock_post = MagicMock(
+            return_value={
+                "id": "1",
+                "channel_id": "c",
+                "content": "x",
+                "author": {"id": "b", "username": "bot"},
+            }
+        )
         monkeypatch.setattr(client, "post", mock_post)
         client.post_message("c", "A" * 3000)
         body = mock_post.call_args[1]["json_body"]
         assert len(body["content"]) == 2000
 
     def test_list_messages_helper(self, client, monkeypatch):
-        msgs = [{"id": "1", "channel_id": "ch", "content": "m",
-                 "author": {"id": "u", "username": "alice"}}]
+        msgs = [
+            {
+                "id": "1",
+                "channel_id": "ch",
+                "content": "m",
+                "author": {"id": "u", "username": "alice"},
+            }
+        ]
         monkeypatch.setattr(client, "get", MagicMock(return_value=msgs))
         result = client.list_messages("ch", limit=10)
         assert result == msgs
@@ -10945,11 +11001,17 @@ class TestDiscordClient:
     # ── to_stix ───────────────────────────────────────────────────────────
 
     def test_to_stix_message_fields(self, client):
-        msg = {"id": "1152921504606846976", "channel_id": "ch1",
-               "content": "suspicious domain: evil.com",
-               "author": {"id": "u1", "username": "alice"},
-               "timestamp": "2026-01-01T00:00:00.000000+00:00",
-               "attachments": [], "embeds": [], "mentions": [], "pinned": False}
+        msg = {
+            "id": "1152921504606846976",
+            "channel_id": "ch1",
+            "content": "suspicious domain: evil.com",
+            "author": {"id": "u1", "username": "alice"},
+            "timestamp": "2026-01-01T00:00:00.000000+00:00",
+            "attachments": [],
+            "embeds": [],
+            "mentions": [],
+            "pinned": False,
+        }
         stix = client.to_stix(msg)
         assert stix["type"] == "note"
         assert stix["spec_version"] == "2.1"
@@ -10959,15 +11021,28 @@ class TestDiscordClient:
         assert stix["x_discord"]["channel_id"] == "ch1"
 
     def test_to_stix_channel_produces_observed_data(self, client):
-        channel = {"_resource": "channel", "id": "c1", "name": "intel",
-                   "topic": "IOCs", "type": 0, "guild_id": "g1", "nsfw": False}
+        channel = {
+            "_resource": "channel",
+            "id": "c1",
+            "name": "intel",
+            "topic": "IOCs",
+            "type": 0,
+            "guild_id": "g1",
+            "nsfw": False,
+        }
         stix = client.to_stix(channel)
         assert stix["type"] == "observed-data"
         assert stix["x_discord"]["name"] == "intel"
 
     def test_to_stix_user_produces_identity(self, client):
-        user = {"_resource": "user", "id": "u1", "username": "alice",
-                "discriminator": "0001", "bot": False, "system": False}
+        user = {
+            "_resource": "user",
+            "id": "u1",
+            "username": "alice",
+            "discriminator": "0001",
+            "bot": False,
+            "system": False,
+        }
         stix = client.to_stix(user)
         assert stix["type"] == "identity"
         assert stix["identity_class"] == "individual"
@@ -10976,8 +11051,12 @@ class TestDiscordClient:
 
     def test_to_stix_message_abstract_truncated_to_256(self, client):
         long_content = "x" * 500
-        msg = {"id": "1", "channel_id": "ch", "content": long_content,
-               "author": {"id": "u", "username": "a"}}
+        msg = {
+            "id": "1",
+            "channel_id": "ch",
+            "content": long_content,
+            "author": {"id": "u", "username": "a"},
+        }
         stix = client.to_stix(msg)
         assert len(stix["abstract"]) == 256
 
@@ -11017,14 +11096,23 @@ class TestDiscordClient:
 
         assert "discord" in CLIENT_REGISTRY
         from gnat.connectors.discord.connector import DiscordClient
+
         assert CLIENT_REGISTRY["discord"] is DiscordClient
 
     # ── ConnectorMixin contract ───────────────────────────────────────────
 
     def test_capabilities_includes_standard_methods(self, client):
         caps = client.capabilities()
-        for method in ("authenticate", "health_check", "get_object", "list_objects",
-                        "upsert_object", "delete_object", "to_stix", "from_stix"):
+        for method in (
+            "authenticate",
+            "health_check",
+            "get_object",
+            "list_objects",
+            "upsert_object",
+            "delete_object",
+            "to_stix",
+            "from_stix",
+        ):
             assert method in caps
 
     def test_capabilities_includes_discord_helpers(self, client):
@@ -11048,12 +11136,14 @@ class TestDiscordClient:
 
     def test_snowflake_to_ts_known_id(self):
         from gnat.connectors.discord.connector import _snowflake_to_ts
+
         ts = _snowflake_to_ts("1152921504606846976")
         assert ts.endswith("Z")
         assert "T" in ts
 
     def test_snowflake_to_ts_invalid_returns_now(self):
         from gnat.connectors.discord.connector import _snowflake_to_ts
+
         ts = _snowflake_to_ts("not-a-number")
         assert ts.endswith("Z")
 
@@ -11120,7 +11210,9 @@ class TestDynatraceClient:
         result = client.list_entities(page_size=1)
         assert len(result) == 2
         # Second call must only pass nextPageKey + pageSize
-        second_call_params = client.get.call_args_list[1][1].get("params") or client.get.call_args_list[1][0][1]
+        second_call_params = (
+            client.get.call_args_list[1][1].get("params") or client.get.call_args_list[1][0][1]
+        )
         assert "entitySelector" not in second_call_params
         assert "nextPageKey" in second_call_params
 
@@ -11286,9 +11378,7 @@ class TestDynatraceClient:
         assert isinstance(result, list)
 
     def test_create_settings_object(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value=[{"objectId": "new-obj"}])
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value=[{"objectId": "new-obj"}]))
         result = client.create_settings_object(
             "builtin:alerting.profile", "environment", {"name": "GNAT Profile"}
         )
@@ -11382,7 +11472,10 @@ class TestDynatraceClient:
 
     def test_to_stix_attack_maps_severity_to_confidence(self, client):
         for severity, expected_confidence in [
-            ("critical", 90), ("high", 75), ("medium", 55), ("low", 35)
+            ("critical", 90),
+            ("high", 75),
+            ("medium", 55),
+            ("low", 35),
         ]:
             attack = {
                 "attackId": f"A-{severity}",
@@ -11438,9 +11531,7 @@ class TestDynatraceClient:
     # ── ConnectorMixin CRUD routing ──────────────────────────────────────
 
     def test_get_object_routes_by_stix_type(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"entityId": "HOST-1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"entityId": "HOST-1"}))
         result = client.get_object("infrastructure", "HOST-1")
         assert result["entityId"] == "HOST-1"
 
@@ -11506,11 +11597,13 @@ class TestIPAPIClient:
     @pytest.fixture()
     def client(self):
         from gnat.connectors.ip_api.client import IPAPIClient
+
         return IPAPIClient()
 
     @pytest.fixture()
     def pro_client(self):
         from gnat.connectors.ip_api.client import IPAPIClient
+
         return IPAPIClient(
             host="https://pro.ip-api.com",
             api_key="TESTPROKEY",
@@ -11533,9 +11626,7 @@ class TestIPAPIClient:
         assert client.health_check() is True
 
     def test_health_check_returns_false_on_api_fail(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "lookup_ip", MagicMock(side_effect=GNATClientError("fail"))
-        )
+        monkeypatch.setattr(client, "lookup_ip", MagicMock(side_effect=GNATClientError("fail")))
         assert client.health_check() is False
 
     def test_health_check_returns_false_on_http_error(self, client, monkeypatch):
@@ -11554,7 +11645,9 @@ class TestIPAPIClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(return_value={"status": "fail", "message": "private range", "query": "192.168.1.1"}),
+            MagicMock(
+                return_value={"status": "fail", "message": "private range", "query": "192.168.1.1"}
+            ),
         )
         with pytest.raises(GNATClientError, match="private range"):
             client.lookup_ip("192.168.1.1")
@@ -11649,9 +11742,17 @@ class TestIPAPIClient:
     def test_to_stix_all_x_ipapi_fields_present(self, client):
         stix = client.to_stix(self._GEO_SUCCESS)
         for field in (
-            "x_ipapi_country", "x_ipapi_country_code", "x_ipapi_region",
-            "x_ipapi_city", "x_ipapi_lat", "x_ipapi_lon", "x_ipapi_isp",
-            "x_ipapi_org", "x_ipapi_as", "x_ipapi_timezone", "x_ipapi_query",
+            "x_ipapi_country",
+            "x_ipapi_country_code",
+            "x_ipapi_region",
+            "x_ipapi_city",
+            "x_ipapi_lat",
+            "x_ipapi_lon",
+            "x_ipapi_isp",
+            "x_ipapi_org",
+            "x_ipapi_as",
+            "x_ipapi_timezone",
+            "x_ipapi_query",
         ):
             assert field in stix, f"Missing field: {field}"
         assert stix["x_ipapi_country"] == "United States"
@@ -11691,18 +11792,14 @@ class TestIPAPIClient:
             client.get_object("indicator", "8.8.8.8")
 
     def test_list_objects_uses_ips_filter(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "lookup_many", MagicMock(return_value=[self._GEO_SUCCESS])
-        )
+        monkeypatch.setattr(client, "lookup_many", MagicMock(return_value=[self._GEO_SUCCESS]))
         result = client.list_objects("observed-data", filters={"ips": ["8.8.8.8"]})
         assert isinstance(result, list)
         assert result[0]["type"] == "observed-data"
         client.lookup_many.assert_called_once_with(["8.8.8.8"])
 
     def test_list_objects_uses_single_ip_filter(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "lookup_many", MagicMock(return_value=[self._GEO_SUCCESS])
-        )
+        monkeypatch.setattr(client, "lookup_many", MagicMock(return_value=[self._GEO_SUCCESS]))
         result = client.list_objects("observed-data", filters={"ip": "8.8.8.8"})
         assert isinstance(result, list)
         client.lookup_many.assert_called_once_with(["8.8.8.8"])
@@ -11778,9 +11875,7 @@ class TestMitreAttackClient:
             {"type": "attack-pattern", "id": "attack-pattern--a", "name": "Spearphish"},
             {"type": "attack-pattern", "id": "attack-pattern--b", "name": "Credential Access"},
         ]
-        out = client.list_objects(
-            "attack-pattern", filters={"name_contains": "phish"}
-        )
+        out = client.list_objects("attack-pattern", filters={"name_contains": "phish"})
         assert len(out) == 1
         assert "Spearphish" in out[0]["name"]
 
@@ -11794,9 +11889,7 @@ class TestMitreAttackClient:
             {
                 "type": "attack-pattern",
                 "id": "attack-pattern--aaaa",
-                "external_references": [
-                    {"source_name": "mitre-attack", "external_id": "T1055"}
-                ],
+                "external_references": [{"source_name": "mitre-attack", "external_id": "T1055"}],
             }
         ]
         obj = client.get_object("attack-pattern", "T1055")
@@ -11990,9 +12083,7 @@ class TestAbuseChClient:
 
     def test_to_stix_infers_feed(self, client):
         # No _feed marker; shape hints at feodo
-        stix = client.to_stix(
-            {"ip_address": "1.1.1.1", "as_number": 1, "malware": "x"}
-        )
+        stix = client.to_stix({"ip_address": "1.1.1.1", "as_number": 1, "malware": "x"})
         assert stix["x_feodotracker"]["ip_address"] == "1.1.1.1"
 
     def test_from_stix_is_noop(self, client):
@@ -12174,9 +12265,7 @@ class TestVulnCheckClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"cve": "CVE-2024-0001", "description": "x"}]}
-            ),
+            MagicMock(return_value={"data": [{"cve": "CVE-2024-0001", "description": "x"}]}),
         )
         obj = client.get_object("vulnerability", "CVE-2024-0001")
         assert obj["cve"] == "CVE-2024-0001"
@@ -12239,9 +12328,7 @@ class TestVulnCheckClient:
         assert "read-only" in out["note"]
 
     def test_get_kev_helper(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"data": [{"cve": "CVE-X"}]})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": [{"cve": "CVE-X"}]}))
         rec = client.get_kev("CVE-X")
         assert rec["cve"] == "CVE-X"
 
@@ -12358,9 +12445,7 @@ class TestCloudflareIntelClient:
         assert obj["_cf_kind"] == "indicator"
 
     def test_get_object_ipv4_dispatches(self, client, monkeypatch):
-        stub = MagicMock(
-            return_value={"result": {"ipv4": "1.2.3.4", "risk_score": 40}}
-        )
+        stub = MagicMock(return_value={"result": {"ipv4": "1.2.3.4", "risk_score": 40}})
         monkeypatch.setattr(client, "get", stub)
         obj = client.get_object("indicator", "1.2.3.4")
         assert obj["ipv4"] == "1.2.3.4"
@@ -12602,18 +12687,14 @@ class TestRunZeroClient:
     def client(self):
         from gnat.connectors.runzero.client import RunZeroClient
 
-        c = RunZeroClient(
-            host="https://console.runzero.com", export_token="rZ_test"
-        )
+        c = RunZeroClient(host="https://console.runzero.com", export_token="rZ_test")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.runzero.client import RunZeroClient
 
-        c = RunZeroClient(
-            host="https://console.runzero.com", export_token="rZ_test"
-        )
+        c = RunZeroClient(host="https://console.runzero.com", export_token="rZ_test")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer rZ_test"
 
@@ -12850,9 +12931,7 @@ class TestSecurityTrailsClient:
             "get",
             MagicMock(
                 return_value={
-                    "records": [
-                        {"values": [{"ip": "1.2.3.4"}], "first_seen": "2020-01-01"}
-                    ]
+                    "records": [{"values": [{"ip": "1.2.3.4"}], "first_seen": "2020-01-01"}]
                 }
             ),
         )
@@ -13031,9 +13110,7 @@ class TestDomainToolsClient:
         assert stix["value"] == "example.com"
 
     def test_to_stix_ipv4(self, client):
-        stix = client.to_stix(
-            {"_dt_kind": "ipv4-addr", "ip_address": "1.2.3.4"}
-        )
+        stix = client.to_stix({"_dt_kind": "ipv4-addr", "ip_address": "1.2.3.4"})
         _assert_stix_contract(stix)
         assert stix["type"] == "ipv4-addr"
         assert stix["value"] == "1.2.3.4"
@@ -13102,9 +13179,7 @@ class TestSilentPushClient:
         monkeypatch.setattr(
             client,
             "post",
-            MagicMock(
-                return_value={"response": {"records": [{"domain": "a"}, {"domain": "b"}]}}
-            ),
+            MagicMock(return_value={"response": {"records": [{"domain": "a"}, {"domain": "b"}]}}),
         )
         items = client.list_objects(
             "indicator", filters={"ioc_type": "domain", "query": {"foo": "bar"}}
@@ -13225,9 +13300,7 @@ class TestSilverfortClient:
             client_id="cid",
             client_secret="sec",
         )
-        monkeypatch.setattr(
-            c, "post", MagicMock(return_value={"access_token": "tok123"})
-        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "tok123"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer tok123"
 
@@ -13241,9 +13314,7 @@ class TestSilverfortClient:
     def test_authenticate_raises_without_token(self, monkeypatch):
         from gnat.connectors.silverfort.client import SilverfortClient
 
-        c = SilverfortClient(
-            host="https://x", client_id="cid", client_secret="sec"
-        )
+        c = SilverfortClient(host="https://x", client_id="cid", client_secret="sec")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
         with pytest.raises(GNATClientError, match="no access_token"):
             c.authenticate()
@@ -13283,9 +13354,7 @@ class TestSilverfortClient:
             client,
             "get",
             MagicMock(
-                return_value={
-                    "data": [{"event_time": "2026-04-01T00:00:00Z", "user_id": "u1"}]
-                }
+                return_value={"data": [{"event_time": "2026-04-01T00:00:00Z", "user_id": "u1"}]}
             ),
         )
         events = client.list_auth_events(since="2026-04-01", risk_score_min=50)
@@ -13387,9 +13456,7 @@ class TestSemperisClient:
             "get",
             MagicMock(
                 return_value={
-                    "value": [
-                        {"id": "ioe-1", "severity": "high", "evaluator": "AdminSDHolder"}
-                    ]
+                    "value": [{"id": "ioe-1", "severity": "high", "evaluator": "AdminSDHolder"}]
                 }
             ),
         )
@@ -13470,18 +13537,14 @@ class TestAbnormalClient:
     def client(self):
         from gnat.connectors.abnormal.client import AbnormalClient
 
-        c = AbnormalClient(
-            host="https://api.abnormalplatform.com", api_token="ab_test"
-        )
+        c = AbnormalClient(host="https://api.abnormalplatform.com", api_token="ab_test")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.abnormal.client import AbnormalClient
 
-        c = AbnormalClient(
-            host="https://api.abnormalplatform.com", api_token="ab_test"
-        )
+        c = AbnormalClient(host="https://api.abnormalplatform.com", api_token="ab_test")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer ab_test"
 
@@ -13609,16 +13672,12 @@ class TestCofenseIntelClient:
     def test_authenticate_requires_credentials(self):
         from gnat.connectors.cofense_intel.client import CofenseIntelClient
 
-        c = CofenseIntelClient(
-            host="https://www.threathq.com", username="", password=""
-        )
+        c = CofenseIntelClient(host="https://www.threathq.com", username="", password="")
         with pytest.raises(GNATClientError, match="username and password"):
             c.authenticate()
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"data": {"families": []}})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": {"families": []}}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -13635,9 +13694,7 @@ class TestCofenseIntelClient:
             MagicMock(
                 return_value={
                     "data": {
-                        "threats": [
-                            {"value": "1.2.3.4", "threatId": "T1", "type": "ipAddress"}
-                        ]
+                        "threats": [{"value": "1.2.3.4", "threatId": "T1", "type": "ipAddress"}]
                     }
                 }
             ),
@@ -13650,9 +13707,7 @@ class TestCofenseIntelClient:
             client,
             "get",
             MagicMock(
-                return_value={
-                    "data": {"families": [{"id": "mf-1", "familyName": "Emotet"}]}
-                }
+                return_value={"data": {"families": [{"id": "mf-1", "familyName": "Emotet"}]}}
             ),
         )
         fams = client.list_malware_families()
@@ -13786,9 +13841,7 @@ class TestTRMLabsClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"id": "ent-1", "name": "Lazarus", "sanctioned": True}
-            ),
+            MagicMock(return_value={"id": "ent-1", "name": "Lazarus", "sanctioned": True}),
         )
         ent = client.get_entity("ent-1")
         assert ent["_trm_kind"] == "entity"
@@ -13914,18 +13967,14 @@ class TestJoeSandboxClient:
     def client(self):
         from gnat.connectors.joe_sandbox.client import JoeSandboxClient
 
-        c = JoeSandboxClient(
-            host="https://jbxcloud.joesecurity.org", api_key="jbx_test"
-        )
+        c = JoeSandboxClient(host="https://jbxcloud.joesecurity.org", api_key="jbx_test")
         c._authenticated = True
         return c
 
     def test_authenticate_stamps_accept(self):
         from gnat.connectors.joe_sandbox.client import JoeSandboxClient
 
-        c = JoeSandboxClient(
-            host="https://jbxcloud.joesecurity.org", api_key="jbx_test"
-        )
+        c = JoeSandboxClient(host="https://jbxcloud.joesecurity.org", api_key="jbx_test")
         c.authenticate()
         assert c._auth_headers["Accept"] == "application/json"
 
@@ -13978,9 +14027,7 @@ class TestJoeSandboxClient:
         monkeypatch.setattr(
             client,
             "post",
-            MagicMock(
-                return_value={"data": {"analyses": [{"webid": "1"}, {"webid": "2"}]}}
-            ),
+            MagicMock(return_value={"data": {"analyses": [{"webid": "1"}, {"webid": "2"}]}}),
         )
         items = client.list_objects("observed-data", filters={"q": "emotet"})
         assert len(items) == 2
@@ -14117,9 +14164,7 @@ class TestAnyRunClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"os": "Windows 10", "bitness": 64}]}
-            ),
+            MagicMock(return_value={"data": [{"os": "Windows 10", "bitness": 64}]}),
         )
         envs = client.list_environments()
         assert envs[0]["os"] == "Windows 10"
@@ -14166,18 +14211,14 @@ class TestHybridAnalysisClient:
     def client(self):
         from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
 
-        c = HybridAnalysisClient(
-            host="https://www.hybrid-analysis.com", api_key="ha_test"
-        )
+        c = HybridAnalysisClient(host="https://www.hybrid-analysis.com", api_key="ha_test")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_headers(self):
         from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
 
-        c = HybridAnalysisClient(
-            host="https://www.hybrid-analysis.com", api_key="ha_test"
-        )
+        c = HybridAnalysisClient(host="https://www.hybrid-analysis.com", api_key="ha_test")
         c.authenticate()
         assert c._auth_headers["api-key"] == "ha_test"
         assert c._auth_headers["User-Agent"] == "Falcon Sandbox"
@@ -14185,9 +14226,7 @@ class TestHybridAnalysisClient:
     def test_authenticate_requires_api_key(self):
         from gnat.connectors.hybrid_analysis.client import HybridAnalysisClient
 
-        c = HybridAnalysisClient(
-            host="https://www.hybrid-analysis.com", api_key=""
-        )
+        c = HybridAnalysisClient(host="https://www.hybrid-analysis.com", api_key="")
         with pytest.raises(GNATClientError, match="requires api_key"):
             c.authenticate()
 
@@ -14203,9 +14242,7 @@ class TestHybridAnalysisClient:
         assert c._auth_headers["User-Agent"] == "Custom Agent"
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"status": "ok"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"status": "ok"}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -14314,9 +14351,7 @@ class TestVMRayClient:
             c.authenticate()
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"data": {"version": "5.0"}})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": {"version": "5.0"}}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -14364,9 +14399,7 @@ class TestVMRayClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"analysis_id": 1}, {"analysis_id": 2}]}
-            ),
+            MagicMock(return_value={"data": [{"analysis_id": 1}, {"analysis_id": 2}]}),
         )
         items = client.list_objects("observed-data")
         assert len(items) == 2
@@ -14427,21 +14460,15 @@ class TestIntezerClient:
     def client(self):
         from gnat.connectors.intezer.client import IntezerClient
 
-        c = IntezerClient(
-            host="https://analyze.intezer.com", api_key="iz_test"
-        )
+        c = IntezerClient(host="https://analyze.intezer.com", api_key="iz_test")
         c._authenticated = True
         return c
 
     def test_authenticate_exchanges_jwt(self, monkeypatch):
         from gnat.connectors.intezer.client import IntezerClient
 
-        c = IntezerClient(
-            host="https://analyze.intezer.com", api_key="iz_test"
-        )
-        monkeypatch.setattr(
-            c, "post", MagicMock(return_value={"result": "jwt_token_xyz"})
-        )
+        c = IntezerClient(host="https://analyze.intezer.com", api_key="iz_test")
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"result": "jwt_token_xyz"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer jwt_token_xyz"
 
@@ -14455,17 +14482,13 @@ class TestIntezerClient:
     def test_authenticate_raises_without_jwt(self, monkeypatch):
         from gnat.connectors.intezer.client import IntezerClient
 
-        c = IntezerClient(
-            host="https://analyze.intezer.com", api_key="iz_test"
-        )
+        c = IntezerClient(host="https://analyze.intezer.com", api_key="iz_test")
         monkeypatch.setattr(c, "post", MagicMock(return_value={}))
         with pytest.raises(GNATClientError, match="no result token"):
             c.authenticate()
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"is_available": True})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"is_available": True}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -14660,9 +14683,7 @@ class TestHuntressClient:
         assert client.TRUST_LEVEL == "trusted_internal"
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"account": {"id": 1}})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"account": {"id": 1}}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -14757,9 +14778,7 @@ class TestHuntressClient:
         assert stix["x_huntress"]["severity"] == "high"
 
     def test_to_stix_organization(self, client):
-        stix = client.to_stix(
-            {"_ht_kind": "organization", "id": "o1", "name": "Acme"}
-        )
+        stix = client.to_stix({"_ht_kind": "organization", "id": "o1", "name": "Acme"})
         _assert_stix_contract(stix)
         assert stix["type"] == "identity"
         assert stix["identity_class"] == "organization"
@@ -14817,9 +14836,7 @@ class TestArcticWolfClient:
     def test_authenticate_without_customer_id(self):
         from gnat.connectors.arctic_wolf.client import ArcticWolfClient
 
-        c = ArcticWolfClient(
-            host="https://api.arcticwolf.com", api_key="aw_test"
-        )
+        c = ArcticWolfClient(host="https://api.arcticwolf.com", api_key="aw_test")
         c.authenticate()
         assert "X-Arctic-Wolf-Customer" not in c._auth_headers
 
@@ -14864,9 +14881,7 @@ class TestArcticWolfClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"investigations": [{"id": "inv1", "status": "active"}]}
-            ),
+            MagicMock(return_value={"investigations": [{"id": "inv1", "status": "active"}]}),
         )
         invs = client.list_investigations()
         assert invs[0]["_aw_kind"] == "investigation"
@@ -14875,9 +14890,7 @@ class TestArcticWolfClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"id": "t1", "status": "open", "severity": "high"}
-            ),
+            MagicMock(return_value={"id": "t1", "status": "open", "severity": "high"}),
         )
         t = client.get_ticket("t1")
         assert t["_aw_kind"] == "ticket"
@@ -14912,9 +14925,7 @@ class TestArcticWolfClient:
         assert "ipv4-addr" in ref_types
 
     def test_to_stix_customer(self, client):
-        stix = client.to_stix(
-            {"_aw_kind": "customer", "id": "cust-1", "name": "Acme"}
-        )
+        stix = client.to_stix({"_aw_kind": "customer", "id": "cust-1", "name": "Acme"})
         _assert_stix_contract(stix)
         assert stix["type"] == "identity"
 
@@ -14933,18 +14944,14 @@ class TestRedCanaryClient:
     def client(self):
         from gnat.connectors.red_canary.client import RedCanaryClient
 
-        c = RedCanaryClient(
-            host="https://my.redcanary.co", api_key="rc_test"
-        )
+        c = RedCanaryClient(host="https://my.redcanary.co", api_key="rc_test")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_x_api_key(self):
         from gnat.connectors.red_canary.client import RedCanaryClient
 
-        c = RedCanaryClient(
-            host="https://my.redcanary.co", api_key="rc_test"
-        )
+        c = RedCanaryClient(host="https://my.redcanary.co", api_key="rc_test")
         c.authenticate()
         assert c._auth_headers["X-Api-Key"] == "rc_test"
 
@@ -14959,9 +14966,7 @@ class TestRedCanaryClient:
         assert client.TRUST_LEVEL == "trusted_internal"
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"data": {"id": "org1"}})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": {"id": "org1"}}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -15172,9 +15177,7 @@ class TestSafeBreachClient:
 
     def test_list_simulations_requires_test_id(self, client):
         with pytest.raises(GNATClientError, match="test_id"):
-            client.list_objects(
-                "observed-data", filters={"kind": "simulations"}
-            )
+            client.list_objects("observed-data", filters={"kind": "simulations"})
 
     def test_list_attackers(self, client, monkeypatch):
         monkeypatch.setattr(
@@ -15227,9 +15230,7 @@ class TestSafeBreachClient:
         )
         _assert_stix_contract(stix)
         assert stix["type"] == "attack-pattern"
-        assert any(
-            r.get("external_id") == "T1055" for r in stix["external_references"]
-        )
+        assert any(r.get("external_id") == "T1055" for r in stix["external_references"])
 
     def test_from_stix_is_noop(self, client):
         out = client.from_stix({"id": "observed-data--x"})
@@ -15268,9 +15269,7 @@ class TestAttackIQClient:
         assert client.TRUST_LEVEL == "trusted_internal"
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"results": []})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"results": []}))
         assert client.health_check() is True
 
     def test_list_assessments(self, client, monkeypatch):
@@ -15295,9 +15294,7 @@ class TestAttackIQClient:
             "get",
             MagicMock(
                 return_value={
-                    "results": [
-                        {"id": "s1", "name": "Lateral Move", "mitre_id": "T1021"}
-                    ]
+                    "results": [{"id": "s1", "name": "Lateral Move", "mitre_id": "T1021"}]
                 }
             ),
         )
@@ -15353,18 +15350,14 @@ class TestCymulateClient:
     def client(self):
         from gnat.connectors.cymulate.client import CymulateClient
 
-        c = CymulateClient(
-            host="https://api.app.cymulate.com", api_key="cym_test"
-        )
+        c = CymulateClient(host="https://api.app.cymulate.com", api_key="cym_test")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_x_token(self):
         from gnat.connectors.cymulate.client import CymulateClient
 
-        c = CymulateClient(
-            host="https://api.app.cymulate.com", api_key="cym_test"
-        )
+        c = CymulateClient(host="https://api.app.cymulate.com", api_key="cym_test")
         c.authenticate()
         assert c._auth_headers["x-token"] == "cym_test"
 
@@ -15376,18 +15369,14 @@ class TestCymulateClient:
             c.authenticate()
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"data": []})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"data": []}))
         assert client.health_check() is True
 
     def test_list_assessments(self, client, monkeypatch):
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "a1", "result": "blocked"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "a1", "result": "blocked"}]}),
         )
         assessments = client.list_assessments()
         assert assessments[0]["_cym_kind"] == "assessment"
@@ -15460,9 +15449,7 @@ class TestPicusClient:
     def client(self):
         from gnat.connectors.picus.client import PicusClient
 
-        c = PicusClient(
-            host="https://api.picussecurity.com", refresh_token="picus_refresh"
-        )
+        c = PicusClient(host="https://api.picussecurity.com", refresh_token="picus_refresh")
         c._authenticated = True
         return c
 
@@ -15473,9 +15460,7 @@ class TestPicusClient:
             host="https://api.picussecurity.com",
             refresh_token="picus_refresh",
         )
-        monkeypatch.setattr(
-            c, "post", MagicMock(return_value={"access_token": "tok_abc"})
-        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "tok_abc"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer tok_abc"
 
@@ -15578,18 +15563,14 @@ class TestPenteraClient:
     def client(self):
         from gnat.connectors.pentera.client import PenteraClient
 
-        c = PenteraClient(
-            host="https://tenant.pentera.io", api_token="pentera_jwt"
-        )
+        c = PenteraClient(host="https://tenant.pentera.io", api_token="pentera_jwt")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.pentera.client import PenteraClient
 
-        c = PenteraClient(
-            host="https://tenant.pentera.io", api_token="pentera_jwt"
-        )
+        c = PenteraClient(host="https://tenant.pentera.io", api_token="pentera_jwt")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer pentera_jwt"
 
@@ -15695,9 +15676,7 @@ class TestXMCyberClient:
         from gnat.connectors.xm_cyber.client import XMCyberClient
 
         c = XMCyberClient(host="https://tenant.xmcyber.com", api_key="xm_test")
-        monkeypatch.setattr(
-            c, "post", MagicMock(return_value={"token": "session_abc"})
-        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"token": "session_abc"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer session_abc"
 
@@ -15894,16 +15873,12 @@ class TestTalosClient:
         assert client.health_check() is False
 
     def test_ip_reputation(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"reputation": "untrusted"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"reputation": "untrusted"}))
         obj = client.ip_reputation("1.2.3.4")
         assert obj["_ts_query_type"] == "ip"
 
     def test_domain_reputation(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"reputation": "trusted"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"reputation": "trusted"}))
         obj = client.domain_reputation("cisco.com")
         assert obj["_ts_query_type"] == "domain"
 
@@ -15988,9 +15963,7 @@ class TestFortiGuardClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "ob1", "title": "Log4Shell"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "ob1", "title": "Log4Shell"}]}),
         )
         alerts = client.list_outbreak_alerts()
         assert alerts[0]["_fg_kind"] == "outbreak"
@@ -16000,9 +15973,7 @@ class TestFortiGuardClient:
             client.list_iocs()
 
     def test_ip_reputation(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"rating": "malicious"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"rating": "malicious"}))
         obj = client.ip_reputation("1.2.3.4")
         assert obj["_fg_kind"] == "ip"
 
@@ -16072,9 +16043,7 @@ class TestKasperskyOpenTIPClient:
     def test_authenticate_with_api_key(self):
         from gnat.connectors.kaspersky_opentip.client import KasperskyOpenTIPClient
 
-        c = KasperskyOpenTIPClient(
-            host="https://opentip.kaspersky.com", api_key="kt_test"
-        )
+        c = KasperskyOpenTIPClient(host="https://opentip.kaspersky.com", api_key="kt_test")
         c.authenticate()
         assert c._auth_headers["x-api-key"] == "kt_test"
 
@@ -16139,18 +16108,14 @@ class TestESETThreatIntelClient:
     def client(self):
         from gnat.connectors.eset_ti.client import ESETThreatIntelClient
 
-        c = ESETThreatIntelClient(
-            host="https://eti.eset.com", api_token="eset_test"
-        )
+        c = ESETThreatIntelClient(host="https://eti.eset.com", api_token="eset_test")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.eset_ti.client import ESETThreatIntelClient
 
-        c = ESETThreatIntelClient(
-            host="https://eti.eset.com", api_token="eset_test"
-        )
+        c = ESETThreatIntelClient(host="https://eti.eset.com", api_token="eset_test")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer eset_test"
 
@@ -16169,9 +16134,7 @@ class TestESETThreatIntelClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "i1", "ioc": "1.2.3.4", "ioc_type": "ip"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "i1", "ioc": "1.2.3.4", "ioc_type": "ip"}]}),
         )
         iocs = client.list_iocs()
         assert iocs[0]["_eset_kind"] == "ioc"
@@ -16181,9 +16144,7 @@ class TestESETThreatIntelClient:
             client,
             "get",
             MagicMock(
-                return_value={
-                    "data": [{"id": "r1", "title": "Turla activity", "actor": "Turla"}]
-                }
+                return_value={"data": [{"id": "r1", "title": "Turla activity", "actor": "Turla"}]}
             ),
         )
         reports = client.list_reports()
@@ -16250,9 +16211,7 @@ class TestBitdefenderIntelliZoneClient:
     def test_authenticate_requires_api_key(self):
         from gnat.connectors.bitdefender_iz.client import BitdefenderIntelliZoneClient
 
-        c = BitdefenderIntelliZoneClient(
-            host="https://intellizone.bitdefender.com", api_key=""
-        )
+        c = BitdefenderIntelliZoneClient(host="https://intellizone.bitdefender.com", api_key="")
         with pytest.raises(GNATClientError, match="requires api_key"):
             c.authenticate()
 
@@ -16321,9 +16280,7 @@ class TestBitdefenderIntelliZoneClient:
         assert stix["type"] == "threat-actor"
 
     def test_to_stix_family(self, client):
-        stix = client.to_stix(
-            {"_bd_kind": "family", "id": "f1", "name": "Emotet"}
-        )
+        stix = client.to_stix({"_bd_kind": "family", "id": "f1", "name": "Emotet"})
         _assert_stix_contract(stix)
         assert stix["type"] == "malware"
 
@@ -16392,9 +16349,7 @@ class TestThreatConnectGapFills:
     def client(self):
         from gnat.connectors.threatconnect.client import ThreatConnectClient
 
-        c = ThreatConnectClient(
-            host="https://tc.example.com", access_id="x", secret_key="y"
-        )
+        c = ThreatConnectClient(host="https://tc.example.com", access_id="x", secret_key="y")
         c._authenticated = True
         return c
 
@@ -16406,9 +16361,7 @@ class TestThreatConnectGapFills:
             return {"data": [{"id": 1, "type": "Address", "summary": "1.2.3.4"}]}
 
         monkeypatch.setattr(client, "_request_signed", _stub)
-        out = client.search_indicators(
-            query="evil", confidence_gte=50, tag="apt"
-        )
+        out = client.search_indicators(query="evil", confidence_gte=50, tag="apt")
         assert len(out) == 1
         assert "evil" in captured["params"]["tql"]
         assert "confidence" in captured["params"]["tql"]
@@ -16500,9 +16453,7 @@ class TestProofpointGapFills:
         assert out[0]["identity"] == "alice@x"
 
     def test_decode_url(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value={"urls": ["http://real"]})
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"urls": ["http://real"]}))
         out = client.decode_url("https://urldefense.proofpoint.com/v3/__http%3A%2F%2Freal__;!!ABC$")
         assert "urls" in out
 
@@ -16593,9 +16544,7 @@ class TestJiraGapFills:
         assert len(out) == 2
 
     def test_get_issue(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"key": "PROJ-1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"key": "PROJ-1"}))
         out = client.get_issue("PROJ-1")
         assert out["key"] == "PROJ-1"
 
@@ -16605,15 +16554,11 @@ class TestJiraGapFills:
             "post",
             MagicMock(return_value={"key": "PROJ-99", "id": "12345"}),
         )
-        out = client.create_issue(
-            project_key="PROJ", summary="Test", description="body"
-        )
+        out = client.create_issue(project_key="PROJ", summary="Test", description="body")
         assert out["key"] == "PROJ-99"
 
     def test_update_issue(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "put", MagicMock(return_value=None)
-        )
+        monkeypatch.setattr(client, "put", MagicMock(return_value=None))
         out = client.update_issue("PROJ-1", {"summary": "new"})
         assert out["status"] == "ok"
 
@@ -16627,9 +16572,7 @@ class TestJiraGapFills:
         assert out[0]["name"] == "Done"
 
     def test_transition_issue(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value=None)
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value=None))
         out = client.transition_issue("PROJ-1", "11")
         assert out["status"] == "ok"
 
@@ -16657,9 +16600,7 @@ class TestServiceNowGapFills:
     def client(self):
         from gnat.connectors.servicenow.client import ServiceNowClient
 
-        c = ServiceNowClient(
-            host="https://acme.service-now.com", username="u", password="p"
-        )
+        c = ServiceNowClient(host="https://acme.service-now.com", username="u", password="p")
         c._authenticated = True
         return c
 
@@ -16768,9 +16709,7 @@ class TestQualysGapFills:
                 return_value={
                     "ASSET_GROUP_LIST_OUTPUT": {
                         "RESPONSE": {
-                            "ASSET_GROUP_LIST": {
-                                "ASSET_GROUP": [{"ID": 1, "TITLE": "Servers"}]
-                            }
+                            "ASSET_GROUP_LIST": {"ASSET_GROUP": [{"ID": 1, "TITLE": "Servers"}]}
                         }
                     }
                 }
@@ -16787,9 +16726,7 @@ class TestQualysGapFills:
                 return_value={
                     "SCAN_LIST_OUTPUT": {
                         "RESPONSE": {
-                            "SCAN_LIST": {
-                                "SCAN": [{"REF": "scan/1", "STATE": "Finished"}]
-                            }
+                            "SCAN_LIST": {"SCAN": [{"REF": "scan/1", "STATE": "Finished"}]}
                         }
                     }
                 }
@@ -16825,9 +16762,7 @@ class TestYetiGapFills:
         monkeypatch.setattr(
             client,
             "post",
-            MagicMock(
-                return_value={"observables": [{"id": "o1", "value": "1.2.3.4"}]}
-            ),
+            MagicMock(return_value={"observables": [{"id": "o1", "value": "1.2.3.4"}]}),
         )
         out = client.search_observables(value="1.2.3.4")
         assert out[0]["value"] == "1.2.3.4"
@@ -16836,17 +16771,13 @@ class TestYetiGapFills:
         monkeypatch.setattr(
             client,
             "post",
-            MagicMock(
-                return_value={"entities": [{"id": "e1", "name": "APT28"}]}
-            ),
+            MagicMock(return_value={"entities": [{"id": "e1", "name": "APT28"}]}),
         )
         out = client.search_entities(name="APT", entity_type="threat-actor")
         assert out[0]["name"] == "APT28"
 
     def test_get_observable(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"id": "o1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "o1"}))
         out = client.get_observable("o1")
         assert out["id"] == "o1"
 
@@ -16860,9 +16791,7 @@ class TestYetiGapFills:
         assert "vertices" in out
 
     def test_link_objects(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value={"id": "rel1"})
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"id": "rel1"}))
         out = client.link_objects("observables", "o1", "entities", "e1")
         assert out["id"] == "rel1"
 
@@ -16886,9 +16815,7 @@ class TestFortiSIEMGapFills:
         assert out["incidentId"] == 42
 
     def test_update_incident(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value={"status": "ok"})
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"status": "ok"}))
         out = client.update_incident("42", status=2, comments="ack")
         assert out["status"] == "ok"
 
@@ -16920,9 +16847,7 @@ class TestFortiSIEMGapFills:
         assert out[0]["name"] == "fw01"
 
     def test_query_events(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value={"events": []})
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"events": []}))
         out = client.query_events("<query/>", 0, 100)
         assert "events" in out
 
@@ -16940,9 +16865,7 @@ class TestPulsediveGapFills:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"indicator": "1.2.3.4", "risk": "high"}
-            ),
+            MagicMock(return_value={"indicator": "1.2.3.4", "risk": "high"}),
         )
         out = client.get_indicator("1.2.3.4")
         assert out["risk"] == "high"
@@ -16960,9 +16883,7 @@ class TestPulsediveGapFills:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"results": [{"indicator": "1.2.3.4", "risk": "high"}]}
-            ),
+            MagicMock(return_value={"results": [{"indicator": "1.2.3.4", "risk": "high"}]}),
         )
         out = client.search_indicators(risk="high", indicator_type="ip")
         assert out[0]["risk"] == "high"
@@ -16986,9 +16907,7 @@ class TestPulsediveGapFills:
         assert out[0]["name"] == "Spamhaus"
 
     def test_analyze(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value={"qid": 42})
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"qid": 42}))
         out = client.analyze("evil.example")
         assert out["qid"] == 42
 
@@ -17051,9 +16970,7 @@ class TestSOCRadarGapFills:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "a1", "severity": "critical"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "a1", "severity": "critical"}]}),
         )
         out = client.list_attack_surface_alerts(severity="critical")
         assert out[0]["severity"] == "critical"
@@ -17163,11 +17080,7 @@ class TestOktaClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value=[
-                    {"id": "app1", "label": "Salesforce", "status": "ACTIVE"}
-                ]
-            ),
+            MagicMock(return_value=[{"id": "app1", "label": "Salesforce", "status": "ACTIVE"}]),
         )
         apps = client.list_apps()
         assert apps[0]["_okta_kind"] == "app"
@@ -17286,18 +17199,14 @@ class TestEntraIDClient:
             client_id="",
             client_secret="",
         )
-        with pytest.raises(
-            GNATClientError, match="tenant_id, client_id, and client_secret"
-        ):
+        with pytest.raises(GNATClientError, match="tenant_id, client_id, and client_secret"):
             c.authenticate()
 
     def test_trust_level_internal(self, client):
         assert client.TRUST_LEVEL == "trusted_internal"
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"value": [{"id": "org1"}]})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"value": [{"id": "org1"}]}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -17372,13 +17281,7 @@ class TestEntraIDClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "value": [
-                        {"id": "ru1", "riskLevel": "high", "userId": "u1"}
-                    ]
-                }
-            ),
+            MagicMock(return_value={"value": [{"id": "ru1", "riskLevel": "high", "userId": "u1"}]}),
         )
         risky = client.list_risky_users(risk_level="high")
         assert risky[0]["_entra_kind"] == "risky_user"
@@ -17388,11 +17291,7 @@ class TestEntraIDClient:
             client,
             "get",
             MagicMock(
-                return_value={
-                    "value": [
-                        {"id": "sp1", "displayName": "MyApp", "appId": "00000"}
-                    ]
-                }
+                return_value={"value": [{"id": "sp1", "displayName": "MyApp", "appId": "00000"}]}
             ),
         )
         sps = client.list_service_principals()
@@ -17492,18 +17391,14 @@ class TestPingIdentityClient:
             client_id="",
             client_secret="",
         )
-        with pytest.raises(
-            GNATClientError, match="environment_id, client_id"
-        ):
+        with pytest.raises(GNATClientError, match="environment_id, client_id"):
             c.authenticate()
 
     def test_trust_level_internal(self, client):
         assert client.TRUST_LEVEL == "trusted_internal"
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"id": "env1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "env1"}))
         assert client.health_check() is True
 
     def test_health_check_false_on_error(self, client, monkeypatch):
@@ -17543,9 +17438,7 @@ class TestPingIdentityClient:
             MagicMock(
                 return_value={
                     "_embedded": {
-                        "populations": [
-                            {"id": "p1", "name": "Employees", "userCount": 42}
-                        ]
+                        "populations": [{"id": "p1", "name": "Employees", "userCount": 42}]
                     }
                 }
             ),
@@ -17606,9 +17499,7 @@ class TestPingIdentityClient:
             MagicMock(
                 return_value={
                     "_embedded": {
-                        "signOnPolicies": [
-                            {"id": "p1", "name": "Default", "default": True}
-                        ]
+                        "signOnPolicies": [{"id": "p1", "name": "Default", "default": True}]
                     }
                 }
             ),
@@ -17779,9 +17670,7 @@ class TestMimecastClient:
         monkeypatch.setattr(
             client,
             "post",
-            MagicMock(
-                return_value={"data": [{"logs": [{"id": "log1", "url": "http://x"}]}]}
-            ),
+            MagicMock(return_value={"data": [{"logs": [{"id": "log1", "url": "http://x"}]}]}),
         )
         out = client.list_url_protect_logs()
         assert out[0]["_mc_kind"] == "url_log"
@@ -17790,9 +17679,7 @@ class TestMimecastClient:
         monkeypatch.setattr(
             client,
             "post",
-            MagicMock(
-                return_value={"data": [{"logs": [{"id": "a1", "fileName": "x.exe"}]}]}
-            ),
+            MagicMock(return_value={"data": [{"logs": [{"id": "a1", "fileName": "x.exe"}]}]}),
         )
         out = client.list_attachment_protect_logs()
         assert out[0]["_mc_kind"] == "attachment_log"
@@ -17801,9 +17688,7 @@ class TestMimecastClient:
         monkeypatch.setattr(
             client,
             "post",
-            MagicMock(
-                return_value={"data": [{"logs": [{"id": "imp1", "subject": "CEO"}]}]}
-            ),
+            MagicMock(return_value={"data": [{"logs": [{"id": "imp1", "subject": "CEO"}]}]}),
         )
         out = client.list_impersonation_logs()
         assert out[0]["_mc_kind"] == "impersonation_log"
@@ -17812,9 +17697,7 @@ class TestMimecastClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"threats": [{"hash": "abc"}]}]}
-            ),
+            MagicMock(return_value={"data": [{"threats": [{"hash": "abc"}]}]}),
         )
         out = client.get_threat_intel_feed()
         assert out[0]["_mc_kind"] == "threat_intel"
@@ -17978,11 +17861,7 @@ class TestIRONSCALESClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "results": [{"email": "alice@acme", "status": "quarantined"}]
-                }
-            ),
+            MagicMock(return_value={"results": [{"email": "alice@acme", "status": "quarantined"}]}),
         )
         mbox = client.list_affected_mailboxes("i1")
         assert mbox[0]["_is_kind"] == "affected_mailbox"
@@ -18030,11 +17909,7 @@ class TestIRONSCALESClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "results": [{"id": "c1", "name": "BEC", "severity": "high"}]
-                }
-            ),
+            MagicMock(return_value={"results": [{"id": "c1", "name": "BEC", "severity": "high"}]}),
         )
         cls = client.list_classifications()
         assert cls[0]["_is_kind"] == "classification"
@@ -18200,13 +18075,7 @@ class TestCode42Client:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "userRiskProfiles": [
-                        {"userId": "u1", "riskScore": 85}
-                    ]
-                }
-            ),
+            MagicMock(return_value={"userRiskProfiles": [{"userId": "u1", "riskScore": 85}]}),
         )
         out = client.list_user_risk_profiles()
         assert out[0]["_c42_kind"] == "risk_profile"
@@ -18288,13 +18157,7 @@ class TestDTEXClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "data": [
-                        {"id": "a1", "severity": "high", "user": "alice"}
-                    ]
-                }
-            ),
+            MagicMock(return_value={"data": [{"id": "a1", "severity": "high", "user": "alice"}]}),
         )
         out = client.list_alerts(severity="high")
         assert out[0]["_dtex_kind"] == "alert"
@@ -18312,9 +18175,7 @@ class TestDTEXClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "u1", "username": "alice"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "u1", "username": "alice"}]}),
         )
         out = client.list_users()
         assert out[0]["_dtex_kind"] == "user"
@@ -18374,18 +18235,14 @@ class TestGuruculClient:
     def client(self):
         from gnat.connectors.gurucul.client import GuruculClient
 
-        c = GuruculClient(
-            host="https://acme.gurucul.com", api_token="gc_test"
-        )
+        c = GuruculClient(host="https://acme.gurucul.com", api_token="gc_test")
         c._authenticated = True
         return c
 
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.gurucul.client import GuruculClient
 
-        c = GuruculClient(
-            host="https://acme.gurucul.com", api_token="gc_test"
-        )
+        c = GuruculClient(host="https://acme.gurucul.com", api_token="gc_test")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer gc_test"
 
@@ -18404,11 +18261,7 @@ class TestGuruculClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "data": [{"id": "i1", "severity": "high", "userId": "u1"}]
-                }
-            ),
+            MagicMock(return_value={"data": [{"id": "i1", "severity": "high", "userId": "u1"}]}),
         )
         out = client.list_incidents(severity="high")
         assert out[0]["_gc_kind"] == "incident"
@@ -18427,9 +18280,7 @@ class TestGuruculClient:
             client,
             "get",
             MagicMock(
-                return_value={
-                    "data": [{"userId": "u1", "username": "alice", "riskScore": 90}]
-                }
+                return_value={"data": [{"userId": "u1", "username": "alice", "riskScore": 90}]}
             ),
         )
         out = client.list_user_risk_scores()
@@ -18439,9 +18290,7 @@ class TestGuruculClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "e1", "name": "server1", "type": "host"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "e1", "name": "server1", "type": "host"}]}),
         )
         out = client.list_entity_risk_scores()
         assert out[0]["_gc_kind"] == "entity"
@@ -18539,9 +18388,7 @@ class TestExabeamClient:
             client_id="cli",
             client_secret="sec",
         )
-        monkeypatch.setattr(
-            c, "post", MagicMock(return_value={"access_token": "exa_tok"})
-        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "exa_tok"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer exa_tok"
 
@@ -18658,9 +18505,7 @@ class TestSecuronixClient:
     def test_authenticate_requires_credentials(self):
         from gnat.connectors.securonix.client import SecuronixClient
 
-        c = SecuronixClient(
-            host="https://acme.securonix.com", username="", password=""
-        )
+        c = SecuronixClient(host="https://acme.securonix.com", username="", password="")
         with pytest.raises(GNATClientError, match="username and password"):
             c.authenticate()
 
@@ -18724,9 +18569,7 @@ class TestSecuronixClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"items": [{"username": "alice", "riskScore": 80}]}
-            ),
+            MagicMock(return_value={"items": [{"username": "alice", "riskScore": 80}]}),
         )
         out = client.list_users()
         assert out[0]["_snx_kind"] == "user"
@@ -18812,9 +18655,7 @@ class TestStellarCyberGapFills:
     def client(self):
         from gnat.connectors.stellarcyber.client import StellarCyberClient
 
-        c = StellarCyberClient(
-            host="https://sc.example.com", username="u", api_key="x"
-        )
+        c = StellarCyberClient(host="https://sc.example.com", username="u", api_key="x")
         c._authenticated = True
         return c
 
@@ -18822,17 +18663,13 @@ class TestStellarCyberGapFills:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "a1", "severity": "high"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "a1", "severity": "high"}]}),
         )
         out = client.list_alerts(severity="high")
         assert out[0]["severity"] == "high"
 
     def test_get_alert(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"id": "a1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "a1"}))
         out = client.get_alert("a1")
         assert out["id"] == "a1"
 
@@ -18867,9 +18704,7 @@ class TestStellarCyberGapFills:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "ti1", "type": "ip"}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "ti1", "type": "ip"}]}),
         )
         out = client.list_threat_intel(ioc_type="ip")
         assert out[0]["type"] == "ip"
@@ -18905,9 +18740,7 @@ class TestDataminrClient:
     def test_authenticate_requires_credentials(self):
         from gnat.connectors.dataminr.client import DataminrClient
 
-        c = DataminrClient(
-            host="https://gateway.dataminr.com", client_id="", client_secret=""
-        )
+        c = DataminrClient(host="https://gateway.dataminr.com", client_id="", client_secret="")
         with pytest.raises(GNATClientError, match="client_id and client_secret"):
             c.authenticate()
 
@@ -18917,9 +18750,7 @@ class TestDataminrClient:
         c = DataminrClient(
             host="https://gateway.dataminr.com", client_id="cid", client_secret="sec"
         )
-        monkeypatch.setattr(
-            c, "post", MagicMock(return_value={"dmaToken": "tok42"})
-        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"dmaToken": "tok42"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Dmauth tok42"
 
@@ -18943,9 +18774,7 @@ class TestDataminrClient:
         assert out[0]["_dm_kind"] == "alert"
 
     def test_get_alert(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"alertId": "a1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"alertId": "a1"}))
         out = client.get_alert("a1")
         assert out["_dm_kind"] == "alert"
 
@@ -18999,9 +18828,7 @@ class TestDataminrClient:
         assert ext["source"] == "USGS"
 
     def test_to_stix_watchlist(self, client):
-        stix = client.to_stix(
-            {"_dm_kind": "list", "id": "w1", "name": "Cyber Threats"}
-        )
+        stix = client.to_stix({"_dm_kind": "list", "id": "w1", "name": "Cyber Threats"})
         _assert_stix_contract(stix)
         assert stix["type"] == "x-dataminr-list"
 
@@ -19041,17 +18868,13 @@ class TestFactalClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "e1", "title": "Quake", "severity": 4}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "e1", "title": "Quake", "severity": 4}]}),
         )
         out = client.list_events(country="US", min_severity=3)
         assert out[0]["_ft_kind"] == "event"
 
     def test_get_event(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"id": "e1", "title": "Quake"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "e1", "title": "Quake"}))
         out = client.get_event("e1")
         assert out["_ft_kind"] == "event"
 
@@ -19102,9 +18925,7 @@ class TestFactalClient:
         assert stix["type"] == "x-factal-topic"
 
     def test_to_stix_place(self, client):
-        stix = client.to_stix(
-            {"_ft_kind": "place", "id": "p1", "name": "SF", "country": "US"}
-        )
+        stix = client.to_stix({"_ft_kind": "place", "id": "p1", "name": "SF", "country": "US"})
         _assert_stix_contract(stix)
         assert stix["type"] == "identity"
 
@@ -19160,9 +18981,7 @@ class TestSamdeskClient:
         assert out[0]["_sd_kind"] == "event"
 
     def test_get_event(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"id": "e1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "e1"}))
         out = client.get_event("e1")
         assert out["_sd_kind"] == "event"
 
@@ -19208,9 +19027,7 @@ class TestSamdeskClient:
         assert stix["x_samdesk"]["country"] == "FR"
 
     def test_to_stix_category(self, client):
-        stix = client.to_stix(
-            {"_sd_kind": "category", "id": "c1", "name": "Civil Unrest"}
-        )
+        stix = client.to_stix({"_sd_kind": "category", "id": "c1", "name": "Civil Unrest"})
         _assert_stix_contract(stix)
         assert stix["type"] == "x-samdesk-category"
 
@@ -19249,9 +19066,7 @@ class TestHumanSecurityClient:
             client_id="cid",
             client_secret="sec",
         )
-        monkeypatch.setattr(
-            c, "post", MagicMock(return_value={"access_token": "hs_tok"})
-        )
+        monkeypatch.setattr(c, "post", MagicMock(return_value={"access_token": "hs_tok"}))
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer hs_tok"
 
@@ -19266,13 +19081,7 @@ class TestHumanSecurityClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "data": [
-                        {"id": "b1", "ipAddress": "1.2.3.4", "isBot": True}
-                    ]
-                }
-            ),
+            MagicMock(return_value={"data": [{"id": "b1", "ipAddress": "1.2.3.4", "isBot": True}]}),
         )
         out = client.list_bot_detections()
         assert out[0]["_hs_kind"] == "bot_detection"
@@ -19299,9 +19108,7 @@ class TestHumanSecurityClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"value": "1.2.3.4", "type": "ip"}]}
-            ),
+            MagicMock(return_value={"data": [{"value": "1.2.3.4", "type": "ip"}]}),
         )
         out = client.list_threats()
         assert out[0]["_hs_kind"] == "threat"
@@ -19354,9 +19161,7 @@ class TestHumanSecurityClient:
         assert "domain-name:value" in stix["pattern"]
 
     def test_to_stix_integration(self, client):
-        stix = client.to_stix(
-            {"_hs_kind": "integration", "id": "int1", "name": "Cloudflare"}
-        )
+        stix = client.to_stix({"_hs_kind": "integration", "id": "int1", "name": "Cloudflare"})
         _assert_stix_contract(stix)
         assert stix["type"] == "x-human-integration"
 
@@ -19418,9 +19223,7 @@ class TestAbuseIPDBClient:
             MagicMock(
                 return_value={
                     "data": {
-                        "reportedAddress": [
-                            {"ipAddress": "1.2.3.4", "abuseConfidenceScore": 80}
-                        ]
+                        "reportedAddress": [{"ipAddress": "1.2.3.4", "abuseConfidenceScore": 80}]
                     }
                 }
             ),
@@ -19433,11 +19236,7 @@ class TestAbuseIPDBClient:
             client,
             "get",
             MagicMock(
-                return_value={
-                    "data": [
-                        {"ipAddress": "1.2.3.4", "abuseConfidenceScore": 100}
-                    ]
-                }
+                return_value={"data": [{"ipAddress": "1.2.3.4", "abuseConfidenceScore": 100}]}
             ),
         )
         out = client.get_blacklist()
@@ -19447,15 +19246,7 @@ class TestAbuseIPDBClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "data": {
-                        "results": [
-                            {"reporterId": 99, "categories": [18]}
-                        ]
-                    }
-                }
-            ),
+            MagicMock(return_value={"data": {"results": [{"reporterId": 99, "categories": [18]}]}}),
         )
         out = client.get_reports("1.2.3.4")
         assert out[0]["_ai_kind"] == "report"
@@ -19514,9 +19305,7 @@ class TestProjectHoneyPotClient:
     def client(self):
         from gnat.connectors.project_honey_pot.client import ProjectHoneyPotClient
 
-        c = ProjectHoneyPotClient(
-            host="dnsbl.httpbl.org", api_key="abcdefghijkl"
-        )
+        c = ProjectHoneyPotClient(host="dnsbl.httpbl.org", api_key="abcdefghijkl")
         c._authenticated = True
         return c
 
@@ -19543,9 +19332,7 @@ class TestProjectHoneyPotClient:
 
     def test_check_ip_listed(self, client, monkeypatch):
         # 7 days ago, threat score 50, comment spammer (4) + harvester (2) = 6
-        monkeypatch.setattr(
-            "socket.gethostbyname", MagicMock(return_value="127.7.50.6")
-        )
+        monkeypatch.setattr("socket.gethostbyname", MagicMock(return_value="127.7.50.6"))
         out = client.check_ip("1.2.3.4")
         assert out["listed"] is True
         assert out["threat_score"] == 50
@@ -19566,9 +19353,7 @@ class TestProjectHoneyPotClient:
         assert out["visitor_types"] == []
 
     def test_check_ip_invalid_response(self, client, monkeypatch):
-        monkeypatch.setattr(
-            "socket.gethostbyname", MagicMock(return_value="9.9.9.9")
-        )
+        monkeypatch.setattr("socket.gethostbyname", MagicMock(return_value="9.9.9.9"))
         with pytest.raises(GNATClientError, match="unexpected http:BL"):
             client.check_ip("1.2.3.4")
 
@@ -19577,9 +19362,7 @@ class TestProjectHoneyPotClient:
             client.check_ip("not.an.ip")
 
     def test_check_ips_batch(self, client, monkeypatch):
-        monkeypatch.setattr(
-            "socket.gethostbyname", MagicMock(return_value="127.0.10.0")
-        )
+        monkeypatch.setattr("socket.gethostbyname", MagicMock(return_value="127.0.10.0"))
         out = client.check_ips(["1.2.3.4", "5.6.7.8"])
         assert len(out) == 2
         assert all(r["listed"] is True for r in out)
@@ -19614,9 +19397,7 @@ class TestProjectHoneyPotClient:
         assert stix["confidence"] == 75
 
     def test_to_stix_unlisted_benign(self, client):
-        stix = client.to_stix(
-            {"ip": "8.8.8.8", "listed": False, "threat_score": 0}
-        )
+        stix = client.to_stix({"ip": "8.8.8.8", "listed": False, "threat_score": 0})
         _assert_stix_contract(stix)
         assert stix["labels"] == ["benign"]
 
@@ -19706,9 +19487,7 @@ class TestCrtShClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value=[{"id": 99, "issuer_name": "DigiCert"}]
-            ),
+            MagicMock(return_value=[{"id": 99, "issuer_name": "DigiCert"}]),
         )
         out = client.get_certificate("99")
         assert out["_crtsh_kind"] == "certificate"
@@ -19792,13 +19571,7 @@ class TestGoogleCTClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={
-                    "entries": [
-                        {"leaf_input": "AAAA", "extra_data": "BBBB"}
-                    ]
-                }
-            ),
+            MagicMock(return_value={"entries": [{"leaf_input": "AAAA", "extra_data": "BBBB"}]}),
         )
         out = client.get_entries(0, 0)
         assert out[0]["_gct_kind"] == "entry"
@@ -19827,9 +19600,7 @@ class TestGoogleCTClient:
             "get",
             MagicMock(return_value={"certificates": ["AAA"]}),
         )
-        out = client.list_objects(
-            "x509-certificate", filters={"kind": "roots"}
-        )
+        out = client.list_objects("x509-certificate", filters={"kind": "roots"})
         assert out[0]["_gct_kind"] == "root"
 
     def test_upsert_raises(self, client):
@@ -19841,17 +19612,13 @@ class TestGoogleCTClient:
             client.delete_object("x509-certificate", "x")
 
     def test_to_stix_entry(self, client):
-        stix = client.to_stix(
-            {"_gct_kind": "entry", "_gct_index": 7, "leaf_input": "AAAA"}
-        )
+        stix = client.to_stix({"_gct_kind": "entry", "_gct_index": 7, "leaf_input": "AAAA"})
         _assert_stix_contract(stix)
         assert stix["type"] == "x509-certificate"
         assert stix["x_google_ct"]["leaf_index"] == 7
 
     def test_to_stix_sth(self, client):
-        stix = client.to_stix(
-            {"_gct_kind": "sth", "tree_size": 1000, "timestamp": 9999}
-        )
+        stix = client.to_stix({"_gct_kind": "sth", "tree_size": 1000, "timestamp": 9999})
         _assert_stix_contract(stix)
         assert stix["type"] == "x-google-ct-sth"
 
@@ -19865,9 +19632,7 @@ class TestVelociraptorClient:
     def client(self):
         from gnat.connectors.velociraptor.client import VelociraptorClient
 
-        c = VelociraptorClient(
-            host="https://vr.example.com:8000", api_token="vrt_tok"
-        )
+        c = VelociraptorClient(host="https://vr.example.com:8000", api_token="vrt_tok")
         c._authenticated = True
         return c
 
@@ -19881,9 +19646,7 @@ class TestVelociraptorClient:
     def test_authenticate_sets_bearer(self):
         from gnat.connectors.velociraptor.client import VelociraptorClient
 
-        c = VelociraptorClient(
-            host="https://vr.example.com:8000", api_token="vrt_tok"
-        )
+        c = VelociraptorClient(host="https://vr.example.com:8000", api_token="vrt_tok")
         c.authenticate()
         assert c._auth_headers["Authorization"] == "Bearer vrt_tok"
 
@@ -19891,9 +19654,7 @@ class TestVelociraptorClient:
         assert client.TRUST_LEVEL == "trusted_internal"
 
     def test_health_check_true(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"items": []})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"items": []}))
         assert client.health_check() is True
 
     def test_list_clients(self, client, monkeypatch):
@@ -19934,17 +19695,13 @@ class TestVelociraptorClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"items": [{"name": "Linux.Sysinfo"}]}
-            ),
+            MagicMock(return_value={"items": [{"name": "Linux.Sysinfo"}]}),
         )
         out = client.list_artifacts()
         assert out[0]["_vr_kind"] == "artifact"
 
     def test_run_vql(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value={"Response": "ok"})
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"Response": "ok"}))
         out = client.run_vql("SELECT * FROM info()")
         assert out["Response"] == "ok"
 
@@ -19953,9 +19710,7 @@ class TestVelociraptorClient:
             client.run_vql("")
 
     def test_run_hunt(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "post", MagicMock(return_value={"hunt_id": "H42"})
-        )
+        monkeypatch.setattr(client, "post", MagicMock(return_value={"hunt_id": "H42"}))
         out = client.run_hunt("Linux.Sysinfo", clients=["C.1"])
         assert out["hunt_id"] == "H42"
 
@@ -20046,20 +19801,14 @@ class TestMagnetAxiomClient:
             client,
             "get",
             MagicMock(
-                return_value={
-                    "data": [
-                        {"id": "case1", "name": "Insider", "status": "open"}
-                    ]
-                }
+                return_value={"data": [{"id": "case1", "name": "Insider", "status": "open"}]}
             ),
         )
         out = client.list_cases(status="open")
         assert out[0]["_ax_kind"] == "case"
 
     def test_get_case(self, client, monkeypatch):
-        monkeypatch.setattr(
-            client, "get", MagicMock(return_value={"id": "case1"})
-        )
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"id": "case1"}))
         out = client.get_case("case1")
         assert out["_ax_kind"] == "case"
 
@@ -20205,9 +19954,7 @@ class TestHackerOneClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": {"id": "r1", "attributes": {"title": "XSS"}}}
-            ),
+            MagicMock(return_value={"data": {"id": "r1", "attributes": {"title": "XSS"}}}),
         )
         out = client.get_report("r1")
         assert out["_h1_kind"] == "report"
@@ -20229,9 +19976,7 @@ class TestHackerOneClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": [{"id": "w1", "attributes": {"name": "XSS"}}]}
-            ),
+            MagicMock(return_value={"data": [{"id": "w1", "attributes": {"name": "XSS"}}]}),
         )
         out = client.list_weaknesses("acme")
         assert out[0]["_h1_kind"] == "weakness"
@@ -20354,9 +20099,7 @@ class TestBugcrowdClient:
         monkeypatch.setattr(
             client,
             "get",
-            MagicMock(
-                return_value={"data": {"id": "s1", "attributes": {"title": "SSRF"}}}
-            ),
+            MagicMock(return_value={"data": {"id": "s1", "attributes": {"title": "SSRF"}}}),
         )
         out = client.get_submission("s1")
         assert out["_bc_kind"] == "submission"
@@ -20519,9 +20262,7 @@ class TestCuckooClient:
     def test_authenticate_v3_autodetect(self):
         from gnat.connectors.cuckoo.client import CuckooClient
 
-        c = CuckooClient(
-            host="https://cuckoo.lab.internal", api_key="ck_test"
-        )
+        c = CuckooClient(host="https://cuckoo.lab.internal", api_key="ck_test")
         c._auth_headers["Authorization"] = "Bearer ck_test"
         c.get = MagicMock(return_value={"version": "CAPEv2"})
         c._detect_version()
@@ -20531,9 +20272,7 @@ class TestCuckooClient:
     def test_authenticate_v2_fallback(self):
         from gnat.connectors.cuckoo.client import CuckooClient
 
-        c = CuckooClient(
-            host="https://cuckoo.lab.internal", api_key="ck_test"
-        )
+        c = CuckooClient(host="https://cuckoo.lab.internal", api_key="ck_test")
         c._auth_headers["Authorization"] = "Bearer ck_test"
 
         def _fail_then_ok(url, *a, **kw):
@@ -20559,9 +20298,7 @@ class TestCuckooClient:
         assert c._prefix == "/api"
 
     def test_health_check_true(self, client_v3, monkeypatch):
-        monkeypatch.setattr(
-            client_v3, "get", MagicMock(return_value={"hostname": "cuckoo"})
-        )
+        monkeypatch.setattr(client_v3, "get", MagicMock(return_value={"hostname": "cuckoo"}))
         assert client_v3.health_check() is True
 
     def test_health_check_false(self, client_v3, monkeypatch):
@@ -20587,9 +20324,7 @@ class TestCuckooClient:
             "target": {"file": {"sha256": "abc", "name": "sample.exe"}},
             "network": {"hosts": ["1.2.3.4"]},
         }
-        monkeypatch.setattr(
-            client_v3, "get", MagicMock(return_value=report)
-        )
+        monkeypatch.setattr(client_v3, "get", MagicMock(return_value=report))
         obj = client_v3.get_object("observed-data", "42")
         assert obj["_cuckoo_task_id"] == "42"
         assert obj["_cuckoo_kind"] == "observed-data"
@@ -20597,9 +20332,7 @@ class TestCuckooClient:
     def test_submit_file_v2(self, client_v2, monkeypatch, tmp_path):
         f = tmp_path / "malware.exe"
         f.write_bytes(b"MZ\x90\x00")
-        monkeypatch.setattr(
-            client_v2, "post", MagicMock(return_value={"task_id": 99})
-        )
+        monkeypatch.setattr(client_v2, "post", MagicMock(return_value={"task_id": 99}))
         result = client_v2.submit_file(str(f))
         assert result["task_id"] == 99
         call_url = client_v2.post.call_args[0][0]
@@ -20609,17 +20342,13 @@ class TestCuckooClient:
     def test_submit_file_v3(self, client_v3, monkeypatch, tmp_path):
         f = tmp_path / "malware.exe"
         f.write_bytes(b"MZ\x90\x00")
-        monkeypatch.setattr(
-            client_v3, "post", MagicMock(return_value={"task_id": 99})
-        )
+        monkeypatch.setattr(client_v3, "post", MagicMock(return_value={"task_id": 99}))
         client_v3.submit_file(str(f))
         call_url = client_v3.post.call_args[0][0]
         assert "/apiv2/tasks/create/file/" in call_url
 
     def test_submit_url(self, client_v3, monkeypatch):
-        monkeypatch.setattr(
-            client_v3, "post", MagicMock(return_value={"task_id": 100})
-        )
+        monkeypatch.setattr(client_v3, "post", MagicMock(return_value={"task_id": 100}))
         result = client_v3.submit_url("http://evil.com/payload")
         assert result["task_id"] == 100
 
@@ -20688,9 +20417,7 @@ class TestCuckooClient:
             "info": {},
             "target": {},
         }
-        monkeypatch.setattr(
-            client_v3, "get", MagicMock(return_value=report)
-        )
+        monkeypatch.setattr(client_v3, "get", MagicMock(return_value=report))
         iocs = client_v3.get_iocs("42")
         types = {i["type"] for i in iocs}
         assert "ipv4" in types
@@ -20717,9 +20444,7 @@ class TestCuckooClient:
             "info": {},
             "target": {},
         }
-        monkeypatch.setattr(
-            client_v3, "get", MagicMock(return_value=report)
-        )
+        monkeypatch.setattr(client_v3, "get", MagicMock(return_value=report))
         iocs = client_v3.get_iocs("42")
         assert sum(1 for i in iocs if i["value"] == "1.2.3.4") == 1
 

@@ -36,8 +36,8 @@ from typing import TYPE_CHECKING, Any
 from gnat.stix.sdos.negative_evidence import NegativeEvidenceRecord
 
 if TYPE_CHECKING:
-    from gnat.core.context import ExecutionContext
     from gnat.context.workspace import WorkspaceManager
+    from gnat.core.context import ExecutionContext
     from gnat.orm.base import STIXBase
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class ReasoningEngine:
 
     def __init__(
         self,
-        manager: "WorkspaceManager",
+        manager: WorkspaceManager,
         workspace_name: str = "analysis",
         search_index: Any | None = None,
     ) -> None:
@@ -98,16 +98,17 @@ class ReasoningEngine:
             self._search_index = search_index
         else:
             from gnat.search.index import NullSearchIndex
+
             self._search_index = NullSearchIndex()
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
     def prioritize(
         self,
-        observable_set: list["STIXBase"],
-        context: "ExecutionContext | None" = None,
+        observable_set: list[STIXBase],
+        context: ExecutionContext | None = None,
         store_notes: bool = True,
-    ) -> list[tuple["STIXBase", float, dict[str, Any]]]:
+    ) -> list[tuple[STIXBase, float, dict[str, Any]]]:
         """
         Score and rank a set of observables.
 
@@ -128,7 +129,7 @@ class ReasoningEngine:
             descending.  Score is in ``[0.0, 1.0]``.  Explanation dict is
             machine-readable (not free text).
         """
-        results: list[tuple["STIXBase", float, dict[str, Any]]] = []
+        results: list[tuple[STIXBase, float, dict[str, Any]]] = []
         ws = self._manager.open(self._workspace_name)
 
         # Gather negative evidence records for fast lookup
@@ -163,8 +164,8 @@ class ReasoningEngine:
 
     def _score_observable(
         self,
-        observable: "STIXBase",
-        context: "ExecutionContext | None",
+        observable: STIXBase,
+        context: ExecutionContext | None,
         neg_evidence: list[NegativeEvidenceRecord],
     ) -> tuple[float, dict[str, Any]]:
         """Compute a composite score for one observable."""
@@ -213,10 +214,7 @@ class ReasoningEngine:
 
         # 5. Composite score
         raw_score = (
-            trust_weight * 0.4
-            + age_factor * 0.3
-            + corroboration_bonus * 0.3
-            - neg_penalty * 0.5
+            trust_weight * 0.4 + age_factor * 0.3 + corroboration_bonus * 0.3 - neg_penalty * 0.5
         )
         score = max(0.0, min(1.0, raw_score))
         explanation["score"] = round(score, 4)
@@ -227,7 +225,7 @@ class ReasoningEngine:
         return score, explanation
 
     @staticmethod
-    def _age_factor(observable: "STIXBase") -> float:
+    def _age_factor(observable: STIXBase) -> float:
         """Return a 0–1 factor where 1.0 = fresh, decaying with object age."""
         modified_str = getattr(observable, "modified", "")
         if not modified_str:
@@ -246,14 +244,14 @@ class ReasoningEngine:
 
     def _store_note(
         self,
-        observable: "STIXBase",
+        observable: STIXBase,
         score: float,
         explanation: dict[str, Any],
     ) -> None:
         """Persist a STIX note object recording the scoring rationale."""
         import json
 
-        from gnat.orm.base import STIXBase as _STIXBase, _utcnow
+        from gnat.orm.base import _utcnow
 
         note_dict = {
             "type": "note",

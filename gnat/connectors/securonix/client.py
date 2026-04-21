@@ -68,9 +68,7 @@ class SecuronixClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange username/password for a Securonix session token."""
         if not self.username or not self.password:
-            raise GNATClientError(
-                "Securonix connector requires username and password."
-            )
+            raise GNATClientError("Securonix connector requires username and password.")
         resp = self.get(
             "/ws/token/generate",
             params={"username": self.username, "password": self.password},
@@ -82,9 +80,7 @@ class SecuronixClient(BaseClient, ConnectorMixin):
         elif isinstance(resp, dict):
             token = resp.get("token") or resp.get("access_token", "")
         if not token:
-            raise GNATClientError(
-                "Securonix authentication failed — empty token response"
-            )
+            raise GNATClientError("Securonix authentication failed — empty token response")
         self._auth_headers["token"] = token
         self._auth_headers["Accept"] = "application/json"
 
@@ -101,24 +97,18 @@ class SecuronixClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("Securonix get_object requires a non-empty id")
         if stix_type == "observed-data":
-            resp = self.get(
-                "/ws/incident/get", params={"incidentId": object_id}
-            )
+            resp = self.get("/ws/incident/get", params={"incidentId": object_id})
             kind = "incident"
         elif stix_type == "user-account":
             resp = self.get(f"/ws/sccresource/users/{object_id}")
             kind = "user"
         else:
-            raise GNATClientError(
-                f"Securonix get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Securonix get_object does not support stix_type={stix_type!r}")
         if isinstance(resp, dict):
             return dict(resp, _snx_kind=kind)
         if isinstance(resp, list) and resp:
             return dict(resp[0], _snx_kind=kind)
-        raise GNATClientError(
-            f"Securonix returned unexpected payload for {object_id!r}"
-        )
+        raise GNATClientError(f"Securonix returned unexpected payload for {object_id!r}")
 
     def list_objects(
         self,
@@ -137,17 +127,13 @@ class SecuronixClient(BaseClient, ConnectorMixin):
         if stix_type == "observed-data":
             kind = (filters.get("kind") or "incidents").lower()
             if kind == "violations":
-                resp = self.get(
-                    "/ws/sccresource/violations", params=params
-                )
+                resp = self.get("/ws/sccresource/violations", params=params)
                 tag = "violation"
             elif kind == "threats":
                 resp = self.get("/ws/sccresource/threats", params=params)
                 tag = "threat"
             elif kind == "spotter":
-                resp = self.get(
-                    "/ws/spotter/index/search", params=params
-                )
+                resp = self.get("/ws/spotter/index/search", params=params)
                 tag = "spotter_hit"
             else:
                 resp = self.get("/ws/incident/actions", params=params)
@@ -164,25 +150,17 @@ class SecuronixClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _snx_kind=tag) for r in _extract_securonix_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Securonix connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Securonix connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Securonix connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Securonix connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Securonix connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Securonix connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def list_incidents(
-        self, status: str = "", since: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_incidents(self, status: str = "", since: str = "") -> list[dict[str, Any]]:
         """Return Securonix incidents."""
         filters: dict[str, Any] = {}
         if status:
@@ -197,15 +175,11 @@ class SecuronixClient(BaseClient, ConnectorMixin):
 
     def list_violations(self) -> list[dict[str, Any]]:
         """Return policy violations."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "violations"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "violations"}, page_size=500)
 
     def list_threats(self) -> list[dict[str, Any]]:
         """Return threat models / chains."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "threats"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "threats"}, page_size=500)
 
     def search_spotter(self, query: str) -> list[dict[str, Any]]:
         """Run a Spotter search (Securonix's SPL-like query language)."""
@@ -234,9 +208,7 @@ class SecuronixClient(BaseClient, ConnectorMixin):
 
         if kind == "user":
             user_id = native.get("userId") or native.get("username", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_SECURONIX, f"user-account|{user_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_SECURONIX, f"user-account|{user_id}")
             return {
                 "type": "user-account",
                 "id": f"user-account--{stix_uuid}",
@@ -254,9 +226,7 @@ class SecuronixClient(BaseClient, ConnectorMixin):
 
         if kind == "policy":
             pol_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_SECURONIX, f"x-securonix-policy|{pol_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_SECURONIX, f"x-securonix-policy|{pol_id}")
             return {
                 "type": "x-securonix-policy",
                 "id": f"x-securonix-policy--{stix_uuid}",
@@ -272,9 +242,7 @@ class SecuronixClient(BaseClient, ConnectorMixin):
         if isinstance(user, dict):
             user = user.get("username") or user.get("id")
         if user:
-            user_uuid = uuid.uuid5(
-                _NAMESPACE_SECURONIX, f"user-account|{user}"
-            )
+            user_uuid = uuid.uuid5(_NAMESPACE_SECURONIX, f"user-account|{user}")
             refs.append(f"user-account--{user_uuid}")
 
         first = (
@@ -322,7 +290,17 @@ def _extract_securonix_list(resp: Any) -> list[dict[str, Any]]:
         return [r for r in resp if isinstance(r, dict)]
     if not isinstance(resp, dict):
         return []
-    for key in ("items", "data", "results", "incidents", "violations", "threats", "users", "policies", "events"):
+    for key in (
+        "items",
+        "data",
+        "results",
+        "incidents",
+        "violations",
+        "threats",
+        "users",
+        "policies",
+        "events",
+    ):
         val = resp.get(key)
         if isinstance(val, list):
             return [r for r in val if isinstance(r, dict)]

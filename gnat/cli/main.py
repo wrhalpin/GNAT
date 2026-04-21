@@ -307,27 +307,76 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_cg_xs.add_argument("--overwrite", action="store_true", help="Overwrite existing zip file")
 
-    p_cg_oa.add_argument("--ai", action="store_true", help="Use Claude to generate complete implementations")
-    p_cg_oa.add_argument("--config", dest="config_path", default=None, metavar="PATH", help="Path to config.ini for AI lookup")
+    p_cg_oa.add_argument(
+        "--ai", action="store_true", help="Use Claude to generate complete implementations"
+    )
+    p_cg_oa.add_argument(
+        "--config",
+        dest="config_path",
+        default=None,
+        metavar="PATH",
+        help="Path to config.ini for AI lookup",
+    )
 
     p_cg_tests = cg_subs.add_parser("tests", help="Generate unit tests for an existing connector")
-    p_cg_tests.add_argument("--connector", required=True, metavar="NAME", help="Connector name as registered in CLIENT_REGISTRY")
-    p_cg_tests.add_argument("--out-dir", default="./tests/unit/connectors", metavar="DIR", help="Output directory (default: ./tests/unit/connectors)")
+    p_cg_tests.add_argument(
+        "--connector",
+        required=True,
+        metavar="NAME",
+        help="Connector name as registered in CLIENT_REGISTRY",
+    )
+    p_cg_tests.add_argument(
+        "--out-dir",
+        default="./tests/unit/connectors",
+        metavar="DIR",
+        help="Output directory (default: ./tests/unit/connectors)",
+    )
     p_cg_tests.add_argument("--overwrite", action="store_true", help="Overwrite existing test file")
-    p_cg_tests.add_argument("--ai", action="store_true", help="Use Claude to generate realistic fixtures")
-    p_cg_tests.add_argument("--config", dest="config_path", default=None, metavar="PATH", help="Path to config.ini for AI lookup")
+    p_cg_tests.add_argument(
+        "--ai", action="store_true", help="Use Claude to generate realistic fixtures"
+    )
+    p_cg_tests.add_argument(
+        "--config",
+        dest="config_path",
+        default=None,
+        metavar="PATH",
+        help="Path to config.ini for AI lookup",
+    )
 
     p_cg_reg = cg_subs.add_parser("register", help="Register connectors in CLIENT_REGISTRY")
-    p_cg_reg.add_argument("--connector", default=None, metavar="NAME", help="Register a single connector by name")
-    p_cg_reg.add_argument("--scan", action="store_true", help="Scan for all unregistered connectors")
-    p_cg_reg.add_argument("--dry-run", action="store_true", help="Print changes without writing files")
+    p_cg_reg.add_argument(
+        "--connector", default=None, metavar="NAME", help="Register a single connector by name"
+    )
+    p_cg_reg.add_argument(
+        "--scan", action="store_true", help="Scan for all unregistered connectors"
+    )
+    p_cg_reg.add_argument(
+        "--dry-run", action="store_true", help="Print changes without writing files"
+    )
 
-    p_cg_docs = cg_subs.add_parser("config-docs", help="Regenerate connector config tables in documentation")
-    p_cg_docs.add_argument("--ini", default="config/config.ini.example", metavar="PATH", help="Source INI example file")
-    p_cg_docs.add_argument("--out", default="docs/reference/configuration.md", metavar="PATH", help="Target Markdown file")
+    p_cg_docs = cg_subs.add_parser(
+        "config-docs", help="Regenerate connector config tables in documentation"
+    )
+    p_cg_docs.add_argument(
+        "--ini", default="config/config.ini.example", metavar="PATH", help="Source INI example file"
+    )
+    p_cg_docs.add_argument(
+        "--out",
+        default="docs/reference/configuration.md",
+        metavar="PATH",
+        help="Target Markdown file",
+    )
     p_cg_docs.add_argument("--dry-run", action="store_true", help="Print diff without writing")
-    p_cg_docs.add_argument("--ai", action="store_true", help="Use Claude for richer field descriptions")
-    p_cg_docs.add_argument("--config", dest="config_path", default=None, metavar="PATH", help="Path to config.ini for AI lookup")
+    p_cg_docs.add_argument(
+        "--ai", action="store_true", help="Use Claude for richer field descriptions"
+    )
+    p_cg_docs.add_argument(
+        "--config",
+        dest="config_path",
+        default=None,
+        metavar="PATH",
+        help="Path to config.ini for AI lookup",
+    )
 
     # ── viz ───────────────────────────────────────────────────────────────
     p_viz = subs.add_parser("viz", help="Workspace visualization")
@@ -440,17 +489,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p_sc_status = sc_subs.add_parser(
         "status", help="Show detailed status and recent runs for one job"
     )
-    p_sc_status.add_argument(
-        "--job", required=True, metavar="JOB_ID", help="Job id to inspect"
-    )
+    p_sc_status.add_argument("--job", required=True, metavar="JOB_ID", help="Job id to inspect")
     _add_source_args(p_sc_status)
 
-    p_sc_history = sc_subs.add_parser(
-        "history", help="Show run history for one job"
-    )
-    p_sc_history.add_argument(
-        "--job", required=True, metavar="JOB_ID", help="Job id to inspect"
-    )
+    p_sc_history = sc_subs.add_parser("history", help="Show run history for one job")
+    p_sc_history.add_argument("--job", required=True, metavar="JOB_ID", help="Job id to inspect")
     p_sc_history.add_argument(
         "--limit",
         type=int,
@@ -853,23 +896,22 @@ def _build_parser() -> argparse.ArgumentParser:
     inv_subs.required = True
 
     _p_inv_list = inv_subs.add_parser("list", help="List investigations")
-    _p_inv_list.add_argument("--status", metavar="STATUS",
-        help="Filter by status: open|in_progress|review|closed")
-    _p_inv_list.add_argument("--created-by", metavar="ANALYST",
-        help="Filter by analyst identifier")
+    _p_inv_list.add_argument(
+        "--status", metavar="STATUS", help="Filter by status: open|in_progress|review|closed"
+    )
+    _p_inv_list.add_argument("--created-by", metavar="ANALYST", help="Filter by analyst identifier")
     _p_inv_list.add_argument("--tag", metavar="TAG", help="Filter by tag (ANY match)")
-    _p_inv_list.add_argument("--text", metavar="TEXT",
-        help="Substring search on title")
+    _p_inv_list.add_argument("--text", metavar="TEXT", help="Substring search on title")
     _p_inv_list.add_argument("--page", type=int, default=1)
     _p_inv_list.add_argument("--page-size", type=int, default=25, dest="page_size")
 
     p_inv_create = inv_subs.add_parser("create", help="Create a new investigation")
     p_inv_create.add_argument("--title", required=True, metavar="TITLE")
-    p_inv_create.add_argument("--created-by", required=True, metavar="ANALYST",
-        dest="created_by")
+    p_inv_create.add_argument("--created-by", required=True, metavar="ANALYST", dest="created_by")
     p_inv_create.add_argument("--description", default="", metavar="TEXT")
-    p_inv_create.add_argument("--tlp", default="amber",
-        choices=["white", "green", "amber", "red"], metavar="LEVEL")
+    p_inv_create.add_argument(
+        "--tlp", default="amber", choices=["white", "green", "amber", "red"], metavar="LEVEL"
+    )
     p_inv_create.add_argument("--tags", default="", metavar="TAG1,TAG2")
 
     p_inv_get = inv_subs.add_parser("get", help="Show a single investigation by ID")
@@ -877,8 +919,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_inv_tr = inv_subs.add_parser("transition", help="Transition investigation status")
     p_inv_tr.add_argument("id", metavar="INVESTIGATION_ID")
-    p_inv_tr.add_argument("status", metavar="NEW_STATUS",
-        choices=["open", "in_progress", "review", "closed"])
+    p_inv_tr.add_argument(
+        "status", metavar="NEW_STATUS", choices=["open", "in_progress", "review", "closed"]
+    )
     p_inv_tr.add_argument("--note", default=None, metavar="TEXT")
     p_inv_tr.add_argument("--author", default="cli", metavar="ANALYST")
 
@@ -889,10 +932,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_inv_link = inv_subs.add_parser("link", help="Link artifacts to an investigation")
     p_inv_link.add_argument("id", metavar="INVESTIGATION_ID")
-    p_inv_link.add_argument("--indicators", default="", metavar="ID1,ID2",
-        help="Comma-separated indicator STIX IDs")
-    p_inv_link.add_argument("--reports", default="", metavar="ID1,ID2",
-        help="Comma-separated report IDs")
+    p_inv_link.add_argument(
+        "--indicators", default="", metavar="ID1,ID2", help="Comma-separated indicator STIX IDs"
+    )
+    p_inv_link.add_argument(
+        "--reports", default="", metavar="ID1,ID2", help="Comma-separated report IDs"
+    )
 
     # ── campaign ─────────────────────────────────────────────────────────
     p_camp = subs.add_parser(
@@ -903,20 +948,24 @@ def _build_parser() -> argparse.ArgumentParser:
     camp_subs.required = True
 
     _p_camp_list = camp_subs.add_parser("list", help="List campaigns")
-    _p_camp_list.add_argument("--status", metavar="STATUS",
-        help="Filter: suspected|active|dormant|concluded")
-    _p_camp_list.add_argument("--actor", metavar="ACTOR_ID",
-        help="Filter by attributed threat actor ID")
+    _p_camp_list.add_argument(
+        "--status", metavar="STATUS", help="Filter: suspected|active|dormant|concluded"
+    )
+    _p_camp_list.add_argument(
+        "--actor", metavar="ACTOR_ID", help="Filter by attributed threat actor ID"
+    )
     _p_camp_list.add_argument("--tag", metavar="TAG", help="Filter by tag")
 
     p_camp_create = camp_subs.add_parser("create", help="Create a new campaign")
     p_camp_create.add_argument("--name", required=True, metavar="NAME")
     p_camp_create.add_argument("--description", default="", metavar="TEXT")
     p_camp_create.add_argument("--objective", default="", metavar="TEXT")
-    p_camp_create.add_argument("--actor", default=None, metavar="ACTOR_ID",
-        help="Primary attributed threat actor ID")
-    p_camp_create.add_argument("--parent", default=None, metavar="CAMPAIGN_ID",
-        help="Parent campaign ID for sub-campaigns")
+    p_camp_create.add_argument(
+        "--actor", default=None, metavar="ACTOR_ID", help="Primary attributed threat actor ID"
+    )
+    p_camp_create.add_argument(
+        "--parent", default=None, metavar="CAMPAIGN_ID", help="Parent campaign ID for sub-campaigns"
+    )
     p_camp_create.add_argument("--tags", default="", metavar="TAG1,TAG2")
 
     p_camp_show = camp_subs.add_parser("show", help="Show campaign details")
@@ -924,8 +973,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_camp_transition = camp_subs.add_parser("transition", help="Change campaign status")
     p_camp_transition.add_argument("id", metavar="CAMPAIGN_ID")
-    p_camp_transition.add_argument("status", metavar="NEW_STATUS",
-        choices=["suspected", "active", "dormant", "concluded"])
+    p_camp_transition.add_argument(
+        "status", metavar="NEW_STATUS", choices=["suspected", "active", "dormant", "concluded"]
+    )
 
     p_camp_link = camp_subs.add_parser("link", help="Link indicator to campaign")
     p_camp_link.add_argument("id", metavar="CAMPAIGN_ID")
@@ -936,10 +986,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p_camp_attr.add_argument("--actor", required=True, metavar="ACTOR_ID")
     p_camp_attr.add_argument("--rationale", default="", metavar="TEXT")
 
-    p_camp_promote = camp_subs.add_parser("promote-cluster",
-        help="Promote a cluster to a campaign")
-    p_camp_promote.add_argument("cluster_json", metavar="CLUSTER_JSON",
-        help="Path to a JSON file containing a Cluster.to_dict() payload")
+    p_camp_promote = camp_subs.add_parser("promote-cluster", help="Promote a cluster to a campaign")
+    p_camp_promote.add_argument(
+        "cluster_json",
+        metavar="CLUSTER_JSON",
+        help="Path to a JSON file containing a Cluster.to_dict() payload",
+    )
 
     # ── actor ────────────────────────────────────────────────────────────
     p_actor = subs.add_parser(
@@ -950,15 +1002,14 @@ def _build_parser() -> argparse.ArgumentParser:
     actor_subs.required = True
 
     _p_actor_list = actor_subs.add_parser("list", help="List actor profiles")
-    _p_actor_list.add_argument("--type", metavar="TYPE",
-        help="Filter: nation-state|criminal|hacktivist")
+    _p_actor_list.add_argument(
+        "--type", metavar="TYPE", help="Filter: nation-state|criminal|hacktivist"
+    )
 
     p_actor_create = actor_subs.add_parser("create", help="Create an actor profile")
     p_actor_create.add_argument("--name", required=True, metavar="NAME")
-    p_actor_create.add_argument("--type", default="unknown", metavar="TYPE",
-        dest="actor_type")
-    p_actor_create.add_argument("--mitre-group", default=None, metavar="G0034",
-        dest="mitre_group")
+    p_actor_create.add_argument("--type", default="unknown", metavar="TYPE", dest="actor_type")
+    p_actor_create.add_argument("--mitre-group", default=None, metavar="G0034", dest="mitre_group")
 
     p_actor_show = actor_subs.add_parser("show", help="Show actor profile")
     p_actor_show.add_argument("id", metavar="ACTOR_ID")
@@ -971,8 +1022,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p_actor_cap = actor_subs.add_parser("capability", help="Add ATT&CK capability")
     p_actor_cap.add_argument("id", metavar="ACTOR_ID")
     p_actor_cap.add_argument("--technique", required=True, metavar="T1059.003")
-    p_actor_cap.add_argument("--proficiency", default="observed",
-        choices=["observed", "proficient", "expert"])
+    p_actor_cap.add_argument(
+        "--proficiency", default="observed", choices=["observed", "proficient", "expert"]
+    )
 
     # ── plugins ───────────────────────────────────────────────────────────
     p_plg = subs.add_parser(
@@ -984,8 +1036,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     _p_plg_list = plg_subs.add_parser("list", help="List loaded plugins")
     p_plg_load = plg_subs.add_parser("load", help="Load plugins from a directory")
-    p_plg_load.add_argument("directory", metavar="DIR",
-        help="Directory containing plugin packages")
+    p_plg_load.add_argument("directory", metavar="DIR", help="Directory containing plugin packages")
 
     # ── db ────────────────────────────────────────────────────────────────
     p_db = subs.add_parser(
@@ -995,16 +1046,18 @@ def _build_parser() -> argparse.ArgumentParser:
     db_subs = p_db.add_subparsers(dest="db_command", metavar="<subcommand>")
     db_subs.required = True
 
-    db_subs.add_parser("upgrade",   help="Upgrade to the latest migration (head)")
+    db_subs.add_parser("upgrade", help="Upgrade to the latest migration (head)")
     db_subs.add_parser("downgrade", help="Downgrade one migration step")
-    db_subs.add_parser("current",   help="Show current migration revision")
-    db_subs.add_parser("history",   help="Show migration history")
+    db_subs.add_parser("current", help="Show current migration revision")
+    db_subs.add_parser("history", help="Show migration history")
     p_db_rev = db_subs.add_parser("revision", help="Create a new migration script")
-    p_db_rev.add_argument("--message", "-m", default="auto", metavar="MSG",
-        help="Migration message")
-    p_db_rev.add_argument("--autogenerate", action="store_true",
-        help="Auto-generate from schema diff")
-    p_db_stamp = db_subs.add_parser("stamp",   help="Stamp DB at a specific revision")
+    p_db_rev.add_argument(
+        "--message", "-m", default="auto", metavar="MSG", help="Migration message"
+    )
+    p_db_rev.add_argument(
+        "--autogenerate", action="store_true", help="Auto-generate from schema diff"
+    )
+    p_db_stamp = db_subs.add_parser("stamp", help="Stamp DB at a specific revision")
     p_db_stamp.add_argument("revision", metavar="REVISION")
 
     # ── review ────────────────────────────────────────────────────────────
@@ -1016,23 +1069,28 @@ def _build_parser() -> argparse.ArgumentParser:
     rev_subs.required = True
 
     p_rev_list = rev_subs.add_parser("list", help="List review items")
-    p_rev_list.add_argument("--status", choices=["pending", "approved", "rejected", "modified"],
-        help="Filter by status (default: pending)")
-    p_rev_list.add_argument("--type", dest="stix_type", metavar="STIX_TYPE",
-        help="Filter by STIX object type")
+    p_rev_list.add_argument(
+        "--status",
+        choices=["pending", "approved", "rejected", "modified"],
+        help="Filter by status (default: pending)",
+    )
+    p_rev_list.add_argument(
+        "--type", dest="stix_type", metavar="STIX_TYPE", help="Filter by STIX object type"
+    )
     p_rev_list.add_argument("--page", type=int, default=1)
     p_rev_list.add_argument("--page-size", type=int, default=25, dest="page_size")
 
     p_rev_approve = rev_subs.add_parser("approve", help="Approve a review item")
     p_rev_approve.add_argument("id", metavar="ITEM_ID")
-    p_rev_approve.add_argument("--by",    metavar="ANALYST", default="cli-analyst")
+    p_rev_approve.add_argument("--by", metavar="ANALYST", default="cli-analyst")
     p_rev_approve.add_argument("--notes", metavar="TEXT")
-    p_rev_approve.add_argument("--confidence", type=int, metavar="0-100",
-        dest="confidence_override")
+    p_rev_approve.add_argument(
+        "--confidence", type=int, metavar="0-100", dest="confidence_override"
+    )
 
     p_rev_reject = rev_subs.add_parser("reject", help="Reject a review item")
     p_rev_reject.add_argument("id", metavar="ITEM_ID")
-    p_rev_reject.add_argument("--by",     metavar="ANALYST", default="cli-analyst")
+    p_rev_reject.add_argument("--by", metavar="ANALYST", default="cli-analyst")
     p_rev_reject.add_argument("--reason", metavar="TEXT")
 
     rev_subs.add_parser("stats", help="Show review queue statistics")
@@ -1054,31 +1112,51 @@ def _build_parser() -> argparse.ArgumentParser:
 
     # peers list
     p_fed_list = fed_subs.add_parser("list", help="List all registered federation peers")
-    p_fed_list.add_argument(
-        "--enabled-only", action="store_true", help="Show only enabled peers"
-    )
+    p_fed_list.add_argument("--enabled-only", action="store_true", help="Show only enabled peers")
 
     # peers register
     p_fed_reg = fed_subs.add_parser("register", help="Register a new federation peer")
-    p_fed_reg.add_argument("peer_id", metavar="PEER_ID",
-                           help="Unique peer slug (lowercase, alphanumeric, hyphens)")
-    p_fed_reg.add_argument("--taxii-url", required=True, metavar="URL",
-                           help="Remote TAXII 2.1 base URL")
-    p_fed_reg.add_argument("--api-key", required=True, metavar="KEY",
-                           help="Bearer token for the remote instance")
+    p_fed_reg.add_argument(
+        "peer_id", metavar="PEER_ID", help="Unique peer slug (lowercase, alphanumeric, hyphens)"
+    )
+    p_fed_reg.add_argument(
+        "--taxii-url", required=True, metavar="URL", help="Remote TAXII 2.1 base URL"
+    )
+    p_fed_reg.add_argument(
+        "--api-key", required=True, metavar="KEY", help="Bearer token for the remote instance"
+    )
     p_fed_reg.add_argument("--display-name", default="", metavar="NAME")
-    p_fed_reg.add_argument("--direction", default="pull",
-                           choices=["pull", "push", "both"],
-                           help="Sync direction (default: pull)")
-    p_fed_reg.add_argument("--max-tlp", default="green",
-                           choices=["white", "clear", "green", "amber", "amber+strict", "red"],
-                           help="Maximum TLP level to share (default: green)")
-    p_fed_reg.add_argument("--parent", default=None, metavar="PEER_ID",
-                           help="Parent peer ID (for hierarchical topology)")
-    p_fed_reg.add_argument("--workspaces", default="", metavar="WS1,WS2",
-                           help="Comma-separated workspace names to sync (required)")
-    p_fed_reg.add_argument("--interval", type=int, default=3600, metavar="SECONDS",
-                           help="Sync interval in seconds (default: 3600)")
+    p_fed_reg.add_argument(
+        "--direction",
+        default="pull",
+        choices=["pull", "push", "both"],
+        help="Sync direction (default: pull)",
+    )
+    p_fed_reg.add_argument(
+        "--max-tlp",
+        default="green",
+        choices=["white", "clear", "green", "amber", "amber+strict", "red"],
+        help="Maximum TLP level to share (default: green)",
+    )
+    p_fed_reg.add_argument(
+        "--parent",
+        default=None,
+        metavar="PEER_ID",
+        help="Parent peer ID (for hierarchical topology)",
+    )
+    p_fed_reg.add_argument(
+        "--workspaces",
+        default="",
+        metavar="WS1,WS2",
+        help="Comma-separated workspace names to sync (required)",
+    )
+    p_fed_reg.add_argument(
+        "--interval",
+        type=int,
+        default=3600,
+        metavar="SECONDS",
+        help="Sync interval in seconds (default: 3600)",
+    )
 
     # peers delete
     p_fed_del = fed_subs.add_parser("delete", help="Remove a federation peer")
@@ -1091,8 +1169,11 @@ def _build_parser() -> argparse.ArgumentParser:
     # sync
     p_fed_sync = fed_subs.add_parser("sync", help="Trigger an immediate sync from a peer")
     p_fed_sync.add_argument("peer_id", metavar="PEER_ID")
-    p_fed_sync.add_argument("--dry-run", action="store_true",
-                            help="Fetch and filter but do not write to local workspaces")
+    p_fed_sync.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Fetch and filter but do not write to local workspaces",
+    )
 
     # topology
     fed_subs.add_parser("topology", help="Print the federation topology graph")
@@ -1866,10 +1947,7 @@ def _cmd_schedule_run(args, scheduler) -> int:
         if args.output == "json":
             _print_json(record.as_dict())
         else:
-            print(
-                f"{args.job}: {record.status} "
-                f"(duration={record.duration_seconds or 0:.2f}s)"
-            )
+            print(f"{args.job}: {record.status} (duration={record.duration_seconds or 0:.2f}s)")
             if record.error:
                 print(f"  error: {record.error}")
         return 0 if record.status in ("success", "partial") else 1
@@ -1889,9 +1967,7 @@ def _cmd_schedule_run(args, scheduler) -> int:
             for jid, rec in results.items()
         ]
         _print_table(rows, fields=["JOB_ID", "STATUS", "DURATION", "ERROR"])
-    any_failed = any(
-        rec.status not in ("success", "partial") for rec in results.values()
-    )
+    any_failed = any(rec.status not in ("success", "partial") for rec in results.values())
     return 1 if any_failed else 0
 
 
@@ -1914,9 +1990,7 @@ def _cmd_schedule_crontab(args, scheduler) -> int:
     else:
         python_path = "gnat"
         script_path = "schedule run"
-    text = scheduler.to_cron_lines(
-        python_path=python_path, script_path=script_path
-    )
+    text = scheduler.to_cron_lines(python_path=python_path, script_path=script_path)
     lines = text.splitlines()
     if args.output == "json":
         _print_json(lines)
@@ -1943,11 +2017,7 @@ def _cmd_schedule_validate(args, scheduler) -> int:
         return 0
     print(_bold(f"OK: {n} job(s) parsed and class references resolved"))
     for j in scheduler:
-        sched = (
-            f"every {j.interval_seconds}s"
-            if j.interval_seconds
-            else f"cron {j.cron!r}"
-        )
+        sched = f"every {j.interval_seconds}s" if j.interval_seconds else f"cron {j.cron!r}"
         print(f"  {j.job_id:30s}  {sched}")
     return 0
 
@@ -2308,10 +2378,12 @@ def _cmd_health(args) -> int:
         from gnat.connectors.health import FleetHealthMonitor
 
         connectors = getattr(args, "fleet_connectors", None)
-        as_json    = getattr(args, "fleet_json", False)
-        fail_any   = getattr(args, "fleet_fail_on_any", False)
+        as_json = getattr(args, "fleet_json", False)
+        fail_any = getattr(args, "fleet_fail_on_any", False)
 
-        print(_bold(f"Fleet health check: {len(connectors) if connectors else 'all'} connector(s) …"))
+        print(
+            _bold(f"Fleet health check: {len(connectors) if connectors else 'all'} connector(s) …")
+        )
         monitor = FleetHealthMonitor()
         results = monitor.check_all(connectors=connectors)
 
@@ -2319,19 +2391,22 @@ def _cmd_health(args) -> int:
             print(_json.dumps([r.to_dict() for r in results], indent=2))
         else:
             for r in results:
-                icon    = _green("✓") if r.ok else _red("✗")
-                ms_str  = f"{r.latency_ms:.0f} ms"
-                trust   = _dim(f"[{r.trust_level}]")
+                icon = _green("✓") if r.ok else _red("✗")
+                ms_str = f"{r.latency_ms:.0f} ms"
+                trust = _dim(f"[{r.trust_level}]")
                 err_str = f"  {_dim(r.error[:60])}" if r.error else ""
                 print(f"  {icon}  {_bold(r.name):<30} {ms_str:<10} {trust}{err_str}")
             summary = monitor.summary(results)
             healthy = summary["healthy"]
-            total   = summary["total"]
+            total = summary["total"]
             print()
             if healthy == total:
                 print(_green(f"All {total} connectors healthy"))
             else:
-                print(_red(f"{total - healthy} unhealthy") + f" / {total} total, {_green(str(healthy))} healthy")
+                print(
+                    _red(f"{total - healthy} unhealthy")
+                    + f" / {total} total, {_green(str(healthy))} healthy"
+                )
 
         if fail_any:
             return 0 if all(r.ok for r in results) else 1
@@ -2647,6 +2722,7 @@ def _cmd_federation(args: argparse.Namespace) -> int:
     if config_path:
         try:
             from gnat.config import GNATConfig
+
             cfg = GNATConfig(config_path)
             registry.from_config(cfg)
         except Exception:  # noqa: BLE001
@@ -2661,14 +2737,14 @@ def _cmd_federation(args: argparse.Namespace) -> int:
             return 0
         rows = [
             {
-                "peer_id":        p.peer_id,
-                "display_name":   p.display_name or "—",
-                "direction":      p.direction,
-                "max_tlp":        p.max_tlp,
-                "enabled":        "yes" if p.enabled else "no",
-                "workspaces":     ",".join(p.workspace_filter) or "—",
-                "last_sync":      (p.last_sync_at or "never")[:19],
-                "last_status":    p.last_sync_status or "—",
+                "peer_id": p.peer_id,
+                "display_name": p.display_name or "—",
+                "direction": p.direction,
+                "max_tlp": p.max_tlp,
+                "enabled": "yes" if p.enabled else "no",
+                "workspaces": ",".join(p.workspace_filter) or "—",
+                "last_sync": (p.last_sync_at or "never")[:19],
+                "last_status": p.last_sync_status or "—",
             }
             for p in peers
         ]
@@ -2678,8 +2754,10 @@ def _cmd_federation(args: argparse.Namespace) -> int:
     if sub == "register":
         workspaces = [w.strip() for w in args.workspaces.split(",") if w.strip()]
         if not workspaces:
-            print(_red("Error: --workspaces is required (comma-separated workspace names)."),
-                  file=sys.stderr)
+            print(
+                _red("Error: --workspaces is required (comma-separated workspace names)."),
+                file=sys.stderr,
+            )
             return 1
         try:
             peer = registry.register(
@@ -2720,6 +2798,7 @@ def _cmd_federation(args: argparse.Namespace) -> int:
         import time
 
         from gnat.connectors.gnat_remote.connector import GNATRemoteConnector
+
         host = peer.taxii_url.rstrip("/")
         for suffix in ("/taxii2", "/taxii2/"):
             if host.endswith(suffix):
@@ -2744,6 +2823,7 @@ def _cmd_federation(args: argparse.Namespace) -> int:
             print(_red(f"Error: peer {args.peer_id!r} not found."), file=sys.stderr)
             return 1
         from gnat.federation.sync import FederationError, PeerSyncService
+
         svc = PeerSyncService()
         dry_run = getattr(args, "dry_run", False)
         if dry_run:
@@ -2758,18 +2838,20 @@ def _cmd_federation(args: argparse.Namespace) -> int:
             print(_red(f"Sync failed: {exc}"), file=sys.stderr)
             return 1
         action = "would accept" if dry_run else "accepted"
-        print(_green(
-            f"✓  Sync complete — {result.objects_accepted} object(s) {action} "
-            f"across {len(result.workspaces_synced)} workspace(s)"
-        ))
+        print(
+            _green(
+                f"✓  Sync complete — {result.objects_accepted} object(s) {action} "
+                f"across {len(result.workspaces_synced)} workspace(s)"
+            )
+        )
         if result.errors:
             for err in result.errors:
                 print(_yellow(f"   ⚠ {err}"), file=sys.stderr)
         return 0
 
     if sub == "topology":
-
         from gnat.federation.topology import FederationTopology
+
         topo = FederationTopology(registry)
         graph = topo.hierarchy_graph()
         peers = registry.list()
@@ -2785,10 +2867,12 @@ def _cmd_federation(args: argparse.Namespace) -> int:
             pid = node["peer_id"]
             parent = node.get("parent_peer_id")
             indent = "  ├─ " if parent else "  "
-            print(f"{indent}{_bold(pid)}"
-                  + (f"  ↑ {parent}" if parent else "  (root/mesh)")
-                  + f"  [{node['direction']} / TLP:{node['max_tlp']}]"
-                  + ("" if node["enabled"] else _dim("  [disabled]")))
+            print(
+                f"{indent}{_bold(pid)}"
+                + (f"  ↑ {parent}" if parent else "  (root/mesh)")
+                + f"  [{node['direction']} / TLP:{node['max_tlp']}]"
+                + ("" if node["enabled"] else _dim("  [disabled]"))
+            )
         return 0
 
     return 0  # unreachable — argparse handles unknown subcommands
@@ -2851,9 +2935,8 @@ def _cmd_serve(args) -> int:
             federation_sync_service = _sync_svc
         except Exception as _exc:  # noqa: BLE001
             import logging
-            logging.getLogger(__name__).warning(
-                "Federation initialization skipped: %s", _exc
-            )
+
+            logging.getLogger(__name__).warning("Federation initialization skipped: %s", _exc)
 
     url = f"http://{host}:{port}"
     print(_green(f"✓  GNAT Web Dashboard: {_bold(url)}"), file=sys.stderr)
@@ -2877,14 +2960,14 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
         from gnat.analysis.investigations.service import InvestigationService
         from gnat.analysis.investigations.storage import InvestigationStore
     except ImportError:
-        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
-              file=sys.stderr)
+        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'), file=sys.stderr)
         return 1
 
     # Resolve DB URL from GNAT_DB_URL env or default
     import os
+
     db_url = os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
-    store   = InvestigationStore(db_url)
+    store = InvestigationStore(db_url)
     store.create_all()
     service = InvestigationService(store)
 
@@ -2904,12 +2987,12 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
                 return None
 
         q = InvestigationQuery(
-            status     = _parse_status(getattr(args, "status", None)),
-            created_by = getattr(args, "created_by", None),
-            tags       = [args.tag] if getattr(args, "tag", None) else None,
-            text       = getattr(args, "text", None),
-            page       = getattr(args, "page", 1),
-            page_size  = getattr(args, "page_size", 25),
+            status=_parse_status(getattr(args, "status", None)),
+            created_by=getattr(args, "created_by", None),
+            tags=[args.tag] if getattr(args, "tag", None) else None,
+            text=getattr(args, "text", None),
+            page=getattr(args, "page", 1),
+            page_size=getattr(args, "page_size", 25),
         )
         investigations = service.list(query=q)
         if not investigations:
@@ -2917,10 +3000,10 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
             return 0
         rows = [
             {
-                "id":         inv.id[:8] + "…",
-                "title":      inv.title[:40],
-                "status":     inv.status.value,
-                "tlp":        inv.classification.value,
+                "id": inv.id[:8] + "…",
+                "title": inv.title[:40],
+                "status": inv.status.value,
+                "tlp": inv.classification.value,
                 "created_by": inv.created_by,
                 "updated_at": inv.updated_at.strftime("%Y-%m-%d"),
             }
@@ -2931,6 +3014,7 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
 
     if sub == "create":
         from gnat.analysis.tlp import TLPLevel
+
         tags = [t.strip() for t in args.tags.split(",") if t.strip()]
         try:
             tlp = TLPLevel(args.tlp)
@@ -2938,11 +3022,11 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
             print(_red(f"Invalid TLP level: {args.tlp!r}"), file=sys.stderr)
             return 1
         inv = service.create(
-            title          = args.title,
-            created_by     = args.created_by,
-            description    = args.description,
-            classification = tlp,
-            tags           = tags,
+            title=args.title,
+            created_by=args.created_by,
+            description=args.description,
+            classification=tlp,
+            tags=tags,
         )
         print(_green(f"✓  Created investigation {_bold(inv.id)}"))
         print(f"   Title: {inv.title}")
@@ -2968,12 +3052,14 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
 
     if sub == "transition":
         from gnat.analysis.investigations.models import InvestigationStatus
+
         try:
             new_status = InvestigationStatus(args.status)
             inv = service.transition(
-                args.id, new_status,
-                note   = args.note,
-                author = args.author,
+                args.id,
+                new_status,
+                note=args.note,
+                author=args.author,
             )
         except Exception as exc:
             print(_red(f"✗  {exc}"), file=sys.stderr)
@@ -2983,9 +3069,10 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
 
     if sub == "note":
         try:
-            note = service.add_note(args.id,
-                content = args.content,
-                author  = args.author,
+            note = service.add_note(
+                args.id,
+                content=args.content,
+                author=args.author,
             )
         except Exception as exc:
             print(_red(f"✗  {exc}"), file=sys.stderr)
@@ -2995,7 +3082,7 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
 
     if sub == "link":
         indicators = [i.strip() for i in args.indicators.split(",") if i.strip()]
-        reports    = [r.strip() for r in args.reports.split(",")    if r.strip()]
+        reports = [r.strip() for r in args.reports.split(",") if r.strip()]
         try:
             if indicators:
                 service.link_indicators(args.id, indicators)
@@ -3023,8 +3110,7 @@ def _cmd_campaign(args: argparse.Namespace) -> int:
         from gnat.analysis.attribution.service import CampaignService, CampaignServiceError
         from gnat.analysis.attribution.storage import CampaignStore
     except ImportError:
-        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
-              file=sys.stderr)
+        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'), file=sys.stderr)
         return 1
 
     store = CampaignStore(db_url)
@@ -3093,8 +3179,14 @@ def _cmd_campaign(args: argparse.Namespace) -> int:
             _print_json(c.to_dict())
         else:
             print(_bold(f"Campaign: {c.name}"))
-            for key in ("id", "status", "threat_actor_id", "classification",
-                        "created_by", "created_at"):
+            for key in (
+                "id",
+                "status",
+                "threat_actor_id",
+                "classification",
+                "created_by",
+                "created_at",
+            ):
                 print(f"  {key:20s} {getattr(c, key)}")
             print(f"  {'indicators':20s} {len(c.indicator_ids)}")
             print(f"  {'clusters':20s} {len(c.cluster_ids)}")
@@ -3134,7 +3226,9 @@ def _cmd_campaign(args: argparse.Namespace) -> int:
                     description=args.rationale or "CLI attribution",
                     weight=50,
                 ),
-            ] if args.rationale else [],
+            ]
+            if args.rationale
+            else [],
         )
         if args.output == "json":
             _print_json(h.to_dict())
@@ -3305,10 +3399,10 @@ def _cmd_plugins(args: argparse.Namespace) -> int:
             return 0
         rows = [
             {
-                "name":         p.name,
-                "version":      p.version,
+                "name": p.name,
+                "version": p.version,
                 "capabilities": ", ".join(c.value for c in p.capabilities),
-                "description":  p.description[:50] if p.description else "",
+                "description": p.description[:50] if p.description else "",
             }
             for p in plugins
         ]
@@ -3333,8 +3427,7 @@ def _cmd_db(args: argparse.Namespace) -> int:
     try:
         from gnat.migrations.cli import run_db_command
     except ImportError:
-        print(_red('Alembic is required.  Run: pip install "gnat[migrations]"'),
-              file=sys.stderr)
+        print(_red('Alembic is required.  Run: pip install "gnat[migrations]"'), file=sys.stderr)
         return 1
 
     sub = args.db_command
@@ -3368,8 +3461,7 @@ def _cmd_review(args: argparse.Namespace) -> int:
         from gnat.review.service import ReviewError, ReviewService
         from gnat.review.store import ReviewQueueStore
     except ImportError:
-        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'),
-              file=sys.stderr)
+        print(_red('SQLAlchemy is required.  Run: pip install "gnat[persist]"'), file=sys.stderr)
         return 1
 
     store = ReviewQueueStore(db_url)
@@ -3390,12 +3482,12 @@ def _cmd_review(args: argparse.Namespace) -> int:
             return 0
         rows = [
             {
-                "id":           i.id[:8] + "…",
-                "type":         i.stix_type,
-                "stix_id":      i.stix_id[:36],
+                "id": i.id[:8] + "…",
+                "type": i.stix_type,
+                "stix_id": i.stix_id[:36],
                 "submitted_by": i.submitted_by[:20],
-                "confidence":   str(i.stix_data.get("confidence", "—")),
-                "status":       i.status.value,
+                "confidence": str(i.stix_data.get("confidence", "—")),
+                "status": i.status.value,
                 "submitted_at": i.submitted_at.strftime("%Y-%m-%d"),
             }
             for i in items

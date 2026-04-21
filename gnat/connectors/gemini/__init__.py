@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.gemini`` package.
 
 Exports: ``GeminiClient``.
 """
+
 from .client import GeminiClient
 
 __all__ = ["GeminiClient"]

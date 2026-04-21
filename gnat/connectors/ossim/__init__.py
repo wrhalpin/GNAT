@@ -67,6 +67,7 @@ class OSSIMAuthError(OSSIMError):
 
 class OSSIMAPIError(OSSIMError):
     """Raised when a o s s i m a p i error error occurs."""
+
     def __init__(self, message, status_code=None, endpoint=None):
         """Initialize OSSIMAPIError."""
         super().__init__(message)
@@ -88,6 +89,7 @@ class OSSIMSTIXError(OSSIMError):
 @dataclass
 class OSSIMConfig:
     """Configuration container for o s s i m."""
+
     url: str
     api_key: str
     verify_ssl: bool = False  # OSSIM commonly uses self-signed certs

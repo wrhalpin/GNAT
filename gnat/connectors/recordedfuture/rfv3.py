@@ -81,9 +81,8 @@ class RecordedFutureClientV3(RecordedFutureBase):
                 break
 
             # Support both top-level and nested pagination token paths
-            token: str | None = (
-                data.get("nextPageToken")
-                or data.get("pagination", {}).get("nextPageToken")
+            token: str | None = data.get("nextPageToken") or data.get("pagination", {}).get(
+                "nextPageToken"
             )
             if not token:
                 break
@@ -133,9 +132,8 @@ class RecordedFutureClientV3(RecordedFutureBase):
             if len(results) >= limit:
                 break
 
-            token: str | None = (
-                data.get("nextPageToken")
-                or data.get("pagination", {}).get("nextPageToken")
+            token: str | None = data.get("nextPageToken") or data.get("pagination", {}).get(
+                "nextPageToken"
             )
             if not token:
                 break

@@ -83,9 +83,7 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set X-Api-Key header from the configured key."""
         if not self.api_key:
-            raise GNATClientError(
-                "Red Canary connector requires api_key in config."
-            )
+            raise GNATClientError("Red Canary connector requires api_key in config.")
         self._auth_headers["X-Api-Key"] = self.api_key
         self._auth_headers["Accept"] = "application/json"
 
@@ -110,14 +108,10 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/openapi/v3/endpoints/{object_id}")
             kind = "endpoint"
         else:
-            raise GNATClientError(
-                f"Red Canary get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Red Canary get_object does not support stix_type={stix_type!r}")
         data = _unwrap_rc(resp)
         if not isinstance(data, dict):
-            raise GNATClientError(
-                f"Red Canary returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Red Canary returned unexpected payload for {object_id!r}")
         return dict(data, _rc_kind=kind)
 
     def list_objects(
@@ -158,19 +152,13 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
             )
         return [dict(r, _rc_kind=kind) for r in _extract_rc_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Red Canary connector is read-only in Phase 2."""
-        raise GNATClientError(
-            "Red Canary connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Red Canary connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Red Canary connector is read-only."""
-        raise GNATClientError(
-            "Red Canary connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Red Canary connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -188,9 +176,7 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
             filters["classification"] = classification
         if since:
             filters["since"] = since
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=1000
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=1000)
 
     def get_detection(self, detection_id: str) -> dict[str, Any]:
         """Fetch a single detection."""
@@ -209,9 +195,7 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
         filters: dict[str, Any] = {}
         if since:
             filters["since"] = since
-        return self.list_objects(
-            "x-red-canary-event", filters=filters, page_size=1000
-        )
+        return self.list_objects("x-red-canary-event", filters=filters, page_size=1000)
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
 
@@ -224,10 +208,10 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
 
         if kind == "endpoint":
             endpoint_id = native.get("id") or native.get("hostname", "unknown")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_REDCANARY, f"identity|endpoint|{endpoint_id}"
+            stix_uuid = uuid.uuid5(_NAMESPACE_REDCANARY, f"identity|endpoint|{endpoint_id}")
+            attrs = (
+                native.get("attributes") if isinstance(native.get("attributes"), dict) else native
             )
-            attrs = native.get("attributes") if isinstance(native.get("attributes"), dict) else native
             return {
                 "type": "identity",
                 "id": f"identity--{stix_uuid}",
@@ -246,25 +230,20 @@ class RedCanaryClient(BaseClient, ConnectorMixin):
             }
 
         # detection / event → observed-data envelope
-        attrs = (
-            native.get("attributes")
-            if isinstance(native.get("attributes"), dict)
-            else native
-        )
+        attrs = native.get("attributes") if isinstance(native.get("attributes"), dict) else native
         refs: list[str] = []
-        endpoint_id = attrs.get("endpoint_id") or attrs.get("endpoint", {}).get("id") \
-            if isinstance(attrs.get("endpoint"), dict) else attrs.get("endpoint_id")
+        endpoint_id = (
+            attrs.get("endpoint_id") or attrs.get("endpoint", {}).get("id")
+            if isinstance(attrs.get("endpoint"), dict)
+            else attrs.get("endpoint_id")
+        )
         if endpoint_id:
-            endpoint_uuid = uuid.uuid5(
-                _NAMESPACE_REDCANARY, f"identity|endpoint|{endpoint_id}"
-            )
+            endpoint_uuid = uuid.uuid5(_NAMESPACE_REDCANARY, f"identity|endpoint|{endpoint_id}")
             refs.append(f"identity--{endpoint_uuid}")
 
         ip = attrs.get("ip_address") or attrs.get("source_ip")
         if ip:
-            ip_uuid = uuid.uuid5(
-                _NAMESPACE_REDCANARY, f"ipv4-addr|{ip}"
-            )
+            ip_uuid = uuid.uuid5(_NAMESPACE_REDCANARY, f"ipv4-addr|{ip}")
             refs.append(f"ipv4-addr--{ip_uuid}")
 
         first = (

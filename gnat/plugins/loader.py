@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 def load_plugins(
     entry_points: bool = True,
-    directories:  list[str] | None = None,
-    config:       Any | None = None,
+    directories: list[str] | None = None,
+    config: Any | None = None,
 ) -> int:
     """
     Discover and load all GNAT plugins.
@@ -52,6 +52,7 @@ def load_plugins(
         Total number of plugins successfully loaded.
     """
     from gnat.plugins.registry import PluginRegistry
+
     registry = PluginRegistry.instance()
 
     # Read config overrides
@@ -61,10 +62,11 @@ def load_plugins(
     if config is not None:
         try:
             if config.has_section("plugins"):
-                if config.has_option("plugins", "enabled"):
-                    if not config.getboolean("plugins", "enabled"):
-                        logger.info("PluginRegistry: plugins disabled via config.")
-                        return 0
+                if config.has_option("plugins", "enabled") and not config.getboolean(
+                    "plugins", "enabled"
+                ):
+                    logger.info("PluginRegistry: plugins disabled via config.")
+                    return 0
                 if config.has_option("plugins", "directories"):
                     raw = config.get("plugins", "directories")
                     dirs.extend(p.strip() for p in raw.split(",") if p.strip())

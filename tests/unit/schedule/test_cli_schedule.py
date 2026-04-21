@@ -59,6 +59,7 @@ def sample_yaml(tmp_path) -> Path:
 @pytest.fixture
 def run_cli(capsys):
     """Invoke gnat_main() and capture stdout/stderr + exit code."""
+
     def _run(*argv: str) -> tuple[int, str, str]:
         exit_code = gnat_main(list(argv))
         captured = capsys.readouterr()
@@ -74,9 +75,7 @@ def run_cli(capsys):
 
 class TestScheduleList:
     def test_list_shows_both_jobs(self, run_cli, sample_yaml):
-        exit_code, out, _ = run_cli(
-            "schedule", "list", "--jobs-file", str(sample_yaml)
-        )
+        exit_code, out, _ = run_cli("schedule", "list", "--jobs-file", str(sample_yaml))
         assert exit_code == 0
         assert "sample-interval" in out
         assert "sample-cron" in out
@@ -205,9 +204,7 @@ class TestScheduleHistory:
 
 class TestScheduleCrontab:
     def test_crontab_emits_lines(self, run_cli, sample_yaml):
-        exit_code, out, _ = run_cli(
-            "schedule", "crontab", "--jobs-file", str(sample_yaml)
-        )
+        exit_code, out, _ = run_cli("schedule", "crontab", "--jobs-file", str(sample_yaml))
         assert exit_code == 0
         # Interval 3600s → */60 * * * * (or similar)
         assert "gnat schedule run" in out
@@ -252,9 +249,7 @@ class TestScheduleCrontab:
 
 class TestScheduleValidate:
     def test_validate_ok(self, run_cli, sample_yaml):
-        exit_code, out, _ = run_cli(
-            "schedule", "validate", "--jobs-file", str(sample_yaml)
-        )
+        exit_code, out, _ = run_cli("schedule", "validate", "--jobs-file", str(sample_yaml))
         assert exit_code == 0
         assert "OK" in out
         assert "2 job(s)" in out
@@ -302,9 +297,7 @@ class TestScheduleValidate:
                 """
             )
         )
-        exit_code, out, _ = run_cli(
-            "schedule", "validate", "--jobs-file", str(yaml)
-        )
+        exit_code, out, _ = run_cli("schedule", "validate", "--jobs-file", str(yaml))
         assert exit_code == 0
         assert "1 job" in out
 
@@ -346,9 +339,7 @@ class TestScheduleRun:
         assert exit_code == 0
         assert "success" in out
 
-    def test_run_single_job_failure_returns_1(
-        self, run_cli, sample_yaml, monkeypatch
-    ):
+    def test_run_single_job_failure_returns_1(self, run_cli, sample_yaml, monkeypatch):
         from datetime import datetime, timezone
 
         from gnat.schedule.job import RunRecord
@@ -401,9 +392,7 @@ class TestScheduleRun:
             }
 
         monkeypatch.setattr(FeedScheduler, "run_all_now", fake_run_all)
-        exit_code, out, _ = run_cli(
-            "schedule", "run", "--jobs-file", str(sample_yaml)
-        )
+        exit_code, out, _ = run_cli("schedule", "run", "--jobs-file", str(sample_yaml))
         assert exit_code == 0
         assert "sample-interval" in out
         assert "sample-cron" in out
@@ -430,14 +419,10 @@ class TestScheduleStart:
     def test_start_with_no_jobs_returns_2(self, run_cli, tmp_path):
         empty = tmp_path / "empty.yaml"
         empty.write_text("jobs: []\n")
-        exit_code, _, _ = run_cli(
-            "schedule", "start", "--jobs-file", str(empty)
-        )
+        exit_code, _, _ = run_cli("schedule", "start", "--jobs-file", str(empty))
         assert exit_code == 2
 
-    def test_start_loops_until_stop_flag(
-        self, run_cli, sample_yaml, monkeypatch
-    ):
+    def test_start_loops_until_stop_flag(self, run_cli, sample_yaml, monkeypatch):
         """
         Patch FeedScheduler.start/stop to be no-ops and replace
         ``time.sleep`` at the ``time`` module level so the ``start``

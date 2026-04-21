@@ -178,9 +178,7 @@ def _tokenize(pattern: str) -> list[_Token]:
     while pos < len(pattern):
         m = _TOKEN_RE.match(pattern, pos)
         if not m:
-            raise STIXPatternParseError(
-                f"unexpected character at position {pos}: {pattern[pos]!r}"
-            )
+            raise STIXPatternParseError(f"unexpected character at position {pos}: {pattern[pos]!r}")
         kind = m.lastgroup
         value = m.group()
         if kind == "WS":
@@ -241,8 +239,7 @@ class _Parser:
         tok = self._peek()
         if tok is None:
             raise STIXPatternParseError(
-                f"unexpected end of pattern; expected {kind}"
-                + (f" {value!r}" if value else "")
+                f"unexpected end of pattern; expected {kind}" + (f" {value!r}" if value else "")
             )
         if tok.kind != kind or (value is not None and tok.value != value):
             raise STIXPatternParseError(
@@ -270,9 +267,7 @@ class _Parser:
         while self._at("KEYWORD", "AND") or self._at("KEYWORD", "OR"):
             kw = self._advance()
             if op is not None and kw.value != op:
-                raise STIXPatternParseError(
-                    "mixed AND/OR at observation level without parentheses"
-                )
+                raise STIXPatternParseError("mixed AND/OR at observation level without parentheses")
             op = kw.value
             observations.append(self._observation())
         if self._peek() is not None:

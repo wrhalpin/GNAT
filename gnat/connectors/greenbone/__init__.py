@@ -8,6 +8,7 @@ Public API surface for the ``gnat.connectors.greenbone`` package.
 
 Exports: ``GreenboneClient``.
 """
+
 from .client import GreenboneClient
 
 __all__ = ["GreenboneClient"]

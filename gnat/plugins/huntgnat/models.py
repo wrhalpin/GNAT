@@ -58,18 +58,14 @@ class TranslationResult:
     translator_version: str = ""
     status: RuleStatus = RuleStatus.DRAFT
     confidence: int = 60
-    created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str = "huntgnat"
     rule_hash: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.rule_hash and self.rule_body:
-            self.rule_hash = hashlib.sha256(
-                self.rule_body.encode("utf-8")
-            ).hexdigest()
+            self.rule_hash = hashlib.sha256(self.rule_body.encode("utf-8")).hexdigest()
 
     def as_dict(self) -> dict[str, Any]:
         return {

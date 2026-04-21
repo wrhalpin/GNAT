@@ -44,8 +44,7 @@ def create_engine(
 
     if engine_name not in _SUPPORTED_ENGINES:
         raise ValueError(
-            f"Unknown rule engine {engine_name!r}. "
-            f"Supported: {sorted(_SUPPORTED_ENGINES)}"
+            f"Unknown rule engine {engine_name!r}. Supported: {sorted(_SUPPORTED_ENGINES)}"
         )
 
     rules_dir = Path(policy.rules_dir)

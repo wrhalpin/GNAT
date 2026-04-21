@@ -89,9 +89,7 @@ class SemperisClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set Authorization: Bearer header from the configured token."""
         if not self.api_token:
-            raise GNATClientError(
-                "Semperis connector requires api_token in config."
-            )
+            raise GNATClientError("Semperis connector requires api_token in config.")
         self._auth_headers["Authorization"] = f"Bearer {self.api_token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -116,13 +114,9 @@ class SemperisClient(BaseClient, ConnectorMixin):
             resp = self.get(f"/api/v1/Tenants/Forest/Domains/{object_id}")
             kind = "domain-posture"
         else:
-            raise GNATClientError(
-                f"Semperis get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Semperis get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Semperis returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Semperis returned unexpected payload for {object_id!r}")
         return dict(resp, _sem_kind=kind)
 
     def list_objects(
@@ -163,24 +157,16 @@ class SemperisClient(BaseClient, ConnectorMixin):
             resp = self.get("/api/v1/Security/Evaluators", params=params)
             kind = "evaluator"
         else:
-            raise GNATClientError(
-                f"Semperis list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Semperis list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _sem_kind=kind) for r in _extract_records(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Semperis connector is read-only."""
-        raise GNATClientError(
-            "Semperis connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Semperis connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Semperis connector is read-only."""
-        raise GNATClientError(
-            "Semperis connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Semperis connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -209,18 +195,14 @@ class SemperisClient(BaseClient, ConnectorMixin):
         resp = self.get("/api/v1/Tenants/Forest/Domains")
         return [dict(r, _sem_kind="domain-posture") for r in _extract_records(resp)]
 
-    def list_security_events(
-        self, since: str = "", until: str = ""
-    ) -> list[dict[str, Any]]:
+    def list_security_events(self, since: str = "", until: str = "") -> list[dict[str, Any]]:
         """Return runtime AD security events."""
         filters: dict[str, Any] = {}
         if since:
             filters["since"] = since
         if until:
             filters["until"] = until
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=10_000
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=10_000)
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
 
@@ -233,18 +215,9 @@ class SemperisClient(BaseClient, ConnectorMixin):
         now = utcnow()
 
         if kind in ("ioe", "ioc"):
-            ioe_id = (
-                native.get("id")
-                or native.get("name")
-                or native.get("evaluator")
-                or "unknown"
-            )
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_SEMPERIS, f"indicator|{kind}|{ioe_id}"
-            )
-            pattern = (
-                f"[x-semperis-{kind}:evaluator = '{native.get('evaluator', ioe_id)}']"
-            )
+            ioe_id = native.get("id") or native.get("name") or native.get("evaluator") or "unknown"
+            stix_uuid = uuid.uuid5(_NAMESPACE_SEMPERIS, f"indicator|{kind}|{ioe_id}")
+            pattern = f"[x-semperis-{kind}:evaluator = '{native.get('evaluator', ioe_id)}']"
             labels = ["malicious-activity"] if kind == "ioc" else ["anomalous-activity"]
             return {
                 "type": "indicator",
@@ -271,20 +244,13 @@ class SemperisClient(BaseClient, ConnectorMixin):
 
         # observed-data — security event or forest/domain posture snapshot
         refs: list[str] = []
-        actor = (
-            native.get("actor")
-            or native.get("user")
-            or native.get("initiator", "")
-        )
+        actor = native.get("actor") or native.get("user") or native.get("initiator", "")
         if actor:
             user_uuid = uuid.uuid5(_NAMESPACE_SEMPERIS, f"user-account|{actor}")
             refs.append(f"user-account--{user_uuid}")
 
         first = (
-            native.get("event_time")
-            or native.get("timestamp")
-            or native.get("first_seen")
-            or now
+            native.get("event_time") or native.get("timestamp") or native.get("first_seen") or now
         )
         last = native.get("last_seen") or first
 

@@ -13,12 +13,9 @@ unset, shows an info notice rather than crashing.
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any
-
-logger = logging.getLogger(__name__)
 
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -26,6 +23,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Select
 
+logger = logging.getLogger(__name__)
 
 _NO_PERSIST_MSG = (
     "Review queue not available.\n"
@@ -34,21 +32,21 @@ _NO_PERSIST_MSG = (
 )
 
 _STATUS_OPTIONS = [
-    ("Pending",  "pending"),
+    ("Pending", "pending"),
     ("Approved", "approved"),
     ("Rejected", "rejected"),
     ("Modified", "modified"),
-    ("All",      ""),
+    ("All", ""),
 ]
 
 _TYPE_OPTIONS = [
-    ("All types",    ""),
-    ("indicator",    "indicator"),
-    ("malware",      "malware"),
+    ("All types", ""),
+    ("indicator", "indicator"),
+    ("malware", "malware"),
     ("threat-actor", "threat-actor"),
-    ("tool",         "tool"),
-    ("vulnerability","vulnerability"),
-    ("campaign",     "campaign"),
+    ("tool", "tool"),
+    ("vulnerability", "vulnerability"),
+    ("campaign", "campaign"),
 ]
 
 
@@ -56,10 +54,10 @@ class ReviewScreen(Screen):
     """AI-extracted intel review queue browser (F6)."""
 
     BINDINGS = [
-        Binding("f6",       "app.switch_tab('review')", "Review",  show=True),
-        Binding("ctrl+r",   "refresh",                  "Refresh", show=True),
-        Binding("ctrl+a",   "approve_selected",         "Approve", show=True),
-        Binding("ctrl+d",   "reject_selected",          "Reject",  show=True),
+        Binding("f6", "app.switch_tab('review')", "Review", show=True),
+        Binding("ctrl+r", "refresh", "Refresh", show=True),
+        Binding("ctrl+a", "approve_selected", "Approve", show=True),
+        Binding("ctrl+d", "reject_selected", "Reject", show=True),
     ]
 
     DEFAULT_CSS = """
@@ -167,7 +165,7 @@ class ReviewScreen(Screen):
         with Horizontal(id="toolbar"):
             yield Input(placeholder="Search submitted_by…", id="search-input")
             yield Select(_STATUS_OPTIONS, id="status-filter", value="pending")
-            yield Select(_TYPE_OPTIONS,  id="type-filter",   value="")
+            yield Select(_TYPE_OPTIONS, id="type-filter", value="")
             yield Button("⟳ Refresh", id="refresh-btn", variant="default")
         yield Label("", id="stats-bar")
         yield DataTable(id="queue-table", cursor_type="row")
@@ -178,7 +176,7 @@ class ReviewScreen(Screen):
             yield Input(placeholder="Reviewer notes (optional)…", id="detail-notes-input")
             with Horizontal(id="action-bar"):
                 yield Button("✓ Approve", id="approve-btn", variant="success")
-                yield Button("✗ Reject",  id="reject-btn",  variant="error")
+                yield Button("✗ Reject", id="reject-btn", variant="error")
                 yield Input(placeholder="Conf 0-100", id="confidence-input")
         yield Label("Loading…", id="status-label")
         yield Footer()
@@ -196,8 +194,9 @@ class ReviewScreen(Screen):
     def _init_service(self) -> None:
         db_url = self._db_url or os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
         try:
-            from gnat.review.store import ReviewQueueStore
             from gnat.review.service import ReviewService
+            from gnat.review.store import ReviewQueueStore
+
             store = ReviewQueueStore(db_url)
             store.create_all()
             self._service = ReviewService(store)
@@ -216,11 +215,11 @@ class ReviewScreen(Screen):
 
         try:
             status_select = self.query_one("#status-filter", Select)
-            type_select   = self.query_one("#type-filter",   Select)
-            search_input  = self.query_one("#search-input",  Input)
+            type_select = self.query_one("#type-filter", Select)
+            search_input = self.query_one("#search-input", Input)
 
-            status    = str(status_select.value) if status_select.value else None
-            stix_type = str(type_select.value)   if type_select.value   else None
+            status = str(status_select.value) if status_select.value else None
+            stix_type = str(type_select.value) if type_select.value else None
             submitted_by = search_input.value.strip() or None
 
             self._items = self._service.list(
@@ -260,22 +259,13 @@ class ReviewScreen(Screen):
     def _show_detail(self, item: Any) -> None:
         self._selected_id = item.id
 
-        name_or_val = (
-            item.stix_data.get("name")
-            or item.stix_data.get("value")
-            or item.stix_id
-        )
-        self.query_one("#detail-header", Label).update(
-            f"[bold]{item.stix_type}[/]  {name_or_val}"
-        )
-        self.query_one("#detail-stix-id", Label).update(
-            f"ID: {item.stix_id}"
-        )
+        name_or_val = item.stix_data.get("name") or item.stix_data.get("value") or item.stix_id
+        self.query_one("#detail-header", Label).update(f"[bold]{item.stix_type}[/]  {name_or_val}")
+        self.query_one("#detail-stix-id", Label).update(f"ID: {item.stix_id}")
         conf = item.stix_data.get("confidence", "—")
-        src  = item.stix_data.get("x_source_type", "—")
+        src = item.stix_data.get("x_source_type", "—")
         self.query_one("#detail-confidence", Label).update(
-            f"Confidence: {conf}  |  Source type: {src}  |  "
-            f"Submitted by: {item.submitted_by}"
+            f"Confidence: {conf}  |  Source type: {src}  |  Submitted by: {item.submitted_by}"
         )
         if item.reviewer_notes:
             self.query_one("#detail-notes-input", Input).value = item.reviewer_notes
@@ -329,7 +319,7 @@ class ReviewScreen(Screen):
             return
         try:
             notes_input = self.query_one("#detail-notes-input", Input)
-            conf_input  = self.query_one("#confidence-input",   Input)
+            conf_input = self.query_one("#confidence-input", Input)
 
             notes = notes_input.value.strip() or None
             conf_override: int | None = None

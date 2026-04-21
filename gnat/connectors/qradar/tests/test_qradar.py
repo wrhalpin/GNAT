@@ -164,6 +164,7 @@ _SAMPLE_EVENT_ROW = {
 
 class TestQRadarConfig(unittest.TestCase):
     """Configuration container for test q radar."""
+
     def test_minimal_config(self):
         """Test that minimal config."""
         cfg = _make_config()
@@ -261,6 +262,7 @@ class TestQRadarConfig(unittest.TestCase):
 
 class TestQRadarAuthManager(unittest.TestCase):
     """Unit tests for :class:`QRadarAuthManager`."""
+
     def _make_auth(self, config=None):
         """Internal helper for make auth."""
         cfg = config or _make_config()
@@ -308,6 +310,7 @@ class TestQRadarAuthManager(unittest.TestCase):
 
 class TestQRadarClient(unittest.TestCase):
     """HTTP API client for the TestQRadar platform."""
+
     def test_get_returns_dict(self):
         """Test that get returns dict."""
         client, mock_http = _make_client()
@@ -444,6 +447,7 @@ class TestQRadarClient(unittest.TestCase):
 
 class TestQRadarOffenseCommands(unittest.TestCase):
     """Unit tests for :class:`QRadarOffenseCommands`."""
+
     def _make_offenses(self):
         """Internal helper for make offenses."""
         client, mock_http = _make_client()
@@ -544,6 +548,7 @@ class TestQRadarOffenseCommands(unittest.TestCase):
 
 class TestQRadarArielCommands(unittest.TestCase):
     """Unit tests for :class:`QRadarArielCommands`."""
+
     def _make_ariel(self):
         """Internal helper for make ariel."""
         client, mock_http = _make_client()
@@ -686,6 +691,7 @@ class TestQRadarArielCommands(unittest.TestCase):
 
 class TestQRadarReferenceDataCommands(unittest.TestCase):
     """Unit tests for :class:`QRadarReferenceDataCommands`."""
+
     def _make_rd(self):
         """Internal helper for make rd."""
         client, mock_http = _make_client()
@@ -782,6 +788,7 @@ class TestQRadarReferenceDataCommands(unittest.TestCase):
 
 class TestQRadarRulesCommands(unittest.TestCase):
     """Unit tests for :class:`QRadarRulesCommands`."""
+
     def _make_rules(self):
         """Internal helper for make rules."""
         client, mock_http = _make_client()
@@ -825,6 +832,7 @@ class TestQRadarRulesCommands(unittest.TestCase):
 
 class TestQRadarAssetCommands(unittest.TestCase):
     """Unit tests for :class:`QRadarAssetCommands`."""
+
     def _make_assets(self):
         """Internal helper for make assets."""
         client, mock_http = _make_client()
@@ -862,6 +870,7 @@ class TestQRadarAssetCommands(unittest.TestCase):
 
 class TestQRadarLogSourceCommands(unittest.TestCase):
     """Unit tests for :class:`QRadarLogSourceCommands`."""
+
     def _make_ls(self):
         """Internal helper for make ls."""
         client, mock_http = _make_client()
@@ -900,6 +909,7 @@ class TestQRadarLogSourceCommands(unittest.TestCase):
 
 class TestQRadarSTIXMapper(unittest.TestCase):
     """STIX translation helper for test q radar s t i x objects."""
+
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.mapper = QRadarSTIXMapper()
@@ -1084,6 +1094,7 @@ class TestQRadarSTIXMapper(unittest.TestCase):
 
 class TestQRadarExceptions(unittest.TestCase):
     """Raised when a test q radar exceptions error occurs."""
+
     def test_all_inherit_from_base(self):
         """Test that all inherit from base."""
         from gnat.connectors.qradar.exceptions import QRadarError

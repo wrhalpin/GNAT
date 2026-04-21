@@ -84,12 +84,11 @@ class WazuhClient:
     config : WazuhConfig
         Validated connector configuration.
     """
+
     TRUST_LEVEL: str = "trusted_internal"
     API_VERSION: str = "v1"
     API_PREFIX: str = "/api"
     COST_UNIT: int = 1
-
-
 
     def __init__(self, config: WazuhConfig) -> None:
         """Initialize WazuhClient."""

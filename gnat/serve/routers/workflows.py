@@ -32,6 +32,7 @@ router = APIRouter(prefix="/api/workflows", tags=["workflows"])
 
 # ── Request / response models ─────────────────────────────────────────────────
 
+
 class WorkflowRunRequest(BaseModel):
     """Request body for POST /api/workflows/{name}/run."""
 
@@ -41,12 +42,14 @@ class WorkflowRunRequest(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _get_workflow_store(request: Request) -> Any:
     store = getattr(request.app.state, "workflow_store", None)
     return store  # may be None — store is optional
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @router.get("")
 def list_catalog(
@@ -60,10 +63,11 @@ def list_catalog(
     """
     try:
         from gnat.agents.catalog import WorkflowCatalog
+
         entries = WorkflowCatalog.list(tags=tag if tag else None)
         return {
             "workflows": [e.to_dict() for e in entries],
-            "total":     len(entries),
+            "total": len(entries),
         }
     except Exception as exc:
         logger.error("workflows/catalog failed: %s", exc)
@@ -72,8 +76,8 @@ def list_catalog(
 
 @router.post("/{name}/run")
 def run_workflow(
-    name:    str,
-    body:    WorkflowRunRequest,
+    name: str,
+    body: WorkflowRunRequest,
     request: Request,
 ) -> dict[str, Any]:
     """
@@ -107,14 +111,14 @@ def run_workflow(
         raise HTTPException(
             status_code=404,
             detail=f"Workflow {name!r} not found. "
-                   f"Available: {[e.name for e in WorkflowCatalog.list()]}",
+            f"Available: {[e.name for e in WorkflowCatalog.list()]}",
         )
 
     try:
-        wf  = entry.factory()
+        wf = entry.factory()
         ctx = WorkflowContext(
-            investigation_id = body.investigation_id,
-            shared           = dict(body.shared),
+            investigation_id=body.investigation_id,
+            shared=dict(body.shared),
         )
         result = wf.run(ctx)
 
@@ -124,20 +128,20 @@ def run_workflow(
             try:
                 run_id = store.save(
                     result,
-                    workflow_name    = name,
-                    investigation_id = body.investigation_id,
+                    workflow_name=name,
+                    investigation_id=body.investigation_id,
                 )
             except Exception as exc:
                 logger.warning("workflows/%s/run: failed to persist: %s", name, exc)
 
         return {
-            "run_id":          run_id,
-            "workflow_name":   name,
-            "success":         result.success,
+            "run_id": run_id,
+            "workflow_name": name,
+            "success": result.success,
             "steps_completed": result.steps_completed,
-            "steps_failed":    result.steps_failed,
+            "steps_failed": result.steps_failed,
             "elapsed_seconds": round(result.elapsed_seconds, 3),
-            "errors":          result.errors,
+            "errors": result.errors,
         }
 
     except Exception as exc:
@@ -147,12 +151,12 @@ def run_workflow(
 
 @router.get("/runs")
 def list_runs(
-    request:          Request,
-    workflow_name:    str | None   = Query(None, description="Filter by workflow name"),
-    investigation_id: str | None   = Query(None),
-    status:           str | None   = Query(None, description="success | failed | running"),
-    limit:            int          = Query(50, ge=1, le=500),
-    offset:           int          = Query(0, ge=0),
+    request: Request,
+    workflow_name: str | None = Query(None, description="Filter by workflow name"),
+    investigation_id: str | None = Query(None),
+    status: str | None = Query(None, description="success | failed | running"),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
 ) -> dict[str, Any]:
     """
     Return workflow run history, newest first.
@@ -163,17 +167,17 @@ def list_runs(
 
     try:
         records = store.list(
-            workflow_name    = workflow_name,
-            investigation_id = investigation_id,
-            status           = status,
-            limit            = limit,
-            offset           = offset,
+            workflow_name=workflow_name,
+            investigation_id=investigation_id,
+            status=status,
+            limit=limit,
+            offset=offset,
         )
         return {
-            "runs":   [r.to_dict() for r in records],
-            "total":  len(records),
+            "runs": [r.to_dict() for r in records],
+            "total": len(records),
             "offset": offset,
-            "limit":  limit,
+            "limit": limit,
         }
     except Exception as exc:
         logger.error("workflows/runs failed: %s", exc)

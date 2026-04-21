@@ -100,9 +100,7 @@ class TestLeakScanner:
 
 class TestDuplicateDetector:
     def test_groups_identical_values(self) -> None:
-        dups = DuplicateDetector().find_duplicates(
-            ["same", "same", "different", "same"]
-        )
+        dups = DuplicateDetector().find_duplicates(["same", "same", "different", "same"])
         assert "same" in dups
         assert len(dups["same"]) == 3
 
@@ -147,9 +145,7 @@ class TestUnsafePatternDetector:
         assert findings == []
 
     def test_bad_credentials_type_ignored(self) -> None:
-        findings = UnsafePatternDetector().inspect_connector_config(
-            {"credentials": "not-a-dict"}
-        )
+        findings = UnsafePatternDetector().inspect_connector_config({"credentials": "not-a-dict"})
         assert findings == []
 
     def test_finding_location_contains_field(self) -> None:

@@ -4,7 +4,6 @@ Unit tests for gnat.analysis.copilot (GapDetector + ReportDraftingAssistant)
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
 from gnat.analysis.copilot import (
@@ -15,74 +14,80 @@ from gnat.analysis.copilot import (
     ReportDraftingAssistant,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_hypothesis(text: str) -> MagicMock:
     h = MagicMock()
-    h.id                  = f"hyp-{text[:10].replace(' ', '-')}"
-    h.statement           = text
-    h.status              = "active"
+    h.id = f"hyp-{text[:10].replace(' ', '-')}"
+    h.statement = text
+    h.status = "active"
     h.supporting_evidence = []
-    h.refuting_evidence   = []
+    h.refuting_evidence = []
     return h
 
 
-def _make_investigation(hypotheses: list | None = None, indicators: list | None = None,
-                        observables: list | None = None) -> MagicMock:
+def _make_investigation(
+    hypotheses: list | None = None, indicators: list | None = None, observables: list | None = None
+) -> MagicMock:
     inv = MagicMock()
-    inv.hypothesis    = hypotheses or []   # singular — matches detect_all()
-    inv.indicators    = indicators or []
-    inv.observables   = observables or []
+    inv.hypothesis = hypotheses or []  # singular — matches detect_all()
+    inv.indicators = indicators or []
+    inv.observables = observables or []
     inv.threat_actors = []
-    inv.campaigns     = []
-    inv.tags          = []
+    inv.campaigns = []
+    inv.tags = []
     return inv
 
 
 def _make_report(
-    title:           str = "Test Report",
-    report_type:     str = "incident",
-    classification:  str = "amber",
-    authors:         list | None = None,
-    key_findings:    list | None = None,
-    evidence_links:  list | None = None,
+    title: str = "Test Report",
+    report_type: str = "incident",
+    classification: str = "amber",
+    authors: list | None = None,
+    key_findings: list | None = None,
+    evidence_links: list | None = None,
     executive_summary: str = "",
 ) -> MagicMock:
     r = MagicMock()
-    r.title          = title
-    r.report_type    = MagicMock(value=report_type)
+    r.title = title
+    r.report_type = MagicMock(value=report_type)
     r.classification = MagicMock(label=classification)
-    r.authors        = authors or ["alice"]
-    r.key_findings   = key_findings or []
+    r.authors = authors or ["alice"]
+    r.key_findings = key_findings or []
     r.evidence_links = evidence_links or []
     r.executive_summary = executive_summary
     return r
 
 
-def _make_finding(statement: str, techniques: list | None = None,
-                  confidence_label: str = "medium") -> MagicMock:
+def _make_finding(
+    statement: str, techniques: list | None = None, confidence_label: str = "medium"
+) -> MagicMock:
     f = MagicMock()
-    f.statement        = statement
+    f.statement = statement
     f.mitre_techniques = techniques or []
-    f.confidence       = MagicMock(label=confidence_label)
+    f.confidence = MagicMock(label=confidence_label)
     return f
 
 
-def _make_evidence(statement: str, link_type: str = "supports",
-                   artifact_source: str = "xsoar",
-                   artifact_type: str = "indicator",
-                   artifact_id: str = "1") -> MagicMock:
+def _make_evidence(
+    statement: str,
+    link_type: str = "supports",
+    artifact_source: str = "xsoar",
+    artifact_type: str = "indicator",
+    artifact_id: str = "1",
+) -> MagicMock:
     e = MagicMock()
-    e.statement      = statement
-    e.link_type      = MagicMock(value=link_type)
+    e.statement = statement
+    e.link_type = MagicMock(value=link_type)
     e.artifact_source = artifact_source
-    e.artifact_type  = artifact_type
-    e.artifact_id    = artifact_id
+    e.artifact_type = artifact_type
+    e.artifact_id = artifact_id
     return e
 
 
 # ── GapDetector ───────────────────────────────────────────────────────────────
+
 
 class TestGapDetector:
     def test_no_evidence_always_triggered_when_no_indicators(self):
@@ -144,8 +149,8 @@ class TestGapDetector:
 
     def test_detect_all_returns_dict(self):
         detector = GapDetector()
-        h1  = _make_hypothesis("Lateral movement via RDP")
-        h2  = _make_hypothesis("Attributed to threat actor group")
+        h1 = _make_hypothesis("Lateral movement via RDP")
+        h2 = _make_hypothesis("Attributed to threat actor group")
         inv = _make_investigation(hypotheses=[h1, h2])
         result = detector.detect_all(inv)
         assert isinstance(result, dict)
@@ -183,12 +188,11 @@ class TestGapDetector:
 
 # ── ReportDraftingAssistant ───────────────────────────────────────────────────
 
+
 class TestReportDraftingAssistant:
     def test_no_llm_returns_placeholder(self):
         assistant = ReportDraftingAssistant(llm_client=None)
-        report    = _make_report(
-            key_findings=[_make_finding("APT used PowerShell")]
-        )
+        report = _make_report(key_findings=[_make_finding("APT used PowerShell")])
         result = assistant.draft_executive_summary(report)
         assert isinstance(result, DraftResult)
         assert result.executive_summary != ""
@@ -196,19 +200,17 @@ class TestReportDraftingAssistant:
 
     def test_no_llm_warning_message(self):
         assistant = ReportDraftingAssistant(llm_client=None)
-        result    = assistant.draft_executive_summary(_make_report())
+        result = assistant.draft_executive_summary(_make_report())
         assert any("No LLM" in w or "no LLM" in w.lower() for w in result.warnings)
 
     def test_llm_client_called(self):
         fake_llm = MagicMock()
         fake_llm.complete.return_value = {
             "content": "APT29 used spear-phishing to gain access.",
-            "model":   "claude-sonnet-4-5",
+            "model": "claude-sonnet-4-5",
         }
         assistant = ReportDraftingAssistant(llm_client=fake_llm)
-        report    = _make_report(
-            key_findings=[_make_finding("PowerShell execution")]
-        )
+        report = _make_report(key_findings=[_make_finding("PowerShell execution")])
         result = assistant.draft_executive_summary(report)
         assert fake_llm.complete.called
         assert "APT29" in result.executive_summary
@@ -217,21 +219,19 @@ class TestReportDraftingAssistant:
         fake_llm = MagicMock()
         fake_llm.complete.side_effect = RuntimeError("timeout")
         assistant = ReportDraftingAssistant(llm_client=fake_llm)
-        result    = assistant.draft_executive_summary(_make_report())
+        result = assistant.draft_executive_summary(_make_report())
         assert "[DRAFT FAILED]" in result.executive_summary
         assert len(result.warnings) > 0
 
     def test_draft_key_findings_no_findings_returns_warning(self):
         assistant = ReportDraftingAssistant(llm_client=None)
-        report    = _make_report(key_findings=[])
-        result    = assistant.draft_key_findings_narrative(report)
+        report = _make_report(key_findings=[])
+        result = assistant.draft_key_findings_narrative(report)
         assert len(result.warnings) > 0
 
     def test_draft_full_merges_results(self):
         assistant = ReportDraftingAssistant(llm_client=None)
-        report    = _make_report(
-            key_findings=[_make_finding("Indicator of compromise detected")]
-        )
+        report = _make_report(key_findings=[_make_finding("Indicator of compromise detected")])
         result = assistant.draft_full(report)
         assert isinstance(result, DraftResult)
         assert result.executive_summary != ""
@@ -240,9 +240,7 @@ class TestReportDraftingAssistant:
         fake_llm = MagicMock()
         fake_llm.complete.return_value = {"content": "text", "model": "m"}
         assistant = ReportDraftingAssistant(llm_client=fake_llm)
-        report    = _make_report(
-            key_findings=[_make_finding("Lateral movement via PsExec")]
-        )
+        report = _make_report(key_findings=[_make_finding("Lateral movement via PsExec")])
         result = assistant.draft_full(report)
         # draft_full makes two LLM calls
         assert fake_llm.complete.call_count == 2
@@ -256,8 +254,8 @@ class TestReportDraftingAssistant:
         fake_llm = MagicMock()
         fake_llm.complete.return_value = {"content": "draft", "model": "m"}
         assistant = ReportDraftingAssistant(
-            llm_client              = fake_llm,
-            summary_prompt_template = custom_tmpl,
+            llm_client=fake_llm,
+            summary_prompt_template=custom_tmpl,
         )
         report = _make_report()
         assistant.draft_executive_summary(report)
@@ -269,7 +267,7 @@ class TestReportDraftingAssistant:
         fake_llm = MagicMock()
         fake_llm.complete.return_value = {"content": "ok", "model": "m"}
         assistant = ReportDraftingAssistant(llm_client=fake_llm)
-        report    = _make_report(evidence_links=many_evidence)
+        report = _make_report(evidence_links=many_evidence)
         assistant.draft_executive_summary(report)
         prompt = fake_llm.complete.call_args[0][0]
         # The truncation notice should appear
@@ -277,12 +275,12 @@ class TestReportDraftingAssistant:
 
     def test_draft_result_to_dict(self):
         result = DraftResult(
-            executive_summary      = "Summary here.",
-            key_findings_narrative = "Findings narrative.",
-            model                  = "claude-3-5",
-            prompt_tokens          = 200,
-            completion_tokens      = 100,
-            warnings               = [],
+            executive_summary="Summary here.",
+            key_findings_narrative="Findings narrative.",
+            model="claude-3-5",
+            prompt_tokens=200,
+            completion_tokens=100,
+            warnings=[],
         )
         d = result.to_dict()
         assert d["executive_summary"] == "Summary here."

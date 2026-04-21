@@ -92,9 +92,7 @@ class SilverfortClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Exchange client credentials for a Bearer token."""
         if not self.client_id or not self.client_secret:
-            raise GNATClientError(
-                "Silverfort connector requires client_id and client_secret."
-            )
+            raise GNATClientError("Silverfort connector requires client_id and client_secret.")
         resp = self.post(
             "/api/v1/auth/token",
             json={
@@ -107,9 +105,7 @@ class SilverfortClient(BaseClient, ConnectorMixin):
         if isinstance(resp, dict):
             token = resp.get("access_token") or resp.get("token") or ""
         if not token:
-            raise GNATClientError(
-                "Silverfort authentication failed — no access_token in response"
-            )
+            raise GNATClientError("Silverfort authentication failed — no access_token in response")
         self._auth_headers["Authorization"] = f"Bearer {token}"
         self._auth_headers["Accept"] = "application/json"
 
@@ -132,13 +128,9 @@ class SilverfortClient(BaseClient, ConnectorMixin):
         elif stix_type == "observed-data":
             resp = self.get(f"/api/v1/events/authentications/{object_id}")
         else:
-            raise GNATClientError(
-                f"Silverfort get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Silverfort get_object does not support stix_type={stix_type!r}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Silverfort returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Silverfort returned unexpected payload for {object_id!r}")
         return dict(resp, _sf_kind=stix_type)
 
     def list_objects(
@@ -174,19 +166,13 @@ class SilverfortClient(BaseClient, ConnectorMixin):
         records = _extract_records(resp)
         return [dict(r, _sf_kind=kind) for r in records]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Silverfort connector is read-only."""
-        raise GNATClientError(
-            "Silverfort connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Silverfort connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Silverfort connector is read-only."""
-        raise GNATClientError(
-            "Silverfort connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Silverfort connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -213,18 +199,14 @@ class SilverfortClient(BaseClient, ConnectorMixin):
             filters["user"] = user
         if risk_score_min is not None:
             filters["risk_score_min"] = risk_score_min
-        return self.list_objects(
-            "observed-data", filters=filters, page_size=10_000
-        )
+        return self.list_objects("observed-data", filters=filters, page_size=10_000)
 
     def list_alerts(self, status: str = "") -> list[dict[str, Any]]:
         """Return Silverfort alerts (optionally filtered by status)."""
         filters: dict[str, Any] = {}
         if status:
             filters["status"] = status
-        return self.list_objects(
-            "x-silverfort-alert", filters=filters, page_size=10_000
-        )
+        return self.list_objects("x-silverfort-alert", filters=filters, page_size=10_000)
 
     def get_user_risk(self, user_id: str) -> dict[str, Any]:
         """Fetch risk metadata for a single user."""
@@ -270,22 +252,15 @@ class SilverfortClient(BaseClient, ConnectorMixin):
         refs: list[str] = []
         user_id = native.get("user_id") or native.get("upn") or native.get("user", "")
         if user_id:
-            user_uuid = uuid.uuid5(
-                _NAMESPACE_SILVERFORT, f"user-account|{user_id}"
-            )
+            user_uuid = uuid.uuid5(_NAMESPACE_SILVERFORT, f"user-account|{user_id}")
             refs.append(f"user-account--{user_uuid}")
         source_ip = native.get("source_ip") or native.get("client_ip")
         if source_ip:
-            ip_uuid = uuid.uuid5(
-                _NAMESPACE_SILVERFORT, f"ipv4-addr|{source_ip}"
-            )
+            ip_uuid = uuid.uuid5(_NAMESPACE_SILVERFORT, f"ipv4-addr|{source_ip}")
             refs.append(f"ipv4-addr--{ip_uuid}")
 
         first = (
-            native.get("event_time")
-            or native.get("timestamp")
-            or native.get("created_at")
-            or now
+            native.get("event_time") or native.get("timestamp") or native.get("created_at") or now
         )
         last = native.get("last_seen") or first
 

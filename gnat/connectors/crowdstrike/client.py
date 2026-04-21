@@ -23,12 +23,11 @@ from gnat.connectors.base_connector import ConnectorMixin
 
 class CrowdStrikeClient(BaseClient, ConnectorMixin):
     """HTTP client for the CrowdStrike Falcon REST API."""
+
     TRUST_LEVEL: str = "semi_trusted"
     API_VERSION: str = "v1"
     API_PREFIX: str = "/oauth2"
     COST_UNIT: int = 1
-
-
 
     stix_type_map: dict[str, str] = {
         "indicator": "iocs",
@@ -200,11 +199,15 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
             action["assigned_to"] = assigned_to
         if tags is not None:
             action["tags"] = tags
-        return self.post("/incidents/entities/incident-actions/v1", json={"action_parameters": [action]})
+        return self.post(
+            "/incidents/entities/incident-actions/v1", json={"action_parameters": [action]}
+        )
 
     def get_incident_behaviors(self, incident_id: str) -> list[dict[str, Any]]:
         """List behaviors (sub-events) associated with an incident."""
-        resp = self.get("/incidents/queries/behaviors/v1", params={"filter": f"incident_id:'{incident_id}'"})
+        resp = self.get(
+            "/incidents/queries/behaviors/v1", params={"filter": f"incident_id:'{incident_id}'"}
+        )
         ids = resp.get("resources", []) if isinstance(resp, dict) else []
         if not ids:
             return []
@@ -259,7 +262,9 @@ class CrowdStrikeClient(BaseClient, ConnectorMixin):
 
     def get_host_network_addresses(self, device_id: str) -> list[dict[str, Any]]:
         """Retrieve network address history for a host."""
-        resp = self.post("/devices/combined/devices/network-address-history/v1", json={"ids": [device_id]})
+        resp = self.post(
+            "/devices/combined/devices/network-address-history/v1", json={"ids": [device_id]}
+        )
         return resp.get("resources", []) if isinstance(resp, dict) else []
 
     # ── Threat Intelligence ───────────────────────────────────────────────────────

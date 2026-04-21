@@ -75,14 +75,10 @@ class SamdeskClient(BaseClient, ConnectorMixin):
         if not object_id:
             raise GNATClientError("Samdesk get_object requires a non-empty id")
         if stix_type != "observed-data":
-            raise GNATClientError(
-                f"Samdesk get_object does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Samdesk get_object does not support stix_type={stix_type!r}")
         resp = self.get(f"/v1/events/{object_id}")
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Samdesk returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Samdesk returned unexpected payload for {object_id!r}")
         return dict(resp, _sd_kind="event")
 
     def list_objects(
@@ -111,24 +107,16 @@ class SamdeskClient(BaseClient, ConnectorMixin):
                 resp = self.get("/v1/events", params=params)
                 tag = "event"
         else:
-            raise GNATClientError(
-                f"Samdesk list_objects does not support stix_type={stix_type!r}"
-            )
+            raise GNATClientError(f"Samdesk list_objects does not support stix_type={stix_type!r}")
         return [dict(r, _sd_kind=tag) for r in _extract_samdesk_list(resp)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Samdesk connector is read-only."""
-        raise GNATClientError(
-            "Samdesk connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("Samdesk connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """Samdesk connector is read-only."""
-        raise GNATClientError(
-            "Samdesk connector is read-only — no delete operations supported."
-        )
+        raise GNATClientError("Samdesk connector is read-only — no delete operations supported.")
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
@@ -154,15 +142,11 @@ class SamdeskClient(BaseClient, ConnectorMixin):
 
     def list_categories(self) -> list[dict[str, Any]]:
         """Return event category taxonomy."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "categories"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "categories"}, page_size=500)
 
     def list_topics(self) -> list[dict[str, Any]]:
         """Return saved topics / monitors."""
-        return self.list_objects(
-            "observed-data", filters={"kind": "topics"}, page_size=500
-        )
+        return self.list_objects("observed-data", filters={"kind": "topics"}, page_size=500)
 
     # ── ConnectorMixin — STIX translation ──────────────────────────────────
 
@@ -175,9 +159,7 @@ class SamdeskClient(BaseClient, ConnectorMixin):
 
         if kind in ("category", "topic"):
             cat_id = native.get("id") or native.get("name", "")
-            stix_uuid = uuid.uuid5(
-                _NAMESPACE_SAMDESK, f"x-samdesk-{kind}|{cat_id}"
-            )
+            stix_uuid = uuid.uuid5(_NAMESPACE_SAMDESK, f"x-samdesk-{kind}|{cat_id}")
             return {
                 "type": f"x-samdesk-{kind}",
                 "id": f"x-samdesk-{kind}--{stix_uuid}",
@@ -193,9 +175,7 @@ class SamdeskClient(BaseClient, ConnectorMixin):
         if isinstance(location, dict):
             place = location.get("name") or location.get("country")
             if place:
-                loc_uuid = uuid.uuid5(
-                    _NAMESPACE_SAMDESK, f"identity|location|{place}"
-                )
+                loc_uuid = uuid.uuid5(_NAMESPACE_SAMDESK, f"identity|location|{place}")
                 refs.append(f"identity--{loc_uuid}")
 
         first = (
@@ -217,7 +197,9 @@ class SamdeskClient(BaseClient, ConnectorMixin):
                     "title": native.get("title"),
                     "description": native.get("description"),
                     "category": native.get("category"),
-                    "country": (location or {}).get("country") if isinstance(location, dict) else None,
+                    "country": (location or {}).get("country")
+                    if isinstance(location, dict)
+                    else None,
                     "city": (location or {}).get("city") if isinstance(location, dict) else None,
                     "severity": native.get("severity"),
                     "url": native.get("url"),

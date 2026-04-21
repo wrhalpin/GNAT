@@ -149,9 +149,7 @@ class TestPolicyEnforcement:
         ref = SecretRef(provider="memory", vault="prod", path="prod/splunk/token")
         provider.store(StoreSecretRequest(ref=ref, value="real-token"))
 
-        broker = SecretsBroker(
-            providers={"memory": provider}, policy=_permissive_engine()
-        )
+        broker = SecretsBroker(providers={"memory": provider}, policy=_permissive_engine())
         retrieved = broker.resolve(ref, caller="runtime")
         assert retrieved.value == "real-token"
 
@@ -166,9 +164,7 @@ class TestPolicyEnforcement:
                 )
             ]
         )
-        broker = SecretsBroker(
-            providers={"memory": MemorySecretProvider()}, policy=engine
-        )
+        broker = SecretsBroker(providers={"memory": MemorySecretProvider()}, policy=engine)
         ref = SecretRef(provider="memory", vault="dev", path="dev/x/key")
         broker.store(StoreSecretRequest(ref=ref, value="v1"), caller="developer")
         with pytest.raises(SecretPolicyError, match="overwrite not permitted"):
@@ -214,9 +210,7 @@ class TestProviderRouting:
                 )
             ]
         )
-        broker = SecretsBroker(
-            providers={"memory": MemorySecretProvider()}, policy=engine
-        )
+        broker = SecretsBroker(providers={"memory": MemorySecretProvider()}, policy=engine)
         ref = SecretRef(provider="memory", vault="gnat-dev", path="dev/x/key")
         # MemorySecretProvider does not advertise supports_checkout
         with pytest.raises(UnsupportedProviderAction, match="checkout"):

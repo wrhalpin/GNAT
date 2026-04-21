@@ -95,20 +95,14 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Validate credentials and stamp the JSON accept header."""
         if not self.api_username:
-            raise GNATClientError(
-                "DomainTools connector requires api_username in config."
-            )
+            raise GNATClientError("DomainTools connector requires api_username in config.")
         if not self.api_key:
-            raise GNATClientError(
-                "DomainTools connector requires api_key in config."
-            )
+            raise GNATClientError("DomainTools connector requires api_key in config.")
         self._auth_headers["Accept"] = "application/json"
 
     # ── Internal helpers ──────────────────────────────────────────────────
 
-    def _auth_params(
-        self, extra: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    def _auth_params(self, extra: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return a params dict with DomainTools credentials appended."""
         params: dict[str, Any] = {
             "api_username": self.api_username,
@@ -142,17 +136,13 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
         if stix_type == "domain-name":
             resp = self.get(f"/v1/{object_id}/whois", params=self._auth_params())
         elif stix_type == "observed-data":
-            resp = self.get(
-                f"/v1/{object_id}/whois/history", params=self._auth_params()
-            )
+            resp = self.get(f"/v1/{object_id}/whois/history", params=self._auth_params())
         else:
             raise GNATClientError(
                 f"DomainTools get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"DomainTools returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"DomainTools returned unexpected payload for {object_id!r}")
         return dict(resp, _dt_kind=stix_type, _dt_query=object_id)
 
     def list_objects(
@@ -178,25 +168,17 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
                 raise GNATClientError(
                     "DomainTools list_objects(ipv4-addr) requires a 'domain' filter"
                 )
-            resp = self.get(
-                f"/v1/reverse-ip/{domain}/", params=self._auth_params()
-            )
+            resp = self.get(f"/v1/reverse-ip/{domain}/", params=self._auth_params())
             data = _extract_dt_results(resp)
-            items = [
-                dict(r, _dt_kind="ipv4-addr", _dt_query=domain) for r in data
-            ]
+            items = [dict(r, _dt_kind="ipv4-addr", _dt_query=domain) for r in data]
         elif stix_type == "observed-data":
             if not domain:
                 raise GNATClientError(
                     "DomainTools list_objects(observed-data) requires a 'domain' filter"
                 )
-            resp = self.get(
-                f"/v1/{domain}/hosting-history/", params=self._auth_params()
-            )
+            resp = self.get(f"/v1/{domain}/hosting-history/", params=self._auth_params())
             data = _extract_dt_results(resp)
-            items = [
-                dict(r, _dt_kind="observed-data", _dt_query=domain) for r in data
-            ]
+            items = [dict(r, _dt_kind="observed-data", _dt_query=domain) for r in data]
         elif stix_type == "domain-name":
             iris_query = filters.get("query") or {}
             if not iris_query:
@@ -208,9 +190,7 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
                 params=self._auth_params(iris_query),
             )
             data = _extract_dt_results(resp)
-            items = [
-                dict(r, _dt_kind="domain-name", _dt_query=domain) for r in data
-            ]
+            items = [dict(r, _dt_kind="domain-name", _dt_query=domain) for r in data]
         else:
             raise GNATClientError(
                 f"DomainTools list_objects does not support stix_type={stix_type!r}"
@@ -219,13 +199,9 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
         start = max(0, (int(page) - 1) * int(page_size))
         return items[start : start + int(page_size)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """DomainTools connector is read-only."""
-        raise GNATClientError(
-            "DomainTools connector is read-only — no write operations supported."
-        )
+        raise GNATClientError("DomainTools connector is read-only — no write operations supported.")
 
     def delete_object(self, stix_type: str, object_id: str) -> None:
         """DomainTools connector is read-only."""
@@ -257,9 +233,7 @@ class DomainToolsClient(BaseClient, ConnectorMixin):
 
     def reputation(self, domain: str) -> dict[str, Any]:
         """Return the domain reputation / risk score."""
-        resp = self.get(
-            f"/v1/{domain}/reputation/", params=self._auth_params()
-        )
+        resp = self.get(f"/v1/{domain}/reputation/", params=self._auth_params())
         if isinstance(resp, dict):
             return dict(resp, _dt_kind="observed-data", _dt_query=domain)
         return {}

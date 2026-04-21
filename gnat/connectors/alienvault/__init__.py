@@ -66,6 +66,7 @@ class OTXAuthError(OTXError):
 
 class OTXAPIError(OTXError):
     """Raised when a o t x a p i error error occurs."""
+
     def __init__(self, message, status_code=None, endpoint=None):
         """Initialize OTXAPIError."""
         super().__init__(message)
@@ -93,6 +94,7 @@ _OTX_BASE = "https://otx.alienvault.com/api/v1"
 @dataclass
 class OTXConfig:
     """Configuration container for o t x."""
+
     api_key: str
     base_url: str = _OTX_BASE
     verify_ssl: bool = True

@@ -90,9 +90,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set the custom ``APIKEY`` header from the configured key."""
         if not self.api_key:
-            raise GNATClientError(
-                "SecurityTrails connector requires api_key in config."
-            )
+            raise GNATClientError("SecurityTrails connector requires api_key in config.")
         self._auth_headers["APIKEY"] = self.api_key
         self._auth_headers["Accept"] = "application/json"
 
@@ -127,9 +125,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
                 f"SecurityTrails get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"SecurityTrails returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"SecurityTrails returned unexpected payload for {object_id!r}")
         return dict(resp, _st_kind=stix_type, _st_query=object_id)
 
     def list_objects(
@@ -159,11 +155,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
                     "SecurityTrails list_objects(domain-name) requires a 'domain' filter"
                 )
             resp = self.get(f"/v1/domain/{domain}/subdomains")
-            subs = (
-                resp.get("subdomains", [])
-                if isinstance(resp, dict)
-                else []
-            )
+            subs = resp.get("subdomains", []) if isinstance(resp, dict) else []
             items = [
                 {"_st_kind": "domain-name", "_st_query": domain, "subdomain": s, "parent": domain}
                 for s in subs
@@ -176,11 +168,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
                     "SecurityTrails list_objects(ipv4-addr) requires a 'query' filter"
                 )
             resp = self.post("/v1/ips/list", json={"query": dsl})
-            records = (
-                resp.get("records", [])
-                if isinstance(resp, dict)
-                else []
-            )
+            records = resp.get("records", []) if isinstance(resp, dict) else []
             items = [
                 dict(r, _st_kind="ipv4-addr", _st_query=dsl) for r in records if isinstance(r, dict)
             ]
@@ -197,11 +185,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
                     f"Valid: {sorted(_VALID_DNS_RECORD_TYPES)}"
                 )
             resp = self.get(f"/v1/history/{domain}/dns/{record_type}")
-            records = (
-                resp.get("records", [])
-                if isinstance(resp, dict)
-                else []
-            )
+            records = resp.get("records", []) if isinstance(resp, dict) else []
             items = [
                 dict(r, _st_kind="observed-data", _st_query=domain, _st_record_type=record_type)
                 for r in records
@@ -215,9 +199,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
         start = max(0, (int(page) - 1) * int(page_size))
         return items[start : start + int(page_size)]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """SecurityTrails connector is read-only."""
         raise GNATClientError(
             "SecurityTrails connector is read-only — no write operations supported."
@@ -244,9 +226,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
                 return [s for s in subs if isinstance(s, str)]
         return []
 
-    def historical_dns(
-        self, hostname: str, record_type: str = "a"
-    ) -> list[dict[str, Any]]:
+    def historical_dns(self, hostname: str, record_type: str = "a") -> list[dict[str, Any]]:
         """Return historical DNS records of *record_type* for *hostname*."""
         return self.list_objects(
             "observed-data",
@@ -291,11 +271,7 @@ class SecurityTrailsClient(BaseClient, ConnectorMixin):
 
         if kind == "domain-name":
             sub = native.get("subdomain") or native.get("hostname") or query
-            fqdn = (
-                f"{sub}.{native.get('parent', '')}".rstrip(".")
-                if native.get("parent")
-                else sub
-            )
+            fqdn = f"{sub}.{native.get('parent', '')}".rstrip(".") if native.get("parent") else sub
             stix_uuid = uuid.uuid5(_NAMESPACE_SECURITYTRAILS, f"domain-name|{fqdn}")
             return {
                 "type": "domain-name",

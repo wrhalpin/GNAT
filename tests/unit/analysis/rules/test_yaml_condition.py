@@ -55,32 +55,38 @@ class TestCompileCondition:
         assert cond(h, None) is True
 
     def test_all_combinator(self):
-        cond = compile_condition({
-            "all": [
-                {"supporting_count": {"gte": 2}},
-                {"has_refutation": False},
-            ]
-        })
+        cond = compile_condition(
+            {
+                "all": [
+                    {"supporting_count": {"gte": 2}},
+                    {"has_refutation": False},
+                ]
+            }
+        )
         h = make_hypothesis(supporting=["a", "b"])
         assert cond(h, None) is True
 
     def test_all_combinator_fails(self):
-        cond = compile_condition({
-            "all": [
-                {"supporting_count": {"gte": 5}},
-                {"has_refutation": False},
-            ]
-        })
+        cond = compile_condition(
+            {
+                "all": [
+                    {"supporting_count": {"gte": 5}},
+                    {"has_refutation": False},
+                ]
+            }
+        )
         h = make_hypothesis(supporting=["a", "b"])
         assert cond(h, None) is False
 
     def test_any_combinator(self):
-        cond = compile_condition({
-            "any": [
-                {"supporting_count": {"gte": 10}},
-                {"has_refutation": True},
-            ]
-        })
+        cond = compile_condition(
+            {
+                "any": [
+                    {"supporting_count": {"gte": 10}},
+                    {"has_refutation": True},
+                ]
+            }
+        )
         h = make_hypothesis(refuting=["x"])
         assert cond(h, None) is True
 
@@ -108,6 +114,7 @@ class TestCompileCondition:
 
     def test_unknown_helper_raises(self):
         import pytest
+
         with pytest.raises(ValueError, match="Unknown helper"):
             compile_condition({"nonexistent_helper": True})
 
@@ -131,5 +138,6 @@ class TestCompileAction:
 
     def test_unknown_action_raises(self):
         import pytest
+
         with pytest.raises(ValueError, match="Unknown action"):
             compile_action({"explode": {}})

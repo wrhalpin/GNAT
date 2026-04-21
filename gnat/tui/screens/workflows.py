@@ -139,6 +139,7 @@ class WorkflowsScreen(Screen):
         table.clear()
         try:
             from gnat.agents.catalog import WorkflowCatalog
+
             for entry in WorkflowCatalog.list():
                 tags = ", ".join(entry.tags)
                 desc = entry.description[:60] + ("…" if len(entry.description) > 60 else "")
@@ -155,11 +156,11 @@ class WorkflowsScreen(Screen):
         try:
             records = self._store.list(limit=50)
             for r in records:
-                run_id   = r.run_id[:8] + "…"
-                status   = "✓" if r.status == "success" else "✗"
-                steps    = f"{len(r.steps_completed)}/{len(r.steps_completed) + len(r.steps_failed)}"
-                elapsed  = f"{r.elapsed_seconds:.1f}"
-                started  = r.created_at.strftime("%Y-%m-%d %H:%M") if r.created_at else "—"
+                run_id = r.run_id[:8] + "…"
+                status = "✓" if r.status == "success" else "✗"
+                steps = f"{len(r.steps_completed)}/{len(r.steps_completed) + len(r.steps_failed)}"
+                elapsed = f"{r.elapsed_seconds:.1f}"
+                started = r.created_at.strftime("%Y-%m-%d %H:%M") if r.created_at else "—"
                 table.add_row(run_id, r.workflow_name, status, steps, elapsed, started)
         except Exception as exc:
             table.add_row("Error", str(exc)[:60], "", "", "", "")
@@ -194,13 +195,16 @@ class WorkflowsScreen(Screen):
             try:
                 from gnat.agents.catalog import WorkflowCatalog
                 from gnat.agents.workflow import WorkflowContext
-                wf  = WorkflowCatalog.build(name)
+
+                wf = WorkflowCatalog.build(name)
                 ctx = WorkflowContext()
                 result = wf.run(ctx)
                 if self._store is not None:
                     self._store.save(result, workflow_name=name)
                 self.call_from_thread(self._populate_history)
-                self.call_from_thread(self._set_status, f"'{name}' completed (success={result.success})")
+                self.call_from_thread(
+                    self._set_status, f"'{name}' completed (success={result.success})"
+                )
             except Exception as exc:
                 self.call_from_thread(self._set_status, f"Trigger failed: {exc}")
 

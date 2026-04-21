@@ -39,16 +39,18 @@ from gnat.orm.relationship import Relationship
 logger = logging.getLogger(__name__)
 
 # STIX types that the ORM can represent as proper Relationship SROs
-_RELATIONSHIP_TYPES = frozenset({
-    "part-of",
-    "same-ioc",
-    "same-host",
-    "same-user",
-    "same-campaign",
-    "same-ticket",
-    "indicates",
-    "related-to",
-})
+_RELATIONSHIP_TYPES = frozenset(
+    {
+        "part-of",
+        "same-ioc",
+        "same-host",
+        "same-user",
+        "same-campaign",
+        "same-ticket",
+        "indicates",
+        "related-to",
+    }
+)
 
 
 def materialize(
@@ -106,17 +108,16 @@ def materialize(
             continue
         try:
             rel = Relationship(
-                relationship_type = edge.relationship_type,
-                source_ref        = src_stix_id,
-                target_ref        = tgt_stix_id,
+                relationship_type=edge.relationship_type,
+                source_ref=src_stix_id,
+                target_ref=tgt_stix_id,
             )
-            rel.x_confidence     = edge.confidence
-            rel.x_reasoning      = edge.reasoning
+            rel.x_confidence = edge.confidence
+            rel.x_reasoning = edge.reasoning
             rel.x_source_platform = edge.source_platform
             ws.add(rel)
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Could not add edge %s→%s: %s",
-                           edge.source_id, edge.target_id, exc)
+            logger.warning("Could not add edge %s→%s: %s", edge.source_id, edge.target_id, exc)
 
     # ── Store investigation metadata in workspace ──────────────────────────
     summary = graph.summary()
@@ -128,45 +129,46 @@ def materialize(
         ],
         "summary": summary,
         "correlation": {
-            "shared_iocs":      {k: v for k, v in graph.by_ioc.items()      if len(v) > 1},
-            "shared_hosts":     {k: v for k, v in graph.by_hostname.items() if len(v) > 1},
-            "shared_users":     {k: v for k, v in graph.by_username.items() if len(v) > 1},
+            "shared_iocs": {k: v for k, v in graph.by_ioc.items() if len(v) > 1},
+            "shared_hosts": {k: v for k, v in graph.by_hostname.items() if len(v) > 1},
+            "shared_users": {k: v for k, v in graph.by_username.items() if len(v) > 1},
             "shared_campaigns": {k: v for k, v in graph.by_campaign.items() if len(v) > 1},
-            "shared_tickets":   {k: v for k, v in graph.by_ticket.items()   if len(v) > 1},
+            "shared_tickets": {k: v for k, v in graph.by_ticket.items() if len(v) > 1},
         },
     }
     ws.save()
 
     logger.info(
         "Materialised %d nodes, %d edges into workspace %r",
-        added, len(graph.edges), ws_name,
+        added,
+        len(graph.edges),
+        ws_name,
     )
     return ws
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
+
 def _node_to_stix_base(node: EvidenceNode) -> STIXBase:
     """Wrap a normalised node's STIX dict as a :class:`~gnat.orm.base.STIXBase`."""
     stix_type = node.stix.get("type", "x-evidence-node")
-    obj = STIXBase(stix_type=stix_type, **{
-        k: v for k, v in node.stix.items() if k != "type"
-    })
+    obj = STIXBase(stix_type=stix_type, **{k: v for k, v in node.stix.items() if k != "type"})
     # Tag with investigation metadata not already in the STIX dict
-    obj.x_evidence_node_id   = node.node_id
+    obj.x_evidence_node_id = node.node_id
     obj.x_evidence_node_type = node.node_type
-    obj.x_source_platform    = node.platform
-    obj.x_source_id          = node.source_id
+    obj.x_source_platform = node.platform
+    obj.x_source_id = node.source_id
     if node.time_window:
         obj.x_time_window_start = node.time_window[0]
-        obj.x_time_window_end   = node.time_window[1]
+        obj.x_time_window_end = node.time_window[1]
     return obj
 
 
 def _title_to_slug(title: str) -> str:
     """Convert an investigation title to a valid workspace name slug."""
     slug = title.lower()
-    for ch in (" ", "/", "\\", ":", ";", ",", ".", "!", "?", "\"", "'"):
+    for ch in (" ", "/", "\\", ":", ";", ",", ".", "!", "?", '"', "'"):
         slug = slug.replace(ch, "-")
     # Collapse repeated hyphens and strip leading/trailing
     while "--" in slug:

@@ -20,13 +20,13 @@ from typing import Any
 class LineageEventType(str, Enum):
     """Types of operations that generate lineage events."""
 
-    INGESTED    = "ingested"
-    ENRICHED    = "enriched"
-    NORMALIZED  = "normalized"
-    LINKED      = "linked"
-    EXPORTED    = "exported"
-    REPORTED    = "reported"
-    DELETED     = "deleted"
+    INGESTED = "ingested"
+    ENRICHED = "enriched"
+    NORMALIZED = "normalized"
+    LINKED = "linked"
+    EXPORTED = "exported"
+    REPORTED = "reported"
+    DELETED = "deleted"
 
 
 @dataclass
@@ -54,25 +54,23 @@ class LineageEvent:
         Arbitrary context dict (platform version, export format, etc.).
     """
 
-    event_type:  LineageEventType
-    object_id:   str
+    event_type: LineageEventType
+    object_id: str
     object_type: str
-    actor:       str
-    source:      str
-    id:          str                   = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp:   datetime              = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
-    )
-    metadata:    dict[str, Any]        = field(default_factory=dict)
+    actor: str
+    source: str
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "id":          self.id,
-            "event_type":  self.event_type.value,
-            "object_id":   self.object_id,
+            "id": self.id,
+            "event_type": self.event_type.value,
+            "object_id": self.object_id,
             "object_type": self.object_type,
-            "actor":       self.actor,
-            "source":      self.source,
-            "timestamp":   self.timestamp.isoformat(),
-            "metadata":    self.metadata,
+            "actor": self.actor,
+            "source": self.source,
+            "timestamp": self.timestamp.isoformat(),
+            "metadata": self.metadata,
         }

@@ -91,13 +91,13 @@ class InvestigationService:
 
     def create(
         self,
-        title:          str,
-        created_by:     str,
-        description:    str          = "",
-        classification: TLPLevel     = TLPLevel.AMBER,
-        assigned_to:    list[str]    | None = None,
-        scope:          InvestigationScope | None = None,
-        tags:           list[str]    | None = None,
+        title: str,
+        created_by: str,
+        description: str = "",
+        classification: TLPLevel = TLPLevel.AMBER,
+        assigned_to: list[str] | None = None,
+        scope: InvestigationScope | None = None,
+        tags: list[str] | None = None,
         source_connectors: list[str] | None = None,
     ) -> Investigation:
         """
@@ -127,14 +127,14 @@ class InvestigationService:
         Investigation
         """
         inv = Investigation(
-            title             = title,
-            created_by        = created_by,
-            description       = description,
-            classification    = classification,
-            assigned_to       = list(assigned_to or []),
-            scope             = scope or InvestigationScope(),
-            tags              = list(tags or []),
-            source_connectors = list(source_connectors or []),
+            title=title,
+            created_by=created_by,
+            description=description,
+            classification=classification,
+            assigned_to=list(assigned_to or []),
+            scope=scope or InvestigationScope(),
+            tags=list(tags or []),
+            source_connectors=list(source_connectors or []),
         )
         self._store.save(inv)
         logger.info("InvestigationService: created investigation %s (%s)", inv.id, title)
@@ -160,12 +160,12 @@ class InvestigationService:
 
     def list(
         self,
-        query:      "Any | None" = None,
-        status:     InvestigationStatus | None = None,
+        query: Any | None = None,
+        status: InvestigationStatus | None = None,
         created_by: str | None = None,
-        tag:        str | None = None,
-        limit:      int = 100,
-        offset:     int = 0,
+        tag: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[Investigation]:
         """
         List investigations with optional filters.
@@ -175,10 +175,12 @@ class InvestigationService:
         accepted for backward compatibility.
         """
         from gnat.analysis.query import InvestigationQuery
+
         if isinstance(query, InvestigationQuery):
             return self._store.list(query=query)
-        return self._store.list(status=status, created_by=created_by, tag=tag,
-                                limit=limit, offset=offset)
+        return self._store.list(
+            status=status, created_by=created_by, tag=tag, limit=limit, offset=offset
+        )
 
     def delete(self, investigation_id: str) -> None:
         """Soft-delete an Investigation."""
@@ -230,15 +232,19 @@ class InvestigationService:
         inv.updated_at = datetime.now(tz=timezone.utc)
 
         if note and author:
-            inv.notes.append(AnalystNote(
-                content = f"**Status changed:** `{old_status.value}` → `{new_status.value}`\n\n{note}",
-                author  = author,
-            ))
+            inv.notes.append(
+                AnalystNote(
+                    content=f"**Status changed:** `{old_status.value}` → `{new_status.value}`\n\n{note}",
+                    author=author,
+                )
+            )
 
         self._store.save(inv)
         logger.info(
             "InvestigationService: %s transitioned %s → %s",
-            investigation_id, old_status.value, new_status.value,
+            investigation_id,
+            old_status.value,
+            new_status.value,
         )
         return inv
 
@@ -248,7 +254,7 @@ class InvestigationService:
         self,
         investigation_id: str,
         content: str,
-        author:  str,
+        author: str,
         linked_artifacts: list[str] | None = None,
     ) -> AnalystNote:
         """
@@ -270,9 +276,9 @@ class InvestigationService:
         """
         inv = self.get(investigation_id)
         note = AnalystNote(
-            content          = content,
-            author           = author,
-            linked_artifacts = list(linked_artifacts or []),
+            content=content,
+            author=author,
+            linked_artifacts=list(linked_artifacts or []),
         )
         inv.notes.append(note)
         inv.updated_at = datetime.now(tz=timezone.utc)
@@ -284,11 +290,11 @@ class InvestigationService:
     def add_task(
         self,
         investigation_id: str,
-        title:       str,
-        description: str           = "",
-        priority:    TaskPriority  = TaskPriority.MEDIUM,
-        assigned_to: str | None    = None,
-        due_date:    datetime | None = None,
+        title: str,
+        description: str = "",
+        priority: TaskPriority = TaskPriority.MEDIUM,
+        assigned_to: str | None = None,
+        due_date: datetime | None = None,
     ) -> InvestigationTask:
         """
         Add an actionable task to an Investigation.
@@ -300,11 +306,11 @@ class InvestigationService:
         """
         inv = self.get(investigation_id)
         task = InvestigationTask(
-            title       = title,
-            description = description,
-            priority    = priority,
-            assigned_to = assigned_to,
-            due_date    = due_date,
+            title=title,
+            description=description,
+            priority=priority,
+            assigned_to=assigned_to,
+            due_date=due_date,
         )
         inv.tasks.append(task)
         inv.updated_at = datetime.now(tz=timezone.utc)
@@ -314,8 +320,8 @@ class InvestigationService:
     def update_task_status(
         self,
         investigation_id: str,
-        task_id:          str,
-        new_status:       TaskStatus,
+        task_id: str,
+        new_status: TaskStatus,
     ) -> InvestigationTask:
         """
         Update the status of a task within an Investigation.
@@ -328,9 +334,9 @@ class InvestigationService:
         inv = self.get(investigation_id)
         for task in inv.tasks:
             if task.id == task_id:
-                task.status     = new_status
+                task.status = new_status
                 task.updated_at = datetime.now(tz=timezone.utc)
-                inv.updated_at  = datetime.now(tz=timezone.utc)
+                inv.updated_at = datetime.now(tz=timezone.utc)
                 self._store.save(inv)
                 return task
         raise InvestigationError(
@@ -342,8 +348,8 @@ class InvestigationService:
     def add_hypothesis(
         self,
         investigation_id: str,
-        statement:        str,
-        confidence:       ConfidenceScore | None = None,
+        statement: str,
+        confidence: ConfidenceScore | None = None,
     ) -> Hypothesis:
         """
         Add an analytical hypothesis to an Investigation.
@@ -355,8 +361,8 @@ class InvestigationService:
         """
         inv = self.get(investigation_id)
         hyp = Hypothesis(
-            statement  = statement,
-            confidence = confidence,
+            statement=statement,
+            confidence=confidence,
         )
         inv.hypothesis.append(hyp)
         inv.updated_at = datetime.now(tz=timezone.utc)
@@ -366,9 +372,9 @@ class InvestigationService:
     def update_hypothesis_status(
         self,
         investigation_id: str,
-        hypothesis_id:    str,
-        new_status:       HypothesisStatus,
-        confidence:       ConfidenceScore | None = None,
+        hypothesis_id: str,
+        new_status: HypothesisStatus,
+        confidence: ConfidenceScore | None = None,
     ) -> Hypothesis:
         """
         Update the evaluation status (and optionally confidence) of a hypothesis.
@@ -381,7 +387,7 @@ class InvestigationService:
         inv = self.get(investigation_id)
         for hyp in inv.hypothesis:
             if hyp.id == hypothesis_id:
-                hyp.status     = new_status
+                hyp.status = new_status
                 hyp.updated_at = datetime.now(tz=timezone.utc)
                 if confidence is not None:
                     hyp.confidence = confidence
@@ -412,7 +418,9 @@ class InvestigationService:
         self._store.save(inv)
         return inv
 
-    def link_threat_actors(self, investigation_id: str, threat_actor_ids: list[str]) -> Investigation:
+    def link_threat_actors(
+        self, investigation_id: str, threat_actor_ids: list[str]
+    ) -> Investigation:
         """Attach STIX ThreatActor IDs to an Investigation (deduplicates)."""
         inv = self.get(investigation_id)
         existing = set(inv.threat_actors)
@@ -459,18 +467,18 @@ class InvestigationService:
         inv = self.get(investigation_id)
         open_tasks = sum(1 for t in inv.tasks if t.status != TaskStatus.DONE)
         return {
-            "id":               inv.id,
-            "title":            inv.title,
-            "status":           inv.status.value,
-            "classification":   inv.classification.label,
-            "created_by":       inv.created_by,
+            "id": inv.id,
+            "title": inv.title,
+            "status": inv.status.value,
+            "classification": inv.classification.label,
+            "created_by": inv.created_by,
             "hypothesis_count": len(inv.hypothesis),
-            "note_count":       len(inv.notes),
-            "task_count":       len(inv.tasks),
-            "open_task_count":  open_tasks,
-            "indicator_count":  len(inv.indicators),
+            "note_count": len(inv.notes),
+            "task_count": len(inv.tasks),
+            "open_task_count": open_tasks,
+            "indicator_count": len(inv.indicators),
             "observable_count": len(inv.observables),
-            "tags":             inv.tags,
-            "created_at":       inv.created_at.isoformat(),
-            "updated_at":       inv.updated_at.isoformat(),
+            "tags": inv.tags,
+            "created_at": inv.created_at.isoformat(),
+            "updated_at": inv.updated_at.isoformat(),
         }

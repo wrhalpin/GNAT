@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 # Status constants (mirrors WorkflowResult.success)
 STATUS_SUCCESS = "success"
-STATUS_FAILED  = "failed"
+STATUS_FAILED = "failed"
 STATUS_RUNNING = "running"
 
 
@@ -83,36 +83,37 @@ class WorkflowRunRecord:
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> None:
-        self.run_id          = run_id
-        self.workflow_name   = workflow_name
-        self.status          = status
-        self.context_json    = context_json
+        self.run_id = run_id
+        self.workflow_name = workflow_name
+        self.status = status
+        self.context_json = context_json
         self.steps_completed = steps_completed
-        self.steps_failed    = steps_failed
-        self.errors          = errors
+        self.steps_failed = steps_failed
+        self.errors = errors
         self.elapsed_seconds = elapsed_seconds
         self.investigation_id = investigation_id
-        self.created_at      = created_at or datetime.now(timezone.utc)
-        self.updated_at      = updated_at or datetime.now(timezone.utc)
+        self.created_at = created_at or datetime.now(timezone.utc)
+        self.updated_at = updated_at or datetime.now(timezone.utc)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a JSON-friendly dict."""
         return {
-            "run_id":           self.run_id,
-            "workflow_name":    self.workflow_name,
-            "status":           self.status,
-            "steps_completed":  self.steps_completed,
-            "steps_failed":     self.steps_failed,
-            "errors":           self.errors,
-            "elapsed_seconds":  round(self.elapsed_seconds, 3),
+            "run_id": self.run_id,
+            "workflow_name": self.workflow_name,
+            "status": self.status,
+            "steps_completed": self.steps_completed,
+            "steps_failed": self.steps_failed,
+            "errors": self.errors,
+            "elapsed_seconds": round(self.elapsed_seconds, 3),
             "investigation_id": self.investigation_id,
-            "created_at":       self.created_at.isoformat(),
-            "updated_at":       self.updated_at.isoformat(),
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }
 
     @classmethod
-    def _from_row(cls, row: Any) -> "WorkflowRunRecord":
+    def _from_row(cls, row: Any) -> WorkflowRunRecord:
         """Build from a DB row (dict-like)."""
+
         def _parse_json_list(val: Any) -> list[str]:
             if isinstance(val, list):
                 return val
@@ -124,17 +125,17 @@ class WorkflowRunRecord:
             return []
 
         return cls(
-            run_id           = row["run_id"],
-            workflow_name    = row["workflow_name"],
-            status           = row["status"],
-            context_json     = row.get("context_json", "{}"),
-            steps_completed  = _parse_json_list(row.get("steps_completed", "[]")),
-            steps_failed     = _parse_json_list(row.get("steps_failed", "[]")),
-            errors           = _parse_json_list(row.get("errors", "[]")),
-            elapsed_seconds  = float(row.get("elapsed_seconds", 0.0)),
-            investigation_id = row.get("investigation_id"),
-            created_at       = _parse_dt(row.get("created_at")),
-            updated_at       = _parse_dt(row.get("updated_at")),
+            run_id=row["run_id"],
+            workflow_name=row["workflow_name"],
+            status=row["status"],
+            context_json=row.get("context_json", "{}"),
+            steps_completed=_parse_json_list(row.get("steps_completed", "[]")),
+            steps_failed=_parse_json_list(row.get("steps_failed", "[]")),
+            errors=_parse_json_list(row.get("errors", "[]")),
+            elapsed_seconds=float(row.get("elapsed_seconds", 0.0)),
+            investigation_id=row.get("investigation_id"),
+            created_at=_parse_dt(row.get("created_at")),
+            updated_at=_parse_dt(row.get("updated_at")),
         )
 
 
@@ -172,6 +173,7 @@ class WorkflowStore:
         if db_url:
             try:
                 import sqlalchemy as sa
+
                 self._engine = sa.create_engine(db_url, future=True)
                 self._ensure_table()
             except Exception as exc:
@@ -185,7 +187,7 @@ class WorkflowStore:
 
     def save(
         self,
-        result: Any,              # WorkflowResult
+        result: Any,  # WorkflowResult
         workflow_name: str,
         investigation_id: str | None = None,
     ) -> str:
@@ -204,28 +206,28 @@ class WorkflowStore:
             The generated ``run_id`` (UUID).
         """
         run_id = str(uuid.uuid4())
-        now    = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc)
         status = STATUS_SUCCESS if result.success else STATUS_FAILED
+
+        import contextlib
 
         ctx_shared = {}
         if hasattr(result, "context") and result.context is not None:
-            try:
+            with contextlib.suppress(Exception):
                 ctx_shared = dict(result.context.shared or {})
-            except Exception:
-                pass
 
         record = WorkflowRunRecord(
-            run_id           = run_id,
-            workflow_name    = workflow_name,
-            status           = status,
-            context_json     = json.dumps(ctx_shared, default=str),
-            steps_completed  = list(result.steps_completed),
-            steps_failed     = list(result.steps_failed),
-            errors           = list(result.errors),
-            elapsed_seconds  = float(result.elapsed_seconds),
-            investigation_id = investigation_id,
-            created_at       = now,
-            updated_at       = now,
+            run_id=run_id,
+            workflow_name=workflow_name,
+            status=status,
+            context_json=json.dumps(ctx_shared, default=str),
+            steps_completed=list(result.steps_completed),
+            steps_failed=list(result.steps_failed),
+            errors=list(result.errors),
+            elapsed_seconds=float(result.elapsed_seconds),
+            investigation_id=investigation_id,
+            created_at=now,
+            updated_at=now,
         )
 
         if self._engine is not None:
@@ -235,7 +237,9 @@ class WorkflowStore:
 
         logger.debug(
             "WorkflowStore.save: run_id=%s workflow=%s status=%s",
-            run_id, workflow_name, status,
+            run_id,
+            workflow_name,
+            status,
         )
         return run_id
 
@@ -245,11 +249,10 @@ class WorkflowStore:
             return self._in_memory.get(run_id)
         try:
             import sqlalchemy as sa
+
             with self._engine.connect() as conn:
                 tbl = self._table()
-                row = conn.execute(
-                    sa.select(tbl).where(tbl.c.run_id == run_id)
-                ).mappings().first()
+                row = conn.execute(sa.select(tbl).where(tbl.c.run_id == run_id)).mappings().first()
                 return WorkflowRunRecord._from_row(dict(row)) if row else None
         except Exception as exc:
             logger.warning("WorkflowStore.get failed: %s", exc)
@@ -288,12 +291,13 @@ class WorkflowStore:
             if status:
                 records = [r for r in records if r.status == status]
             records.sort(key=lambda r: r.created_at, reverse=True)
-            return records[offset: offset + limit]
+            return records[offset : offset + limit]
 
         try:
             import sqlalchemy as sa
+
             tbl = self._table()
-            q   = sa.select(tbl)
+            q = sa.select(tbl)
             if workflow_name:
                 q = q.where(tbl.c.workflow_name == workflow_name)
             if investigation_id:
@@ -314,11 +318,10 @@ class WorkflowStore:
             return bool(self._in_memory.pop(run_id, None))
         try:
             import sqlalchemy as sa
+
             tbl = self._table()
             with self._engine.begin() as conn:
-                result = conn.execute(
-                    sa.delete(tbl).where(tbl.c.run_id == run_id)
-                )
+                result = conn.execute(sa.delete(tbl).where(tbl.c.run_id == run_id))
                 return result.rowcount > 0
         except Exception as exc:
             logger.warning("WorkflowStore.delete failed: %s", exc)
@@ -328,20 +331,22 @@ class WorkflowStore:
 
     def _table(self) -> Any:
         import sqlalchemy as sa
+
         meta = sa.MetaData()
         return sa.Table(
-            "workflow_runs", meta,
-            sa.Column("run_id",           sa.String(36),   primary_key=True),
-            sa.Column("workflow_name",    sa.String(128),  nullable=False, index=True),
-            sa.Column("status",           sa.String(32),   nullable=False),
-            sa.Column("context_json",     sa.Text,         nullable=False, default="{}"),
-            sa.Column("steps_completed",  sa.Text,         nullable=False, default="[]"),
-            sa.Column("steps_failed",     sa.Text,         nullable=False, default="[]"),
-            sa.Column("errors",           sa.Text,         nullable=False, default="[]"),
-            sa.Column("elapsed_seconds",  sa.Float,        nullable=False, default=0.0),
-            sa.Column("investigation_id", sa.String(128),  nullable=True,  index=True),
-            sa.Column("created_at",       sa.DateTime(timezone=True), nullable=False),
-            sa.Column("updated_at",       sa.DateTime(timezone=True), nullable=False),
+            "workflow_runs",
+            meta,
+            sa.Column("run_id", sa.String(36), primary_key=True),
+            sa.Column("workflow_name", sa.String(128), nullable=False, index=True),
+            sa.Column("status", sa.String(32), nullable=False),
+            sa.Column("context_json", sa.Text, nullable=False, default="{}"),
+            sa.Column("steps_completed", sa.Text, nullable=False, default="[]"),
+            sa.Column("steps_failed", sa.Text, nullable=False, default="[]"),
+            sa.Column("errors", sa.Text, nullable=False, default="[]"),
+            sa.Column("elapsed_seconds", sa.Float, nullable=False, default=0.0),
+            sa.Column("investigation_id", sa.String(128), nullable=True, index=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         )
 
     def _ensure_table(self) -> None:
@@ -354,22 +359,23 @@ class WorkflowStore:
 
     def _db_insert(self, record: WorkflowRunRecord) -> None:
         try:
-            import sqlalchemy as sa
             tbl = self._table()
             with self._engine.begin() as conn:
-                conn.execute(tbl.insert().values(
-                    run_id           = record.run_id,
-                    workflow_name    = record.workflow_name,
-                    status           = record.status,
-                    context_json     = record.context_json,
-                    steps_completed  = json.dumps(record.steps_completed),
-                    steps_failed     = json.dumps(record.steps_failed),
-                    errors           = json.dumps(record.errors),
-                    elapsed_seconds  = record.elapsed_seconds,
-                    investigation_id = record.investigation_id,
-                    created_at       = record.created_at,
-                    updated_at       = record.updated_at,
-                ))
+                conn.execute(
+                    tbl.insert().values(
+                        run_id=record.run_id,
+                        workflow_name=record.workflow_name,
+                        status=record.status,
+                        context_json=record.context_json,
+                        steps_completed=json.dumps(record.steps_completed),
+                        steps_failed=json.dumps(record.steps_failed),
+                        errors=json.dumps(record.errors),
+                        elapsed_seconds=record.elapsed_seconds,
+                        investigation_id=record.investigation_id,
+                        created_at=record.created_at,
+                        updated_at=record.updated_at,
+                    )
+                )
         except Exception as exc:
             logger.warning("WorkflowStore._db_insert: %s — falling back to in-memory", exc)
             self._in_memory[record.run_id] = record

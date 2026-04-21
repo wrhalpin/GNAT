@@ -83,9 +83,7 @@ class HybridAnalysisClient(BaseClient, ConnectorMixin):
     def authenticate(self) -> None:
         """Set api-key + mandatory User-Agent headers."""
         if not self.api_key:
-            raise GNATClientError(
-                "Hybrid Analysis connector requires api_key in config."
-            )
+            raise GNATClientError("Hybrid Analysis connector requires api_key in config.")
         self._auth_headers["api-key"] = self.api_key
         self._auth_headers["User-Agent"] = self.user_agent
         self._auth_headers["Accept"] = "application/json"
@@ -110,9 +108,7 @@ class HybridAnalysisClient(BaseClient, ConnectorMixin):
         * ``"malware"`` — overview by SHA-256
         """
         if not object_id:
-            raise GNATClientError(
-                "Hybrid Analysis get_object requires a non-empty id"
-            )
+            raise GNATClientError("Hybrid Analysis get_object requires a non-empty id")
         if stix_type == "observed-data":
             resp = self.get(f"/api/v2/report/{object_id}/summary")
         elif stix_type == "malware":
@@ -122,9 +118,7 @@ class HybridAnalysisClient(BaseClient, ConnectorMixin):
                 f"Hybrid Analysis get_object does not support stix_type={stix_type!r}"
             )
         if not isinstance(resp, dict):
-            raise GNATClientError(
-                f"Hybrid Analysis returned unexpected payload for {object_id!r}"
-            )
+            raise GNATClientError(f"Hybrid Analysis returned unexpected payload for {object_id!r}")
         return dict(resp, _ha_kind=stix_type, _ha_query=object_id)
 
     def list_objects(
@@ -154,13 +148,9 @@ class HybridAnalysisClient(BaseClient, ConnectorMixin):
             resp = self.post("/api/v2/search/terms", data=body)
         items = _extract_hybrid_list(resp)
         start = max(0, (int(page) - 1) * int(page_size))
-        return [
-            dict(r, _ha_kind=stix_type) for r in items[start : start + int(page_size)]
-        ]
+        return [dict(r, _ha_kind=stix_type) for r in items[start : start + int(page_size)]]
 
-    def upsert_object(
-        self, stix_type: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def upsert_object(self, stix_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Sandbox submissions are domain helpers, not upsert."""
         raise GNATClientError(
             "Hybrid Analysis connector is read-only via CRUD — use submit_file / "
@@ -175,9 +165,7 @@ class HybridAnalysisClient(BaseClient, ConnectorMixin):
 
     # ── Domain-specific helpers ────────────────────────────────────────────
 
-    def submit_file(
-        self, filepath: str, environment_id: int = 100
-    ) -> dict[str, Any]:
+    def submit_file(self, filepath: str, environment_id: int = 100) -> dict[str, Any]:
         """Submit a local file.  ``environment_id`` selects the VM (default Windows 10 64-bit)."""
         import os
 
@@ -279,8 +267,7 @@ class HybridAnalysisClient(BaseClient, ConnectorMixin):
             source_name="hybrid_analysis",
             analysis_id=str(native.get("job_id") or native.get("sha256", "")),
             submitted_sha256=native.get("sha256") or "",
-            submitted_filename=native.get("submit_name")
-            or native.get("file_name", ""),
+            submitted_filename=native.get("submit_name") or native.get("file_name", ""),
             processes=[p for p in processes if p],
             contacted_ips=[h for h in hosts if isinstance(h, str)],
             contacted_domains=[d for d in domains if isinstance(d, str)],
