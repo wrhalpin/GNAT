@@ -88,6 +88,27 @@ every fired rule can be traced to an exact committed version.
 
 `GNAT_ALLOW_DIRTY_RULES=1` overrides this for development.
 
+## Three engine implementations
+
+The `[rules] engine` config key selects the rule language:
+
+- **`hy`** (default) — Lisp/S-expression syntax via the `defrule` macro.
+  Most expressive; supports arbitrary Python interop. Best for power
+  users comfortable with functional programming.
+- **`yaml`** — Declarative YAML with a structured condition DSL. No code
+  authoring required; conditions reference the 26 helpers by name with
+  comparison operators (`gte`, `lt`, etc.) and boolean combinators
+  (`all`/`any`/`not`). Lowest barrier to entry.
+- **`prolog`** — SWI-Prolog via pyswip. Best for complex inference
+  chains, backward chaining, and rules with inter-hypothesis
+  dependencies. Hypothesis facts are asserted into the KB before each
+  evaluation and retracted after.
+
+All three engines share the same evaluation pipeline (RuleContext,
+Decision types, AuditWriter, Orchestrator, helpers). Only rule file
+parsing and condition evaluation differ. The `RuleEngineProtocol`
+ensures any engine implementing `evaluate()` is a drop-in replacement.
+
 → [ADR-0054: Analysis Rule Engine](architecture/adrs/0054-ADR-analysis-rule-engine.md)
 → [Rule Engine Spec](../reference/rule-engine-spec.md)
 → [Authoring Rules](../how-to/authoring-rules.md)
