@@ -1,11 +1,9 @@
-# GNAT 🪰
-
-**GNAT's Not Another TIP** — A Python library for unified cyber threat intelligence and management operations across 159 security and data platforms.
+[![GNAT](assets/logo/readme-banner.png)](https://github.com/wrhalpin/GNAT)
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Pylint](https://github.com/wrhalpin/GNAT/actions/workflows/pylint.yml/badge.svg)](https://github.com/wrhalpin/GNAT/actions/workflows/pylint.yml)
-[![Tests](https://img.shields.io/badge/tests-1500%2B-brightgreen)](#running-tests)
+[![Tests](https://img.shields.io/badge/tests-5100%2B-brightgreen)](#running-tests)
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A570%25-green)](pyproject.toml)
 [![STIX](https://img.shields.io/badge/STIX-2.1-blueviolet)](https://oasis-open.github.io/cti-documentation/stix/intro.html)
 
