@@ -1,4 +1,8 @@
-[![GNAT](assets/logo/readme-banner.png)](https://github.com/wrhalpin/GNAT)
+<p align="center">
+  <img src="assets/logo/readme-banner.png" alt="GNAT" width="800">
+</p>
+
+# GNAT
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -7,13 +11,25 @@
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A570%25-green)](pyproject.toml)
 [![STIX](https://img.shields.io/badge/STIX-2.1-blueviolet)](https://oasis-open.github.io/cti-documentation/stix/intro.html)
 
----
+A unified Python library for cyber threat intelligence across 159 security
+platforms. Every connector implements the same interface and bidirectional
+STIX 2.1 translation, making automation portable: switch platforms, add
+sources, or replace tools without rewriting pipelines, schedules, or reports.
 
-GNAT provides a single, consistent abstraction layer over 159 platforms — threat intelligence platforms, SIEMs, EDRs, vulnerability scanners, SOAR tools, network sensors, AI assistants, cloud security posture products, and more. Every connector implements the same interface and bidirectional STIX 2.1 translation, making automation portable: switch platforms, add sources, or replace tools without rewriting pipelines, schedules, or reports.
+**Full documentation:** [`docs/`](docs/) — organised by the
+[Diataxis](https://diataxis.fr/) framework (tutorials, how-to guides,
+reference, explanation). Rendered at
+[wrhalpin.github.io/GNAT](https://wrhalpin.github.io/GNAT/).
 
-```
-[ 159 Platforms ]  →  GNATClient  →  STIX 2.1 ORM  →  Ingest / Export / Report / Schedule / Research
-```
+**Quick starting points:**
+
+- New here? → [tutorials/your-first-rule.md](docs/tutorials/your-first-rule.md)
+- Authoring rules? → [how-to/authoring-rules.md](docs/how-to/authoring-rules.md)
+- Architecture tour? → [explanation/rule-engine.md](docs/explanation/rule-engine.md)
+- Rule engine spec? → [reference/rule-engine-spec.md](docs/reference/rule-engine-spec.md)
+- Scheduling feeds? → [how-to/schedule-feeds.md](docs/how-to/schedule-feeds.md)
+
+**Ecosystem:** [SandGNAT](https://github.com/wrhalpin/SandGNAT) · [RedGNAT](https://github.com/wrhalpin/RedGNAT)
 
 ---
 
