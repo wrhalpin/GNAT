@@ -82,10 +82,51 @@ header.hero{
 }
 .card{
   background:var(--surface-2);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:1rem 1.1rem;
+  border:2px solid var(--line);
+  border-radius:14px;
+  padding:1.5rem 1.25rem;
+  display:flex;
+  flex-direction:column;
 }
+.card h3{
+  margin:0 0 .5rem 0;
+  font-size:1.25rem;
+}
+.card p{
+  flex:1;
+}
+.card-tag{
+  display:inline-block;
+  font-size:.75rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--muted);
+  margin-bottom:.5rem;
+}
+.card-link{
+  display:inline-block;
+  margin-top:.75rem;
+  padding:.4rem 1rem;
+  border-radius:8px;
+  font-size:.9rem;
+  font-weight:600;
+  text-decoration:none;
+  color:#fff;
+  align-self:flex-start;
+}
+.card-link:hover{
+  filter:brightness(0.85);
+  color:#fff;
+}
+.card-sand{border-color:#D4A017;}
+.card-sand h3{color:#D4A017;}
+.card-link-sand{background:#D4A017;}
+.card-red{border-color:#C0392B;}
+.card-red h3{color:#C0392B;}
+.card-link-red{background:#C0392B;}
+.card-sense{border-color:#2E86C1;}
+.card-sense h3{color:#2E86C1;}
+.card-link-sense{background:#2E86C1;}
 .quadrants{
   border-collapse:collapse;
   width:100%;
