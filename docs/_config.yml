@@ -1,0 +1,27 @@
+title: GNAT
+description: >-
+  GNAT's Not A TIP — unified Python library for cyber threat intelligence
+  across 159 security platforms. STIX 2.1 ORM, investigations, reports,
+  rule engine, campaign tracking. Documentation organised with the
+  Diataxis framework.
+
+theme: jekyll-theme-cayman
+
+show_downloads: false
+github:
+  repository_url: https://github.com/wrhalpin/GNAT
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+include:
+  - assets
+
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
