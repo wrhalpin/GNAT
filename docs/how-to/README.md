@@ -25,6 +25,7 @@ Pick the guide for your goal — no need to read them in order.
 | [Use the Execution Context](use-execution-context.md) | Create and propagate `ExecutionContext`; enforce domain boundaries and trust levels; track query budgets |
 | [Use the Reasoning Engine](use-reasoning-engine.md) | Score and rank observables; propose, evaluate, and close hypotheses; track negative evidence |
 | [Agent Governance](agent-governance.md) | Permission checks, rate limiting, HITL review, XSOAR escalation, and agent audit trails |
+| [Authoring Rules](authoring-rules.md) | Write hypothesis evaluation rules in Hy, YAML, or Prolog |
 
 ---
 
