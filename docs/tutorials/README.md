@@ -9,6 +9,7 @@ Each tutorial is designed for learning — follow the steps in order.
 | [Production Scheduled Pipeline](production-scheduled-pipeline.md) | Set up a long-running process with ingest, export, curation, and reporting jobs |
 | [Analyst Intelligence Workflow](analyst-intelligence-workflow.md) | Build a cross-platform evidence graph, run correlation and gap detection, produce a structured intelligence report, and publish to downstream consumers |
 | [XSOAR + ThreatQ + GreyMatter → Power BI](investigation_xsoar_tq_gm_powerbi.py) | Runnable end-to-end investigation script: seed expansion across three platforms, graph materialisation, and Power BI xlsx export; supports `--mock` for dry runs without live credentials |
+| [Your First Rule](your-first-rule.md) | Create a minimal hypothesis evaluation rule, enable the engine, and see it fire |
 
 ---
 
