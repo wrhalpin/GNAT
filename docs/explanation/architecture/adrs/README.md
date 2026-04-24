@@ -71,6 +71,7 @@ subsystems.
 ### Cross-Tool Integration
 
 55. [ADR-0055: Cross-Tool Investigation Context](0055-ADR-cross-tool-investigation-context.md)
+56. [ADR-0056: Unified API Key Authentication](0056-ADR-unified-api-key-auth.md)
 
 ---
 

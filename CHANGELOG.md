@@ -19,6 +19,46 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — OIDC/SSO authentication (`gnat[sso]`)
+
+Optional OIDC authentication via external identity providers (Okta,
+Entra ID, Keycloak, Auth0). Install with `pip install "gnat[sso]"`.
+
+- `gnat/auth/` module: `OIDCProvider` validates JWT bearer tokens
+  against IdP JWKS, maps claims to GNAT roles/tenants/TLP levels.
+- `OIDCIdentity` dataclass implements the same interface as `APIKey`
+  (role, tenant_id, tlp_level, is_valid) for seamless integration.
+- Bearer token or-chain: API key validation first, OIDC JWT fallback.
+  Service accounts keep using API keys; human analysts can use SSO.
+- Device code flow for CLI: `gnat auth login --issuer URL --client-id ID`
+  (OAuth 2.0 Device Authorization Grant, RFC 8628).
+- `gnat auth status` / `gnat auth logout` for credential management.
+- JWKS caching with configurable TTL (default 1 hour).
+- INI config: `[auth] provider=oidc, issuer=..., role_map={...}`.
+- `create_auth_dependency()` factory for shared auth across all
+  dissemination endpoints.
+- pyproject.toml `[sso]` extras group (`authlib>=1.3`).
+
+### Changed — Unified API key authentication
+
+Consolidates the serve layer (single shared `X-Api-Key`) and
+dissemination layer (`Authorization: Bearer` multi-key `APIKeyStore`)
+into one auth scheme backed by `APIKeyStore`.
+
+- `APIKey.tenant_id` is now a first-class field (was in metadata dict).
+- `APIKeyStore.rotate_key()` replaces a key with a new one, keeping the
+  old key valid for a configurable grace period.
+- `SQLAlchemyKeyStore` persists keys in the database (same pattern as
+  `InvestigationStore`).
+- `gnat/serve/auth.py` `APIKeyAuth` accepts `APIKeyStore` and supports
+  both `Authorization: Bearer` and `X-Api-Key` headers for backward
+  compatibility.
+- `gnat serve` accepts `--key-store` or legacy `--api-key`.
+- CLI key management: `gnat key generate`, `gnat key list`,
+  `gnat key revoke <prefix>`, `gnat key rotate <prefix>`.
+- SSE endpoint timing side-channel fixed (`hmac.compare_digest`).
+- ADR-0056 documenting the design decisions.
+
 ### Added — Cross-tool investigation context
 
 Lets SandGNAT, SenseGNAT, and RedGNAT attach their outputs to GNAT

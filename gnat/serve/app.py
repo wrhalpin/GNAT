@@ -352,7 +352,9 @@ _DASHBOARD_HTML = """\
 
 
 def create_app(
-    api_key: str,
+    api_key: str | None = None,
+    key_store: object | None = None,
+    oidc_provider: object | None = None,
     library_backend=None,
     scheduler_backend=None,
     reports_dir: str | None = None,
@@ -375,8 +377,11 @@ def create_app(
 
     Parameters
     ----------
-    api_key : str
-        Required ``X-Api-Key`` value for all ``/api/*`` requests.
+    api_key : str, optional
+        Legacy single-key mode.  Deprecated — use *key_store* instead.
+    key_store : APIKeyStore, optional
+        Multi-key store for ``Authorization: Bearer`` and ``X-Api-Key``
+        authentication.  When provided, *api_key* is ignored.
     library_backend : ResearchLibrary, optional
         Pre-constructed library instance.  When ``None`` the library
         endpoints return ``503``.
@@ -386,7 +391,7 @@ def create_app(
     reports_dir : str, optional
         Directory to scan for generated reports.
     """
-    auth = APIKeyAuth(api_key)
+    auth = APIKeyAuth(key_store=key_store, api_key=api_key, oidc_provider=oidc_provider)
     limiter = RateLimiter(max_requests=100, window_seconds=60)
 
     app = FastAPI(
@@ -431,9 +436,27 @@ def create_app(
 
         Authentication: ``X-Api-Key`` header (same as other API endpoints).
         """
-        api_key_header = request.headers.get("X-Api-Key", "")
-        # Validate API key manually since SSE can't use Depends easily
-        if api_key_header != api_key:
+        import hmac as _hmac
+
+        _sse_token = (
+            request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+            or request.headers.get("X-Api-Key", "")
+        )
+        _sse_valid = False
+        if key_store is not None:
+            _sse_key = key_store.get_key(_sse_token)
+            _sse_valid = _sse_key is not None and _sse_key.is_valid()
+        if not _sse_valid and api_key is not None:
+            _sse_valid = _hmac.compare_digest(
+                _sse_token.encode("utf-8"), api_key.encode("utf-8")
+            )
+        if not _sse_valid and oidc_provider is not None:
+            try:
+                _sse_identity = oidc_provider.validate_token(_sse_token)
+                _sse_valid = _sse_identity is not None
+            except Exception:
+                pass
+        if not _sse_valid:
             from fastapi import HTTPException
 
             raise HTTPException(status_code=403, detail="Invalid API key")
@@ -515,7 +538,9 @@ def create_app(
 
 
 def run(
-    api_key: str,
+    api_key: str | None = None,
+    key_store: object | None = None,
+    oidc_provider: object | None = None,
     host: str = "127.0.0.1",
     port: int = 8088,
     library_backend=None,
@@ -540,6 +565,8 @@ def run(
 
     app = create_app(
         api_key=api_key,
+        key_store=key_store,
+        oidc_provider=oidc_provider,
         library_backend=library_backend,
         scheduler_backend=scheduler_backend,
         reports_dir=reports_dir,

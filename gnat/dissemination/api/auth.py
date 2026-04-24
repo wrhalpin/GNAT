@@ -48,6 +48,9 @@ class APIKey:
         RBAC role string (``"viewer"``, ``"analyst"``, etc.).  The
         :class:`~gnat.policy.engine.PolicyEngine` coerces this to a
         :class:`~gnat.policy.models.Role` at evaluation time.
+    tenant_id : str | None
+        Tenant scope.  When set, the key is restricted to resources
+        belonging to this tenant.  ``None`` means no tenant restriction.
     created_at : datetime
         Creation timestamp.
     expires_at : datetime | None
@@ -62,6 +65,7 @@ class APIKey:
     tlp_level: TLPLevel
     label: str = ""
     role: str = "viewer"
+    tenant_id: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
     expires_at: datetime | None = None
     enabled: bool = True
@@ -86,6 +90,7 @@ class APIKey:
             "tlp_level": self.tlp_level.value,
             "label": self.label,
             "role": self.role,
+            "tenant_id": self.tenant_id,
             "created_at": self.created_at.isoformat(),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "enabled": self.enabled,
@@ -118,6 +123,7 @@ class APIKeyStore:
         tlp_level: TLPLevel,
         label: str = "",
         role: str = "viewer",
+        tenant_id: str | None = None,
         expires_at: datetime | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> APIKey:
@@ -135,6 +141,8 @@ class APIKeyStore:
         role : str
             RBAC role (``"viewer"``, ``"analyst"``, ``"senior_analyst"``,
             ``"reviewer"``, ``"admin"``).  Defaults to ``"viewer"``.
+        tenant_id : str | None
+            Tenant scope.
         expires_at : datetime | None
             Optional expiry.
         metadata : dict | None
@@ -149,6 +157,7 @@ class APIKeyStore:
             tlp_level=tlp_level,
             label=label,
             role=role,
+            tenant_id=tenant_id,
             expires_at=expires_at,
             metadata=metadata or {},
         )
@@ -203,9 +212,91 @@ class APIKeyStore:
             return True
         return False
 
+    def rotate_key(
+        self,
+        token: str,
+        grace_hours: int = 24,
+    ) -> APIKey | None:
+        """
+        Replace *token* with a new key, keeping the old key valid for a grace period.
+
+        The old key's ``expires_at`` is set to ``now + grace_hours`` so
+        callers using the old token have time to switch.  The new key
+        inherits the old key's role, TLP level, tenant, and label.
+
+        Parameters
+        ----------
+        token : str
+            The token to rotate.
+        grace_hours : int
+            Hours the old key remains valid after rotation.  Use ``0``
+            for immediate expiry.
+
+        Returns
+        -------
+        APIKey or None
+            The newly generated replacement key, or ``None`` if the
+            original token was not found.
+        """
+        old = self._keys.get(token)
+        if old is None:
+            return None
+        from datetime import timedelta
+
+        old.expires_at = datetime.now(tz=timezone.utc) + timedelta(hours=grace_hours)
+        return self.generate_key(
+            tlp_level=old.tlp_level,
+            label=old.label,
+            role=old.role,
+            tenant_id=old.tenant_id,
+            metadata={**old.metadata, "rotated_from": old.token_hash},
+        )
+
     def list_keys(self) -> list[APIKey]:
         """Return all registered keys."""
         return list(self._keys.values())
 
     def __len__(self) -> int:
         return len(self._keys)
+
+
+def create_auth_dependency(
+    key_store: APIKeyStore,
+    oidc_provider: Any = None,
+) -> Any:
+    """
+    Build a FastAPI dependency that validates Bearer tokens as API keys
+    with optional OIDC JWT fallback.
+
+    Use this in ``build_gateway_router`` and ``build_investigation_router``
+    to share one auth check across all dissemination endpoints.
+    """
+
+    def _require_auth(authorization: str = ...) -> Any:
+        ...
+
+    try:
+        from fastapi import Header, HTTPException
+    except ImportError:
+        return None
+
+    def _require_auth(authorization: str = Header(default="")) -> Any:
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing Bearer token.")
+        token = authorization.removeprefix("Bearer ").strip()
+
+        key = key_store.get_key(token)
+        if key is not None and key.is_valid():
+            return key
+
+        if oidc_provider is not None:
+            try:
+                identity = oidc_provider.validate_token(token)
+                if identity is not None:
+                    return identity
+            except Exception:
+                pass
+
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
+
+    return _require_auth
