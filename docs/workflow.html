@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Canonical Workflow — GNAT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="End-to-end operator workflow for the GNAT-o-sphere ecosystem: from telemetry and indicators to correlation, validation, and reporting.">
+  <link rel="stylesheet" href="./gnat-theme.css">
+  <style>
+    .prose{
+      max-width:720px;
+    }
+    .prose h2{
+      font-size:1.4rem;
+      font-weight:700;
+      margin:2.5rem 0 .5rem;
+      color:var(--ink);
+      border-bottom:1px solid var(--line);
+      padding-bottom:.4rem;
+    }
+    .prose h3{
+      font-size:1.1rem;
+      font-weight:600;
+      margin:1.75rem 0 .4rem;
+      color:var(--brand);
+    }
+    .prose p{
+      margin:0 0 1rem;
+      color:var(--ink);
+    }
+    .prose ul{
+      margin:0 0 1rem 1.25rem;
+      padding:0;
+    }
+    .prose li{
+      margin-bottom:.3rem;
+      color:var(--ink);
+    }
+    .prose strong{
+      color:var(--ink);
+      font-weight:600;
+    }
+    .prose .meta{
+      font-size:.85rem;
+      color:var(--muted);
+      margin-bottom:2rem;
+    }
+    .back-link{
+      display:inline-block;
+      margin-bottom:2rem;
+      font-size:.875rem;
+      color:var(--muted);
+      text-decoration:none;
+    }
+    .back-link:hover{
+      color:var(--ink);
+    }
+    .callout{
+      background:var(--surface-2);
+      border-left:3px solid var(--brand);
+      border-radius:0 14px 14px 0;
+      padding:1rem 1.25rem;
+      margin:1.5rem 0;
+    }
+    .callout p{margin:0;}
+  </style>
+</head>
+<body>
+
+  <header class="hero" style="padding:2rem 0;">
+    <div class="wrap">
+      <a class="back-link" href="index.html">&larr; GNAT home</a>
+      <h1 style="font-size:2rem;margin:0;">Canonical Workflow</h1>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap" style="padding-top:2.5rem;padding-bottom:3rem;">
+      <div class="prose">
+
+        <p class="meta">Date: 2026-04-22</p>
+
+        <p>This document provides a single end-to-end operator workflow for the GNAT-o-sphere ecosystem.</p>
+
+        <h2>Purpose</h2>
+        <p>The ecosystem is strongest when described as a connected operational flow instead of a set of adjacent projects. This document explains the intended path from telemetry and indicators to correlation, validation, and reporting.</p>
+
+        <h2>Core Components</h2>
+        <ul>
+          <li><strong>GNAT</strong> — investigation hub, connector platform, STIX-centric correlation and reporting</li>
+          <li><strong>SenseGNAT</strong> — behavioral profiling and anomaly detection on network telemetry</li>
+          <li><strong>SandGNAT</strong> — malware detonation and artifact enrichment</li>
+          <li><strong>RedGNAT</strong> — adversary emulation and validation</li>
+        </ul>
+
+        <h2>Architectural View</h2>
+        <p>The workflow spans two connected planes:</p>
+
+        <h3>1. Telemetry Plane</h3>
+        <p>Raw flow and operational telemetry enters the ecosystem. SenseGNAT consumes GNAT's Kafka telemetry stream before GNAT converts records to STIX.</p>
+        <p>This is where behavioral logic benefits from fields such as:</p>
+        <ul>
+          <li>source and destination IP</li>
+          <li>destination port</li>
+          <li>protocol</li>
+          <li>byte counts</li>
+          <li>session-level context</li>
+        </ul>
+
+        <h3>2. Intelligence Plane</h3>
+        <p>Normalized findings are correlated and represented in structured investigation workflows. GNAT acts as the primary hub for evidence, relationships, reporting, and downstream publication.</p>
+
+        <h2>Canonical End-to-End Flow</h2>
+
+        <h3>Step 1: Telemetry and Source Collection</h3>
+        <p>GNAT ingests and routes telemetry, connector outputs, and source intelligence into the ecosystem.</p>
+
+        <h3>Step 2: Behavioral Profiling with SenseGNAT</h3>
+        <p>SenseGNAT consumes telemetry directly from the Kafka stream (<code>gnat.telemetry</code> by default) and applies behavioral profiling and anomaly detection before STIX transformation removes useful flow-level detail.</p>
+        <p>Outputs may include:</p>
+        <ul>
+          <li>anomaly findings</li>
+          <li>narratives</li>
+          <li>confidence or explanation metadata</li>
+          <li>normalized detection outputs for GNAT consumption</li>
+        </ul>
+
+        <h3>Step 3: Malware Detonation with SandGNAT</h3>
+        <p>Suspicious files, URLs, or derived artifacts are detonated and analyzed in SandGNAT.</p>
+        <p>Outputs may include:</p>
+        <ul>
+          <li>static and dynamic observations</li>
+          <li>extracted indicators</li>
+          <li>CAPA/YARA-derived findings</li>
+          <li>sandbox artifacts and bundles</li>
+        </ul>
+
+        <h3>Step 4: Detection Validation with RedGNAT</h3>
+        <p>Where defensive confidence or coverage validation is required, RedGNAT performs controlled adversary emulation and returns findings about:</p>
+        <ul>
+          <li>detection coverage</li>
+          <li>response gaps</li>
+          <li>validation results</li>
+          <li>structured notes for investigation follow-up</li>
+        </ul>
+
+        <h3>Step 5: Correlation in GNAT</h3>
+        <p>GNAT consumes and correlates outputs from connectors and addons into an investigation context that can include:</p>
+        <ul>
+          <li>indicators</li>
+          <li>observations</li>
+          <li>behavioral findings</li>
+          <li>detonation findings</li>
+          <li>emulation findings</li>
+          <li>linked evidence and campaign context</li>
+        </ul>
+
+        <h3>Step 6: Reporting and Operator Action</h3>
+        <p>The investigator or analyst uses GNAT to:</p>
+        <ul>
+          <li>pivot across evidence</li>
+          <li>build case context</li>
+          <li>assess confidence</li>
+          <li>publish reports</li>
+          <li>export structured findings</li>
+        </ul>
+
+        <h2>Why This Workflow Matters</h2>
+        <div class="callout">
+          <p>Together, they support a full path from <strong>signal</strong> to <strong>investigation</strong> to <strong>validation</strong> to <strong>reporting</strong>.</p>
+        </div>
+        <p>This workflow expresses the actual intended platform value:</p>
+        <ul>
+          <li>GNAT is the hub</li>
+          <li>SenseGNAT adds telemetry-native behavioral context</li>
+          <li>SandGNAT adds malware and artifact analysis depth</li>
+          <li>RedGNAT adds controlled validation and coverage testing</li>
+        </ul>
+
+      </div>
+    </div>
+  </main>
+
+  <hr style="border:none;border-top:1px solid var(--line);margin:0;">
+  <footer>
+    <div class="wrap">
+      <p><strong>GNAT</strong> — GNAT's Not A TIP</p>
+      <p><a href="https://github.com/wrhalpin/GNAT">GitHub</a> · Apache 2.0</p>
+    </div>
+  </footer>
+
+</body>
+</html>
