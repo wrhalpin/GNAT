@@ -46,7 +46,11 @@ from gnat.analysis.investigations.models import (
     TaskPriority,
     TaskStatus,
 )
-from gnat.analysis.investigations.service import InvestigationError, InvestigationService
+from gnat.analysis.investigations.service import (
+    AttachResult,
+    InvestigationError,
+    InvestigationService,
+)
 from gnat.analysis.investigations.storage import InvestigationStore
 
 __all__ = [
@@ -65,4 +69,5 @@ __all__ = [
     "InvestigationService",
     "InvestigationStore",
     "InvestigationError",
+    "AttachResult",
 ]

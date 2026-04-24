@@ -19,6 +19,35 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Cross-tool investigation context
+
+Lets SandGNAT, SenseGNAT, and RedGNAT attach their outputs to GNAT
+investigations via three custom STIX properties (`x_gnat_investigation_id`,
+`x_gnat_investigation_origin`, `x_gnat_investigation_link_type`).
+
+- `EvidenceNode.origin` field (default `"gnat"`) labels which tool
+  produced each graph node.
+- `EvidenceEdge.link_type` field (`"confirmed"`, `"inferred"`,
+  `"suggested"`) for origin-aware correlation edges.
+- Normalizer pass-through preserves all three `x_gnat_investigation_*`
+  properties from raw records onto `EvidenceNode` metadata.
+- `GraphQuery.filter_by_origin()` filters graph contexts by addon origin.
+- `InvestigationService.attach_evidence_bundle()` validates and ingests
+  stamped STIX bundles with tenant isolation and closed-investigation
+  policy (409 Conflict / X-Reopen-Investigation header).
+- `InvestigationService.find_by_subject()` locates investigations
+  containing a given STIX reference or IOC value.
+- REST endpoints: `GET /api/investigations`, `GET /api/investigations/{id}`,
+  `GET /api/investigations/{id}/hypotheses`,
+  `POST /api/investigations/{id}/evidence`.
+- `CrossToolInvestigationTemplate` report template groups findings by
+  origin with sections for each addon tool.
+- CLI additions: `gnat investigation evidence`, `graph`, `export`,
+  `report` subcommands for cross-tool read path.
+- ADR-0055 documenting the shared contract and design decisions.
+- Reference schema at `docs/reference/investigation-context-schema.md`.
+- Explanation doc at `docs/explanation/cross-tool-investigation-model.md`.
+
 ### Added — Analysis rule engine for hypothesis evaluation
 
 New `gnat/analysis/rules/` package implementing a declarative Hy-based

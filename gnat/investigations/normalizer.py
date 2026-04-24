@@ -867,6 +867,37 @@ _DISPATCH: dict[tuple[str, str], Any] = {
 }
 
 
+_VALID_ORIGINS = frozenset({"sandgnat", "sensegnat", "redgnat", "gnat", "external"})
+_VALID_LINK_TYPES = frozenset({"confirmed", "inferred", "suggested"})
+
+
+def _apply_investigation_context(node: EvidenceNode, raw: dict[str, Any]) -> None:
+    """Copy ``x_gnat_investigation_*`` properties from *raw* onto *node*."""
+    inv_id = raw.get("x_gnat_investigation_id")
+    inv_origin = raw.get("x_gnat_investigation_origin")
+    inv_link = raw.get("x_gnat_investigation_link_type")
+
+    if inv_id is not None:
+        node.investigation_id = str(inv_id)
+    if inv_origin is not None and str(inv_origin) in _VALID_ORIGINS:
+        node.investigation_origin = str(inv_origin)
+        node.origin = str(inv_origin)
+    if inv_link is not None and str(inv_link) in _VALID_LINK_TYPES:
+        node.investigation_link_type = str(inv_link)
+
+    stix = node.stix or {}
+    stix_origin = stix.get("x_gnat_investigation_origin")
+    stix_id = stix.get("x_gnat_investigation_id")
+    stix_link = stix.get("x_gnat_investigation_link_type")
+    if stix_id and not node.investigation_id:
+        node.investigation_id = str(stix_id)
+    if stix_origin and str(stix_origin) in _VALID_ORIGINS and node.origin == "gnat":
+        node.investigation_origin = str(stix_origin)
+        node.origin = str(stix_origin)
+    if stix_link and str(stix_link) in _VALID_LINK_TYPES and not node.investigation_link_type:
+        node.investigation_link_type = str(stix_link)
+
+
 def normalize(
     platform: str,
     record_type: str,
@@ -903,4 +934,7 @@ def normalize(
         )
     if fn is None:
         return None
-    return fn(platform, raw)
+    node = fn(platform, raw)
+    if node is not None:
+        _apply_investigation_context(node, raw)
+    return node

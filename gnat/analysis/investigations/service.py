@@ -42,6 +42,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
@@ -63,8 +64,20 @@ from gnat.analysis.tlp import TLPLevel
 logger = logging.getLogger(__name__)
 
 
+VALID_ORIGINS = frozenset({"sandgnat", "sensegnat", "redgnat", "gnat", "external"})
+
+
 class InvestigationError(Exception):
     """Raised for invalid Investigation operations."""
+
+
+@dataclass
+class AttachResult:
+    """Result of attaching an evidence bundle to an investigation."""
+
+    accepted_count: int = 0
+    rejected_count: int = 0
+    rejection_reasons: list[str] = field(default_factory=list)
 
 
 class InvestigationService:
@@ -448,6 +461,133 @@ class InvestigationService:
         inv.updated_at = datetime.now(tz=timezone.utc)
         self._store.save(inv)
         return inv
+
+    # ── Cross-tool evidence ─────────────────────────────────────────────────
+
+    def attach_evidence_bundle(
+        self,
+        investigation_id: str,
+        bundle: dict[str, Any],
+        origin: str,
+        tenant_id: str | None = None,
+    ) -> AttachResult:
+        """
+        Validate and ingest a STIX bundle stamped for an investigation.
+
+        Parameters
+        ----------
+        investigation_id : str
+            Target investigation.
+        bundle : dict
+            STIX 2.1 bundle (or Grouping envelope).
+        origin : str
+            Addon origin label (``"sandgnat"``, ``"sensegnat"``, etc.).
+        tenant_id : str or None
+            Tenant scope.  When set, the investigation must belong to this
+            tenant; cross-tenant references are rejected.
+
+        Returns
+        -------
+        AttachResult
+        """
+        result = AttachResult()
+
+        if origin not in VALID_ORIGINS:
+            result.rejected_count = 1
+            result.rejection_reasons.append(f"Invalid origin: {origin!r}")
+            return result
+
+        inv = self._store.get(investigation_id)
+        if inv is None:
+            result.rejected_count = 1
+            result.rejection_reasons.append(
+                f"Investigation not found: {investigation_id}"
+            )
+            return result
+
+        inv_tenant = getattr(inv, "tenant_id", None)
+        if tenant_id and inv_tenant and inv_tenant != tenant_id:
+            result.rejected_count = 1
+            result.rejection_reasons.append(
+                f"Cross-tenant reference denied: investigation belongs to "
+                f"tenant {inv_tenant!r}, request authenticated as {tenant_id!r}"
+            )
+            return result
+
+        if inv.status == InvestigationStatus.CLOSED:
+            raise InvestigationError(
+                f"Investigation {investigation_id} is CLOSED. "
+                f"Set X-Reopen-Investigation header to reopen."
+            )
+
+        objects = bundle.get("objects", [])
+        if not objects:
+            objects_from_grouping = bundle.get("object_refs", [])
+            if not objects_from_grouping:
+                result.rejection_reasons.append("Bundle contains no objects")
+                return result
+
+        for obj in objects:
+            obj_inv_id = obj.get("x_gnat_investigation_id")
+            if obj_inv_id and obj_inv_id != investigation_id:
+                result.rejected_count += 1
+                result.rejection_reasons.append(
+                    f"Object {obj.get('id', '?')} stamped with "
+                    f"investigation_id={obj_inv_id!r}, expected {investigation_id!r}"
+                )
+                continue
+
+            obj_type = obj.get("type", "")
+            obj_id = obj.get("id", "")
+            if obj_type == "indicator" and obj_id:
+                if obj_id not in inv.indicators:
+                    inv.indicators.append(obj_id)
+            elif obj_id and obj_id not in inv.observables:
+                inv.observables.append(obj_id)
+            result.accepted_count += 1
+
+        if result.accepted_count > 0:
+            if origin not in inv.source_connectors:
+                inv.source_connectors.append(origin)
+            inv.updated_at = datetime.now(tz=timezone.utc)
+            self._store.save(inv)
+            logger.info(
+                "InvestigationService: attached %d objects from %s to %s",
+                result.accepted_count,
+                origin,
+                investigation_id,
+            )
+        return result
+
+    def find_by_subject(
+        self,
+        subject_ref: str,
+        tenant_id: str | None = None,
+    ) -> list[Investigation]:
+        """
+        Find investigations whose evidence already contains *subject_ref*.
+
+        Parameters
+        ----------
+        subject_ref : str
+            STIX object ID or IOC value to search for.
+        tenant_id : str or None
+            Restrict to a specific tenant.
+
+        Returns
+        -------
+        list of Investigation
+        """
+        all_investigations = self._store.list(limit=10000)
+        matches: list[Investigation] = []
+        for inv in all_investigations:
+            if tenant_id:
+                inv_tenant = getattr(inv, "tenant_id", None)
+                if inv_tenant and inv_tenant != tenant_id:
+                    continue
+            if subject_ref in inv.indicators or subject_ref in inv.observables:
+                matches.append(inv)
+        return matches
 
     # ── Summary ───────────────────────────────────────────────────────────────
 

@@ -15,9 +15,11 @@ gateway
 
 from gnat.dissemination.api.auth import APIKey, APIKeyStore
 from gnat.dissemination.api.gateway import build_gateway_router
+from gnat.dissemination.api.investigations import build_investigation_router
 
 __all__ = [
     "APIKey",
     "APIKeyStore",
     "build_gateway_router",
+    "build_investigation_router",
 ]

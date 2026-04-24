@@ -316,3 +316,26 @@ TemplateRegistry.register(
         "executive", _EXECUTIVE_SECTIONS, {"description": "Executive-level threat brief"}
     ),
 )
+
+_CROSS_TOOL_SECTIONS = [
+    SectionSpec("investigation_header", "Investigation Overview", "investigation_header", order=1),
+    SectionSpec("timeline", "Timeline", "timeline_events", order=2),
+    SectionSpec("gnat_findings", "GNAT / Core Findings", "gnat_findings", order=3),
+    SectionSpec("sandgnat_findings", "SandGNAT Findings", "sandgnat_findings",
+                condition_expr="getattr(agg, 'sandgnat_count', 0) > 0", order=4),
+    SectionSpec("sensegnat_findings", "SenseGNAT Findings", "sensegnat_findings",
+                condition_expr="getattr(agg, 'sensegnat_count', 0) > 0", order=5),
+    SectionSpec("redgnat_findings", "RedGNAT Findings", "redgnat_findings",
+                condition_expr="getattr(agg, 'redgnat_count', 0) > 0", order=6),
+    SectionSpec("confidence_summary", "Confidence and Attribution", "confidence_summary", order=7),
+    SectionSpec("recommendations", "Recommendations", "recommendations", order=8),
+    SectionSpec("stix_appendix", "Appendix: STIX References", "stix_refs", order=9),
+]
+TemplateRegistry.register(
+    "cross_tool_investigation",
+    ReportTemplate(
+        "cross_tool_investigation",
+        _CROSS_TOOL_SECTIONS,
+        {"description": "Cross-tool investigation report grouped by addon origin"},
+    ),
+)

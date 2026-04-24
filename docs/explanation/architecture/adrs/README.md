@@ -68,6 +68,10 @@ subsystems.
 53. [ADR-0053: Infrastructure Graph Labels](0053-ADR-infrastructure-graph-labels.md)
 54. [ADR-0054: Analysis Rule Engine](0054-ADR-analysis-rule-engine.md)
 
+### Cross-Tool Integration
+
+55. [ADR-0055: Cross-Tool Investigation Context](0055-ADR-cross-tool-investigation-context.md)
+
 ---
 
 ## Quick Reference: Adding a New Connector

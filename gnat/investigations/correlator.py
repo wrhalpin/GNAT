@@ -124,6 +124,14 @@ def _add_edges(
                 if sig in existing:
                     continue
                 existing.add(sig)
+                src_node = graph.nodes.get(src)
+                tgt_node = graph.nodes.get(tgt)
+                link_type = "inferred"
+                if (
+                    (src_node and getattr(src_node, "investigation_link_type", None) == "confirmed")
+                    or (tgt_node and getattr(tgt_node, "investigation_link_type", None) == "confirmed")
+                ):
+                    link_type = "confirmed"
                 graph.edges.append(
                     EvidenceEdge(
                         source_id=src,
@@ -131,6 +139,7 @@ def _add_edges(
                         relationship_type=relationship_type,
                         confidence=0.9,
                         reasoning=f"Shared {label}: {key}",
+                        link_type=link_type,
                     )
                 )
 
