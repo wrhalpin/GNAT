@@ -119,6 +119,16 @@ class EvidenceNode:
         External ticket references (Jira, ServiceNow, …).
     time_window : (str, str) or None
         Earliest and latest timestamps found in the record.
+    origin : str
+        Which tool produced this node (``"gnat"``, ``"sandgnat"``,
+        ``"sensegnat"``, ``"redgnat"``, ``"external"``).  Default ``"gnat"``.
+    investigation_id : str or None
+        ``x_gnat_investigation_id`` from the source STIX object, if present.
+    investigation_origin : str or None
+        ``x_gnat_investigation_origin`` from the source STIX object.
+    investigation_link_type : str or None
+        ``x_gnat_investigation_link_type`` (``"confirmed"``,
+        ``"inferred"``, or ``"suggested"``).
     """
 
     node_id: str
@@ -134,6 +144,10 @@ class EvidenceNode:
     ticket_refs: list[str] = field(default_factory=list)
     infrastructure_roles: list[str] = field(default_factory=list)
     time_window: tuple[str, str] | None = None
+    origin: str = "gnat"
+    investigation_id: str | None = None
+    investigation_origin: str | None = None
+    investigation_link_type: str | None = None
 
 
 @dataclass
@@ -158,6 +172,9 @@ class EvidenceEdge:
         Which platform produced this edge (empty for inferred edges).
     reasoning : str
         Human-readable justification (e.g. ``"Shared IOC: 185.220.101.5"``).
+    link_type : str
+        Cross-tool link type: ``"confirmed"``, ``"inferred"``, or
+        ``"suggested"``.  Default ``"inferred"``.
     """
 
     source_id: str
@@ -166,6 +183,7 @@ class EvidenceEdge:
     confidence: float = 1.0
     source_platform: str = ""
     reasoning: str = ""
+    link_type: str = "inferred"
 
 
 @dataclass

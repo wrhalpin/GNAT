@@ -5,6 +5,7 @@ Architecture, rationale, and design choices behind GNAT.
 | Topic | Description |
 |-------|-------------|
 | [Architecture](../architecture.md) | System overview: connectors, analysis, reporting, dissemination, telemetry |
+| [Cross-Tool Investigation Model](cross-tool-investigation-model.md) | How SandGNAT, SenseGNAT, and RedGNAT attach outputs to GNAT investigations |
 | [Rule Engine](rule-engine.md) | Why Hy, two-engine coexistence, advisor pattern, AI ceiling design |
 | [Architecture Decision Records](architecture/adrs/README.md) | 55 ADRs documenting every design decision |
 | [Diagrams](architecture/diagrams.md) | System architecture and data flow diagrams |

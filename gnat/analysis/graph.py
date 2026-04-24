@@ -275,6 +275,42 @@ class GraphQuery:
             seed_ids=context.seed_ids,
         )
 
+    def filter_by_origin(
+        self,
+        context: GraphContext,
+        origins: list[str],
+    ) -> GraphContext:
+        """
+        Retain only nodes produced by the specified addon origins.
+
+        Parameters
+        ----------
+        context : GraphContext
+            Existing context to filter.
+        origins : list of str
+            Origin labels to keep (e.g. ``["sandgnat", "sensegnat"]``).
+
+        Returns
+        -------
+        GraphContext
+        """
+        origin_set = {o.lower() for o in origins}
+        filtered_nodes = {
+            nid: node
+            for nid, node in context.nodes.items()
+            if getattr(node, "origin", "gnat").lower() in origin_set
+        }
+        filtered_edges = [
+            e
+            for e in context.edges
+            if e.source_id in filtered_nodes and e.target_id in filtered_nodes
+        ]
+        return GraphContext(
+            nodes=filtered_nodes,
+            edges=filtered_edges,
+            seed_ids=context.seed_ids,
+        )
+
     def neighbours(self, node_id: str) -> list[str]:
         """Return the immediate neighbour node IDs of *node_id*."""
         return list(self._adjacency.get(node_id, set()))

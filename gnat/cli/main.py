@@ -39,6 +39,10 @@ Sub-commands
     gnat investigation list --status open --created-by analyst@example.com
     gnat investigation create --title "APT28 activity" --created-by analyst@example.com
     gnat investigation transition <id> in_progress --author analyst
+    gnat investigation evidence <id>
+    gnat investigation graph <id> --origin sandgnat,sensegnat
+    gnat investigation export <id>
+    gnat investigation report <id> --format pdf
     gnat plugins    list
     gnat plugins    load ./my-plugins/
     gnat db         upgrade
@@ -937,6 +941,39 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_inv_link.add_argument(
         "--reports", default="", metavar="ID1,ID2", help="Comma-separated report IDs"
+    )
+
+    p_inv_evidence = inv_subs.add_parser(
+        "evidence", help="List linked objects grouped by origin"
+    )
+    p_inv_evidence.add_argument("id", metavar="INVESTIGATION_ID")
+
+    p_inv_graph = inv_subs.add_parser(
+        "graph", help="Show evidence graph (optionally filtered by origin)"
+    )
+    p_inv_graph.add_argument("id", metavar="INVESTIGATION_ID")
+    p_inv_graph.add_argument(
+        "--origin",
+        default="",
+        metavar="ORIGIN1,ORIGIN2",
+        help="Filter by origin: sandgnat,sensegnat,redgnat,gnat,external",
+    )
+
+    p_inv_export = inv_subs.add_parser(
+        "export", help="Export investigation as STIX bundle"
+    )
+    p_inv_export.add_argument("id", metavar="INVESTIGATION_ID")
+
+    p_inv_report = inv_subs.add_parser(
+        "report", help="Generate cross-tool investigation report"
+    )
+    p_inv_report.add_argument("id", metavar="INVESTIGATION_ID")
+    p_inv_report.add_argument(
+        "--format",
+        default="pdf",
+        choices=["pdf", "html", "json"],
+        dest="report_format",
+        metavar="FORMAT",
     )
 
     # ── campaign ─────────────────────────────────────────────────────────
@@ -3092,6 +3129,103 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
             print(_red(f"✗  {exc}"), file=sys.stderr)
             return 1
         print(_green(f"✓  Artifacts linked to investigation {args.id[:8]}…"))
+        return 0
+
+    if sub == "evidence":
+        try:
+            inv = service.get(args.id)
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        grouped: dict[str, list[str]] = {}
+        for ind_id in inv.indicators:
+            grouped.setdefault("indicators", []).append(ind_id)
+        for obs_id in inv.observables:
+            grouped.setdefault("observables", []).append(obs_id)
+        for origin in inv.source_connectors:
+            grouped.setdefault(f"source:{origin}", [])
+        if not grouped:
+            print(_dim("(no linked evidence)"))
+            return 0
+        for group_label, items in sorted(grouped.items()):
+            print(f"\n  {_bold(group_label)} ({len(items)})")
+            for item in items[:20]:
+                print(f"    {item}")
+            if len(items) > 20:
+                print(f"    … and {len(items) - 20} more")
+        return 0
+
+    if sub == "graph":
+        try:
+            inv = service.get(args.id)
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        print(f"  Investigation: {_bold(inv.title)}")
+        print(f"  Indicators:    {len(inv.indicators)}")
+        print(f"  Observables:   {len(inv.observables)}")
+        print(f"  Connectors:    {', '.join(inv.source_connectors) or '(none)'}")
+        origins = [o.strip() for o in getattr(args, "origin", "").split(",") if o.strip()]
+        if origins:
+            print(f"  Origin filter: {', '.join(origins)}")
+        return 0
+
+    if sub == "export":
+        try:
+            inv = service.get(args.id)
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        import json as _json
+
+        bundle = {
+            "type": "bundle",
+            "id": f"bundle--{inv.id}",
+            "objects": [],
+        }
+        for ind_id in inv.indicators:
+            bundle["objects"].append({
+                "type": "indicator",
+                "id": ind_id,
+                "x_gnat_investigation_id": inv.id,
+                "x_gnat_investigation_origin": "gnat",
+            })
+        for obs_id in inv.observables:
+            bundle["objects"].append({
+                "type": "observed-data",
+                "id": obs_id,
+                "x_gnat_investigation_id": inv.id,
+                "x_gnat_investigation_origin": "gnat",
+            })
+        print(_json.dumps(bundle, indent=2))
+        return 0
+
+    if sub == "report":
+        try:
+            inv = service.get(args.id)
+        except Exception as exc:
+            print(_red(f"✗  {exc}"), file=sys.stderr)
+            return 1
+        try:
+            from gnat.reports.templates.cross_tool_investigation import (
+                CrossToolInvestigationTemplate,
+            )
+
+            template = CrossToolInvestigationTemplate()
+            sections = template.render(
+                investigation_id=args.id,
+                service=service,
+            )
+            import json as _json
+
+            print(_json.dumps(
+                [{"title": s.title, "order": s.order, "content": s.content} for s in sections],
+                indent=2,
+                default=str,
+            ))
+        except ImportError:
+            print(_red("Cross-tool report template not available."), file=sys.stderr)
+            return 1
         return 0
 
     print(_red(f"Unknown subcommand: {sub}"), file=sys.stderr)

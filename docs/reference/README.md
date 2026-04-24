@@ -6,6 +6,7 @@ Precise technical details for configuration syntax and other lookup material.
 |-----------|-------------|
 | [Configuration](configuration.md) | INI file format, section keys, and discovery rules |
 | [Rule Engine Spec](rule-engine-spec.md) | Rule file format, 26 helpers, evaluation model, audit, policy parameters |
+| [Investigation Context Schema](investigation-context-schema.md) | JSON schema for cross-tool investigation properties, Grouping envelope, error cases |
 
 ---
 
