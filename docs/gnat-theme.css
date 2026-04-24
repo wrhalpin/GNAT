@@ -196,6 +196,20 @@ header.hero{
 .flow-node--sand strong{color:#D4A017;}
 .flow-node--red{border-color:#C0392B;}
 .flow-node--red strong{color:#C0392B;}
+.flow-actions{
+  display:flex;
+  gap:1.5rem;
+  font-size:.875rem;
+  justify-content:flex-end;
+}
+.flow-actions a{
+  color:var(--muted);
+  text-decoration:none;
+}
+.flow-actions a:hover{
+  color:var(--ink);
+  text-decoration:underline;
+}
 @media (max-width:640px){
   .flow-teaser{flex-direction:column;}
   .flow-arrow{justify-content:center;transform:rotate(90deg);}
