@@ -105,6 +105,58 @@
         </div>
       </div>
     </section>
+
+    <section>
+      <h2>Canonical Workflow</h2>
+      <div class="flow-teaser">
+
+        <div class="flow-stage">
+          <div class="flow-node flow-node--neutral">
+            <span class="flow-step">Collect</span>
+            <strong>Telemetry &amp; Sources</strong>
+            <p>External indicators and raw network telemetry enter the ecosystem</p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">&rarr;</div>
+
+        <div class="flow-stage">
+          <div class="flow-node flow-node--gnat">
+            <span class="flow-step">Process</span>
+            <strong>GNAT</strong>
+            <p>Ingest, normalize, convert to STIX, and route to addons</p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">&rarr;</div>
+
+        <div class="flow-stage flow-stage--addons">
+          <div class="flow-node flow-node--sense">
+            <strong>SenseGNAT</strong>
+            <p>Behavioral profiling &amp; anomaly detection</p>
+          </div>
+          <div class="flow-node flow-node--sand">
+            <strong>SandGNAT</strong>
+            <p>Malware detonation &amp; artifact enrichment</p>
+          </div>
+          <div class="flow-node flow-node--red">
+            <strong>RedGNAT</strong>
+            <p>Adversary emulation &amp; validation</p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">&rarr;</div>
+
+        <div class="flow-stage">
+          <div class="flow-node flow-node--neutral">
+            <span class="flow-step">Report</span>
+            <strong>Investigate &amp; Act</strong>
+            <p>Unified investigation graph, reporting, and operator action</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
   </main>
 
   <footer>
