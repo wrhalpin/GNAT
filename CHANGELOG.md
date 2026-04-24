@@ -19,6 +19,26 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Changed — Unified API key authentication
+
+Consolidates the serve layer (single shared `X-Api-Key`) and
+dissemination layer (`Authorization: Bearer` multi-key `APIKeyStore`)
+into one auth scheme backed by `APIKeyStore`.
+
+- `APIKey.tenant_id` is now a first-class field (was in metadata dict).
+- `APIKeyStore.rotate_key()` replaces a key with a new one, keeping the
+  old key valid for a configurable grace period.
+- `SQLAlchemyKeyStore` persists keys in the database (same pattern as
+  `InvestigationStore`).
+- `gnat/serve/auth.py` `APIKeyAuth` accepts `APIKeyStore` and supports
+  both `Authorization: Bearer` and `X-Api-Key` headers for backward
+  compatibility.
+- `gnat serve` accepts `--key-store` or legacy `--api-key`.
+- CLI key management: `gnat key generate`, `gnat key list`,
+  `gnat key revoke <prefix>`, `gnat key rotate <prefix>`.
+- SSE endpoint timing side-channel fixed (`hmac.compare_digest`).
+- ADR-0056 documenting the design decisions.
+
 ### Added — Cross-tool investigation context
 
 Lets SandGNAT, SenseGNAT, and RedGNAT attach their outputs to GNAT

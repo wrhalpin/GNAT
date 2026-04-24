@@ -123,7 +123,7 @@ class TestAPIKeyAuth:
     def test_missing_key_returns_401(self):
         client = _client()
         r = client.get("/api/library")
-        assert r.status_code == 422  # FastAPI returns 422 for missing required header
+        assert r.status_code == 401
 
     def test_wrong_key_returns_401(self):
         client = _client()
@@ -135,13 +135,19 @@ class TestAPIKeyAuth:
         r = client.get("/api/library", headers={"X-Api-Key": ""})
         assert r.status_code == 401
 
-    def test_auth_uses_constant_time_compare(self):
-        """hmac.compare_digest is used — verify key is stored as bytes."""
-        auth = APIKeyAuth("secret")
-        assert auth._key == b"secret"
-        # Different-length key avoids early-exit; verify mismatch is caught
-        auth2 = APIKeyAuth("a" * 32)
-        assert auth2._key == b"a" * 32
+    def test_auth_uses_key_store(self):
+        """APIKeyAuth wraps single key in a store — verify legacy constructor works."""
+        from gnat.analysis.tlp import TLPLevel
+        from gnat.dissemination.api.auth import APIKeyStore
+
+        auth = APIKeyAuth(api_key="secret")
+        # Legacy mode stores key via _legacy_key for hmac comparison
+        assert auth._legacy_key == b"secret"
+        # Multi-key mode accepts a store
+        store = APIKeyStore()
+        store.add_key("k1", TLPLevel.AMBER, label="test")
+        auth2 = APIKeyAuth(key_store=store)
+        assert auth2._store is store
 
 
 # ---------------------------------------------------------------------------

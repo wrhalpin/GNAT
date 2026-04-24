@@ -192,7 +192,7 @@ def build_investigation_router(
         ``x_gnat_investigation_id``, then routes into existing ingest.
         """
         origin = body.get("x_gnat_investigation_origin", "external")
-        tenant_id = getattr(api_key, "tenant_id", None)
+        tenant_id = api_key.tenant_id if hasattr(api_key, "tenant_id") else None
 
         if x_reopen_investigation:
             try:
