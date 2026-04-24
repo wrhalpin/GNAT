@@ -137,6 +137,69 @@ header.hero{
   padding:.75rem;
   vertical-align:top;
 }
+/* ── Workflow teaser ── */
+.flow-teaser{
+  display:flex;
+  align-items:stretch;
+  gap:.5rem;
+  margin-bottom:1rem;
+}
+.flow-arrow{
+  display:flex;
+  align-items:center;
+  font-size:1.25rem;
+  color:var(--muted);
+  flex-shrink:0;
+  padding-top:.5rem;
+}
+.flow-stage{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:.4rem;
+}
+.flow-stage--addons{
+  flex:1.2;
+}
+.flow-node{
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:.75rem 1rem;
+  flex:1;
+}
+.flow-node strong{
+  display:block;
+  font-size:.95rem;
+  font-weight:600;
+  margin-bottom:.2rem;
+}
+.flow-node p{
+  margin:0;
+  font-size:.78rem;
+  color:var(--muted);
+  line-height:1.4;
+}
+.flow-step{
+  display:block;
+  font-size:.68rem;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  color:var(--muted);
+  margin-bottom:.3rem;
+}
+.flow-node--gnat{border-color:var(--ink);}
+.flow-node--gnat strong{color:var(--ink);}
+.flow-node--sense{border-color:#7C3AED;}
+.flow-node--sense strong{color:#7C3AED;}
+.flow-node--sand{border-color:#D4A017;}
+.flow-node--sand strong{color:#D4A017;}
+.flow-node--red{border-color:#C0392B;}
+.flow-node--red strong{color:#C0392B;}
+@media (max-width:640px){
+  .flow-teaser{flex-direction:column;}
+  .flow-arrow{justify-content:center;transform:rotate(90deg);}
+}
 footer{
   border-top:1px solid var(--line);
   margin-top:3rem;
