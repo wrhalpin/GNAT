@@ -133,15 +133,90 @@ roles, and TLP levels.  This is consistent with ADR-0055 (cross-tool
 investigation context).  API keys are the right mechanism for
 machine-to-machine service accounts.
 
-### 9. SSO/OIDC deferred to future release
+### 9. SSO/OIDC implementation
 
-Human user authentication via SSO/OIDC is deferred.  When
-implemented it will live behind an optional `gnat[sso]` extra to
-avoid pulling in heavy dependencies (e.g. `authlib`, `python-jose`).
-The `APIKeyAuth` dependency will be extended with an `or`-chain that
-accepts either a valid API key or a valid OIDC token.  This ADR does
-not constrain the OIDC design — it only ensures the API key path
-does not preclude it.
+Human user authentication via OIDC is now supported alongside API
+keys.  The implementation is gated behind the `gnat[sso]` optional
+extra (`authlib>=1.3`) so that core installations remain
+dependency-light.
+
+#### 9.1 `AuthenticatedIdentity` protocol
+
+A new `AuthenticatedIdentity` protocol (`gnat.auth.identity`)
+defines the structural interface shared by `APIKey` and
+`OIDCIdentity`.  Both provide `subject_id`, `role`, `tenant_id`,
+`tlp_level`, `label`, `token_hash`, `is_valid()`, and `to_dict()`.
+Policy engine, audit middleware, and downstream endpoints depend on
+the protocol, not a concrete class.
+
+#### 9.2 OIDC via authlib in `gnat[sso]` extra
+
+`OIDCProvider` (`gnat.auth.oidc`) validates JWT bearer tokens against
+the IdP's JWKS.  It supports RS256/RS384/RS512/ES256/ES384
+signatures.  The provider is constructed from the `[auth]` INI
+section and reused for the lifetime of the process.
+
+Import of `authlib` is guarded: if the package is missing, the
+constructor raises `ImportError` with an actionable install
+instruction.
+
+#### 9.3 Bearer token or-chain (API key first, OIDC fallback)
+
+The `APIKeyAuth` serve dependency now implements an or-chain:
+
+1. Resolve the incoming `Authorization: Bearer` (or `X-Api-Key`)
+   token against the `APIKeyStore`.
+2. If no matching API key is found **and** an `OIDCProvider` is
+   configured, validate the token as an OIDC JWT.
+3. If both fail, return 401.
+
+This preserves full backward compatibility for existing API key
+deployments while transparently adding SSO for human users.
+
+#### 9.4 Device code flow for CLI (`gnat auth login`)
+
+`DeviceCodeFlow` (`gnat.auth.device_code`) implements RFC 8628
+(OAuth 2.0 Device Authorization Grant) for terminal sessions:
+
+1. Requests a device code from the authorization server.
+2. Prints the verification URI and user code for the operator.
+3. Polls the token endpoint until the user completes browser
+   authentication.
+4. Stores the resulting tokens at `~/.gnat/credentials.json`
+   (mode `0600`).
+
+The CLI `gnat auth login` subcommand wraps this flow.
+
+#### 9.5 Claim-to-role mapping via INI config
+
+Role derivation is configurable in the `[auth]` INI section:
+
+```ini
+[auth]
+provider      = oidc
+issuer        = https://your-tenant.okta.com
+client_id     = 0oa...
+audience      = https://gnat.internal
+role_claim    = groups
+role_map      = {"gnat-admins": "admin", "gnat-analysts": "analyst", "gnat-viewers": "viewer"}
+default_role  = viewer
+default_tlp   = amber
+tenant_claim  = x_gnat_tenant
+```
+
+`role_map` is a JSON object mapping IdP group names to GNAT roles.
+When multiple groups match, the highest-priority role wins.
+`default_role` applies when no group matches.  `tenant_claim`
+extracts the tenant ID from a custom JWT claim.
+
+#### 9.6 JWKS caching
+
+The JWKS key set is fetched from
+`{issuer}/.well-known/openid-configuration` → `jwks_uri` on first
+token validation and cached for `jwks_cache_ttl` seconds (default
+3600 / 1 hour).  Subsequent validations reuse the cached key set
+without network calls.  On cache expiry the JWKS is re-fetched
+transparently.
 
 ## Consequences
 

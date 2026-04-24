@@ -258,3 +258,45 @@ class APIKeyStore:
 
     def __len__(self) -> int:
         return len(self._keys)
+
+
+def create_auth_dependency(
+    key_store: APIKeyStore,
+    oidc_provider: Any = None,
+) -> Any:
+    """
+    Build a FastAPI dependency that validates Bearer tokens as API keys
+    with optional OIDC JWT fallback.
+
+    Use this in ``build_gateway_router`` and ``build_investigation_router``
+    to share one auth check across all dissemination endpoints.
+    """
+
+    def _require_auth(authorization: str = ...) -> Any:
+        ...
+
+    try:
+        from fastapi import Header, HTTPException
+    except ImportError:
+        return None
+
+    def _require_auth(authorization: str = Header(default="")) -> Any:
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing Bearer token.")
+        token = authorization.removeprefix("Bearer ").strip()
+
+        key = key_store.get_key(token)
+        if key is not None and key.is_valid():
+            return key
+
+        if oidc_provider is not None:
+            try:
+                identity = oidc_provider.validate_token(token)
+                if identity is not None:
+                    return identity
+            except Exception:
+                pass
+
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
+
+    return _require_auth

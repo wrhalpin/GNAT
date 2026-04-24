@@ -43,6 +43,9 @@ Sub-commands
     gnat investigation graph <id> --origin sandgnat,sensegnat
     gnat investigation export <id>
     gnat investigation report <id> --format pdf
+    gnat auth       login --issuer https://acme.okta.com --client-id 0oa...
+    gnat auth       status
+    gnat auth       logout
     gnat key        generate --role analyst --tenant acme --tlp amber --label "SandGNAT"
     gnat key        list
     gnat key        revoke <prefix>
@@ -979,6 +982,21 @@ def _build_parser() -> argparse.ArgumentParser:
         dest="report_format",
         metavar="FORMAT",
     )
+
+    # ── auth ─────────────────────────────────────────────────────────────
+    p_auth = subs.add_parser(
+        "auth",
+        help="OIDC/SSO authentication (login, logout, status)",
+    )
+    auth_subs = p_auth.add_subparsers(dest="auth_command", metavar="<subcommand>")
+    auth_subs.required = True
+
+    p_auth_login = auth_subs.add_parser("login", help="Authenticate via OIDC device code flow")
+    p_auth_login.add_argument("--issuer", metavar="URL", help="OIDC issuer URL")
+    p_auth_login.add_argument("--client-id", metavar="ID", dest="client_id", help="OAuth2 client ID")
+
+    _p_auth_status = auth_subs.add_parser("status", help="Show current authentication status")
+    _p_auth_logout = auth_subs.add_parser("logout", help="Clear stored credentials")
 
     # ── key ──────────────────────────────────────────────────────────────
     p_key = subs.add_parser(
@@ -3283,6 +3301,87 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_auth(args: argparse.Namespace) -> int:
+    """Handle 'gnat auth <subcommand>'."""
+    sub = args.auth_command
+
+    if sub == "login":
+        try:
+            from gnat.auth.device_code import DeviceCodeFlow
+        except ImportError:
+            print(
+                _red('OIDC support requires authlib.  Run: pip install "gnat[sso]"'),
+                file=sys.stderr,
+            )
+            return 1
+
+        issuer = getattr(args, "issuer", None)
+        client_id = getattr(args, "client_id", None)
+
+        if not issuer or not client_id:
+            from gnat.config import GNATConfig
+
+            cfg = GNATConfig.from_env()
+            auth_section = cfg.get_section("auth") if hasattr(cfg, "get_section") else {}
+            issuer = issuer or auth_section.get("issuer", "")
+            client_id = client_id or auth_section.get("client_id", "")
+
+        if not issuer or not client_id:
+            print(
+                _red(
+                    "OIDC issuer and client_id required.\n"
+                    "  Use --issuer URL --client-id ID, or set [auth] in config.ini."
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            flow = DeviceCodeFlow(issuer=issuer, client_id=client_id)
+            result = flow.authenticate()
+            print(_green("Authentication successful."))
+            if result.get("id_token"):
+                print(f"  Token type: ID token + access token")
+            else:
+                print(f"  Token type: access token")
+            print(f"  Expires in: {result.get('expires_in', '?')}s")
+        except Exception as exc:
+            print(_red(f"Authentication failed: {exc}"), file=sys.stderr)
+            return 1
+        return 0
+
+    if sub == "status":
+        try:
+            from gnat.auth.device_code import DeviceCodeFlow
+        except ImportError:
+            print(_dim("OIDC not installed (pip install 'gnat[sso]')"))
+            return 0
+
+        creds = DeviceCodeFlow.load_credentials()
+        if creds is None:
+            print(_dim("Not authenticated (no stored credentials)"))
+        else:
+            print(_green("Authenticated"))
+            if creds.get("access_token"):
+                print(f"  Token: {creds['access_token'][:12]}…")
+            if creds.get("expires_in"):
+                print(f"  TTL:   {creds['expires_in']}s")
+        return 0
+
+    if sub == "logout":
+        try:
+            from gnat.auth.device_code import DeviceCodeFlow
+
+            DeviceCodeFlow.clear_credentials()
+            print(_green("Credentials cleared."))
+        except ImportError:
+            print(_dim("OIDC not installed — nothing to clear."))
+        return 0
+
+    print(_red(f"Unknown subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
 def _cmd_key(args: argparse.Namespace) -> int:
     """Handle 'gnat key <subcommand>'."""
     import os
@@ -3879,6 +3978,7 @@ def main(argv: list[str] | None = None) -> int:
         "health": _cmd_health,
         "contribute": _cmd_contribute,
         "investigation": _cmd_investigation,
+        "auth": _cmd_auth,
         "key": _cmd_key,
         "campaign": _cmd_campaign,
         "actor": _cmd_actor,
