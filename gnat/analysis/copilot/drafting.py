@@ -29,6 +29,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -218,6 +219,72 @@ class ReportDraftingAssistant:
             model=summary_result.model or findings_result.model,
             prompt_tokens=summary_result.prompt_tokens + findings_result.prompt_tokens,
             completion_tokens=summary_result.completion_tokens + findings_result.completion_tokens,
+            warnings=summary_result.warnings + findings_result.warnings,
+        )
+
+    def draft_with_progress(
+        self,
+        report: Any,
+        progress_callback: Callable[[float, str], None] | None = None,
+    ) -> DraftResult:
+        """
+        Draft both sections with progress reporting at each stage.
+
+        Identical to :meth:`draft_full` but invokes *progress_callback* at
+        each major step so callers (UIs, job framework) can display live
+        status.
+
+        Parameters
+        ----------
+        report : Report
+            The report whose findings and evidence will be used as context.
+        progress_callback : callable, optional
+            ``callback(progress: float, message: str)`` invoked at each step.
+            *progress* is a fraction in ``[0.0, 1.0]``.
+
+        Returns
+        -------
+        DraftResult
+        """
+        cb = progress_callback or (lambda p, m: None)
+
+        cb(0.1, "Formatting findings")
+        findings_block = self._format_findings(report)
+
+        cb(0.3, "Formatting evidence")
+        evidence_block = self._format_evidence(report)
+
+        cb(0.5, "Querying LLM for executive summary")
+        summary_prompt = self._summary_tmpl.format(
+            title=report.title,
+            report_type=report.report_type.value,
+            classification=report.classification.label,
+            authors=", ".join(report.authors) or "Unknown",
+            n_findings=len(report.key_findings),
+            findings_block=findings_block,
+            evidence_block=evidence_block,
+        )
+        summary_result = self._call_llm(summary_prompt, report)
+
+        cb(0.8, "Querying LLM for key findings narrative")
+        findings_prompt = self._findings_tmpl.format(
+            title=report.title,
+            classification=report.classification.label,
+            findings_block=findings_block,
+            evidence_block=evidence_block,
+        )
+        findings_result = self._call_llm(findings_prompt, report)
+
+        cb(1.0, "Draft complete")
+
+        return DraftResult(
+            executive_summary=summary_result.executive_summary,
+            key_findings_narrative=findings_result.key_findings_narrative,
+            model=summary_result.model or findings_result.model,
+            prompt_tokens=summary_result.prompt_tokens + findings_result.prompt_tokens,
+            completion_tokens=(
+                summary_result.completion_tokens + findings_result.completion_tokens
+            ),
             warnings=summary_result.warnings + findings_result.warnings,
         )
 

@@ -51,6 +51,7 @@ Usage::
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -282,6 +283,68 @@ class GapDetector:
                     )
             except Exception:  # noqa: BLE001
                 pass  # rule evaluation failure never blocks gap detection
+
+        _ORDER = {
+            GapSeverity.CRITICAL: 0,
+            GapSeverity.HIGH: 1,
+            GapSeverity.MEDIUM: 2,
+            GapSeverity.LOW: 3,
+        }
+        gaps.sort(key=lambda g: _ORDER[g.severity])
+        return gaps
+
+    def detect_with_progress(
+        self,
+        hypothesis: Any,
+        investigation: Any,
+        progress_callback: Callable[[float, str], None] | None = None,
+    ) -> list[GapRecommendation]:
+        """
+        Detect evidence gaps with progress reporting at each rule check.
+
+        Identical to :meth:`detect` but invokes *progress_callback* after
+        evaluating each rule so callers can display live status.
+
+        Parameters
+        ----------
+        hypothesis : Hypothesis
+            The hypothesis to evaluate.
+        investigation : Investigation
+            The investigation providing the evidence context.
+        progress_callback : callable, optional
+            ``callback(progress: float, message: str)`` invoked per rule.
+            *progress* is a fraction in ``[0.0, 1.0]``.
+
+        Returns
+        -------
+        list of GapRecommendation
+            Detected gaps sorted by severity (CRITICAL first).
+        """
+        cb = progress_callback or (lambda p, m: None)
+        stmt = hypothesis.statement.lower()
+        gaps: list[GapRecommendation] = []
+        n_rules = len(_RULES)
+
+        for i, rule in enumerate(_RULES):
+            cb(i / max(n_rules, 1), f"Checking rule: {rule.id}")
+
+            # Always-checked rules have empty keywords list
+            if rule.keywords and not any(kw in stmt for kw in rule.keywords):
+                continue
+            try:
+                if rule.check_fn(hypothesis, investigation):
+                    gaps.append(
+                        GapRecommendation(
+                            rule_id=rule.id,
+                            description=rule.description,
+                            severity=rule.severity,
+                            suggested_action=rule.suggested_action,
+                        )
+                    )
+            except Exception:  # noqa: BLE001
+                pass  # rule evaluation failure never blocks gap detection
+
+        cb(1.0, "Gap detection complete")
 
         _ORDER = {
             GapSeverity.CRITICAL: 0,

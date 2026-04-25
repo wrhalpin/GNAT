@@ -19,6 +19,28 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Job framework (Stream 3)
+
+New `gnat/jobs/` package for user-initiated, one-shot async operations
+with progress tracking. Coexists with FeedScheduler (recurring cron jobs).
+
+- `Job` dataclass with lifecycle: QUEUED → RUNNING → SUCCEEDED/FAILED/CANCELLED
+- `JobStore`: thread-safe in-memory store with CRUD, filtering, eviction
+- `JobRunner`: ThreadPoolExecutor-based execution with cooperative cancellation
+- `JobRegistry` + `@job` decorator for registering handler functions
+- Progress callback pattern: handlers call `progress_callback(0.5, "msg")`
+
+### Added — Streaming/SSE hooks (Stream 4)
+
+Streaming-aware methods on existing classes for live progress reporting.
+Existing sync methods unchanged — new methods added alongside.
+
+- `gnat/streaming.py`: StreamEvent, ProgressEvent, TokenEvent, ResultEvent, ErrorEvent
+- `InvestigationBuilder.build_with_progress()`: 5-step pipeline with callbacks
+- `GapDetector.detect_with_progress()`: per-rule progress callbacks
+- `ReportDraftingAssistant.draft_with_progress()`: findings/evidence/LLM callbacks
+- `LLMClient.stream_events()`: wraps `stream()` to yield TokenEvent/ResultEvent
+
 ### Added — Pydantic v2 schema exports (Stream 1)
 
 New `gnat/schemas/` package with 28 Pydantic v2 BaseModel schemas
