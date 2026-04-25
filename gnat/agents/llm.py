@@ -41,7 +41,10 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from gnat.streaming import StreamEvent
 
 from gnat.agents.base import LLMProvider
 from gnat.clients.base import GNATClientError
@@ -266,6 +269,38 @@ class LLMClient:
             "No LLM backend supports embeddings. "
             "Add openai or gemini to fallback_backends, or use backend='openai'."
         ) from last_exc
+
+    def stream_events(self, prompt: str, **kwargs: Any) -> Iterator[StreamEvent]:
+        """
+        Yield :class:`~gnat.streaming.StreamEvent` objects from a streaming
+        completion.
+
+        Each incremental text chunk is wrapped in a
+        :class:`~gnat.streaming.TokenEvent`.  After the stream is exhausted a
+        final :class:`~gnat.streaming.ResultEvent` is yielded containing the
+        full concatenated text.
+
+        Parameters
+        ----------
+        prompt : str
+            User message text.
+        **kwargs
+            ``system``, ``temperature``, ``max_tokens`` passed through to
+            :meth:`stream`.
+
+        Yields
+        ------
+        StreamEvent
+            :class:`~gnat.streaming.TokenEvent` for each chunk, then a single
+            :class:`~gnat.streaming.ResultEvent`.
+        """
+        from gnat.streaming import ResultEvent, TokenEvent
+
+        full_text: list[str] = []
+        for chunk in self.stream(prompt, **kwargs):
+            full_text.append(chunk)
+            yield TokenEvent(text=chunk)
+        yield ResultEvent(result={"text": "".join(full_text)})
 
     def get_model_name(self) -> str:
         """Return the active model name for logging."""

@@ -50,6 +50,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from gnat.investigations.correlator import correlate
@@ -156,6 +157,68 @@ class InvestigationBuilder:
             "InvestigationBuilder: finished — %s",
             graph.summary(),
         )
+        return graph
+
+    def build_with_progress(
+        self,
+        seeds: list[Seed],
+        title: str = "Investigation",
+        expand_depth: int = 1,
+        progress_callback: Callable[[float, str], None] | None = None,
+    ) -> EvidenceGraph:
+        """
+        Run the five-step evidence graph pipeline with progress reporting.
+
+        Identical to :meth:`build` but invokes *progress_callback* at each
+        major step so callers (UIs, job framework) can display live status.
+
+        Parameters
+        ----------
+        seeds : list of Seed
+            Starting points for evidence collection.
+        title : str
+            Human-readable investigation title stored in the graph.
+        expand_depth : int
+            Number of expansion rounds (currently only ``1`` is applied).
+        progress_callback : callable, optional
+            ``callback(progress: float, message: str)`` invoked at each step.
+            *progress* is a fraction in ``[0.0, 1.0]``.
+
+        Returns
+        -------
+        EvidenceGraph
+        """
+        cb = progress_callback or (lambda p, m: None)
+
+        graph = EvidenceGraph(title=title, seeds=seeds)
+
+        # Step 1: Validate / expand seeds
+        cb(0.0, "Validating seeds")
+        n_seeds = len(seeds)
+        for i, seed in enumerate(seeds):
+            cb(0.1 * (i + 1) / max(n_seeds, 1), f"Expanding seed {i + 1}/{n_seeds}: {seed.value}")
+            self._expand_seed(graph, seed)
+
+        # Step 2: Expand incidents
+        incident_nodes = [n for n in list(graph.nodes.values()) if n.node_type == NodeType.INCIDENT]
+        n_incidents = len(incident_nodes)
+        cb(0.5, f"Expanding incidents ({n_incidents} found)")
+        for i, node in enumerate(incident_nodes):
+            cb(
+                0.5 + 0.3 * (i + 1) / max(n_incidents, 1),
+                f"Expanding incident {i + 1}/{n_incidents}",
+            )
+            self._expand_incident(graph, node)
+
+        # Step 3-4: Correlate
+        cb(0.8, "Correlating cross-platform matches")
+        correlate(graph)
+
+        # Step 5: Summary
+        cb(0.95, "Building graph summary")
+        logger.info("InvestigationBuilder: finished — %s", graph.summary())
+
+        cb(1.0, "Complete")
         return graph
 
     # ── Step 1: seed expansion ────────────────────────────────────────────
