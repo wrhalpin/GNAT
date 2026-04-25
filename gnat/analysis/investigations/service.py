@@ -500,9 +500,7 @@ class InvestigationService:
         inv = self._store.get(investigation_id)
         if inv is None:
             result.rejected_count = 1
-            result.rejection_reasons.append(
-                f"Investigation not found: {investigation_id}"
-            )
+            result.rejection_reasons.append(f"Investigation not found: {investigation_id}")
             return result
 
         inv_tenant = getattr(inv, "tenant_id", None)

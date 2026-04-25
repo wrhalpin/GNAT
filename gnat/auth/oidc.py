@@ -60,8 +60,7 @@ except ImportError:
 def _require_authlib() -> None:
     if not _AUTHLIB_AVAILABLE:
         raise ImportError(
-            "authlib is required for OIDC authentication. "
-            "Install with: pip install 'gnat[sso]'"
+            "authlib is required for OIDC authentication. Install with: pip install 'gnat[sso]'"
         )
 
 

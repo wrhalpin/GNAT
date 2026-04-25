@@ -153,9 +153,7 @@ class TestCrossToolIngest:
 
         # Verify each origin has the correct number of nodes
         for origin in ALL_ORIGINS:
-            origin_nodes = [
-                n for n in evidence_graph.nodes.values() if n.origin == origin
-            ]
+            origin_nodes = [n for n in evidence_graph.nodes.values() if n.origin == origin]
             assert len(origin_nodes) == 3, (
                 f"Expected 3 nodes for origin {origin!r}, got {len(origin_nodes)}"
             )
@@ -167,8 +165,7 @@ class TestCrossToolIngest:
                 f"{node.investigation_id} != {inv.id}"
             )
             assert node.investigation_origin in ALL_ORIGINS, (
-                f"Node {node.node_id} has invalid investigation_origin: "
-                f"{node.investigation_origin}"
+                f"Node {node.node_id} has invalid investigation_origin: {node.investigation_origin}"
             )
             assert node.investigation_link_type == "confirmed"
             assert node.origin == node.investigation_origin
@@ -202,17 +199,13 @@ class TestCrossToolIngest:
             graph.nodes[node.node_id] = node
 
         # Filter by single origin
-        sandgnat_nodes = [
-            n for n in graph.nodes.values() if n.origin == "sandgnat"
-        ]
+        sandgnat_nodes = [n for n in graph.nodes.values() if n.origin == "sandgnat"]
         assert len(sandgnat_nodes) == 1
         assert sandgnat_nodes[0].investigation_origin == "sandgnat"
 
         # Filter by multiple origins
         internal_origins = {"gnat", "sandgnat", "sensegnat"}
-        internal_nodes = [
-            n for n in graph.nodes.values() if n.origin in internal_origins
-        ]
+        internal_nodes = [n for n in graph.nodes.values() if n.origin in internal_origins]
         assert len(internal_nodes) == 3
 
     def test_investigation_indicators_linked(self, investigation_service):

@@ -13,9 +13,7 @@ or network traffic is required.
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -98,8 +96,9 @@ class TestDiscoverEndpoints:
 
     def test_discover_raises_when_no_device_endpoint(self):
         flow = _make_flow()
-        disco_no_device = {k: v for k, v in _OIDC_DISCOVERY.items()
-                          if k != "device_authorization_endpoint"}
+        disco_no_device = {
+            k: v for k, v in _OIDC_DISCOVERY.items() if k != "device_authorization_endpoint"
+        }
         with patch("urllib3.PoolManager") as MockPM:
             mock_http = MockPM.return_value
             mock_http.request.return_value = _mock_response(200, disco_no_device)
@@ -153,8 +152,7 @@ class TestPollForToken:
         pending_resp = _mock_response(400, {"error": "authorization_pending"})
         success_resp = _mock_response(200, _TOKEN_SUCCESS)
 
-        with patch("urllib3.PoolManager") as MockPM, \
-             patch("time.sleep"):  # skip real sleeps
+        with patch("urllib3.PoolManager") as MockPM, patch("time.sleep"):  # skip real sleeps
             mock_http = MockPM.return_value
             mock_http.request.side_effect = [pending_resp, success_resp]
             result = flow._poll_for_token(
@@ -172,8 +170,7 @@ class TestPollForToken:
 
         expired_resp = _mock_response(400, {"error": "expired_token"})
 
-        with patch("urllib3.PoolManager") as MockPM, \
-             patch("time.sleep"):
+        with patch("urllib3.PoolManager") as MockPM, patch("time.sleep"):
             mock_http = MockPM.return_value
             mock_http.request.side_effect = [expired_resp]
             with pytest.raises(DeviceCodeError, match="expired_token"):
@@ -189,8 +186,7 @@ class TestPollForToken:
 
         denied_resp = _mock_response(400, {"error": "access_denied"})
 
-        with patch("urllib3.PoolManager") as MockPM, \
-             patch("time.sleep"):
+        with patch("urllib3.PoolManager") as MockPM, patch("time.sleep"):
             mock_http = MockPM.return_value
             mock_http.request.side_effect = [denied_resp]
             with pytest.raises(DeviceCodeError, match="access_denied"):
@@ -208,8 +204,7 @@ class TestPollForToken:
         slow_resp = _mock_response(400, {"error": "slow_down"})
         success_resp = _mock_response(200, _TOKEN_SUCCESS)
 
-        with patch("urllib3.PoolManager") as MockPM, \
-             patch("time.sleep") as mock_sleep:
+        with patch("urllib3.PoolManager") as MockPM, patch("time.sleep") as mock_sleep:
             mock_http = MockPM.return_value
             mock_http.request.side_effect = [slow_resp, success_resp]
             flow._poll_for_token(
@@ -314,10 +309,12 @@ class TestAuthenticateIntegration:
         # the token success.
         token_resp = _mock_response(200, _TOKEN_SUCCESS)
 
-        with patch("urllib3.PoolManager") as MockPM, \
-             patch("time.sleep"), \
-             patch("gnat.auth.device_code._CREDENTIALS_PATH", cred_path), \
-             patch("builtins.print"):  # suppress interactive output
+        with (
+            patch("urllib3.PoolManager") as MockPM,
+            patch("time.sleep"),
+            patch("gnat.auth.device_code._CREDENTIALS_PATH", cred_path),
+            patch("builtins.print"),
+        ):  # suppress interactive output
             mock_http = MockPM.return_value
             mock_http.request.side_effect = [disco_resp, device_resp, token_resp]
             result = flow.authenticate()

@@ -103,8 +103,7 @@ class APIKeyAuth:
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Missing API key. Use Authorization: Bearer <token> "
-                "or X-Api-Key header.",
+                detail="Missing API key. Use Authorization: Bearer <token> or X-Api-Key header.",
             )
 
         if self._store is not None:

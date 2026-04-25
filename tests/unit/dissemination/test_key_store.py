@@ -18,7 +18,6 @@ import pytest
 from gnat.analysis.tlp import TLPLevel
 from gnat.dissemination.api.auth import APIKey, APIKeyStore
 
-
 # ---------------------------------------------------------------------------
 # APIKey — tenant_id field
 # ---------------------------------------------------------------------------

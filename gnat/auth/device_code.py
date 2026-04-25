@@ -132,10 +132,7 @@ class DeviceCodeFlow:
         import urllib3
 
         http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=10, read=10))
-        body = (
-            f"client_id={self._client_id}"
-            f"&scope={'+'.join(self._scopes)}"
-        )
+        body = f"client_id={self._client_id}&scope={'+'.join(self._scopes)}"
         resp = http.request(
             "POST",
             self._device_authorization_endpoint,
@@ -185,9 +182,7 @@ class DeviceCodeFlow:
                 continue
             if error in ("expired_token", "access_denied"):
                 raise DeviceCodeError(f"Device code flow failed: {error}")
-            raise DeviceCodeError(
-                f"Unexpected token response: {resp.status} {data}"
-            )
+            raise DeviceCodeError(f"Unexpected token response: {resp.status} {data}")
 
         raise DeviceCodeError("Device code expired — user did not complete authentication")
 

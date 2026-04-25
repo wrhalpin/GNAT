@@ -56,22 +56,16 @@ def _stix_bundle(investigation_id: str, origin: str = "gnat", count: int = 3) ->
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "objects": [
-            _stix_indicator(investigation_id, origin=origin) for _ in range(count)
-        ],
+        "objects": [_stix_indicator(investigation_id, origin=origin) for _ in range(count)],
     }
 
 
-def _mismatched_bundle(
-    endpoint_id: str, stamped_id: str, count: int = 2
-) -> dict:
+def _mismatched_bundle(endpoint_id: str, stamped_id: str, count: int = 2) -> dict:
     """Build a bundle where objects are stamped with a different investigation_id."""
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "objects": [
-            _stix_indicator(stamped_id, origin="gnat") for _ in range(count)
-        ],
+        "objects": [_stix_indicator(stamped_id, origin="gnat") for _ in range(count)],
     }
 
 
@@ -128,9 +122,7 @@ def service(mock_store) -> InvestigationService:
 class TestAttachEvidenceBundle:
     """Tests for InvestigationService.attach_evidence_bundle."""
 
-    def test_valid_bundle_returns_accepted(
-        self, service, mock_store, open_investigation
-    ):
+    def test_valid_bundle_returns_accepted(self, service, mock_store, open_investigation):
         """A valid bundle with matching investigation_id returns
         an AttachResult with accepted_count > 0."""
         inv_id = open_investigation.id
@@ -148,9 +140,7 @@ class TestAttachEvidenceBundle:
         assert result.rejected_count == 0
         assert result.rejection_reasons == []
 
-    def test_mismatched_investigation_id_rejected(
-        self, service, mock_store, open_investigation
-    ):
+    def test_mismatched_investigation_id_rejected(self, service, mock_store, open_investigation):
         """Objects stamped with a different investigation_id are rejected."""
         inv_id = open_investigation.id
         other_id = _investigation_id()
@@ -167,9 +157,7 @@ class TestAttachEvidenceBundle:
         assert result.rejected_count > 0
         assert len(result.rejection_reasons) > 0
 
-    def test_closed_investigation_raises(
-        self, service, mock_store, closed_investigation
-    ):
+    def test_closed_investigation_raises(self, service, mock_store, closed_investigation):
         """Attaching evidence to a CLOSED investigation raises InvestigationError."""
         inv_id = closed_investigation.id
         bundle = _stix_bundle(inv_id)

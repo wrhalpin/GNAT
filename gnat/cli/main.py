@@ -950,9 +950,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--reports", default="", metavar="ID1,ID2", help="Comma-separated report IDs"
     )
 
-    p_inv_evidence = inv_subs.add_parser(
-        "evidence", help="List linked objects grouped by origin"
-    )
+    p_inv_evidence = inv_subs.add_parser("evidence", help="List linked objects grouped by origin")
     p_inv_evidence.add_argument("id", metavar="INVESTIGATION_ID")
 
     p_inv_graph = inv_subs.add_parser(
@@ -966,14 +964,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Filter by origin: sandgnat,sensegnat,redgnat,gnat,external",
     )
 
-    p_inv_export = inv_subs.add_parser(
-        "export", help="Export investigation as STIX bundle"
-    )
+    p_inv_export = inv_subs.add_parser("export", help="Export investigation as STIX bundle")
     p_inv_export.add_argument("id", metavar="INVESTIGATION_ID")
 
-    p_inv_report = inv_subs.add_parser(
-        "report", help="Generate cross-tool investigation report"
-    )
+    p_inv_report = inv_subs.add_parser("report", help="Generate cross-tool investigation report")
     p_inv_report.add_argument("id", metavar="INVESTIGATION_ID")
     p_inv_report.add_argument(
         "--format",
@@ -993,7 +987,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_auth_login = auth_subs.add_parser("login", help="Authenticate via OIDC device code flow")
     p_auth_login.add_argument("--issuer", metavar="URL", help="OIDC issuer URL")
-    p_auth_login.add_argument("--client-id", metavar="ID", dest="client_id", help="OAuth2 client ID")
+    p_auth_login.add_argument(
+        "--client-id", metavar="ID", dest="client_id", help="OAuth2 client ID"
+    )
 
     _p_auth_status = auth_subs.add_parser("status", help="Show current authentication status")
     _p_auth_logout = auth_subs.add_parser("logout", help="Clear stored credentials")
@@ -3253,19 +3249,23 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
             "objects": [],
         }
         for ind_id in inv.indicators:
-            bundle["objects"].append({
-                "type": "indicator",
-                "id": ind_id,
-                "x_gnat_investigation_id": inv.id,
-                "x_gnat_investigation_origin": "gnat",
-            })
+            bundle["objects"].append(
+                {
+                    "type": "indicator",
+                    "id": ind_id,
+                    "x_gnat_investigation_id": inv.id,
+                    "x_gnat_investigation_origin": "gnat",
+                }
+            )
         for obs_id in inv.observables:
-            bundle["objects"].append({
-                "type": "observed-data",
-                "id": obs_id,
-                "x_gnat_investigation_id": inv.id,
-                "x_gnat_investigation_origin": "gnat",
-            })
+            bundle["objects"].append(
+                {
+                    "type": "observed-data",
+                    "id": obs_id,
+                    "x_gnat_investigation_id": inv.id,
+                    "x_gnat_investigation_origin": "gnat",
+                }
+            )
         print(_json.dumps(bundle, indent=2))
         return 0
 
@@ -3287,11 +3287,13 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
             )
             import json as _json
 
-            print(_json.dumps(
-                [{"title": s.title, "order": s.order, "content": s.content} for s in sections],
-                indent=2,
-                default=str,
-            ))
+            print(
+                _json.dumps(
+                    [{"title": s.title, "order": s.order, "content": s.content} for s in sections],
+                    indent=2,
+                    default=str,
+                )
+            )
         except ImportError:
             print(_red("Cross-tool report template not available."), file=sys.stderr)
             return 1
@@ -3341,9 +3343,9 @@ def _cmd_auth(args: argparse.Namespace) -> int:
             result = flow.authenticate()
             print(_green("Authentication successful."))
             if result.get("id_token"):
-                print(f"  Token type: ID token + access token")
+                print("  Token type: ID token + access token")
             else:
-                print(f"  Token type: access token")
+                print("  Token type: access token")
             print(f"  Expires in: {result.get('expires_in', '?')}s")
         except Exception as exc:
             print(_red(f"Authentication failed: {exc}"), file=sys.stderr)
@@ -3393,8 +3395,10 @@ def _cmd_key(args: argparse.Namespace) -> int:
         from gnat.dissemination.api.auth import APIKeyStore
 
         store = APIKeyStore()
-        print(_yellow("SQLAlchemy not available — using in-memory store (keys will not persist)."),
-              file=sys.stderr)
+        print(
+            _yellow("SQLAlchemy not available — using in-memory store (keys will not persist)."),
+            file=sys.stderr,
+        )
     else:
         store = SQLAlchemyKeyStore(db_url)
 
@@ -3464,8 +3468,9 @@ def _cmd_key(args: argparse.Namespace) -> int:
             print(_red(f"No key found matching prefix: {prefix!r}"), file=sys.stderr)
             return 1
         if len(matches) > 1:
-            print(_red(f"Prefix matches {len(matches)} keys — use a longer prefix."),
-                  file=sys.stderr)
+            print(
+                _red(f"Prefix matches {len(matches)} keys — use a longer prefix."), file=sys.stderr
+            )
             return 1
         store.revoke_key(matches[0].token)
         print(_green(f"Revoked key {matches[0].token_hash}"))
@@ -3480,8 +3485,9 @@ def _cmd_key(args: argparse.Namespace) -> int:
             print(_red(f"No key found matching prefix: {prefix!r}"), file=sys.stderr)
             return 1
         if len(matches) > 1:
-            print(_red(f"Prefix matches {len(matches)} keys — use a longer prefix."),
-                  file=sys.stderr)
+            print(
+                _red(f"Prefix matches {len(matches)} keys — use a longer prefix."), file=sys.stderr
+            )
             return 1
         new_key = store.rotate_key(matches[0].token, grace_hours=args.grace)
         if new_key is None:
