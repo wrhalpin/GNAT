@@ -19,6 +19,39 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — Pydantic v2 schema exports (Stream 1)
+
+New `gnat/schemas/` package with 28 Pydantic v2 BaseModel schemas
+mirroring every domain dataclass. Typed contracts for API consumers;
+FastAPI auto-generates OpenAPI, frontend generates TypeScript types.
+
+- Analysis schemas: InvestigationSchema, HypothesisSchema, AnalystNoteSchema,
+  InvestigationTaskSchema, InvestigationScopeSchema, ConfidenceScoreSchema,
+  TLPLevelSchema, TimelineEventSchema, GraphContextSchema,
+  GapRecommendationSchema, DraftResultSchema
+- Investigations schemas: SeedSchema, EvidenceNodeSchema, EvidenceEdgeSchema,
+  EvidenceGraphSchema
+- Reporting schemas: ReportSchema, FindingSchema, EvidenceLinkSchema,
+  AttributionSchema, ReportSectionSchema, ChangelogEntrySchema
+- Rules schemas: RuleSchema, RuleAuditEntrySchema
+- Auth schemas: APIKeySchema, OIDCIdentitySchema
+- Every schema uses `ConfigDict(from_attributes=True)` with `from_domain()` classmethod
+- `pydantic>=2.0` added to base dependencies
+- ADR-0057
+
+### Added — Analyst service wrappers (Stream 2)
+
+New `gnat/analyst_services/` package with thin orchestration services
+over existing domain code. Unified API surface for GNAT-gui and future consumers.
+
+- AnalystContext: frozen dataclass (actor, tenant, request_id) for audit + multi-tenant scoping
+- AnalysisService: 9 methods (get/list/create/transition investigations, hypotheses, notes, timeline, graph, gap detection)
+- InvestigationsService: seed → build → graph summary
+- RulesService: list rules, evaluate, audit trail lookup
+- ReportingService: create, get, transition, draft summary, STIX export
+- Exception hierarchy: AnalystServiceError, InvestigationNotFound, ReportNotFound, TransitionError
+- ADR-0058
+
 ### Added — OIDC/SSO authentication (`gnat[sso]`)
 
 Optional OIDC authentication via external identity providers (Okta,
