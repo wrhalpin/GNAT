@@ -115,20 +115,26 @@ class CrossToolInvestigationTemplate:
     def _header_section(self, inv: Any) -> ReportSection:
         hypotheses = []
         for hyp in getattr(inv, "hypothesis", []):
-            hypotheses.append({
-                "id": hyp.id,
-                "statement": hyp.statement,
-                "status": hyp.status.value if hasattr(hyp.status, "value") else str(hyp.status),
-            })
+            hypotheses.append(
+                {
+                    "id": hyp.id,
+                    "statement": hyp.statement,
+                    "status": hyp.status.value if hasattr(hyp.status, "value") else str(hyp.status),
+                }
+            )
 
         notes = []
         for note in getattr(inv, "notes", []):
-            notes.append({
-                "id": note.id,
-                "content": note.content,
-                "author": note.author,
-                "created_at": note.created_at.isoformat() if hasattr(note.created_at, "isoformat") else str(note.created_at),
-            })
+            notes.append(
+                {
+                    "id": note.id,
+                    "content": note.content,
+                    "author": note.author,
+                    "created_at": note.created_at.isoformat()
+                    if hasattr(note.created_at, "isoformat")
+                    else str(note.created_at),
+                }
+            )
 
         return ReportSection(
             title="Investigation Overview",
@@ -144,9 +150,7 @@ class CrossToolInvestigationTemplate:
             },
         )
 
-    def _timeline_section(
-        self, inv: Any, timeline_builder: Any | None
-    ) -> ReportSection:
+    def _timeline_section(self, inv: Any, timeline_builder: Any | None) -> ReportSection:
         timeline_events: list[dict[str, Any]] = []
         if timeline_builder is not None:
             try:
@@ -164,9 +168,7 @@ class CrossToolInvestigationTemplate:
             content={"events": timeline_events},
         )
 
-    def _origin_sections(
-        self, inv: Any, graph: Any | None
-    ) -> list[ReportSection]:
+    def _origin_sections(self, inv: Any, graph: Any | None) -> list[ReportSection]:
         grouped: dict[str, list[dict[str, Any]]] = {o: [] for o in ORIGIN_ORDER}
 
         if graph is not None:
@@ -220,15 +222,11 @@ class CrossToolInvestigationTemplate:
             },
         )
 
-    def _recommendations_section(
-        self, inv: Any, drafting_assistant: Any | None
-    ) -> ReportSection:
+    def _recommendations_section(self, inv: Any, drafting_assistant: Any | None) -> ReportSection:
         recommendations: str = ""
         if drafting_assistant is not None:
             try:
-                recommendations = drafting_assistant.draft_recommendations(
-                    investigation_id=inv.id
-                )
+                recommendations = drafting_assistant.draft_recommendations(investigation_id=inv.id)
             except Exception:
                 logger.warning("Drafting assistant failed for %s", inv.id)
 
@@ -238,9 +236,7 @@ class CrossToolInvestigationTemplate:
             content={"text": recommendations},
         )
 
-    def _appendix_section(
-        self, inv: Any, graph: Any | None
-    ) -> ReportSection:
+    def _appendix_section(self, inv: Any, graph: Any | None) -> ReportSection:
         stix_refs: list[str] = list(getattr(inv, "indicators", []))
         stix_refs.extend(getattr(inv, "observables", []))
 

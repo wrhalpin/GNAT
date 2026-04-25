@@ -39,9 +39,7 @@ class AuthConfig:
         self.audience: str = parser.get(self.SECTION, "audience", fallback="")
         self.role_claim: str = parser.get(self.SECTION, "role_claim", fallback="groups")
         self.default_role: str = parser.get(self.SECTION, "default_role", fallback="viewer")
-        self.tenant_claim: str = parser.get(
-            self.SECTION, "tenant_claim", fallback="x_gnat_tenant"
-        )
+        self.tenant_claim: str = parser.get(self.SECTION, "tenant_claim", fallback="x_gnat_tenant")
 
         tlp_raw = parser.get(self.SECTION, "default_tlp", fallback="amber")
         self.default_tlp: TLPLevel = TLPLevel(tlp_raw)

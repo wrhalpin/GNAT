@@ -29,7 +29,7 @@ reference, explanation). Rendered at
 - Rule engine spec? → [reference/rule-engine-spec.md](docs/reference/rule-engine-spec.md)
 - Scheduling feeds? → [how-to/schedule-feeds.md](docs/how-to/schedule-feeds.md)
 
-**Ecosystem:** [SandGNAT](https://github.com/wrhalpin/SandGNAT) · [RedGNAT](https://github.com/wrhalpin/RedGNAT)
+**Ecosystem:** [SandGNAT](https://github.com/wrhalpin/SandGNAT) · [RedGNAT](https://github.com/wrhalpin/RedGNAT) · [GNAT-gui](https://github.com/wrhalpin/GNAT-gui)
 
 ---
 

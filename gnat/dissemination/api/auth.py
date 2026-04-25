@@ -272,8 +272,7 @@ def create_auth_dependency(
     to share one auth check across all dissemination endpoints.
     """
 
-    def _require_auth(authorization: str = ...) -> Any:
-        ...
+    def _require_auth(authorization: str = ...) -> Any: ...
 
     try:
         from fastapi import Header, HTTPException

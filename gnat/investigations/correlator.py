@@ -128,8 +128,9 @@ def _add_edges(
                 tgt_node = graph.nodes.get(tgt)
                 link_type = "inferred"
                 if (
-                    (src_node and getattr(src_node, "investigation_link_type", None) == "confirmed")
-                    or (tgt_node and getattr(tgt_node, "investigation_link_type", None) == "confirmed")
+                    src_node and getattr(src_node, "investigation_link_type", None) == "confirmed"
+                ) or (
+                    tgt_node and getattr(tgt_node, "investigation_link_type", None) == "confirmed"
                 ):
                     link_type = "confirmed"
                 graph.edges.append(

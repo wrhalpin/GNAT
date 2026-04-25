@@ -13,8 +13,6 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime, timedelta, timezone
 
-import pytest
-
 from gnat.analysis.tlp import TLPLevel
 from gnat.auth.identity import AuthenticatedIdentity, OIDCIdentity
 
@@ -135,9 +133,7 @@ class TestOIDCIdentityValidity:
         """Boundary: expires_at == now should be invalid (strict less-than)."""
         # We cannot freeze time perfectly, but an expiry far in the past
         # guarantees the check fails.
-        identity = _make_identity(
-            expires_at=datetime(2000, 1, 1, tzinfo=timezone.utc)
-        )
+        identity = _make_identity(expires_at=datetime(2000, 1, 1, tzinfo=timezone.utc))
         assert identity.is_valid() is False
 
 

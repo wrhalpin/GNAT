@@ -438,18 +438,15 @@ def create_app(
         """
         import hmac as _hmac
 
-        _sse_token = (
-            request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-            or request.headers.get("X-Api-Key", "")
-        )
+        _sse_token = request.headers.get("Authorization", "").removeprefix(
+            "Bearer "
+        ).strip() or request.headers.get("X-Api-Key", "")
         _sse_valid = False
         if key_store is not None:
             _sse_key = key_store.get_key(_sse_token)
             _sse_valid = _sse_key is not None and _sse_key.is_valid()
         if not _sse_valid and api_key is not None:
-            _sse_valid = _hmac.compare_digest(
-                _sse_token.encode("utf-8"), api_key.encode("utf-8")
-            )
+            _sse_valid = _hmac.compare_digest(_sse_token.encode("utf-8"), api_key.encode("utf-8"))
         if not _sse_valid and oidc_provider is not None:
             try:
                 _sse_identity = oidc_provider.validate_token(_sse_token)

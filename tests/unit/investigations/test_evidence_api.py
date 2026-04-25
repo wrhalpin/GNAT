@@ -65,9 +65,7 @@ def _stix_bundle(investigation_id: str, origin: str = "gnat", count: int = 2) ->
     return {
         "type": "bundle",
         "id": f"bundle--{uuid.uuid4()}",
-        "objects": [
-            _stix_indicator(investigation_id, origin=origin) for _ in range(count)
-        ],
+        "objects": [_stix_indicator(investigation_id, origin=origin) for _ in range(count)],
     }
 
 
@@ -100,9 +98,7 @@ def _mock_investigation_service(
 
     # .attach_evidence_bundle() returns a real AttachResult
     if accept:
-        svc.attach_evidence_bundle.return_value = AttachResult(
-            accepted_count=2, rejected_count=0
-        )
+        svc.attach_evidence_bundle.return_value = AttachResult(accepted_count=2, rejected_count=0)
     else:
         svc.attach_evidence_bundle.return_value = AttachResult(
             accepted_count=0, rejected_count=2, rejection_reasons=["mismatched id"]
@@ -155,9 +151,7 @@ def client_factory():
         accept: bool = True,
     ):
         inv_id = investigation_id or _investigation_id()
-        svc = _mock_investigation_service(
-            inv_id, status=status, tenant_id=tenant_id, accept=accept
-        )
+        svc = _mock_investigation_service(inv_id, status=status, tenant_id=tenant_id, accept=accept)
         key_store = _mock_key_store(tenant_id=tenant_id)
 
         from gnat.dissemination.api.investigations import build_investigation_router
@@ -210,9 +204,7 @@ class TestPostEvidenceBundle:
         svc.attach_evidence_bundle.return_value = AttachResult(
             accepted_count=0,
             rejected_count=2,
-            rejection_reasons=[
-                f"Object stamped with {other_id} does not match endpoint {inv_id}"
-            ],
+            rejection_reasons=[f"Object stamped with {other_id} does not match endpoint {inv_id}"],
         )
 
         resp = tc.post(
@@ -275,8 +267,7 @@ class TestPostEvidenceBundle:
 
         # The service raises InvestigationError for closed investigations
         svc.attach_evidence_bundle.side_effect = InvestigationError(
-            f"Investigation {inv_id} is CLOSED. "
-            f"Set X-Reopen-Investigation header to reopen."
+            f"Investigation {inv_id} is CLOSED. Set X-Reopen-Investigation header to reopen."
         )
 
         bundle = _stix_bundle(inv_id)
@@ -297,9 +288,7 @@ class TestPostEvidenceBundle:
         # When X-Reopen-Investigation is sent, the router calls transition()
         # first (changing status to IN_PROGRESS), then attach_evidence_bundle().
         # The transition side_effect updates inv.status, so attach won't see CLOSED.
-        svc.attach_evidence_bundle.return_value = AttachResult(
-            accepted_count=2, rejected_count=0
-        )
+        svc.attach_evidence_bundle.return_value = AttachResult(accepted_count=2, rejected_count=0)
 
         bundle = _stix_bundle(inv_id)
         resp = tc.post(

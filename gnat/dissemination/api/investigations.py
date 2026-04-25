@@ -53,8 +53,7 @@ def build_investigation_router(
         from fastapi.responses import JSONResponse
     except ImportError as exc:  # pragma: no cover
         raise ImportError(
-            "FastAPI is required for the investigation API. "
-            "Install with: pip install 'gnat[serve]'"
+            "FastAPI is required for the investigation API. Install with: pip install 'gnat[serve]'"
         ) from exc
 
     router = APIRouter(tags=["investigations"])
@@ -83,9 +82,7 @@ def build_investigation_router(
             try:
                 inv_status = InvestigationStatus(status.lower())
             except ValueError:
-                raise HTTPException(
-                    status_code=400, detail=f"Invalid status: {status!r}"
-                )
+                raise HTTPException(status_code=400, detail=f"Invalid status: {status!r}")
 
         investigations = investigation_service.list(
             status=inv_status,
@@ -96,25 +93,29 @@ def build_investigation_router(
 
         result = []
         for inv in investigations:
-            result.append({
-                "id": inv.id,
-                "title": inv.title,
-                "status": inv.status.value,
-                "created_by": inv.created_by,
-                "created_at": inv.created_at.isoformat(),
-                "updated_at": inv.updated_at.isoformat(),
-                "hypothesis_count": len(inv.hypothesis),
-                "indicator_count": len(inv.indicators),
-                "observable_count": len(inv.observables),
-                "tags": inv.tags,
-            })
+            result.append(
+                {
+                    "id": inv.id,
+                    "title": inv.title,
+                    "status": inv.status.value,
+                    "created_by": inv.created_by,
+                    "created_at": inv.created_at.isoformat(),
+                    "updated_at": inv.updated_at.isoformat(),
+                    "hypothesis_count": len(inv.hypothesis),
+                    "indicator_count": len(inv.indicators),
+                    "observable_count": len(inv.observables),
+                    "tags": inv.tags,
+                }
+            )
 
-        return JSONResponse({
-            "page": page,
-            "page_size": page_size,
-            "count": len(result),
-            "investigations": result,
-        })
+        return JSONResponse(
+            {
+                "page": page,
+                "page_size": page_size,
+                "count": len(result),
+                "investigations": result,
+            }
+        )
 
     @router.get("/investigations/{investigation_id}")
     def get_investigation(
@@ -130,23 +131,25 @@ def build_investigation_router(
                 detail=f"Investigation not found: {investigation_id}",
             )
 
-        return JSONResponse({
-            "id": inv.id,
-            "title": inv.title,
-            "status": inv.status.value,
-            "description": inv.description,
-            "classification": inv.classification.value
-            if hasattr(inv.classification, "value")
-            else str(inv.classification),
-            "created_by": inv.created_by,
-            "created_at": inv.created_at.isoformat(),
-            "updated_at": inv.updated_at.isoformat(),
-            "hypothesis_count": len(inv.hypothesis),
-            "indicator_count": len(inv.indicators),
-            "observable_count": len(inv.observables),
-            "source_connectors": inv.source_connectors,
-            "tags": inv.tags,
-        })
+        return JSONResponse(
+            {
+                "id": inv.id,
+                "title": inv.title,
+                "status": inv.status.value,
+                "description": inv.description,
+                "classification": inv.classification.value
+                if hasattr(inv.classification, "value")
+                else str(inv.classification),
+                "created_by": inv.created_by,
+                "created_at": inv.created_at.isoformat(),
+                "updated_at": inv.updated_at.isoformat(),
+                "hypothesis_count": len(inv.hypothesis),
+                "indicator_count": len(inv.indicators),
+                "observable_count": len(inv.observables),
+                "source_connectors": inv.source_connectors,
+                "tags": inv.tags,
+            }
+        )
 
     @router.get("/investigations/{investigation_id}/hypotheses")
     def list_hypotheses(
@@ -164,18 +167,24 @@ def build_investigation_router(
 
         hypotheses = []
         for hyp in inv.hypothesis:
-            hypotheses.append({
-                "id": hyp.id,
-                "statement": hyp.statement,
-                "status": hyp.status.value if hasattr(hyp.status, "value") else str(hyp.status),
-                "confidence": hyp.confidence.to_dict() if hasattr(hyp.confidence, "to_dict") and hyp.confidence else None,
-                "created_at": hyp.created_at.isoformat(),
-            })
+            hypotheses.append(
+                {
+                    "id": hyp.id,
+                    "statement": hyp.statement,
+                    "status": hyp.status.value if hasattr(hyp.status, "value") else str(hyp.status),
+                    "confidence": hyp.confidence.to_dict()
+                    if hasattr(hyp.confidence, "to_dict") and hyp.confidence
+                    else None,
+                    "created_at": hyp.created_at.isoformat(),
+                }
+            )
 
-        return JSONResponse({
-            "investigation_id": investigation_id,
-            "hypotheses": hypotheses,
-        })
+        return JSONResponse(
+            {
+                "investigation_id": investigation_id,
+                "hypotheses": hypotheses,
+            }
+        )
 
     @router.post("/investigations/{investigation_id}/evidence")
     def post_evidence(

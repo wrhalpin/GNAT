@@ -24,11 +24,6 @@ import pytest
 authlib = pytest.importorskip("authlib")
 
 from authlib.jose import JsonWebKey, JsonWebToken  # noqa: E402
-from authlib.jose.errors import (  # noqa: E402
-    BadSignatureError,
-    DecodeError,
-    ExpiredTokenError,
-)
 
 from gnat.analysis.tlp import TLPLevel  # noqa: E402
 from gnat.auth.identity import OIDCIdentity  # noqa: E402
@@ -294,9 +289,7 @@ class TestJWKSFetching:
     def test_fetches_jwks_via_discovery(self):
         provider = _make_provider()
         # No cached JWKS — force a fetch.
-        oidc_config = json.dumps(
-            {"jwks_uri": f"{_ISSUER}/oauth2/v1/keys"}
-        ).encode()
+        oidc_config = json.dumps({"jwks_uri": f"{_ISSUER}/oauth2/v1/keys"}).encode()
         jwks_body = json.dumps(_JWKS).encode()
 
         with patch("urllib3.PoolManager") as MockPM:
