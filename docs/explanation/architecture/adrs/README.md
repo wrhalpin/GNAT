@@ -73,6 +73,11 @@ subsystems.
 55. [ADR-0055: Cross-Tool Investigation Context](0055-ADR-cross-tool-investigation-context.md)
 56. [ADR-0056: Unified API Key Authentication](0056-ADR-unified-api-key-auth.md)
 
+### GUI Foundation
+
+57. [ADR-0057: Pydantic Schema Exports](0057-ADR-pydantic-schemas.md)
+58. [ADR-0058: Analyst Service Wrappers](0058-ADR-analyst-services.md)
+
 ---
 
 ## Quick Reference: Adding a New Connector

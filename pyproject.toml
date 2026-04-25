@@ -24,7 +24,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 requires-python = ">=3.9"
-dependencies    = ["urllib3>=2.0"]
+dependencies    = ["urllib3>=2.0", "pydantic>=2.0"]
 
 [project.optional-dependencies]
 yaml   = ["pyyaml>=6.0"]
