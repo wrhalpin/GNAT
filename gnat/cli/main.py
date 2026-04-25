@@ -43,6 +43,13 @@ Sub-commands
     gnat investigation graph <id> --origin sandgnat,sensegnat
     gnat investigation export <id>
     gnat investigation report <id> --format pdf
+    gnat auth       login --issuer https://acme.okta.com --client-id 0oa...
+    gnat auth       status
+    gnat auth       logout
+    gnat key        generate --role analyst --tenant acme --tlp amber --label "SandGNAT"
+    gnat key        list
+    gnat key        revoke <prefix>
+    gnat key        rotate <prefix> --grace 48
     gnat plugins    list
     gnat plugins    load ./my-plugins/
     gnat db         upgrade
@@ -974,6 +981,68 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["pdf", "html", "json"],
         dest="report_format",
         metavar="FORMAT",
+    )
+
+    # ── auth ─────────────────────────────────────────────────────────────
+    p_auth = subs.add_parser(
+        "auth",
+        help="OIDC/SSO authentication (login, logout, status)",
+    )
+    auth_subs = p_auth.add_subparsers(dest="auth_command", metavar="<subcommand>")
+    auth_subs.required = True
+
+    p_auth_login = auth_subs.add_parser("login", help="Authenticate via OIDC device code flow")
+    p_auth_login.add_argument("--issuer", metavar="URL", help="OIDC issuer URL")
+    p_auth_login.add_argument("--client-id", metavar="ID", dest="client_id", help="OAuth2 client ID")
+
+    _p_auth_status = auth_subs.add_parser("status", help="Show current authentication status")
+    _p_auth_logout = auth_subs.add_parser("logout", help="Clear stored credentials")
+
+    # ── key ──────────────────────────────────────────────────────────────
+    p_key = subs.add_parser(
+        "key",
+        help="Manage API keys (generate, list, revoke, rotate)",
+    )
+    key_subs = p_key.add_subparsers(dest="key_command", metavar="<subcommand>")
+    key_subs.required = True
+
+    p_key_gen = key_subs.add_parser("generate", help="Generate a new API key")
+    p_key_gen.add_argument(
+        "--role",
+        default="viewer",
+        choices=["viewer", "analyst", "senior_analyst", "reviewer", "admin"],
+        metavar="ROLE",
+    )
+    p_key_gen.add_argument("--tenant", default=None, metavar="TENANT_ID")
+    p_key_gen.add_argument(
+        "--tlp",
+        default="amber",
+        choices=["white", "green", "amber", "amber_strict", "red"],
+        metavar="TLP",
+    )
+    p_key_gen.add_argument("--label", default="", metavar="LABEL")
+    p_key_gen.add_argument(
+        "--expires-in",
+        default=None,
+        type=int,
+        metavar="SECONDS",
+        dest="expires_in",
+        help="Key expires after N seconds",
+    )
+
+    _p_key_list = key_subs.add_parser("list", help="List all API keys")
+
+    p_key_revoke = key_subs.add_parser("revoke", help="Revoke an API key by token prefix")
+    p_key_revoke.add_argument("prefix", metavar="TOKEN_PREFIX")
+
+    p_key_rotate = key_subs.add_parser("rotate", help="Rotate an API key")
+    p_key_rotate.add_argument("prefix", metavar="TOKEN_PREFIX")
+    p_key_rotate.add_argument(
+        "--grace",
+        default=24,
+        type=int,
+        metavar="HOURS",
+        help="Grace period in hours before old key expires (default: 24)",
     )
 
     # ── campaign ─────────────────────────────────────────────────────────
@@ -3232,6 +3301,204 @@ def _cmd_investigation(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_auth(args: argparse.Namespace) -> int:
+    """Handle 'gnat auth <subcommand>'."""
+    sub = args.auth_command
+
+    if sub == "login":
+        try:
+            from gnat.auth.device_code import DeviceCodeFlow
+        except ImportError:
+            print(
+                _red('OIDC support requires authlib.  Run: pip install "gnat[sso]"'),
+                file=sys.stderr,
+            )
+            return 1
+
+        issuer = getattr(args, "issuer", None)
+        client_id = getattr(args, "client_id", None)
+
+        if not issuer or not client_id:
+            from gnat.config import GNATConfig
+
+            cfg = GNATConfig.from_env()
+            auth_section = cfg.get_section("auth") if hasattr(cfg, "get_section") else {}
+            issuer = issuer or auth_section.get("issuer", "")
+            client_id = client_id or auth_section.get("client_id", "")
+
+        if not issuer or not client_id:
+            print(
+                _red(
+                    "OIDC issuer and client_id required.\n"
+                    "  Use --issuer URL --client-id ID, or set [auth] in config.ini."
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            flow = DeviceCodeFlow(issuer=issuer, client_id=client_id)
+            result = flow.authenticate()
+            print(_green("Authentication successful."))
+            if result.get("id_token"):
+                print(f"  Token type: ID token + access token")
+            else:
+                print(f"  Token type: access token")
+            print(f"  Expires in: {result.get('expires_in', '?')}s")
+        except Exception as exc:
+            print(_red(f"Authentication failed: {exc}"), file=sys.stderr)
+            return 1
+        return 0
+
+    if sub == "status":
+        try:
+            from gnat.auth.device_code import DeviceCodeFlow
+        except ImportError:
+            print(_dim("OIDC not installed (pip install 'gnat[sso]')"))
+            return 0
+
+        creds = DeviceCodeFlow.load_credentials()
+        if creds is None:
+            print(_dim("Not authenticated (no stored credentials)"))
+        else:
+            print(_green("Authenticated"))
+            if creds.get("access_token"):
+                print(f"  Token: {creds['access_token'][:12]}…")
+            if creds.get("expires_in"):
+                print(f"  TTL:   {creds['expires_in']}s")
+        return 0
+
+    if sub == "logout":
+        try:
+            from gnat.auth.device_code import DeviceCodeFlow
+
+            DeviceCodeFlow.clear_credentials()
+            print(_green("Credentials cleared."))
+        except ImportError:
+            print(_dim("OIDC not installed — nothing to clear."))
+        return 0
+
+    print(_red(f"Unknown subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
+def _cmd_key(args: argparse.Namespace) -> int:
+    """Handle 'gnat key <subcommand>'."""
+    import os
+
+    db_url = os.environ.get("GNAT_DB_URL", "sqlite:///gnat.db")
+    try:
+        from gnat.dissemination.api.key_store_db import SQLAlchemyKeyStore
+    except ImportError:
+        from gnat.dissemination.api.auth import APIKeyStore
+
+        store = APIKeyStore()
+        print(_yellow("SQLAlchemy not available — using in-memory store (keys will not persist)."),
+              file=sys.stderr)
+    else:
+        store = SQLAlchemyKeyStore(db_url)
+
+    sub = args.key_command
+
+    if sub == "generate":
+        from datetime import datetime, timedelta, timezone
+
+        from gnat.analysis.tlp import TLPLevel
+
+        try:
+            tlp = TLPLevel(args.tlp)
+        except ValueError:
+            print(_red(f"Invalid TLP level: {args.tlp!r}"), file=sys.stderr)
+            return 1
+
+        expires_at = None
+        if getattr(args, "expires_in", None):
+            expires_at = datetime.now(tz=timezone.utc) + timedelta(seconds=args.expires_in)
+
+        key = store.generate_key(
+            tlp_level=tlp,
+            label=args.label,
+            role=args.role,
+            tenant_id=getattr(args, "tenant", None),
+            expires_at=expires_at,
+        )
+        print(_green("API key generated successfully."))
+        print(f"  Token:    {_bold(key.token)}")
+        print(f"  Hash:     {key.token_hash}")
+        print(f"  Role:     {key.role}")
+        print(f"  TLP:      {key.tlp_level.value}")
+        if key.tenant_id:
+            print(f"  Tenant:   {key.tenant_id}")
+        if key.expires_at:
+            print(f"  Expires:  {key.expires_at.isoformat()}")
+        print()
+        print(_yellow("  Save this token now — it cannot be recovered later."))
+        return 0
+
+    if sub == "list":
+        keys = store.list_keys()
+        if not keys:
+            print(_dim("(no API keys found)"))
+            return 0
+        rows = [
+            {
+                "hash": k.token_hash,
+                "label": k.label[:30] or "(none)",
+                "role": k.role,
+                "tlp": k.tlp_level.value,
+                "tenant": k.tenant_id or "-",
+                "enabled": "yes" if k.enabled else "no",
+                "expires": k.expires_at.strftime("%Y-%m-%d") if k.expires_at else "-",
+            }
+            for k in keys
+        ]
+        _print_table(rows)
+        return 0
+
+    if sub == "revoke":
+        prefix = args.prefix
+        matches = [k for k in store.list_keys() if k.token.startswith(prefix)]
+        if not matches:
+            matches = [k for k in store.list_keys() if k.token_hash.startswith(prefix)]
+        if not matches:
+            print(_red(f"No key found matching prefix: {prefix!r}"), file=sys.stderr)
+            return 1
+        if len(matches) > 1:
+            print(_red(f"Prefix matches {len(matches)} keys — use a longer prefix."),
+                  file=sys.stderr)
+            return 1
+        store.revoke_key(matches[0].token)
+        print(_green(f"Revoked key {matches[0].token_hash}"))
+        return 0
+
+    if sub == "rotate":
+        prefix = args.prefix
+        matches = [k for k in store.list_keys() if k.token.startswith(prefix)]
+        if not matches:
+            matches = [k for k in store.list_keys() if k.token_hash.startswith(prefix)]
+        if not matches:
+            print(_red(f"No key found matching prefix: {prefix!r}"), file=sys.stderr)
+            return 1
+        if len(matches) > 1:
+            print(_red(f"Prefix matches {len(matches)} keys — use a longer prefix."),
+                  file=sys.stderr)
+            return 1
+        new_key = store.rotate_key(matches[0].token, grace_hours=args.grace)
+        if new_key is None:
+            print(_red("Rotation failed."), file=sys.stderr)
+            return 1
+        print(_green("Key rotated successfully."))
+        print(f"  New token: {_bold(new_key.token)}")
+        print(f"  New hash:  {new_key.token_hash}")
+        print(f"  Old key expires in {args.grace}h (hash: {matches[0].token_hash})")
+        print()
+        print(_yellow("  Save the new token now — it cannot be recovered later."))
+        return 0
+
+    print(_red(f"Unknown subcommand: {sub}"), file=sys.stderr)
+    return 1
+
+
 def _cmd_campaign(args: argparse.Namespace) -> int:
     """Handle 'gnat campaign <subcommand>'."""
     import json as _json
@@ -3711,6 +3978,8 @@ def main(argv: list[str] | None = None) -> int:
         "health": _cmd_health,
         "contribute": _cmd_contribute,
         "investigation": _cmd_investigation,
+        "auth": _cmd_auth,
+        "key": _cmd_key,
         "campaign": _cmd_campaign,
         "actor": _cmd_actor,
         "review": _cmd_review,
