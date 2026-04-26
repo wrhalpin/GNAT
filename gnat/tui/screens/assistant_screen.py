@@ -14,8 +14,15 @@ from textual.widgets import Static, Input, RichLog, Button
 from textual.reactive import reactive
 from rich.text import Text
 from rich.panel import Panel
+import asyncio
 
 from gnat.agents import LiveAnalystAssistantSession, ConversationStore, AgentConfig
+
+# Color scheme
+COLOR_ANALYST = "blue"
+COLOR_ASSISTANT = "yellow"
+COLOR_SUGGESTION = "green"
+COLOR_ACCENT = "cyan"
 
 
 class AssistantPanel(RichLog):
@@ -26,16 +33,28 @@ class AssistantPanel(RichLog):
         self.session = None
 
     def add_user_query(self, text: str) -> None:
-        """Log user query."""
-        self.write(Text(f"You: {text}", style="blue"))
+        """Log user query with color."""
+        header = Text("You: ", style=f"bold {COLOR_ANALYST}")
+        content = Text(text, style=COLOR_ANALYST)
+        self.write(header, end="")
+        self.write(content)
 
     def add_assistant_response(self, text: str) -> None:
-        """Log assistant response."""
-        self.write(Text(f"Assistant: {text}", style="yellow"))
+        """Log assistant response with color."""
+        header = Text("Assistant: ", style=f"bold {COLOR_ASSISTANT}")
+        content = Text(text, style=COLOR_ASSISTANT)
+        self.write(header, end="")
+        self.write(content)
 
     def add_suggestion(self, title: str, content: str) -> None:
-        """Add a formatted suggestion."""
-        self.write(Panel(content, title=title))
+        """Add a formatted suggestion with color."""
+        panel = Panel(
+            content,
+            title=title,
+            border_style=COLOR_SUGGESTION,
+            title_align="left",
+        )
+        self.write(panel)
 
 
 class AssistantInput(Input):
@@ -153,7 +172,33 @@ class AssistantScreen(Container):
 
     BINDINGS = [
         ("escape", "dismiss", "Close"),
+        ("ctrl+c", "cancel_request", "Cancel"),
+        ("f1", "show_help", "Help"),
     ]
+
+    CSS = """
+    AssistantScreen {
+        layout: vertical;
+    }
+
+    #header {
+        height: 1;
+        background: $surface;
+        border: heavy $accent;
+        dock: top;
+    }
+
+    #response {
+        height: 1fr;
+        border: heavy $panel;
+    }
+
+    #input {
+        height: 3;
+        border: heavy $accent;
+        dock: bottom;
+    }
+    """
 
     def __init__(self, investigation_id: str, name: str = None):
         super().__init__(name=name)
@@ -205,3 +250,29 @@ class AssistantScreen(Container):
     def action_dismiss(self) -> None:
         """Close the assistant screen."""
         self.app.pop_screen()
+
+    def action_cancel_request(self) -> None:
+        """Cancel ongoing assistant request."""
+        panel = self.query_one("#response", AssistantPanel)
+        panel.add_assistant_response("Request cancelled by analyst")
+
+    def action_show_help(self) -> None:
+        """Show assistant help."""
+        panel = self.query_one("#response", AssistantPanel)
+        help_text = (
+            "Commands:\n"
+            "  /enrich — Get enrichment connector suggestions\n"
+            "  /draft <section> — Draft report section\n"
+            "  /explain <type>:<value> — Explain a STIX object\n"
+            "  Or just ask a question for search routing help\n\n"
+            "Examples:\n"
+            "  /enrich\n"
+            "  /explain ipv4-addr:1.2.3.4\n"
+            "  /draft findings\n"
+            "  Find APT29 infrastructure\n\n"
+            "Keybindings:\n"
+            "  Ctrl+C — Cancel ongoing request\n"
+            "  Escape — Close assistant\n"
+            "  F1 — Show this help"
+        )
+        panel.add_assistant_response(help_text)

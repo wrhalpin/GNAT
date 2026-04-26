@@ -14,9 +14,16 @@ from textual.widgets import Static, Input, RichLog, Button
 from textual.reactive import reactive
 from rich.text import Text
 from rich.panel import Panel
+from rich.syntax import Syntax
 import asyncio
 
 from gnat.agents import InvestigationCopilotSession, ConversationStore, AgentConfig
+
+# Color scheme
+COLOR_ANALYST = "blue"
+COLOR_COPILOT = "red"
+COLOR_SYSTEM = "yellow"
+COLOR_ACCENT = "cyan"
 
 
 class CopilotStatus(Static):
@@ -40,16 +47,23 @@ class CopilotConversation(RichLog):
         self.session = None
 
     def add_analyst_message(self, text: str) -> None:
-        """Add analyst message to conversation."""
-        self.write(Text(f"You: {text}", style="blue"))
+        """Add analyst message to conversation with color."""
+        header = Text("You: ", style=f"bold {COLOR_ANALYST}")
+        content = Text(text, style=COLOR_ANALYST)
+        self.write(header, end="")
+        self.write(content)
 
     def add_copilot_message(self, text: str) -> None:
-        """Add copilot message to conversation."""
-        self.write(Text(f"Copilot: {text}", style="red"))
+        """Add copilot message to conversation with color."""
+        header = Text("Copilot: ", style=f"bold {COLOR_COPILOT}")
+        content = Text(text, style=COLOR_COPILOT)
+        self.write(header, end="")
+        self.write(content)
 
     def add_system_message(self, text: str) -> None:
-        """Add system status message."""
-        self.write(Text(f"[System] {text}", style="yellow"))
+        """Add system status message with color."""
+        msg = Text(f"[System] {text}", style=f"dim {COLOR_SYSTEM}")
+        self.write(msg)
 
     async def stream_copilot_response(self, prompt: str) -> None:
         """Stream response tokens from copilot."""
@@ -70,8 +84,13 @@ class CopilotInput(Input):
     """Input field for analyst messages."""
 
     def __init__(self, conversation: CopilotConversation, name: str = None):
-        super().__init__(placeholder="Type your response or /help", name=name)
+        super().__init__(
+            placeholder="Type your response or /help (Ctrl+C to cancel stream)",
+            name=name,
+        )
         self.conversation = conversation
+        self.streaming = False
+        self.cancel_stream = False
 
     async def process_input(self, text: str) -> None:
         """Process user input and trigger copilot response."""
@@ -81,8 +100,13 @@ class CopilotInput(Input):
         if text.startswith("/"):
             await self._handle_command(text)
         else:
+            self.streaming = True
+            self.cancel_stream = False
             self.conversation.add_analyst_message(text)
-            await self.conversation.stream_copilot_response(text)
+            try:
+                await self.conversation.stream_copilot_response(text)
+            finally:
+                self.streaming = False
 
         self.value = ""
 
@@ -107,8 +131,30 @@ class CopilotScreen(Container):
 
     BINDINGS = [
         ("escape", "dismiss", "Close"),
-        ("ctrl+c", "cancel_stream", "Cancel"),
+        ("ctrl+c", "cancel_stream", "Cancel Stream"),
+        ("f1", "show_help", "Help"),
     ]
+
+    CSS = """
+    CopilotScreen {
+        layout: vertical;
+    }
+
+    #status {
+        height: 3;
+        border: heavy $panel;
+    }
+
+    #history {
+        height: 1fr;
+        border: heavy $panel;
+    }
+
+    #input {
+        height: 3;
+        border: heavy $accent;
+    }
+    """
 
     def __init__(self, investigation_id: str, name: str = None):
         super().__init__(name=name)
@@ -162,5 +208,23 @@ class CopilotScreen(Container):
 
     def action_cancel_stream(self) -> None:
         """Cancel ongoing LLM streaming."""
-        # TODO: Implement stream cancellation
-        pass
+        input_widget = self.query_one("#input", CopilotInput)
+        if input_widget.streaming:
+            input_widget.cancel_stream = True
+            history = self.query_one("#history", CopilotConversation)
+            history.add_system_message("Stream cancelled by analyst")
+
+    def action_show_help(self) -> None:
+        """Show copilot help."""
+        history = self.query_one("#history", CopilotConversation)
+        help_text = (
+            "Commands:\n"
+            "  /next — Suggest next investigation step\n"
+            "  /close — Mark investigation as closing\n"
+            "  /help — Show this help\n\n"
+            "Keybindings:\n"
+            "  Ctrl+C — Cancel ongoing stream\n"
+            "  Escape — Close copilot\n"
+            "  F1 — Show this help"
+        )
+        history.add_system_message(help_text)

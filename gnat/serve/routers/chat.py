@@ -9,9 +9,10 @@ Streaming responses via Server-Sent Events (SSE) and WebSocket.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 import json
 from typing import Optional, AsyncGenerator
+from datetime import datetime
 
 from gnat.agents import (
     InvestigationCopilotSession,
@@ -269,5 +270,125 @@ async def get_conversation_history(
 
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Export Routes ───
+
+
+@router.get("/investigations/{investigation_id}/export")
+async def export_conversation(
+    investigation_id: str,
+    conversation_id: str = Query(...),
+    format: str = Query("json", regex="^(json|csv)$"),
+    user=Depends(get_current_user),
+):
+    """
+    Export conversation as JSON or CSV.
+
+    Query parameters:
+    - format: "json" or "csv"
+    """
+    session = conversation_store.get_session(conversation_id)
+    if not session or session.investigation_id != investigation_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    try:
+        turns = conversation_store.get_turns(conversation_id)
+
+        if format == "json":
+            content = json.dumps([t.to_dict() for t in turns], indent=2)
+            filename = f"conversation_{conversation_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+            media_type = "application/json"
+
+        else:  # csv
+            import csv
+            from io import StringIO
+
+            output = StringIO()
+            if turns:
+                fieldnames = ["timestamp", "role", "text", "tokens_in", "tokens_out", "latency_ms"]
+                writer = csv.DictWriter(output, fieldnames=fieldnames)
+                writer.writeheader()
+
+                for turn in turns:
+                    writer.writerow({
+                        "timestamp": turn.timestamp.isoformat(),
+                        "role": turn.role.value,
+                        "text": turn.text,
+                        "tokens_in": turn.tokens_in,
+                        "tokens_out": turn.tokens_out,
+                        "latency_ms": turn.latency_ms,
+                    })
+
+            content = output.getvalue()
+            filename = f"conversation_{conversation_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+            media_type = "text/csv"
+
+        return {
+            "filename": filename,
+            "format": format,
+            "content": content,
+            "turn_count": len(turns),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/investigations/{investigation_id}/copy")
+async def copy_suggestion(
+    investigation_id: str,
+    conversation_id: str = Query(...),
+    text: str = Query(...),
+    user=Depends(get_current_user),
+):
+    """
+    Copy suggestion to clipboard (for Web UI).
+    In production, use browser Clipboard API directly.
+    This endpoint returns the text in a format ready for copying.
+    """
+    session = conversation_store.get_session(conversation_id)
+    if not session or session.investigation_id != investigation_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    return {
+        "text": text,
+        "copied": True,
+        "message": "Text ready for clipboard (use browser Clipboard API to copy)",
+    }
+
+
+@router.get("/investigations/{investigation_id}/summary")
+async def get_conversation_summary(
+    investigation_id: str,
+    conversation_id: str = Query(...),
+    user=Depends(get_current_user),
+):
+    """Get summary stats for a conversation."""
+    session = conversation_store.get_session(conversation_id)
+    if not session or session.investigation_id != investigation_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    try:
+        turns = conversation_store.get_turns(conversation_id)
+
+        analyst_msgs = sum(1 for t in turns if "analyst" in t.role.value.lower())
+        agent_msgs = sum(1 for t in turns if "analyst" not in t.role.value.lower())
+        total_tokens = sum(t.tokens_in + t.tokens_out for t in turns)
+        avg_latency = sum(t.latency_ms for t in turns) / len(turns) if turns else 0
+
+        return {
+            "conversation_id": conversation_id,
+            "agent_type": session.agent_type,
+            "turn_count": len(turns),
+            "analyst_messages": analyst_msgs,
+            "agent_messages": agent_msgs,
+            "total_tokens": total_tokens,
+            "avg_latency_ms": round(avg_latency, 2),
+            "duration_seconds": (turns[-1].timestamp - turns[0].timestamp).total_seconds() if turns else 0,
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
