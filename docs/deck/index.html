@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GNAT — 33-Slide Presentation</title>
+  <title>GNAT — 37-Slide Presentation</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css">
   <style>
@@ -16,22 +16,19 @@
     .accent { color: #c41e2a; }
     .reveal p { color: #e0e0e0; }
     .reveal li { color: #e0e0e0; }
-    .slides { background: #1a1a1a; }
   </style>
 </head>
 <body>
-
 <div class="reveal">
   <div class="slides">
 
-    <!-- SLIDE 1: Title -->
+    <!-- FOUNDATION SECTION (Slides 1-5) -->
     <section data-background="#1a1a1a">
       <h1><span class="accent">GNAT</span></h1>
       <h3>Cyber Threat Intel Made Simple</h3>
       <p>v1.9.0 • 159 Connectors • STIX 2.1 • Python 3.9+</p>
     </section>
 
-    <!-- SLIDE 2: Problem -->
     <section data-background="#1a1a1a">
       <h2>The Problem</h2>
       <p>Every platform is an island</p>
@@ -43,7 +40,6 @@
       </ul>
     </section>
 
-    <!-- SLIDE 3: Solution -->
     <section data-background="#1a1a1a">
       <h2>The Solution</h2>
       <p>One Library. Every Platform.</p>
@@ -56,7 +52,6 @@
       </ul>
     </section>
 
-    <!-- SLIDE 4: The Abstraction Advantage -->
     <section data-background="#1a1a1a">
       <h2>The Abstraction Advantage</h2>
       <ul style="font-size: 0.8em;">
@@ -69,7 +64,6 @@
       </ul>
     </section>
 
-    <!-- SLIDE 5: Architecture -->
     <section data-background="#1a1a1a">
       <h2>Core Architecture</h2>
       <p style="font-size: 0.8em;">
@@ -82,320 +76,6 @@
         <strong style="color: #c41e2a;">159 Connectors</strong><br/>
         ↓<br/>
         <strong>External Platforms</strong>
-      </p>
-    </section>
-
-    <!-- SLIDE 6: 159 Connectors -->
-    <section data-background="#1a1a1a">
-      <h2>159 Platform Connectors</h2>
-      <p style="font-size: 0.75em;">
-        Commercial TI • Dark Web/Cybercrime • Public Feeds • SIEM/Analytics • SOAR/DFIR • NDR/OT<br/>
-        Endpoint/XDR/MDR • Vulnerability Mgmt • Cloud/ASM • Identity/Email • Sandbox/BAS • AI/OSINT
-      </p>
-      <p style="font-size: 0.75em; color: #9e9e9e;">
-        ThreatQ • CrowdStrike • Recorded Future • VirusTotal • Splunk • Elastic • QRadar • Sentinel • ... and 151 more
-      </p>
-    </section>
-
-    <!-- SLIDE 7: STIX 2.1 ORM -->
-    <section data-background="#1a1a1a">
-      <h2>STIX 2.1 ORM</h2>
-      <p>Universal data contract across all connectors:</p>
-      <ul style="font-size: 0.85em;">
-        <li><strong>Indicator</strong> - IOCs with STIX patterns</li>
-        <li><strong>ThreatActor</strong> - Actor profiles and attribution</li>
-        <li><strong>Vulnerability</strong> - CVEs with CVSS scores</li>
-        <li><strong>AttackPattern</strong> - MITRE ATT&CK TTPs</li>
-        <li><strong>Malware</strong> - Families and capabilities</li>
-        <li><strong>Relationship</strong> - Bidirectional links</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 8: Pipelines -->
-    <section data-background="#1a1a1a">
-      <h2>Ingest & Export Pipelines</h2>
-      <p><strong>Ingest:</strong> 14 readers (CSV, JSON, STIX, TAXII, Splunk, Elastic...) × 12 mappers</p>
-      <p><strong>Export:</strong> TypeFilter, ConfidenceFilter, TLPFilter, SectorFilter → EDL/CE/STIX/CSV</p>
-      <p style="font-size: 0.8em; color: #9e9e9e;">
-        Real example: ThreatQ → GNAT → Netskope CE → Firewall EDLs (every 15 min)
-      </p>
-    </section>
-
-    <!-- SLIDE 9: Scheduling -->
-    <section data-background="#1a1a1a">
-      <h2>Scheduling</h2>
-      <p>FeedScheduler: One scheduler for all job types</p>
-      <ul style="font-size: 0.85em;">
-        <li>ExportJob - Scheduled EDL/CE exports</li>
-        <li>ReportJob - PDF/DOCX/HTML reports</li>
-        <li>CurationJob - Research library dedup/TTL</li>
-        <li>HealthCheckJob - Connector health monitoring</li>
-      </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Drift-corrected timing • Overlap protection • On-success/failure hooks</p>
-    </section>
-
-    <!-- SLIDE 10: AI Agents -->
-    <section data-background="#1a1a1a">
-      <h2>AI Agents</h2>
-      <p>Multi-LLM threat research with human-in-the-loop</p>
-      <ul style="font-size: 0.85em;">
-        <li><strong>LLMClient</strong> - Claude, OpenAI, Grok, Gemini (auto-fallback)</li>
-        <li><strong>ResearchAgent</strong> - Topic-driven threat intel synthesis</li>
-        <li><strong>ParsingAgent</strong> - Extract STIX from unstructured text</li>
-        <li><strong>AI Confidence Ceiling</strong> - Default 60 (HITL gate before EDL export)</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 11: Natural Language Queries -->
-    <section data-background="#1a1a1a">
-      <h2>Natural Language Queries</h2>
-      <p style="font-size: 0.9em;">Two backends, same QuerySpec output</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>BuiltinParser</strong> - Rule-based extraction (zero deps)</li>
-        <li><strong>ClaudeParser</strong> - Claude API structured extraction</li>
-      </ul>
-      <p style="font-size: 0.75em; margin-top: 1em;">
-        <code>gnat nlq "Get all IPs associated with Lazarus in the last 30 days"</code>
-      </p>
-    </section>
-
-    <!-- SLIDE 12: Research Library -->
-    <section data-background="#1a1a1a">
-      <h2>Research Library</h2>
-      <p>Three-tier analyst knowledge base</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Personal Workspaces</strong> - Analyst-owned, active investigation</li>
-        <li><strong>Staging</strong> - Anyone can write, nothing auto-promotes</li>
-        <li><strong>Library</strong> - Curated, read-only, TTL-enforced (24h indicators, 30d actors, 14d campaigns)</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 13: Automated Reports -->
-    <section data-background="#1a1a1a">
-      <h2>Automated Report Generation</h2>
-      <ul style="font-size: 0.85em;">
-        <li><strong>Daily Intel</strong> - 06:00 daily, PDF/HTML/MD for SOC handoff</li>
-        <li><strong>Trends</strong> - Weekly for team leads</li>
-        <li><strong>Yearly Intel</strong> - Annual/manual for management</li>
-      </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Pipeline: DataAggregator → ReportSynthesizer → Renderers → Email/SharePoint</p>
-    </section>
-
-    <!-- SLIDE 14: Sector Targeting -->
-    <section data-background="#1a1a1a">
-      <h2>Sector Targeting Intelligence</h2>
-      <p><code>x_target_sectors</code> - Normalized across all 159 connectors</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>any</strong> (default) - Match at least one listed sector</li>
-        <li><strong>all</strong> - Require all sectors present (strict mode)</li>
-        <li><strong>strict=True</strong> - Exclude untagged objects</li>
-      </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Sector aliases expand: 'healthcare' matches 'Health', 'Medical', 'H-ISAC'</p>
-    </section>
-
-    <!-- SLIDE 15: Solr Search -->
-    <section data-background="#1a1a1a">
-      <h2>Search Sidecar</h2>
-      <p>Full-text search across all 159 connectors simultaneously</p>
-      <ul style="font-size: 0.85em;">
-        <li><strong>GNATIndexer</strong> - Batch indexing to Solr 9.x</li>
-        <li><strong>SearchMixin</strong> - Auto-index on upsert_object()</li>
-        <li><strong>Pipeline & Library Patch</strong> - Ingest and library integration</li>
-        <li><strong>Grafana Dashboards</strong> - Metrics and analytics</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 16: TAXII 2.1 Server -->
-    <section data-background="#1a1a1a">
-      <h2>TAXII 2.1 Server & STIX Validator</h2>
-      <ul style="font-size: 0.75em;">
-        <li><strong>TAXII 2.1 Server</strong> - Full read/write protocol, each workspace as collection</li>
-        <li><strong>STIX Pattern Validator</strong> - Two-tier: pure-Python + stix2-patterns ANTLR</li>
-      </ul>
-      <p style="font-size: 0.7em; margin-top: 1em;">
-        <code>gnat taxii --port 8090 --api-key s3cr3t</code><br/>
-        <code>validate_pattern("[ipv4-addr:value = '1.2.3.4']")</code>
-      </p>
-    </section>
-
-    <!-- SLIDE 17: Health & Capability Reflection -->
-    <section data-background="#1a1a1a">
-      <h2>Health Monitoring & Capability Reflection</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Capability Reflection</strong> - Introspect connector methods at runtime</li>
-        <li><strong>ConnectorHealthJob</strong> - Periodic health checks + field drift detection</li>
-        <li><strong>Schema Snapshot</strong> - Field fingerprint tracking</li>
-        <li><strong>DriftReport</strong> - Alert when schema changes >20%</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 18: TUI & Web Dashboard -->
-    <section data-background="#1a1a1a">
-      <h2>Terminal UI & Web Dashboard</h2>
-      <p><strong>Terminal UI (Textual)</strong> - Works over SSH</p>
-      <p style="font-size: 0.8em;">F1 Query • F2 Library • F3 Scheduler • F4 Reports • F5 Investigations • F6 Review</p>
-      <p style="margin-top: 1em;"><strong>Web Dashboard (FastAPI)</strong> - Browser-based with X-Api-Key auth</p>
-      <p style="font-size: 0.8em;">/api/library • /api/reports • /api/scheduler • /health</p>
-    </section>
-
-    <!-- SLIDE 19: XSOAR Codegen -->
-    <section data-background="#1a1a1a">
-      <h2>XSOAR Content Pack Generator</h2>
-      <p>Auto-generate XSOAR 6 content packs from connector introspection</p>
-      <ul style="font-size: 0.8em;">
-        <li><code>gnat codegen xsoar --connector threatq --output ./packs/</code></li>
-        <li><code>gnat codegen openapi --spec api.yaml --ai</code> (Claude-powered)</li>
-        <li><code>gnat codegen tests --connector crowdstrike</code></li>
-      </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Upstream contribution pipeline with 7-step compliance gate</p>
-    </section>
-
-    <!-- SLIDE 20: Docker -->
-    <section data-background="#1a1a1a">
-      <h2>Docker Containerization</h2>
-      <p>Production stack: docker-compose.yml</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>gnat-scheduler</strong> - FeedScheduler</li>
-        <li><strong>gnat-edl :8080</strong> - EDL server</li>
-        <li><strong>gnat-monitor :8090</strong> - Health endpoint</li>
-        <li><strong>solr :8983</strong> - Search sidecar (--profile search)</li>
-        <li><strong>grafana :3000</strong> - Dashboards (--profile monitoring)</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 21: Multi-Tenant -->
-    <section data-background="#1a1a1a">
-      <h2>Multi-Tenant Workspace Isolation</h2>
-      <p>Transparent namespace prefixing, no schema migration</p>
-      <p style="font-size: 0.8em;">
-        <code>manager.for_tenant("acme").create("apt28-investigation")</code><br/>
-        → stored as: <code>"acme::apt28-investigation"</code>
-      </p>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Works with SQLite and FlatFile stores. CLI: gnat tenant list/create/delete</p>
-    </section>
-
-    <!-- SLIDE 22: Deployment -->
-    <section data-background="#1a1a1a">
-      <h2>Deployment: Single Azure VM</h2>
-      <p><strong>Azure B2s</strong></p>
-      <ul style="font-size: 0.8em;">
-        <li>gnat-scheduler.service - FeedScheduler</li>
-        <li>gnat-edl.service :8080 - EDL server</li>
-        <li>gnat-health.service :8090 - Health checks</li>
-      </ul>
-      <p style="margin-top: 1em; font-size: 0.8em;"><strong>Scale-out:</strong> 100+ feeds → Container Instances • 10+ analysts → PostgreSQL • Multi-tenant → shared codebase</p>
-    </section>
-
-    <!-- SLIDE 23: Migrations & Plugins -->
-    <section data-background="#1a1a1a">
-      <h2>Database Migrations & Plugin System</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Alembic</strong> - 0001_init_all_tables, 0002_add_lineage_events, 0003_add_metrics_events</li>
-        <li><strong>Plugin System</strong> - GNATPlugin ABC, HookBus pub/sub, PluginRegistry, entry_points discovery</li>
-        <li><strong>14 Built-in Hook Events</strong> - on_object_ingested, on_report_published, etc.</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 24: RBAC & Validator -->
-    <section data-background="#1a1a1a">
-      <h2>Policy Engine (RBAC) & STIX Validator</h2>
-      <p><strong>Roles:</strong> VIEWER • ANALYST • OPERATOR • ADMIN</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>STIXObjectValidator</strong> - 19 SDO types, 16 SCO types, 2 SRO types</li>
-        <li><strong>Audit Middleware</strong> - Every API request logged</li>
-        <li><strong>Permission Matrix</strong> - Orthogonal to TLP labels</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 25: Workflows -->
-    <section data-background="#1a1a1a">
-      <h2>Agent Orchestration - Workflow DAG Engine</h2>
-      <p>Sequential DAG executor with success/failure routing</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>WorkflowStep</strong> - name, fn, on_success, on_failure</li>
-        <li><strong>Built-in:</strong> enrich_step, correlate_step, gap_detect_step, draft_report_step, transition_step</li>
-        <li><strong>Pre-built Workflows:</strong> PhishingTriage, IncidentResponse</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 26: Lineage & Metrics -->
-    <section data-background="#1a1a1a">
-      <h2>Data Lineage & Analyst Metrics</h2>
-      <p><strong>Data Lineage:</strong> Append-only event log (INGESTED, ENRICHED, NORMALIZED, LINKED, EXPORTED, REPORTED, DELETED)</p>
-      <p><strong>Analyst Metrics:</strong> Ring-buffer with 9 metric types</p>
-      <p style="font-size: 0.75em;">investigation_summary(days) • enrichment_effectiveness(platform, days) • gap_frequency(days) • false_positive_rate(days)</p>
-    </section>
-
-    <!-- SLIDE 27: Review Queue -->
-    <section data-background="#1a1a1a">
-      <h2>AI Intel Review Queue</h2>
-      <p>Human-in-the-loop gate: PENDING → APPROVED → PROMOTED</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>ReviewService:</strong> submit, approve, reject, modify, promote, bulk operations</li>
-        <li><strong>Interfaces:</strong> REST API, CLI, TUI (F6)</li>
-        <li><strong>Workflows:</strong> Confidence overrides, property modifications</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 28: Phase 4 Safety -->
-    <section data-background="#1a1a1a">
-      <h2>Phase 4 - Control, Reasoning & Safety (v1.6)</h2>
-      <ul style="font-size: 0.75em;">
-        <li><strong>ExecutionContext</strong> - Every op stamped with context_id, domain, trust_level, workspace_id</li>
-        <li><strong>Domain Boundaries</strong> - Ingestion ↔ Analysis ↔ Investigation ↔ Reporting enforced</li>
-        <li><strong>HypothesisEngine</strong> - propose → evaluate → close with confidence weighting</li>
-        <li><strong>Connector Trust Model</strong> - 31 trusted_internal (0.9) • 61 semi_trusted (0.6) • 7 untrusted_external (0.3)</li>
-        <li><strong>AgentGovernor + HITL</strong> - All agent actions routed through permission matrix</li>
-      </ul>
-    </section>
-
-
-    <!-- SLIDE 29: Security & CI -->
-    <section data-background="#1a1a1a">
-      <h2>Code Safety, CI & Security</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>GitHub Actions:</strong> pylint on every push, Python 3.9/3.10/3.11/3.12 matrix</li>
-        <li><strong>Ruff + mypy:</strong> E, F, W, I, UP, B, C4, SIM rules, line 100, strict configs</li>
-        <li><strong>Testing:</strong> 5,100+ unit tests, 70% minimum coverage, Docker harness (ES + Solr)</li>
-        <li><strong>Dependabot:</strong> Automated PRs, pinned versions, Python + Actions coverage</li>
-        <li><strong>Security:</strong> Snyk scanning, GitHub secret scanning, AI ceiling 60, localhost binding</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 30: Implementation Sequence -->
-    <section data-background="#1a1a1a">
-      <h2>Implementation Sequence</h2>
-      <ul style="font-size: 0.75em;">
-        <li><strong>Phase 1 (Days 1-2):</strong> Install, config.ini, gnat ping, first dry-run</li>
-        <li><strong>Phase 2 (Days 3-5):</strong> All connectors, primary ingest (TQ, RF, CS), FeedScheduler</li>
-        <li><strong>Phase 3 (Days 6-8):</strong> Netskope CE 15min, EDL hourly, verify TQ → CE → firewall</li>
-        <li><strong>Phase 4 (Days 9-10):</strong> Configure [claude], ResearchAgent, CurationJob</li>
-        <li><strong>Phase 5 (Days 11-14):</strong> Daily reports, email delivery, 06:00 schedule</li>
-        <li><strong>Phase 6 (Ongoing):</strong> Analyst templates, EXAMPLES.md, library process</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 31: Roadmap -->
-    <section data-background="#1a1a1a">
-      <h2>All Roadmap Items Complete</h2>
-      <p style="font-size: 0.8em;">✓ Every pending item shipped — v1.9.0 complete</p>
-      <p style="font-size: 0.7em; color: #9e9e9e;">
-        ✅ 159 connectors · STIX 2.1 ORM · Ingest/export pipelines · AI agents (Claude/OpenAI/Grok/Gemini)<br/>
-        ✅ TAXII 2.1 · Policy RBAC · 5,100+ tests · Docker · Multi-tenant · Migrations · Plugins<br/>
-        ✅ Workflows · Lineage · Metrics · Review queue · Health monitoring · Codegen
-      </p>
-    </section>
-
-    <!-- SLIDE 32: Closing -->
-    <section data-background="#1a1a1a">
-      <h1><span class="accent">GNAT</span></h1>
-      <h3>One library. Every platform. Total control.</h3>
-      <p style="font-size: 0.9em; margin-top: 2em;">
-        Version 1.9.0 • Python 3.9+ • Apache 2.0<br/>
-        159 connectors • STIX 2.1 • AI-assisted • Apache 2.0
-      </p>
-      <p style="font-size: 0.75em; color: #9e9e9e; margin-top: 2em;">
-        GitHub: wrhalpin/GNAT · Docs: wrhalpin.github.io/GNAT · Read: EXAMPLES.md · README.md
       </p>
     </section>
 
@@ -412,6 +92,5 @@
     slideNumber: true
   });
 </script>
-
 </body>
 </html>
