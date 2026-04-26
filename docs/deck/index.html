@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GNAT — 37-Slide Presentation</title>
+  <title>GNAT — 38-Slide Presentation</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css">
   <style>
@@ -53,18 +53,6 @@
     </section>
 
     <section data-background="#1a1a1a">
-      <h2>The Abstraction Advantage</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Portability:</strong> Switch platforms, pipeline stays the same</li>
-        <li><strong>Maintenance:</strong> API changes affect one connector, not every script</li>
-        <li><strong>Consistency:</strong> One interface works across 159 platforms</li>
-        <li><strong>Coherence:</strong> One scheduler, one log stream, one health endpoint</li>
-        <li><strong>Incremental:</strong> Each layer independently useful</li>
-        <li><strong>Testing:</strong> 5,100+ unit tests, 70% coverage minimum</li>
-      </ul>
-    </section>
-
-    <section data-background="#1a1a1a">
       <h2>Core Architecture</h2>
       <p style="font-size: 0.8em;">
         <strong>Analyst / Automation</strong><br/>
@@ -77,6 +65,18 @@
         ↓<br/>
         <strong>External Platforms</strong>
       </p>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>The Abstraction Advantage</h2>
+      <ul style="font-size: 0.8em;">
+        <li><strong>Portability:</strong> Switch platforms, pipeline stays the same</li>
+        <li><strong>Maintenance:</strong> API changes affect one connector, not every script</li>
+        <li><strong>Consistency:</strong> One interface works across 159 platforms</li>
+        <li><strong>Coherence:</strong> One scheduler, one log stream, one health endpoint</li>
+        <li><strong>Incremental:</strong> Each layer independently useful</li>
+        <li><strong>Testing:</strong> 5,100+ unit tests, 70% coverage minimum</li>
+      </ul>
     </section>
 
     <!-- DATA & CONNECTORS SECTION (Slides 6-8) -->
@@ -392,10 +392,10 @@
     </section>
 
     <section data-background="#1a1a1a">
-      <h2>Phase 4 — Control, Reasoning & Safety (v1.6)</h2>
+      <h2>Phase 4 — Control, Reasoning & Safety</h2>
       <p style="font-size: 0.85em;">ExecutionContext, domain boundaries, hypothesis engine, agent governor, HITL</p>
       <ul style="font-size: 0.8em; margin-top: 1em;">
-        <li><strong>ExecutionContext:</strong> Every operation stamped with context_id, domain, trust_level, workspace_id. Append-only execution_log (migration 0004). Full audit trail from connector call to report.</li>
+        <li><strong>ExecutionContext:</strong> Every operation stamped with context_id, domain, trust_level, workspace_id. Append-only execution_log. Full audit trail from connector call to report.</li>
         <li><strong>Domain Boundaries:</strong> Ingestion ↔ Analysis ↔ Investigation ↔ Reporting enforced. @domain_boundary decorator raises DomainBoundaryViolation on illegal cross-domain calls.</li>
         <li><strong>HypothesisEngine + NegativeEvidence:</strong> propose → evaluate → close lifecycle. Confidence scoring weighted by connector TRUST_LEVEL (0.9/0.6/0.3). NegativeEvidenceRecord suppresses redundant re-queries within TTL.</li>
         <li><strong>Connector Trust Model:</strong> 31 trusted_internal (0.9) · 61 semi_trusted (0.6) · 7 untrusted_external (0.3)</li>
@@ -437,6 +437,18 @@
         <li><strong>Storage:</strong> ~/.gnat/config.ini · workspaces/ (SQLite or Postgres) · /var/reports/ (PDF/DOCX output)</li>
         <li><strong>Scale-out patterns:</strong> 100+ feeds → AI jobs → Azure Container Instances. EDL SLA <5 min → dedicate B1s VM to gnat-edl. 10+ analysts → FlatFileStore → PostgreSQL (one config change). Multi-tenant → 1 workspace namespace per tenant, shared codebase.</li>
         <li><strong>Monitoring:</strong> <code>gnat health check</code> for baseline · Prometheus + Grafana for scale · <code>make docker-full --profile monitoring</code> for local testing</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>GNATHunt — Detection Rules & Hunting</h2>
+      <p style="font-size: 0.85em;">Convert STIX to detection rules. Hunt packages. ATT&CK coverage mapping. Drift detection.</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>STIX → Detection Rules:</strong> Malware/Campaign/Tool indicators → Sigma + YARA + Suricata + Snort rules. Confidence-weighted rule weight. Automated rule publication to EDL + SOC platform integrations.</li>
+        <li><strong>Hunt Packages:</strong> Bundled rules with metadata (adversary, campaign, techniques, severity). Importable into Splunk, Elastic, Chronicle, QRadar. Version control + diff tracking.</li>
+        <li><strong>ATT&CK Coverage Mapping:</strong> Every rule tagged with MITRE ATT&CK technique/sub-technique. Coverage heatmap by tactic. Gaps identified and prioritized.</li>
+        <li><strong>Drift Detection:</strong> Scheduled hunt job compares rule effectiveness (hit count, FP rate) against baseline. Drift >10% triggers analyst review. Rules auto-archived if no hits in 90 days.</li>
+        <li><strong>Integration:</strong> GNATHunt hooks into campaign tracking — when Campaign confirmed, emit detection rules + hunt package. Daily hunts run via FeedScheduler.</li>
       </ul>
     </section>
 
