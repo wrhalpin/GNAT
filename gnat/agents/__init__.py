@@ -113,6 +113,11 @@ from gnat.agents.copilot_governor import (
 )
 from gnat.agents.copilot_review import CopilotReviewManager, CopilotReviewRequest
 from gnat.agents.copilot_audit import CopilotAuditLog, CopilotAuditEntry
+from gnat.agents.copilot_workflows import (
+    CopilotGuidedPhishingTriage,
+    CopilotGuidedIncidentResponse,
+    WorkflowFactory,
+)
 from gnat.agents.llm import LLMClient
 from gnat.agents.openai_compatible import OpenAICompatibleProvider
 from gnat.agents.parsing import ParsingAgent
@@ -148,4 +153,7 @@ __all__ = [
     "CopilotReviewRequest",
     "CopilotAuditLog",
     "CopilotAuditEntry",
+    "CopilotGuidedPhishingTriage",
+    "CopilotGuidedIncidentResponse",
+    "WorkflowFactory",
 ]
