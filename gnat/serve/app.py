@@ -42,6 +42,7 @@ from .rate_limit import RateLimiter
 from .routers import (
     analysis,
     analytics,
+    chat,
     federation,
     investigations,
     library,
@@ -525,6 +526,7 @@ def create_app(
     app.include_router(analytics.router, dependencies=_api_deps)
     app.include_router(federation.router, dependencies=_api_deps)
     app.include_router(workflows.router, dependencies=_api_deps)
+    app.include_router(chat.router, dependencies=_api_deps)
 
     return app
 
