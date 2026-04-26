@@ -20,6 +20,13 @@ import asyncio
 from gnat.agents.conversations import ConversationStore, ConversationTurn, ConversationRole, SessionContext
 from gnat.agents.llm import LLMClient
 from gnat.agents.base import AgentConfig
+from gnat.agents.copilot_prompts import (
+    get_next_question,
+    get_refinement_prompt,
+    get_next_step_prompt,
+    COPILOT_SYSTEM_PROMPT,
+)
+from gnat.agents.hypothesis_refinement import HypothesisRefinement, HypothesisScore
 
 
 class CopilotPhase(str, Enum):
@@ -264,15 +271,14 @@ class InvestigationCopilotSession:
         user_input: str,
     ) -> str:
         """Build Claude prompt for clarifying question."""
-        # Placeholder: real implementation will be in copilot_prompts.py
-        return f"""
-        Phase: {phase.value}
-        Investigation state: {investigation_state}
-        Analyst said: {user_input}
+        turns = self.store.get_turns(self.conversation_id)
+        conversation_history = [t.text for t in turns if t.role == ConversationRole.COPILOT]
 
-        What is the next clarifying question to narrow scope and build hypothesis?
-        Keep it concise (1 sentence).
-        """
+        return get_next_question(
+            phase=phase.value,
+            investigation_state=investigation_state,
+            conversation_history=conversation_history,
+        )
 
     def _build_refinement_prompt(
         self,
@@ -280,12 +286,7 @@ class InvestigationCopilotSession:
         analyst_feedback: str,
     ) -> str:
         """Build Claude prompt for hypothesis refinement."""
-        return f"""
-        Current hypotheses: {hypotheses}
-        Analyst feedback: {analyst_feedback}
-
-        Re-score the hypotheses based on this feedback. Return JSON with updated confidence values.
-        """
+        return get_refinement_prompt(hypotheses, analyst_feedback)
 
     def _build_step_suggestion_prompt(
         self,
@@ -293,18 +294,14 @@ class InvestigationCopilotSession:
         turns: List[ConversationTurn],
     ) -> str:
         """Build Claude prompt to suggest next investigation step."""
-        return f"""
-        Investigation state: {investigation_state}
-        Conversation history: {len(turns)} turns
+        # TODO: Extract hypotheses from investigation context
+        hypotheses = []
 
-        What is the next recommended action? Choose from:
-        - Query ThreatQ for campaign overlap
-        - Run hunt package XYZ
-        - Check Recorded Future for reputation
-        - Narrow scope by excluding actors
-
-        Recommend one action with reasoning.
-        """
+        return get_next_step_prompt(
+            investigation_state=investigation_state,
+            conversation_turns=len(turns),
+            hypotheses=hypotheses,
+        )
 
     def _advance_phase(self, current: CopilotPhase, state: Dict[str, Any]) -> CopilotPhase:
         """Determine next phase based on current state."""
