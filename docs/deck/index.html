@@ -210,6 +210,91 @@
       </ul>
     </section>
 
+    <!-- OPERATIONS & VISIBILITY SECTION (Slides 17-21) -->
+    <section data-background="#1a1a1a">
+      <h2>Search Sidecar</h2>
+      <p style="font-size: 0.85em;">Solr 9.x full-text search across all 159 connectors simultaneously</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>GNATIndexer:</strong> Add/update/delete Solr documents. Batch indexing with configurable batch_size. Field-mapped from STIX objects (type, value, confidence, x_target_sectors, tlp, source, timestamp).</li>
+        <li><strong>SearchMixin:</strong> Drop-in connector mixin. Auto-indexes on upsert_object() calls. Zero code change to existing connectors.</li>
+        <li><strong>Pipeline Patch:</strong> Routes ingest pipeline records through Solr indexer post-map.</li>
+        <li><strong>Library Patch:</strong> ResearchLibrary search-backed lookups. Cross-source correlation at query time.</li>
+        <li><strong>Config:</strong> [search] solr_url = http://localhost:8983/solr/gnat · enabled=true · batch_size=100</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>TAXII 2.1 Server</h2>
+      <p style="font-size: 0.85em;">Full read + write protocol. Each workspace exposed as TAXII collection</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Discovery:</strong> GET /taxii2/ → server metadata</li>
+        <li><strong>Collections:</strong> GET /taxii2/roots/gnat/collections/ → list all workspace collections</li>
+        <li><strong>Objects:</strong> GET /taxii2/.../objects/ (paginated bundle) · POST /taxii2/.../objects/ (ingest with WRITE_TAXII permission) · DELETE /taxii2/.../objects/{id} (soft-delete by STIX ID)</li>
+        <li><strong>Manifest:</strong> GET /taxii2/.../manifest/ → object metadata · GET /taxii2/.../objects/{oid}/versions/ → version history</li>
+        <li><strong>CLI:</strong> <code>gnat taxii --port 8090 --api-key s3cr3t</code> · TLP:AMBER + RED collections allow write · 56 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>STIX Pattern Validator</h2>
+      <p style="font-size: 0.85em;">Two-tier validation: pure-Python recursive descent + optional ANTLR grammar</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Tier 1 (always):</strong> Pure-Python recursive descent. Zero dependencies. Validates syntax and basic semantics.</li>
+        <li><strong>Tier 2 (optional):</strong> stix2-patterns ANTLR grammar. Full W3C STIX Pattern specification compliance. Requires <code>gnat[stix-validate]</code>.</li>
+        <li><strong>API:</strong> <code>from gnat.stix import validate_pattern, PatternValidationError</code> · <code>result = validate_pattern("[ipv4-addr:value = '1.2.3.4']")</code></li>
+        <li><strong>ORM opt-in:</strong> <code>Indicator(pattern="[domain-name:value = 'evil.com']", validate=True)</code></li>
+        <li><strong>CLI:</strong> <code>gnat validate pattern "[ipv4-addr:value = '1.2.3.4']"</code> · <code>gnat validate bundle indicators.json --strict</code></li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Health Monitoring</h2>
+      <p style="font-size: 0.85em;">ConnectorHealthJob + schema drift detection</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>ConnectorHealthJob (FeedJob subclass):</strong> Periodic health checks. Calls health_check() on all configured connectors. Samples list_objects(limit=1), stores field fingerprint.</li>
+        <li><strong>DriftReport:</strong> Alerts when changed fields exceed drift_threshold (default 20%). Slack webhook or email alerts on drift detection.</li>
+        <li><strong>Config [health_monitor]:</strong> enabled=true · interval_minutes=60 · alert_webhook=https://hooks.slack.com/... · drift_threshold=0.2</li>
+        <li><strong>CLI:</strong> <code>gnat health check</code> · <code>gnat health baseline</code> · 74 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Capability Reflection</h2>
+      <p style="font-size: 0.85em;">Runtime introspection of connector capabilities with guarded dispatch</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>capabilities():</strong> Returns [{name, signature, doc, type: 'auth|read|write|helper', platform_specific: bool}, ...]</li>
+        <li><strong>Guarded dispatch:</strong> <code>client.call("list_objects", stix_type="indicator")</code> — safe, reads only. <code>client.call("upsert", obj, allow_write=True)</code> — requires explicit allow_write flag.</li>
+        <li><strong>Use cases:</strong> Dynamic UI generation (which connectors support write?). Automated testing (are all methods implemented?). Validation (does this method exist?)</li>
+        <li><strong>CLI:</strong> <code>gnat client capabilities --platform threatq</code> · <code>gnat client call --platform splunk --method list_objects</code> · 31 unit tests</li>
+      </ul>
+    </section>
+
+    <!-- DASHBOARDS & UX SECTION (Slides 22-23) -->
+    <section data-background="#1a1a1a">
+      <h2>Terminal UI</h2>
+      <p style="font-size: 0.85em;">Works over SSH — no browser, no display server required. Modern TUI built on Textual</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>F1 Query:</strong> NLP search bar + scrollable STIX results table. Execute <code>gnat nlq "..."</code> in-place.</li>
+        <li><strong>F2 Library:</strong> Research Library browser. Promote (Ctrl+P) / reject (Ctrl+X) staging items. TTL visibility.</li>
+        <li><strong>F3 Scheduler:</strong> Live job status (running/queued/failed). Manual trigger with Ctrl+T. Next-run countdown.</li>
+        <li><strong>F4 Reports:</strong> PDF/HTML/DOCX browser. Open in browser (Ctrl+O). Export to disk (Ctrl+E).</li>
+        <li><strong>F5 Investigations:</strong> Investigation browser. Status transitions. Ctrl+N new, Ctrl+R refresh.</li>
+        <li><strong>F6 Review:</strong> AI Intel Review Queue. Approve/Reject/Modify with confidence override. Ctrl+A bulk approve.</li>
+        <li><strong>Launch:</strong> <code>gnat tui</code> · <code>gnat tui review</code> (start on review screen) · pip install "gnat[tui]" · 38 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Web Dashboard</h2>
+      <p style="font-size: 0.85em;">Browser-based dashboard for server deployments. X-Api-Key auth, rate-limited 100 req/min</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>REST API endpoints:</strong> GET/POST /api/library (research, promote, reject) · GET /api/reports (list, serve HTML inline) · GET/POST /api/scheduler/jobs (status, trigger) · GET /health (unauthenticated liveness)</li>
+        <li><strong>Single-page dashboard:</strong> GET / → dark theme, no build step. Live job monitoring, report browser, library search.</li>
+        <li><strong>Authentication:</strong> X-Api-Key header. Per-key role (VIEWER/ANALYST/OPERATOR/ADMIN) + permission enforcement.</li>
+        <li><strong>Launch:</strong> <code>gnat serve --port 8088 --api-key $(openssl rand -hex 16)</code> · Bind 127.0.0.1 by default · pip install "gnat[serve]" · 54 unit tests</li>
+      </ul>
+    </section>
+
   </div>
 </div>
 
