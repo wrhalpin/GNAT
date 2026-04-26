@@ -56,7 +56,20 @@
       </ul>
     </section>
 
-    <!-- SLIDE 4: Architecture -->
+    <!-- SLIDE 4: The Abstraction Advantage -->
+    <section data-background="#1a1a1a">
+      <h2>The Abstraction Advantage</h2>
+      <ul style="font-size: 0.8em;">
+        <li><strong>Portability:</strong> Switch platforms, pipeline stays the same</li>
+        <li><strong>Maintenance:</strong> API changes affect one connector, not every script</li>
+        <li><strong>Consistency:</strong> One interface works across 159 platforms</li>
+        <li><strong>Coherence:</strong> One scheduler, one log stream, one health endpoint</li>
+        <li><strong>Incremental:</strong> Each layer independently useful</li>
+        <li><strong>Testing:</strong> 5,100+ unit tests, 70% coverage minimum</li>
+      </ul>
+    </section>
+
+    <!-- SLIDE 5: Architecture -->
     <section data-background="#1a1a1a">
       <h2>Core Architecture</h2>
       <p style="font-size: 0.8em;">
@@ -72,7 +85,7 @@
       </p>
     </section>
 
-    <!-- SLIDE 5: 159 Connectors -->
+    <!-- SLIDE 6: 159 Connectors -->
     <section data-background="#1a1a1a">
       <h2>159 Platform Connectors</h2>
       <p style="font-size: 0.75em;">
@@ -84,7 +97,7 @@
       </p>
     </section>
 
-    <!-- SLIDE 6: STIX 2.1 ORM -->
+    <!-- SLIDE 7: STIX 2.1 ORM -->
     <section data-background="#1a1a1a">
       <h2>STIX 2.1 ORM</h2>
       <p>Universal data contract across all connectors:</p>
@@ -98,7 +111,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 7: Pipelines -->
+    <!-- SLIDE 8: Pipelines -->
     <section data-background="#1a1a1a">
       <h2>Ingest & Export Pipelines</h2>
       <p><strong>Ingest:</strong> 14 readers (CSV, JSON, STIX, TAXII, Splunk, Elastic...) × 12 mappers</p>
@@ -108,7 +121,7 @@
       </p>
     </section>
 
-    <!-- SLIDE 8: Scheduling -->
+    <!-- SLIDE 9: Scheduling -->
     <section data-background="#1a1a1a">
       <h2>Scheduling</h2>
       <p>FeedScheduler: One scheduler for all job types</p>
@@ -121,7 +134,7 @@
       <p style="font-size: 0.75em; color: #9e9e9e;">Drift-corrected timing • Overlap protection • On-success/failure hooks</p>
     </section>
 
-    <!-- SLIDE 9: AI Agents -->
+    <!-- SLIDE 10: AI Agents -->
     <section data-background="#1a1a1a">
       <h2>AI Agents</h2>
       <p>Multi-LLM threat research with human-in-the-loop</p>
@@ -133,7 +146,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 10: Natural Language Queries -->
+    <!-- SLIDE 11: Natural Language Queries -->
     <section data-background="#1a1a1a">
       <h2>Natural Language Queries</h2>
       <p style="font-size: 0.9em;">Two backends, same QuerySpec output</p>
@@ -146,7 +159,7 @@
       </p>
     </section>
 
-    <!-- SLIDE 11: Research Library -->
+    <!-- SLIDE 12: Research Library -->
     <section data-background="#1a1a1a">
       <h2>Research Library</h2>
       <p>Three-tier analyst knowledge base</p>
@@ -157,7 +170,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 12: Automated Reports -->
+    <!-- SLIDE 13: Automated Reports -->
     <section data-background="#1a1a1a">
       <h2>Automated Report Generation</h2>
       <ul style="font-size: 0.85em;">
@@ -168,7 +181,7 @@
       <p style="font-size: 0.75em; color: #9e9e9e;">Pipeline: DataAggregator → ReportSynthesizer → Renderers → Email/SharePoint</p>
     </section>
 
-    <!-- SLIDE 13: Sector Targeting -->
+    <!-- SLIDE 14: Sector Targeting -->
     <section data-background="#1a1a1a">
       <h2>Sector Targeting Intelligence</h2>
       <p><code>x_target_sectors</code> - Normalized across all 159 connectors</p>
@@ -180,7 +193,7 @@
       <p style="font-size: 0.75em; color: #9e9e9e;">Sector aliases expand: 'healthcare' matches 'Health', 'Medical', 'H-ISAC'</p>
     </section>
 
-    <!-- SLIDE 14: Solr Search -->
+    <!-- SLIDE 15: Solr Search -->
     <section data-background="#1a1a1a">
       <h2>Search Sidecar</h2>
       <p>Full-text search across all 159 connectors simultaneously</p>
@@ -192,7 +205,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 15: TAXII 2.1 Server -->
+    <!-- SLIDE 16: TAXII 2.1 Server -->
     <section data-background="#1a1a1a">
       <h2>TAXII 2.1 Server & STIX Validator</h2>
       <ul style="font-size: 0.75em;">
@@ -205,7 +218,7 @@
       </p>
     </section>
 
-    <!-- SLIDE 16: Health & Capability Reflection -->
+    <!-- SLIDE 17: Health & Capability Reflection -->
     <section data-background="#1a1a1a">
       <h2>Health Monitoring & Capability Reflection</h2>
       <ul style="font-size: 0.8em;">
@@ -216,7 +229,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 17: TUI & Web Dashboard -->
+    <!-- SLIDE 18: TUI & Web Dashboard -->
     <section data-background="#1a1a1a">
       <h2>Terminal UI & Web Dashboard</h2>
       <p><strong>Terminal UI (Textual)</strong> - Works over SSH</p>
@@ -225,7 +238,7 @@
       <p style="font-size: 0.8em;">/api/library • /api/reports • /api/scheduler • /health</p>
     </section>
 
-    <!-- SLIDE 18: XSOAR Codegen -->
+    <!-- SLIDE 19: XSOAR Codegen -->
     <section data-background="#1a1a1a">
       <h2>XSOAR Content Pack Generator</h2>
       <p>Auto-generate XSOAR 6 content packs from connector introspection</p>
@@ -237,7 +250,7 @@
       <p style="font-size: 0.75em; color: #9e9e9e;">Upstream contribution pipeline with 7-step compliance gate</p>
     </section>
 
-    <!-- SLIDE 19: Docker -->
+    <!-- SLIDE 20: Docker -->
     <section data-background="#1a1a1a">
       <h2>Docker Containerization</h2>
       <p>Production stack: docker-compose.yml</p>
@@ -250,7 +263,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 20: Multi-Tenant -->
+    <!-- SLIDE 21: Multi-Tenant -->
     <section data-background="#1a1a1a">
       <h2>Multi-Tenant Workspace Isolation</h2>
       <p>Transparent namespace prefixing, no schema migration</p>
@@ -261,10 +274,10 @@
       <p style="font-size: 0.75em; color: #9e9e9e;">Works with SQLite and FlatFile stores. CLI: gnat tenant list/create/delete</p>
     </section>
 
-    <!-- SLIDE 21: Deployment -->
+    <!-- SLIDE 22: Deployment -->
     <section data-background="#1a1a1a">
       <h2>Deployment: Single Azure VM</h2>
-      <p><strong>Azure B2s (~$50/month)</strong></p>
+      <p><strong>Azure B2s</strong></p>
       <ul style="font-size: 0.8em;">
         <li>gnat-scheduler.service - FeedScheduler</li>
         <li>gnat-edl.service :8080 - EDL server</li>
@@ -273,7 +286,7 @@
       <p style="margin-top: 1em; font-size: 0.8em;"><strong>Scale-out:</strong> 100+ feeds → Container Instances • 10+ analysts → PostgreSQL • Multi-tenant → shared codebase</p>
     </section>
 
-    <!-- SLIDE 22: Migrations & Plugins -->
+    <!-- SLIDE 23: Migrations & Plugins -->
     <section data-background="#1a1a1a">
       <h2>Database Migrations & Plugin System</h2>
       <ul style="font-size: 0.8em;">
@@ -283,7 +296,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 23: RBAC & Validator -->
+    <!-- SLIDE 24: RBAC & Validator -->
     <section data-background="#1a1a1a">
       <h2>Policy Engine (RBAC) & STIX Validator</h2>
       <p><strong>Roles:</strong> VIEWER • ANALYST • OPERATOR • ADMIN</p>
@@ -294,7 +307,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 24: Workflows -->
+    <!-- SLIDE 25: Workflows -->
     <section data-background="#1a1a1a">
       <h2>Agent Orchestration - Workflow DAG Engine</h2>
       <p>Sequential DAG executor with success/failure routing</p>
@@ -305,7 +318,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 25: Lineage & Metrics -->
+    <!-- SLIDE 26: Lineage & Metrics -->
     <section data-background="#1a1a1a">
       <h2>Data Lineage & Analyst Metrics</h2>
       <p><strong>Data Lineage:</strong> Append-only event log (INGESTED, ENRICHED, NORMALIZED, LINKED, EXPORTED, REPORTED, DELETED)</p>
@@ -313,7 +326,7 @@
       <p style="font-size: 0.75em;">investigation_summary(days) • enrichment_effectiveness(platform, days) • gap_frequency(days) • false_positive_rate(days)</p>
     </section>
 
-    <!-- SLIDE 26: Review Queue -->
+    <!-- SLIDE 27: Review Queue -->
     <section data-background="#1a1a1a">
       <h2>AI Intel Review Queue</h2>
       <p>Human-in-the-loop gate: PENDING → APPROVED → PROMOTED</p>
@@ -324,7 +337,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 27: Phase 4 Safety -->
+    <!-- SLIDE 28: Phase 4 Safety -->
     <section data-background="#1a1a1a">
       <h2>Phase 4 - Control, Reasoning & Safety (v1.6)</h2>
       <ul style="font-size: 0.75em;">
@@ -336,18 +349,6 @@
       </ul>
     </section>
 
-    <!-- SLIDE 28: Advantages -->
-    <section data-background="#1a1a1a">
-      <h2>The Abstraction Advantage</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Portability:</strong> Switch platforms, pipeline stays the same</li>
-        <li><strong>Maintenance:</strong> API changes affect one connector, not every script</li>
-        <li><strong>Consistency:</strong> One interface works across 159 platforms</li>
-        <li><strong>Coherence:</strong> One scheduler, one log stream, one health endpoint</li>
-        <li><strong>Incremental:</strong> Each layer independently useful</li>
-        <li><strong>Testing:</strong> 5,100+ unit tests, 70% coverage minimum</li>
-      </ul>
-    </section>
 
     <!-- SLIDE 29: Security & CI -->
     <section data-background="#1a1a1a">
@@ -361,20 +362,7 @@
       </ul>
     </section>
 
-    <!-- SLIDE 30: By the Numbers -->
-    <section data-background="#1a1a1a">
-      <h2>By the Numbers</h2>
-      <p style="font-size: 1.2em;">
-        <strong style="color: #c41e2a;">159</strong> Connectors<br/>
-        <strong style="color: #c41e2a;">5,100+</strong> Unit Tests<br/>
-        <strong style="color: #c41e2a;">250+</strong> Source Files<br/>
-        <strong style="color: #c41e2a;">~$50</strong>/month Azure VM<br/>
-        <strong style="color: #c41e2a;">60</strong> AI Confidence Ceiling<br/>
-        <strong style="color: #c41e2a;">49</strong> Architecture Decision Records
-      </p>
-    </section>
-
-    <!-- SLIDE 31: Implementation Sequence -->
+    <!-- SLIDE 30: Implementation Sequence -->
     <section data-background="#1a1a1a">
       <h2>Implementation Sequence</h2>
       <ul style="font-size: 0.75em;">
@@ -387,24 +375,24 @@
       </ul>
     </section>
 
-    <!-- SLIDE 32: Roadmap -->
+    <!-- SLIDE 31: Roadmap -->
     <section data-background="#1a1a1a">
       <h2>All Roadmap Items Complete</h2>
-      <p style="font-size: 0.8em;">✓ Every pending item shipped — v1.9.0 complete · Phase 4 (v1.6) shipped</p>
+      <p style="font-size: 0.8em;">✓ Every pending item shipped — v1.9.0 complete</p>
       <p style="font-size: 0.7em; color: #9e9e9e;">
         ✅ 159 connectors · STIX 2.1 ORM · Ingest/export pipelines · AI agents (Claude/OpenAI/Grok/Gemini)<br/>
         ✅ TAXII 2.1 · Policy RBAC · 5,100+ tests · Docker · Multi-tenant · Migrations · Plugins<br/>
-        ✅ Workflows · Lineage · Metrics · Review queue · Phase 4 safety · Health monitoring · Codegen
+        ✅ Workflows · Lineage · Metrics · Review queue · Health monitoring · Codegen
       </p>
     </section>
 
-    <!-- SLIDE 33: Closing -->
+    <!-- SLIDE 32: Closing -->
     <section data-background="#1a1a1a">
       <h1><span class="accent">GNAT</span></h1>
       <h3>One library. Every platform. Total control.</h3>
       <p style="font-size: 0.9em; margin-top: 2em;">
         Version 1.9.0 • Python 3.9+ • Apache 2.0<br/>
-        159 connectors • STIX 2.1 • AI-assisted • ~$50/month
+        159 connectors • STIX 2.1 • AI-assisted • Apache 2.0
       </p>
       <p style="font-size: 0.75em; color: #9e9e9e; margin-top: 2em;">
         GitHub: wrhalpin/GNAT · Docs: wrhalpin.github.io/GNAT · Read: EXAMPLES.md · README.md
