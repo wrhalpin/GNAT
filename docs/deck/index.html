@@ -79,6 +79,48 @@
       </p>
     </section>
 
+    <!-- DATA & CONNECTORS SECTION (Slides 6-8) -->
+    <section data-background="#1a1a1a">
+      <h2>159 Platform Connectors</h2>
+      <p style="font-size: 0.75em;">
+        <strong>Categories:</strong> Commercial TI • Dark Web/Cybercrime • Public Feeds • SIEM/Analytics • SOAR/DFIR • NDR/OT • Endpoint/XDR/MDR • Vulnerability Mgmt • Cloud/ASM • Identity/Email • Sandbox/BAS • AI/OSINT
+      </p>
+      <p style="font-size: 0.8em; color: #9e9e9e; margin-top: 1em;">
+        Examples: ThreatQ • CrowdStrike • Recorded Future • VirusTotal • Splunk • Elastic • QRadar • Microsoft Sentinel • ... and 151 more
+      </p>
+      <p style="font-size: 0.7em; color: #9e9e9e; margin-top: 1em;">
+        <strong>Unified contract:</strong> Every connector implements authenticate() • health_check() • get/list/upsert/delete_object() • to_stix() • from_stix()
+      </p>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>STIX 2.1 ORM</h2>
+      <p>Universal data contract — normalize all platforms into same object types</p>
+      <ul style="font-size: 0.85em; margin-top: 1.2em;">
+        <li><strong>Indicator</strong> — IOCs with STIX patterns: [ipv4-addr:value = '...']</li>
+        <li><strong>ThreatActor</strong> — Profiles, aliases, motivation, attribution</li>
+        <li><strong>Vulnerability</strong> — CVEs, CVSS scores, exploited flag, products</li>
+        <li><strong>AttackPattern</strong> — MITRE ATT&CK TTPs with tactic mapping</li>
+        <li><strong>Malware</strong> — Families, capabilities, kill-chain</li>
+        <li><strong>Relationship</strong> — Bidirectional links (indicates, uses, targets)</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Unified Interface Contract</h2>
+      <p style="font-size: 0.9em;">Same method signature across all 159 connectors:</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><code>authenticate()</code> — OAuth2, API key, Basic, mTLS, etc.</li>
+        <li><code>health_check()</code> — Lightweight ping + status</li>
+        <li><code>get_object(stix_id)</code> — Fetch one object</li>
+        <li><code>list_objects(stix_type, limit, offset)</code> — Paginated results</li>
+        <li><code>upsert_object(stix_obj)</code> — Create or update</li>
+        <li><code>delete_object(stix_id)</code> — Soft or hard delete</li>
+        <li><code>to_stix(native_obj)</code> — Platform → STIX</li>
+        <li><code>from_stix(stix_obj)</code> — STIX → platform format</li>
+      </ul>
+    </section>
+
   </div>
 </div>
 
