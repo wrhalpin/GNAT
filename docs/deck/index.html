@@ -295,6 +295,77 @@
       </ul>
     </section>
 
+    <!-- ADVANCED FEATURES SECTION (Slides 24-29) -->
+    <section data-background="#1a1a1a">
+      <h2>XSOAR Content Pack Generator</h2>
+      <p style="font-size: 0.85em;">Auto-generate valid XSOAR 6 content packs from connector introspection</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>What it generates:</strong> pack_metadata.json · Integrations/<Name>/<Name>.yml (command defs) · Integrations/<Name>/<Name>.py (Python bridge) · ReleaseNotes/<ver>.md</li>
+        <li><strong>Intelligence:</strong> Write methods flagged dangerous=true · Auth type auto-detected from constructor · Full integration signature extraction</li>
+        <li><strong>Upstream Contribution Pipeline:</strong> Packages connector as draft GitHub PR through 7-step compliance gate: 1) opt-in guard 2) in CLIENT_REGISTRY 3) ComplianceMatrix (8 methods + tests) 4) test suite pass 5) branch:contribute/{platform}-{ts} 6) commit+push to fork 7) draft PR via GitHub API</li>
+        <li><strong>CLI:</strong> <code>gnat codegen xsoar --connector threatq --output ./packs/</code> · <code>gnat codegen openapi --spec api.yaml --ai</code> (Claude-powered) · <code>gnat codegen tests --connector crowdstrike</code></li>
+        <li><strong>Tests:</strong> 40 xsoar tests · 47 contribution pipeline tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Docker Containerization</h2>
+      <p style="font-size: 0.85em;">Production stack via docker-compose.yml with optional profile-based services</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Core services:</strong> gnat-scheduler (FeedScheduler, all ingest/export/AI jobs) · gnat-edl :8080 (EDL server, survives scheduler restart) · gnat-monitor :8090 (health endpoint, GET /status)</li>
+        <li><strong>Optional profiles:</strong> --profile search → solr :8983 (Solr search sidecar for full-text) · --profile monitoring → grafana :3000 (Solr + GNAT metrics dashboards)</li>
+        <li><strong>Volumes:</strong> Named volume gnat-workspace (persistent data) · .env.example → .env (credentials)</li>
+        <li><strong>Commands:</strong> <code>make docker-build</code> · <code>make docker-up</code> · <code>make docker-search</code> · <code>make docker-full</code> · <code>make docker-down</code></li>
+        <li><strong>Integration tests:</strong> Elasticsearch 8.13.4 + Solr 9.6 (non-conflicting ports 19200, 18983) · <code>make test-docker</code> (up → run → down)</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Multi-Tenant Workspace Isolation</h2>
+      <p style="font-size: 0.85em;">Transparent namespace prefixing — no schema migration — works with SQLite and FlatFile</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>API:</strong> <code>manager = WorkspaceManager.default()</code> · <code>acme = manager.for_tenant("acme")</code> · <code>ws = acme.create("apt28-investigation")</code> → stored as "acme::apt28-investigation" · <code>beta = manager.for_tenant("beta")</code> · <code>ws2 = beta.create("apt28-investigation")</code> → "beta::apt28-investigation" (no collision)</li>
+        <li><strong>TenantRegistry:</strong> Existing workspaces → "default" tenant · Per-tenant config_path in INI · list() scoped to tenant namespace</li>
+        <li><strong>Persistence:</strong> Works with SQLite, PostgreSQL, FlatFile backends. Config option GNAT_DB_URL → [database] INI → default.</li>
+        <li><strong>CLI:</strong> <code>gnat tenant list</code> · <code>gnat tenant create acme --display-name "Acme Corp" --config /etc/gnat/acme.ini</code> · <code>gnat tenant workspaces acme</code> · <code>gnat tenant delete acme --yes</code></li>
+        <li><strong>Tests:</strong> 63 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Database Migrations</h2>
+      <p style="font-size: 0.85em;">Alembic 1.13 schema management. Zero runtime dependencies</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Migration files:</strong> 0001_init_all_tables (investigations, reports, workspaces, workspace_objects, enrichment_log, context_globals) · 0002_add_lineage_events (lineage_events table + composite index) · 0003_add_metrics_events (metrics_events table + index)</li>
+        <li><strong>CLI:</strong> <code>gnat-db upgrade head</code> (apply all) · <code>gnat-db current</code> (show revision) · <code>gnat-db history</code> (show migration history) · <code>gnat-db downgrade -1</code> (rollback)</li>
+        <li><strong>Configuration:</strong> GNAT_DB_URL env var → [database] INI section → default SQLite. get_combined_metadata() for Alembic auto-detect.</li>
+        <li><strong>Installation:</strong> pip install "gnat[migrations]"</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Plugin System</h2>
+      <p style="font-size: 0.85em;">Extensible architecture with entry_points discovery, filesystem scanning, HookBus pub/sub</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>GNATPlugin ABC:</strong> name, version, capabilities (list[PluginCapability]), register(registry) method</li>
+        <li><strong>PluginCapability enum:</strong> CONNECTOR, READER, MAPPER, AGENT, REPORTER, HOOK</li>
+        <li><strong>HookBus:</strong> Thread-safe pub/sub. 14 built-in KNOWN_EVENTS (on_object_ingested, on_enrichment_complete, on_report_published, etc.). Async handlers. Exceptions never propagate.</li>
+        <li><strong>PluginRegistry:</strong> load/unload/get/list · entry_points discovery · GNAT_PLUGIN_DIRS env var · [plugins] dirs = /opt/gnat/plugins INI section</li>
+        <li><strong>Use case:</strong> Custom connector? Write GNATPlugin + register(). Custom reporter? Implement Reporter capability. Custom data sink? Hook into on_object_ingested.</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Policy Engine (RBAC)</h2>
+      <p style="font-size: 0.85em;">Role-based access control orthogonal to TLP labels. Static permission matrix. FastAPI-native</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Roles:</strong> VIEWER (READ_OBJECTS, READ_REPORTS, QUERY_NLP) · ANALYST (+ WRITE_OBJECTS, ENRICH, PROMOTE_INTEL) · OPERATOR (+ MANAGE_SCHEDULES, WRITE_TAXII, EXPORT) · ADMIN (+ MANAGE_KEYS, MANAGE_TENANTS, all perms)</li>
+        <li><strong>STIX Object Validator:</strong> Validates required properties, vocabularies, confidence, refs, ID format. 19 SDO types (indicator, malware, campaign...) · 16 SCO types (ipv4-addr, domain-name, file...) · 2 SRO types (relationship, sighting) · 4 meta types (bundle, marking-definition...).</li>
+        <li><strong>Audit Middleware:</strong> Every API request emits api_request HookBus event + structured log (actor, endpoint, timestamp, result).</li>
+        <li><strong>FastAPI integration:</strong> <code>engine.require(Permission.WRITE_TAXII, key_store)</code> as Depends() guard</li>
+      </ul>
+    </section>
+
   </div>
 </div>
 
