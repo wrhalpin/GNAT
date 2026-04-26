@@ -38,6 +38,8 @@ from gnat.tui.screens.query import QueryScreen
 from gnat.tui.screens.reports import ReportsScreen
 from gnat.tui.screens.review import ReviewScreen
 from gnat.tui.screens.scheduler import SchedulerScreen
+from gnat.tui.screens.copilot_screen import CopilotScreen
+from gnat.tui.screens.assistant_screen import AssistantScreen
 
 _VERSION = "0.1.0"
 
@@ -76,6 +78,8 @@ class GNATApp(App):
         Binding("f4", "switch_tab('reports')", "Reports", show=True),
         Binding("f5", "switch_tab('investigations')", "Investigations", show=True),
         Binding("f6", "switch_tab('review')", "Review", show=True),
+        Binding("f10", "open_copilot", "Copilot", show=True),
+        Binding("f11", "open_assistant", "Assistant", show=True),
         Binding("q", "quit", "Quit", show=True),
         Binding("ctrl+c", "quit", "Quit", show=False),
     ]
@@ -148,6 +152,26 @@ class GNATApp(App):
         """Switch the active tab by id (used by F-key bindings)."""
         with contextlib.suppress(Exception):
             self.query_one(TabbedContent).active = tab_id
+
+    def action_open_copilot(self) -> None:
+        """Open Investigation Copilot modal (F10)."""
+        # Get investigation_id from context (set by InvestigationsScreen)
+        investigation_id = getattr(self, "_current_investigation_id", None)
+        if not investigation_id:
+            # Show error or prompt
+            pass
+        else:
+            self.push_screen(CopilotScreen(investigation_id=investigation_id))
+
+    def action_open_assistant(self) -> None:
+        """Open Live Analyst Assistant modal (F11)."""
+        # Get investigation_id from context (set by InvestigationsScreen)
+        investigation_id = getattr(self, "_current_investigation_id", None)
+        if not investigation_id:
+            # Show error or prompt
+            pass
+        else:
+            self.push_screen(AssistantScreen(investigation_id=investigation_id))
 
 
 def run(

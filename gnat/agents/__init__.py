@@ -91,7 +91,33 @@ M365 + Copilot::
 
 from gnat.agents.base import AgentConfig, ClaudeClient, ParsedIntel, ResearchResult
 from gnat.agents.claude import ClaudeProvider
+from gnat.agents.conversations import (
+    ConversationStore,
+    ConversationTurn,
+    ConversationRole,
+    SessionContext,
+)
 from gnat.agents.copilot import CopilotReader
+from gnat.agents.copilot_investigation import InvestigationCopilotSession, CopilotPhase, CopilotSuggestion
+from gnat.agents.assistant_analyst import (
+    LiveAnalystAssistantSession,
+    EnrichmentSuggestion,
+    ReportDraftOption,
+)
+from gnat.agents.copilot_governor import (
+    CopilotGovernor,
+    CopilotAction,
+    AssistantAction,
+    ActionRisk,
+    CostTracker,
+)
+from gnat.agents.copilot_review import CopilotReviewManager, CopilotReviewRequest
+from gnat.agents.copilot_audit import CopilotAuditLog, CopilotAuditEntry
+from gnat.agents.copilot_workflows import (
+    CopilotGuidedPhishingTriage,
+    CopilotGuidedIncidentResponse,
+    WorkflowFactory,
+)
 from gnat.agents.llm import LLMClient
 from gnat.agents.openai_compatible import OpenAICompatibleProvider
 from gnat.agents.parsing import ParsingAgent
@@ -108,4 +134,26 @@ __all__ = [
     "CopilotReader",
     "LLMClient",
     "OpenAICompatibleProvider",
+    "ConversationStore",
+    "ConversationTurn",
+    "ConversationRole",
+    "SessionContext",
+    "InvestigationCopilotSession",
+    "CopilotPhase",
+    "CopilotSuggestion",
+    "LiveAnalystAssistantSession",
+    "EnrichmentSuggestion",
+    "ReportDraftOption",
+    "CopilotGovernor",
+    "CopilotAction",
+    "AssistantAction",
+    "ActionRisk",
+    "CostTracker",
+    "CopilotReviewManager",
+    "CopilotReviewRequest",
+    "CopilotAuditLog",
+    "CopilotAuditEntry",
+    "CopilotGuidedPhishingTriage",
+    "CopilotGuidedIncidentResponse",
+    "WorkflowFactory",
 ]
