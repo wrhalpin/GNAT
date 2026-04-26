@@ -366,6 +366,108 @@
       </ul>
     </section>
 
+    <!-- WORKFLOWS & SAFETY SECTION (Slides 30-32) -->
+    <section data-background="#1a1a1a">
+      <h2>Workflow DAG Engine</h2>
+      <p style="font-size: 0.85em;">Sequential DAG executor with success/failure routing, cycle detection, elapsed timing</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>WorkflowStep:</strong> name, fn (callable), on_success, on_failure. Optional routing based on step result.</li>
+        <li><strong>WorkflowContext:</strong> investigation, enriched_objects, gaps, draft, errors, metadata. Shared state across all steps.</li>
+        <li><strong>WorkflowResult:</strong> success, steps_run, errors, elapsed_ms. Full execution trace.</li>
+        <li><strong>Built-in step factories:</strong> enrich_step, correlate_step, gap_detect_step, draft_report_step, transition_step, fn_step</li>
+        <li><strong>Pre-built workflows:</strong> PhishingTriage (enrich → correlate → gap_detect → draft_report → transition(IN_PROGRESS)) · IncidentResponse (same but transition(REVIEW))</li>
+        <li><strong>Usage:</strong> <code>from gnat.agents.workflows.phishing_triage import build_phishing_triage_workflow</code> · <code>result = build_phishing_triage_workflow(...).execute(ctx)</code></li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>AI Intel Review Queue</h2>
+      <p style="font-size: 0.85em;">Human-in-the-loop gate: PENDING → APPROVED → PROMOTED (or REJECTED / MODIFIED)</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>ReviewService methods:</strong> submit(stix_id, stix_type, stix_data) → PENDING · approve(id, reviewer, notes, confidence) → APPROVED + optional confidence override · reject(id, reviewer, reason) → REJECTED · modify(id, reviewer, modified_properties) → capture analyst overrides · promote(id, reviewer, workspace_manager) → merge overrides + x_source_type=analyst_verified · bulk_approve/reject(ids) · stats() → per-status breakdown</li>
+        <li><strong>REST API:</strong> GET /api/review (list) · POST /api/review (submit) · GET /api/review/{id} (detail) · POST /api/review/{id}/approve · POST /api/review/{id}/reject · POST /api/review/{id}/modify · POST /api/review/{id}/promote · GET /api/review/stats</li>
+        <li><strong>CLI:</strong> <code>gnat review list --status pending --type indicator</code> · <code>gnat review approve <id> --by alice --confidence 85</code> · <code>gnat review stats</code></li>
+        <li><strong>TUI:</strong> F6 ReviewScreen. Approve/Reject/Modify with confidence input. Ctrl+A bulk approve. Per-status counts.</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Phase 4 — Control, Reasoning & Safety (v1.6)</h2>
+      <p style="font-size: 0.85em;">ExecutionContext, domain boundaries, hypothesis engine, agent governor, HITL</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>ExecutionContext:</strong> Every operation stamped with context_id, domain, trust_level, workspace_id. Append-only execution_log (migration 0004). Full audit trail from connector call to report.</li>
+        <li><strong>Domain Boundaries:</strong> Ingestion ↔ Analysis ↔ Investigation ↔ Reporting enforced. @domain_boundary decorator raises DomainBoundaryViolation on illegal cross-domain calls.</li>
+        <li><strong>HypothesisEngine + NegativeEvidence:</strong> propose → evaluate → close lifecycle. Confidence scoring weighted by connector TRUST_LEVEL (0.9/0.6/0.3). NegativeEvidenceRecord suppresses redundant re-queries within TTL.</li>
+        <li><strong>Connector Trust Model:</strong> 31 trusted_internal (0.9) · 61 semi_trusted (0.6) · 7 untrusted_external (0.3)</li>
+        <li><strong>AgentGovernor + HITL:</strong> All agent actions routed through permission matrix ([agent_policy] INI). High/critical actions create PENDING ReviewItem. Critical triggers XSOAR playbook.</li>
+      </ul>
+    </section>
+
+    <!-- ROLLOUT & ROADMAP SECTION (Slides 33-36) -->
+    <section data-background="#1a1a1a">
+      <h2>Security & CI</h2>
+      <p style="font-size: 0.85em;">GitHub Actions, Ruff, mypy, pytest, Dependabot, Snyk, secret scanning</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>GitHub Actions CI:</strong> pylint on every push. Python 3.9/3.10/3.11/3.12 matrix. Fails build on any lint error. Badge on README signals status.</li>
+        <li><strong>Ruff + mypy:</strong> E, F, W, I, UP, B, C4, SIM rules. Line length 100, Python 3.9 target. warn_return_any, strict configs. <code>make check</code> = lint + typecheck gate.</li>
+        <li><strong>Testing:</strong> 5,100+ unit tests across 40+ files. 70% minimum coverage enforced (fail_under=70 in pyproject.toml). Docker integration harness (Elasticsearch + Solr).</li>
+        <li><strong>Dependabot:</strong> Automated dependency update PRs. One PR per dependency for audit trail. Pinned versions reviewed before merge. Python + GitHub Actions deps.</li>
+        <li><strong>Security scanning:</strong> Snyk: dependency vulnerability scanning + code security analysis. GitHub secret scanning: blocks known patterns before history. AI confidence ceiling 60, draft PRs only, localhost binding by default, call() write guard, no credentials in source, HMAC constant-time validation.</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Implementation Sequence</h2>
+      <p style="font-size: 0.85em;">6-phase rollout timeline</p>
+      <ul style="font-size: 0.75em; margin-top: 1em;">
+        <li><strong>Phase 1 (Days 1-2):</strong> Install + configure config.ini · Test connectivity: gnat ping · First ingest dry-run</li>
+        <li><strong>Phase 2 (Days 3-5):</strong> All connector configs · Primary ingest jobs (TQ, RF, CS) · FeedScheduler running</li>
+        <li><strong>Phase 3 (Days 6-8):</strong> Netskope CE ExportJob (15 min) · EDL files hourly · Verify TQ → CE → firewall EDLs</li>
+        <li><strong>Phase 4 (Days 9-10):</strong> Configure [claude] in config.ini · First ResearchAgent query · CurationJob to scheduler</li>
+        <li><strong>Phase 5 (Days 11-14):</strong> Daily report — review PDF/HTML · Configure email delivery · ReportJob at 06:00 daily</li>
+        <li><strong>Phase 6 (Ongoing):</strong> Analyst config templates · Share EXAMPLES.md · Library review process</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Deployment Architecture</h2>
+      <p style="font-size: 0.85em;">Single Azure B2s VM (~$50/month baseline) with scale-out path</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Baseline deployment (single VM):</strong> gnat-scheduler.service (FeedScheduler: ingest, export, AI research, curation, reports) · gnat-edl.service :8080 (EDLServer: independent, survives scheduler restart) · gnat-health.service :8090 (Health endpoint: GET /status → JSON, Azure Monitor/Grafana ping)</li>
+        <li><strong>Storage:</strong> ~/.gnat/config.ini · workspaces/ (SQLite or Postgres) · /var/reports/ (PDF/DOCX output)</li>
+        <li><strong>Scale-out patterns:</strong> 100+ feeds → AI jobs → Azure Container Instances. EDL SLA <5 min → dedicate B1s VM to gnat-edl. 10+ analysts → FlatFileStore → PostgreSQL (one config change). Multi-tenant → 1 workspace namespace per tenant, shared codebase.</li>
+        <li><strong>Monitoring:</strong> <code>gnat health check</code> for baseline · Prometheus + Grafana for scale · <code>make docker-full --profile monitoring</code> for local testing</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>All Roadmap Items Complete</h2>
+      <p style="font-size: 0.85em;">✓ Every pending item has shipped — v1.9.0 complete</p>
+      <ul style="font-size: 0.7em; margin-top: 1em;">
+        <li>✅ 159 connectors · STIX 2.1 ORM · Ingest/export pipelines · Kafka telemetry ingestion</li>
+        <li>✅ HuntGNAT: STIX → Sigma/YARA/Suricata/Snort · Hunt packages · ATT&CK coverage</li>
+        <li>✅ Attribution: Campaign tracking · Diamond Model · Kill-chain · Infrastructure classification</li>
+        <li>✅ AI agents (Claude/OpenAI/Grok/Gemini) · TAXII 2.1 · Policy RBAC · 5,100+ tests</li>
+        <li>✅ Terminal UI (Textual) · Web Dashboard (FastAPI) · Docker (core + search + monitoring)</li>
+        <li>✅ Migrations (Alembic) · Plugin system (HookBus) · Workflows (DAG engine) · Multi-tenant</li>
+        <li>✅ Health monitoring · Capability reflection · XSOAR codegen · Upstream contributions</li>
+        <li>✅ Data lineage · Analyst metrics · Review queue · Phase 4 safety (ExecutionContext, domain boundaries, hypothesis engine, agent governor, HITL)</li>
+      </ul>
+    </section>
+
+    <!-- CLOSING -->
+    <section data-background="#1a1a1a">
+      <h1><span class="accent">GNAT</span></h1>
+      <h3>One library. Every platform. Total control.</h3>
+      <p style="font-size: 0.9em; margin-top: 2em;">
+        Version 1.9.0 • Python 3.9+ • Apache 2.0<br/>
+        159 connectors • STIX 2.1 • AI-assisted • Threat intel made simple
+      </p>
+      <p style="font-size: 0.75em; color: #9e9e9e; margin-top: 2em;">
+        GitHub: wrhalpin/GNAT · Docs: wrhalpin.github.io/GNAT · Read: EXAMPLES.md, IMPLEMENTATION_PLAN.md, README.md
+      </p>
+    </section>
+
   </div>
 </div>
 
