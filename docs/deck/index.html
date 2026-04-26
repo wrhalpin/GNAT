@@ -307,30 +307,58 @@
       </div>
     </section>
 
-    <!-- 7. The GNAT-o-sphere -->
+    <!-- 7. The GNAT-o-sphere: Addons -->
     <section class="has-accent" data-background-color="#1A1A1A">
       <h2>The GNAT-o-sphere</h2>
-      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:.6rem;">
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem;">
+        GNAT is the hub. Each addon plugs in, ingests STIX objects from GNAT, and writes enriched objects back.
+      </p>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
         <div class="card card-sand">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
+          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon · sandbox</span>
           <h3>SandGNAT</h3>
-          <p>Automated malware sandbox — detonate binaries in isolated VMs, capture behavioral artifacts, emit STIX 2.1 objects.</p>
+          <p>Detonates binaries and URLs in isolated VMs. Captures memory, process trees, network IOCs, and mutexes — emits enriched STIX 2.1 objects back to GNAT.</p>
         </div>
         <div class="card card-red">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
+          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon · red team</span>
           <h3>RedGNAT</h3>
-          <p>Continuous adversary emulation — ingest threat intel, construct scenarios, execute with safety controls.</p>
+          <p>Continuous adversary emulation — pulls TTPs from GNAT threat intel, constructs ATT&amp;CK-mapped scenarios, and executes them with safety controls and coverage reporting.</p>
         </div>
         <div class="card card-sense">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
+          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon · network</span>
           <h3>SenseGNAT</h3>
-          <p>Network behavior analysis — Kafka telemetry, Redis dedup, anomaly detection, campaign auto-link.</p>
+          <p>High-volume sensor and honeypot telemetry via Kafka. Redis dedup, behavioral profiling, anomaly detection, and campaign auto-linking back into GNAT context.</p>
         </div>
-        <div class="card card-gui">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Web App</span>
-          <h3>GNAT-gui</h3>
-          <p>Browser analyst workbench — investigation graphs, gap analysis, report drafting, live job streaming.</p>
+      </div>
+    </section>
+
+    <!-- 7b. GNAT-gui + ecosystem glue -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>GNAT-gui &amp; Ecosystem Glue</h2>
+      <div class="two-col" style="margin-top:.6rem;">
+        <div>
+          <div class="card card-gui" style="margin-bottom:.75rem;">
+            <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Web App</span>
+            <h3>GNAT-gui</h3>
+            <p>Browser analyst workbench — investigation graphs, gap analysis, rule coverage, report drafting, and live job streaming across the full ecosystem.</p>
+          </div>
         </div>
+        <div>
+          <div class="col-head">How the pieces connect</div>
+          <ul>
+            <li>All addons share GNAT's STIX 2.1 object model — no conversion needed</li>
+            <li>SandGNAT artifacts auto-promote to campaigns in GNAT attribution</li>
+            <li>RedGNAT coverage gaps drive SenseGNAT sensor tuning</li>
+            <li>GNAT-gui surfaces the full graph: indicators → campaigns → reports</li>
+            <li>Single config file spans all components; one Python package per addon</li>
+          </ul>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:.8rem;font-size:.78rem;color:var(--muted);">
+        <a href="https://wrhalpin.github.io/GNAT/" style="color:var(--brand);">wrhalpin.github.io/GNAT</a> ·
+        <a href="https://wrhalpin.github.io/SandGNAT/" style="color:var(--sand);">SandGNAT</a> ·
+        <a href="https://wrhalpin.github.io/SenseGNAT/" style="color:var(--sense);">SenseGNAT</a> ·
+        <a href="https://wrhalpin.github.io/RedGNAT/" style="color:var(--red);">RedGNAT</a>
       </div>
     </section>
 

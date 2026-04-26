@@ -31,6 +31,8 @@ reference, explanation). Rendered at
 
 **Ecosystem:** [SandGNAT](https://github.com/wrhalpin/SandGNAT) · [RedGNAT](https://github.com/wrhalpin/RedGNAT) · [GNAT-gui](https://github.com/wrhalpin/GNAT-gui)
 
+**Live presentation:** [wrhalpin.github.io/GNAT/deck/](https://wrhalpin.github.io/GNAT/deck/) — platform overview, architecture, and ecosystem map (Reveal.js)
+
 ---
 
 ## Table of Contents
