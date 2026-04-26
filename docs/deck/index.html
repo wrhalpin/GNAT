@@ -155,6 +155,61 @@
       </ul>
     </section>
 
+    <!-- ANALYSIS & ENRICHMENT SECTION (Slides 12-16) -->
+    <section data-background="#1a1a1a">
+      <h2>AI Agents</h2>
+      <p style="font-size: 0.85em;">Multi-LLM threat research with human-in-the-loop confidence gating</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>LLMClient</strong> — Unified facade for Claude, OpenAI, Grok (xAI), Gemini. Automatic provider fallback on errors/rate limits. Configured via [claude] [openai] [grok] [gemini] INI sections.</li>
+        <li><strong>ResearchAgent (SourceReader):</strong> Topic-driven research synthesis (e.g., "Lazarus Group infrastructure 2024"). Feed-driven monitoring of threat sources.</li>
+        <li><strong>ParsingAgent (RecordMapper):</strong> Extract structured STIX from unstructured text (reports, tweets, emails). All output capped at confidence ≤60, tagged x_source_type=ai_extracted.</li>
+        <li><strong>AI Trust Model:</strong> confidence_ceiling=60 (default, configurable) prevents AI intel from reaching EDLs without analyst review. Export pipelines default to ConfidenceFilter(min=70), excluding AI intel until promoted.</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Natural Language Queries</h2>
+      <p style="font-size: 0.9em;">Query threat intel using plain English. Two backends, same QuerySpec output</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>BuiltinParser:</strong> Rule-based extraction — zero extra dependencies. Regex + keyword rules extract entities, IOC types, time ranges, platform filters.</li>
+        <li><strong>ClaudeParser:</strong> Claude API structured extraction. Returns same QuerySpec as builtin. Configured via [nlp] backend=claude.</li>
+        <li><strong>Usage:</strong> <code>gnat nlq "Get all IPs associated with Lazarus in last 30 days"</code> → dispatched to all configured connectors</li>
+        <li><strong>QuerySpec output:</strong> entities, ioc_types, since, until, platforms, limit</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Research Library</h2>
+      <p style="font-size: 0.85em;">Three-tier analyst knowledge base with TTL enforcement</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Personal Workspaces:</strong> Analyst-owned, active investigation. Isolated per analyst.</li>
+        <li><strong>Staging (_gnat_staging):</strong> <code>lib.promote(ws, topic, researcher, note='...')</code> — anyone can write, nothing auto-promotes. Manual review gate.</li>
+        <li><strong>Library (_gnat_library):</strong> Curated, read-only to analysts. CurationJob every 4h. Deduplication, TTL enforcement: indicators 24h, vulnerabilities 72h, campaigns 14d, actors 30d, other 7d.</li>
+        <li><strong>Workflow:</strong> Analyst checks <code>lib.is_fresh("APT29")</code> → ResearchAgent if stale → manual review → promotes to staging with note → CurationJob to library</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Automated Report Generation</h2>
+      <p style="font-size: 0.85em;">Multi-audience, multi-format report production</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Daily Intel:</strong> 06:00 daily. PDF/HTML/Markdown. Audience: SOC analysts, shift handoff. Assisted AI mode (claude backend).</li>
+        <li><strong>Trends:</strong> Weekly. PDF/HTML. Audience: team leads, analysts. Assisted AI mode.</li>
+        <li><strong>Yearly Intel:</strong> Annual/manual. PDF/DOCX. Audience: management, compliance. Full AI mode (comprehensive synthesis).</li>
+        <li><strong>Pipeline:</strong> DataAggregator (no AI) → ReportSynthesizer (one LLM call per section) → Renderers (MD/HTML/PDF/DOCX) → Delivery (Email + SharePoint)</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Data Lineage & Analyst Metrics</h2>
+      <p style="font-size: 0.85em;">Append-only audit trail + ring-buffer aggregation</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Data Lineage (gnat.lineage):</strong> Append-only event log (INGESTED, ENRICHED, NORMALIZED, LINKED, EXPORTED, REPORTED, DELETED). UUID4 id, timestamp, object_id, actor, source, metadata (immutable). SQLAlchemy-backed lineage_events table.</li>
+        <li><strong>Analyst Metrics (gnat.metrics):</strong> Thread-safe ring-buffer. 9 metric types: INVESTIGATION_CREATED/CLOSED, ENRICHMENT_ATTEMPTED/SUCCESS, REPORT_PUBLISHED, GAP_DETECTED, FALSE_POSITIVE_FLAGGED, ANALYST_OVERRIDE, INTEL_PROMOTED.</li>
+        <li><strong>Queries:</strong> investigation_summary(days) → status breakdown + close rate. enrichment_effectiveness(platform, days) → hit rate + avg confidence. gap_frequency(days). false_positive_rate(days).</li>
+      </ul>
+    </section>
+
   </div>
 </div>
 
