@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GNAT — 33-Slide Presentation</title>
+  <title>GNAT — 37-Slide Presentation</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css">
   <style>
@@ -16,22 +16,19 @@
     .accent { color: #c41e2a; }
     .reveal p { color: #e0e0e0; }
     .reveal li { color: #e0e0e0; }
-    .slides { background: #1a1a1a; }
   </style>
 </head>
 <body>
-
 <div class="reveal">
   <div class="slides">
 
-    <!-- SLIDE 1: Title -->
+    <!-- FOUNDATION SECTION (Slides 1-5) -->
     <section data-background="#1a1a1a">
       <h1><span class="accent">GNAT</span></h1>
       <h3>Cyber Threat Intel Made Simple</h3>
       <p>v1.9.0 • 159 Connectors • STIX 2.1 • Python 3.9+</p>
     </section>
 
-    <!-- SLIDE 2: Problem -->
     <section data-background="#1a1a1a">
       <h2>The Problem</h2>
       <p>Every platform is an island</p>
@@ -43,7 +40,6 @@
       </ul>
     </section>
 
-    <!-- SLIDE 3: Solution -->
     <section data-background="#1a1a1a">
       <h2>The Solution</h2>
       <p>One Library. Every Platform.</p>
@@ -56,7 +52,6 @@
       </ul>
     </section>
 
-    <!-- SLIDE 4: The Abstraction Advantage -->
     <section data-background="#1a1a1a">
       <h2>The Abstraction Advantage</h2>
       <ul style="font-size: 0.8em;">
@@ -69,7 +64,6 @@
       </ul>
     </section>
 
-    <!-- SLIDE 5: Architecture -->
     <section data-background="#1a1a1a">
       <h2>Core Architecture</h2>
       <p style="font-size: 0.8em;">
@@ -85,317 +79,392 @@
       </p>
     </section>
 
-    <!-- SLIDE 6: 159 Connectors -->
+    <!-- DATA & CONNECTORS SECTION (Slides 6-8) -->
     <section data-background="#1a1a1a">
       <h2>159 Platform Connectors</h2>
       <p style="font-size: 0.75em;">
-        Commercial TI • Dark Web/Cybercrime • Public Feeds • SIEM/Analytics • SOAR/DFIR • NDR/OT<br/>
-        Endpoint/XDR/MDR • Vulnerability Mgmt • Cloud/ASM • Identity/Email • Sandbox/BAS • AI/OSINT
+        <strong>Categories:</strong> Commercial TI • Dark Web/Cybercrime • Public Feeds • SIEM/Analytics • SOAR/DFIR • NDR/OT • Endpoint/XDR/MDR • Vulnerability Mgmt • Cloud/ASM • Identity/Email • Sandbox/BAS • AI/OSINT
       </p>
-      <p style="font-size: 0.75em; color: #9e9e9e;">
-        ThreatQ • CrowdStrike • Recorded Future • VirusTotal • Splunk • Elastic • QRadar • Sentinel • ... and 151 more
+      <p style="font-size: 0.8em; color: #9e9e9e; margin-top: 1em;">
+        Examples: ThreatQ • CrowdStrike • Recorded Future • VirusTotal • Splunk • Elastic • QRadar • Microsoft Sentinel • ... and 151 more
+      </p>
+      <p style="font-size: 0.7em; color: #9e9e9e; margin-top: 1em;">
+        <strong>Unified contract:</strong> Every connector implements authenticate() • health_check() • get/list/upsert/delete_object() • to_stix() • from_stix()
       </p>
     </section>
 
-    <!-- SLIDE 7: STIX 2.1 ORM -->
     <section data-background="#1a1a1a">
       <h2>STIX 2.1 ORM</h2>
-      <p>Universal data contract across all connectors:</p>
-      <ul style="font-size: 0.85em;">
-        <li><strong>Indicator</strong> - IOCs with STIX patterns</li>
-        <li><strong>ThreatActor</strong> - Actor profiles and attribution</li>
-        <li><strong>Vulnerability</strong> - CVEs with CVSS scores</li>
-        <li><strong>AttackPattern</strong> - MITRE ATT&CK TTPs</li>
-        <li><strong>Malware</strong> - Families and capabilities</li>
-        <li><strong>Relationship</strong> - Bidirectional links</li>
+      <p>Universal data contract — normalize all platforms into same object types</p>
+      <ul style="font-size: 0.85em; margin-top: 1.2em;">
+        <li><strong>Indicator</strong> — IOCs with STIX patterns: [ipv4-addr:value = '...']</li>
+        <li><strong>ThreatActor</strong> — Profiles, aliases, motivation, attribution</li>
+        <li><strong>Vulnerability</strong> — CVEs, CVSS scores, exploited flag, products</li>
+        <li><strong>AttackPattern</strong> — MITRE ATT&CK TTPs with tactic mapping</li>
+        <li><strong>Malware</strong> — Families, capabilities, kill-chain</li>
+        <li><strong>Relationship</strong> — Bidirectional links (indicates, uses, targets)</li>
       </ul>
     </section>
 
-    <!-- SLIDE 8: Pipelines -->
     <section data-background="#1a1a1a">
-      <h2>Ingest & Export Pipelines</h2>
-      <p><strong>Ingest:</strong> 14 readers (CSV, JSON, STIX, TAXII, Splunk, Elastic...) × 12 mappers</p>
-      <p><strong>Export:</strong> TypeFilter, ConfidenceFilter, TLPFilter, SectorFilter → EDL/CE/STIX/CSV</p>
-      <p style="font-size: 0.8em; color: #9e9e9e;">
-        Real example: ThreatQ → GNAT → Netskope CE → Firewall EDLs (every 15 min)
-      </p>
-    </section>
-
-    <!-- SLIDE 9: Scheduling -->
-    <section data-background="#1a1a1a">
-      <h2>Scheduling</h2>
-      <p>FeedScheduler: One scheduler for all job types</p>
-      <ul style="font-size: 0.85em;">
-        <li>ExportJob - Scheduled EDL/CE exports</li>
-        <li>ReportJob - PDF/DOCX/HTML reports</li>
-        <li>CurationJob - Research library dedup/TTL</li>
-        <li>HealthCheckJob - Connector health monitoring</li>
+      <h2>Unified Interface Contract</h2>
+      <p style="font-size: 0.9em;">Same method signature across all 159 connectors:</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><code>authenticate()</code> — OAuth2, API key, Basic, mTLS, etc.</li>
+        <li><code>health_check()</code> — Lightweight ping + status</li>
+        <li><code>get_object(stix_id)</code> — Fetch one object</li>
+        <li><code>list_objects(stix_type, limit, offset)</code> — Paginated results</li>
+        <li><code>upsert_object(stix_obj)</code> — Create or update</li>
+        <li><code>delete_object(stix_id)</code> — Soft or hard delete</li>
+        <li><code>to_stix(native_obj)</code> — Platform → STIX</li>
+        <li><code>from_stix(stix_obj)</code> — STIX → platform format</li>
       </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Drift-corrected timing • Overlap protection • On-success/failure hooks</p>
     </section>
 
-    <!-- SLIDE 10: AI Agents -->
+    <!-- PIPELINES & ORCHESTRATION SECTION (Slides 9-11) -->
+    <section data-background="#1a1a1a">
+      <h2>Ingest Pipeline</h2>
+      <p style="font-size: 0.85em;"><strong>SourceReader</strong> (14 types) → <strong>RecordMapper</strong> (12 types) → <strong>Workspace</strong></p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Readers:</strong> PlainText, CSV, JSON, JSONL, STIX Bundle, TAXII, SQL, MISP, Syslog, RSS, Email, OpenIOC, Splunk, Elastic, Kafka</li>
+        <li><strong>Mappers:</strong> FlatIOC, STIXPassthrough, MISP, CEF, SQLRow, CSV, RSSEntry, Email, OpenIOC, Splunk, Elastic, NVD CVE, Telemetry</li>
+        <li><strong>Processing:</strong> Deduplication, confidence scoring, x_target_sectors normalization, TTL tracking</li>
+        <li><strong>Output:</strong> STIX objects → Workspace (SQLite/Postgres/FlatFile)</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Export Pipeline</h2>
+      <p style="font-size: 0.85em;"><strong>Workspace</strong> → <strong>ExportFilter</strong> → <strong>ExportTransform</strong> → <strong>Delivery</strong></p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Filters:</strong> TypeFilter (indicator|malware|campaign...), ConfidenceFilter (min/max %), TLPFilter (WHITE|GREEN|AMBER|RED), SectorFilter, IOCTypeFilter, LimitFilter</li>
+        <li><strong>Transforms:</strong> EDLTransform (IP/domain/hash lists), NetskopeCETransform (tenant format), STIXBundle, CSV</li>
+        <li><strong>Delivery:</strong> FileDelivery (disk), EDLServer (HTTP), PlatformDelivery (write back to connectors), MultiDelivery (parallel)</li>
+        <li><strong>Real example:</strong> ThreatQ → GNAT → Netskope CE (FQDN+URL+SHA256 every 15 min) → Firewall EDLs</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Scheduling & Job Orchestration</h2>
+      <p style="font-size: 0.85em;"><strong>FeedScheduler</strong> — unified thread-safe scheduler for all job types</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Job Types:</strong> ExportJob (EDL/CE delivery), ReportJob (PDF/DOCX/HTML), CurationJob (library dedup), HealthCheckJob (connector monitoring), custom jobs</li>
+        <li><strong>Guarantees:</strong> Drift-corrected timing (hourly jobs stay hourly even if run takes 5min), overlap protection (skip or queue policy), on-success/on-failure hooks</li>
+        <li><strong>Adapters:</strong> APScheduler/Celery bridges for external schedulers, <code>to_cron_lines()</code> for crontab export</li>
+        <li><strong>CLI:</strong> <code>FeedScheduler.summary()</code> → single view of all running/queued/failed jobs</li>
+      </ul>
+    </section>
+
+    <!-- ANALYSIS & ENRICHMENT SECTION (Slides 12-16) -->
     <section data-background="#1a1a1a">
       <h2>AI Agents</h2>
-      <p>Multi-LLM threat research with human-in-the-loop</p>
-      <ul style="font-size: 0.85em;">
-        <li><strong>LLMClient</strong> - Claude, OpenAI, Grok, Gemini (auto-fallback)</li>
-        <li><strong>ResearchAgent</strong> - Topic-driven threat intel synthesis</li>
-        <li><strong>ParsingAgent</strong> - Extract STIX from unstructured text</li>
-        <li><strong>AI Confidence Ceiling</strong> - Default 60 (HITL gate before EDL export)</li>
+      <p style="font-size: 0.85em;">Multi-LLM threat research with human-in-the-loop confidence gating</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>LLMClient</strong> — Unified facade for Claude, OpenAI, Grok (xAI), Gemini. Automatic provider fallback on errors/rate limits. Configured via [claude] [openai] [grok] [gemini] INI sections.</li>
+        <li><strong>ResearchAgent (SourceReader):</strong> Topic-driven research synthesis (e.g., "Lazarus Group infrastructure 2024"). Feed-driven monitoring of threat sources.</li>
+        <li><strong>ParsingAgent (RecordMapper):</strong> Extract structured STIX from unstructured text (reports, tweets, emails). All output capped at confidence ≤60, tagged x_source_type=ai_extracted.</li>
+        <li><strong>AI Trust Model:</strong> confidence_ceiling=60 (default, configurable) prevents AI intel from reaching EDLs without analyst review. Export pipelines default to ConfidenceFilter(min=70), excluding AI intel until promoted.</li>
       </ul>
     </section>
 
-    <!-- SLIDE 11: Natural Language Queries -->
     <section data-background="#1a1a1a">
       <h2>Natural Language Queries</h2>
-      <p style="font-size: 0.9em;">Two backends, same QuerySpec output</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>BuiltinParser</strong> - Rule-based extraction (zero deps)</li>
-        <li><strong>ClaudeParser</strong> - Claude API structured extraction</li>
+      <p style="font-size: 0.9em;">Query threat intel using plain English. Two backends, same QuerySpec output</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>BuiltinParser:</strong> Rule-based extraction — zero extra dependencies. Regex + keyword rules extract entities, IOC types, time ranges, platform filters.</li>
+        <li><strong>ClaudeParser:</strong> Claude API structured extraction. Returns same QuerySpec as builtin. Configured via [nlp] backend=claude.</li>
+        <li><strong>Usage:</strong> <code>gnat nlq "Get all IPs associated with Lazarus in last 30 days"</code> → dispatched to all configured connectors</li>
+        <li><strong>QuerySpec output:</strong> entities, ioc_types, since, until, platforms, limit</li>
       </ul>
-      <p style="font-size: 0.75em; margin-top: 1em;">
-        <code>gnat nlq "Get all IPs associated with Lazarus in the last 30 days"</code>
-      </p>
     </section>
 
-    <!-- SLIDE 12: Research Library -->
     <section data-background="#1a1a1a">
       <h2>Research Library</h2>
-      <p>Three-tier analyst knowledge base</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Personal Workspaces</strong> - Analyst-owned, active investigation</li>
-        <li><strong>Staging</strong> - Anyone can write, nothing auto-promotes</li>
-        <li><strong>Library</strong> - Curated, read-only, TTL-enforced (24h indicators, 30d actors, 14d campaigns)</li>
+      <p style="font-size: 0.85em;">Three-tier analyst knowledge base with TTL enforcement</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Personal Workspaces:</strong> Analyst-owned, active investigation. Isolated per analyst.</li>
+        <li><strong>Staging (_gnat_staging):</strong> <code>lib.promote(ws, topic, researcher, note='...')</code> — anyone can write, nothing auto-promotes. Manual review gate.</li>
+        <li><strong>Library (_gnat_library):</strong> Curated, read-only to analysts. CurationJob every 4h. Deduplication, TTL enforcement: indicators 24h, vulnerabilities 72h, campaigns 14d, actors 30d, other 7d.</li>
+        <li><strong>Workflow:</strong> Analyst checks <code>lib.is_fresh("APT29")</code> → ResearchAgent if stale → manual review → promotes to staging with note → CurationJob to library</li>
       </ul>
     </section>
 
-    <!-- SLIDE 13: Automated Reports -->
     <section data-background="#1a1a1a">
       <h2>Automated Report Generation</h2>
-      <ul style="font-size: 0.85em;">
-        <li><strong>Daily Intel</strong> - 06:00 daily, PDF/HTML/MD for SOC handoff</li>
-        <li><strong>Trends</strong> - Weekly for team leads</li>
-        <li><strong>Yearly Intel</strong> - Annual/manual for management</li>
-      </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Pipeline: DataAggregator → ReportSynthesizer → Renderers → Email/SharePoint</p>
-    </section>
-
-    <!-- SLIDE 14: Sector Targeting -->
-    <section data-background="#1a1a1a">
-      <h2>Sector Targeting Intelligence</h2>
-      <p><code>x_target_sectors</code> - Normalized across all 159 connectors</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>any</strong> (default) - Match at least one listed sector</li>
-        <li><strong>all</strong> - Require all sectors present (strict mode)</li>
-        <li><strong>strict=True</strong> - Exclude untagged objects</li>
-      </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Sector aliases expand: 'healthcare' matches 'Health', 'Medical', 'H-ISAC'</p>
-    </section>
-
-    <!-- SLIDE 15: Solr Search -->
-    <section data-background="#1a1a1a">
-      <h2>Search Sidecar</h2>
-      <p>Full-text search across all 159 connectors simultaneously</p>
-      <ul style="font-size: 0.85em;">
-        <li><strong>GNATIndexer</strong> - Batch indexing to Solr 9.x</li>
-        <li><strong>SearchMixin</strong> - Auto-index on upsert_object()</li>
-        <li><strong>Pipeline & Library Patch</strong> - Ingest and library integration</li>
-        <li><strong>Grafana Dashboards</strong> - Metrics and analytics</li>
+      <p style="font-size: 0.85em;">Multi-audience, multi-format report production</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Daily Intel:</strong> 06:00 daily. PDF/HTML/Markdown. Audience: SOC analysts, shift handoff. Assisted AI mode (claude backend).</li>
+        <li><strong>Trends:</strong> Weekly. PDF/HTML. Audience: team leads, analysts. Assisted AI mode.</li>
+        <li><strong>Yearly Intel:</strong> Annual/manual. PDF/DOCX. Audience: management, compliance. Full AI mode (comprehensive synthesis).</li>
+        <li><strong>Pipeline:</strong> DataAggregator (no AI) → ReportSynthesizer (one LLM call per section) → Renderers (MD/HTML/PDF/DOCX) → Delivery (Email + SharePoint)</li>
       </ul>
     </section>
 
-    <!-- SLIDE 16: TAXII 2.1 Server -->
-    <section data-background="#1a1a1a">
-      <h2>TAXII 2.1 Server & STIX Validator</h2>
-      <ul style="font-size: 0.75em;">
-        <li><strong>TAXII 2.1 Server</strong> - Full read/write protocol, each workspace as collection</li>
-        <li><strong>STIX Pattern Validator</strong> - Two-tier: pure-Python + stix2-patterns ANTLR</li>
-      </ul>
-      <p style="font-size: 0.7em; margin-top: 1em;">
-        <code>gnat taxii --port 8090 --api-key s3cr3t</code><br/>
-        <code>validate_pattern("[ipv4-addr:value = '1.2.3.4']")</code>
-      </p>
-    </section>
-
-    <!-- SLIDE 17: Health & Capability Reflection -->
-    <section data-background="#1a1a1a">
-      <h2>Health Monitoring & Capability Reflection</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Capability Reflection</strong> - Introspect connector methods at runtime</li>
-        <li><strong>ConnectorHealthJob</strong> - Periodic health checks + field drift detection</li>
-        <li><strong>Schema Snapshot</strong> - Field fingerprint tracking</li>
-        <li><strong>DriftReport</strong> - Alert when schema changes >20%</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 18: TUI & Web Dashboard -->
-    <section data-background="#1a1a1a">
-      <h2>Terminal UI & Web Dashboard</h2>
-      <p><strong>Terminal UI (Textual)</strong> - Works over SSH</p>
-      <p style="font-size: 0.8em;">F1 Query • F2 Library • F3 Scheduler • F4 Reports • F5 Investigations • F6 Review</p>
-      <p style="margin-top: 1em;"><strong>Web Dashboard (FastAPI)</strong> - Browser-based with X-Api-Key auth</p>
-      <p style="font-size: 0.8em;">/api/library • /api/reports • /api/scheduler • /health</p>
-    </section>
-
-    <!-- SLIDE 19: XSOAR Codegen -->
-    <section data-background="#1a1a1a">
-      <h2>XSOAR Content Pack Generator</h2>
-      <p>Auto-generate XSOAR 6 content packs from connector introspection</p>
-      <ul style="font-size: 0.8em;">
-        <li><code>gnat codegen xsoar --connector threatq --output ./packs/</code></li>
-        <li><code>gnat codegen openapi --spec api.yaml --ai</code> (Claude-powered)</li>
-        <li><code>gnat codegen tests --connector crowdstrike</code></li>
-      </ul>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Upstream contribution pipeline with 7-step compliance gate</p>
-    </section>
-
-    <!-- SLIDE 20: Docker -->
-    <section data-background="#1a1a1a">
-      <h2>Docker Containerization</h2>
-      <p>Production stack: docker-compose.yml</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>gnat-scheduler</strong> - FeedScheduler</li>
-        <li><strong>gnat-edl :8080</strong> - EDL server</li>
-        <li><strong>gnat-monitor :8090</strong> - Health endpoint</li>
-        <li><strong>solr :8983</strong> - Search sidecar (--profile search)</li>
-        <li><strong>grafana :3000</strong> - Dashboards (--profile monitoring)</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 21: Multi-Tenant -->
-    <section data-background="#1a1a1a">
-      <h2>Multi-Tenant Workspace Isolation</h2>
-      <p>Transparent namespace prefixing, no schema migration</p>
-      <p style="font-size: 0.8em;">
-        <code>manager.for_tenant("acme").create("apt28-investigation")</code><br/>
-        → stored as: <code>"acme::apt28-investigation"</code>
-      </p>
-      <p style="font-size: 0.75em; color: #9e9e9e;">Works with SQLite and FlatFile stores. CLI: gnat tenant list/create/delete</p>
-    </section>
-
-    <!-- SLIDE 22: Deployment -->
-    <section data-background="#1a1a1a">
-      <h2>Deployment: Single Azure VM</h2>
-      <p><strong>Azure B2s</strong></p>
-      <ul style="font-size: 0.8em;">
-        <li>gnat-scheduler.service - FeedScheduler</li>
-        <li>gnat-edl.service :8080 - EDL server</li>
-        <li>gnat-health.service :8090 - Health checks</li>
-      </ul>
-      <p style="margin-top: 1em; font-size: 0.8em;"><strong>Scale-out:</strong> 100+ feeds → Container Instances • 10+ analysts → PostgreSQL • Multi-tenant → shared codebase</p>
-    </section>
-
-    <!-- SLIDE 23: Migrations & Plugins -->
-    <section data-background="#1a1a1a">
-      <h2>Database Migrations & Plugin System</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>Alembic</strong> - 0001_init_all_tables, 0002_add_lineage_events, 0003_add_metrics_events</li>
-        <li><strong>Plugin System</strong> - GNATPlugin ABC, HookBus pub/sub, PluginRegistry, entry_points discovery</li>
-        <li><strong>14 Built-in Hook Events</strong> - on_object_ingested, on_report_published, etc.</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 24: RBAC & Validator -->
-    <section data-background="#1a1a1a">
-      <h2>Policy Engine (RBAC) & STIX Validator</h2>
-      <p><strong>Roles:</strong> VIEWER • ANALYST • OPERATOR • ADMIN</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>STIXObjectValidator</strong> - 19 SDO types, 16 SCO types, 2 SRO types</li>
-        <li><strong>Audit Middleware</strong> - Every API request logged</li>
-        <li><strong>Permission Matrix</strong> - Orthogonal to TLP labels</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 25: Workflows -->
-    <section data-background="#1a1a1a">
-      <h2>Agent Orchestration - Workflow DAG Engine</h2>
-      <p>Sequential DAG executor with success/failure routing</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>WorkflowStep</strong> - name, fn, on_success, on_failure</li>
-        <li><strong>Built-in:</strong> enrich_step, correlate_step, gap_detect_step, draft_report_step, transition_step</li>
-        <li><strong>Pre-built Workflows:</strong> PhishingTriage, IncidentResponse</li>
-      </ul>
-    </section>
-
-    <!-- SLIDE 26: Lineage & Metrics -->
     <section data-background="#1a1a1a">
       <h2>Data Lineage & Analyst Metrics</h2>
-      <p><strong>Data Lineage:</strong> Append-only event log (INGESTED, ENRICHED, NORMALIZED, LINKED, EXPORTED, REPORTED, DELETED)</p>
-      <p><strong>Analyst Metrics:</strong> Ring-buffer with 9 metric types</p>
-      <p style="font-size: 0.75em;">investigation_summary(days) • enrichment_effectiveness(platform, days) • gap_frequency(days) • false_positive_rate(days)</p>
+      <p style="font-size: 0.85em;">Append-only audit trail + ring-buffer aggregation</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Data Lineage (gnat.lineage):</strong> Append-only event log (INGESTED, ENRICHED, NORMALIZED, LINKED, EXPORTED, REPORTED, DELETED). UUID4 id, timestamp, object_id, actor, source, metadata (immutable). SQLAlchemy-backed lineage_events table.</li>
+        <li><strong>Analyst Metrics (gnat.metrics):</strong> Thread-safe ring-buffer. 9 metric types: INVESTIGATION_CREATED/CLOSED, ENRICHMENT_ATTEMPTED/SUCCESS, REPORT_PUBLISHED, GAP_DETECTED, FALSE_POSITIVE_FLAGGED, ANALYST_OVERRIDE, INTEL_PROMOTED.</li>
+        <li><strong>Queries:</strong> investigation_summary(days) → status breakdown + close rate. enrichment_effectiveness(platform, days) → hit rate + avg confidence. gap_frequency(days). false_positive_rate(days).</li>
+      </ul>
     </section>
 
-    <!-- SLIDE 27: Review Queue -->
+    <!-- OPERATIONS & VISIBILITY SECTION (Slides 17-21) -->
+    <section data-background="#1a1a1a">
+      <h2>Search Sidecar</h2>
+      <p style="font-size: 0.85em;">Solr 9.x full-text search across all 159 connectors simultaneously</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>GNATIndexer:</strong> Add/update/delete Solr documents. Batch indexing with configurable batch_size. Field-mapped from STIX objects (type, value, confidence, x_target_sectors, tlp, source, timestamp).</li>
+        <li><strong>SearchMixin:</strong> Drop-in connector mixin. Auto-indexes on upsert_object() calls. Zero code change to existing connectors.</li>
+        <li><strong>Pipeline Patch:</strong> Routes ingest pipeline records through Solr indexer post-map.</li>
+        <li><strong>Library Patch:</strong> ResearchLibrary search-backed lookups. Cross-source correlation at query time.</li>
+        <li><strong>Config:</strong> [search] solr_url = http://localhost:8983/solr/gnat · enabled=true · batch_size=100</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>TAXII 2.1 Server</h2>
+      <p style="font-size: 0.85em;">Full read + write protocol. Each workspace exposed as TAXII collection</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Discovery:</strong> GET /taxii2/ → server metadata</li>
+        <li><strong>Collections:</strong> GET /taxii2/roots/gnat/collections/ → list all workspace collections</li>
+        <li><strong>Objects:</strong> GET /taxii2/.../objects/ (paginated bundle) · POST /taxii2/.../objects/ (ingest with WRITE_TAXII permission) · DELETE /taxii2/.../objects/{id} (soft-delete by STIX ID)</li>
+        <li><strong>Manifest:</strong> GET /taxii2/.../manifest/ → object metadata · GET /taxii2/.../objects/{oid}/versions/ → version history</li>
+        <li><strong>CLI:</strong> <code>gnat taxii --port 8090 --api-key s3cr3t</code> · TLP:AMBER + RED collections allow write · 56 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>STIX Pattern Validator</h2>
+      <p style="font-size: 0.85em;">Two-tier validation: pure-Python recursive descent + optional ANTLR grammar</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Tier 1 (always):</strong> Pure-Python recursive descent. Zero dependencies. Validates syntax and basic semantics.</li>
+        <li><strong>Tier 2 (optional):</strong> stix2-patterns ANTLR grammar. Full W3C STIX Pattern specification compliance. Requires <code>gnat[stix-validate]</code>.</li>
+        <li><strong>API:</strong> <code>from gnat.stix import validate_pattern, PatternValidationError</code> · <code>result = validate_pattern("[ipv4-addr:value = '1.2.3.4']")</code></li>
+        <li><strong>ORM opt-in:</strong> <code>Indicator(pattern="[domain-name:value = 'evil.com']", validate=True)</code></li>
+        <li><strong>CLI:</strong> <code>gnat validate pattern "[ipv4-addr:value = '1.2.3.4']"</code> · <code>gnat validate bundle indicators.json --strict</code></li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Health Monitoring</h2>
+      <p style="font-size: 0.85em;">ConnectorHealthJob + schema drift detection</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>ConnectorHealthJob (FeedJob subclass):</strong> Periodic health checks. Calls health_check() on all configured connectors. Samples list_objects(limit=1), stores field fingerprint.</li>
+        <li><strong>DriftReport:</strong> Alerts when changed fields exceed drift_threshold (default 20%). Slack webhook or email alerts on drift detection.</li>
+        <li><strong>Config [health_monitor]:</strong> enabled=true · interval_minutes=60 · alert_webhook=https://hooks.slack.com/... · drift_threshold=0.2</li>
+        <li><strong>CLI:</strong> <code>gnat health check</code> · <code>gnat health baseline</code> · 74 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Capability Reflection</h2>
+      <p style="font-size: 0.85em;">Runtime introspection of connector capabilities with guarded dispatch</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>capabilities():</strong> Returns [{name, signature, doc, type: 'auth|read|write|helper', platform_specific: bool}, ...]</li>
+        <li><strong>Guarded dispatch:</strong> <code>client.call("list_objects", stix_type="indicator")</code> — safe, reads only. <code>client.call("upsert", obj, allow_write=True)</code> — requires explicit allow_write flag.</li>
+        <li><strong>Use cases:</strong> Dynamic UI generation (which connectors support write?). Automated testing (are all methods implemented?). Validation (does this method exist?)</li>
+        <li><strong>CLI:</strong> <code>gnat client capabilities --platform threatq</code> · <code>gnat client call --platform splunk --method list_objects</code> · 31 unit tests</li>
+      </ul>
+    </section>
+
+    <!-- DASHBOARDS & UX SECTION (Slides 22-23) -->
+    <section data-background="#1a1a1a">
+      <h2>Terminal UI</h2>
+      <p style="font-size: 0.85em;">Works over SSH — no browser, no display server required. Modern TUI built on Textual</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>F1 Query:</strong> NLP search bar + scrollable STIX results table. Execute <code>gnat nlq "..."</code> in-place.</li>
+        <li><strong>F2 Library:</strong> Research Library browser. Promote (Ctrl+P) / reject (Ctrl+X) staging items. TTL visibility.</li>
+        <li><strong>F3 Scheduler:</strong> Live job status (running/queued/failed). Manual trigger with Ctrl+T. Next-run countdown.</li>
+        <li><strong>F4 Reports:</strong> PDF/HTML/DOCX browser. Open in browser (Ctrl+O). Export to disk (Ctrl+E).</li>
+        <li><strong>F5 Investigations:</strong> Investigation browser. Status transitions. Ctrl+N new, Ctrl+R refresh.</li>
+        <li><strong>F6 Review:</strong> AI Intel Review Queue. Approve/Reject/Modify with confidence override. Ctrl+A bulk approve.</li>
+        <li><strong>Launch:</strong> <code>gnat tui</code> · <code>gnat tui review</code> (start on review screen) · pip install "gnat[tui]" · 38 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Web Dashboard</h2>
+      <p style="font-size: 0.85em;">Browser-based dashboard for server deployments. X-Api-Key auth, rate-limited 100 req/min</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>REST API endpoints:</strong> GET/POST /api/library (research, promote, reject) · GET /api/reports (list, serve HTML inline) · GET/POST /api/scheduler/jobs (status, trigger) · GET /health (unauthenticated liveness)</li>
+        <li><strong>Single-page dashboard:</strong> GET / → dark theme, no build step. Live job monitoring, report browser, library search.</li>
+        <li><strong>Authentication:</strong> X-Api-Key header. Per-key role (VIEWER/ANALYST/OPERATOR/ADMIN) + permission enforcement.</li>
+        <li><strong>Launch:</strong> <code>gnat serve --port 8088 --api-key $(openssl rand -hex 16)</code> · Bind 127.0.0.1 by default · pip install "gnat[serve]" · 54 unit tests</li>
+      </ul>
+    </section>
+
+    <!-- ADVANCED FEATURES SECTION (Slides 24-29) -->
+    <section data-background="#1a1a1a">
+      <h2>XSOAR Content Pack Generator</h2>
+      <p style="font-size: 0.85em;">Auto-generate valid XSOAR 6 content packs from connector introspection</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>What it generates:</strong> pack_metadata.json · Integrations/<Name>/<Name>.yml (command defs) · Integrations/<Name>/<Name>.py (Python bridge) · ReleaseNotes/<ver>.md</li>
+        <li><strong>Intelligence:</strong> Write methods flagged dangerous=true · Auth type auto-detected from constructor · Full integration signature extraction</li>
+        <li><strong>Upstream Contribution Pipeline:</strong> Packages connector as draft GitHub PR through 7-step compliance gate: 1) opt-in guard 2) in CLIENT_REGISTRY 3) ComplianceMatrix (8 methods + tests) 4) test suite pass 5) branch:contribute/{platform}-{ts} 6) commit+push to fork 7) draft PR via GitHub API</li>
+        <li><strong>CLI:</strong> <code>gnat codegen xsoar --connector threatq --output ./packs/</code> · <code>gnat codegen openapi --spec api.yaml --ai</code> (Claude-powered) · <code>gnat codegen tests --connector crowdstrike</code></li>
+        <li><strong>Tests:</strong> 40 xsoar tests · 47 contribution pipeline tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Docker Containerization</h2>
+      <p style="font-size: 0.85em;">Production stack via docker-compose.yml with optional profile-based services</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Core services:</strong> gnat-scheduler (FeedScheduler, all ingest/export/AI jobs) · gnat-edl :8080 (EDL server, survives scheduler restart) · gnat-monitor :8090 (health endpoint, GET /status)</li>
+        <li><strong>Optional profiles:</strong> --profile search → solr :8983 (Solr search sidecar for full-text) · --profile monitoring → grafana :3000 (Solr + GNAT metrics dashboards)</li>
+        <li><strong>Volumes:</strong> Named volume gnat-workspace (persistent data) · .env.example → .env (credentials)</li>
+        <li><strong>Commands:</strong> <code>make docker-build</code> · <code>make docker-up</code> · <code>make docker-search</code> · <code>make docker-full</code> · <code>make docker-down</code></li>
+        <li><strong>Integration tests:</strong> Elasticsearch 8.13.4 + Solr 9.6 (non-conflicting ports 19200, 18983) · <code>make test-docker</code> (up → run → down)</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Multi-Tenant Workspace Isolation</h2>
+      <p style="font-size: 0.85em;">Transparent namespace prefixing — no schema migration — works with SQLite and FlatFile</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>API:</strong> <code>manager = WorkspaceManager.default()</code> · <code>acme = manager.for_tenant("acme")</code> · <code>ws = acme.create("apt28-investigation")</code> → stored as "acme::apt28-investigation" · <code>beta = manager.for_tenant("beta")</code> · <code>ws2 = beta.create("apt28-investigation")</code> → "beta::apt28-investigation" (no collision)</li>
+        <li><strong>TenantRegistry:</strong> Existing workspaces → "default" tenant · Per-tenant config_path in INI · list() scoped to tenant namespace</li>
+        <li><strong>Persistence:</strong> Works with SQLite, PostgreSQL, FlatFile backends. Config option GNAT_DB_URL → [database] INI → default.</li>
+        <li><strong>CLI:</strong> <code>gnat tenant list</code> · <code>gnat tenant create acme --display-name "Acme Corp" --config /etc/gnat/acme.ini</code> · <code>gnat tenant workspaces acme</code> · <code>gnat tenant delete acme --yes</code></li>
+        <li><strong>Tests:</strong> 63 unit tests</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Database Migrations</h2>
+      <p style="font-size: 0.85em;">Alembic 1.13 schema management. Zero runtime dependencies</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Migration files:</strong> 0001_init_all_tables (investigations, reports, workspaces, workspace_objects, enrichment_log, context_globals) · 0002_add_lineage_events (lineage_events table + composite index) · 0003_add_metrics_events (metrics_events table + index)</li>
+        <li><strong>CLI:</strong> <code>gnat-db upgrade head</code> (apply all) · <code>gnat-db current</code> (show revision) · <code>gnat-db history</code> (show migration history) · <code>gnat-db downgrade -1</code> (rollback)</li>
+        <li><strong>Configuration:</strong> GNAT_DB_URL env var → [database] INI section → default SQLite. get_combined_metadata() for Alembic auto-detect.</li>
+        <li><strong>Installation:</strong> pip install "gnat[migrations]"</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Plugin System</h2>
+      <p style="font-size: 0.85em;">Extensible architecture with entry_points discovery, filesystem scanning, HookBus pub/sub</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>GNATPlugin ABC:</strong> name, version, capabilities (list[PluginCapability]), register(registry) method</li>
+        <li><strong>PluginCapability enum:</strong> CONNECTOR, READER, MAPPER, AGENT, REPORTER, HOOK</li>
+        <li><strong>HookBus:</strong> Thread-safe pub/sub. 14 built-in KNOWN_EVENTS (on_object_ingested, on_enrichment_complete, on_report_published, etc.). Async handlers. Exceptions never propagate.</li>
+        <li><strong>PluginRegistry:</strong> load/unload/get/list · entry_points discovery · GNAT_PLUGIN_DIRS env var · [plugins] dirs = /opt/gnat/plugins INI section</li>
+        <li><strong>Use case:</strong> Custom connector? Write GNATPlugin + register(). Custom reporter? Implement Reporter capability. Custom data sink? Hook into on_object_ingested.</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Policy Engine (RBAC)</h2>
+      <p style="font-size: 0.85em;">Role-based access control orthogonal to TLP labels. Static permission matrix. FastAPI-native</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Roles:</strong> VIEWER (READ_OBJECTS, READ_REPORTS, QUERY_NLP) · ANALYST (+ WRITE_OBJECTS, ENRICH, PROMOTE_INTEL) · OPERATOR (+ MANAGE_SCHEDULES, WRITE_TAXII, EXPORT) · ADMIN (+ MANAGE_KEYS, MANAGE_TENANTS, all perms)</li>
+        <li><strong>STIX Object Validator:</strong> Validates required properties, vocabularies, confidence, refs, ID format. 19 SDO types (indicator, malware, campaign...) · 16 SCO types (ipv4-addr, domain-name, file...) · 2 SRO types (relationship, sighting) · 4 meta types (bundle, marking-definition...).</li>
+        <li><strong>Audit Middleware:</strong> Every API request emits api_request HookBus event + structured log (actor, endpoint, timestamp, result).</li>
+        <li><strong>FastAPI integration:</strong> <code>engine.require(Permission.WRITE_TAXII, key_store)</code> as Depends() guard</li>
+      </ul>
+    </section>
+
+    <!-- WORKFLOWS & SAFETY SECTION (Slides 30-32) -->
+    <section data-background="#1a1a1a">
+      <h2>Workflow DAG Engine</h2>
+      <p style="font-size: 0.85em;">Sequential DAG executor with success/failure routing, cycle detection, elapsed timing</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>WorkflowStep:</strong> name, fn (callable), on_success, on_failure. Optional routing based on step result.</li>
+        <li><strong>WorkflowContext:</strong> investigation, enriched_objects, gaps, draft, errors, metadata. Shared state across all steps.</li>
+        <li><strong>WorkflowResult:</strong> success, steps_run, errors, elapsed_ms. Full execution trace.</li>
+        <li><strong>Built-in step factories:</strong> enrich_step, correlate_step, gap_detect_step, draft_report_step, transition_step, fn_step</li>
+        <li><strong>Pre-built workflows:</strong> PhishingTriage (enrich → correlate → gap_detect → draft_report → transition(IN_PROGRESS)) · IncidentResponse (same but transition(REVIEW))</li>
+        <li><strong>Usage:</strong> <code>from gnat.agents.workflows.phishing_triage import build_phishing_triage_workflow</code> · <code>result = build_phishing_triage_workflow(...).execute(ctx)</code></li>
+      </ul>
+    </section>
+
     <section data-background="#1a1a1a">
       <h2>AI Intel Review Queue</h2>
-      <p>Human-in-the-loop gate: PENDING → APPROVED → PROMOTED</p>
-      <ul style="font-size: 0.8em;">
-        <li><strong>ReviewService:</strong> submit, approve, reject, modify, promote, bulk operations</li>
-        <li><strong>Interfaces:</strong> REST API, CLI, TUI (F6)</li>
-        <li><strong>Workflows:</strong> Confidence overrides, property modifications</li>
+      <p style="font-size: 0.85em;">Human-in-the-loop gate: PENDING → APPROVED → PROMOTED (or REJECTED / MODIFIED)</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>ReviewService methods:</strong> submit(stix_id, stix_type, stix_data) → PENDING · approve(id, reviewer, notes, confidence) → APPROVED + optional confidence override · reject(id, reviewer, reason) → REJECTED · modify(id, reviewer, modified_properties) → capture analyst overrides · promote(id, reviewer, workspace_manager) → merge overrides + x_source_type=analyst_verified · bulk_approve/reject(ids) · stats() → per-status breakdown</li>
+        <li><strong>REST API:</strong> GET /api/review (list) · POST /api/review (submit) · GET /api/review/{id} (detail) · POST /api/review/{id}/approve · POST /api/review/{id}/reject · POST /api/review/{id}/modify · POST /api/review/{id}/promote · GET /api/review/stats</li>
+        <li><strong>CLI:</strong> <code>gnat review list --status pending --type indicator</code> · <code>gnat review approve <id> --by alice --confidence 85</code> · <code>gnat review stats</code></li>
+        <li><strong>TUI:</strong> F6 ReviewScreen. Approve/Reject/Modify with confidence input. Ctrl+A bulk approve. Per-status counts.</li>
       </ul>
     </section>
 
-    <!-- SLIDE 28: Phase 4 Safety -->
     <section data-background="#1a1a1a">
-      <h2>Phase 4 - Control, Reasoning & Safety (v1.6)</h2>
-      <ul style="font-size: 0.75em;">
-        <li><strong>ExecutionContext</strong> - Every op stamped with context_id, domain, trust_level, workspace_id</li>
-        <li><strong>Domain Boundaries</strong> - Ingestion ↔ Analysis ↔ Investigation ↔ Reporting enforced</li>
-        <li><strong>HypothesisEngine</strong> - propose → evaluate → close with confidence weighting</li>
-        <li><strong>Connector Trust Model</strong> - 31 trusted_internal (0.9) • 61 semi_trusted (0.6) • 7 untrusted_external (0.3)</li>
-        <li><strong>AgentGovernor + HITL</strong> - All agent actions routed through permission matrix</li>
+      <h2>Phase 4 — Control, Reasoning & Safety (v1.6)</h2>
+      <p style="font-size: 0.85em;">ExecutionContext, domain boundaries, hypothesis engine, agent governor, HITL</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>ExecutionContext:</strong> Every operation stamped with context_id, domain, trust_level, workspace_id. Append-only execution_log (migration 0004). Full audit trail from connector call to report.</li>
+        <li><strong>Domain Boundaries:</strong> Ingestion ↔ Analysis ↔ Investigation ↔ Reporting enforced. @domain_boundary decorator raises DomainBoundaryViolation on illegal cross-domain calls.</li>
+        <li><strong>HypothesisEngine + NegativeEvidence:</strong> propose → evaluate → close lifecycle. Confidence scoring weighted by connector TRUST_LEVEL (0.9/0.6/0.3). NegativeEvidenceRecord suppresses redundant re-queries within TTL.</li>
+        <li><strong>Connector Trust Model:</strong> 31 trusted_internal (0.9) · 61 semi_trusted (0.6) · 7 untrusted_external (0.3)</li>
+        <li><strong>AgentGovernor + HITL:</strong> All agent actions routed through permission matrix ([agent_policy] INI). High/critical actions create PENDING ReviewItem. Critical triggers XSOAR playbook.</li>
       </ul>
     </section>
 
-
-    <!-- SLIDE 29: Security & CI -->
+    <!-- ROLLOUT & ROADMAP SECTION (Slides 33-36) -->
     <section data-background="#1a1a1a">
-      <h2>Code Safety, CI & Security</h2>
-      <ul style="font-size: 0.8em;">
-        <li><strong>GitHub Actions:</strong> pylint on every push, Python 3.9/3.10/3.11/3.12 matrix</li>
-        <li><strong>Ruff + mypy:</strong> E, F, W, I, UP, B, C4, SIM rules, line 100, strict configs</li>
-        <li><strong>Testing:</strong> 5,100+ unit tests, 70% minimum coverage, Docker harness (ES + Solr)</li>
-        <li><strong>Dependabot:</strong> Automated PRs, pinned versions, Python + Actions coverage</li>
-        <li><strong>Security:</strong> Snyk scanning, GitHub secret scanning, AI ceiling 60, localhost binding</li>
+      <h2>Security & CI</h2>
+      <p style="font-size: 0.85em;">GitHub Actions, Ruff, mypy, pytest, Dependabot, Snyk, secret scanning</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>GitHub Actions CI:</strong> pylint on every push. Python 3.9/3.10/3.11/3.12 matrix. Fails build on any lint error. Badge on README signals status.</li>
+        <li><strong>Ruff + mypy:</strong> E, F, W, I, UP, B, C4, SIM rules. Line length 100, Python 3.9 target. warn_return_any, strict configs. <code>make check</code> = lint + typecheck gate.</li>
+        <li><strong>Testing:</strong> 5,100+ unit tests across 40+ files. 70% minimum coverage enforced (fail_under=70 in pyproject.toml). Docker integration harness (Elasticsearch + Solr).</li>
+        <li><strong>Dependabot:</strong> Automated dependency update PRs. One PR per dependency for audit trail. Pinned versions reviewed before merge. Python + GitHub Actions deps.</li>
+        <li><strong>Security scanning:</strong> Snyk: dependency vulnerability scanning + code security analysis. GitHub secret scanning: blocks known patterns before history. AI confidence ceiling 60, draft PRs only, localhost binding by default, call() write guard, no credentials in source, HMAC constant-time validation.</li>
       </ul>
     </section>
 
-    <!-- SLIDE 30: Implementation Sequence -->
     <section data-background="#1a1a1a">
       <h2>Implementation Sequence</h2>
-      <ul style="font-size: 0.75em;">
-        <li><strong>Phase 1 (Days 1-2):</strong> Install, config.ini, gnat ping, first dry-run</li>
-        <li><strong>Phase 2 (Days 3-5):</strong> All connectors, primary ingest (TQ, RF, CS), FeedScheduler</li>
-        <li><strong>Phase 3 (Days 6-8):</strong> Netskope CE 15min, EDL hourly, verify TQ → CE → firewall</li>
-        <li><strong>Phase 4 (Days 9-10):</strong> Configure [claude], ResearchAgent, CurationJob</li>
-        <li><strong>Phase 5 (Days 11-14):</strong> Daily reports, email delivery, 06:00 schedule</li>
-        <li><strong>Phase 6 (Ongoing):</strong> Analyst templates, EXAMPLES.md, library process</li>
+      <p style="font-size: 0.85em;">6-phase rollout timeline</p>
+      <ul style="font-size: 0.75em; margin-top: 1em;">
+        <li><strong>Phase 1 (Days 1-2):</strong> Install + configure config.ini · Test connectivity: gnat ping · First ingest dry-run</li>
+        <li><strong>Phase 2 (Days 3-5):</strong> All connector configs · Primary ingest jobs (TQ, RF, CS) · FeedScheduler running</li>
+        <li><strong>Phase 3 (Days 6-8):</strong> Netskope CE ExportJob (15 min) · EDL files hourly · Verify TQ → CE → firewall EDLs</li>
+        <li><strong>Phase 4 (Days 9-10):</strong> Configure [claude] in config.ini · First ResearchAgent query · CurationJob to scheduler</li>
+        <li><strong>Phase 5 (Days 11-14):</strong> Daily report — review PDF/HTML · Configure email delivery · ReportJob at 06:00 daily</li>
+        <li><strong>Phase 6 (Ongoing):</strong> Analyst config templates · Share EXAMPLES.md · Library review process</li>
       </ul>
     </section>
 
-    <!-- SLIDE 31: Roadmap -->
     <section data-background="#1a1a1a">
-      <h2>All Roadmap Items Complete</h2>
-      <p style="font-size: 0.8em;">✓ Every pending item shipped — v1.9.0 complete</p>
-      <p style="font-size: 0.7em; color: #9e9e9e;">
-        ✅ 159 connectors · STIX 2.1 ORM · Ingest/export pipelines · AI agents (Claude/OpenAI/Grok/Gemini)<br/>
-        ✅ TAXII 2.1 · Policy RBAC · 5,100+ tests · Docker · Multi-tenant · Migrations · Plugins<br/>
-        ✅ Workflows · Lineage · Metrics · Review queue · Health monitoring · Codegen
-      </p>
+      <h2>Deployment Architecture</h2>
+      <p style="font-size: 0.85em;">Single Azure B2s VM (~$50/month baseline) with scale-out path</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Baseline deployment (single VM):</strong> gnat-scheduler.service (FeedScheduler: ingest, export, AI research, curation, reports) · gnat-edl.service :8080 (EDLServer: independent, survives scheduler restart) · gnat-health.service :8090 (Health endpoint: GET /status → JSON, Azure Monitor/Grafana ping)</li>
+        <li><strong>Storage:</strong> ~/.gnat/config.ini · workspaces/ (SQLite or Postgres) · /var/reports/ (PDF/DOCX output)</li>
+        <li><strong>Scale-out patterns:</strong> 100+ feeds → AI jobs → Azure Container Instances. EDL SLA <5 min → dedicate B1s VM to gnat-edl. 10+ analysts → FlatFileStore → PostgreSQL (one config change). Multi-tenant → 1 workspace namespace per tenant, shared codebase.</li>
+        <li><strong>Monitoring:</strong> <code>gnat health check</code> for baseline · Prometheus + Grafana for scale · <code>make docker-full --profile monitoring</code> for local testing</li>
+      </ul>
     </section>
 
-    <!-- SLIDE 32: Closing -->
+    <section data-background="#1a1a1a">
+      <h2>All Roadmap Items Complete</h2>
+      <p style="font-size: 0.85em;">✓ Every pending item has shipped — v1.9.0 complete</p>
+      <ul style="font-size: 0.7em; margin-top: 1em;">
+        <li>✅ 159 connectors · STIX 2.1 ORM · Ingest/export pipelines · Kafka telemetry ingestion</li>
+        <li>✅ HuntGNAT: STIX → Sigma/YARA/Suricata/Snort · Hunt packages · ATT&CK coverage</li>
+        <li>✅ Attribution: Campaign tracking · Diamond Model · Kill-chain · Infrastructure classification</li>
+        <li>✅ AI agents (Claude/OpenAI/Grok/Gemini) · TAXII 2.1 · Policy RBAC · 5,100+ tests</li>
+        <li>✅ Terminal UI (Textual) · Web Dashboard (FastAPI) · Docker (core + search + monitoring)</li>
+        <li>✅ Migrations (Alembic) · Plugin system (HookBus) · Workflows (DAG engine) · Multi-tenant</li>
+        <li>✅ Health monitoring · Capability reflection · XSOAR codegen · Upstream contributions</li>
+        <li>✅ Data lineage · Analyst metrics · Review queue · Phase 4 safety (ExecutionContext, domain boundaries, hypothesis engine, agent governor, HITL)</li>
+      </ul>
+    </section>
+
+    <!-- CLOSING -->
     <section data-background="#1a1a1a">
       <h1><span class="accent">GNAT</span></h1>
       <h3>One library. Every platform. Total control.</h3>
       <p style="font-size: 0.9em; margin-top: 2em;">
         Version 1.9.0 • Python 3.9+ • Apache 2.0<br/>
-        159 connectors • STIX 2.1 • AI-assisted • Apache 2.0
+        159 connectors • STIX 2.1 • AI-assisted • Threat intel made simple
       </p>
       <p style="font-size: 0.75em; color: #9e9e9e; margin-top: 2em;">
-        GitHub: wrhalpin/GNAT · Docs: wrhalpin.github.io/GNAT · Read: EXAMPLES.md · README.md
+        GitHub: wrhalpin/GNAT · Docs: wrhalpin.github.io/GNAT · Read: EXAMPLES.md, IMPLEMENTATION_PLAN.md, README.md
       </p>
     </section>
 
@@ -412,6 +481,5 @@
     slideNumber: true
   });
 </script>
-
 </body>
 </html>
