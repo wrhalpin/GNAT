@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>GNAT — Live Presentation Deck</title>
+  <title>GNAT — 33-Slide Presentation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
   <style>
-    /* ── GNAT palette override ── */
     :root {
       --brand:     #C41E2A;
       --brand-dk:  #9B1820;
@@ -21,10 +20,8 @@
       --sense:     #7C3AED;
       --gui:       #2d8cb8;
     }
-
     .reveal-viewport { background: var(--surface); }
     .reveal { color: var(--ink); font-family: Inter, Arial, sans-serif; }
-
     .reveal h1, .reveal h2, .reveal h3 { color: #fff; text-transform: none; letter-spacing: -.01em; }
     .reveal h1 { font-size: 2.6rem; }
     .reveal h2 { font-size: 1.85rem; }
@@ -32,154 +29,42 @@
     .reveal p, .reveal li { color: var(--ink); }
     .reveal a { color: var(--brand); }
     .reveal strong { color: #fff; }
-
-    /* title slide */
     .slide-title { background: linear-gradient(160deg, var(--surface) 0%, #0d0d0d 100%); }
     .slide-title h1 { font-size: 3.2rem; }
-    .kicker {
-      display: inline-block;
-      font-size: .78rem;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: var(--muted);
-      margin-bottom: 1rem;
-    }
+    .kicker { display: inline-block; font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 1rem; }
     .accent { color: var(--brand); }
     .tag-row { margin-top: 1.2rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
-    .tag {
-      border: 1px solid var(--line);
-      background: var(--surface-2);
-      border-radius: 999px;
-      padding: .25rem .75rem;
-      font-size: .8rem;
-      color: var(--ink);
-    }
-
-    /* section accent bar */
-    .reveal section.has-accent::before {
-      content: '';
-      display: block;
-      width: 48px;
-      height: 4px;
-      background: var(--brand);
-      border-radius: 2px;
-      margin: 0 auto .9rem;
-    }
-
-    /* cards grid */
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: .75rem;
-      margin-top: 1rem;
-    }
-    .card {
-      background: var(--surface-2);
-      border: 2px solid var(--line);
-      border-radius: 12px;
-      padding: 1rem .9rem;
-      text-align: left;
-    }
+    .tag { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: .25rem .75rem; font-size: .8rem; color: var(--ink); }
+    .reveal section.has-accent::before { content: ''; display: block; width: 48px; height: 4px; background: var(--brand); border-radius: 2px; margin: 0 auto .9rem; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; margin-top: 1rem; }
+    .card { background: var(--surface-2); border: 2px solid var(--line); border-radius: 12px; padding: 1rem .9rem; text-align: left; }
     .card h3 { margin: 0 0 .35rem; font-size: 1rem; }
-    .card p  { margin: 0; font-size: .78rem; color: var(--muted); line-height: 1.45; }
-    .card-sand  { border-color: var(--sand); }
-    .card-sand  h3 { color: var(--sand); }
-    .card-red   { border-color: var(--red); }
-    .card-red   h3 { color: var(--red); }
-    .card-sense { border-color: var(--sense); }
-    .card-sense h3 { color: var(--sense); }
-    .card-gui   { border-color: var(--gui); }
-    .card-gui   h3 { color: var(--gui); }
-    .card-gnat  { border-color: var(--brand); }
-    .card-gnat  h3 { color: var(--brand); }
-
-    /* stat row */
+    .card p { margin: 0; font-size: .78rem; color: var(--muted); line-height: 1.45; }
+    .card-gnat { border-color: var(--brand); }
+    .card-gnat h3 { color: var(--brand); }
     .stat-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
-    .stat {
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: .9rem 1.4rem;
-      min-width: 130px;
-      text-align: center;
-    }
+    .stat { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1.4rem; min-width: 130px; text-align: center; }
     .stat-num { font-size: 2.2rem; font-weight: 700; color: var(--brand); line-height: 1; }
     .stat-lbl { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .3rem; }
-
-    /* flow diagram */
-    .flow { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
-    .flow-box {
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: .65rem 1rem;
-      font-size: .8rem;
-      text-align: center;
-      min-width: 100px;
-    }
-    .flow-box strong { display: block; font-size: .9rem; color: #fff; }
-    .flow-box span { color: var(--muted); font-size: .72rem; }
-    .flow-box.box-gnat { border-color: var(--brand); }
-    .flow-box.box-gnat strong { color: var(--brand); }
-    .flow-box.box-sense { border-color: var(--sense); }
-    .flow-box.box-sense strong { color: var(--sense); }
-    .flow-box.box-sand { border-color: var(--sand); }
-    .flow-box.box-sand strong { color: var(--sand); }
-    .flow-box.box-red { border-color: var(--red); }
-    .flow-box.box-red strong { color: var(--red); }
-    .flow-arrow { color: var(--muted); font-size: 1.2rem; }
-
-    /* two-col */
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; text-align: left; }
     .two-col ul { margin: .5rem 0; padding-left: 1.2rem; }
     .two-col li { font-size: .82rem; color: var(--muted); line-height: 1.6; }
     .col-head { font-size: .85rem; font-weight: 700; color: #fff; margin-bottom: .4rem; }
-
-    /* code-ish */
-    .cli-box {
-      background: #0d0d0d;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: .8rem 1.1rem;
-      font-family: 'Courier New', monospace;
-      font-size: .78rem;
-      color: #a3e635;
-      text-align: left;
-      margin-top: .8rem;
-    }
-
-    /* progress bar */
+    .cli-box { background: #0d0d0d; border: 1px solid var(--line); border-radius: 8px; padding: .8rem 1.1rem; font-family: 'Courier New', monospace; font-size: .78rem; color: #a3e635; text-align: left; margin-top: .8rem; }
     .reveal .progress { color: var(--brand); }
     .reveal .progress span { background: var(--brand); }
-
-    /* controls */
     .reveal .controls { color: var(--brand); }
-
-    /* nav link */
-    .back-link {
-      position: fixed;
-      bottom: 1rem;
-      right: 1rem;
-      font-size: .75rem;
-      color: var(--muted);
-      text-decoration: none;
-      z-index: 100;
-    }
-    .back-link:hover { color: var(--ink); }
+    code { color: var(--sand); background: rgba(0,0,0,0.3); padding: 0.2em 0.4em; border-radius: 3px; }
   </style>
 </head>
 <body>
 
 <div class="reveal">
   <div class="slides">
-
-    <!-- 1. Title -->
     <section class="slide-title" data-background-color="#1A1A1A">
-      <span class="kicker">GNAT-o-sphere · Core Platform · v1.9.0</span>
+      <span class="kicker">GNAT — Core Platform · v1.9.0</span>
       <h1><span class="accent">GNAT</span></h1>
-      <p style="font-size:1.15rem;color:var(--muted);margin-top:-.4rem;">
-        GNAT's Not A TIP — Cyber Threat Intel Made Simple
-      </p>
+      <p style="font-size:1.15rem;color:var(--muted);margin-top:-.4rem;">GNAT's Not Another TIP — Cyber Threat Intel Made Simple</p>
       <div class="tag-row">
         <span class="tag">159 connectors</span>
         <span class="tag">STIX 2.1 native</span>
@@ -187,251 +72,824 @@
         <span class="tag">Apache 2.0</span>
         <span class="tag">Python 3.9 – 3.13</span>
       </div>
+      <p style="margin-top:2rem;font-size:.85rem;color:var(--muted);">Universal threat intelligence library — abstract, normalise, automate</p>
     </section>
-
-    <!-- 2. The Problem -->
     <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>The Problem</h2>
-      <p style="color:var(--muted);font-size:.9rem;max-width:700px;margin:0 auto .8rem;">
-        Security teams rebuild the same automation, enrichment, and reporting logic around every new vendor API. The result is fragile, non-portable workflows that break with each contract renewal.
-      </p>
-      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
-        <div class="card">
-          <h3>Integration churn</h3>
-          <p>Each new platform demands bespoke glue code that nobody else can maintain.</p>
-        </div>
-        <div class="card">
-          <h3>Stranded intel</h3>
-          <p>Indicators live in silos — enrichment, context, and attribution can't travel with them.</p>
-        </div>
-        <div class="card">
-          <h3>Workflow lock-in</h3>
-          <p>Automations are tied to specific tools, so every vendor change restarts the clock.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. What GNAT does -->
-    <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>What GNAT Does</h2>
+      <h2>The Problem: Fragmented Threat Intelligence</h2>
       <div class="card-grid" style="grid-template-columns:repeat(2,1fr);">
-        <div class="card card-gnat">
-          <h3>Normalize</h3>
-          <p>159 connectors behind one unified client surface — same call signature everywhere.</p>
+        <div class="card">
+          <h3>Every platform is an island</h3>
+          <p>Numerous different APIs. Each has its own auth scheme, data model, and SDK. ThreatQ OAuth2 ≠ CrowdStrike OAuth2 ≠ VirusTotal API key.</p>
         </div>
-        <div class="card card-gnat">
-          <h3>Translate</h3>
-          <p>STIX 2.1 as the stable contract. Objects, bundles, and patterns that travel between tools.</p>
+        <div class="card">
+          <h3>No shared data model</h3>
+          <p>An indicator in ThreatQ looks nothing like one in CrowdStrike or Splunk. Correlation requires manual mapping.</p>
         </div>
-        <div class="card card-gnat">
-          <h3>Analyze</h3>
-          <p>Diamond Model attribution, kill-chain mapping, campaign tracking, and hypothesis evaluation.</p>
+        <div class="card">
+          <h3>Custom code per integration</h3>
+          <p>Every new source or destination means new scripts with no shared error handling, retry logic, or scheduling.</p>
         </div>
-        <div class="card card-gnat">
-          <h3>Anchor the ecosystem</h3>
-          <p>Hub platform that SandGNAT, SenseGNAT, RedGNAT, and GNAT-gui plug into.</p>
+        <div class="card">
+          <h3>Fragile automation</h3>
+          <p>Ad-hoc scripts break when APIs change. No tests, no versioning, no consistent patterns.</p>
         </div>
       </div>
     </section>
-
-    <!-- 4. Platform Stats -->
     <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>Platform Stats</h2>
-      <div class="stat-row">
-        <div class="stat"><div class="stat-num">159</div><div class="stat-lbl">Connectors</div></div>
-        <div class="stat"><div class="stat-num">1.9</div><div class="stat-lbl">Version</div></div>
-        <div class="stat"><div class="stat-num">15</div><div class="stat-lbl">Ingest readers</div></div>
-        <div class="stat"><div class="stat-num">13</div><div class="stat-lbl">Mappers</div></div>
-        <div class="stat"><div class="stat-num">8</div><div class="stat-lbl">ORM types</div></div>
-        <div class="stat"><div class="stat-num">4</div><div class="stat-lbl">LLM backends</div></div>
+      <h2>The Solution: One Library, Every Platform</h2>
+      <div class="two-col" style="margin-top:2rem;">
+        <div>
+          <div class="col-head">Without GNAT</div>
+          <ul style="font-size:.85rem;">
+            <li>ThreatQ SDK → custom code</li>
+            <li>CrowdStrike API → custom code</li>
+            <li>Splunk API → custom code</li>
+            <li>VirusTotal API → custom code</li>
+            <li>Each: own auth, errors, retries</li>
+            <li>Each: own data model</li>
+            <li>No shared testing or scheduling</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">With GNAT</div>
+          <ul style="font-size:.85rem;">
+            <li>GNATConfig → one <code>config.ini</code></li>
+            <li>GNATClient → one interface</li>
+            <li>STIX 2.1 everywhere</li>
+            <li>IngestPipeline → pull any source</li>
+            <li>ExportPipeline → push to EDLs/CE</li>
+            <li>FeedScheduler → all jobs, one place</li>
+            <li>ReportGenerator → PDF/HTML/DOCX</li>
+          </ul>
+        </div>
       </div>
-      <p style="margin-top:1.2rem;font-size:.8rem;color:var(--muted);">
-        Platforms covered: EDRs, SIEMs, TIPs, ASM, UEBA, MDR, BAS, sandbox, identity, email security, OSINT, DFIR, bug bounty, and more.
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Architecture: The Middle Layer Model</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.2rem;">
+        GNAT sits in the middle: one unified interface to 159 platforms, feeding standardized STIX objects upstream.
+      </p>
+      <div style="font-size:.8rem;text-align:center;line-height:1.8;">
+        <strong>ANALYST / AUTOMATION LAYER</strong><br/>
+        Workstations · SOAR · Scheduled jobs · CLI · TUI · Web Dashboard<br/><br/>
+        <strong style="color:var(--brand);">↕ GNAT CORE</strong><br/>
+        Ingest · Export · AI Agents · Research Library · Reports · NLP · TAXII 2.1 · Solr Search<br/><br/>
+        <strong>STIX 2.1 ORM + WORKSPACE</strong><br/>
+        Indicator · ThreatActor · Vulnerability · AttackPattern · Malware · Relationship<br/><br/>
+        <strong style="color:var(--brand);">↕ CONNECTOR LAYER (159 platforms)</strong><br/>
+        ThreatQ · CrowdStrike · Splunk · Sentinel · VirusTotal · Mandiant · ... and 153 more<br/><br/>
+        <strong>EXTERNAL PLATFORMS</strong>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>159 Platform Connectors — One Interface</h2>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:.8rem;">Every connector: <code>authenticate()</code> · <code>health_check()</code> · <code>get/list/upsert/delete_object()</code> · <code>to_stix()</code> · <code>from_stix()</code></p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;font-size:.75rem;">
+        <div><strong style="color:var(--sand);">Commercial TI:</strong> ThreatQ · CrowdStrike · Recorded Future · VirusTotal · Mandiant · MS Defender TI · ThreatStream · SOCRadar</div>
+        <div><strong style="color:var(--sand);">Dark Web/Cybercrime:</strong> Flashpoint · Intel 471 · Group-IB · HudsonRock · Cyble Vision · FLARE</div>
+        <div><strong style="color:var(--sand);">SIEM/Analytics:</strong> Splunk · Elastic · QRadar · Sentinel · Graylog · Security Onion · Wazuh · Chronicle</div>
+        <div><strong style="color:var(--sand);">SOAR/DFIR:</strong> XSOAR · TheHive · ServiceNow · Jira · Synapse · Velociraptor · HackerOne</div>
+        <div><strong style="color:var(--sand);">Cloud/ASM:</strong> Orca · Wiz · Cortex Xpanse · Prisma Cloud · CyCognito · Censys · JupiterOne · runZero</div>
+        <div><strong style="color:var(--sand);">Identity/Email:</strong> Okta · Entra ID · Silverfort · Mimecast · Abnormal · Code42 · GitGuardian</div>
+        <div><strong style="color:var(--sand);">Sandbox/BAS:</strong> Joe Sandbox · ANY.RUN · Intezer · SafeBreach · AttackIQ · Cymulate · Pentera</div>
+        <div><strong style="color:var(--sand);">AI & OSINT:</strong> Dataminr · Factal · Samdesk · Copilot · ChatGPT · Gemini · Grok · Discord</div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>STIX 2.1 ORM — A Universal Data Contract</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.2rem;">Every object from every connector normalises into the same STIX 2.1 types:</p>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="card card-gnat">
+          <h3>Indicator</h3>
+          <p>IOCs with STIX patterns: <code>[domain-name:value = '...']</code></p>
+        </div>
+        <div class="card card-gnat">
+          <h3>ThreatActor</h3>
+          <p>Actor profiles, aliases, motivation, attribution</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Vulnerability</h3>
+          <p>CVEs, CVSS scores, exploited flag, products</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>AttackPattern</h3>
+          <p>MITRE ATT&CK TTPs with tactic mapping</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Malware</h3>
+          <p>Malware families, capabilities, kill-chain</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Relationship</h3>
+          <p>Links: indicates · uses · targets (bidirectional graph)</p>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Ingest + Export Pipelines</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.85rem;">
+        <div>
+          <div class="col-head">Ingest (Pull)</div>
+          <ul>
+            <li><strong>SourceReader:</strong> 14 reader types (TAXII, CSV, STIX, Syslog, RSS, Email, Splunk, Elastic...)</li>
+            <li><strong>RecordMapper:</strong> 12 mapper types (FlatIOC, STIX, MISP, CEF, CSV, NVD CVE...)</li>
+            <li><strong>Workspace:</strong> STIX ORM objects, dedup, confidence scoring</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">Export (Push)</div>
+          <ul>
+            <li><strong>ExportFilter:</strong> Type, confidence, TLP, sector, IOC type limits</li>
+            <li><strong>ExportTransform:</strong> EDLTransform, NetskopeCETransform, STIXBundle</li>
+            <li><strong>Delivery:</strong> FileDelivery, EDLServer (HTTP), PlatformDelivery</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:1.2rem;font-size:.78rem;color:var(--muted);text-align:center;">
+        Real example: ThreatQ → GNAT → Netskope CE (FQDN + URL + SHA256 every 15 min) → Tenant lists → Palo Alto EDLs
       </p>
     </section>
-
-    <!-- 5. Core Architecture -->
     <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>Core Architecture</h2>
-      <div class="two-col">
-        <div>
-          <div class="col-head">Data layer</div>
-          <ul>
-            <li>STIX 2.1 ORM — pure Python property bag, no SQLAlchemy</li>
-            <li>urllib3 (sync) + httpx (async) — zero <code>requests</code> dependency</li>
-            <li>INI-based config — zero-dep, per-platform sections</li>
-            <li>Optional Rust extension (<code>gnat._core</code>) for hot paths</li>
-          </ul>
+      <h2>Scheduling — One Scheduler, All Jobs</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="card">
+          <h3>FeedScheduler</h3>
+          <p>Thread-safe scheduler. Runs all job types together. Drift-corrected timing — hourly jobs stay hourly even when runs take 5 min.</p>
         </div>
-        <div>
-          <div class="col-head">Pipeline layer</div>
-          <ul>
-            <li>Ingest: 15 readers · 13 mappers · Kafka telemetry · Redis dedup</li>
-            <li>Export: EDL · Netskope CE delivery targets</li>
-            <li>Schedule: croniter-based FeedJob / FeedScheduler</li>
-            <li>Search: Solr 9.x full-text sidecar with ORM integration</li>
-            <li>Serve: FastAPI + TAXII 2.1 endpoint</li>
-          </ul>
+        <div class="card">
+          <h3>FeedJob Types</h3>
+          <p>ExportJob (scheduled EDL/CE), ReportJob (PDF/DOCX), CurationJob, HealthCheckJob, and custom types.</p>
+        </div>
+        <div class="card">
+          <h3>Overlap Protection</h3>
+          <p>Skip or queue policy — never two runs of the same job simultaneously.</p>
+        </div>
+        <div class="card">
+          <h3>Adapters</h3>
+          <p>APScheduler / Celery adapters. Export to external schedulers via <code>to_cron_lines()</code>.</p>
         </div>
       </div>
     </section>
-
-    <!-- 6. AI & Analysis -->
     <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>AI &amp; Analysis</h2>
-      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
+      <h2>AI Agents — Multi-LLM Threat Research</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);font-size:.8rem;">
+        <div class="card">
+          <h3>ResearchAgent</h3>
+          <p>Topic-driven research synthesis. Feed-driven source monitoring. Backed by LLMClient (Claude / OpenAI / Grok / Gemini).</p>
+        </div>
+        <div class="card">
+          <h3>ParsingAgent</h3>
+          <p>Extract structured STIX from unstructured text. All output capped at confidence ≤60, tagged <code>x_source_type=ai_extracted</code>.</p>
+        </div>
         <div class="card">
           <h3>LLMClient</h3>
-          <p>Unified facade — Claude, OpenAI, Grok (xAI), Gemini. Automatic fallback. urllib3-based, no requests.</p>
+          <p>Unified facade. Single interface for Claude, OpenAI, Grok, Gemini. Automatic provider fallback on errors/rate limits.</p>
         </div>
         <div class="card">
-          <h3>Agents</h3>
-          <p>ResearchAgent (SourceReader), ParsingAgent (RecordMapper), quality agents, repo-maintenance agents, secrets hygiene.</p>
+          <h3>WorkflowEngine</h3>
+          <p>Sequential DAG orchestration. PhishingTriage · IncidentResponse · Custom DAGs with success/failure routing.</p>
         </div>
         <div class="card">
-          <h3>Attribution</h3>
-          <p>Diamond Model, kill-chain mapping, campaign auto-link, infrastructure classification, hypothesis engine (Hy + YAML + Prolog rule backends).</p>
+          <h3>AI Trust Model</h3>
+          <p><code>confidence_ceiling = 60</code> prevents AI intel from reaching EDLs without analyst review. Export pipelines default to <code>ConfidenceFilter(min=70)</code>.</p>
         </div>
         <div class="card">
-          <h3>Detection rules</h3>
-          <p>STIX → Sigma, YARA, Suricata, Snort. Hunt packages, ATT&amp;CK coverage, validation. (huntgnat plugin)</p>
-        </div>
-        <div class="card">
-          <h3>Reports</h3>
-          <p>AI-assisted PDF + DOCX via ReportLab / python-docx. ResearchLibrary + CurationJob pipeline.</p>
-        </div>
-        <div class="card">
-          <h3>NLP</h3>
-          <p>Built-in IOC extraction + Claude backend. Extracts indicators from freeform text at analyst speed.</p>
+          <h3>CopilotReader</h3>
+          <p>Query Microsoft Copilot (SharePoint, mailboxes, Teams). Output feeds directly into ParsingAgent.</p>
         </div>
       </div>
     </section>
-
-    <!-- 7. The GNAT-o-sphere -->
     <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>The GNAT-o-sphere</h2>
-      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:.6rem;">
-        <div class="card card-sand">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
-          <h3>SandGNAT</h3>
-          <p>Automated malware sandbox — detonate binaries in isolated VMs, capture behavioral artifacts, emit STIX 2.1 objects.</p>
+      <h2>Natural Language Query Interface</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">Query threat intel using plain English. Two backends, same QuerySpec output.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;font-size:.8rem;">
+        <div>
+          <strong style="color:var(--sand);">BuiltinParser</strong><br/>
+          Rule-based extraction — zero extra dependencies. Regex + keyword rules extract entities, IOC types, time ranges, and platform filters.
         </div>
-        <div class="card card-red">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
-          <h3>RedGNAT</h3>
-          <p>Continuous adversary emulation — ingest threat intel, construct scenarios, execute with safety controls.</p>
+        <div>
+          <strong style="color:var(--sand);">ClaudeParser</strong><br/>
+          Claude API structured extraction. Returns the same QuerySpec as the builtin backend. Configure via <code>[nlp] backend = claude</code>.
         </div>
-        <div class="card card-sense">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
-          <h3>SenseGNAT</h3>
-          <p>Network behavior analysis — Kafka telemetry, Redis dedup, anomaly detection, campaign auto-link.</p>
+      </div>
+      <div class="cli-box" style="margin-top:1rem;">
+        gnat nlq "Get all IPs associated with Lazarus Group in the last 30 days"<br/>
+        # → list[STIXBase] dispatched to all configured connectors
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Research Library — Shared Team Knowledge Base</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="card">
+          <h3>PERSONAL WORKSPACES</h3>
+          <p>Analyst-owned. Active investigation. Each analyst has their own workspace.</p>
         </div>
-        <div class="card card-gui">
-          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Web App</span>
-          <h3>GNAT-gui</h3>
-          <p>Browser analyst workbench — investigation graphs, gap analysis, report drafting, live job streaming.</p>
+        <div class="card">
+          <h3>STAGING (_gnat_staging)</h3>
+          <p><code>lib.promote(ws, topic, researcher, note='...')</code> — Anyone can write, nothing auto-promotes.</p>
+        </div>
+        <div class="card">
+          <h3>LIBRARY (_gnat_library)</h3>
+          <p>Curated. Read-only to analysts. CurationJob every 4h. Deduplication and TTL enforcement.</p>
+        </div>
+        <div class="card">
+          <h3>TTL by Category</h3>
+          <p><strong>indicator:</strong> 24h · <strong>vulnerability:</strong> 72h · <strong>campaign:</strong> 14d · <strong>threat_actor:</strong> 30d · <strong>other:</strong> 7d</p>
         </div>
       </div>
     </section>
-
-    <!-- 8. Canonical Workflow -->
     <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>Canonical Workflow</h2>
-      <div class="flow">
-        <div class="flow-box">
-          <strong>Sources</strong>
-          <span>Feeds, APIs,<br>sensors</span>
+      <h2>Automated Report Generation</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);font-size:.75rem;">
+        <div class="card">
+          <h3>Daily Intel</h3>
+          <p><strong>Schedule:</strong> 06:00 daily<br/><strong>AI Mode:</strong> Assisted<br/><strong>Audience:</strong> SOC analysts / shift handoff<br/><strong>Formats:</strong> PDF · HTML · Markdown</p>
         </div>
-        <div class="flow-arrow">→</div>
-        <div class="flow-box box-gnat">
-          <strong>GNAT</strong>
-          <span>Ingest · normalize<br>STIX · route</span>
+        <div class="card">
+          <h3>Trends</h3>
+          <p><strong>Schedule:</strong> Weekly<br/><strong>AI Mode:</strong> Assisted<br/><strong>Audience:</strong> Team leads<br/><strong>Formats:</strong> PDF · HTML</p>
         </div>
-        <div class="flow-arrow">→</div>
-        <div style="display:flex;flex-direction:column;gap:.5rem;">
-          <div class="flow-box box-sense"><strong>SenseGNAT</strong><span>Behavioral profiling</span></div>
-          <div class="flow-box box-sand"><strong>SandGNAT</strong><span>Malware detonation</span></div>
-          <div class="flow-box box-red"><strong>RedGNAT</strong><span>Adversary emulation</span></div>
-        </div>
-        <div class="flow-arrow">→</div>
-        <div class="flow-box">
-          <strong>Act</strong>
-          <span>Investigate · report<br>detect · export</span>
+        <div class="card">
+          <h3>Yearly Intel</h3>
+          <p><strong>Schedule:</strong> Annual/manual<br/><strong>AI Mode:</strong> Full<br/><strong>Audience:</strong> Management/compliance<br/><strong>Formats:</strong> PDF · DOCX</p>
         </div>
       </div>
-      <p style="font-size:.78rem;color:var(--muted);margin-top:1rem;">
-        GNAT-gui provides the browser workbench across all stages — investigation graphs, live job streaming, report output.
+      <p style="margin-top:1.2rem;font-size:.8rem;color:var(--muted);text-align:center;">
+        Pipeline: DataAggregator (no AI) → ReportSynthesizer (one call/section) → Renderers (MD/HTML/PDF/DOCX) → Delivery (Email + SharePoint)
       </p>
     </section>
-
-    <!-- 9. Getting Started -->
     <section class="has-accent" data-background-color="#1A1A1A">
-      <h2>Getting Started</h2>
-      <div class="cli-box">
-        <div style="color:var(--muted);margin-bottom:.4rem;"># Install</div>
-        pip install gnat<br>
-        pip install "gnat[all]"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted)"># everything</span><br><br>
-        <div style="color:var(--muted);margin-bottom:.4rem;"># Configure</div>
-        cp config/config.ini.example ~/.gnat/config.ini<br><br>
-        <div style="color:var(--muted);margin-bottom:.4rem;"># Use the CLI</div>
-        gnat ingest --source taxii --output stix<br>
-        gnat report --template executive --format pdf<br>
-        gnat tui&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted)"># launch TUI</span>
+      <h2>Sector Targeting Intelligence</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;"><code>x_target_sectors</code> — canonical cross-platform sector field, normalized from all connectors</p>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="card">
+          <h3>any (default)</h3>
+          <p>Include objects tagged with at least one listed sector. Untagged objects also pass (non-strict mode).</p>
+        </div>
+        <div class="card">
+          <h3>all</h3>
+          <p>Require all listed sectors to be present on the object. Strict: only tagged objects.</p>
+        </div>
+        <div class="card">
+          <h3>strict=True</h3>
+          <p>Exclude untagged objects entirely. Only explicitly tagged objects are included.</p>
+        </div>
       </div>
-      <p style="font-size:.78rem;color:var(--muted);margin-top:.8rem;">
-        Python 3.9–3.13 · Apache 2.0 · INI config, no secrets in code
+      <div class="cli-box" style="margin-top:1.2rem;font-size:.75rem;">
+        [sector_aliases]<br/>
+        healthcare = Healthcare, Health, Medical, H-ISAC<br/>
+        financial  = Financial Services, Finance, Banking, FS-ISAC<br/>
+        # SectorFilter expands aliases for cross-platform matching
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Search Sidecar — Solr Full-Text Search</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">Every STIX object indexed in Solr 9.x — search across all connectors simultaneously</p>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="card">
+          <h3>GNATIndexer</h3>
+          <p>Add/update/delete Solr documents. Batch indexing with configurable <code>batch_size</code>. Field-mapped from STIX objects.</p>
+        </div>
+        <div class="card">
+          <h3>SearchMixin</h3>
+          <p>Drop-in connector mixin. Auto-indexes on <code>upsert_object()</code> calls. Zero code change to existing connectors.</p>
+        </div>
+        <div class="card">
+          <h3>Pipeline/Library Patch</h3>
+          <p>Patches IngestPipeline to route records through Solr. ResearchLibrary search-backed lookups.</p>
+        </div>
+        <div class="card">
+          <h3>Configuration</h3>
+          <p>Configure via <code>[search]</code> in <code>gnat.ini</code>. Grafana dashboards via <code>gnat viz serve --with-solr</code>.</p>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>TAXII 2.1 Server &amp; STIX Pattern Validator</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.8rem;">
+        <div>
+          <div class="col-head">TAXII 2.1 Server</div>
+          <ul>
+            <li>Full read + write protocol</li>
+            <li>Each workspace exposed as TAXII collection</li>
+            <li><code>GET /taxii2/</code> — discovery</li>
+            <li><code>GET /taxii2/.../objects/</code> — paginated bundle</li>
+            <li><code>POST /taxii2/.../objects/</code> — ingest (WRITE_TAXII permission)</li>
+            <li><code>gnat taxii --port 8090 --api-key s3cr3t</code></li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">STIX 2.1 Validator</div>
+          <ul>
+            <li>Two-tier: pure-Python + stix2-patterns ANTLR</li>
+            <li>Validates patterns, properties, vocabularies</li>
+            <li><code>validate_pattern("[ipv4-addr:value = '1.2.3.4']")</code></li>
+            <li>ORM opt-in validation</li>
+            <li><code>Indicator(pattern="...", validate=True)</code></li>
+            <li>87 unit tests</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Connector Capability Reflection &amp; Health Monitoring</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.8rem;">
+        <div>
+          <div class="col-head">Capability Reflection</div>
+          <ul>
+            <li>Introspect any connector at runtime</li>
+            <li>Safe guarded dispatch prevents writes</li>
+            <li><code>caps = client.capabilities()</code></li>
+            <li><code>client.call("list_objects", stix_type="indicator")</code></li>
+            <li><code>client.call("upsert", obj, allow_write=True)</code></li>
+            <li>CLI: <code>gnat client capabilities --platform threatq</code></li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">Health + Drift Monitor</div>
+          <ul>
+            <li><strong>ConnectorHealthJob:</strong> periodic health checks</li>
+            <li><strong>SchemaSnapshot:</strong> field fingerprint</li>
+            <li><strong>DriftReport:</strong> alert when fields change >20%</li>
+            <li>Slack webhook or email alerts</li>
+            <li><code>gnat health check</code> / <code>gnat health baseline</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Terminal UI &amp; Web Dashboard</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.8rem;">
+        <div>
+          <div class="col-head">Terminal UI (Textual)</div>
+          <ul>
+            <li>Works over SSH — no browser required</li>
+            <li><strong>F1 Query:</strong> NLP search + STIX results</li>
+            <li><strong>F2 Library:</strong> Research browser · promote/reject</li>
+            <li><strong>F3 Scheduler:</strong> Live job status · manual trigger</li>
+            <li><strong>F4 Reports:</strong> PDF/HTML/DOCX browser</li>
+            <li><strong>F5 Investigations:</strong> Status transitions</li>
+            <li><strong>F6 Review:</strong> AI Intel review queue</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">Web Dashboard (FastAPI)</div>
+          <ul>
+            <li>Browser-based for server deployments</li>
+            <li>X-Api-Key auth, 100 req/min rate limit</li>
+            <li><code>GET/POST /api/library</code> — research</li>
+            <li><code>GET /api/reports</code> — serve HTML inline</li>
+            <li><code>GET /api/scheduler/jobs</code> — status + trigger</li>
+            <li><code>GET /health</code> — liveness check</li>
+            <li><code>gnat serve --port 8088 --api-key ...</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>XSOAR Content Pack Generator &amp; Contribution Pipeline</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.75rem;">
+        <div>
+          <div class="col-head">Code Generation</div>
+          <ul>
+            <li><strong>XSOAR packs:</strong> introspect connector → valid XSOAR 6 zip</li>
+            <li><strong>OpenAPI:</strong> scaffold connector from spec</li>
+            <li><strong>Tests:</strong> auto-generate test harness</li>
+            <li><strong>Register:</strong> scan and re-register connectors</li>
+            <li><strong>Config docs:</strong> inline documentation</li>
+            <li><code>gnat codegen xsoar --connector threatq --output ./packs/</code></li>
+            <li><code>gnat codegen openapi --spec api.yaml --ai</code> (Claude-powered)</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">Upstream Contribution</div>
+          <ul>
+            <li>Package connector as draft GitHub PR</li>
+            <li>7-step compliance gate</li>
+            <li>1. Enabled guard (opt-in)</li>
+            <li>2. In CLIENT_REGISTRY</li>
+            <li>3. ComplianceMatrix: 8 methods + tests</li>
+            <li>4. Full test suite or abort</li>
+            <li>5-7. Branch, commit, draft PR</li>
+            <li><code>gnat contribute --connector myplatform</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Docker &amp; Containerization</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;"><code>docker-compose.yml</code> — Production Stack</p>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);font-size:.75rem;">
+        <div class="card">
+          <h3>gnat-scheduler</h3>
+          <p>FeedScheduler: ingest, export, AI research, curation, and report jobs</p>
+        </div>
+        <div class="card">
+          <h3>gnat-edl :8080</h3>
+          <p>EDL server: serves indicator files to firewalls. Survives scheduler restart.</p>
+        </div>
+        <div class="card">
+          <h3>gnat-monitor :8090</h3>
+          <p>Health endpoint: <code>GET /status</code> → JSON. Azure Monitor / Grafana ping.</p>
+        </div>
+        <div class="card">
+          <h3>solr :8983 (search)</h3>
+          <p>Solr search index for GNAT sidecar. <code>--profile search</code></p>
+        </div>
+        <div class="card">
+          <h3>grafana :3000 (monitoring)</h3>
+          <p>Grafana dashboards for Solr + GNAT metrics. <code>--profile monitoring</code></p>
+        </div>
+        <div class="card">
+          <h3>Integration Tests</h3>
+          <p>Elasticsearch 8.13.4 + Solr 9.6. <code>make test-docker</code></p>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Multi-Tenant Workspace Isolation</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">Transparent namespace prefixing — no schema migration — works with SQLite and FlatFile stores</p>
+      <div class="cli-box" style="font-size:.75rem;">
+        from gnat.context import WorkspaceManager<br/>
+        manager = WorkspaceManager.default()<br/>
+        acme = manager.for_tenant("acme")<br/>
+        ws   = acme.create("apt28-investigation")<br/>
+        # stored as: "acme::apt28-investigation"<br/><br/>
+        beta = manager.for_tenant("beta")<br/>
+        ws2  = beta.create("apt28-investigation")<br/>
+        # stored as: "beta::apt28-investigation"  (no collision)
+      </div>
+      <p style="margin-top:1rem;font-size:.8rem;color:var(--muted);">
+        <strong>TenantRegistry:</strong> existing workspaces → "default" tenant. Per-tenant <code>config_path</code> in INI.<br/>
+        <strong>CLI:</strong> <code>gnat tenant list</code> · <code>gnat tenant create acme --display-name "Acme Corp"</code>
       </p>
     </section>
-
-    <!-- 10. Links -->
-    <section data-background-color="#1A1A1A">
-      <span class="kicker">GNAT-o-sphere</span>
-      <h2>Resources</h2>
-      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);margin-top:1rem;">
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Deployment: Single Azure VM, Three Services</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);font-size:.8rem;">
+        <div class="card">
+          <h3>Azure B2s VM (~$50/month)</h3>
+          <p><strong>gnat-scheduler.service:</strong> FeedScheduler: ingest, export, AI research, curation, and report jobs</p>
+          <p style="margin-top:.5rem;"><strong>gnat-edl.service :8080:</strong> EDLServer: serves indicator files to firewalls</p>
+          <p style="margin-top:.5rem;"><strong>gnat-health.service :8090:</strong> Health endpoint: <code>GET /status</code> → JSON</p>
+        </div>
+        <div class="card">
+          <h3>Scale-out Path</h3>
+          <p><strong>100+ feeds:</strong> AI jobs → Azure Container Instances</p>
+          <p style="margin-top:.5rem;"><strong>EDL SLA <5 min:</strong> EDL server → dedicated B1s VM</p>
+          <p style="margin-top:.5rem;"><strong>10+ analysts:</strong> FlatFileStore → PostgreSQL (1 config change)</p>
+          <p style="margin-top:.5rem;"><strong>Multi-tenant:</strong> 1 workspace namespace per tenant, shared codebase</p>
+        </div>
+      </div>
+      <p style="margin-top:1rem;font-size:.8rem;color:var(--muted);text-align:center;">
+        Storage: <code>~/.gnat/config.ini</code> · <code>workspaces/</code> · <code>/var/reports/</code>
+      </p>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Database Migrations &amp; Plugin System</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.75rem;">
+        <div>
+          <div class="col-head">Alembic Migrations</div>
+          <ul>
+            <li><strong>0001_init_all_tables:</strong> investigations, reports, workspaces, workspace_objects, enrichment_log</li>
+            <li><strong>0002_add_lineage_events:</strong> lineage_events table + composite index</li>
+            <li><strong>0003_add_metrics_events:</strong> metrics_events table + index</li>
+            <li><code>gnat-db upgrade head</code> — apply all</li>
+            <li><code>gnat-db current</code> — show revision</li>
+            <li><code>gnat-db history</code> — show history</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">Plugin System</div>
+          <ul>
+            <li><strong>GNATPlugin ABC:</strong> name, version, capabilities, register()</li>
+            <li><strong>PluginCapability:</strong> CONNECTOR, READER, MAPPER, AGENT, REPORTER, HOOK</li>
+            <li><strong>HookBus:</strong> thread-safe pub/sub · 14 built-in events · async handlers</li>
+            <li><strong>PluginRegistry:</strong> load/unload/get/list · entry_points discovery</li>
+            <li><code>GNAT_PLUGIN_DIRS</code> env var or <code>[plugins]</code> INI section</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Policy Engine (RBAC) &amp; STIX Object Validator</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.75rem;">
+        <div>
+          <div class="col-head">Role-Based Access Control</div>
+          <ul>
+            <li><strong>VIEWER:</strong> READ_OBJECTS, READ_REPORTS, QUERY_NLP</li>
+            <li><strong>ANALYST:</strong> + WRITE_OBJECTS, ENRICH, PROMOTE_INTEL</li>
+            <li><strong>OPERATOR:</strong> + MANAGE_SCHEDULES, WRITE_TAXII, EXPORT</li>
+            <li><strong>ADMIN:</strong> + MANAGE_KEYS, MANAGE_TENANTS (all perms)</li>
+            <li><strong>Audit Middleware:</strong> every API request emits <code>api_request</code> HookBus event + structured log</li>
+            <li><code>engine.require(Permission.WRITE_TAXII, key_store)</code> (FastAPI Depends)</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">STIX Object Validator</div>
+          <ul>
+            <li><strong>SDO (19 types):</strong> indicator, malware, threat-actor, campaign, attack-pattern, etc.</li>
+            <li><strong>SCO (16 types):</strong> ipv4-addr, domain-name, url, file, process, etc.</li>
+            <li><strong>SRO (2 types):</strong> relationship, sighting (validates refs)</li>
+            <li><strong>Meta (4 types):</strong> bundle, marking-definition, etc.</li>
+            <li>Validates required props, vocabularies, confidence, refs, ID format</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Agent Orchestration — Workflow DAG Engine</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;"><code>gnat.agents.workflow</code> — Sequential DAG executor with success/failure routing, cycle detection, and elapsed timing</p>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);font-size:.75rem;">
+        <div class="card">
+          <h3>WorkflowStep</h3>
+          <p>name, fn, on_success, on_failure. Callable step with optional routing.</p>
+        </div>
+        <div class="card">
+          <h3>WorkflowContext</h3>
+          <p>investigation, enriched_objects, gaps, draft, errors, metadata — shared state across all steps.</p>
+        </div>
+        <div class="card">
+          <h3>WorkflowResult</h3>
+          <p>success, steps_run, errors, elapsed_ms. Full execution trace.</p>
+        </div>
+        <div class="card">
+          <h3>Built-in Factories</h3>
+          <p>enrich_step · correlate_step · gap_detect_step · draft_report_step · transition_step · fn_step</p>
+        </div>
+        <div class="card">
+          <h3>Pre-built Workflows</h3>
+          <p><strong>PhishingTriage:</strong> enrich → correlate → gap_detect → draft_report → transition</p>
+        </div>
+        <div class="card">
+          <h3>IncidentResponse</h3>
+          <p>enrich → correlate → gap_detect → draft_report → transition(REVIEW)</p>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Data Lineage &amp; Analyst Metrics</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.8rem;">
+        <div>
+          <div class="col-head">Data Lineage</div>
+          <ul>
+            <li>Append-only event log. Zero new runtime deps. Optional deployment.</li>
+            <li><strong>LineageEventType:</strong> INGESTED · ENRICHED · NORMALIZED · LINKED · EXPORTED · REPORTED · DELETED</li>
+            <li><strong>LineageEvent:</strong> UUID4 id, timestamp, object_id, actor, source, metadata (immutable)</li>
+            <li><strong>LineageStore:</strong> SQLAlchemy-backed. append / query / query_by_type / count()</li>
+            <li><code>tracker.record_ingested("indicator--abc", actor="feed_scheduler")</code></li>
+            <li><code>store.query("indicator--abc")</code> — full audit trail</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">Analyst Metrics</div>
+          <ul>
+            <li>Thread-safe ring-buffer with structured aggregation by type and window.</li>
+            <li><strong>Metric Types:</strong> INVESTIGATION_CREATED/CLOSED · ENRICHMENT_ATTEMPTED/SUCCESS · REPORT_PUBLISHED · GAP_DETECTED · FALSE_POSITIVE_FLAGGED · ANALYST_OVERRIDE · INTEL_PROMOTED</li>
+            <li><code>investigation_summary(days)</code> — status breakdown + close rate</li>
+            <li><code>enrichment_effectiveness(platform, days)</code> — hit rate + avg confidence</li>
+            <li><code>gap_frequency(days)</code> — gap detection rate</li>
+            <li><code>false_positive_rate(days)</code> — FP:total ratio</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>AI Intel Review Queue</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">Human-in-the-loop gate between AI-extracted intel and the analyst-verified workspace</p>
+      <div style="text-align:center;font-size:1.1rem;color:var(--brand);margin:1.5rem 0;font-weight:700;">
+        PENDING → APPROVED → PROMOTED<br/>
+        <span style="color:var(--sand);font-size:.9rem;">↓ REJECTED · MODIFIED</span>
+      </div>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);font-size:.75rem;">
+        <div class="card">
+          <h3>ReviewService Methods</h3>
+          <ul style="list-style:none;padding-left:0;">
+            <li><code>submit(stix_id, stix_type, stix_data)</code></li>
+            <li><code>approve(id, reviewer, notes, confidence)</code></li>
+            <li><code>reject(id, reviewer, reason)</code></li>
+            <li><code>modify(id, reviewer, modified_properties)</code></li>
+            <li><code>promote(id, reviewer, workspace_manager)</code></li>
+            <li><code>bulk_approve/reject(ids)</code></li>
+            <li><code>stats()</code> — per-status breakdown</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Interfaces</h3>
+          <ul style="list-style:none;padding-left:0;">
+            <li><strong>REST API:</strong> GET/POST /api/review, /api/review/{id}, stats</li>
+            <li><strong>CLI:</strong> <code>gnat review list --status pending</code></li>
+            <li><strong>CLI:</strong> <code>gnat review approve &lt;id&gt; --by alice --confidence 85</code></li>
+            <li><strong>TUI:</strong> F6 ReviewScreen · Approve/Reject/Modify with confidence input</li>
+            <li><strong>TUI:</strong> Ctrl+A bulk approve</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Phase 4 — Control, Reasoning &amp; Safety</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">✓ ExecutionContext · Domain Boundaries · HypothesisEngine · AgentGovernor · HITL · Workspace Trust — shipped in v1.6</p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;font-size:.75rem;">
+        <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.8rem;">
+          <strong style="color:var(--sand);">ExecutionContext</strong><br/>
+          Every operation stamped with context_id, domain, trust_level, workspace_id. Append-only execution_log.
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.8rem;">
+          <strong style="color:var(--sand);">Domain Boundaries</strong><br/>
+          Ingestion ↔ Analysis ↔ Investigation ↔ Reporting enforced. <code>@domain_boundary</code> decorator raises on illegal cross-domain calls.
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.8rem;">
+          <strong style="color:var(--sand);">HypothesisEngine</strong><br/>
+          propose → evaluate → close lifecycle. Confidence weighted by connector TRUST_LEVEL (0.9/0.6/0.3).
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.8rem;">
+          <strong style="color:var(--sand);">Connector Trust Model</strong><br/>
+          31 trusted_internal (0.9) · 61 semi_trusted (0.6) · 7 untrusted_external (0.3)
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.8rem;">
+          <strong style="color:var(--sand);">AgentGovernor + HITL</strong><br/>
+          All agent actions routed through permission matrix. High/critical actions create PENDING ReviewItem.
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.8rem;">
+          <strong style="color:var(--sand);">ReasoningEngine</strong><br/>
+          prioritize(observable_set, context) scores by trust, confidence, TTL, age, corroboration. Structured explanation dict.
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>The Abstraction Advantage</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
         <div class="card card-gnat">
-          <h3>GitHub</h3>
-          <p><a href="https://github.com/wrhalpin/GNAT" style="color:var(--brand);">github.com/wrhalpin/GNAT</a></p>
+          <h3>Portability</h3>
+          <p>Switch from ThreatQ to a new TIP? Change one config line. The pipeline, scheduler, reports, and export jobs all work unchanged.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Maintenance</h3>
+          <p>API changes affect one connector file, not every script. Tests cover all connectors uniformly. One library version covers the entire integration stack.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Interface Consistency</h3>
+          <p>Every platform exposes <code>get_object()</code>, <code>list_objects()</code>, <code>upsert_object()</code>, <code>to_stix()</code>, <code>from_stix()</code>. One mental model for 159 platforms.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Coherence</h3>
+          <p>One scheduler, one health endpoint, one log stream. <code>FeedScheduler.summary()</code> answers all questions about overnight runs.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Incremental Adoption</h3>
+          <p>Each layer is independently useful. Start with connectors. Add ingest. Add export. Add AI. Add reports. Stack is additive.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Test Coverage</h3>
+          <p>5,100+ unit tests across 40+ files. Every connector, pipeline stage, renderer, scheduler, v1.4/1.5 module. Confidence without regression fear.</p>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Code Safety, CI &amp; Developer Security</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);font-size:.78rem;">
+        <div class="card">
+          <h3>GitHub Actions CI</h3>
+          <p>pylint on every push. Python 3.9/3.10/3.11/3.12 matrix. Fails build on any lint error. Badge on README.</p>
         </div>
         <div class="card">
-          <h3>Docs &amp; GitHub Pages</h3>
-          <p><a href="https://wrhalpin.github.io/GNAT/" style="color:var(--brand);">wrhalpin.github.io/GNAT</a></p>
+          <h3>Ruff + mypy</h3>
+          <p>E, F, W, I, UP, B, C4, SIM rules. Line 100, Python 3.9 target. <code>warn_return_any, strict configs</code>. <code>make check</code> = lint + typecheck gate.</p>
         </div>
-        <div class="card card-sand">
-          <h3>SandGNAT</h3>
-          <p><a href="https://wrhalpin.github.io/SandGNAT/" style="color:var(--sand);">wrhalpin.github.io/SandGNAT</a></p>
+        <div class="card">
+          <h3>Testing</h3>
+          <p>5,100+ unit tests across 40+ files. 70% minimum coverage enforced. Docker integration harness (ES + Solr).</p>
         </div>
-        <div class="card card-sense">
-          <h3>SenseGNAT</h3>
-          <p><a href="https://wrhalpin.github.io/SenseGNAT/" style="color:var(--sense);">wrhalpin.github.io/SenseGNAT</a></p>
+        <div class="card">
+          <h3>Dependabot</h3>
+          <p>Automated PRs, one per dependency for audit trail. Pinned versions reviewed before merge. Python + GitHub Actions coverage.</p>
         </div>
-        <div class="card card-red">
-          <h3>RedGNAT</h3>
-          <p><a href="https://wrhalpin.github.io/RedGNAT/" style="color:var(--red);">wrhalpin.github.io/RedGNAT</a></p>
+        <div class="card">
+          <h3>Security Scanning</h3>
+          <p>Snyk: dependency vulnerability scanning + code security. GitHub secret scanning: blocks known patterns before history.</p>
         </div>
-        <div class="card card-gui">
-          <h3>GNAT-gui</h3>
-          <p><a href="https://github.com/wrhalpin/GNAT-gui" style="color:var(--gui);">github.com/wrhalpin/GNAT-gui</a></p>
+        <div class="card">
+          <h3>Safety Guardrails</h3>
+          <p>AI confidence ceiling 60 (draft PRs only). Localhost binding by default. <code>call()</code> write guard. No credentials in source. HMAC constant-time validation.</p>
         </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>By the Numbers</h2>
+      <div class="stat-row" style="margin-top:2rem;">
+        <div class="stat"><div class="stat-num">159</div><div class="stat-lbl">Platform Connectors</div></div>
+        <div class="stat"><div class="stat-num">5,100+</div><div class="stat-lbl">Unit Tests</div></div>
+        <div class="stat"><div class="stat-num">250+</div><div class="stat-lbl">Source Files</div></div>
+        <div class="stat"><div class="stat-num">~$50</div><div class="stat-lbl">Monthly Azure VM</div></div>
+        <div class="stat"><div class="stat-num">60</div><div class="stat-lbl">AI Confidence Ceiling</div></div>
+        <div class="stat"><div class="stat-num">49</div><div class="stat-lbl">Architecture Decision Records</div></div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Implementation Sequence</h2>
+      <div class="two-col" style="margin-top:1.5rem;font-size:.75rem;gap:1rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+          <div style="background:var(--surface-2);border:2px solid var(--sand);border-radius:8px;padding:.8rem;">
+            <strong style="color:var(--sand);">Phase 1: Days 1-2</strong><br/>
+            Install + configure config.ini · Test: gnat ping · First ingest dry-run
+          </div>
+          <div style="background:var(--surface-2);border:2px solid var(--sand);border-radius:8px;padding:.8rem;">
+            <strong style="color:var(--sand);">Phase 2: Days 3-5</strong><br/>
+            All connector configs · Primary ingest (TQ, RF, CS) · FeedScheduler running
+          </div>
+          <div style="background:var(--surface-2);border:2px solid var(--sand);border-radius:8px;padding:.8rem;">
+            <strong style="color:var(--sand);">Phase 3: Days 6-8</strong><br/>
+            Netskope CE ExportJob (15 min) · EDL files hourly · Verify TQ → CE → EDLs
+          </div>
+          <div style="background:var(--surface-2);border:2px solid var(--sand);border-radius:8px;padding:.8rem;">
+            <strong style="color:var(--sand);">Phase 4: Days 9-10</strong><br/>
+            Configure [claude] · First ResearchAgent query · CurationJob to scheduler
+          </div>
+          <div style="background:var(--surface-2);border:2px solid var(--sand);border-radius:8px;padding:.8rem;">
+            <strong style="color:var(--sand);">Phase 5: Days 11-14</strong><br/>
+            Daily report PDF/HTML · Configure email · ReportJob at 06:00 daily
+          </div>
+          <div style="background:var(--surface-2);border:2px solid var(--sand);border-radius:8px;padding:.8rem;">
+            <strong style="color:var(--sand);">Phase 6: Ongoing</strong><br/>
+            Analyst config templates · Share EXAMPLES.md · Library review process
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>All Roadmap Items — Complete</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">✓ Every pending item has shipped — v1.9.0 complete · Phase 4 (v1.6) shipped</p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem;font-size:.75rem;">
+        <ul style="list-style:none;padding-left:0;text-align:left;">
+          <li>✅ x_target_sectors normalized across all connectors</li>
+          <li>✅ DOCX renderer — pure Python (python-docx)</li>
+          <li>✅ WorkspaceManager.default() method</li>
+          <li>✅ Copilot DirectLine token refresh</li>
+          <li>✅ CLI: gnat report run / gnat report list</li>
+          <li>✅ SectorFilter in gnat.export.filters</li>
+          <li>✅ Email body: rendered HTML content</li>
+          <li>✅ NLP Query Interface (builtin + Claude)</li>
+          <li>✅ Client Capability Reflection + safe dispatch</li>
+          <li>✅ XSOAR Content Pack Generator</li>
+          <li>✅ Docker containerization (3-service stack)</li>
+          <li>✅ Database Migrations (Alembic + gnat-db CLI)</li>
+          <li>✅ Plugin System (PluginRegistry + HookBus)</li>
+          <li>✅ WorkflowEngine DAG (PhishingTriage · IncidentResponse)</li>
+          <li>✅ Terminal UI (Textual, SSH-safe, F1–F6 screens)</li>
+          <li>✅ Web Dashboard (FastAPI, X-Api-Key, rate-limited)</li>
+        </ul>
+        <ul style="list-style:none;padding-left:0;text-align:left;">
+          <li>✅ Connector Health + Drift Monitoring</li>
+          <li>✅ Upstream Contribution Pipeline (7-step gate)</li>
+          <li>✅ TAXII 2.1 Server (full read + write protocol)</li>
+          <li>✅ STIX 2.1 Pattern Validator (two-tier)</li>
+          <li>✅ Multi-Tenant Workspace Isolation</li>
+          <li>✅ Docker Integration Test Harness</li>
+          <li>✅ 159 connectors total in CLIENT_REGISTRY</li>
+          <li>✅ LLMClient: Claude · OpenAI · Grok · Gemini (v1.3)</li>
+          <li>✅ Policy Engine (RBAC · Permission matrix · audit hook)</li>
+          <li>✅ Data Lineage tracking (append-only event log)</li>
+          <li>✅ Analyst Metrics (ring-buffer · 9 metric types)</li>
+          <li>✅ AI Intel Review Queue (submit → approve → promote)</li>
+          <li>✅ Phase 4: ExecutionContext + Domain Boundaries (v1.6)</li>
+          <li>✅ Phase 4: HypothesisEngine + NegativeEvidence + ReasoningEngine</li>
+          <li>✅ Phase 4: AgentGovernor + HITLGateway + Workspace Trust Boundary</li>
+        </ul>
+      </div>
+    </section>
+    <section class="slide-title" data-background-color="#1A1A1A">
+      <h1><span class="accent">GNAT</span></h1>
+      <p style="font-size:1.1rem;color:var(--muted);margin-top:-.4rem;">One library. Every platform. Total control.</p>
+      <div style="font-size:.85rem;color:var(--ink);margin-top:2rem;line-height:1.8;">
+        <p>159 connectors · STIX 2.1 ORM · Ingest + Export pipelines · Kafka telemetry ingestion</p>
+        <p>HuntGNAT: STIX → Sigma/YARA/Suricata/Snort · Hunt packages · ATT&CK coverage · Drift detection</p>
+        <p>Attribution: Campaign tracking · Diamond Model · Kill-chain · Actor profiles · Infrastructure classification</p>
+        <p>AI agents (Claude · OpenAI · Grok · Gemini) · TAXII 2.1 · Policy RBAC · 5,100+ tests · ~$50/month Azure</p>
+      </div>
+      <div style="margin-top:2rem;font-size:.8rem;color:var(--muted);">
+        <strong style="color:#fff;">Version 1.9.0</strong> | Python 3.9+ | Apache 2.0 | EXAMPLES.md · IMPLEMENTATION_PLAN.md · README.md
       </div>
     </section>
 
   </div>
 </div>
 
-<a class="back-link" href="../index.html">← GNAT docs</a>
-
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/plugin/notes/notes.js"></script>
 <script>
   Reveal.initialize({
     hash: true,
-    slideNumber: 'c/t',
-    progress: true,
-    controls: true,
-    center: true,
+    slideNumber: true,
     transition: 'slide',
-    transitionSpeed: 'fast',
     backgroundTransition: 'fade',
+    plugins: [RevealNotes],
+    width: '100%',
+    height: '100%',
+    margin: 0.05,
+    minScale: 0.2,
+    maxScale: 2.0
   });
 </script>
+
 </body>
 </html>
