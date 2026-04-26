@@ -403,6 +403,18 @@
       </ul>
     </section>
 
+    <section data-background="#1a1a1a">
+      <h2>GNATHunt — Detection Rules & Hunting</h2>
+      <p style="font-size: 0.85em;">Convert STIX to detection rules. Hunt packages. ATT&CK coverage mapping. Drift detection.</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>STIX → Detection Rules:</strong> Malware/Campaign/Tool indicators → Sigma + YARA + Suricata + Snort rules. Confidence-weighted rule weight. Automated rule publication to EDL + SOC platform integrations.</li>
+        <li><strong>Hunt Packages:</strong> Bundled rules with metadata (adversary, campaign, techniques, severity). Importable into Splunk, Elastic, Chronicle, QRadar. Version control + diff tracking.</li>
+        <li><strong>ATT&CK Coverage Mapping:</strong> Every rule tagged with MITRE ATT&CK technique/sub-technique. Coverage heatmap by tactic. Gaps identified and prioritized.</li>
+        <li><strong>Drift Detection:</strong> Scheduled hunt job compares rule effectiveness (hit count, FP rate) against baseline. Drift >10% triggers analyst review. Rules auto-archived if no hits in 90 days.</li>
+        <li><strong>Integration:</strong> GNATHunt hooks into campaign tracking — when Campaign confirmed, emit detection rules + hunt package. Daily hunts run via FeedScheduler.</li>
+      </ul>
+    </section>
+
     <!-- ROLLOUT & ROADMAP SECTION (Slides 33-36) -->
     <section data-background="#1a1a1a">
       <h2>Security & CI</h2>
@@ -437,18 +449,6 @@
         <li><strong>Storage:</strong> ~/.gnat/config.ini · workspaces/ (SQLite or Postgres) · /var/reports/ (PDF/DOCX output)</li>
         <li><strong>Scale-out patterns:</strong> 100+ feeds → AI jobs → Azure Container Instances. EDL SLA <5 min → dedicate B1s VM to gnat-edl. 10+ analysts → FlatFileStore → PostgreSQL (one config change). Multi-tenant → 1 workspace namespace per tenant, shared codebase.</li>
         <li><strong>Monitoring:</strong> <code>gnat health check</code> for baseline · Prometheus + Grafana for scale · <code>make docker-full --profile monitoring</code> for local testing</li>
-      </ul>
-    </section>
-
-    <section data-background="#1a1a1a">
-      <h2>GNATHunt — Detection Rules & Hunting</h2>
-      <p style="font-size: 0.85em;">Convert STIX to detection rules. Hunt packages. ATT&CK coverage mapping. Drift detection.</p>
-      <ul style="font-size: 0.8em; margin-top: 1em;">
-        <li><strong>STIX → Detection Rules:</strong> Malware/Campaign/Tool indicators → Sigma + YARA + Suricata + Snort rules. Confidence-weighted rule weight. Automated rule publication to EDL + SOC platform integrations.</li>
-        <li><strong>Hunt Packages:</strong> Bundled rules with metadata (adversary, campaign, techniques, severity). Importable into Splunk, Elastic, Chronicle, QRadar. Version control + diff tracking.</li>
-        <li><strong>ATT&CK Coverage Mapping:</strong> Every rule tagged with MITRE ATT&CK technique/sub-technique. Coverage heatmap by tactic. Gaps identified and prioritized.</li>
-        <li><strong>Drift Detection:</strong> Scheduled hunt job compares rule effectiveness (hit count, FP rate) against baseline. Drift >10% triggers analyst review. Rules auto-archived if no hits in 90 days.</li>
-        <li><strong>Integration:</strong> GNATHunt hooks into campaign tracking — when Campaign confirmed, emit detection rules + hunt package. Daily hunts run via FeedScheduler.</li>
       </ul>
     </section>
 
