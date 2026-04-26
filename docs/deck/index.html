@@ -121,6 +121,40 @@
       </ul>
     </section>
 
+    <!-- PIPELINES & ORCHESTRATION SECTION (Slides 9-11) -->
+    <section data-background="#1a1a1a">
+      <h2>Ingest Pipeline</h2>
+      <p style="font-size: 0.85em;"><strong>SourceReader</strong> (14 types) → <strong>RecordMapper</strong> (12 types) → <strong>Workspace</strong></p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Readers:</strong> PlainText, CSV, JSON, JSONL, STIX Bundle, TAXII, SQL, MISP, Syslog, RSS, Email, OpenIOC, Splunk, Elastic, Kafka</li>
+        <li><strong>Mappers:</strong> FlatIOC, STIXPassthrough, MISP, CEF, SQLRow, CSV, RSSEntry, Email, OpenIOC, Splunk, Elastic, NVD CVE, Telemetry</li>
+        <li><strong>Processing:</strong> Deduplication, confidence scoring, x_target_sectors normalization, TTL tracking</li>
+        <li><strong>Output:</strong> STIX objects → Workspace (SQLite/Postgres/FlatFile)</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Export Pipeline</h2>
+      <p style="font-size: 0.85em;"><strong>Workspace</strong> → <strong>ExportFilter</strong> → <strong>ExportTransform</strong> → <strong>Delivery</strong></p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Filters:</strong> TypeFilter (indicator|malware|campaign...), ConfidenceFilter (min/max %), TLPFilter (WHITE|GREEN|AMBER|RED), SectorFilter, IOCTypeFilter, LimitFilter</li>
+        <li><strong>Transforms:</strong> EDLTransform (IP/domain/hash lists), NetskopeCETransform (tenant format), STIXBundle, CSV</li>
+        <li><strong>Delivery:</strong> FileDelivery (disk), EDLServer (HTTP), PlatformDelivery (write back to connectors), MultiDelivery (parallel)</li>
+        <li><strong>Real example:</strong> ThreatQ → GNAT → Netskope CE (FQDN+URL+SHA256 every 15 min) → Firewall EDLs</li>
+      </ul>
+    </section>
+
+    <section data-background="#1a1a1a">
+      <h2>Scheduling & Job Orchestration</h2>
+      <p style="font-size: 0.85em;"><strong>FeedScheduler</strong> — unified thread-safe scheduler for all job types</p>
+      <ul style="font-size: 0.8em; margin-top: 1em;">
+        <li><strong>Job Types:</strong> ExportJob (EDL/CE delivery), ReportJob (PDF/DOCX/HTML), CurationJob (library dedup), HealthCheckJob (connector monitoring), custom jobs</li>
+        <li><strong>Guarantees:</strong> Drift-corrected timing (hourly jobs stay hourly even if run takes 5min), overlap protection (skip or queue policy), on-success/on-failure hooks</li>
+        <li><strong>Adapters:</strong> APScheduler/Celery bridges for external schedulers, <code>to_cron_lines()</code> for crontab export</li>
+        <li><strong>CLI:</strong> <code>FeedScheduler.summary()</code> → single view of all running/queued/failed jobs</li>
+      </ul>
+    </section>
+
   </div>
 </div>
 
