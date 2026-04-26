@@ -27,6 +27,9 @@ from gnat.agents.copilot_prompts import (
     COPILOT_SYSTEM_PROMPT,
 )
 from gnat.agents.hypothesis_refinement import HypothesisRefinement, HypothesisScore
+from gnat.agents.copilot_governor import CopilotGovernor, CopilotAction, ActionRisk, CostTracker
+from gnat.agents.copilot_review import CopilotReviewManager
+from gnat.agents.copilot_audit import CopilotAuditLog
 
 
 class CopilotPhase(str, Enum):
@@ -81,6 +84,12 @@ class InvestigationCopilotSession:
             raise ValueError(f"Conversation {conversation_id} not found")
 
         self.session_context = ctx
+
+        # Initialize safety/governance components
+        self.governor = CopilotGovernor()
+        self.review_manager = CopilotReviewManager()
+        self.audit_log = CopilotAuditLog()
+        self.cost_tracker = CostTracker(investigation_id=ctx.investigation_id)
 
     async def ask_clarifying_question(self, user_input: str) -> str:
         """

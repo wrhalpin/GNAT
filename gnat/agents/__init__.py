@@ -104,6 +104,15 @@ from gnat.agents.assistant_analyst import (
     EnrichmentSuggestion,
     ReportDraftOption,
 )
+from gnat.agents.copilot_governor import (
+    CopilotGovernor,
+    CopilotAction,
+    AssistantAction,
+    ActionRisk,
+    CostTracker,
+)
+from gnat.agents.copilot_review import CopilotReviewManager, CopilotReviewRequest
+from gnat.agents.copilot_audit import CopilotAuditLog, CopilotAuditEntry
 from gnat.agents.llm import LLMClient
 from gnat.agents.openai_compatible import OpenAICompatibleProvider
 from gnat.agents.parsing import ParsingAgent
@@ -130,4 +139,13 @@ __all__ = [
     "LiveAnalystAssistantSession",
     "EnrichmentSuggestion",
     "ReportDraftOption",
+    "CopilotGovernor",
+    "CopilotAction",
+    "AssistantAction",
+    "ActionRisk",
+    "CostTracker",
+    "CopilotReviewManager",
+    "CopilotReviewRequest",
+    "CopilotAuditLog",
+    "CopilotAuditEntry",
 ]
