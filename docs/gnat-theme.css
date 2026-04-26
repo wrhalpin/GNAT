@@ -130,6 +130,9 @@ header.hero{
 .card-gui{border-color:#2d8cb8;}
 .card-gui h3{color:#2d8cb8;}
 .card-link-gui{background:#2d8cb8;}
+.card-deck{border-color:#C41E2A;}
+.card-deck h3{color:#C41E2A;}
+.card-link-deck{background:#C41E2A;}
 .quadrants{
   border-collapse:collapse;
   width:100%;

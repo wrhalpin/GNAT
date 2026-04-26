@@ -1,5 +1,3 @@
 {
-  "dependencies": {
-    "pptxgenjs": "^4.0.1"
-  }
+  "description": "GNAT presentation deck — live Reveal.js deck at docs/deck/index.html"
 }

@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GNAT — Live Presentation Deck</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+  <style>
+    /* ── GNAT palette override ── */
+    :root {
+      --brand:     #C41E2A;
+      --brand-dk:  #9B1820;
+      --surface:   #1A1A1A;
+      --surface-2: #242424;
+      --line:      #3A3A3A;
+      --ink:       #E0E0E0;
+      --muted:     #9E9E9E;
+      --sand:      #D4A017;
+      --red:       #C0392B;
+      --sense:     #7C3AED;
+      --gui:       #2d8cb8;
+    }
+
+    .reveal-viewport { background: var(--surface); }
+    .reveal { color: var(--ink); font-family: Inter, Arial, sans-serif; }
+
+    .reveal h1, .reveal h2, .reveal h3 { color: #fff; text-transform: none; letter-spacing: -.01em; }
+    .reveal h1 { font-size: 2.6rem; }
+    .reveal h2 { font-size: 1.85rem; }
+    .reveal h3 { font-size: 1.25rem; }
+    .reveal p, .reveal li { color: var(--ink); }
+    .reveal a { color: var(--brand); }
+    .reveal strong { color: #fff; }
+
+    /* title slide */
+    .slide-title { background: linear-gradient(160deg, var(--surface) 0%, #0d0d0d 100%); }
+    .slide-title h1 { font-size: 3.2rem; }
+    .kicker {
+      display: inline-block;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .accent { color: var(--brand); }
+    .tag-row { margin-top: 1.2rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+    .tag {
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      border-radius: 999px;
+      padding: .25rem .75rem;
+      font-size: .8rem;
+      color: var(--ink);
+    }
+
+    /* section accent bar */
+    .reveal section.has-accent::before {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 4px;
+      background: var(--brand);
+      border-radius: 2px;
+      margin: 0 auto .9rem;
+    }
+
+    /* cards grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: .75rem;
+      margin-top: 1rem;
+    }
+    .card {
+      background: var(--surface-2);
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem .9rem;
+      text-align: left;
+    }
+    .card h3 { margin: 0 0 .35rem; font-size: 1rem; }
+    .card p  { margin: 0; font-size: .78rem; color: var(--muted); line-height: 1.45; }
+    .card-sand  { border-color: var(--sand); }
+    .card-sand  h3 { color: var(--sand); }
+    .card-red   { border-color: var(--red); }
+    .card-red   h3 { color: var(--red); }
+    .card-sense { border-color: var(--sense); }
+    .card-sense h3 { color: var(--sense); }
+    .card-gui   { border-color: var(--gui); }
+    .card-gui   h3 { color: var(--gui); }
+    .card-gnat  { border-color: var(--brand); }
+    .card-gnat  h3 { color: var(--brand); }
+
+    /* stat row */
+    .stat-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+    .stat {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: .9rem 1.4rem;
+      min-width: 130px;
+      text-align: center;
+    }
+    .stat-num { font-size: 2.2rem; font-weight: 700; color: var(--brand); line-height: 1; }
+    .stat-lbl { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .3rem; }
+
+    /* flow diagram */
+    .flow { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
+    .flow-box {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: .65rem 1rem;
+      font-size: .8rem;
+      text-align: center;
+      min-width: 100px;
+    }
+    .flow-box strong { display: block; font-size: .9rem; color: #fff; }
+    .flow-box span { color: var(--muted); font-size: .72rem; }
+    .flow-box.box-gnat { border-color: var(--brand); }
+    .flow-box.box-gnat strong { color: var(--brand); }
+    .flow-box.box-sense { border-color: var(--sense); }
+    .flow-box.box-sense strong { color: var(--sense); }
+    .flow-box.box-sand { border-color: var(--sand); }
+    .flow-box.box-sand strong { color: var(--sand); }
+    .flow-box.box-red { border-color: var(--red); }
+    .flow-box.box-red strong { color: var(--red); }
+    .flow-arrow { color: var(--muted); font-size: 1.2rem; }
+
+    /* two-col */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; text-align: left; }
+    .two-col ul { margin: .5rem 0; padding-left: 1.2rem; }
+    .two-col li { font-size: .82rem; color: var(--muted); line-height: 1.6; }
+    .col-head { font-size: .85rem; font-weight: 700; color: #fff; margin-bottom: .4rem; }
+
+    /* code-ish */
+    .cli-box {
+      background: #0d0d0d;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: .8rem 1.1rem;
+      font-family: 'Courier New', monospace;
+      font-size: .78rem;
+      color: #a3e635;
+      text-align: left;
+      margin-top: .8rem;
+    }
+
+    /* progress bar */
+    .reveal .progress { color: var(--brand); }
+    .reveal .progress span { background: var(--brand); }
+
+    /* controls */
+    .reveal .controls { color: var(--brand); }
+
+    /* nav link */
+    .back-link {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      font-size: .75rem;
+      color: var(--muted);
+      text-decoration: none;
+      z-index: 100;
+    }
+    .back-link:hover { color: var(--ink); }
+  </style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+
+    <!-- 1. Title -->
+    <section class="slide-title" data-background-color="#1A1A1A">
+      <span class="kicker">GNAT-o-sphere · Core Platform · v1.9.0</span>
+      <h1><span class="accent">GNAT</span></h1>
+      <p style="font-size:1.15rem;color:var(--muted);margin-top:-.4rem;">
+        GNAT's Not A TIP — Cyber Threat Intel Made Simple
+      </p>
+      <div class="tag-row">
+        <span class="tag">159 connectors</span>
+        <span class="tag">STIX 2.1 native</span>
+        <span class="tag">AI-assisted</span>
+        <span class="tag">Apache 2.0</span>
+        <span class="tag">Python 3.9 – 3.13</span>
+      </div>
+    </section>
+
+    <!-- 2. The Problem -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>The Problem</h2>
+      <p style="color:var(--muted);font-size:.9rem;max-width:700px;margin:0 auto .8rem;">
+        Security teams rebuild the same automation, enrichment, and reporting logic around every new vendor API. The result is fragile, non-portable workflows that break with each contract renewal.
+      </p>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="card">
+          <h3>Integration churn</h3>
+          <p>Each new platform demands bespoke glue code that nobody else can maintain.</p>
+        </div>
+        <div class="card">
+          <h3>Stranded intel</h3>
+          <p>Indicators live in silos — enrichment, context, and attribution can't travel with them.</p>
+        </div>
+        <div class="card">
+          <h3>Workflow lock-in</h3>
+          <p>Automations are tied to specific tools, so every vendor change restarts the clock.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. What GNAT does -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>What GNAT Does</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="card card-gnat">
+          <h3>Normalize</h3>
+          <p>159 connectors behind one unified client surface — same call signature everywhere.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Translate</h3>
+          <p>STIX 2.1 as the stable contract. Objects, bundles, and patterns that travel between tools.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Analyze</h3>
+          <p>Diamond Model attribution, kill-chain mapping, campaign tracking, and hypothesis evaluation.</p>
+        </div>
+        <div class="card card-gnat">
+          <h3>Anchor the ecosystem</h3>
+          <p>Hub platform that SandGNAT, SenseGNAT, RedGNAT, and GNAT-gui plug into.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Platform Stats -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Platform Stats</h2>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num">159</div><div class="stat-lbl">Connectors</div></div>
+        <div class="stat"><div class="stat-num">1.9</div><div class="stat-lbl">Version</div></div>
+        <div class="stat"><div class="stat-num">15</div><div class="stat-lbl">Ingest readers</div></div>
+        <div class="stat"><div class="stat-num">13</div><div class="stat-lbl">Mappers</div></div>
+        <div class="stat"><div class="stat-num">8</div><div class="stat-lbl">ORM types</div></div>
+        <div class="stat"><div class="stat-num">4</div><div class="stat-lbl">LLM backends</div></div>
+      </div>
+      <p style="margin-top:1.2rem;font-size:.8rem;color:var(--muted);">
+        Platforms covered: EDRs, SIEMs, TIPs, ASM, UEBA, MDR, BAS, sandbox, identity, email security, OSINT, DFIR, bug bounty, and more.
+      </p>
+    </section>
+
+    <!-- 5. Core Architecture -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Core Architecture</h2>
+      <div class="two-col">
+        <div>
+          <div class="col-head">Data layer</div>
+          <ul>
+            <li>STIX 2.1 ORM — pure Python property bag, no SQLAlchemy</li>
+            <li>urllib3 (sync) + httpx (async) — zero <code>requests</code> dependency</li>
+            <li>INI-based config — zero-dep, per-platform sections</li>
+            <li>Optional Rust extension (<code>gnat._core</code>) for hot paths</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-head">Pipeline layer</div>
+          <ul>
+            <li>Ingest: 15 readers · 13 mappers · Kafka telemetry · Redis dedup</li>
+            <li>Export: EDL · Netskope CE delivery targets</li>
+            <li>Schedule: croniter-based FeedJob / FeedScheduler</li>
+            <li>Search: Solr 9.x full-text sidecar with ORM integration</li>
+            <li>Serve: FastAPI + TAXII 2.1 endpoint</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. AI & Analysis -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>AI &amp; Analysis</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="card">
+          <h3>LLMClient</h3>
+          <p>Unified facade — Claude, OpenAI, Grok (xAI), Gemini. Automatic fallback. urllib3-based, no requests.</p>
+        </div>
+        <div class="card">
+          <h3>Agents</h3>
+          <p>ResearchAgent (SourceReader), ParsingAgent (RecordMapper), quality agents, repo-maintenance agents, secrets hygiene.</p>
+        </div>
+        <div class="card">
+          <h3>Attribution</h3>
+          <p>Diamond Model, kill-chain mapping, campaign auto-link, infrastructure classification, hypothesis engine (Hy + YAML + Prolog rule backends).</p>
+        </div>
+        <div class="card">
+          <h3>Detection rules</h3>
+          <p>STIX → Sigma, YARA, Suricata, Snort. Hunt packages, ATT&amp;CK coverage, validation. (huntgnat plugin)</p>
+        </div>
+        <div class="card">
+          <h3>Reports</h3>
+          <p>AI-assisted PDF + DOCX via ReportLab / python-docx. ResearchLibrary + CurationJob pipeline.</p>
+        </div>
+        <div class="card">
+          <h3>NLP</h3>
+          <p>Built-in IOC extraction + Claude backend. Extracts indicators from freeform text at analyst speed.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. The GNAT-o-sphere -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>The GNAT-o-sphere</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:.6rem;">
+        <div class="card card-sand">
+          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
+          <h3>SandGNAT</h3>
+          <p>Automated malware sandbox — detonate binaries in isolated VMs, capture behavioral artifacts, emit STIX 2.1 objects.</p>
+        </div>
+        <div class="card card-red">
+          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
+          <h3>RedGNAT</h3>
+          <p>Continuous adversary emulation — ingest threat intel, construct scenarios, execute with safety controls.</p>
+        </div>
+        <div class="card card-sense">
+          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Addon</span>
+          <h3>SenseGNAT</h3>
+          <p>Network behavior analysis — Kafka telemetry, Redis dedup, anomaly detection, campaign auto-link.</p>
+        </div>
+        <div class="card card-gui">
+          <span style="font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Web App</span>
+          <h3>GNAT-gui</h3>
+          <p>Browser analyst workbench — investigation graphs, gap analysis, report drafting, live job streaming.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Canonical Workflow -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Canonical Workflow</h2>
+      <div class="flow">
+        <div class="flow-box">
+          <strong>Sources</strong>
+          <span>Feeds, APIs,<br>sensors</span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box box-gnat">
+          <strong>GNAT</strong>
+          <span>Ingest · normalize<br>STIX · route</span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <div class="flow-box box-sense"><strong>SenseGNAT</strong><span>Behavioral profiling</span></div>
+          <div class="flow-box box-sand"><strong>SandGNAT</strong><span>Malware detonation</span></div>
+          <div class="flow-box box-red"><strong>RedGNAT</strong><span>Adversary emulation</span></div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          <strong>Act</strong>
+          <span>Investigate · report<br>detect · export</span>
+        </div>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:1rem;">
+        GNAT-gui provides the browser workbench across all stages — investigation graphs, live job streaming, report output.
+      </p>
+    </section>
+
+    <!-- 9. Getting Started -->
+    <section class="has-accent" data-background-color="#1A1A1A">
+      <h2>Getting Started</h2>
+      <div class="cli-box">
+        <div style="color:var(--muted);margin-bottom:.4rem;"># Install</div>
+        pip install gnat<br>
+        pip install "gnat[all]"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted)"># everything</span><br><br>
+        <div style="color:var(--muted);margin-bottom:.4rem;"># Configure</div>
+        cp config/config.ini.example ~/.gnat/config.ini<br><br>
+        <div style="color:var(--muted);margin-bottom:.4rem;"># Use the CLI</div>
+        gnat ingest --source taxii --output stix<br>
+        gnat report --template executive --format pdf<br>
+        gnat tui&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted)"># launch TUI</span>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:.8rem;">
+        Python 3.9–3.13 · Apache 2.0 · INI config, no secrets in code
+      </p>
+    </section>
+
+    <!-- 10. Links -->
+    <section data-background-color="#1A1A1A">
+      <span class="kicker">GNAT-o-sphere</span>
+      <h2>Resources</h2>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr);margin-top:1rem;">
+        <div class="card card-gnat">
+          <h3>GitHub</h3>
+          <p><a href="https://github.com/wrhalpin/GNAT" style="color:var(--brand);">github.com/wrhalpin/GNAT</a></p>
+        </div>
+        <div class="card">
+          <h3>Docs &amp; GitHub Pages</h3>
+          <p><a href="https://wrhalpin.github.io/GNAT/" style="color:var(--brand);">wrhalpin.github.io/GNAT</a></p>
+        </div>
+        <div class="card card-sand">
+          <h3>SandGNAT</h3>
+          <p><a href="https://wrhalpin.github.io/SandGNAT/" style="color:var(--sand);">wrhalpin.github.io/SandGNAT</a></p>
+        </div>
+        <div class="card card-sense">
+          <h3>SenseGNAT</h3>
+          <p><a href="https://wrhalpin.github.io/SenseGNAT/" style="color:var(--sense);">wrhalpin.github.io/SenseGNAT</a></p>
+        </div>
+        <div class="card card-red">
+          <h3>RedGNAT</h3>
+          <p><a href="https://wrhalpin.github.io/RedGNAT/" style="color:var(--red);">wrhalpin.github.io/RedGNAT</a></p>
+        </div>
+        <div class="card card-gui">
+          <h3>GNAT-gui</h3>
+          <p><a href="https://github.com/wrhalpin/GNAT-gui" style="color:var(--gui);">github.com/wrhalpin/GNAT-gui</a></p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<a class="back-link" href="../index.html">← GNAT docs</a>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    progress: true,
+    controls: true,
+    center: true,
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'fade',
+  });
+</script>
+</body>
+</html>
