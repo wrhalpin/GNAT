@@ -83,6 +83,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from gnat.agents.confirmation import requires_confirmation
 from gnat.research.entry import (
     DEFAULT_TTLS,
     ResearchEntry,
@@ -233,6 +234,18 @@ class ResearchLibrary:
 
     # ── Promotion (personal → staging) ─────────────────────────────────────
 
+    @requires_confirmation(
+        scope="library.promote",
+        risk="medium",
+        subject_from=lambda args, kw: {
+            "topic": kw.get("topic") or (args[2] if len(args) > 2 else None),
+            "object_count": len(kw.get("stix_ids", [])) if kw.get("stix_ids") else "all",
+        },
+        reason=lambda args, kw: (
+            f"Promote research for topic '{kw.get('topic') or (args[2] if len(args) > 2 else 'unknown')}' to library"
+        ),
+        workspace=lambda args, kw: kw.get("workspace", args[1]).name if len(args) > 1 else "unknown",
+    )
     def promote(
         self,
         workspace: Workspace,
