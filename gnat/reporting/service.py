@@ -42,6 +42,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from gnat.agents.confirmation import requires_confirmation
 from gnat.analysis.confidence import ConfidenceScore
 from gnat.analysis.tlp import TLPLevel
 from gnat.reporting.models import (
@@ -193,6 +194,16 @@ class ReportService:
             self._store.save(report)  # persist reviewer before _transition reloads
         return self._transition(report_id, ReportStatus.APPROVED, reviewer, "Approved.")
 
+    @requires_confirmation(
+        scope="report.publish",
+        risk="irreversible",
+        subject_from=lambda args, kw: {
+            "report_id": args[1] if len(args) > 1 else kw.get("report_id"),
+            "changed_by": args[2] if len(args) > 2 else kw.get("changed_by"),
+        },
+        reason=lambda args, kw: "Publish report (irreversible state transition)",
+        workspace="reports",
+    )
     def publish(self, report_id: str, changed_by: str) -> Report:
         """
         Publish a report: APPROVED → PUBLISHED.
