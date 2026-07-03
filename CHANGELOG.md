@@ -19,6 +19,70 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — ConfirmationBroker (human-in-the-loop control-flow gates)
+
+New `gnat/agents/confirmation/` package: pauses sensitive or irreversible
+agent actions for analyst approval and records every decision.
+
+- `ConfirmationBroker` with INI-driven policies (`[confirmation]` +
+  `[confirmation.policies]`); scope patterns with `.*` prefix wildcard,
+  first match wins, `prompt_timeout_deny` fail-closed default
+- **Off by default**: without a `[confirmation]` section (or with
+  `enabled = false`) gated call sites run unchanged
+- Backends: `cli` (interactive terminal with real timeout), `dashboard`
+  (web; pending queue + `GET /api/confirmations/pending` and
+  `POST /api/confirmations/{id}/decide` routes), `auto` (test/ci only),
+  `null` (deny-all fallback), `recording` (test fixture with
+  `assert_requested()`)
+- `@requires_confirmation` decorator (sync + async) with secret-redacting
+  subject capture and lazy reason/workspace extraction
+- Append-only JSONL audit log (`~/.gnat/confirmation_audit.jsonl`) with
+  workspace/scope filtering and per-workspace outcome summaries
+- Gated call sites: `ResearchLibrary.promote()` (`library.promote`) and
+  `ReportService.publish()` (`report.publish`)
+- Docs: `docs/explanation/confirmation-broker.md`,
+  `docs/how-to/configure-confirmation-policies.md`; `[confirmation]`
+  template in `config/config.ini.example`
+
+### Added — Investigation Copilot & Live Analyst Assistant
+
+- `gnat/agents/conversations.py`: SQLite-backed `ConversationStore` with
+  turn history, session state machine, and token/latency tracking
+- `InvestigationCopilotSession` (phase machine: gathering → hypothesizing
+  → testing → closing) and `LiveAnalystAssistantSession` (enrichment
+  suggestions, report drafting, finding explanation, search help)
+- Governance: `CopilotGovernor` (risk-tiered action checks),
+  `CopilotReviewManager` (HITL review of high-confidence hypotheses),
+  `CopilotAuditLog`, `CostTracker` with per-model pricing
+- Guided workflows: phishing triage and incident response templates
+- TUI: F10 Copilot / F11 Assistant modal screens (color-coded
+  conversation, slash commands, F1 help)
+- Web API: `/api/chat/*` routes with SSE streaming, conversation
+  history, JSON/CSV export, and summary stats
+- CLI: `gnat/cli/copilot_cli.py` for scripted copilot/assistant use
+
+### Fixed
+
+- `import gnat` failed on any install: `gnat/agents/conversations.py`,
+  `copilot_governor.py`, `copilot_review.py`, and `copilot_audit.py`
+  imported names that do not exist (`workspace_manager`,
+  `ExecutionContext`, `Permission`, `ReviewService`); every test module,
+  the TUI, and the API server failed at import
+- `gnat/serve/routers/chat.py` imported a nonexistent
+  `gnat.serve.auth.get_current_user` and loaded config/SQLite at import
+  time, crashing server startup without a `[claude]` config section;
+  auth now follows the router-level `APIKeyAuth` pattern and stores are
+  created lazily
+- TUI copilot/assistant screens: wrong `Tabs` import path, invalid
+  `RichLog.write(end=...)` calls, `query_one()` during `compose()`, and
+  missing `Input.Submitted` handlers made both screens unusable; rebuilt
+  as `ModalScreen`s and exercised under a headless Textual pilot
+- ConfirmationBroker: `prompt_timeout_approve` policies now actually
+  approve on timeout; `decided` audit events carry workspace/scope so
+  summaries count outcomes; CLI backend note capture and case-sensitive
+  deny-with-note work; Python 3.9 compatibility (PEP 604 unions were
+  evaluated at runtime)
+
 ### Added — Job framework (Stream 3)
 
 New `gnat/jobs/` package for user-initiated, one-shot async operations

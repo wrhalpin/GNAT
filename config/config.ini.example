@@ -1315,3 +1315,39 @@ api_token = YOUR_BUGCROWD_API_TOKEN
 # stale_days_default = 30
 # fresh_days_default = 7
 # allow_dirty_rules = false
+
+# ──────────────────────────────────────────────────────────────────────
+# ConfirmationBroker — human-in-the-loop gates for sensitive agent
+# actions (library promotion, report publishing, connector writes).
+#
+# OFF BY DEFAULT: with no [confirmation] section, gated call sites run
+# unchanged. Adding the section (with enabled = true) turns on the gates.
+#
+# backend:
+#   cli        — interactive terminal prompt (development)
+#   dashboard  — web dashboard via /api/confirmations (production)
+#   auto       — approve everything; only loads when GNAT_ENV=test/ci/dev
+#   null       — deny everything (fail-closed fallback)
+#
+# default_action for scopes with no matching policy:
+#   auto_approve | auto_deny | prompt |
+#   prompt_timeout_approve | prompt_timeout_deny   (ship closed: deny)
+# ──────────────────────────────────────────────────────────────────────
+# [confirmation]
+# enabled = true
+# backend = cli
+# principal = analyst@example.com
+# default_action = prompt_timeout_deny
+# default_timeout_seconds = 300
+# audit_log_path = ~/.gnat/confirmation_audit.jsonl
+
+# Policies: scope pattern = action. First match wins; trailing .* is a
+# prefix wildcard (connector.delete.* matches connector.delete.threatq).
+# ──────────────────────────────────────────────────────────────────────
+# [confirmation.policies]
+# report.publish = prompt
+# library.promote = prompt
+# connector.delete.* = prompt
+# dissemination.taxii.publish = prompt
+# dissemination.webhook.* = prompt
+# agent.research.run = auto_approve

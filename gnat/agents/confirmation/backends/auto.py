@@ -8,29 +8,31 @@ AutoApproveBackend for testing and CI environments.
 """
 
 import os
+
 from gnat.agents.confirmation.backends.base import ConfirmationBackend
 from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
     ConfirmationOutcome,
+    ConfirmationRequest,
+    PromptResult,
 )
 
 
 class AutoApproveBackend(ConfirmationBackend):
     """
-    Backend that auto-approves all requests.
+    Backend that approves all requests without prompting.
 
     Intended for testing and CI environments only. Refuses to load
-    if GNAT_ENV is not "test" or "ci".
+    if GNAT_ENV is not "test", "ci", or "dev". Requests still flow
+    through the broker and are audited.
     """
 
     def __init__(self):
         env = os.environ.get("GNAT_ENV", "").lower()
         if env not in ("test", "ci", "dev"):
             raise RuntimeError(
-                "AutoApproveBackend is only allowed in test/ci/dev environments. "
-                f"GNAT_ENV={env}"
+                f"AutoApproveBackend is only allowed in test/ci/dev environments. GNAT_ENV={env!r}"
             )
 
-    def prompt(self, request: ConfirmationRequest) -> ConfirmationOutcome:
-        """Always return APPROVED."""
-        return ConfirmationOutcome.APPROVED
+    def prompt(self, request: ConfirmationRequest) -> PromptResult:
+        """Always approve."""
+        return PromptResult(ConfirmationOutcome.APPROVED, note="auto-approve backend")

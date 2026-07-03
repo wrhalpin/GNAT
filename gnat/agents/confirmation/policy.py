@@ -7,12 +7,11 @@ gnat.agents.confirmation.policy
 Policy engine for confirmation broker decisions.
 """
 
-from typing import Dict, Optional, Literal
-import re
+from typing import Optional
 
 from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
     ConfirmationOutcome,
+    ConfirmationRequest,
 )
 
 
@@ -34,7 +33,7 @@ class PolicyEngine:
 
     def __init__(
         self,
-        policies: Dict[str, str],
+        policies: dict[str, str],
         default_action: str = "prompt_timeout_deny",
     ):
         """
@@ -75,39 +74,17 @@ class PolicyEngine:
         Returns:
             ConfirmationOutcome if policy short-circuits, None if human decision needed
         """
-        # Find first matching policy
-        matched_action = self._find_matching_action(request.scope)
+        action = self.matched_action(request.scope)
 
-        if matched_action == "auto_approve":
+        if action == "auto_approve":
             return ConfirmationOutcome.AUTO_APPROVED
-        elif matched_action == "auto_deny":
+        if action == "auto_deny":
             return ConfirmationOutcome.AUTO_DENIED
-        elif matched_action == "prompt":
-            return None
-        elif matched_action == "prompt_timeout_approve":
-            # Return None now; timeout handling happens in broker
-            return None
-        elif matched_action == "prompt_timeout_deny":
-            # Return None now; timeout handling happens in broker
-            return None
+        # prompt / prompt_timeout_* defer to the backend; the broker reads
+        # matched_action() to decide what a timeout becomes.
+        return None
 
-    def get_action_and_timeout_behavior(self, request: ConfirmationRequest) -> tuple:
-        """
-        Get the matched action and how to handle timeouts.
-
-        Returns:
-            (action, timeout_becomes_outcome or None)
-        """
-        matched_action = self._find_matching_action(request.scope)
-
-        if matched_action == "prompt_timeout_approve":
-            return (matched_action, ConfirmationOutcome.APPROVED)
-        elif matched_action == "prompt_timeout_deny":
-            return (matched_action, ConfirmationOutcome.DENIED)
-        else:
-            return (matched_action, None)
-
-    def _find_matching_action(self, scope: str) -> str:
+    def matched_action(self, scope: str) -> str:
         """
         Find the first matching action for a scope.
 
@@ -120,9 +97,9 @@ class PolicyEngine:
         Returns:
             The matched action, or self.default_action if no match
         """
-        for pattern, action in self.policies.items():
+        for pattern, policy_action in self.policies.items():
             if self._pattern_matches(scope, pattern):
-                return action
+                return policy_action
 
         return self.default_action
 
@@ -151,7 +128,9 @@ class PolicyEngine:
             return scope == pattern
 
     @classmethod
-    def from_ini(cls, config_dict: Dict[str, str], section_name: str = "confirmation.policies") -> "PolicyEngine":
+    def from_ini(
+        cls, config_dict: dict[str, str], section_name: str = "confirmation.policies"
+    ) -> "PolicyEngine":
         """
         Load policies from an INI config section dict.
 

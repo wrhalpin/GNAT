@@ -10,9 +10,7 @@ Logs all operations to ExecutionContext for compliance and investigation review.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Dict, Any
-
-from gnat.context import ExecutionContext
+from typing import Any, Optional
 
 
 @dataclass
@@ -31,7 +29,7 @@ class CopilotAuditEntry:
     risk_level: str = "low"
     review_required: bool = False
     review_id: Optional[str] = None
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -63,12 +61,13 @@ class CopilotAuditLog:
     Integrates with ExecutionContext for compliance tracking.
     """
 
-    def __init__(self, context: Optional[ExecutionContext] = None):
+    def __init__(self, context: Optional[Any] = None):
         """
         Initialize audit log.
 
         Args:
-            context: Optional ExecutionContext (creates default if None)
+            context: Optional opaque execution-context handle used by
+                _log_to_context; entries are kept in memory when None.
         """
         self.context = context
         self.entries = []
@@ -184,7 +183,7 @@ class CopilotAuditLog:
 
         # Append to execution_log with structured format
         # TODO: Use context.execution_log.append() when available
-        log_entry = {
+        {
             "timestamp": entry.timestamp.isoformat(),
             "event_type": "copilot_operation",
             "operation": entry.operation,
@@ -233,7 +232,7 @@ class CopilotAuditLog:
 
         return [e.to_dict() for e in results]
 
-    def get_investigation_summary(self, investigation_id: str) -> Dict[str, Any]:
+    def get_investigation_summary(self, investigation_id: str) -> dict[str, Any]:
         """
         Get summary stats for an investigation.
 

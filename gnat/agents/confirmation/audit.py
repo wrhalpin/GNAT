@@ -9,14 +9,13 @@ Append-only audit log for confirmation decisions.
 
 import json
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any, Optional
 
 from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
     ConfirmationDecision,
-    ConfirmationOutcome,
+    ConfirmationRequest,
 )
 
 
@@ -24,21 +23,31 @@ class ConfirmationAuditLog:
     """Append-only JSONL audit log for confirmation events."""
 
     def __init__(self, log_path: str):
-        self.log_path = Path(log_path)
+        self.log_path = Path(log_path).expanduser()
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
+
+    @classmethod
+    def null(cls) -> "ConfirmationAuditLog":
+        """A no-op audit log for the disabled broker: records nothing and
+        creates no files."""
+        instance = cls.__new__(cls)
+        instance.log_path = None
+        instance._lock = threading.Lock()
+        return instance
 
     def record_requested(self, request: ConfirmationRequest) -> None:
         """Log a confirmation request."""
         event = {
             "event": "requested",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "request_id": str(request.request_id),
             "scope": request.scope,
             "action": request.action,
             "agent": request.agent,
             "workspace": request.workspace,
             "risk": request.risk,
+            "principal": request.principal,
             "principal_type": request.principal_type,
             "timeout_seconds": request.timeout_seconds,
         }
@@ -53,10 +62,14 @@ class ConfirmationAuditLog:
         decision: ConfirmationDecision,
     ) -> None:
         """Log a confirmation decision."""
+        # workspace and scope are duplicated from the request so decided
+        # events survive workspace/scope filtering on their own.
         event = {
             "event": "decided",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "request_id": str(decision.request_id),
+            "workspace": request.workspace,
+            "scope": request.scope,
             "outcome": decision.outcome.value,
             "decided_by": decision.decided_by,
         }
@@ -65,18 +78,19 @@ class ConfirmationAuditLog:
 
         self._write_event(event)
 
-    def _write_event(self, event: Dict[str, Any]) -> None:
-        """Write a single event to the log (thread-safe)."""
-        with self._lock:
-            with open(self.log_path, "a") as f:
-                f.write(json.dumps(event) + "\n")
+    def _write_event(self, event: dict[str, Any]) -> None:
+        """Write a single event to the log (thread-safe). No-op for null logs."""
+        if self.log_path is None:
+            return
+        with self._lock, open(self.log_path, "a") as f:
+            f.write(json.dumps(event) + "\n")
 
     def read_events(
         self,
         workspace: Optional[str] = None,
         request_id: Optional[str] = None,
         scope: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Read events from the audit log with optional filtering.
 
@@ -88,46 +102,45 @@ class ConfirmationAuditLog:
         Returns:
             List of matching events in chronological order.
         """
-        if not self.log_path.exists():
+        if self.log_path is None or not self.log_path.exists():
             return []
 
         events = []
-        with self._lock:
-            with open(self.log_path) as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        event = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
+        with self._lock, open(self.log_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
 
-                    # Filter
-                    if workspace and event.get("workspace") != workspace:
-                        continue
-                    if request_id and event.get("request_id") != request_id:
-                        continue
-                    if scope and event.get("scope") != scope:
-                        continue
+                # Filter
+                if workspace and event.get("workspace") != workspace:
+                    continue
+                if request_id and event.get("request_id") != request_id:
+                    continue
+                if scope and event.get("scope") != scope:
+                    continue
 
-                    events.append(event)
+                events.append(event)
 
         return events
 
-    def get_request_history(self, request_id: str) -> List[Dict[str, Any]]:
+    def get_request_history(self, request_id: str) -> list[dict[str, Any]]:
         """Get all events for a single request."""
         return self.read_events(request_id=request_id)
 
-    def get_workspace_history(self, workspace: str) -> List[Dict[str, Any]]:
+    def get_workspace_history(self, workspace: str) -> list[dict[str, Any]]:
         """Get all events for a workspace."""
         return self.read_events(workspace=workspace)
 
-    def get_scope_history(self, scope: str) -> List[Dict[str, Any]]:
+    def get_scope_history(self, scope: str) -> list[dict[str, Any]]:
         """Get all events for a specific scope."""
         return self.read_events(scope=scope)
 
-    def get_audit_summary(self, workspace: str) -> Dict[str, Any]:
+    def get_audit_summary(self, workspace: str) -> dict[str, Any]:
         """
         Generate audit summary for a workspace.
 

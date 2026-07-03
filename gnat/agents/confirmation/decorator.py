@@ -7,53 +7,64 @@ gnat.agents.confirmation.decorator
 @requires_confirmation decorator for gating actions.
 """
 
+from __future__ import annotations
+
 import asyncio
 import inspect
 from functools import wraps
-from typing import Callable, Optional, Dict, Any, Literal
-from uuid import uuid4
+from typing import Any, Callable
 
-from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
-    ConfirmationDenied,
-)
 from gnat.agents.confirmation.broker import ConfirmationBroker
+from gnat.agents.confirmation.models import ConfirmationRequest
+
+# typing.Literal risk values; kept as a plain tuple to avoid a runtime
+# Literal dependency in the signature
+_RISK_LEVELS = ("low", "medium", "high", "irreversible")
+
+_SECRET_KEY_FRAGMENTS = ("secret", "key", "token", "password", "credential")
 
 
 def _redact_secrets(obj: Any) -> Any:
     """
     Redact secret-shaped values from an object for audit logging.
 
-    Recursively handles dicts and lists. Redacts values with keys
-    matching secret patterns: *_key, *_secret, *_token, password, etc.
+    Recursively handles dicts and lists/tuples. Redacts values whose keys
+    contain secret-looking fragments (key, secret, token, password, ...).
     """
     if isinstance(obj, dict):
         redacted = {}
         for k, v in obj.items():
-            k_lower = k.lower()
-            if any(
-                pattern in k_lower
-                for pattern in ["secret", "key", "token", "password", "credential", "api_key"]
-            ):
+            k_lower = str(k).lower()
+            if any(fragment in k_lower for fragment in _SECRET_KEY_FRAGMENTS):
                 redacted[k] = "***REDACTED***"
             else:
                 redacted[k] = _redact_secrets(v)
         return redacted
-    elif isinstance(obj, list):
+    if isinstance(obj, (list, tuple)):
         return [_redact_secrets(item) for item in obj]
-    else:
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
         return obj
+    # Arbitrary objects aren't JSON-serializable; record their repr.
+    return repr(obj)
 
 
-def _caller_class_name() -> str:
-    """Extract the class name of the caller (for agent field)."""
+def _caller_class_name(skip_self: Any = None) -> str:
+    """
+    Best-effort name of the class whose method triggered the gated call.
+
+    Walks up the stack looking for a frame with a ``self`` local, skipping
+    the decorated method's own receiver.
+    """
     frame = inspect.currentframe()
     try:
-        # Walk up the stack to find a frame with 'self'
         while frame:
-            if "self" in frame.f_locals:
-                self_obj = frame.f_locals["self"]
-                return self_obj.__class__.__name__
+            candidate = frame.f_locals.get("self")
+            if candidate is not None and candidate is not skip_self:
+                module = type(candidate).__module__ or ""
+                if module.startswith("gnat.agents.confirmation"):
+                    frame = frame.f_back
+                    continue
+                return type(candidate).__name__
             frame = frame.f_back
         return "unknown"
     finally:
@@ -62,87 +73,90 @@ def _caller_class_name() -> str:
 
 def requires_confirmation(
     scope: str,
-    risk: Literal["low", "medium", "high", "irreversible"] = "medium",
-    subject_from: Optional[Callable[[tuple, Dict[str, Any]], Dict[str, Any]]] = None,
-    reason: Optional[str | Callable] = None,
-    timeout_seconds: Optional[int] = None,
-    workspace: Optional[str | Callable] = None,
+    risk: str = "medium",
+    subject_from: Callable[[tuple, dict[str, Any]], dict[str, Any]] | None = None,
+    reason: str | Callable | None = None,
+    timeout_seconds: int | None = None,
+    workspace: str | Callable | None = None,
+    principal_type: str = "analyst",
 ) -> Callable:
     """
-    Decorator that gates a function with confirmation broker.
+    Decorator that gates a function through the ConfirmationBroker.
 
-    Args:
-        scope: The scope string (e.g., "library.promote")
-        risk: Risk level of the action
-        subject_from: Callable that extracts subject from (args, kwargs)
-        reason: String or callable that returns reason text
-        timeout_seconds: Timeout for broker decision
-        workspace: String or callable that returns workspace name
+    When the broker is disabled (no ``[confirmation]`` config section),
+    the wrapped function runs unchanged.
 
-    Example:
-        @requires_confirmation(
-            scope="library.promote",
-            risk="medium",
-            subject_from=lambda args, kw: {"topic": kw["topic"]},
-            reason="Promoting to library",
-        )
-        def promote(self, topic, workspace):
-            ...
+    Parameters
+    ----------
+    scope : str
+        Scope identifier (e.g. ``"library.promote"``).
+    risk : str
+        One of ``low``, ``medium``, ``high``, ``irreversible``.
+    subject_from : callable, optional
+        ``(args, kwargs) -> dict`` extractor for the audit subject.
+        Defaults to redacted args/kwargs.
+    reason : str or callable, optional
+        Human-readable rationale; callables are resolved lazily with
+        ``(args, kwargs)``.
+    timeout_seconds : int, optional
+        How long the backend may wait for a decision (default 300).
+    workspace : str or callable, optional
+        Workspace name; callables are resolved lazily with ``(args, kwargs)``.
+    principal_type : str
+        ``"analyst"`` for interactive flows, ``"system"`` for scheduled jobs.
+
+    Raises
+    ------
+    ConfirmationDenied
+        If the broker denies the action.
     """
+    if risk not in _RISK_LEVELS:
+        raise ValueError(f"risk must be one of {_RISK_LEVELS}, got {risk!r}")
 
     def decorator(func: Callable) -> Callable:
-        is_async = asyncio.iscoroutinefunction(func)
-
-        if is_async:
+        if asyncio.iscoroutinefunction(func):
 
             @wraps(func)
             async def async_wrapper(*args, **kwargs):
-                # Build confirmation request
-                req = _build_request(
-                    scope=scope,
-                    risk=risk,
-                    subject_from=subject_from,
-                    reason=reason,
-                    timeout_seconds=timeout_seconds,
-                    workspace=workspace,
-                    func=func,
-                    args=args,
-                    kwargs=kwargs,
-                )
-
-                # Request confirmation
                 broker = ConfirmationBroker.default()
-                broker.request_or_raise(req)
-
-                # Call the underlying function
+                if broker.enabled:
+                    req = _build_request(
+                        scope,
+                        risk,
+                        subject_from,
+                        reason,
+                        timeout_seconds,
+                        workspace,
+                        principal_type,
+                        func,
+                        args,
+                        kwargs,
+                    )
+                    broker.request_or_raise(req)
                 return await func(*args, **kwargs)
 
             return async_wrapper
-        else:
 
-            @wraps(func)
-            def sync_wrapper(*args, **kwargs):
-                # Build confirmation request
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            broker = ConfirmationBroker.default()
+            if broker.enabled:
                 req = _build_request(
-                    scope=scope,
-                    risk=risk,
-                    subject_from=subject_from,
-                    reason=reason,
-                    timeout_seconds=timeout_seconds,
-                    workspace=workspace,
-                    func=func,
-                    args=args,
-                    kwargs=kwargs,
+                    scope,
+                    risk,
+                    subject_from,
+                    reason,
+                    timeout_seconds,
+                    workspace,
+                    principal_type,
+                    func,
+                    args,
+                    kwargs,
                 )
-
-                # Request confirmation
-                broker = ConfirmationBroker.default()
                 broker.request_or_raise(req)
+            return func(*args, **kwargs)
 
-                # Call the underlying function
-                return func(*args, **kwargs)
-
-            return sync_wrapper
+        return sync_wrapper
 
     return decorator
 
@@ -150,27 +164,25 @@ def requires_confirmation(
 def _build_request(
     scope: str,
     risk: str,
-    subject_from: Optional[Callable],
-    reason: Optional[str | Callable],
-    timeout_seconds: Optional[int],
-    workspace: Optional[str | Callable],
+    subject_from: Callable | None,
+    reason: str | Callable | None,
+    timeout_seconds: int | None,
+    workspace: str | Callable | None,
+    principal_type: str,
     func: Callable,
     args: tuple,
-    kwargs: Dict[str, Any],
+    kwargs: dict[str, Any],
 ) -> ConfirmationRequest:
     """Build a ConfirmationRequest from decorator arguments and call context."""
 
-    # Extract subject
     if subject_from:
         subject = subject_from(args, kwargs)
     else:
-        # Default: redacted args and kwargs
         subject = {
-            "args": _redact_secrets(args),
+            "args": _redact_secrets(list(args)),
             "kwargs": _redact_secrets(kwargs),
         }
 
-    # Resolve reason
     if reason is None:
         reason_text = f"Calling {func.__name__}"
     elif callable(reason):
@@ -178,7 +190,6 @@ def _build_request(
     else:
         reason_text = reason
 
-    # Resolve workspace
     if workspace is None:
         workspace_name = "unknown"
     elif callable(workspace):
@@ -186,16 +197,16 @@ def _build_request(
     else:
         workspace_name = workspace
 
-    # Build request
-    req = ConfirmationRequest(
+    receiver = args[0] if args else None
+
+    return ConfirmationRequest(
         scope=scope,
         action=func.__name__,
-        agent=_caller_class_name(),
+        agent=_caller_class_name(skip_self=receiver),
         workspace=workspace_name,
         subject=subject,
         reason=reason_text,
         risk=risk,
         timeout_seconds=timeout_seconds or 300,
+        principal_type=principal_type,
     )
-
-    return req

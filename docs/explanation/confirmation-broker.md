@@ -172,7 +172,13 @@ Interactive prompt at the terminal. Useful for development and scheduled jobs ru
 
 Web-based confirmation via REST + WebSocket. Stores pending requests in memory; web handler resolves via `/api/confirmations/{request_id}/decide` endpoint.
 
-Synchronous `prompt()` blocks on an `asyncio.Future` until the analyst decides or timeout elapses.
+Synchronous `prompt()` parks the calling thread on a `threading.Event` until the analyst decides or the timeout elapses, so it is safe to call whether or not an asyncio loop is running elsewhere in the process (e.g. under FastAPI).
+
+Routes (registered in `gnat.serve.app`, behind the standard API-key auth):
+- `GET /api/confirmations/pending` — list requests awaiting a decision
+- `POST /api/confirmations/{request_id}/decide?outcome=approved|denied&note=...` — resolve one
+
+Pending requests live in memory only: a process restart while a prompt is pending surfaces as a timeout, and the broker fails closed.
 
 ### RecordingBackend
 
@@ -269,7 +275,9 @@ connector.delete.gnat_remote = auto_deny
 - `backend = cli` — Interactive terminal prompt
 - `backend = dashboard` — Web UI (requires FastAPI integration)
 - `backend = auto` — Auto-approve (test/ci only)
-- `backend = null` — Auto-deny (safe default if missing)
+- `backend = null` — Auto-deny (fallback when an enabled broker's backend fails to load)
+
+If the `[confirmation]` section is missing entirely, or sets `enabled = false`, the broker is disabled and gated call sites run unchanged — turning the gates on is an explicit opt-in.
 
 ## Error Handling
 

@@ -5,25 +5,24 @@ gnat.tui.screens.copilot_screen
 ==================================
 
 TUI screen for Investigation Copilot (F10).
-Multi-turn conversation interface with streaming responses.
+Multi-turn conversation interface.
 """
 
-from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Static, Input, RichLog, Button
-from textual.reactive import reactive
-from rich.text import Text
-from rich.panel import Panel
-from rich.syntax import Syntax
-import asyncio
+from __future__ import annotations
 
-from gnat.agents import InvestigationCopilotSession, ConversationStore, AgentConfig
+from rich.text import Text
+from textual.app import ComposeResult
+from textual.containers import Vertical
+from textual.reactive import reactive
+from textual.screen import ModalScreen
+from textual.widgets import Input, RichLog, Static
+
+from gnat.agents import AgentConfig, ConversationStore, InvestigationCopilotSession
 
 # Color scheme
 COLOR_ANALYST = "blue"
 COLOR_COPILOT = "red"
 COLOR_SYSTEM = "yellow"
-COLOR_ACCENT = "cyan"
 
 
 class CopilotStatus(Static):
@@ -34,115 +33,49 @@ class CopilotStatus(Static):
     confidence = reactive(0.0)
 
     def render(self) -> str:
-        """Render status bar."""
-        status_text = f"Phase: {self.phase} | IOCs: {self.ioc_count} | Confidence: {self.confidence:.0%}"
-        return Panel(status_text, expand=False)
+        return f"Phase: {self.phase} | IOCs: {self.ioc_count} | Confidence: {self.confidence:.0%}"
 
 
 class CopilotConversation(RichLog):
-    """Scrollable conversation history with streaming support."""
-
-    def __init__(self, name: str = None):
-        super().__init__(markup=True, name=name)
-        self.session = None
+    """Scrollable conversation history."""
 
     def add_analyst_message(self, text: str) -> None:
-        """Add analyst message to conversation with color."""
-        header = Text("You: ", style=f"bold {COLOR_ANALYST}")
-        content = Text(text, style=COLOR_ANALYST)
-        self.write(header, end="")
-        self.write(content)
+        line = Text("You: ", style=f"bold {COLOR_ANALYST}")
+        line.append(text, style=COLOR_ANALYST)
+        self.write(line)
 
     def add_copilot_message(self, text: str) -> None:
-        """Add copilot message to conversation with color."""
-        header = Text("Copilot: ", style=f"bold {COLOR_COPILOT}")
-        content = Text(text, style=COLOR_COPILOT)
-        self.write(header, end="")
-        self.write(content)
+        line = Text("Copilot: ", style=f"bold {COLOR_COPILOT}")
+        line.append(text, style=COLOR_COPILOT)
+        self.write(line)
 
     def add_system_message(self, text: str) -> None:
-        """Add system status message with color."""
-        msg = Text(f"[System] {text}", style=f"dim {COLOR_SYSTEM}")
-        self.write(msg)
-
-    async def stream_copilot_response(self, prompt: str) -> None:
-        """Stream response tokens from copilot."""
-        if not self.session:
-            self.add_system_message("Session not initialized")
-            return
-
-        self.write(Text("Copilot: ", style="red"), end="")
-
-        try:
-            response = await self.session.ask_clarifying_question(prompt)
-            self.write(Text(response, style="red"))
-        except Exception as e:
-            self.add_system_message(f"Error: {e}")
+        self.write(Text(f"[System] {text}", style=f"dim {COLOR_SYSTEM}"))
 
 
-class CopilotInput(Input):
-    """Input field for analyst messages."""
-
-    def __init__(self, conversation: CopilotConversation, name: str = None):
-        super().__init__(
-            placeholder="Type your response or /help (Ctrl+C to cancel stream)",
-            name=name,
-        )
-        self.conversation = conversation
-        self.streaming = False
-        self.cancel_stream = False
-
-    async def process_input(self, text: str) -> None:
-        """Process user input and trigger copilot response."""
-        if not text.strip():
-            return
-
-        if text.startswith("/"):
-            await self._handle_command(text)
-        else:
-            self.streaming = True
-            self.cancel_stream = False
-            self.conversation.add_analyst_message(text)
-            try:
-                await self.conversation.stream_copilot_response(text)
-            finally:
-                self.streaming = False
-
-        self.value = ""
-
-    async def _handle_command(self, cmd: str) -> None:
-        """Handle slash commands."""
-        if cmd == "/help":
-            self.conversation.add_system_message(
-                "Commands: /next (suggest next step), /close (end investigation), /help"
-            )
-        elif cmd == "/next":
-            if self.conversation.session:
-                suggestion = await self.conversation.session.suggest_next_step()
-                self.conversation.add_system_message(
-                    f"Next step: {suggestion.text}"
-                )
-        elif cmd == "/close":
-            self.conversation.add_system_message("Investigation marked as closing phase")
-
-
-class CopilotScreen(Container):
-    """Main Investigation Copilot TUI screen."""
+class CopilotScreen(ModalScreen):
+    """Investigation Copilot modal screen (F10)."""
 
     BINDINGS = [
-        ("escape", "dismiss", "Close"),
-        ("ctrl+c", "cancel_stream", "Cancel Stream"),
+        ("escape", "dismiss_screen", "Close"),
         ("f1", "show_help", "Help"),
     ]
 
     CSS = """
     CopilotScreen {
-        layout: vertical;
+        align: center middle;
+    }
+
+    #copilot-body {
+        width: 90%;
+        height: 90%;
+        background: $surface;
+        border: heavy $accent;
     }
 
     #status {
-        height: 3;
-        border: heavy $panel;
+        height: 1;
+        padding: 0 1;
     }
 
     #history {
@@ -151,80 +84,106 @@ class CopilotScreen(Container):
     }
 
     #input {
-        height: 3;
         border: heavy $accent;
     }
     """
 
-    def __init__(self, investigation_id: str, name: str = None):
+    def __init__(self, investigation_id: str, name: str | None = None):
         super().__init__(name=name)
         self.investigation_id = investigation_id
-        self.conversation_store = ConversationStore()
-        self.agent_config = AgentConfig.from_ini()
         self.copilot_session = None
+        self._busy = False
 
     def compose(self) -> ComposeResult:
-        """Build screen layout."""
         yield Vertical(
             CopilotStatus(id="status"),
             CopilotConversation(id="history"),
-            CopilotInput(
-                conversation=self.query_one("#history", CopilotConversation),
-                id="input"
-            ),
+            Input(placeholder="Type your response or /help (Esc to close)", id="input"),
+            id="copilot-body",
         )
 
     def on_mount(self) -> None:
         """Initialize copilot session and display welcome."""
+        history = self.query_one("#history", CopilotConversation)
         try:
-            session_ctx = self.conversation_store.create_session(
-                analyst_id="current_user",  # TODO: Get from context
+            store = ConversationStore()
+            session_ctx = store.create_session(
+                analyst_id="current_user",  # TODO: thread analyst identity from app
                 investigation_id=self.investigation_id,
                 agent_type="copilot",
             )
             self.copilot_session = InvestigationCopilotSession(
                 conversation_id=session_ctx.conversation_id,
-                config=self.agent_config,
-                conversation_store=self.conversation_store,
+                config=AgentConfig.from_ini(),
+                conversation_store=store,
             )
-
-            history = self.query_one("#history", CopilotConversation)
-            history.session = self.copilot_session
             history.add_system_message(
-                "Investigation Copilot initialized. Let's begin. What do you know about this activity?"
+                "Investigation Copilot initialized. What do you know about this activity?"
             )
-
-            # Set focus to input
-            self.query_one("#input", CopilotInput).focus()
-
         except Exception as e:
-            self.query_one("#history", CopilotConversation).add_system_message(
-                f"Failed to initialize: {e}"
-            )
+            history.add_system_message(f"Failed to initialize: {e}")
 
-    def action_dismiss(self) -> None:
+        self.query_one("#input", Input).focus()
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle a submitted analyst message."""
+        text = event.value.strip()
+        event.input.value = ""
+        if not text or self._busy:
+            return
+
+        history = self.query_one("#history", CopilotConversation)
+
+        if text.startswith("/"):
+            await self._handle_command(text, history)
+            return
+
+        history.add_analyst_message(text)
+
+        if not self.copilot_session:
+            history.add_system_message("Session not initialized")
+            return
+
+        self._busy = True
+        try:
+            response = await self.copilot_session.ask_clarifying_question(text)
+            history.add_copilot_message(response)
+        except Exception as e:
+            history.add_system_message(f"Error: {e}")
+        finally:
+            self._busy = False
+
+    async def _handle_command(self, cmd: str, history: CopilotConversation) -> None:
+        """Handle slash commands."""
+        if cmd == "/help":
+            self.action_show_help()
+        elif cmd == "/next":
+            if not self.copilot_session:
+                history.add_system_message("Session not initialized")
+                return
+            try:
+                suggestion = await self.copilot_session.suggest_next_step()
+                history.add_system_message(f"Next step: {suggestion.text}")
+            except Exception as e:
+                history.add_system_message(f"Error: {e}")
+        elif cmd == "/close":
+            history.add_system_message("Investigation marked as closing phase")
+        else:
+            history.add_system_message(f"Unknown command: {cmd} (try /help)")
+
+    def action_dismiss_screen(self) -> None:
         """Close the copilot screen."""
         self.app.pop_screen()
-
-    def action_cancel_stream(self) -> None:
-        """Cancel ongoing LLM streaming."""
-        input_widget = self.query_one("#input", CopilotInput)
-        if input_widget.streaming:
-            input_widget.cancel_stream = True
-            history = self.query_one("#history", CopilotConversation)
-            history.add_system_message("Stream cancelled by analyst")
 
     def action_show_help(self) -> None:
         """Show copilot help."""
         history = self.query_one("#history", CopilotConversation)
-        help_text = (
+        history.add_system_message(
             "Commands:\n"
             "  /next — Suggest next investigation step\n"
             "  /close — Mark investigation as closing\n"
-            "  /help — Show this help\n\n"
+            "  /help — Show this help\n"
             "Keybindings:\n"
-            "  Ctrl+C — Cancel ongoing stream\n"
             "  Escape — Close copilot\n"
             "  F1 — Show this help"
         )
-        history.add_system_message(help_text)

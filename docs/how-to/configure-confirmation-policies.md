@@ -279,7 +279,7 @@ Action was explicitly denied by policy or analyst. Options:
 
 ### "Configuration not found"
 
-Broker defaults to NullBackend (deny-all) if `[confirmation]` section is missing. Add it to `config.ini`.
+Without a `[confirmation]` section (or with `enabled = false`), the broker is **disabled**: gated call sites run unchanged, nothing is prompted, and no audit file is written. Add the section with `enabled = true` to turn the gates on. If the section exists but the configured backend fails to load, the broker falls back to NullBackend (deny-all) — enabled brokers fail closed.
 
 ### Policy isn't matching
 

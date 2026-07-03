@@ -12,10 +12,9 @@ Tracks costs, audit trail, and escalations.
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Any, Optional
 
-from gnat.agents.governor import AgentGovernor, Permission
-from gnat.context import ExecutionContext
+from gnat.agents.governor import AgentGovernor
 
 
 class CopilotAction(str, Enum):
@@ -52,9 +51,10 @@ class GovernedAction:
     risk_level: ActionRisk
     confidence: float
     description: str
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
     timestamp: datetime = None
-    execution_context: Optional[ExecutionContext] = None
+    # Opaque execution-context handle; only .context_id is read when present.
+    execution_context: Optional[Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -91,7 +91,7 @@ class CopilotGovernor:
         Args:
             agent_governor: Optional AgentGovernor instance (creates default if None)
         """
-        self.governor = agent_governor or AgentGovernor.from_config()
+        self.governor = agent_governor or AgentGovernor()
         self.audit_trail = []
 
     async def check_copilot_action(
@@ -101,7 +101,7 @@ class CopilotGovernor:
         analyst_id: str,
         confidence: float,
         description: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ) -> bool:
         """
         Check if copilot action is permitted.
