@@ -261,6 +261,7 @@ reference, explanation). Rendered at
 | `vmray` | VMRay (hypervisor-level analysis) | API key (`api_key` header) |
 | `intezer` | Intezer Analyze (binary DNA attribution) | API key → JWT Bearer |
 | `cuckoo` | Cuckoo Sandbox / CAPEv2 (dynamic malware analysis) | Bearer token |
+| `sandgnat` | SandGNAT (GNAT-o-sphere detonation sandbox) | `X-API-Key` (shared INTAKE_API_KEY) |
 
 ### Managed Detection & Response (MDR)
 

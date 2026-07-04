@@ -19,6 +19,30 @@ all v1.4+ modules.
 → Full feature breakdown is in `## [1.4.0]` below; this entry marks the version cut.
 ## [Unreleased]
 
+### Added — SandGNAT connector (GNAT-o-sphere detonation sandbox)
+
+New `gnat/connectors/sandgnat/` connector for the first-party SandGNAT
+malware runtime-analysis environment (registry key `sandgnat`,
+`X-API-Key` auth, trust level `trusted_internal`).
+
+- Reads: `list_objects`/`get_object` over `/analyses` with sha256,
+  status, since, investigation_id, and has_investigation filters;
+  `get_bundle` / `get_bundle_objects` pull the server-built STIX 2.1
+  bundle for completed detonations; `get_static_analysis` (PE/ELF,
+  CAPA, deep YARA, imphash/ssdeep/tlsh); `get_similar` (LSH byte /
+  opcode trigram neighbours + lineage)
+- Writes: `submit_sample` / `submit_file` (multipart intake with
+  priority, force, submitter, and cross-tool investigation context);
+  `set_investigation` retroactive tagging (link types: confirmed /
+  inferred / suggested)
+- STIX: job rows convert to `malware-analysis`, `file`, or
+  `indicator` views with deterministic ids; `from_stix` extracts a
+  SHA-256 lookup descriptor from file SCOs and indicator patterns
+- Verified end-to-end against SandGNAT's actual Flask app (intake +
+  export blueprints with its in-memory test store) over live HTTP:
+  auth rejection, filters, bundle 409-until-completed, real intake
+  submission, and retroactive tagging
+
 ### Added — ConfirmationBroker (human-in-the-loop control-flow gates)
 
 New `gnat/agents/confirmation/` package: pauses sensitive or irreversible

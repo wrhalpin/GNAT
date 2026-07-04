@@ -126,6 +126,7 @@ from gnat.connectors.riskrecon.client import RiskReconClient
 from gnat.connectors.runzero.client import RunZeroClient
 from gnat.connectors.safebreach.client import SafeBreachClient
 from gnat.connectors.samdesk.client import SamdeskClient
+from gnat.connectors.sandgnat.client import SandGNATClient
 from gnat.connectors.security_onion.client import SecurityOnionClient
 from gnat.connectors.securityscorecard.client import SecurityScorecardClient
 from gnat.connectors.securitytrails.client import SecurityTrailsClient
@@ -301,6 +302,8 @@ CLIENT_REGISTRY: dict = {
     "hybrid_analysis": HybridAnalysisClient,
     "vmray": VMRayClient,
     "intezer": IntezerClient,
+    # GNAT-o-sphere — first-party detonation sandbox
+    "sandgnat": SandGNATClient,
     # Phase 2 Wave 2 — MDR platforms
     "huntress": HuntressClient,
     "arctic_wolf": ArcticWolfClient,
@@ -430,6 +433,8 @@ __all__ = [
     "HybridAnalysisClient",
     "VMRayClient",
     "IntezerClient",
+    # GNAT-o-sphere — first-party detonation sandbox
+    "SandGNATClient",
     # Phase 2 Wave 2 — MDR platforms
     "HuntressClient",
     "ArcticWolfClient",

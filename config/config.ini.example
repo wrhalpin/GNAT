@@ -1239,6 +1239,14 @@ host        = https://cuckoo.lab.internal
 api_key     = <your-cuckoo-api-key>
 # api_version = 3     ; optional — auto-detected if omitted
 
+# --- SandGNAT (GNAT-o-sphere detonation sandbox) ----------------------------
+# First-party malware runtime-analysis environment. api_key is the value
+# of SandGNAT's INTAKE_API_KEY, sent as X-API-Key; one shared secret
+# covers both sample submission and the read-only export routes.
+[sandgnat]
+host    = https://sandgnat.lab.internal:8000
+api_key = <INTAKE_API_KEY value>
+
 # --- Google Certificate Transparency log API -------------------------------
 # No authentication required. ``log`` is the path to a specific CT log
 # operated by Google (Argon, Xenon, etc.).
