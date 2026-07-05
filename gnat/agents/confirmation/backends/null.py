@@ -9,8 +9,9 @@ NullBackend that denies everything (safe default).
 
 from gnat.agents.confirmation.backends.base import ConfirmationBackend
 from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
     ConfirmationOutcome,
+    ConfirmationRequest,
+    PromptResult,
 )
 
 
@@ -18,9 +19,13 @@ class NullBackend(ConfirmationBackend):
     """
     Backend that denies all requests.
 
-    Used as a safe default if no backend can be loaded.
+    Used as the fail-closed fallback when the configured backend cannot
+    be loaded on an *enabled* broker.
     """
 
-    def prompt(self, request: ConfirmationRequest) -> ConfirmationOutcome:
-        """Always return DENIED."""
-        return ConfirmationOutcome.DENIED
+    def prompt(self, request: ConfirmationRequest) -> PromptResult:
+        """Always deny."""
+        return PromptResult(
+            ConfirmationOutcome.DENIED,
+            note="null backend: no confirmation backend available",
+        )

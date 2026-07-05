@@ -415,9 +415,10 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         except ImportError:
             pytest.skip("fastapi not installed")
 
-        routes = [r.path for r in app.routes]
-        # /solr/ routes should NOT be present
-        self.assertFalse(any("/solr" in r for r in routes))
+        # OpenAPI paths are stable across FastAPI versions (newer FastAPI
+        # nests include_router routes, hiding them from app.routes)
+        paths = app.openapi()["paths"]
+        self.assertFalse(any("/solr" in p for p in paths))
 
     def test_build_app_with_search_index_mounts_solr(self):
         import pytest
@@ -434,8 +435,8 @@ class TestGrafanaServerWithSearchIndex(unittest.TestCase):
         except ImportError:
             pytest.skip("fastapi not installed")
 
-        routes = [r.path for r in app.routes]
-        self.assertTrue(any("/solr" in r for r in routes))
+        paths = app.openapi()["paths"]
+        self.assertTrue(any("/solr" in p for p in paths))
 
     def test_grafana_server_stores_search_index(self):
         try:

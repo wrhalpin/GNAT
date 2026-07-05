@@ -15,14 +15,12 @@
 | Keybinding | Action |
 |------------|--------|
 | `Escape` | Close copilot |
-| `Ctrl+C` | Cancel ongoing LLM stream |
 | `F1` | Show help |
 
 **Assistant (F11):**
 | Keybinding | Action |
 |------------|--------|
 | `Escape` | Close assistant |
-| `Ctrl+C` | Cancel ongoing request |
 | `F1` | Show help |
 
 ### Screen Formatting
@@ -39,11 +37,10 @@
 - Input field with command hints (dock: bottom)
 - F1 help shows all available commands and examples
 
-### Stream Cancellation
+### In-Flight Request Guard
 
-- `Ctrl+C` while copilot is streaming sets `cancel_stream` flag
-- Analyst sees immediate "[System] Stream cancelled" message
-- Input field becomes responsive again
+- Input is ignored while a copilot/assistant request is in flight
+  (responses arrive as a single awaited call, not a cancellable stream)
 
 ### Help System
 
@@ -118,10 +115,9 @@ async function copySuggestion(text) {
    - Suggested actions stand out with green borders
    - System status is visually distinct (dim yellow)
 
-2. **Stream Control**
-   - Can cancel long-running copilot queries with Ctrl+C
-   - Immediate feedback ("Stream cancelled")
-   - Input becomes responsive right away
+2. **Request Guard**
+   - Duplicate submissions are ignored while a query is in flight
+   - Input clears immediately on submit
 
 3. **Quick Help**
    - F1 brings up all available commands
@@ -154,14 +150,12 @@ async function copySuggestion(text) {
   - Added color constants and color-coded message methods
   - Added CSS with borders and layout
   - Added F1 help action
-  - Added Ctrl+C stream cancellation
   - Updated placeholder text with keybinding hints
 
 - `gnat/tui/screens/assistant_screen.py`
   - Added color constants and color-coded message methods
   - Added CSS with docking and borders
   - Added F1 help action
-  - Added Ctrl+C cancellation
   - Added suggestion panel coloring (green borders)
 
 ### Web API
@@ -176,7 +170,6 @@ async function copySuggestion(text) {
 ## Testing Checklist
 
 - [ ] Copilot colors render correctly (blue/red/yellow)
-- [ ] Ctrl+C cancels stream in copilot
 - [ ] F1 shows help in both copilot and assistant
 - [ ] Escape closes both screens
 - [ ] Export endpoint returns valid JSON

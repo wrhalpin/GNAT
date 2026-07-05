@@ -8,10 +8,11 @@ Abstract base class for confirmation backends.
 """
 
 from abc import ABC, abstractmethod
+
 from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
     ConfirmationOutcome,
-    ConfirmationTimeout,
+    ConfirmationRequest,
+    PromptResult,
 )
 
 
@@ -19,22 +20,30 @@ class ConfirmationBackend(ABC):
     """Abstract base class for confirmation backends."""
 
     @abstractmethod
-    def prompt(self, request: ConfirmationRequest) -> ConfirmationOutcome:
+    def prompt(self, request: ConfirmationRequest) -> PromptResult:
         """
-        Prompt for confirmation and return the outcome.
+        Prompt for confirmation and return the result.
 
-        Args:
-            request: The confirmation request
+        Implementations must respect ``request.timeout_seconds``.
 
-        Returns:
-            ConfirmationOutcome (APPROVED or DENIED)
+        Parameters
+        ----------
+        request : ConfirmationRequest
+            The confirmation request.
 
-        Raises:
-            ConfirmationTimeout: If the prompt times out
+        Returns
+        -------
+        PromptResult
+            The outcome (APPROVED or DENIED) plus an optional analyst note.
+
+        Raises
+        ------
+        ConfirmationTimeout
+            If no decision arrives within ``request.timeout_seconds``.
         """
-        pass
+        ...
 
-    def notify_decided(
+    def notify_decided(  # noqa: B027 — optional hook, deliberately non-abstract
         self,
         request: ConfirmationRequest,
         outcome: ConfirmationOutcome,
@@ -43,9 +52,4 @@ class ConfirmationBackend(ABC):
         Optional hook called after a decision is made (by policy or backend).
 
         Backends can use this to update UI state or clean up.
-
-        Args:
-            request: The confirmation request
-            outcome: The decision outcome
         """
-        pass

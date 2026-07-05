@@ -52,18 +52,19 @@ For configuration, add to config.ini:
     agent.research.run = auto_approve
 """
 
-from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
-    ConfirmationDecision,
-    ConfirmationOutcome,
-    ConfirmationDenied,
-    ConfirmationTimeout,
-    ConfirmationRisk,
-    ConfirmationPrincipal,
-)
+from gnat.agents.confirmation.audit import ConfirmationAuditLog
 from gnat.agents.confirmation.broker import ConfirmationBroker
 from gnat.agents.confirmation.decorator import requires_confirmation
-from gnat.agents.confirmation.audit import ConfirmationAuditLog
+from gnat.agents.confirmation.models import (
+    ConfirmationDecision,
+    ConfirmationDenied,
+    ConfirmationOutcome,
+    ConfirmationPrincipal,
+    ConfirmationRequest,
+    ConfirmationRisk,
+    ConfirmationTimeout,
+    PromptResult,
+)
 from gnat.agents.confirmation.policy import PolicyEngine
 
 __all__ = [
@@ -74,6 +75,7 @@ __all__ = [
     "ConfirmationTimeout",
     "ConfirmationRisk",
     "ConfirmationPrincipal",
+    "PromptResult",
     "ConfirmationBroker",
     "requires_confirmation",
     "ConfirmationAuditLog",

@@ -8,16 +8,14 @@ Session management for Investigation Copilot and Live Analyst Assistant.
 Persistent conversation storage with turn history, context binding, and metadata.
 """
 
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
-from enum import Enum
-from typing import Optional, Any, List, Dict
-from pathlib import Path
 import json
 import sqlite3
 import threading
-
-from gnat.context import workspace_manager
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any, Optional
 
 
 class ConversationRole(str, Enum):
@@ -41,7 +39,7 @@ class ConversationTurn:
     tokens_in: int = 0
     tokens_out: int = 0
     latency_ms: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -62,7 +60,7 @@ class SessionContext:
     created_at: datetime = field(default_factory=datetime.utcnow)
     last_turn_seq: int = 0
     state: str = "IDLE"  # State machine for copilot; ignored for assistant
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -142,9 +140,6 @@ class ConversationStore:
         workspace_id: Optional[str] = None,
     ) -> SessionContext:
         """Create a new conversation session."""
-        if workspace_id is None:
-            workspace_id = workspace_manager.current_workspace()
-
         conversation_id = f"{agent_type}_{investigation_id}_{datetime.utcnow().timestamp()}"
         ctx = SessionContext(
             conversation_id=conversation_id,
@@ -205,7 +200,7 @@ class ConversationStore:
         tokens_in: int = 0,
         tokens_out: int = 0,
         latency_ms: float = 0.0,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ) -> ConversationTurn:
         """Add a turn to conversation history."""
         ctx = self.get_session(conversation_id)
@@ -248,7 +243,7 @@ class ConversationStore:
 
         return turn
 
-    def get_turns(self, conversation_id: str, since_seq: int = 0, limit: int = 100) -> List[ConversationTurn]:
+    def get_turns(self, conversation_id: str, since_seq: int = 0, limit: int = 100) -> list[ConversationTurn]:
         """Fetch turns from conversation."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -286,7 +281,7 @@ class ConversationStore:
             )
             conn.commit()
 
-    def get_investigation_conversations(self, investigation_id: str) -> List[SessionContext]:
+    def get_investigation_conversations(self, investigation_id: str) -> list[SessionContext]:
         """Fetch all conversations for an investigation."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row

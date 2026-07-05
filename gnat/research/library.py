@@ -103,6 +103,16 @@ _LIBRARY_NAME = "_ctmsak_library"
 _ENTRY_PREFIX = "research_entry:"
 
 
+def _promote_arg(args: tuple, kwargs: dict, name: str, position: int):
+    """Fetch a promote() argument whether it was passed by keyword or
+    positionally (position counts self at index 0)."""
+    if name in kwargs:
+        return kwargs[name]
+    if len(args) > position:
+        return args[position]
+    return None
+
+
 class ResearchLibrary:
     """
     Three-tier shared research knowledge base.
@@ -238,13 +248,16 @@ class ResearchLibrary:
         scope="library.promote",
         risk="medium",
         subject_from=lambda args, kw: {
-            "topic": kw.get("topic") or (args[2] if len(args) > 2 else None),
-            "object_count": len(kw.get("stix_ids", [])) if kw.get("stix_ids") else "all",
+            "topic": _promote_arg(args, kw, "topic", 2),
+            "researcher": _promote_arg(args, kw, "researcher", 3),
+            "object_count": len(kw["stix_ids"]) if kw.get("stix_ids") else "all",
         },
         reason=lambda args, kw: (
-            f"Promote research for topic '{kw.get('topic') or (args[2] if len(args) > 2 else 'unknown')}' to library"
+            f"Promote research for topic {_promote_arg(args, kw, 'topic', 2)!r} to library"
         ),
-        workspace=lambda args, kw: kw.get("workspace", args[1]).name if len(args) > 1 else "unknown",
+        workspace=lambda args, kw: getattr(
+            _promote_arg(args, kw, "workspace", 1), "name", "unknown"
+        ),
     )
     def promote(
         self,

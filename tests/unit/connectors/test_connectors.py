@@ -20468,3 +20468,246 @@ class TestCuckooClient:
         assert "observed-data" in client_v3.stix_type_map
         assert "malware" in client_v3.stix_type_map
         assert "indicator" in client_v3.stix_type_map
+
+
+class TestSandGNATClient:
+    """SandGNAT — first-party detonation sandbox (GNAT-o-sphere)."""
+
+    SHA256 = "a" * 64
+    JOB = {
+        "id": "3f8e6f2a-0000-4000-8000-000000000001",
+        "sample_hash_sha256": "a" * 64,
+        "sample_hash_sha1": "b" * 40,
+        "sample_hash_md5": "c" * 32,
+        "sample_name": "dropper.exe",
+        "sample_size_bytes": 4096,
+        "sample_mime_type": "application/x-dosexec",
+        "status": "completed",
+        "started_at": "2026-07-01T12:00:00.000000Z",
+        "completed_at": "2026-07-01T12:05:00.000000Z",
+        "evasion_observed": True,
+        "vt_verdict": "malicious",
+        "vt_detection_count": 55,
+        "vt_total_engines": 70,
+        "yara_matches": ["win_agent_tesla"],
+        "investigation_id": "inv-42",
+        "imphash": "d" * 32,
+        "ssdeep": "3:abc:xyz",
+        "tlsh": "T1" + "e" * 70,
+    }
+
+    @pytest.fixture
+    def client(self):
+        from gnat.connectors.sandgnat.client import SandGNATClient
+
+        c = SandGNATClient(host="https://sandgnat.lab.internal:8000", api_key="sg_test")
+        c._authenticated = True
+        c._auth_headers["X-API-Key"] = "sg_test"
+        return c
+
+    # ── auth + health ──────────────────────────────────────────────────
+
+    def test_authenticate_sets_api_key_header(self):
+        from gnat.connectors.sandgnat.client import SandGNATClient
+
+        c = SandGNATClient(host="https://sandgnat.lab.internal:8000", api_key="sg_test")
+        c.authenticate()
+        assert c._auth_headers["X-API-Key"] == "sg_test"
+
+    def test_authenticate_requires_api_key(self):
+        from gnat.connectors.sandgnat.client import SandGNATClient
+
+        c = SandGNATClient(host="https://sandgnat.lab.internal:8000", api_key="")
+        with pytest.raises(GNATClientError, match="requires api_key"):
+            c.authenticate()
+
+    def test_health_check_ok(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"status": "ok"}))
+        assert client.health_check() is True
+
+    def test_health_check_bad_payload(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"status": "degraded"}))
+        assert client.health_check() is False
+
+    def test_health_check_error(self, client, monkeypatch):
+        def _boom(*a, **kw):
+            raise RuntimeError("down")
+
+        monkeypatch.setattr(client, "get", _boom)
+        assert client.health_check() is False
+
+    # ── CRUD reads ─────────────────────────────────────────────────────
+
+    def test_get_object_tags_kind(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value=dict(self.JOB)))
+        obj = client.get_object("malware-analysis", self.JOB["id"])
+        assert obj["_sandgnat_kind"] == "malware-analysis"
+        client.get.assert_called_once_with(f"/analyses/{self.JOB['id']}")
+
+    def test_get_object_rejects_unknown_type(self, client):
+        with pytest.raises(GNATClientError, match="does not support"):
+            client.get_object("campaign", self.JOB["id"])
+
+    def test_get_object_requires_id(self, client):
+        with pytest.raises(GNATClientError, match="non-empty id"):
+            client.get_object("malware-analysis", "")
+
+    def test_list_objects_maps_pagination_and_filters(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"items": [dict(self.JOB)], "count": 1})
+        monkeypatch.setattr(client, "get", mock_get)
+        items = client.list_objects(
+            "malware-analysis",
+            filters={
+                "sha256": self.SHA256,
+                "status": "completed",
+                "since": "2026-07-01T00:00:00Z",
+                "investigation_id": "inv-42",
+                "has_investigation": True,
+            },
+            page=3,
+            page_size=50,
+        )
+        assert len(items) == 1
+        assert items[0]["_sandgnat_kind"] == "malware-analysis"
+        params = mock_get.call_args.kwargs["params"]
+        assert params["limit"] == 50
+        assert params["offset"] == 100  # (page 3 - 1) * 50
+        assert params["sha256"] == self.SHA256
+        assert params["status"] == "completed"
+        assert params["investigation_id"] == "inv-42"
+        assert params["has_investigation"] == "true"
+
+    def test_list_objects_caps_limit_at_export_api_max(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"items": []})
+        monkeypatch.setattr(client, "get", mock_get)
+        client.list_objects("malware-analysis", page_size=500)
+        assert mock_get.call_args.kwargs["params"]["limit"] == 200
+
+    def test_upsert_object_refuses(self, client):
+        with pytest.raises(GNATClientError, match="submit_sample"):
+            client.upsert_object("malware-analysis", {})
+
+    def test_delete_object_refuses(self, client):
+        with pytest.raises(GNATClientError, match="read-only"):
+            client.delete_object("malware-analysis", self.JOB["id"])
+
+    # ── domain helpers ─────────────────────────────────────────────────
+
+    def test_submit_sample_multipart(self, client, monkeypatch):
+        mock_post = MagicMock(
+            return_value={"decision": "queued", "analysis_id": self.JOB["id"]}
+        )
+        monkeypatch.setattr(client, "post", mock_post)
+        report = client.submit_sample(
+            b"MZ\x90\x00", name="dropper.exe", priority=1,
+            investigation_id="inv-42", submitter="analyst1",
+        )
+        assert report["decision"] == "queued"
+        kwargs = mock_post.call_args.kwargs
+        assert mock_post.call_args.args[0] == "/submit"
+        assert kwargs["files"]["file"] == ("dropper.exe", b"MZ\x90\x00")
+        assert kwargs["data"]["priority"] == "1"
+        assert kwargs["data"]["investigation_id"] == "inv-42"
+        assert kwargs["data"]["submitter"] == "analyst1"
+
+    def test_submit_sample_rejects_empty(self, client):
+        with pytest.raises(GNATClientError, match="non-empty"):
+            client.submit_sample(b"")
+
+    def test_get_bundle_returns_stix_bundle(self, client, monkeypatch):
+        bundle = {"type": "bundle", "id": "bundle--x", "objects": [{"type": "malware"}]}
+        monkeypatch.setattr(client, "get", MagicMock(return_value=bundle))
+        assert client.get_bundle(self.JOB["id"])["type"] == "bundle"
+        assert client.get_bundle_objects(self.JOB["id"]) == [{"type": "malware"}]
+
+    def test_get_bundle_rejects_non_bundle(self, client, monkeypatch):
+        monkeypatch.setattr(client, "get", MagicMock(return_value={"error": "nope"}))
+        with pytest.raises(GNATClientError, match="non-bundle"):
+            client.get_bundle(self.JOB["id"])
+
+    def test_get_similar_params_and_flavour_guard(self, client, monkeypatch):
+        mock_get = MagicMock(return_value={"items": [{"similarity": 0.91}]})
+        monkeypatch.setattr(client, "get", mock_get)
+        items = client.get_similar(self.JOB["id"], threshold=0.7, limit=10, flavour="opcode")
+        assert items == [{"similarity": 0.91}]
+        params = mock_get.call_args.kwargs["params"]
+        assert params == {"threshold": 0.7, "limit": 10, "flavour": "opcode"}
+        with pytest.raises(GNATClientError, match="flavour"):
+            client.get_similar(self.JOB["id"], flavour="vibes")
+
+    def test_set_investigation_posts_body(self, client, monkeypatch):
+        mock_post = MagicMock(return_value=dict(self.JOB))
+        monkeypatch.setattr(client, "post", mock_post)
+        client.set_investigation(self.JOB["id"], "inv-99", link_type="confirmed", force=True)
+        assert mock_post.call_args.args[0] == f"/analyses/{self.JOB['id']}/investigation"
+        assert mock_post.call_args.kwargs["json"] == {
+            "investigation_id": "inv-99",
+            "link_type": "confirmed",
+        }
+        assert mock_post.call_args.kwargs["params"] == {"force": "true"}
+
+    def test_set_investigation_requires_id(self, client):
+        with pytest.raises(GNATClientError, match="investigation_id"):
+            client.set_investigation(self.JOB["id"], "")
+
+    def test_set_investigation_rejects_bad_link_type(self, client):
+        with pytest.raises(GNATClientError, match="link_type"):
+            client.set_investigation(self.JOB["id"], "inv-99", link_type="manual")
+
+    # ── STIX translation ───────────────────────────────────────────────
+
+    def test_to_stix_malware_analysis(self, client):
+        obj = client.to_stix(dict(self.JOB, _sandgnat_kind="malware-analysis"))
+        assert obj["type"] == "malware-analysis"
+        assert obj["product"] == "sandgnat"
+        assert obj["result"] == "malicious"
+        assert obj["analysis_started"] == self.JOB["started_at"]
+        assert obj["x_sandgnat"]["evasion_observed"] is True
+        assert obj["x_sandgnat"]["yara_matches"] == ["win_agent_tesla"]
+        assert obj["x_sandgnat"]["investigation_id"] == "inv-42"
+
+    def test_to_stix_defaults_to_malware_analysis(self, client):
+        obj = client.to_stix(dict(self.JOB))
+        assert obj["type"] == "malware-analysis"
+
+    def test_to_stix_file(self, client):
+        obj = client.to_stix(dict(self.JOB, _sandgnat_kind="file"))
+        assert obj["type"] == "file"
+        assert obj["hashes"]["SHA-256"] == self.SHA256
+        assert obj["hashes"]["MD5"] == "c" * 32
+        assert obj["name"] == "dropper.exe"
+        assert obj["size"] == 4096
+
+    def test_to_stix_indicator(self, client):
+        obj = client.to_stix(dict(self.JOB, _sandgnat_kind="indicator"))
+        assert obj["type"] == "indicator"
+        assert self.SHA256 in obj["pattern"]
+        assert obj["pattern_type"] == "stix"
+
+    def test_to_stix_indicator_requires_sha256(self, client):
+        with pytest.raises(GNATClientError, match="sha256"):
+            client.to_stix({"_sandgnat_kind": "indicator", "id": "x"})
+
+    def test_to_stix_ids_are_deterministic(self, client):
+        a = client.to_stix(dict(self.JOB))
+        b = client.to_stix(dict(self.JOB))
+        assert a["id"] == b["id"]
+
+    def test_from_stix_file_sco(self, client):
+        desc = client.from_stix({"type": "file", "id": "file--x",
+                                 "hashes": {"SHA-256": self.SHA256.upper()}})
+        assert desc["sha256"] == self.SHA256
+
+    def test_from_stix_indicator_pattern(self, client):
+        pattern = f"[file:hashes.'SHA-256' = '{self.SHA256}']"
+        desc = client.from_stix({"type": "indicator", "id": "indicator--x",
+                                 "pattern": pattern})
+        assert desc["sha256"] == self.SHA256
+
+    def test_registry_contains_sandgnat(self):
+        from gnat.clients import CLIENT_REGISTRY, SandGNATClient
+
+        assert CLIENT_REGISTRY["sandgnat"] is SandGNATClient
+
+    def test_trust_level_is_first_party(self, client):
+        assert client.TRUST_LEVEL == "trusted_internal"

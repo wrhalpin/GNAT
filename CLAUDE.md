@@ -355,6 +355,7 @@ Prefer mocking at the HTTP layer (`mock_pool_manager`) rather than patching indi
 | VMRay (hypervisor-level analysis) | `gnat/connectors/vmray/` | API key (`api_key` header) |
 | Intezer Analyze (binary DNA attribution) | `gnat/connectors/intezer/` | API key → JWT Bearer |
 | Cuckoo Sandbox / CAPEv2 (dynamic malware analysis) | `gnat/connectors/cuckoo/` | Bearer token |
+| SandGNAT (GNAT-o-sphere detonation sandbox) | `gnat/connectors/sandgnat/` | `X-API-Key` (shared INTAKE_API_KEY) |
 | Huntress Managed EDR / ITDR | `gnat/connectors/huntress/` | HTTP Basic (key id + secret) |
 | Arctic Wolf MDR | `gnat/connectors/arctic_wolf/` | Bearer token (+ optional customer id) |
 | Red Canary MDR | `gnat/connectors/red_canary/` | API key (`X-Api-Key` header) |

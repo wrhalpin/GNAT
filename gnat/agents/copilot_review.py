@@ -10,9 +10,7 @@ High-confidence copilot suggestions are submitted to ReviewService for analyst a
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Dict, Any
-
-from gnat.agents.governor import ReviewService, ReviewItem, ReviewStatus
+from typing import Any, Optional
 
 
 @dataclass
@@ -24,7 +22,7 @@ class CopilotReviewRequest:
     confidence: float
     action_type: str  # "hypothesis_refinement", "escalate_to_ir", etc.
     supporting_evidence: Optional[str] = None
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -37,12 +35,14 @@ class CopilotReviewManager:
     Submits high-confidence suggestions to ReviewService for analyst gate.
     """
 
-    def __init__(self, review_service: Optional[ReviewService] = None):
+    def __init__(self, review_service: Optional[Any] = None):
         """
         Initialize review manager.
 
         Args:
-            review_service: Optional ReviewService instance (creates default if None)
+            review_service: Optional review-service handle. The concrete
+                integration is not implemented yet (see _submit_review);
+                pass None to use the built-in mock behaviour.
         """
         self.review_service = review_service
 
@@ -135,7 +135,7 @@ class CopilotReviewManager:
 
         return review_id
 
-    async def check_review_status(self, review_id: str) -> Dict[str, Any]:
+    async def check_review_status(self, review_id: str) -> dict[str, Any]:
         """
         Check status of a submitted review.
 
@@ -158,7 +158,7 @@ class CopilotReviewManager:
         self,
         review_id: str,
         timeout_seconds: int = 300,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Wait for a review decision (blocking).
 

@@ -43,6 +43,7 @@ from .routers import (
     analysis,
     analytics,
     chat,
+    confirmations,
     federation,
     investigations,
     library,
@@ -527,6 +528,7 @@ def create_app(
     app.include_router(federation.router, dependencies=_api_deps)
     app.include_router(workflows.router, dependencies=_api_deps)
     app.include_router(chat.router, dependencies=_api_deps)
+    app.include_router(confirmations.router, dependencies=_api_deps)
 
     return app
 

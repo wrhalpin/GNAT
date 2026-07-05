@@ -4,124 +4,116 @@
 gnat.agents.confirmation.backends.dashboard
 ==============================================
 
-DashboardBackend for web-based confirmation via REST + WebSocket.
+DashboardBackend for web-based confirmation.
+
+``prompt()`` parks the calling thread on a ``threading.Event`` (safe to
+call whether or not an asyncio loop is running elsewhere in the process).
+The FastAPI routes in :mod:`gnat.serve.routers.confirmations` list pending
+requests and resolve them via :meth:`DashboardBackend.decide`.
+
+Pending requests live in memory only. A process restart while a prompt is
+pending surfaces as a timeout, and the broker fails closed — which is the
+intended behaviour.
 """
 
-import asyncio
-from typing import Optional, Dict
+import threading
+from dataclasses import dataclass, field
+from typing import Optional
 from uuid import UUID
 
 from gnat.agents.confirmation.backends.base import ConfirmationBackend
 from gnat.agents.confirmation.models import (
-    ConfirmationRequest,
     ConfirmationOutcome,
+    ConfirmationRequest,
     ConfirmationTimeout,
+    PromptResult,
 )
 
 
+@dataclass
+class _PendingPrompt:
+    """A prompt waiting for an analyst decision."""
+
+    request: ConfirmationRequest
+    event: threading.Event = field(default_factory=threading.Event)
+    outcome: Optional[ConfirmationOutcome] = None
+    note: Optional[str] = None
+    decided_by: Optional[str] = None
+
+
+_shared_lock = threading.Lock()
+_shared_instance: Optional["DashboardBackend"] = None
+
+
 class DashboardBackend(ConfirmationBackend):
-    """
-    Backend that dispatches confirmation requests to a web dashboard.
-
-    Stores pending requests in memory; web handlers resolve them via
-    /api/confirmations/{request_id}/decide endpoint.
-
-    Synchronous prompt() blocks on a Future until the analyst decides
-    or timeout elapses.
-
-    Design:
-    - pending_requests: dict[workspace][request_id] -> request
-    - decision_futures: dict[request_id] -> asyncio.Future[ConfirmationOutcome]
-    - Web handler: resolution of future via REST endpoint
-    """
+    """Backend that queues confirmation requests for the web dashboard."""
 
     def __init__(self):
-        """Initialize dashboard backend."""
-        self.pending_requests: Dict[str, Dict[UUID, ConfirmationRequest]] = {}
-        self.decision_futures: Dict[UUID, asyncio.Future] = {}
+        self._lock = threading.Lock()
+        self._pending: dict[UUID, _PendingPrompt] = {}
 
-    def prompt(self, request: ConfirmationRequest) -> ConfirmationOutcome:
+    @classmethod
+    def shared(cls) -> "DashboardBackend":
+        """Process-wide instance shared by the broker and the serve routes."""
+        global _shared_instance
+        with _shared_lock:
+            if _shared_instance is None:
+                _shared_instance = cls()
+            return _shared_instance
+
+    # ── Broker-facing API ──────────────────────────────────────────────
+
+    def prompt(self, request: ConfirmationRequest) -> PromptResult:
         """
-        Queue request for dashboard and wait for decision.
-
-        Blocks the calling thread until the analyst decides or timeout elapses.
-
-        Args:
-            request: The confirmation request
-
-        Returns:
-            ConfirmationOutcome (APPROVED or DENIED)
-
-        Raises:
-            ConfirmationTimeout: If timeout elapses
+        Queue the request and block until an analyst decides or the
+        request times out.
         """
-        # Store request in pending
-        if request.workspace not in self.pending_requests:
-            self.pending_requests[request.workspace] = {}
-        self.pending_requests[request.workspace][request.request_id] = request
-
-        # Create future and wait
-        loop = self._get_or_create_event_loop()
-        future: asyncio.Future = loop.create_future()
-        self.decision_futures[request.request_id] = future
+        pending = _PendingPrompt(request=request)
+        with self._lock:
+            self._pending[request.request_id] = pending
 
         try:
-            # Block with timeout
-            outcome = loop.run_until_complete(
-                asyncio.wait_for(future, timeout=request.timeout_seconds)
-            )
-            return outcome
-        except asyncio.TimeoutError:
-            raise ConfirmationTimeout(request)
+            if not pending.event.wait(timeout=request.timeout_seconds):
+                raise ConfirmationTimeout(request)
+            return PromptResult(pending.outcome, note=pending.note)
         finally:
-            # Clean up
-            if request.request_id in self.decision_futures:
-                del self.decision_futures[request.request_id]
-            if request.workspace in self.pending_requests:
-                self.pending_requests[request.workspace].pop(request.request_id, None)
-                if not self.pending_requests[request.workspace]:
-                    del self.pending_requests[request.workspace]
+            with self._lock:
+                self._pending.pop(request.request_id, None)
 
-    def get_pending_for_workspace(self, workspace: str) -> list[ConfirmationRequest]:
-        """Get all pending requests for a workspace."""
-        if workspace not in self.pending_requests:
-            return []
-        return list(self.pending_requests[workspace].values())
+    # ── Dashboard-facing API ───────────────────────────────────────────
+
+    def get_pending(self, workspace: Optional[str] = None) -> list[ConfirmationRequest]:
+        """List pending requests, optionally filtered by workspace."""
+        with self._lock:
+            requests = [p.request for p in self._pending.values()]
+        if workspace is not None:
+            requests = [r for r in requests if r.workspace == workspace]
+        return sorted(requests, key=lambda r: r.created_at)
 
     def decide(
         self,
         request_id: UUID,
         outcome: ConfirmationOutcome,
+        note: Optional[str] = None,
         decided_by: str = "analyst",
     ) -> None:
         """
-        Resolve a pending decision (called by web endpoint).
+        Resolve a pending prompt (called by the web endpoint).
 
-        Args:
-            request_id: The request UUID
-            outcome: The decision outcome
-            decided_by: Who made the decision
-
-        Raises:
-            KeyError: If request_id is not pending
+        Raises
+        ------
+        KeyError
+            If ``request_id`` is not pending (already decided or timed out).
         """
-        if request_id not in self.decision_futures:
-            raise KeyError(f"No pending request with id {request_id}")
-
-        future = self.decision_futures[request_id]
-        if not future.done():
-            future.set_result(outcome)
-
-    def _get_or_create_event_loop(self) -> asyncio.AbstractEventLoop:
-        """Get or create the current event loop."""
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_closed():
-                    raise RuntimeError("Event loop is closed")
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-        return loop
+        if outcome not in (ConfirmationOutcome.APPROVED, ConfirmationOutcome.DENIED):
+            raise ValueError(
+                f"Dashboard decisions must be APPROVED or DENIED, got {outcome.value!r}"
+            )
+        with self._lock:
+            pending = self._pending.get(request_id)
+            if pending is None:
+                raise KeyError(f"No pending confirmation with id {request_id}")
+            pending.outcome = outcome
+            pending.note = note
+            pending.decided_by = decided_by
+            pending.event.set()
