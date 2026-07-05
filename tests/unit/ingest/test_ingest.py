@@ -1220,3 +1220,151 @@ class TestNVDCVEMapper:
     def test_description_extracted(self):
         objs = _map(NVDCVEMapper(), self._nvd2_record("CVE-2024-1111", 5.0))
         assert "test vuln" in objs[0].description
+
+
+# ---------------------------------------------------------------------------
+# SandGNATReader
+# ---------------------------------------------------------------------------
+
+
+class _FakeSandGNATClient:
+    """Stand-in for SandGNATClient: canned pages, bundles, and to_stix."""
+
+    def __init__(self, pages, bundles, fail_bundle_ids=()):
+        self.pages = pages  # list of job-row lists, one per page
+        self.bundles = bundles  # analysis_id -> list of STIX objects
+        self.fail_bundle_ids = set(fail_bundle_ids)
+        self.list_calls = []
+
+    def list_objects(self, stix_type, filters=None, page=1, page_size=100):
+        self.list_calls.append({"filters": dict(filters or {}), "page": page})
+        idx = page - 1
+        return list(self.pages[idx]) if idx < len(self.pages) else []
+
+    def get_bundle_objects(self, analysis_id):
+        from gnat.clients.base import GNATClientError
+
+        if analysis_id in self.fail_bundle_ids:
+            raise GNATClientError("bundle not available", status=409)
+        return [dict(o) for o in self.bundles.get(analysis_id, [])]
+
+    def to_stix(self, native):
+        return {
+            "type": "malware-analysis",
+            "id": f"malware-analysis--{native['id']}",
+            "product": "sandgnat",
+            "result": "malicious",
+        }
+
+
+def _sandgnat_job(analysis_id, sha256="a" * 64):
+    return {"id": analysis_id, "sample_hash_sha256": sha256, "status": "completed"}
+
+
+class TestSandGNATReader:
+    BUNDLE = [
+        {"type": "malware", "id": "malware--1", "name": "agent_tesla"},
+        {"type": "indicator", "id": "indicator--1", "pattern": "[file:hashes.'SHA-256' = 'aa']"},
+        {"type": "network-traffic", "id": "network-traffic--1"},
+    ]
+
+    def _reader(self, client, **kwargs):
+        from gnat.ingest.sources import SandGNATReader
+
+        return SandGNATReader(client=client, **kwargs)
+
+    def test_yields_summary_then_bundle_objects(self):
+        client = _FakeSandGNATClient(
+            pages=[[_sandgnat_job("job-1")]], bundles={"job-1": self.BUNDLE}
+        )
+        with self._reader(client) as reader:
+            records = list(reader)
+
+        assert [r["type"] for r in records] == [
+            "malware-analysis", "malware", "indicator", "network-traffic",
+        ]
+
+    def test_stamps_provenance_on_every_record(self):
+        client = _FakeSandGNATClient(
+            pages=[[_sandgnat_job("job-1")]], bundles={"job-1": self.BUNDLE}
+        )
+        with self._reader(client) as reader:
+            records = list(reader)
+        assert all(r["x_sandgnat_analysis_id"] == "job-1" for r in records)
+
+    def test_filters_forwarded_and_status_forced_completed(self):
+        client = _FakeSandGNATClient(pages=[[]], bundles={})
+        with self._reader(
+            client,
+            since="2026-07-01T00:00:00Z",
+            investigation_id="inv-9",
+            sha256="b" * 64,
+        ) as reader:
+            list(reader)
+
+        sent = client.list_calls[0]["filters"]
+        assert sent["status"] == "completed"
+        assert sent["since"] == "2026-07-01T00:00:00Z"
+        assert sent["investigation_id"] == "inv-9"
+        assert sent["sha256"] == "b" * 64
+
+    def test_stix_types_filter(self):
+        client = _FakeSandGNATClient(
+            pages=[[_sandgnat_job("job-1")]], bundles={"job-1": self.BUNDLE}
+        )
+        with self._reader(client, stix_types=["indicator"]) as reader:
+            records = list(reader)
+        assert [r["type"] for r in records] == ["indicator"]
+
+    def test_summary_can_be_disabled(self):
+        client = _FakeSandGNATClient(
+            pages=[[_sandgnat_job("job-1")]], bundles={"job-1": self.BUNDLE}
+        )
+        with self._reader(client, include_analysis_summary=False) as reader:
+            records = list(reader)
+        assert all(r["type"] != "malware-analysis" for r in records)
+
+    def test_bundle_failure_skips_analysis_not_run(self):
+        client = _FakeSandGNATClient(
+            pages=[[_sandgnat_job("job-bad"), _sandgnat_job("job-ok")]],
+            bundles={"job-ok": self.BUNDLE},
+            fail_bundle_ids={"job-bad"},
+        )
+        with self._reader(client, include_analysis_summary=False) as reader:
+            records = list(reader)
+        # job-bad contributes nothing; job-ok's 3 objects still arrive
+        assert len(records) == 3
+        assert all(r["x_sandgnat_analysis_id"] == "job-ok" for r in records)
+
+    def test_pagination_stops_on_short_page(self):
+        full_page = [_sandgnat_job(f"job-{i}") for i in range(2)]
+        short_page = [_sandgnat_job("job-last")]
+        bundles = {j["id"]: [] for j in full_page + short_page}
+        client = _FakeSandGNATClient(pages=[full_page, short_page], bundles=bundles)
+        with self._reader(client, page_size=2, include_analysis_summary=True) as reader:
+            records = list(reader)
+        assert len(records) == 3  # one summary per job, no bundle objects
+        assert [c["page"] for c in client.list_calls] == [1, 2]
+
+    def test_max_analyses_caps_run(self):
+        page = [_sandgnat_job(f"job-{i}") for i in range(5)]
+        client = _FakeSandGNATClient(
+            pages=[page], bundles={j["id"]: [] for j in page}
+        )
+        with self._reader(client, max_analyses=2) as reader:
+            records = list(reader)
+        assert len(records) == 2
+
+    def test_pipeline_with_passthrough_mapper(self):
+        """End-to-end: reader records land as bound ORM objects."""
+        client = _FakeSandGNATClient(
+            pages=[[_sandgnat_job("job-1")]], bundles={"job-1": self.BUNDLE}
+        )
+        mapper = STIXPassthroughMapper()
+        with self._reader(client, stix_types=["malware", "indicator"]) as reader:
+            objs = list(mapper.map_many(reader))
+
+        types = sorted(o.to_dict()["type"] for o in objs)
+        assert types == ["indicator", "malware"]
+        malware = next(o for o in objs if o.to_dict()["type"] == "malware")
+        assert malware.to_dict()["x_sandgnat_analysis_id"] == "job-1"

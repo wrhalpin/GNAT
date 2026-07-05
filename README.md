@@ -576,7 +576,7 @@ result = (
 )
 ```
 
-### Source Readers (14)
+### Source Readers (15)
 
 | Reader | Source |
 |--------|--------|
@@ -593,6 +593,7 @@ result = (
 | `OpenIOCReader` | OpenIOC 1.1 XML |
 | `SplunkReader` | Splunk REST Search API |
 | `ElasticReader` | Elasticsearch scroll API |
+| `SandGNATReader` | SandGNAT detonation STIX bundles (export API) |
 
 ### Mappers (12)
 

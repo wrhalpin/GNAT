@@ -422,7 +422,7 @@ batch_size  = 100
 
 ## Ingest Sources & Mappers
 
-**15 Source Readers:** PlainText, CSV, JSON, JSONL, STIXBundle, TAXIICollection, SQL, MISP, Syslog, RSS, Email, OpenIOC, Splunk, Elastic, Kafka (telemetry)
+**16 Source Readers:** PlainText, CSV, JSON, JSONL, STIXBundle, TAXIICollection, SQL, MISP, Syslog, RSS, Email, OpenIOC, Splunk, Elastic, Kafka (telemetry), SandGNAT (detonation bundles)
 
 **13 Record Mappers:** FlatIOC, STIXPassthrough, MISP, CEF, SQLRow, CSV, RSSEntry, Email, OpenIOC, Splunk, Elastic, NVDCVE, Telemetry
 

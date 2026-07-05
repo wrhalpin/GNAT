@@ -43,6 +43,23 @@ malware runtime-analysis environment (registry key `sandgnat`,
   auth rejection, filters, bundle 409-until-completed, real intake
   submission, and retroactive tagging
 
+### Added — SandGNATReader ingest source
+
+New `gnat/ingest/sources/sandgnat_reader.py`: `SandGNATReader` pulls
+completed detonations from the SandGNAT export API and yields each
+bundle's STIX objects (plus an optional per-job `malware-analysis`
+summary), ready for `STIXPassthroughMapper` and FeedJob polling via
+`since=ctx.last_success_iso`.
+
+- Filters: since / investigation_id / sha256 / stix_types; status is
+  always forced to `completed` (only completed jobs have bundles)
+- Every record stamped with `x_sandgnat_analysis_id` provenance
+- Unavailable bundles (status races) are logged and skipped — one bad
+  analysis never aborts a feed run; pagination and `max_analyses` cap
+- Verified against SandGNAT's real Flask app over HTTP: running jobs
+  excluded, broken bundles skipped, since-filter honoured, and records
+  land as bound ORM objects through STIXPassthroughMapper
+
 ### Added — ConfirmationBroker (human-in-the-loop control-flow gates)
 
 New `gnat/agents/confirmation/` package: pauses sensitive or irreversible
