@@ -18,6 +18,7 @@ from gnat.ingest.sources.readers import (
     SyslogReader,
     TAXIICollectionReader,
 )
+from gnat.ingest.sources.sandgnat_reader import SandGNATReader
 
 __all__ = [
     "PlainTextReader",
@@ -34,4 +35,5 @@ __all__ = [
     "OpenIOCReader",
     "SplunkReader",
     "ElasticReader",
+    "SandGNATReader",
 ]
